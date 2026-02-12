@@ -1,0 +1,135 @@
+import {
+  LayoutDashboard,
+  Users,
+  Car,
+  Calendar,
+  FileText,
+  Wrench,
+  Package,
+  Receipt,
+  Building2,
+  Store,
+  ShoppingCart,
+  TrendingUp,
+  MessageSquare
+} from 'lucide-react';
+
+export interface MenuItem {
+  name: string;
+  href: string;
+  icon: any;
+  roles?: string[]; // Если не указано, доступно всем
+}
+
+// Меню для администратора
+export const adminMenu: MenuItem[] = [
+  { name: 'Админ панель', href: '/admin', icon: LayoutDashboard },
+];
+
+// Меню для владельца СТО
+export const stoOwnerMenu: MenuItem[] = [
+  { name: 'Дашборд', href: '/', icon: LayoutDashboard },
+  { name: 'Клиенты', href: '/customers', icon: Users },
+  { name: 'Автомобили', href: '/vehicles', icon: Car },
+  { name: 'Записи', href: '/appointments', icon: Calendar },
+  { name: 'Заказ-наряды', href: '/work-orders', icon: FileText },
+  { name: 'Услуги', href: '/services', icon: Wrench },
+  { name: 'Счета', href: '/invoices', icon: Receipt },
+  { name: 'Сотрудники', href: '/sto/employees', icon: Users },
+  { name: 'Аналитика', href: '/sto/analytics', icon: TrendingUp },
+  { name: 'Поддержка', href: '/support', icon: MessageSquare },
+];
+
+// Меню для работника СТО
+export const stoWorkerMenu: MenuItem[] = [
+  { name: 'Моя статистика', href: '/worker/dashboard', icon: LayoutDashboard },
+  { name: 'Клиенты', href: '/customers', icon: Users },
+  { name: 'Автомобили', href: '/vehicles', icon: Car },
+  { name: 'Записи', href: '/appointments', icon: Calendar },
+  { name: 'Заказ-наряды', href: '/work-orders', icon: FileText },
+  { name: 'Услуги', href: '/services', icon: Wrench },
+];
+
+// Меню для владельца разборки
+export const partsOwnerMenu: MenuItem[] = [
+  { name: 'Дашборд', href: '/parts-dashboard', icon: LayoutDashboard },
+  { name: 'Мои авто', href: '/my-vehicles', icon: Car },
+  { name: 'Запчасти', href: '/parts', icon: Package },
+  { name: 'Заказы', href: '/parts-orders', icon: ShoppingCart },
+  { name: 'Клиенты', href: '/customers', icon: Users },
+  { name: 'Сотрудники', href: '/parts/employees', icon: Users },
+  { name: 'Аналитика', href: '/parts/analytics', icon: TrendingUp },
+  { name: 'Поддержка', href: '/support', icon: MessageSquare },
+];
+
+// Меню для работника разборки
+export const partsWorkerMenu: MenuItem[] = [
+  { name: 'Дашборд', href: '/parts-dashboard', icon: LayoutDashboard },
+  { name: 'Запчасти', href: '/parts', icon: Package },
+  { name: 'Заказы', href: '/parts-orders', icon: ShoppingCart },
+  { name: 'Клиенты', href: '/customers', icon: Users },
+];
+
+// Меню для владельца магазина
+export const storeOwnerMenu: MenuItem[] = [
+  { name: 'Дашборд', href: '/store-dashboard', icon: LayoutDashboard },
+  { name: 'Товары', href: '/store/products', icon: Package },
+  { name: 'Заказы', href: '/store/orders', icon: ShoppingCart },
+  { name: 'Клиенты', href: '/customers', icon: Users },
+  { name: 'Сотрудники', href: '/store/employees', icon: Users },
+  { name: 'Поддержка', href: '/support', icon: MessageSquare },
+];
+
+// Меню для работника магазина
+export const storeWorkerMenu: MenuItem[] = [
+  { name: 'Дашборд', href: '/store-dashboard', icon: LayoutDashboard },
+  { name: 'Товары', href: '/store/products', icon: Package },
+  { name: 'Заказы', href: '/store/orders', icon: ShoppingCart },
+  { name: 'Клиенты', href: '/customers', icon: Users },
+];
+
+// Общее меню для обычного пользователя
+export const userMenu: MenuItem[] = [
+  { name: 'Мои автомобили', href: '/my-vehicles', icon: Car },
+];
+
+// Маппинг ролей на меню
+export const roleMenuMap: Record<string, MenuItem[]> = {
+  'admin': adminMenu,
+  'sto_owner': stoOwnerMenu,
+  'sto_worker': stoWorkerMenu,
+  'parts_owner': partsOwnerMenu,
+  'parts_worker': partsWorkerMenu,
+  'store_owner': storeOwnerMenu,
+  'store_worker': storeWorkerMenu,
+  'user': userMenu,
+};
+
+// Функция для получения объединенного меню для пользователя с несколькими ролями
+export function getMenuForRoles(roleNames: string[]): MenuItem[] {
+  const menuItems = new Map<string, MenuItem>();
+
+  // Собираем все уникальные пункты меню из всех ролей
+  roleNames.forEach(roleName => {
+    const roleMenu = roleMenuMap[roleName] || [];
+    roleMenu.forEach(item => {
+      menuItems.set(item.href, item);
+    });
+  });
+
+  // Если ролей нет, показываем меню обычного пользователя
+  if (menuItems.size === 0) {
+    return userMenu;
+  }
+
+  return Array.from(menuItems.values());
+}
+
+// Функция для определения стартовой страницы по ролям
+export function getDefaultRouteForRoles(roleNames: string[]): string {
+  if (roleNames.includes('admin')) return '/admin';
+  if (roleNames.includes('sto_owner') || roleNames.includes('sto_worker')) return '/';
+  if (roleNames.includes('parts_owner') || roleNames.includes('parts_worker')) return '/parts-dashboard';
+  if (roleNames.includes('store_owner') || roleNames.includes('store_worker')) return '/store-dashboard';
+  return '/';
+}

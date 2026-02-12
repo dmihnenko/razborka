@@ -1,0 +1,353 @@
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
+import { Plus, Eye, UserCog } from 'lucide-react'
+import { useUserProfile } from '@/hooks/useUserProfile'
+import { useNavigate } from 'react-router-dom'
+import { IMaskInput } from 'react-imask'
+
+interface Employee {
+  id: string
+  full_name: string | null
+  username: string | null
+  plain_password: string | null
+  email: string
+  phone: string | null
+  created_at: string
+}
+
+export default function StoEmployees() {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const navigate = useNavigate()
+  const { data: currentUserProfile } = useUserProfile()
+
+  // Загрузка работников СТО
+  const { data: employees = [], isLoading } = useQuery({
+    queryKey: ['sto_employees', currentUserProfile?.sto_company_id],
+    queryFn: async () => {
+      if (!currentUserProfile?.sto_company_id) return []
+
+      // Получаем роль sto_worker
+      const { data: roleData, error: roleError } = await supabase
+        .from('roles')
+        .select('id')
+        .eq('name', 'sto_worker')
+        .single()
+
+      if (roleError) throw roleError
+      if (!roleData) return []
+
+      // Сначала получаем все user_roles для роли sto_worker
+      const { data: userRolesData, error: userRolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role_id', roleData.id)
+
+      if (userRolesError) throw userRolesError
+      
+      const userIds = userRolesData?.map(ur => ur.user_id) || []
+      
+      if (userIds.length === 0) return []
+
+      // Теперь получаем профили этих пользователей, отфильтрованные по СТО
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('sto_company_id', currentUserProfile.sto_company_id)
+        .in('id', userIds)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      return data as Employee[]
+    },
+    enabled: !!currentUserProfile?.sto_company_id
+  })
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Сотрудники СТО</h1>
+          <p className="text-sm text-gray-600 mt-1">Управление работниками вашего СТО</p>
+        </div>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Добавить работника
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      ) : employees.length === 0 ? (
+        <div className="bg-white rounded-lg shadow p-12 text-center">
+          <UserCog className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Нет работников</h3>
+          <p className="text-gray-600 mb-4">Добавьте первого работника для вашего СТО</p>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Добавить работника
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {employees.map((employee) => (
+            <div
+              key={employee.id}
+              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center">
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-lg">
+                    {employee.full_name?.charAt(0) || employee.username?.charAt(0)?.toUpperCase() || 'W'}
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {employee.full_name || 'Без имени'}
+                    </h3>
+                    <p className="text-sm text-gray-500">Работник СТО</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Логин:</span>
+                  <span className="font-mono font-semibold text-gray-900">{employee.username}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Пароль:</span>
+                  <span className="font-mono bg-gray-100 px-2 py-1 rounded text-gray-900">
+                    {employee.plain_password || '—'}
+                  </span>
+                </div>
+                {employee.phone && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">Телефон:</span>
+                    <span className="text-gray-900">{employee.phone}</span>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => navigate(`/sto/employees/${employee.id}`)}
+                className="w-full flex items-center justify-center px-4 py-2 text-primary border border-primary rounded-md hover:bg-primary hover:text-white transition-colors"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Просмотр статистики
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {isModalOpen && currentUserProfile?.sto_company_id && (
+        <AddEmployeeModal
+          onClose={() => setIsModalOpen(false)}
+          stoCompanyId={currentUserProfile.sto_company_id}
+        />
+      )}
+    </div>
+  )
+}
+
+function AddEmployeeModal({ onClose, stoCompanyId }: { onClose: () => void; stoCompanyId: string }) {
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+    full_name: '',
+    phone: ''
+  })
+  const queryClient = useQueryClient()
+
+  const createEmployeeMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      // Проверяем, не существует ли уже пользователь с таким username
+      const { data: existingUser, error: checkError } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('username', data.username)
+        .maybeSingle()
+
+      if (existingUser) {
+        throw new Error(`Пользователь с логином "${data.username}" уже существует`)
+      }
+
+      // Генерируем email-заглушку с валидным доменом
+      const email = `${data.username}@sto-worker.local`
+
+      // Создаем пользователя в auth с минимальными данными
+      let userId: string
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password: data.password
+      })
+
+      if (authError) {
+        console.error('Auth signup error:', authError)
+        // Более понятное сообщение об ошибке
+        if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
+          throw new Error('Email уже зарегистрирован. Попробуйте другой логин.')
+        }
+        throw new Error(authError.message || 'Ошибка создания пользователя')
+      }
+
+      if (!authData.user) {
+        throw new Error('Не удалось создать пользователя')
+      }
+
+      userId = authData.user.id
+
+      // Даем время триггеру создать базовый профиль
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      // Обновляем или создаем профиль
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .upsert({
+          id: userId,
+          username: data.username,
+          plain_password: data.password,
+          full_name: data.full_name || null,
+          phone: data.phone || null,
+          sto_company_id: stoCompanyId || null,
+          parts_company_id: null,
+          email: email,
+          is_active: true
+        })
+
+      if (profileError) {
+        console.error('Profile error:', profileError)
+        throw profileError
+      }
+
+      // Получаем role_id для sto_worker
+      const { data: roleData } = await supabase
+        .from('roles')
+        .select('id')
+        .eq('name', 'sto_worker')
+        .single()
+
+      if (!roleData) throw new Error('Role not found')
+
+      // Добавляем роль (если уже есть - игнорируем)
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .upsert({
+          user_id: userId,
+          role_id: roleData.id,
+          is_primary: true
+        }, {
+          onConflict: 'user_id,role_id'
+        })
+
+      if (roleError) throw roleError
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sto_employees', stoCompanyId] })
+      toast.success('Работник добавлен')
+      onClose()
+    },
+    onError: (error: any) => {
+      toast.error('Ошибка при добавлении: ' + error.message)
+    }
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formData.username || !formData.password) {
+      toast.error('Заполните обязательные поля')
+      return
+    }
+    createEmployeeMutation.mutate(formData)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-md w-full p-6">
+        <h2 className="text-xl font-bold mb-4">Добавить работника</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Логин (username) *
+            </label>
+            <input
+              type="text"
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="worker1"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Пароль *
+            </label>
+            <input
+              type="text"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="Минимум 6 символов"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">Пароль будет виден в списке работников</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              ФИО
+            </label>
+            <input
+              type="text"
+              value={formData.full_name}
+              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="Иванов Иван Иванович"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Телефон
+            </label>
+            <IMaskInput
+              mask="+380 (00) 000-00-00"
+              value={formData.phone}
+              onAccept={(value) => setFormData({ ...formData, phone: value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="+380 (XX) XXX-XX-XX"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              disabled={createEmployeeMutation.isPending}
+              className="px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
+            >
+              {createEmployeeMutation.isPending ? 'Добавление...' : 'Добавить'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}

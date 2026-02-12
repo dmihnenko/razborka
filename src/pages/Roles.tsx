@@ -1,0 +1,296 @@
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '../lib/supabase'
+import { Plus, Edit2, Trash2, Shield } from 'lucide-react'
+import { toast } from 'sonner'
+import type { Role } from '../types/database'
+
+export default function Roles() {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingRole, setEditingRole] = useState<Role | null>(null)
+  const queryClient = useQueryClient()
+
+  const { data: roles, isLoading } = useQuery({
+    queryKey: ['roles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('roles')
+        .select('*')
+        .order('name')
+
+      if (error) throw error
+      return data as Role[]
+    },
+  })
+
+  const deleteRole = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('roles')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] })
+      toast.success('Роль удалена')
+    },
+    onError: (error) => {
+      toast.error('Ошибка при удалении роли: ' + error.message)
+    },
+  })
+
+  const handleDelete = async (id: string, name: string) => {
+    if (name === 'admin' || name === 'user') {
+      toast.error('Системные роли нельзя удалить')
+      return
+    }
+
+    if (confirm('Удалить роль? Пользователи с этой ролью потеряют свои права.')) {
+      deleteRole.mutate(id)
+    }
+  }
+
+  if (isLoading) {
+    return <div className="p-8">Загрузка...</div>
+  }
+
+  return (
+    <div className="p-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Управление ролями</h1>
+        <button
+          onClick={() => {
+            setEditingRole(null)
+            setIsModalOpen(true)
+          }}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+        >
+          <Plus size={20} />
+          Добавить роль
+        </button>
+      </div>
+
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Название
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Отображаемое имя
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Описание
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Статус
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Действия
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {roles?.map((role) => (
+              <tr key={role.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center gap-2">
+                    <Shield size={16} className="text-blue-600" />
+                    <span className="font-mono text-sm">{role.name}</span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="text-sm font-medium text-gray-900">
+                    {role.display_name}
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <span className="text-sm text-gray-600">
+                    {role.description || '-'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      role.is_active
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {role.is_active ? 'Активна' : 'Неактивна'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button
+                    onClick={() => {
+                      setEditingRole(role)
+                      setIsModalOpen(true)
+                    }}
+                    className="text-blue-600 hover:text-blue-900 mr-4"
+                  >
+                    <Edit2 size={18} />
+                  </button>
+                  {role.name !== 'admin' && role.name !== 'user' && (
+                    <button
+                      onClick={() => handleDelete(role.id, role.name)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {isModalOpen && (
+        <RoleModal
+          role={editingRole}
+          onClose={() => {
+            setIsModalOpen(false)
+            setEditingRole(null)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function RoleModal({
+  role,
+  onClose,
+}: {
+  role: Role | null
+  onClose: () => void
+}) {
+  const [formData, setFormData] = useState({
+    name: role?.name || '',
+    display_name: role?.display_name || '',
+    description: role?.description || '',
+    is_active: role?.is_active ?? true,
+  })
+  const queryClient = useQueryClient()
+
+  const saveRole = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      if (role) {
+        const { error } = await supabase
+          .from('roles')
+          .update(data)
+          .eq('id', role.id)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from('roles').insert([data])
+
+        if (error) throw error
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] })
+      toast.success(role ? 'Роль обновлена' : 'Роль создана')
+      onClose()
+    },
+    onError: (error) => {
+      toast.error('Ошибка: ' + error.message)
+    },
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    saveRole.mutate(formData)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-4">
+          {role ? 'Редактировать роль' : 'Новая роль'}
+        </h2>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Системное имя (латиница)
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              disabled={!!role}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              required
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Отображаемое название
+            </label>
+            <input
+              type="text"
+              value={formData.display_name}
+              onChange={(e) =>
+                setFormData({ ...formData, display_name: e.target.value })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Описание
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={3}
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.is_active}
+                onChange={(e) =>
+                  setFormData({ ...formData, is_active: e.target.checked })
+                }
+                className="mr-2"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Активная роль
+              </span>
+            </label>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Сохранить
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300"
+            >
+              Отмена
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
