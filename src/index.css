@@ -56,4 +56,190 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Улучшенная типографика для мобильных */
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Минимальный размер touch target - 44x44px (Apple HIG) */
+  button,
+  a,
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Убираем highlight на touch устройствах */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Плавная прокрутка */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Улучшенный фокус для клавиатурной навигации */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+}
+
+@layer components {
+  /* Touch-friendly кнопки */
+  .btn-touch {
+    @apply min-h-[44px] px-4 py-2.5 rounded-lg font-medium transition-colors active:scale-95;
+  }
+
+  .btn-touch-sm {
+    @apply min-h-[36px] px-3 py-1.5 text-sm rounded-md;
+  }
+
+  .btn-touch-lg {
+    @apply min-h-[52px] px-6 py-3 text-lg rounded-lg;
+  }
+
+  /* Адаптивные карточки */
+  .card-mobile {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 transition-shadow;
+  }
+
+  .card-mobile-hover {
+    @apply card-mobile hover:shadow-md active:shadow-sm;
+  }
+
+  /* Адаптивные input поля */
+  .input-mobile {
+    @apply w-full px-3 py-2 sm:px-4 sm:py-2.5 text-base border border-gray-300 rounded-lg 
+           focus:ring-2 focus:ring-primary focus:border-transparent transition-colors;
+  }
+
+  /* Адаптивные заголовки */
+  .heading-mobile-1 {
+    @apply text-xl sm:text-2xl md:text-3xl font-bold text-gray-900;
+  }
+
+  .heading-mobile-2 {
+    @apply text-lg sm:text-xl md:text-2xl font-bold text-gray-900;
+  }
+
+  .heading-mobile-3 {
+    @apply text-base sm:text-lg md:text-xl font-semibold text-gray-900;
+  }
+
+  /* Адаптивный текст */
+  .text-mobile-sm {
+    @apply text-xs sm:text-sm;
+  }
+
+  .text-mobile-base {
+    @apply text-sm sm:text-base;
+  }
+
+  .text-mobile-lg {
+    @apply text-base sm:text-lg;
+  }
+
+  /* Container с адаптивными отступами */
+  .container-mobile {
+    @apply px-4 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8;
+  }
+
+  /* Скрыть scrollbar но оставить функциональность */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Адаптивная сетка */
+  .grid-mobile {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6;
+  }
+
+  .grid-mobile-stats {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6;
+  }
+
+  /* Адаптивная таблица для мобильных */
+  .table-mobile-hide {
+    @apply hidden md:block;
+  }
+
+  .table-mobile-show {
+    @apply block md:hidden;
+  }
+
+  /* Модальные окна на мобильных */
+  .modal-mobile {
+    @apply fixed inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center;
+  }
+
+  .modal-content-mobile {
+    @apply w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-xl 
+           max-h-[90vh] sm:max-h-[80vh] overflow-y-auto;
+  }
+
+  /* Badge адаптивный */
+  .badge-mobile {
+    @apply inline-flex items-center px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full 
+           text-xs sm:text-sm font-medium;
+  }
+
+  /* Floating Action Button для мобильных */
+  .fab-mobile {
+    @apply fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-14 h-14 sm:w-16 sm:h-16 
+           rounded-full shadow-lg flex items-center justify-center z-40
+           transition-transform active:scale-95;
+  }
+}
+
+@layer utilities {
+  /* Адаптивные отступы */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Truncate с поддержкой нескольких строк */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Touch feedback */
+  .touch-feedback {
+    @apply transition-transform active:scale-95;
+  }
+
+  .touch-feedback-sm {
+    @apply transition-transform active:scale-98;
+  }
 }
