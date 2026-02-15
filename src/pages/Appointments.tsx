@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, UserCog, Archive, List, TrendingUp, Check } from 'lucide-react'
+import { Plus, Pencil, Trash2, UserCog, List, TrendingUp, Check } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 import ReassignWorkerModal from '@/components/appointments/ReassignWorkerModal'
 import { useNavigate } from 'react-router-dom'
@@ -151,13 +151,10 @@ export default function Appointments() {
             {showArchived ? (
               <>
                 <List className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Активные</span>
+                <span>Активные</span>
               </>
             ) : (
-              <>
-                <Archive className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Архив</span>
-              </>
+              <span>Архив</span>
             )}
           </button>
           {isStoOwner && (

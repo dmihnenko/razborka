@@ -92,13 +92,13 @@ export default function Breadcrumbs() {
           <div key={crumb.path} className="inline-flex items-center">
             <ChevronRight className="w-4 h-4 mx-1 text-gray-400 flex-shrink-0" />
             {isLast ? (
-              <span className="text-gray-900 font-medium capitalize whitespace-nowrap">
+              <span className="text-gray-900 font-medium whitespace-nowrap">
                 {crumb.label}
               </span>
             ) : (
               <Link
                 to={crumb.path}
-                className="hover:text-blue-600 transition-colors capitalize whitespace-nowrap"
+                className="hover:text-blue-600 transition-colors whitespace-nowrap"
               >
                 {crumb.label}
               </Link>
