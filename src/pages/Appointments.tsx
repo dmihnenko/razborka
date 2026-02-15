@@ -146,27 +146,27 @@ export default function Appointments() {
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setShowArchived(!showArchived)}
-            className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+            className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 flex items-center gap-1.5"
           >
             {showArchived ? (
               <>
-                <List className="w-4 h-4" />
-                <span className="hidden sm:inline ml-1.5">Активные</span>
+                <List className="w-4 h-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Активные</span>
               </>
             ) : (
               <>
-                <Archive className="w-4 h-4" />
-                <span className="hidden sm:inline ml-1.5">Архив</span>
+                <Archive className="w-4 h-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Архив</span>
               </>
             )}
           </button>
           {isStoOwner && (
             <button
               onClick={() => navigate('/appointments/statistics')}
-              className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+              className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 flex items-center gap-1.5"
             >
-              <TrendingUp className="w-4 h-4" />
-              <span className="hidden sm:inline ml-1.5">Статистика</span>
+              <TrendingUp className="w-4 h-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Статистика</span>
             </button>
           )}
           {!showArchived && (
@@ -175,10 +175,10 @@ export default function Appointments() {
                 setEditingAppointment(null)
                 setIsModalOpen(true)
               }}
-              className="btn-touch-sm bg-primary text-white hover:bg-primary/90"
+              className="btn-touch-sm bg-primary text-white hover:bg-primary/90 flex items-center gap-1.5"
             >
-              <Plus className="w-4 h-4" />
-              <span className="ml-1.5">Новая</span>
+              <Plus className="w-4 h-4 flex-shrink-0" />
+              <span>Новая</span>
             </button>
           )}
         </div>
@@ -196,8 +196,13 @@ export default function Appointments() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    {isStoOwner && (
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        № Заявки
+                      </th>
+                    )}
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Номер / Дата
+                      Дата
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Клиент
@@ -208,9 +213,9 @@ export default function Appointments() {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Статус
                     </th>
-                    {(!isStoOwner || workersCount > 1) && (
+                    {!isStoOwner && (
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        {isStoOwner ? 'Назначено' : 'Сумма'}
+                        Сумма
                       </th>
                     )}
                     {!showArchived && (
@@ -227,10 +232,14 @@ export default function Appointments() {
                       onClick={() => navigate(`/sto/appointments/${appointment.id}`)}
                       className="cursor-pointer hover:bg-gray-50 transition-colors"
                     >
+                      {isStoOwner && (
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                          <div className="text-gray-900 font-medium">
+                            {appointment.request_number || `#${appointment.id.slice(0, 8)}`}
+                          </div>
+                        </td>
+                      )}
                       <td className="px-4 py-3 whitespace-nowrap text-sm">
-                        {appointment.request_number && (
-                          <div className="text-gray-900 font-medium">{appointment.request_number}</div>
-                        )}
                         <div className="text-gray-500">
                           {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU')}
                           {appointment.scheduled_time && ` ${appointment.scheduled_time}`}
@@ -259,24 +268,11 @@ export default function Appointments() {
                           {statusLabels[appointment.status as keyof typeof statusLabels]}
                         </span>
                       </td>
-                      {(!isStoOwner || workersCount > 1) && (
+                      {!isStoOwner && (
                         <td className="px-4 py-3 whitespace-nowrap text-sm">
-                          {isStoOwner ? (
-                            appointment.assigned_to_profile || appointment.assigned_to_name ? (
-                              <div>
-                                <div className="text-gray-900 font-medium">
-                                  {appointment.assigned_to_name || appointment.assigned_to_profile?.full_name || appointment.assigned_to_profile?.email}
-                                </div>
-                                <div className="text-xs text-gray-500">Работник</div>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 italic">Не назначено</span>
-                            )
-                          ) : (
-                            <div className="text-gray-900">
-                              ₴{(appointment.total_cost || appointment.total_parts_cost + appointment.total_work_cost || 0).toFixed(2)}
-                            </div>
-                          )}
+                          <div className="text-gray-900">
+                            ₴{(appointment.total_cost || appointment.total_parts_cost + appointment.total_work_cost || 0).toFixed(2)}
+                          </div>
                         </td>
                       )}
                       {!showArchived && (
@@ -317,12 +313,12 @@ export default function Appointments() {
                 className="card-mobile-hover active:scale-98 transition-transform"
               >
                 {/* Клиент и автомобиль */}
-                <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex items-start justify-between gap-3 mb-2">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 text-base mb-1 truncate">
+                    <h3 className="font-semibold text-gray-900 text-mobile-base mb-1 truncate">
                       {appointment.customers?.name}
                     </h3>
-                    <p className="text-sm text-gray-600 truncate">
+                    <p className="text-mobile-sm text-gray-600 truncate">
                       {(() => {
                         const brand = appointment.vehicles?.brand || ''
                         const model = appointment.vehicles?.model || ''
@@ -349,47 +345,32 @@ export default function Appointments() {
                 </div>
 
                 {/* Дополнительная информация */}
-                <div className="flex items-center justify-between text-sm text-gray-500">
+                <div className="flex items-center justify-between text-mobile-sm text-gray-500 mt-2">
                   <span>
                     {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU')}
                     {appointment.scheduled_time && ` в ${appointment.scheduled_time}`}
                   </span>
                   
                   {!isStoOwner && (appointment.total_cost || appointment.total_parts_cost + appointment.total_work_cost) > 0 && (
-                    <span className="font-semibold text-primary">
+                    <span className="font-semibold text-primary text-mobile-base">
                       ₴{(appointment.total_cost || appointment.total_parts_cost + appointment.total_work_cost || 0).toFixed(2)}
                     </span>
                   )}
                 </div>
 
-                {/* Работник (для владельца) */}
-                {isStoOwner && workersCount > 1 && (
-                  <div className="mt-2 pt-2 border-t border-gray-100">
-                    <p className="text-xs text-gray-500">
-                      Работник:{' '}
-                      <span className="text-gray-700 font-medium">
-                        {appointment.assigned_to_name || 
-                         appointment.assigned_to_profile?.full_name || 
-                         appointment.assigned_to_profile?.email || 
-                         'Не назначено'}
-                      </span>
-                    </p>
-                  </div>
-                )}
-
                 {/* Оплаты (если не архив) */}
                 {!showArchived && (appointment.parts_paid || appointment.work_paid) && (
-                  <div className="mt-2 flex gap-3 text-xs">
+                  <div className="mt-2 flex gap-2 text-mobile-sm">
                     {appointment.parts_paid && (
                       <div className="flex items-center gap-1 text-green-600">
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Запчасти оплачены</span>
+                        <Check className="w-3 h-3" />
+                        <span>Запчасти</span>
                       </div>
                     )}
                     {appointment.work_paid && (
                       <div className="flex items-center gap-1 text-green-600">
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Работы оплачены</span>
+                        <Check className="w-3 h-3" />
+                        <span>Работы</span>
                       </div>
                     )}
                   </div>

@@ -169,18 +169,22 @@ export default function AppointmentDetails() {
       <div className="mb-6">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          className="flex items-center text-mobile-base text-gray-600 hover:text-gray-900 mb-4"
         >
-          <ArrowLeft className="w-5 h-5 mr-2" />
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
           Назад
         </button>
         
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Заявка {appointment.request_number || `#${appointment.id.slice(0, 8)}`}
+            <h1 className="heading-mobile-1">
+              {isStoOwner ? (
+                <>Заявка {appointment.request_number || `#${appointment.id.slice(0, 8)}`}</>
+              ) : (
+                <>Заявка</>  
+              )}
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-mobile-sm text-gray-500 mt-1">
               Создана {new Date(appointment.created_at).toLocaleDateString('ru-RU')}
             </p>
           </div>
@@ -197,18 +201,18 @@ export default function AppointmentDetails() {
                   customerName: appointment.customers?.name || 'Неизвестно',
                   vehicleName: `${appointment.vehicles?.brand || ''} ${appointment.vehicles?.model || ''}`.trim(),
                 })}
-                className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-800 border border-blue-600 hover:border-blue-800 rounded-md transition-colors"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-mobile-sm text-blue-600 hover:text-blue-800 border border-blue-600 hover:border-blue-800 rounded-md transition-colors"
               >
-                <UserCog className="w-5 h-5" />
-                Переназначить
+                <UserCog className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="hidden sm:inline">Переназначить</span>
               </button>
             )}
             <button
               onClick={() => setIsEditModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white hover:bg-primary/90 rounded-md transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-mobile-sm bg-primary text-white hover:bg-primary/90 rounded-md transition-colors"
             >
-              <Pencil className="w-5 h-5" />
-              Редактировать
+              <Pencil className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+              <span className="hidden sm:inline">Редактировать</span>
             </button>
           </div>
         </div>
@@ -218,43 +222,43 @@ export default function AppointmentDetails() {
         {/* Основная информация */}
         <div className="lg:col-span-2 space-y-6">
           {/* Клиент и автомобиль */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Информация о клиенте</h2>
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+            <h2 className="heading-mobile-2 mb-4">Информация о клиенте</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-start">
-                <User className="w-5 h-5 text-gray-400 mt-1 mr-3" />
+                <User className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mt-1 mr-2 sm:mr-3 flex-shrink-0" />
                 <div>
-                  <p className="text-sm text-gray-500">Клиент</p>
-                  <p className="text-gray-900 font-medium">{appointment.customers?.name}</p>
+                  <p className="text-mobile-sm text-gray-500">Клиент</p>
+                  <p className="text-mobile-base text-gray-900 font-medium">{appointment.customers?.name}</p>
                 </div>
               </div>
               
               <div className="flex items-start">
-                <Phone className="w-5 h-5 text-gray-400 mt-1 mr-3" />
+                <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mt-1 mr-2 sm:mr-3 flex-shrink-0" />
                 <div>
-                  <p className="text-sm text-gray-500">Телефон</p>
-                  <p className="text-gray-900 font-medium">{appointment.customers?.phone}</p>
+                  <p className="text-mobile-sm text-gray-500">Телефон</p>
+                  <p className="text-mobile-base text-gray-900 font-medium">{appointment.customers?.phone}</p>
                 </div>
               </div>
               
               <div className="flex items-start">
-                <Car className="w-5 h-5 text-gray-400 mt-1 mr-3" />
+                <Car className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mt-1 mr-2 sm:mr-3 flex-shrink-0" />
                 <div>
-                  <p className="text-sm text-gray-500">Автомобиль</p>
-                  <p className="text-gray-900 font-medium">
+                  <p className="text-mobile-sm text-gray-500">Автомобиль</p>
+                  <p className="text-mobile-base text-gray-900 font-medium">
                     {appointment.vehicles?.brand} {appointment.vehicles?.model}
                   </p>
-                  <p className="text-sm text-gray-500">{appointment.vehicles?.license_plate}</p>
+                  <p className="text-mobile-sm text-gray-500">{appointment.vehicles?.license_plate}</p>
                 </div>
               </div>
               
               {appointment.vehicles?.vin && (
                 <div className="flex items-start">
-                  <FileText className="w-5 h-5 text-gray-400 mt-1 mr-3" />
+                  <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mt-1 mr-2 sm:mr-3 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-500">VIN</p>
-                    <p className="text-gray-900 font-mono text-sm">{appointment.vehicles.vin}</p>
+                    <p className="text-mobile-sm text-gray-500">VIN</p>
+                    <p className="text-mobile-sm text-gray-900 font-mono">{appointment.vehicles.vin}</p>
                   </div>
                 </div>
               )}
@@ -263,25 +267,25 @@ export default function AppointmentDetails() {
 
           {/* Запчасти */}
           {appointment.appointment_parts && appointment.appointment_parts.length > 0 && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <Package className="w-5 h-5 mr-2" />
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+              <h2 className="heading-mobile-2 mb-4 flex items-center">
+                <Package className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
                 Запчасти ({appointment.appointment_parts.length})
               </h2>
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {appointment.appointment_parts.map((part: any) => (
                   <div key={part.id} className="flex items-start justify-between border-b border-gray-100 pb-2">
-                    <p className="text-gray-900 flex-1">{part.description}</p>
+                    <p className="text-mobile-base text-gray-900 flex-1">{part.description}</p>
                     {part.store_cost !== null && part.store_cost > 0 && (
-                      <span className="text-gray-900 font-medium ml-4">₴{(part.store_cost * (part.quantity || 1)).toFixed(2)}</span>
+                      <span className="text-mobile-base text-gray-900 font-medium ml-4">₴{(part.store_cost * (part.quantity || 1)).toFixed(2)}</span>
                     )}
                   </div>
                 ))}
                 {appointment.appointment_parts.some((p: any) => p.store_cost) && (
                   <div className="pt-2 border-t-2 border-gray-200">
                     <div className="flex justify-between items-center">
-                      <span className="font-semibold text-gray-900">Итого запчасти:</span>
-                      <span className="text-lg font-bold text-gray-900">
+                      <span className="text-mobile-base font-semibold text-gray-900">Итого запчасти:</span>
+                      <span className="text-mobile-lg font-bold text-gray-900">
                         ₴{appointment.appointment_parts.reduce((sum: number, p: any) => 
                           sum + ((p.store_cost || 0) * (p.quantity || 1)), 0).toFixed(2)}
                       </span>
@@ -294,25 +298,25 @@ export default function AppointmentDetails() {
 
           {/* Работы */}
           {appointment.appointment_services && appointment.appointment_services.length > 0 && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <Wrench className="w-5 h-5 mr-2" />
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+              <h2 className="heading-mobile-2 mb-4 flex items-center">
+                <Wrench className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
                 Работы ({appointment.appointment_services.length})
               </h2>
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {appointment.appointment_services.map((service: any) => (
                   <div key={service.id} className="flex items-start justify-between border-b border-gray-100 pb-2">
-                    <p className="text-gray-900 flex-1">{service.description}</p>
+                    <p className="text-mobile-base text-gray-900 flex-1">{service.description}</p>
                     {service.cost !== null && service.cost > 0 && (
-                      <span className="text-gray-900 font-medium ml-4">₴{service.cost.toFixed(2)}</span>
+                      <span className="text-mobile-base text-gray-900 font-medium ml-4">₴{service.cost.toFixed(2)}</span>
                     )}
                   </div>
                 ))}
                 {appointment.appointment_services.some((s: any) => s.cost) && (
                   <div className="pt-2 border-t-2 border-gray-200">
                     <div className="flex justify-between items-center">
-                      <span className="font-semibold text-gray-900">Итого работы:</span>
-                      <span className="text-lg font-bold text-gray-900">
+                      <span className="text-mobile-base font-semibold text-gray-900">Итого работы:</span>
+                      <span className="text-mobile-lg font-bold text-gray-900">
                         ₴{appointment.appointment_services.reduce((sum: number, s: any) => 
                           sum + (s.cost || 0), 0).toFixed(2)}
                       </span>
@@ -327,16 +331,16 @@ export default function AppointmentDetails() {
         {/* Боковая панель */}
         <div className="space-y-6">
           {/* Даты и время */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              <Calendar className="w-5 h-5 mr-2" />
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+            <h2 className="heading-mobile-3 mb-4 flex items-center">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
               Даты
             </h2>
             
             <div className="space-y-3">
               <div>
-                <p className="text-sm text-gray-500">Запланирована</p>
-                <p className="text-gray-900 font-medium">
+                <p className="text-mobile-sm text-gray-500">Запланирована</p>
+                <p className="text-mobile-base text-gray-900 font-medium">
                   {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU')}
                   {appointment.scheduled_time && ` ${appointment.scheduled_time}`}
                 </p>
@@ -344,8 +348,8 @@ export default function AppointmentDetails() {
               
               {appointment.completed_at && (
                 <div>
-                  <p className="text-sm text-gray-500">Выполнена</p>
-                  <p className="text-gray-900 font-medium">
+                  <p className="text-mobile-sm text-gray-500">Выполнена</p>
+                  <p className="text-mobile-base text-gray-900 font-medium">
                     {new Date(appointment.completed_at).toLocaleDateString('ru-RU')}
                   </p>
                 </div>
@@ -354,22 +358,22 @@ export default function AppointmentDetails() {
           </div>
 
           {/* Работник */}
-          {(appointment.assigned_to_profile || appointment.assigned_to_name) && (
+          {isStoOwner && workersCount > 1 && (appointment.assigned_to_profile || appointment.assigned_to_name) && (
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+              <h2 className="heading-mobile-3 mb-4 flex items-center">
                 <Wrench className="w-5 h-5 mr-2" />
                 Работник
               </h2>
-              <p className="text-gray-900 font-medium">
+              <p className="text-mobile-base text-gray-900 font-medium">
                 {appointment.assigned_to_name || appointment.assigned_to_profile?.full_name || appointment.assigned_to_profile?.email}
               </p>
             </div>
           )}
 
           {/* Финансы */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-              <DollarSign className="w-6 h-6 mr-2" />
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+            <h2 className="heading-mobile-2 mb-4 sm:mb-6 flex items-center">
+              <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 mr-2 flex-shrink-0" />
               Оплата
             </h2>
             
@@ -384,7 +388,7 @@ export default function AppointmentDetails() {
                   <div className="pb-3 border-b border-gray-100">
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col gap-2">
-                        <span className="text-base font-semibold text-gray-900">Запчасти</span>
+                        <span className="text-mobile-base font-semibold text-gray-900">Запчасти</span>
                         {isStoOwner ? (
                           <label className="flex items-center gap-2 cursor-pointer group">
                             <div className="relative">
@@ -402,16 +406,16 @@ export default function AppointmentDetails() {
                                 )}
                               </div>
                             </div>
-                            <span className="text-xs text-gray-600 group-hover:text-gray-900">Оплачено</span>
+                            <span className="text-mobile-sm text-gray-600 group-hover:text-gray-900">Оплачено</span>
                           </label>
                         ) : (
-                          <span className={`text-xs px-2 py-1 rounded inline-block ${appointment.parts_paid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          <span className={`text-mobile-sm px-2 py-1 rounded inline-block ${appointment.parts_paid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                             {appointment.parts_paid ? 'Оплачено' : 'Не оплачено'}
                           </span>
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="text-xl font-bold text-gray-900">₴{partsCost.toFixed(2)}</p>
+                        <p className="text-mobile-lg font-bold text-gray-900">₴{partsCost.toFixed(2)}</p>
                       </div>
                     </div>
                   </div>
@@ -428,7 +432,7 @@ export default function AppointmentDetails() {
                   <div className="pb-3 border-b border-gray-100">
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col gap-2">
-                        <span className="text-base font-semibold text-gray-900">Работы</span>
+                        <span className="text-mobile-base font-semibold text-gray-900">Работы</span>
                         {isStoOwner ? (
                           <label className="flex items-center gap-2 cursor-pointer group">
                             <div className="relative">
@@ -446,16 +450,16 @@ export default function AppointmentDetails() {
                                 )}
                               </div>
                             </div>
-                            <span className="text-xs text-gray-600 group-hover:text-gray-900">Оплачено</span>
+                            <span className="text-mobile-sm text-gray-600 group-hover:text-gray-900">Оплачено</span>
                           </label>
                         ) : (
-                          <span className={`text-xs px-2 py-1 rounded inline-block ${appointment.work_paid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          <span className={`text-mobile-sm px-2 py-1 rounded inline-block ${appointment.work_paid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                             {appointment.work_paid ? 'Оплачено' : 'Не оплачено'}
                           </span>
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="text-xl font-bold text-gray-900">₴{workCost.toFixed(2)}</p>
+                        <p className="text-mobile-lg font-bold text-gray-900">₴{workCost.toFixed(2)}</p>
                       </div>
                     </div>
                   </div>
@@ -473,8 +477,8 @@ export default function AppointmentDetails() {
                 return totalCost > 0 && (
                   <div className="pt-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-bold text-gray-900">Итого</span>
-                      <span className="text-3xl font-bold text-primary">
+                      <span className="text-mobile-lg font-bold text-gray-900">Итого</span>
+                      <span className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
                         ₴{totalCost.toFixed(2)}
                       </span>
                     </div>
@@ -487,7 +491,7 @@ export default function AppointmentDetails() {
           {/* Дополнительная информация */}
           {appointment.ready_for_pickup && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-green-800 font-medium">✓ Готово к выдаче</p>
+              <p className="text-mobile-base text-green-800 font-medium">✓ Готово к выдаче</p>
             </div>
           )}
         </div>
@@ -514,11 +518,11 @@ export default function AppointmentDetails() {
       {/* Модалка подтверждения оплаты */}
       {paymentConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 max-w-md w-full mx-4">
+            <h3 className="heading-mobile-3 mb-4">
               Подтверждение изменения статуса оплаты
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-mobile-base text-gray-600 mb-6">
               {paymentConfirmModal.currentValue 
                 ? `Вы уверены, что хотите отметить ${paymentConfirmModal.type === 'parts' ? 'запчасти' : 'работы'} как неоплаченные?`
                 : `Вы уверены, что хотите отметить ${paymentConfirmModal.type === 'parts' ? 'запчасти' : 'работы'} как оплаченные?`

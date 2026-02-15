@@ -89,14 +89,22 @@ export default function Layout() {
     <div className="flex flex-col md:flex-row md:h-screen bg-gray-100">
       {/* Mobile Header */}
       <div className="md:hidden bg-white border-b sticky top-0 z-10">
-        {/* User Name Display */}
-        <div className="px-4 py-2 border-b bg-gray-50">
-          <p className="text-sm font-medium text-gray-700 truncate">
+        {/* User Name Display with Logout */}
+        <div className="px-4 py-2.5 border-b bg-gray-50 flex items-center justify-between gap-3">
+          <p className="text-sm font-medium text-gray-700 truncate flex-1">
             {profile?.full_name || profile?.email || 'Пользователь'}
           </p>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 flex-shrink-0 min-h-[36px] hover:bg-red-100 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Выйти</span>
+          </button>
         </div>
+        
         {/* Mobile Navigation - Grid для лучшей адаптивности */}
-        <nav className="grid grid-cols-3 gap-1 p-2">
+        <nav className="grid grid-cols-3 gap-2 p-2">
           {navigation.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
@@ -104,9 +112,9 @@ export default function Layout() {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex flex-col items-center justify-center gap-1 px-2 py-2.5 text-xs font-medium transition-colors rounded-md min-h-[60px] ${
+                className={`flex flex-col items-center justify-center gap-1.5 px-2 py-3 text-xs font-medium transition-colors rounded-lg min-h-[64px] ${
                   isActive
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-white shadow-sm'
                     : 'text-gray-700 bg-gray-50 hover:bg-gray-100'
                 }`}
               >
@@ -117,26 +125,19 @@ export default function Layout() {
           })}
         </nav>
         
-        {/* Bottom Actions - Admin & Logout */}
-        <div className="flex gap-2 px-2 pb-2">
-          {isAdmin && (
+        {/* Admin Panel Button (if admin) */}
+        {isAdmin && (
+          <div className="px-2 pb-2">
             <Link
               to="/admin"
               onClick={() => localStorage.removeItem('activeRole')}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-purple-700 bg-purple-50 rounded-md border border-purple-200 min-h-[44px]"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-purple-700 bg-purple-50 rounded-lg border border-purple-200 min-h-[44px] hover:bg-purple-100 transition-colors"
             >
               <Shield className="w-4 h-4 flex-shrink-0" />
-              <span>Админ</span>
+              <span>Админ панель</span>
             </Link>
-          )}
-          <button
-            onClick={handleLogout}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 min-h-[44px]"
-          >
-            <LogOut className="w-4 h-4 flex-shrink-0" />
-            <span>Выйти</span>
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Desktop Sidebar */}
