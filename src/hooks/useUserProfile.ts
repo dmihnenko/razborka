@@ -5,6 +5,7 @@ import type { UserProfile } from '../types/database'
 export function useUserProfile() {
   return useQuery({
     queryKey: ['userProfile'],
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser()
       

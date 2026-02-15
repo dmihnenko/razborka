@@ -14,13 +14,8 @@ import Breadcrumbs from './Breadcrumbs'
 export default function Layout() {
   const location = useLocation()
   const isAdmin = useIsAdmin()
-  const { data: profile, isLoading, isRefetching, refetch } = useUserProfile()
+  const { data: profile, isLoading } = useUserProfile()
   const queryClient = useQueryClient()
-  
-  // Форсируем перезагрузку профиля при монтировании Layout
-  useEffect(() => {
-    refetch()
-  }, [refetch])
   
   // Получаем PRIMARY роль пользователя
   // Приоритет ролей: admin > sto_owner > parts_owner > store_owner > worker roles > user
@@ -81,8 +76,8 @@ export default function Layout() {
     }
   }
 
-  // Показываем загрузчик пока профиль загружается/обновляется или если нет меню
-  if (isLoading || isRefetching || (!navigation || navigation.length === 0)) {
+  // Показываем загрузчик только при первой загрузке профиля или если нет меню
+  if (isLoading || (!navigation || navigation.length === 0)) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
