@@ -67,12 +67,15 @@ function App() {
   const queryClient = useQueryClient()
 
   useEffect(() => {
-    // Очищаем кэш только при выходе
+    // Управляем кешем при изменении состояния аутентификации
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         queryClient.clear()
       }
-      // При входе НЕ очищаем кэш, чтобы не было перезагрузок
+      if (event === 'SIGNED_IN') {
+        // Инвалидируем только профиль пользователя, чтобы перезагрузить его данные
+        queryClient.invalidateQueries({ queryKey: ['userProfile'] })
+      }
     })
 
     return () => subscription.unsubscribe()
