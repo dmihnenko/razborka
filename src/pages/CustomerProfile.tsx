@@ -55,16 +55,9 @@ export default function CustomerProfile() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('appointments')
-        .select(`
-          *,
-          vehicles (
-            brand,
-            model,
-            license_plate
-          )
-        `)
+        .select('*, vehicles(brand, model, license_plate)')
         .eq('customer_id', id)
-        .order('appointment_date', { ascending: false })
+        .order('scheduled_date', { ascending: false })
       
       if (error) throw error
       return data
@@ -216,7 +209,7 @@ export default function CustomerProfile() {
             {appointments.map((appointment) => (
               <Link
                 key={appointment.id}
-                to={`/appointment/${appointment.id}`}
+                to={`/sto/appointments/${appointment.id}`}
                 className="block border border-gray-200 rounded-lg p-4 hover:border-primary transition-colors"
               >
                 <div className="flex items-start justify-between mb-2">
