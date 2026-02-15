@@ -130,38 +130,43 @@ export default function Appointments() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">
+    <div className="container-mobile">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+        <h1 className="heading-mobile-1">
           {showArchived ? 'Архив заявок' : 'Записи на обслуживание'}
           {appointments && appointments.length > 0 && (
-            <span className="ml-3 text-2xl font-normal text-gray-500">({appointments.length})</span>
+            <span className="ml-2 text-lg sm:text-xl md:text-2xl font-normal text-gray-500">
+              ({appointments.length})
+            </span>
           )}
         </h1>
-        <div className="flex gap-3">
+        
+        {/* Actions */}
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setShowArchived(!showArchived)}
-            className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
           >
             {showArchived ? (
               <>
-                <List className="w-5 h-5 mr-2" />
-                Активные заявки
+                <List className="w-4 h-4" />
+                <span className="hidden sm:inline ml-1.5">Активные</span>
               </>
             ) : (
               <>
-                <Archive className="w-5 h-5 mr-2" />
-                Архив
+                <Archive className="w-4 h-4" />
+                <span className="hidden sm:inline ml-1.5">Архив</span>
               </>
             )}
           </button>
           {isStoOwner && (
             <button
               onClick={() => navigate('/appointments/statistics')}
-              className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
             >
-              <TrendingUp className="w-5 h-5 mr-2" />
-              Статистика
+              <TrendingUp className="w-4 h-4" />
+              <span className="hidden sm:inline ml-1.5">Статистика</span>
             </button>
           )}
           {!showArchived && (
@@ -170,149 +175,235 @@ export default function Appointments() {
                 setEditingAppointment(null)
                 setIsModalOpen(true)
               }}
-              className="flex items-center px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
+              className="btn-touch-sm bg-primary text-white hover:bg-primary/90"
             >
-              <Plus className="w-5 h-5 mr-2" />
-              Новая запись
+              <Plus className="w-4 h-4" />
+              <span className="ml-1.5">Новая</span>
             </button>
           )}
         </div>
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center">
+        <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Номер / Дата
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Клиент
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Автомобиль
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Статус
-                </th>
-                {(!isStoOwner || workersCount > 1) && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    {isStoOwner ? 'Назначено' : 'Сумма'}
-                  </th>
-                )}
-                {!showArchived && (
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                    Оплаты
-                  </th>
-                )}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {appointments?.map((appointment: any) => (
-                <tr 
-                  key={appointment.id}
-                  onClick={() => navigate(`/sto/appointments/${appointment.id}`)}
-                  className="cursor-pointer hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {appointment.request_number && (
-                      <div className="text-gray-900 font-medium">{appointment.request_number}</div>
+        <>
+          {/* Desktop таблица */}
+          <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Номер / Дата
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Клиент
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Автомобиль
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Статус
+                    </th>
+                    {(!isStoOwner || workersCount > 1) && (
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        {isStoOwner ? 'Назначено' : 'Сумма'}
+                      </th>
                     )}
-                    <div className="text-gray-500">
-                      {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU')}
-                      {appointment.scheduled_time && ` ${appointment.scheduled_time}`}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{appointment.customers?.name}</div>
-                    <div className="text-sm text-gray-500">{appointment.customers?.phone}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {(() => {
-                      const brand = appointment.vehicles?.brand || ''
-                      const model = appointment.vehicles?.model || ''
-                      
-                      // Если модель равна бренду или модель начинается с бренда, показываем только модель
-                      if (model.toLowerCase() === brand.toLowerCase() || 
-                          model.toLowerCase().startsWith(brand.toLowerCase() + ' ')) {
-                        return model
-                      }
-                      
-                      // Иначе показываем бренд + модель
-                      return `${brand} ${model}`.trim()
-                    })()}
-                    <div className="text-sm text-gray-500">{appointment.vehicles?.license_plate}</div>
-                    {appointment.vehicles?.vin && (
-                      <div 
-                        className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer mt-1"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          navigator.clipboard.writeText(appointment.vehicles.vin)
-                          toast.success('VIN скопирован', { duration: 500 })
-                        }}
-                        title="Нажмите чтобы скопировать"
-                      >
-                        {appointment.vehicles.vin}
-                      </div>
+                    {!showArchived && (
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                        Оплаты
+                      </th>
                     )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[appointment.status as keyof typeof statusColors]}`}>
-                      {statusLabels[appointment.status as keyof typeof statusLabels]}
-                    </span>
-                  </td>
-                  {(!isStoOwner || workersCount > 1) && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {isStoOwner ? (
-                        appointment.assigned_to_profile || appointment.assigned_to_name ? (
-                          <div>
-                            <div className="text-gray-900 font-medium">
-                              {appointment.assigned_to_name || appointment.assigned_to_profile?.full_name || appointment.assigned_to_profile?.email}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {appointments?.map((appointment: any) => (
+                    <tr 
+                      key={appointment.id}
+                      onClick={() => navigate(`/sto/appointments/${appointment.id}`)}
+                      className="cursor-pointer hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-4 py-3 whitespace-nowrap text-sm">
+                        {appointment.request_number && (
+                          <div className="text-gray-900 font-medium">{appointment.request_number}</div>
+                        )}
+                        <div className="text-gray-500">
+                          {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU')}
+                          {appointment.scheduled_time && ` ${appointment.scheduled_time}`}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{appointment.customers?.name}</div>
+                        <div className="text-sm text-gray-500">{appointment.customers?.phone}</div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                        {(() => {
+                          const brand = appointment.vehicles?.brand || ''
+                          const model = appointment.vehicles?.model || ''
+                          
+                          if (model.toLowerCase() === brand.toLowerCase() || 
+                              model.toLowerCase().startsWith(brand.toLowerCase() + ' ')) {
+                            return model
+                          }
+                          
+                          return `${brand} ${model}`.trim()
+                        })()}
+                        <div className="text-sm text-gray-500">{appointment.vehicles?.license_plate}</div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[appointment.status as keyof typeof statusColors]}`}>
+                          {statusLabels[appointment.status as keyof typeof statusLabels]}
+                        </span>
+                      </td>
+                      {(!isStoOwner || workersCount > 1) && (
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                          {isStoOwner ? (
+                            appointment.assigned_to_profile || appointment.assigned_to_name ? (
+                              <div>
+                                <div className="text-gray-900 font-medium">
+                                  {appointment.assigned_to_name || appointment.assigned_to_profile?.full_name || appointment.assigned_to_profile?.email}
+                                </div>
+                                <div className="text-xs text-gray-500">Работник</div>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 italic">Не назначено</span>
+                            )
+                          ) : (
+                            <div className="text-gray-900">
+                              ₴{(appointment.total_cost || appointment.total_parts_cost + appointment.total_work_cost || 0).toFixed(2)}
                             </div>
-                            <div className="text-xs text-gray-500">Работник</div>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400 italic">Не назначено</span>
-                        )
-                      ) : (
-                        <div className="text-gray-900">
-                          ₴{(appointment.total_cost || appointment.total_parts_cost + appointment.total_work_cost || 0).toFixed(2)}
-                        </div>
+                          )}
+                        </td>
                       )}
-                    </td>
+                      {!showArchived && (
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                          <div className="flex flex-col gap-1 items-start">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-600">Запчасти:</span>
+                              {appointment.parts_paid ? (
+                                <Check className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <span className="text-xs text-gray-400">—</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-600">Работы:</span>
+                              {appointment.work_paid ? (
+                                <Check className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <span className="text-xs text-gray-400">—</span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile карточки */}
+          <div className="md:hidden space-y-3">
+            {appointments?.map((appointment: any) => (
+              <div
+                key={appointment.id}
+                onClick={() => navigate(`/sto/appointments/${appointment.id}`)}
+                className="card-mobile-hover active:scale-98 transition-transform"
+              >
+                {/* Клиент и автомобиль */}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900 text-base mb-1 truncate">
+                      {appointment.customers?.name}
+                    </h3>
+                    <p className="text-sm text-gray-600 truncate">
+                      {(() => {
+                        const brand = appointment.vehicles?.brand || ''
+                        const model = appointment.vehicles?.model || ''
+                        
+                        if (model.toLowerCase() === brand.toLowerCase() || 
+                            model.toLowerCase().startsWith(brand.toLowerCase() + ' ')) {
+                          return model
+                        }
+                        
+                        return `${brand} ${model}`.trim()
+                      })()}
+                      {appointment.vehicles?.license_plate && (
+                        <span className="ml-2 text-gray-500">
+                          {appointment.vehicles.license_plate}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  
+                  {/* Статус */}
+                  <span className={`badge-mobile flex-shrink-0 ${statusColors[appointment.status as keyof typeof statusColors]}`}>
+                    {statusLabels[appointment.status as keyof typeof statusLabels]}
+                  </span>
+                </div>
+
+                {/* Дополнительная информация */}
+                <div className="flex items-center justify-between text-sm text-gray-500">
+                  <span>
+                    {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU')}
+                    {appointment.scheduled_time && ` в ${appointment.scheduled_time}`}
+                  </span>
+                  
+                  {!isStoOwner && (appointment.total_cost || appointment.total_parts_cost + appointment.total_work_cost) > 0 && (
+                    <span className="font-semibold text-primary">
+                      ₴{(appointment.total_cost || appointment.total_parts_cost + appointment.total_work_cost || 0).toFixed(2)}
+                    </span>
                   )}
-                  {!showArchived && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      <div className="flex flex-col gap-1 items-start">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-600">Запчасти:</span>
-                          {appointment.parts_paid ? (
-                            <Check className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <span className="text-xs text-gray-400">—</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-600">Работы:</span>
-                          {appointment.work_paid ? (
-                            <Check className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <span className="text-xs text-gray-400">—</span>
-                          )}
-                        </div>
+                </div>
+
+                {/* Работник (для владельца) */}
+                {isStoOwner && workersCount > 1 && (
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <p className="text-xs text-gray-500">
+                      Работник:{' '}
+                      <span className="text-gray-700 font-medium">
+                        {appointment.assigned_to_name || 
+                         appointment.assigned_to_profile?.full_name || 
+                         appointment.assigned_to_profile?.email || 
+                         'Не назначено'}
+                      </span>
+                    </p>
+                  </div>
+                )}
+
+                {/* Оплаты (если не архив) */}
+                {!showArchived && (appointment.parts_paid || appointment.work_paid) && (
+                  <div className="mt-2 flex gap-3 text-xs">
+                    {appointment.parts_paid && (
+                      <div className="flex items-center gap-1 text-green-600">
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Запчасти оплачены</span>
                       </div>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    )}
+                    {appointment.work_paid && (
+                      <div className="flex items-center gap-1 text-green-600">
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Работы оплачены</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {appointments?.length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                <p>Нет заявок</p>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       <AppointmentModal

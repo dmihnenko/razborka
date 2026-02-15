@@ -88,14 +88,15 @@ export default function Layout() {
   return (
     <div className="flex flex-col md:flex-row md:h-screen bg-gray-100">
       {/* Mobile Header */}
-      <div className="md:hidden bg-white border-b">
+      <div className="md:hidden bg-white border-b sticky top-0 z-10">
         {/* User Name Display */}
         <div className="px-4 py-2 border-b bg-gray-50">
-          <p className="text-sm font-medium text-gray-700">
+          <p className="text-sm font-medium text-gray-700 truncate">
             {profile?.full_name || profile?.email || 'Пользователь'}
           </p>
         </div>
-        <nav className="flex px-4 py-2 gap-2">
+        {/* Mobile Navigation - Grid для лучшей адаптивности */}
+        <nav className="grid grid-cols-3 gap-1 p-2">
           {navigation.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
@@ -103,35 +104,39 @@ export default function Layout() {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium transition-colors whitespace-nowrap rounded-md ${
+                className={`flex flex-col items-center justify-center gap-1 px-2 py-2.5 text-xs font-medium transition-colors rounded-md min-h-[60px] ${
                   isActive
                     ? 'bg-primary text-white'
-                    : 'text-gray-700 bg-gray-100'
+                    : 'text-gray-700 bg-gray-50 hover:bg-gray-100'
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                {item.name}
+                <Icon className="w-5 h-5 flex-shrink-0" />
+                <span className="text-center leading-tight line-clamp-2">{item.name}</span>
               </Link>
             )
           })}
+        </nav>
+        
+        {/* Bottom Actions - Admin & Logout */}
+        <div className="flex gap-2 px-2 pb-2">
           {isAdmin && (
             <Link
               to="/admin"
               onClick={() => localStorage.removeItem('activeRole')}
-              className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium text-purple-700 bg-purple-50 rounded-md whitespace-nowrap border border-purple-200"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-purple-700 bg-purple-50 rounded-md border border-purple-200 min-h-[44px]"
             >
-              <Shield className="w-4 h-4" />
-              Админ панель
+              <Shield className="w-4 h-4 flex-shrink-0" />
+              <span>Админ</span>
             </Link>
           )}
           <button
             onClick={handleLogout}
-            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-md whitespace-nowrap"
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 min-h-[44px]"
           >
-            <LogOut className="w-4 h-4" />
-            Выйти
+            <LogOut className="w-4 h-4 flex-shrink-0" />
+            <span>Выйти</span>
           </button>
-        </nav>
+        </div>
       </div>
 
       {/* Desktop Sidebar */}
@@ -188,7 +193,7 @@ export default function Layout() {
 
       {/* Main content */}
       <div className="flex-1 overflow-auto">
-        <div className="p-4 sm:p-6 md:p-8">
+        <div className="p-3 sm:p-4 md:p-6 lg:p-8">
           <Breadcrumbs />
           <Outlet />
         </div>
