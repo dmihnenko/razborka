@@ -65,12 +65,6 @@ export default function ShareLinkModal({ isOpen, onClose, vehicleId, userId }: P
     toast.success('Ссылка скопирована в буфер обмена', { duration: 500 })
   }
 
-  const handleCopyLink = (code: string) => {
-    const link = `${window.location.origin}/vehicle-access?code=${code}`
-    navigator.clipboard.writeText(link)
-    toast.success('Ссылка скопирована в буфер обмена', { duration: 500 })
-  }
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ru-RU', {
       day: '2-digit',
@@ -158,7 +152,7 @@ export default function ShareLinkModal({ isOpen, onClose, vehicleId, userId }: P
                   </button>
                 </div>
                 <button
-                  onClick={() => handleCopyLink(newCode)}
+                  onClick={() => handleCopyCode(newCode)}
                   className="mt-2 sm:mt-3 w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-100 text-gray-700 text-xs sm:text-sm rounded hover:bg-gray-200 transition-colors"
                 >
                   Копировать ссылку для отправки

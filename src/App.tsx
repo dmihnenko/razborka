@@ -1,52 +1,67 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { Toaster } from 'sonner'
 import { AlertProvider } from './components/CustomAlert'
 import VersionChecker from './components/VersionChecker'
+import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
-import Dashboard from './pages/Dashboard'
-import Customers from './pages/Customers'
-import Vehicles from './pages/Vehicles'
-import Appointments from './pages/Appointments'
-import AppointmentDetails from './pages/AppointmentDetails'
-import WorkOrders from './pages/WorkOrders'
-import Services from './pages/Services'
-import Parts from './pages/Parts'
-import Invoices from './pages/Invoices'
-import Users from './pages/Users'
+
+// Критичные страницы - загружаем сразу
 import Login from './pages/Login'
-import AdminPanel from './pages/AdminPanel'
-import Roles from './pages/Roles'
-import StoCompanies from './pages/StoCompanies'
-import PartsCompanies from './pages/PartsCompanies'
-import Subscriptions from './pages/Subscriptions'
-import StoEmployees from './pages/StoEmployees'
-import EmployeeProfile from './pages/EmployeeProfile'
-import WorkerDashboard from './pages/WorkerDashboard'
-import Support from './pages/Support'
-import AdminSupport from './pages/AdminSupport'
-import MyVehicles from './pages/MyVehicles'
-import MyVehiclesArchive from './pages/MyVehiclesArchive'
-import PublicPersonalVehicleView from './pages/PublicPersonalVehicleView'
-import PublicCustomerView from './pages/PublicCustomerView'
-import CustomerProfile from './pages/CustomerProfile'
-import VehicleAccessPage from './pages/VehicleAccessPage'
-import Analytics from './pages/Analytics'
-import MonthlyDetails from './pages/MonthlyDetails'
-import MonthlyStatistics from './pages/MonthlyStatistics'
-import ActivityHistory from './pages/ActivityHistory'
-import PartsDashboard from './pages/PartsDashboard'
-import PartsVehicles from './pages/PartsVehicles'
-import PartsInventory from './pages/PartsInventory'
-import PartsOrders from './pages/PartsOrders'
-import PartsEmployees from './pages/PartsEmployees'
-import PartsAnalytics from './pages/PartsAnalytics'
-import PartsCustomers from './pages/PartsCustomers'
+import Dashboard from './pages/Dashboard'
+
+// Lazy loading для остальных страниц
+const Customers = lazy(() => import('./pages/Customers'))
+const Vehicles = lazy(() => import('./pages/Vehicles'))
+const Appointments = lazy(() => import('./pages/Appointments'))
+const AppointmentDetails = lazy(() => import('./pages/AppointmentDetails'))
+const WorkOrders = lazy(() => import('./pages/WorkOrders'))
+const Services = lazy(() => import('./pages/Services'))
+const Parts = lazy(() => import('./pages/Parts'))
+const Invoices = lazy(() => import('./pages/Invoices'))
+const Users = lazy(() => import('./pages/Users'))
+const AdminPanel = lazy(() => import('./pages/AdminPanel'))
+const Roles = lazy(() => import('./pages/Roles'))
+const StoCompanies = lazy(() => import('./pages/StoCompanies'))
+const PartsCompanies = lazy(() => import('./pages/PartsCompanies'))
+const Subscriptions = lazy(() => import('./pages/Subscriptions'))
+const StoEmployees = lazy(() => import('./pages/StoEmployees'))
+const EmployeeProfile = lazy(() => import('./pages/EmployeeProfile'))
+const WorkerDashboard = lazy(() => import('./pages/WorkerDashboard'))
+const Support = lazy(() => import('./pages/Support'))
+const AdminSupport = lazy(() => import('./pages/AdminSupport'))
+const MyVehicles = lazy(() => import('./pages/MyVehicles'))
+const MyVehiclesArchive = lazy(() => import('./pages/MyVehiclesArchive'))
+const PublicPersonalVehicleView = lazy(() => import('./pages/PublicPersonalVehicleView'))
+const PublicCustomerView = lazy(() => import('./pages/PublicCustomerView'))
+const CustomerProfile = lazy(() => import('./pages/CustomerProfile'))
+const VehicleAccessPage = lazy(() => import('./pages/VehicleAccessPage'))
+const Analytics = lazy(() => import('./pages/Analytics'))
+const MonthlyDetails = lazy(() => import('./pages/MonthlyDetails'))
+const MonthlyStatistics = lazy(() => import('./pages/MonthlyStatistics'))
+const ActivityHistory = lazy(() => import('./pages/ActivityHistory'))
+const PartsDashboard = lazy(() => import('./pages/PartsDashboard'))
+const PartsVehicles = lazy(() => import('./pages/PartsVehicles'))
+const PartsInventory = lazy(() => import('./pages/PartsInventory'))
+const PartsOrders = lazy(() => import('./pages/PartsOrders'))
+const PartsEmployees = lazy(() => import('./pages/PartsEmployees'))
+const PartsAnalytics = lazy(() => import('./pages/PartsAnalytics'))
+const PartsCustomers = lazy(() => import('./pages/PartsCustomers'))
+
 import { useAuth } from './hooks/useAuth'
 import { useUserProfile } from './hooks/useUserProfile'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from './lib/supabase'
+
+// Компонент загрузки для Suspense
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  )
+}
 
 function App() {
   const queryClient = useQueryClient()
@@ -64,12 +79,14 @@ function App() {
   }, [queryClient])
 
   return (
-    <AlertProvider>
-      <VersionChecker />
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <Toaster position="top-right" />
-        <Routes>
-        <Route path="/login" element={<Login />} />
+    <ErrorBoundary>
+      <AlertProvider>
+        <VersionChecker />
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <Toaster position="top-right" />
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
         
         {/* Публичный доступ к автомобилям по коду */}
         <Route path="/vehicle-access" element={<VehicleAccessPage />} />
@@ -128,8 +145,10 @@ function App() {
           <Route path="database" element={<div className="p-8"><h1 className="text-2xl font-bold">База данных</h1><p className="text-gray-600 mt-4">В разработке...</p></div>} />
         </Route>
       </Routes>
-      </BrowserRouter>
-    </AlertProvider>
+    </Suspense>
+    </BrowserRouter>
+  </AlertProvider>
+</ErrorBoundary>
   )
 }
 

@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
 import { getMenuForRoles } from '../config/navigation'
 import { useQueryClient } from '@tanstack/react-query'
+import Breadcrumbs from './Breadcrumbs'
 
 export default function Layout() {
   const location = useLocation()
@@ -188,6 +189,7 @@ export default function Layout() {
       {/* Main content */}
       <div className="flex-1 overflow-auto">
         <div className="p-4 sm:p-6 md:p-8">
+          <Breadcrumbs />
           <Outlet />
         </div>
       </div>

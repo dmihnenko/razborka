@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Phone, Mail, Car, Search } from 'lucide-react'
-import InputMask from 'react-input-mask'
+import { IMaskInput } from 'react-imask'
 import { useNavigate, Link } from 'react-router-dom'
 import { useHasAnyRole } from '@/hooks/useUserProfile'
 
@@ -280,21 +280,15 @@ function CustomerModal({ customer, onClose }: CustomerModalProps) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Телефон *</label>
-            <InputMask
-              mask="+380 (99) 999-99-99"
+            <IMaskInput
+              mask="+380 (00) 000-00-00"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            >
-              {(inputProps: any) => (
-                <input
-                  {...inputProps}
-                  type="tel"
-                  required
-                  placeholder="+380 (XX) XXX-XX-XX"
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-              )}
-            </InputMask>
+              onAccept={(value) => setFormData({ ...formData, phone: value })}
+              type="tel"
+              required
+              placeholder="+380 (XX) XXX-XX-XX"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Заметки</label>

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, Store, Package, Users, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
-import InputMask from 'react-input-mask';
+import { IMaskInput } from 'react-imask';
 import { Link } from 'react-router-dom';
 
 interface PartsCompany {
@@ -338,20 +338,14 @@ export default function PartsCompanies() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Телефон
                 </label>
-                <InputMask
-                  mask="+380 99 999-99-99"
+                <IMaskInput
+                  mask="+380 00 000-00-00"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                >
-                  {(inputProps: any) => (
-                    <input
-                      {...inputProps}
-                      type="tel"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="+380 XX XXX-XX-XX"
-                    />
-                  )}
-                </InputMask>
+                  onAccept={(value) => setFormData({ ...formData, phone: value })}
+                  type="tel"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="+380 XX XXX-XX-XX"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

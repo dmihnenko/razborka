@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
-import { Users, Shield, Settings, BarChart3, Database } from 'lucide-react'
+import { Users, Shield, Settings, BarChart3, Database, Activity, AlertCircle } from 'lucide-react'
 import { useUserProfile } from '../hooks/useUserProfile'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import StatCard from '@/components/StatCard'
 
 export default function AdminPanel() {
   const { data: profile } = useUserProfile()
@@ -114,39 +115,31 @@ export default function AdminPanel() {
 
       {/* Быстрая статистика */}
       <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="Всего пользователей" value={stats?.usersCount.toString() || '0'} color="blue" />
-        <StatCard title="Активные роли" value={stats?.rolesCount.toString() || '0'} color="purple" />
-        <StatCard title="Сессий сегодня" value="—" color="green" />
-        <StatCard title="Системных ошибок" value="—" color="red" />
+        <StatCard 
+          title="Всего пользователей" 
+          value={stats?.usersCount || 0} 
+          icon={Users}
+          variant="blue" 
+        />
+        <StatCard 
+          title="Активные роли" 
+          value={stats?.rolesCount || 0} 
+          icon={Shield}
+          variant="purple" 
+        />
+        <StatCard 
+          title="Сессий сегодня" 
+          value="—" 
+          icon={Activity}
+          variant="green" 
+        />
+        <StatCard 
+          title="Системных ошибок" 
+          value="—" 
+          icon={AlertCircle}
+          variant="red" 
+        />
       </div>
-    </div>
-  )
-}
-
-function StatCard({
-  title,
-  value,
-  color,
-}: {
-  title: string
-  value: string
-  color: string
-}) {
-  const colorClasses = {
-    blue: 'bg-blue-50 text-blue-600 border-blue-200',
-    purple: 'bg-purple-50 text-purple-600 border-purple-200',
-    green: 'bg-green-50 text-green-600 border-green-200',
-    red: 'bg-red-50 text-red-600 border-red-200',
-  }
-
-  return (
-    <div
-      className={`p-4 rounded-lg border ${
-        colorClasses[color as keyof typeof colorClasses]
-      }`}
-    >
-      <div className="text-sm font-medium mb-1">{title}</div>
-      <div className="text-2xl font-bold">{value}</div>
     </div>
   )
 }
