@@ -1,9 +1,32 @@
 import { Link } from 'react-router-dom'
 import { Users, Shield, Settings, BarChart3, Database } from 'lucide-react'
 import { useUserProfile } from '../hooks/useUserProfile'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
 
 export default function AdminPanel() {
   const { data: profile } = useUserProfile()
+
+  // Загрузка статистики
+  const { data: stats } = useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: async () => {
+      // Всего пользователей
+      const { count: usersCount } = await supabase
+        .from('user_profiles')
+        .select('*', { count: 'exact', head: true })
+
+      // Активные роли
+      const { count: rolesCount } = await supabase
+        .from('roles')
+        .select('*', { count: 'exact', head: true })
+
+      return {
+        usersCount: usersCount || 0,
+        rolesCount: rolesCount || 0
+      }
+    }
+  })
 
   const adminSections = [
     {
@@ -91,10 +114,10 @@ export default function AdminPanel() {
 
       {/* Быстрая статистика */}
       <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="Всего пользователей" value="0" color="blue" />
-        <StatCard title="Активные роли" value="8" color="purple" />
-        <StatCard title="Сессий сегодня" value="0" color="green" />
-        <StatCard title="Ошибок" value="0" color="red" />
+        <StatCard title="Всего пользователей" value={stats?.usersCount.toString() || '0'} color="blue" />
+        <StatCard title="Активные роли" value={stats?.rolesCount.toString() || '0'} color="purple" />
+        <StatCard title="Сессий сегодня" value="—" color="green" />
+        <StatCard title="Системных ошибок" value="—" color="red" />
       </div>
     </div>
   )

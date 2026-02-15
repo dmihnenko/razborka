@@ -52,11 +52,12 @@ function App() {
   const queryClient = useQueryClient()
 
   useEffect(() => {
-    // Очищаем кэш при смене пользователя
+    // Очищаем кэш только при выходе
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
+      if (event === 'SIGNED_OUT') {
         queryClient.clear()
       }
+      // При входе НЕ очищаем кэш, чтобы не было перезагрузок
     })
 
     return () => subscription.unsubscribe()

@@ -29,10 +29,8 @@ export default function Layout() {
   
   const primaryRole = profile?.roles?.length ? getRoleByPriority(profile.roles) : null
   
-  // Обновляем профиль при изменении маршрута (особенно при переходе с админ-панели)
+  // Управляем activeRole в localStorage
   useEffect(() => {
-    refetch()
-    
     // Если админ зашел первый раз и activeRole не установлена, устанавливаем 'user'
     if (primaryRole?.name === 'admin' && !localStorage.getItem('activeRole')) {
       localStorage.setItem('activeRole', 'user')
@@ -42,7 +40,7 @@ export default function Layout() {
     if (primaryRole && primaryRole.name !== 'admin') {
       localStorage.removeItem('activeRole')
     }
-  }, [location.pathname, refetch, primaryRole])
+  }, [primaryRole])
   
   // Получаем меню на основе PRIMARY роли пользователя
   // Для админа проверяем activeRole из localStorage
