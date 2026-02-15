@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { ArrowLeft, Calendar, User, Car, Phone, FileText, Package, Wrench, DollarSign, Pencil, UserCog } from 'lucide-react'
+import { ArrowLeft, Calendar, User, Car, Phone, FileText, Package, Wrench, DollarSign, UserCog } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 import ReassignWorkerModal from '@/components/appointments/ReassignWorkerModal'
 import { toast } from 'sonner'
@@ -209,10 +209,9 @@ export default function AppointmentDetails() {
             )}
             <button
               onClick={() => setIsEditModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-mobile-sm bg-primary text-white hover:bg-primary/90 rounded-md transition-colors"
+              className="px-4 py-2 text-sm font-semibold bg-primary text-white hover:bg-primary/90 rounded-full transition-colors"
             >
-              <Pencil className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-              <span className="hidden sm:inline">Редактировать</span>
+              Изменить
             </button>
           </div>
         </div>
