@@ -157,9 +157,6 @@ export default function MonthlyDetails() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Номер / Дата закрытия
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Клиент
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -189,14 +186,6 @@ export default function MonthlyDetails() {
                     onClick={() => navigate(`/sto/appointments/${appointment.id}`)}
                     className="cursor-pointer hover:bg-gray-50 transition-colors"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {appointment.request_number && (
-                        <div className="text-gray-900 font-medium">{appointment.request_number}</div>
-                      )}
-                      <div className="text-gray-500">
-                        {new Date(appointment.closed_date).toLocaleDateString('ru-RU')}
-                      </div>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{appointment.customers?.name}</div>
                       <div className="text-sm text-gray-500">{appointment.customers?.phone}</div>

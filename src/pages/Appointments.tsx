@@ -196,14 +196,6 @@ export default function Appointments() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    {isStoOwner && (
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        № Заявки
-                      </th>
-                    )}
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Дата
-                    </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Клиент
                     </th>
@@ -232,19 +224,6 @@ export default function Appointments() {
                       onClick={() => navigate(`/sto/appointments/${appointment.id}`)}
                       className="cursor-pointer hover:bg-gray-50 transition-colors"
                     >
-                      {isStoOwner && (
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">
-                          <div className="text-gray-900 font-medium">
-                            {appointment.request_number || `#${appointment.id.slice(0, 8)}`}
-                          </div>
-                        </td>
-                      )}
-                      <td className="px-4 py-3 whitespace-nowrap text-sm">
-                        <div className="text-gray-500">
-                          {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU')}
-                          {appointment.scheduled_time && ` ${appointment.scheduled_time}`}
-                        </div>
-                      </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{appointment.customers?.name}</div>
                         <div className="text-sm text-gray-500">{appointment.customers?.phone}</div>
@@ -345,18 +324,13 @@ export default function Appointments() {
                 </div>
 
                 {/* Дополнительная информация */}
-                <div className="flex items-center justify-between text-mobile-sm text-gray-500 mt-2">
-                  <span>
-                    {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU')}
-                    {appointment.scheduled_time && ` в ${appointment.scheduled_time}`}
-                  </span>
-                  
-                  {!isStoOwner && (appointment.total_cost || appointment.total_parts_cost + appointment.total_work_cost) > 0 && (
+                {!isStoOwner && (appointment.total_cost || appointment.total_parts_cost + appointment.total_work_cost) > 0 && (
+                  <div className="flex items-center justify-end text-mobile-sm text-gray-500 mt-2">
                     <span className="font-semibold text-primary text-mobile-base">
                       ₴{(appointment.total_cost || appointment.total_parts_cost + appointment.total_work_cost || 0).toFixed(2)}
                     </span>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {/* Оплаты (если не архив) */}
                 {!showArchived && (appointment.parts_paid || appointment.work_paid) && (
