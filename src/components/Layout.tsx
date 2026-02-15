@@ -14,7 +14,7 @@ import Breadcrumbs from './Breadcrumbs'
 export default function Layout() {
   const location = useLocation()
   const isAdmin = useIsAdmin()
-  const { data: profile, isLoading, refetch } = useUserProfile()
+  const { data: profile, isLoading, isRefetching, refetch } = useUserProfile()
   const queryClient = useQueryClient()
   
   // Форсируем перезагрузку профиля при монтировании Layout
@@ -81,8 +81,8 @@ export default function Layout() {
     }
   }
 
-  // Показываем загрузчик пока профиль загружается или если нет меню
-  if (isLoading || (!navigation || navigation.length === 0)) {
+  // Показываем загрузчик пока профиль загружается/обновляется или если нет меню
+  if (isLoading || isRefetching || (!navigation || navigation.length === 0)) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
