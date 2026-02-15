@@ -1,23 +1,18 @@
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useNavigate } from 'react-router-dom'
 import { 
-  Plus, 
   FileText, 
   Package, 
   Wrench, 
   Clock, 
   CheckCircle,
   AlertCircle,
-  DollarSign,
-  TrendingUp
+  DollarSign
 } from 'lucide-react'
-import AppointmentModal from '@/components/appointments/AppointmentModal'
 
 export default function MonthlyStatistics() {
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const { data: profile } = useUserProfile()
   const navigate = useNavigate()
 
@@ -169,37 +164,11 @@ export default function MonthlyStatistics() {
   const partsCost = monthlyStats?.parts || 0
   const workCost = monthlyStats?.work || 0
   const totalCost = monthlyStats?.total || 0
-  const completedCount = monthlyStats?.count || 0
 
   const isLoading = statsLoading || monthlyLoading
 
-  // Получаем название текущего месяца
-  const currentMonth = new Date().toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
-
   return (
     <div className="container-mobile">
-      {/* Header с кнопками */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className="heading-mobile-1">Моя статистика</h1>
-        
-        <div className="flex gap-2">
-          <button
-            onClick={() => navigate('/appointments')}
-            className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 flex items-center gap-1.5"
-          >
-            <FileText className="w-4 h-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Мои записи</span>
-          </button>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="btn-touch bg-primary text-white hover:bg-primary/90 flex items-center justify-center gap-2"
-          >
-            <Plus className="w-5 h-5 flex-shrink-0" />
-            <span>Новая запись</span>
-          </button>
-        </div>
-      </div>
-
       {isLoading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -294,15 +263,6 @@ export default function MonthlyStatistics() {
 
           {/* Статистика текущего месяца */}
           <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5 md:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900">
-                Выручка за {currentMonth}
-              </h2>
-              <span className="text-mobile-sm text-gray-600">
-                Закрыто: {completedCount}
-              </span>
-            </div>
-            
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               {/* Сумма запчастей */}
               <div className="p-3 sm:p-4 rounded-lg bg-green-50 border border-green-100">
@@ -348,12 +308,6 @@ export default function MonthlyStatistics() {
           {/* Статистика по месяцам */}
           {!allMonthsLoading && allMonthsStats && allMonthsStats.length > 0 && (
             <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
-              <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
-                <h2 className="text-base sm:text-lg font-semibold text-gray-900">
-                  История по месяцам
-                </h2>
-              </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -402,12 +356,6 @@ export default function MonthlyStatistics() {
           )}
         </div>
       )}
-
-      {/* Модальное окно для создания новой записи */}
-      <AppointmentModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
     </div>
   )
 }
