@@ -17,6 +17,11 @@ export default function Layout() {
   const { data: profile, isLoading, refetch } = useUserProfile()
   const queryClient = useQueryClient()
   
+  // Форсируем перезагрузку профиля при монтировании Layout
+  useEffect(() => {
+    refetch()
+  }, [refetch])
+  
   // Получаем PRIMARY роль пользователя
   // Приоритет ролей: admin > sto_owner > parts_owner > store_owner > worker roles > user
   const getRoleByPriority = (roles: any[]) => {
