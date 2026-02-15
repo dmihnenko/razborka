@@ -4,7 +4,6 @@ import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Archive, List, TrendingUp, Check } from 'lucide-react'
-import { toast } from 'sonner'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 
 export default function MonthlyStatistics() {
@@ -16,37 +15,6 @@ export default function MonthlyStatistics() {
 
   // Проверяем, является ли пользователь владельцем СТО
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
-
-  // Получаем количество работников СТО
-  const { data: workersCount = 0 } = useQuery({
-    queryKey: ['sto_workers_count', profile?.sto_company_id],
-    queryFn: async () => {
-      const { data: workerRole } = await supabase
-        .from('roles')
-        .select('id')
-        .eq('name', 'sto_worker')
-        .single()
-
-      if (!workerRole) return 0
-
-      const { data: userRoles } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role_id', workerRole.id)
-
-      if (!userRoles) return 0
-
-      const { count } = await supabase
-        .from('user_profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('sto_company_id', profile?.sto_company_id)
-        .eq('is_active', true)
-        .in('id', userRoles.map(ur => ur.user_id))
-
-      return count || 0
-    },
-    enabled: !!profile?.sto_company_id && isStoOwner,
-  })
 
   // Заявки работника
   const { data: appointments, isLoading: appointmentsLoading } = useQuery({
@@ -186,30 +154,30 @@ export default function MonthlyStatistics() {
   }
 
   return (
-    <div>
+    <div className="container-mobile">
       {/* Заявки работника */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+          <h1 className="heading-mobile-1">
             {showArchived ? 'Архив заявок' : 'Последние записи'}
             {appointments && appointments.length > 0 && (
-              <span className="ml-3 text-2xl font-normal text-gray-500">({appointments.length})</span>
+              <span className="ml-2 text-lg sm:text-xl md:text-2xl font-normal text-gray-500">({appointments.length})</span>
             )}
           </h1>
-          <div className="flex gap-3">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => setShowArchived(!showArchived)}
-              className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 flex items-center gap-1.5"
             >
               {showArchived ? (
                 <>
-                  <List className="w-5 h-5 mr-2" />
-                  Активные заявки
+                  <List className="w-4 h-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">Активные</span>
                 </>
               ) : (
                 <>
-                  <Archive className="w-5 h-5 mr-2" />
-                  Архив
+                  <Archive className="w-4 h-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">Архив</span>
                 </>
               )}
             </button>
@@ -219,147 +187,200 @@ export default function MonthlyStatistics() {
                   setEditingAppointment(null)
                   setIsModalOpen(true)
                 }}
-                className="flex items-center px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
+                className="btn-touch-sm bg-primary text-white hover:bg-primary/90 flex items-center gap-1.5"
               >
-                <Plus className="w-5 h-5 mr-2" />
-                Новая запись
+                <Plus className="w-4 h-4 flex-shrink-0" />
+                <span>Новая</span>
               </button>
             )}
           </div>
         </div>
 
         {appointmentsLoading ? (
-          <div className="flex justify-center">
+          <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Номер / Дата
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Клиент
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Автомобиль
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Статус
-                  </th>
-                  {(!isStoOwner || workersCount > 1) && (
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      {isStoOwner ? 'Назначено' : 'Сумма'}
-                    </th>
-                  )}
-                  {!showArchived && (
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                      Оплаты
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {appointments?.map((appointment: any) => (
-                  <tr 
-                    key={appointment.id}
-                    onClick={() => navigate(`/sto/appointments/${appointment.id}`)}
-                    className="cursor-pointer hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {appointment.request_number && (
-                        <div className="text-gray-900 font-medium">{appointment.request_number}</div>
+          <>
+            {/* Desktop таблица */}
+            <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Дата
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Клиент
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Автомобиль
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Статус
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Сумма
+                      </th>
+                      {!showArchived && (
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                          Оплаты
+                        </th>
                       )}
-                      <div className="text-gray-500">
-                        {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU')}
-                        {appointment.scheduled_time && ` ${appointment.scheduled_time}`}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{appointment.customers?.name}</div>
-                      <div className="text-sm text-gray-500">{appointment.customers?.phone}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {(() => {
-                        const brand = appointment.vehicles?.brand || ''
-                        const model = appointment.vehicles?.model || ''
-                        
-                        if (model.toLowerCase() === brand.toLowerCase() || 
-                            model.toLowerCase().startsWith(brand.toLowerCase() + ' ')) {
-                          return model
-                        }
-                        
-                        return `${brand} ${model}`.trim()
-                      })()}
-                      <div className="text-sm text-gray-500">{appointment.vehicles?.license_plate}</div>
-                      {appointment.vehicles?.vin && (
-                        <div 
-                          className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer mt-1"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            navigator.clipboard.writeText(appointment.vehicles.vin)
-                            toast.success('VIN скопирован', { duration: 500 })
-                          }}
-                          title="Нажмите чтобы скопировать"
-                        >
-                          {appointment.vehicles.vin}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[appointment.status as keyof typeof statusColors]}`}>
-                        {statusLabels[appointment.status as keyof typeof statusLabels]}
-                      </span>
-                    </td>
-                    {(!isStoOwner || workersCount > 1) && (
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {isStoOwner ? (
-                          appointment.assigned_to_profile || appointment.assigned_to_name ? (
-                            <div>
-                              <div className="text-gray-900 font-medium">
-                                {appointment.assigned_to_name || appointment.assigned_to_profile?.full_name || appointment.assigned_to_profile?.email}
-                              </div>
-                              <div className="text-xs text-gray-500">Работник</div>
-                            </div>
-                          ) : (
-                            <span className="text-gray-400 italic">Не назначено</span>
-                          )
-                        ) : (
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {appointments?.map((appointment: any) => (
+                      <tr 
+                        key={appointment.id}
+                        onClick={() => navigate(`/sto/appointments/${appointment.id}`)}
+                        className="cursor-pointer hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                          <div className="text-gray-500">
+                            {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU')}
+                            {appointment.scheduled_time && ` ${appointment.scheduled_time}`}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{appointment.customers?.name}</div>
+                          <div className="text-sm text-gray-500">{appointment.customers?.phone}</div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                          {(() => {
+                            const brand = appointment.vehicles?.brand || ''
+                            const model = appointment.vehicles?.model || ''
+                            
+                            if (model.toLowerCase() === brand.toLowerCase() || 
+                                model.toLowerCase().startsWith(brand.toLowerCase() + ' ')) {
+                              return model
+                            }
+                            
+                            return `${brand} ${model}`.trim()
+                          })()}
+                          <div className="text-sm text-gray-500">{appointment.vehicles?.license_plate}</div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[appointment.status as keyof typeof statusColors]}`}>
+                            {statusLabels[appointment.status as keyof typeof statusLabels]}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">
                           <div className="text-gray-900">
-                            ₴{((appointment.total_work_cost || 0) + (appointment.total_parts_cost || 0)).toFixed(2)}
+                            ₴{(appointment.total_cost || appointment.total_parts_cost + appointment.total_work_cost || 0).toFixed(2)}
                           </div>
+                        </td>
+                        {!showArchived && (
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                            <div className="flex flex-col gap-1 items-start">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-600">Запчасти:</span>
+                                {appointment.parts_paid ? (
+                                  <Check className="w-4 h-4 text-green-600" />
+                                ) : (
+                                  <span className="text-xs text-gray-400">—</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-600">Работы:</span>
+                                {appointment.work_paid ? (
+                                  <Check className="w-4 h-4 text-green-600" />
+                                ) : (
+                                  <span className="text-xs text-gray-400">—</span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
                         )}
-                      </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mobile карточки */}
+            <div className="md:hidden space-y-3">
+              {appointments?.map((appointment: any) => (
+                <div
+                  key={appointment.id}
+                  onClick={() => navigate(`/sto/appointments/${appointment.id}`)}
+                  className="card-mobile-hover active:scale-98 transition-transform"
+                >
+                  {/* Клиент и автомобиль */}
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-mobile-base mb-1 truncate">
+                        {appointment.customers?.name}
+                      </h3>
+                      <p className="text-mobile-sm text-gray-600 truncate">
+                        {(() => {
+                          const brand = appointment.vehicles?.brand || ''
+                          const model = appointment.vehicles?.model || ''
+                          
+                          if (model.toLowerCase() === brand.toLowerCase() || 
+                              model.toLowerCase().startsWith(brand.toLowerCase() + ' ')) {
+                            return model
+                          }
+                          
+                          return `${brand} ${model}`.trim()
+                        })()}
+                        {appointment.vehicles?.license_plate && (
+                          <span className="ml-2 text-gray-500">
+                            {appointment.vehicles.license_plate}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    
+                    {/* Статус */}
+                    <span className={`badge-mobile flex-shrink-0 ${statusColors[appointment.status as keyof typeof statusColors]}`}>
+                      {statusLabels[appointment.status as keyof typeof statusLabels]}
+                    </span>
+                  </div>
+
+                  {/* Дополнительная информация */}
+                  <div className="flex items-center justify-between text-mobile-sm text-gray-500 mt-2">
+                    <span>
+                      {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU')}
+                      {appointment.scheduled_time && ` в ${appointment.scheduled_time}`}
+                    </span>
+                    
+                    {(appointment.total_cost || appointment.total_parts_cost + appointment.total_work_cost) > 0 && (
+                      <span className="font-semibold text-primary text-mobile-base">
+                        ₴{(appointment.total_cost || appointment.total_parts_cost + appointment.total_work_cost || 0).toFixed(2)}
+                      </span>
                     )}
-                    {!showArchived && (
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        <div className="flex flex-col gap-1 items-start">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-600">Запчасти:</span>
-                            {appointment.parts_paid ? (
-                              <Check className="w-4 h-4 text-green-600" />
-                            ) : (
-                              <span className="text-xs text-gray-400">—</span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-600">Работы:</span>
-                            {appointment.work_paid ? (
-                              <Check className="w-4 h-4 text-green-600" />
-                            ) : (
-                              <span className="text-xs text-gray-400">—</span>
-                            )}
-                          </div>
+                  </div>
+
+                  {/* Оплаты (если не архив) */}
+                  {!showArchived && (appointment.parts_paid || appointment.work_paid) && (
+                    <div className="mt-2 flex gap-2 text-mobile-sm">
+                      {appointment.parts_paid && (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <Check className="w-3 h-3" />
+                          <span>Запчасти</span>
                         </div>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      )}
+                      {appointment.work_paid && (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <Check className="w-3 h-3" />
+                          <span>Работы</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {appointments?.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  Заявок нет
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
 
