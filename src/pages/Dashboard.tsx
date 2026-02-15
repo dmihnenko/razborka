@@ -166,7 +166,7 @@ export default function Dashboard() {
         
         <div className="flex gap-2">
           <button
-            onClick={() => navigate('/sto/appointments/statistics')}
+            onClick={() => navigate('/appointments/statistics')}
             className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 flex items-center gap-1.5"
           >
             <TrendingUp className="w-4 h-4 flex-shrink-0" />
@@ -192,7 +192,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Активные заявки */}
             <div 
-              onClick={() => navigate('/sto/appointments')}
+              onClick={() => navigate('/appointments')}
               className="card-mobile cursor-pointer hover:shadow-md transition-shadow"
             >
               <div className="flex flex-col">
@@ -208,7 +208,7 @@ export default function Dashboard() {
 
             {/* Запланированные */}
             <div 
-              onClick={() => navigate('/sto/appointments')}
+              onClick={() => navigate('/appointments')}
               className="card-mobile cursor-pointer hover:shadow-md transition-shadow"
             >
               <div className="flex flex-col">
@@ -224,7 +224,7 @@ export default function Dashboard() {
 
             {/* В работе */}
             <div 
-              onClick={() => navigate('/sto/appointments')}
+              onClick={() => navigate('/appointments')}
               className="card-mobile cursor-pointer hover:shadow-md transition-shadow"
             >
               <div className="flex flex-col">
@@ -240,7 +240,7 @@ export default function Dashboard() {
 
             {/* Готовые */}
             <div 
-              onClick={() => navigate('/sto/appointments')}
+              onClick={() => navigate('/appointments')}
               className="card-mobile cursor-pointer hover:shadow-md transition-shadow"
             >
               <div className="flex flex-col">

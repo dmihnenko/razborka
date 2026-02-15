@@ -16,6 +16,7 @@ export default function Breadcrumbs() {
   const pathLabels: Record<string, string> = {
     '': 'Главная',
     'dashboard': 'Дашборд',
+    'sto': 'СТО',
     'customers': 'Клиенты',
     'vehicles': 'Автомобили',
     'appointments': 'Записи',
@@ -34,9 +35,11 @@ export default function Breadcrumbs() {
     'my-vehicles': 'Мои авто',
     'archive': 'Архив',
     'analytics': 'Аналитика',
+    'statistics': 'Статистика',
     'monthly-statistics': 'Месячная статистика',
     'monthly-details': 'Детали месяца',
     'activity': 'История действий',
+    'history': 'История',
     'worker-dashboard': 'Рабочий стол',
     'profile': 'Профиль',
     'settings': 'Настройки'
@@ -73,10 +76,10 @@ export default function Breadcrumbs() {
   }
 
   return (
-    <nav className="flex items-center space-x-1 text-sm text-gray-600 mb-4">
+    <nav className="flex flex-wrap items-center gap-1 text-sm text-gray-600 mb-4">
       <Link
         to="/"
-        className="flex items-center hover:text-blue-600 transition-colors"
+        className="inline-flex items-center hover:text-blue-600 transition-colors"
         title="Главная"
       >
         <Home className="w-4 h-4" />
@@ -86,16 +89,16 @@ export default function Breadcrumbs() {
         const isLast = index === breadcrumbs.length - 1
         
         return (
-          <div key={crumb.path} className="flex items-center">
-            <ChevronRight className="w-4 h-4 mx-1 text-gray-400" />
+          <div key={crumb.path} className="inline-flex items-center">
+            <ChevronRight className="w-4 h-4 mx-1 text-gray-400 flex-shrink-0" />
             {isLast ? (
-              <span className="text-gray-900 font-medium capitalize">
+              <span className="text-gray-900 font-medium capitalize whitespace-nowrap">
                 {crumb.label}
               </span>
             ) : (
               <Link
                 to={crumb.path}
-                className="hover:text-blue-600 transition-colors capitalize"
+                className="hover:text-blue-600 transition-colors capitalize whitespace-nowrap"
               >
                 {crumb.label}
               </Link>
