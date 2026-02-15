@@ -7,22 +7,27 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 interface Props {
   formData: AppointmentFormValues
   onUpdate: (data: Partial<AppointmentFormValues>) => void
+  isEditing?: boolean
 }
 
 const statusLabels: Record<AppointmentStatus, string> = {
-  'pending': '⏳ Ожидает',
-  'confirmed': '✅ Подтверждена',
   'in_progress': '🔧 В работе',
+  'ready': '✅ Готова',
   'completed': '✔️ Завершена',
   'cancelled': '❌ Отменена',
-  'paid': '💰 Оплачена',
+  'pending_deletion': '🗑️ Ожидает удаления',
+  'deleted': '🚫 Удалена',
 }
 
-export default function AppointmentSummary({ formData, onUpdate }: Props) {
+export default function AppointmentSummary({ formData, onUpdate, isEditing }: Props) {
   const { data: profile } = useUserProfile()
   const totalWork = formData.workItems.reduce((sum, item) => sum + item.price, 0)
   const totalParts = formData.partItems.reduce((sum, item) => sum + item.totalPrice, 0)
   const grandTotal = totalWork + totalParts
+
+  // Проверка ролей
+  const isStoWorker = profile?.roles?.some((r: any) => r.name === 'sto_worker')
+  const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
 
   // Загружаем список работников СТО
   const { data: workers } = useQuery({
@@ -131,18 +136,20 @@ export default function AppointmentSummary({ formData, onUpdate }: Props) {
                 <div>
                   <div className="font-medium">{idx + 1}. {item.name}</div>
                   <div className="text-sm text-gray-500">
-                    {item.quantity} шт × {item.price} грн
-                    {item.articleNumber && ` • ${item.articleNumber}`}
+                    Цена: ₴{(item.price || 0).toFixed(2)} | Кол-во: {item.quantity || 1}
+                    {/* Закупка: ₴{item.price.toFixed(2)} | Наценка:{' '}
+                    {item.markupType === 'percentage' ? `${item.markup}%` : `₴${item.markup.toFixed(2)}`} |
+                    Кол-во: {item.quantity} */}
                   </div>
                 </div>
                 <div className="font-semibold text-primary whitespace-nowrap ml-4">
-                  {item.totalPrice.toLocaleString()} грн
+                  ₴{(item.totalPrice || 0).toLocaleString()}
                 </div>
               </div>
             ))}
             <div className="flex justify-between pt-2 border-t font-semibold">
               <span>Всего запчастей:</span>
-              <span className="text-primary">{totalParts.toLocaleString()} грн</span>
+              <span className="text-primary">₴{totalParts.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -155,7 +162,7 @@ export default function AppointmentSummary({ formData, onUpdate }: Props) {
         </div>
       </div>
 
-      {workers && workers.length > 0 && (
+      {isStoOwner && workers && workers.length > 0 && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             <UserCog className="w-4 h-4 inline mr-1" />
@@ -176,20 +183,36 @@ export default function AppointmentSummary({ formData, onUpdate }: Props) {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Calendar className="w-4 h-4 inline mr-1" />
-            Дата записи *
-          </label>
-          <input
-            type="datetime-local"
-            required
-            value={formData.scheduledDate}
-            onChange={(e) => onUpdate({ scheduledDate: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-          />
+      {isStoOwner && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="parts_paid"
+              checked={formData.parts_paid || false}
+              onChange={(e) => onUpdate({ parts_paid: e.target.checked })}
+              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+            />
+            <label htmlFor="parts_paid" className="text-sm font-medium text-gray-700">
+              🔧 Запчасти оплачены
+            </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="work_paid"
+              checked={formData.work_paid || false}
+              onChange={(e) => onUpdate({ work_paid: e.target.checked })}
+              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+            />
+            <label htmlFor="work_paid" className="text-sm font-medium text-gray-700">
+              🔩 Работы оплачены
+            </label>
+          </div>
         </div>
+      )}
+
+      {isEditing && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             <FileText className="w-4 h-4 inline mr-1" />
@@ -200,12 +223,28 @@ export default function AppointmentSummary({ formData, onUpdate }: Props) {
             onChange={(e) => onUpdate({ status: e.target.value as AppointmentStatus })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
           >
-            {Object.entries(statusLabels).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
-            ))}
+            {isStoWorker && !isStoOwner ? (
+              // Работник может ставить только "Готова"
+              <>
+                <option value="in_progress">🔧 В работе</option>
+                <option value="ready">✅ Готова</option>
+              </>
+            ) : (
+              // Владелец может выбирать любой статус
+              Object.entries(statusLabels)
+                .filter(([key]) => key !== 'pending_deletion' && key !== 'deleted')
+                .map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))
+            )}
           </select>
+          {isStoOwner && formData.status === 'ready' && !(formData.parts_paid && formData.work_paid) && (
+            <p className="text-xs text-amber-600 mt-1">
+              ⚠️ Для завершения необходимо отметить оплату
+            </p>
+          )}
         </div>
-      </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">

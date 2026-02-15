@@ -1,9 +1,19 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search } from 'lucide-react'
 import { useSearchParams, Link } from 'react-router-dom'
+import { useUserProfile } from '@/hooks/useUserProfile'
+
+interface VehicleModalProps {
+  vehicle: any
+  onClose: () => void
+  customerSearch: string
+  setCustomerSearch: (value: string) => void
+  showCustomerDropdown: boolean
+  setShowCustomerDropdown: (value: boolean) => void
+}
 
 export default function Vehicles() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -13,6 +23,11 @@ export default function Vehicles() {
   const queryClient = useQueryClient()
   const [customerSearch, setCustomerSearch] = useState('')
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const { data: profile } = useUserProfile()
+  
+  // Проверка роли владельца
+  const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
 
   const { data: vehicles, isLoading } = useQuery({
     queryKey: ['vehicles', customerId],
@@ -33,6 +48,27 @@ export default function Vehicles() {
       return data
     },
   })
+
+  // Фильтрация автомобилей по поисковому запросу
+  const filteredVehicles = useMemo(() => {
+    if (!vehicles) return []
+    if (!searchQuery.trim()) return vehicles
+
+    const query = searchQuery.toLowerCase().trim()
+    return vehicles.filter((vehicle) => {
+      const brand = vehicle.brand?.toLowerCase() || ''
+      const model = vehicle.model?.toLowerCase() || ''
+      const plate = vehicle.license_plate?.toLowerCase() || ''
+      const vin = vehicle.vin?.toLowerCase() || ''
+      const customer = vehicle.customers?.name?.toLowerCase() || ''
+      
+      return brand.includes(query) || 
+             model.includes(query) || 
+             plate.includes(query) || 
+             vin.includes(query) ||
+             customer.includes(query)
+    })
+  }, [vehicles, searchQuery])
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -59,17 +95,29 @@ export default function Vehicles() {
             </p>
           )}
         </div>
-        <button
-          onClick={() => {
-            setEditingVehicle(null)
-            setCustomerSearch('')
-            setIsModalOpen(true)
-          }}
-          className="flex items-center px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Добавить автомобиль
-        </button>
+        <div className="flex gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Поиск по марке, модели, номеру, VIN..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-80"
+            />
+          </div>
+          <button
+            onClick={() => {
+              setEditingVehicle(null)
+              setCustomerSearch('')
+              setIsModalOpen(true)
+            }}
+            className="flex items-center px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Добавить автомобиль
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -102,7 +150,7 @@ export default function Vehicles() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {vehicles?.map((vehicle: any) => (
+              {filteredVehicles?.map((vehicle: any) => (
                 <tr key={vehicle.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {vehicle.customers?.name}
@@ -133,16 +181,18 @@ export default function Vehicles() {
                     >
                       <Pencil className="w-5 h-5" />
                     </button>
-                    <button
-                      onClick={() => {
-                        if (confirm('Удалить этот автомобиль?')) {
-                          deleteMutation.mutate(vehicle.id)
-                        }
-                      }}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                    {isStoOwner && (
+                      <button
+                        onClick={() => {
+                          if (confirm('Удалить этот автомобиль?')) {
+                            deleteMutation.mutate(vehicle.id)
+                          }
+                        }}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -172,14 +222,7 @@ function VehicleModal({
   setCustomerSearch,
   showCustomerDropdown,
   setShowCustomerDropdown
-}: { 
-  vehicle: any; 
-  onClose: () => void;
-  customerSearch: string;
-  setCustomerSearch: (value: string) => void;
-  showCustomerDropdown: boolean;
-  setShowCustomerDropdown: (value: boolean) => void;
-}) {
+}: VehicleModalProps) {
   const [formData, setFormData] = useState({
     customer_id: vehicle?.customer_id || '',
     brand: vehicle?.brand || '',

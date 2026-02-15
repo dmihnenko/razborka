@@ -302,7 +302,7 @@ export default function PublicPersonalVehicleView() {
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-700">Total UAH:</span>
-                            <span className="font-semibold text-gray-900">{totalUAH.toFixed(2)} грн</span>
+                            <span className="font-semibold text-gray-900">{Number(totalUAH || 0).toFixed(2)} грн</span>
                           </div>
                           <div className="border-t-2 border-blue-300 pt-2 mt-2">
                             <div className="flex justify-between items-center">
@@ -377,7 +377,7 @@ export default function PublicPersonalVehicleView() {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm sm:text-base text-gray-700">Total UAH:</span>
-                          <span className="font-semibold text-sm sm:text-base text-gray-900">{totalUAH.toFixed(2)} грн</span>
+                          <span className="font-semibold text-sm sm:text-base text-gray-900">{Number(totalUAH || 0).toFixed(2)} грн</span>
                         </div>
                         <div className="border-t-2 border-blue-300 pt-2 sm:pt-3 mt-2 sm:mt-3">
                           <div className="flex justify-between items-center">

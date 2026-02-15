@@ -156,10 +156,10 @@ export default function MyVehicles() {
           <p className="text-sm sm:text-base text-gray-600 text-center mb-4 whitespace-nowrap">
             Личные автомобили с аукционов США
           </p>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center justify-end gap-2 sm:gap-3">
             <button
               onClick={() => navigate('/my-vehicles/archive')}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm sm:text-base border border-gray-700 shadow-sm"
+              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm sm:text-base border border-gray-700 shadow-sm"
             >
               <Archive className="w-4 h-4 sm:w-5 sm:h-5" />
               Архив
@@ -167,7 +167,7 @@ export default function MyVehicles() {
             
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base border border-blue-700 shadow-sm"
+              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base border border-blue-700 shadow-sm"
             >
               <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
               Добавить

@@ -1,15 +1,21 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, Phone, Mail, Car } from 'lucide-react'
+import { Plus, Pencil, Trash2, Phone, Mail, Car, Search } from 'lucide-react'
 import InputMask from 'react-input-mask'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useHasAnyRole } from '@/hooks/useUserProfile'
+
+interface CustomerModalProps {
+  customer: any
+  onClose: () => void
+}
 
 export default function Customers() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState<any>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const canDelete = useHasAnyRole(['admin', 'sto_owner'])
@@ -40,6 +46,21 @@ export default function Customers() {
     },
   })
 
+  // Фильтрация клиентов по поисковому запросу
+  const filteredCustomers = useMemo(() => {
+    if (!customers) return []
+    if (!searchQuery.trim()) return customers
+
+    const query = searchQuery.toLowerCase().trim()
+    return customers.filter((customer) => {
+      const name = customer.name?.toLowerCase() || ''
+      const phone = customer.phone?.toLowerCase() || ''
+      const email = customer.email?.toLowerCase() || ''
+      
+      return name.includes(query) || phone.includes(query) || email.includes(query)
+    })
+  }, [customers, searchQuery])
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('customers').delete().eq('id', id)
@@ -64,21 +85,41 @@ export default function Customers() {
       deleteMutation.mutate(id)
     }
   }
-
+  const handleCopyPublicLink = async (customerId: string) => {
+    const publicUrl = `${window.location.origin}/public/customer/${customerId}`
+    try {
+      await navigator.clipboard.writeText(publicUrl)
+      toast.success('Ссылка скопирована в буфер обмена')
+    } catch (err) {
+      toast.error('Не удалось скопировать ссылку')
+    }
+  }
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Клиенты</h1>
-        <button
-          onClick={() => {
-            setEditingCustomer(null)
-            setIsModalOpen(true)
-          }}
-          className="flex items-center px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Добавить клиента
-        </button>
+        <div className="flex gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Поиск по имени, телефону, email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-80"
+            />
+          </div>
+          <button
+            onClick={() => {
+              setEditingCustomer(null)
+              setIsModalOpen(true)
+            }}
+            className="flex items-center px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Добавить клиента
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -108,10 +149,15 @@ export default function Customers() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {customers?.map((customer) => (
+              {filteredCustomers?.map((customer) => (
                 <tr key={customer.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{customer.name}</div>
+                    <Link 
+                      to={`/customer/${customer.id}`}
+                      className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
+                    >
+                      {customer.name}
+                    </Link>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col space-y-1">
@@ -176,7 +222,7 @@ export default function Customers() {
   )
 }
 
-function CustomerModal({ customer, onClose }: { customer: any; onClose: () => void }) {
+function CustomerModal({ customer, onClose }: CustomerModalProps) {
   const [formData, setFormData] = useState({
     name: customer?.name || '',
     phone: customer?.phone || '',

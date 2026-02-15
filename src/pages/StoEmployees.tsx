@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
-import { Plus, Eye, UserCog } from 'lucide-react'
+import { Plus, Eye, UserCog, Trash2, Edit } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useNavigate } from 'react-router-dom'
 import { IMaskInput } from 'react-imask'
@@ -19,6 +19,9 @@ interface Employee {
 
 export default function StoEmployees() {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isBulkAssignModalOpen, setIsBulkAssignModalOpen] = useState(false)
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
+  const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null)
   const navigate = useNavigate()
   const { data: currentUserProfile } = useUserProfile()
 
@@ -55,6 +58,7 @@ export default function StoEmployees() {
         .from('user_profiles')
         .select('*')
         .eq('sto_company_id', currentUserProfile.sto_company_id)
+        .eq('is_active', true)
         .in('id', userIds)
         .order('created_at', { ascending: false })
 
@@ -64,6 +68,32 @@ export default function StoEmployees() {
     enabled: !!currentUserProfile?.sto_company_id
   })
 
+  const queryClient = useQueryClient()
+
+  // Мутация для удаления работника
+  const deleteEmployeeMutation = useMutation({
+    mutationFn: async (employeeId: string) => {
+      // Деактивируем пользователя вместо удаления
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ is_active: false })
+        .eq('id', employeeId)
+      
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sto_employees'] })
+      toast.success('Работник удален. Его заявки переназначены автоматически.')
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Ошибка при удалении работника')
+    }
+  })
+
+  const handleDeleteEmployee = (employee: Employee) => {
+    setDeletingEmployee(employee)
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -71,13 +101,24 @@ export default function StoEmployees() {
           <h1 className="text-3xl font-bold text-gray-900">Сотрудники СТО</h1>
           <p className="text-sm text-gray-600 mt-1">Управление работниками вашего СТО</p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Добавить работника
-        </button>
+        <div className="flex gap-3">
+          {employees.length > 0 && (
+            <button
+              onClick={() => setIsBulkAssignModalOpen(true)}
+              className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              <UserCog className="w-5 h-5 mr-2" />
+              Назначить заявки
+            </button>
+          )}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Добавить работника
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -144,6 +185,23 @@ export default function StoEmployees() {
                 <Eye className="w-4 h-4 mr-2" />
                 Просмотр статистики
               </button>
+
+              <button
+                onClick={() => setEditingEmployee(employee)}
+                className="w-full mt-2 flex items-center justify-center px-4 py-2 text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50 transition-colors"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Редактировать
+              </button>
+
+              <button
+                onClick={() => handleDeleteEmployee(employee)}
+                disabled={deleteEmployeeMutation.isPending}
+                className="w-full mt-2 flex items-center justify-center px-4 py-2 text-red-600 border border-red-300 rounded-md hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {deleteEmployeeMutation.isPending ? 'Удаление...' : 'Удалить работника'}
+              </button>
             </div>
           ))}
         </div>
@@ -153,6 +211,30 @@ export default function StoEmployees() {
         <AddEmployeeModal
           onClose={() => setIsModalOpen(false)}
           stoCompanyId={currentUserProfile.sto_company_id}
+        />
+      )}
+
+      <BulkAssignModal
+        isOpen={isBulkAssignModalOpen}
+        onClose={() => setIsBulkAssignModalOpen(false)}
+        employees={employees}
+      />
+
+      {editingEmployee && (
+        <EditEmployeeModal
+          employee={editingEmployee}
+          onClose={() => setEditingEmployee(null)}
+        />
+      )}
+
+      {deletingEmployee && (
+        <DeleteEmployeeConfirmModal
+          employee={deletingEmployee}
+          onClose={() => setDeletingEmployee(null)}
+          onConfirm={() => {
+            deleteEmployeeMutation.mutate(deletingEmployee.id)
+            setDeletingEmployee(null)
+          }}
         />
       )}
     </div>
@@ -347,6 +429,244 @@ function AddEmployeeModal({ onClose, stoCompanyId }: { onClose: () => void; stoC
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+// Модальное окно для массового назначения заявок
+function BulkAssignModal({ isOpen, onClose, employees }: { isOpen: boolean; onClose: () => void; employees: Employee[] }) {
+  const [selectedWorkerId, setSelectedWorkerId] = useState('')
+  const queryClient = useQueryClient()
+
+  const bulkAssignMutation = useMutation({
+    mutationFn: async (workerId: string) => {
+      const worker = employees.find(e => e.id === workerId)
+      
+      const { error } = await supabase
+        .from('appointments')
+        .update({
+          assigned_to: workerId,
+          assigned_to_name: worker?.full_name || worker?.username || null
+        })
+        .is('assigned_to', null)
+      
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] })
+      toast.success('Заявки успешно назначены работнику')
+      onClose()
+      setSelectedWorkerId('')
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Ошибка при назначении заявок')
+    }
+  })
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          Массовое назначение заявок
+        </h2>
+
+        <p className="text-sm text-gray-600 mb-4">
+          Выберите работника, которому будут назначены все незакрепленные заявки (включая архивные).
+        </p>
+
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Работник
+          </label>
+          <select
+            value={selectedWorkerId}
+            onChange={(e) => setSelectedWorkerId(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">Выберите работника</option>
+            {employees.map((employee) => (
+              <option key={employee.id} value={employee.id}>
+                {employee.full_name || employee.username}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={() => bulkAssignMutation.mutate(selectedWorkerId)}
+            disabled={!selectedWorkerId || bulkAssignMutation.isPending}
+            className="px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {bulkAssignMutation.isPending ? 'Назначение...' : 'Назначить'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Модальное окно для редактирования сотрудника
+function EditEmployeeModal({ employee, onClose }: { employee: Employee; onClose: () => void }) {
+  const [fullName, setFullName] = useState(employee.full_name || '')
+  const queryClient = useQueryClient()
+
+  const updateEmployeeMutation = useMutation({
+    mutationFn: async (newFullName: string) => {
+      // Обновляем имя в user_profiles
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({ full_name: newFullName })
+        .eq('id', employee.id)
+      
+      if (profileError) throw profileError
+
+      // Обновляем assigned_to_name во всех активных заявках
+      const { error: appointmentsError } = await supabase
+        .from('appointments')
+        .update({ assigned_to_name: newFullName })
+        .eq('assigned_to', employee.id)
+        .neq('status', 'archived')
+        .neq('status', 'completed')
+        .neq('status', 'cancelled')
+      
+      if (appointmentsError) throw appointmentsError
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sto_employees'] })
+      queryClient.invalidateQueries({ queryKey: ['appointments'] })
+      toast.success('Данные работника обновлены')
+      onClose()
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Ошибка при обновлении данных')
+    }
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!fullName.trim()) {
+      toast.error('Введите имя работника')
+      return
+    }
+    updateEmployeeMutation.mutate(fullName.trim())
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          Редактировать работника
+        </h2>
+
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Логин
+            </label>
+            <input
+              type="text"
+              value={employee.username || ''}
+              disabled
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Полное имя <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Введите полное имя"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              autoFocus
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              disabled={updateEmployeeMutation.isPending || !fullName.trim()}
+              className="px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {updateEmployeeMutation.isPending ? 'Сохранение...' : 'Сохранить'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// Модальное окно подтверждения удаления работника
+function DeleteEmployeeConfirmModal({ 
+  employee, 
+  onClose, 
+  onConfirm 
+}: { 
+  employee: Employee; 
+  onClose: () => void; 
+  onConfirm: () => void 
+}) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h2 className="text-2xl font-bold text-red-600 mb-4">
+          Удаление работника
+        </h2>
+
+        <div className="mb-6">
+          <p className="text-gray-900 mb-3">
+            Вы действительно хотите удалить работника{' '}
+            <span className="font-semibold">{employee.full_name || employee.username}</span>?
+          </p>
+          
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+            <p className="text-sm text-yellow-800">
+              <strong>Важно:</strong> Его активные заявки будут автоматически:
+            </p>
+            <ul className="list-disc list-inside text-sm text-yellow-800 mt-2 space-y-1">
+              <li>Переназначены другому работнику, если он один в системе</li>
+              <li>Сняты с назначения, если работников несколько или нет</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700"
+          >
+            Удалить работника
+          </button>
+        </div>
       </div>
     </div>
   )

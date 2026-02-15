@@ -1,9 +1,10 @@
-import { useState } from 'react'
-import { X, ChevronLeft, ChevronRight, Check } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, ChevronLeft, ChevronRight, Check, Trash2 } from 'lucide-react'
 import { AppointmentFormValues, AppointmentStatus } from '@/types/appointments'
-import { useQueryClient, useMutation } from '@tanstack/react-query'
+import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { useAlert } from '@/components/CustomAlert'
 import { toast } from 'sonner'
 import ClientSelector from './ClientSelector'
 import VehicleSelector from './VehicleSelector'
@@ -29,54 +30,189 @@ const steps = [
 export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuccess }: Props) {
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
+  const { showConfirm } = useAlert()
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<AppointmentFormValues>({
     customer_id: '',
     vehicle_id: '',
     scheduledDate: new Date().toISOString().slice(0, 16),
-    status: 'pending',
+    status: 'in_progress',
     notes: '',
     workItems: [],
     partItems: [],
+    parts_paid: false,
+    work_paid: false,
   })
+
+  // Проверка роли работника
+  const isStoWorker = profile?.roles?.some((r: any) => r.name === 'sto_worker')
+  const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
+  
+  // Загрузка существующей заявки для редактирования
+  const { data: existingAppointment } = useQuery({
+    queryKey: ['appointment', appointmentId],
+    queryFn: async () => {
+      if (!appointmentId) return null
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*, customers(*), vehicles(*)')
+        .eq('id', appointmentId)
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    enabled: !!appointmentId && isOpen,
+  })
+
+  // Загрузка данных при редактировании
+  useEffect(() => {
+    if (existingAppointment && appointmentId) {
+      // Обработка даты: если Invalid Date, используем created_at или updated_at
+      let scheduledDate = existingAppointment.scheduled_date
+      if (!scheduledDate || isNaN(new Date(scheduledDate).getTime())) {
+        scheduledDate = existingAppointment.created_at || existingAppointment.updated_at || new Date().toISOString()
+      }
+      // Преобразуем в формат datetime-local
+      scheduledDate = new Date(scheduledDate).toISOString().slice(0, 16)
+      
+      setFormData({
+        customer_id: existingAppointment.customer_id,
+        vehicle_id: existingAppointment.vehicle_id,
+        scheduledDate,
+        status: existingAppointment.status,
+        notes: existingAppointment.notes || '',
+        workItems: existingAppointment.work_items || [],
+        partItems: existingAppointment.part_items || [],
+        selectedClient: existingAppointment.customers,
+        selectedVehicle: existingAppointment.vehicles,
+        assigned_to: existingAppointment.assigned_to,
+        parts_paid: existingAppointment.parts_paid || false,
+        work_paid: existingAppointment.work_paid || false,
+      })
+      // При редактировании работником, начинаем с шага 3
+      if (isStoWorker && !isStoOwner) {
+        setCurrentStep(3)
+      }
+    } else {
+      // Сбросить форму при создании новой заявки
+      setFormData({
+        customer_id: '',
+        vehicle_id: '',
+        scheduledDate: new Date().toISOString().slice(0, 16),
+        status: 'in_progress',
+        notes: '',
+        workItems: [],
+        partItems: [],
+        parts_paid: false,
+        work_paid: false,
+      })
+      setCurrentStep(1)
+    }
+  }, [existingAppointment, appointmentId, isOpen, isStoWorker, isStoOwner])
 
   const createMutation = useMutation({
     mutationFn: async (data: AppointmentFormValues) => {
       const totalWork = data.workItems.reduce((sum, item) => sum + item.price, 0)
       const totalParts = data.partItems.reduce((sum, item) => sum + item.totalPrice, 0)
 
-      const { data: appointment, error } = await supabase
-        .from('appointments')
-        .insert({
-          customer_id: data.customer_id,
-          vehicle_id: data.vehicle_id,
-          scheduled_date: data.scheduledDate,
-          status: data.status,
-          notes: data.notes,
-          work_items: data.workItems,
-          part_items: data.partItems,
-          total_work_cost: totalWork,
-          total_parts_cost: totalParts,
-          total_cost: totalWork + totalParts,
-          sto_company_id: profile?.sto_company_id,
-          created_by: profile?.id,
-          // Автоматически назначаем создателя как ответственного работника
-          assigned_to: profile?.id,
-        })
-        .select()
-        .single()
+      if (appointmentId) {
+        // Обновление существующей заявки
+        const { data: appointment, error } = await supabase
+          .from('appointments')
+          .update({
+            scheduled_date: data.scheduledDate,
+            status: data.status,
+            notes: data.notes,
+            work_items: data.workItems,
+            part_items: data.partItems,
+            total_work_cost: totalWork,
+            total_parts_cost: totalParts,
+            total_cost: totalWork + totalParts,
+            assigned_to: data.assigned_to,
+            parts_paid: data.parts_paid || false,
+            work_paid: data.work_paid || false,
+          })
+          .eq('id', appointmentId)
+          .select()
+          .single()
 
-      if (error) throw error
-      return appointment
+        if (error) throw error
+        return appointment
+      } else {
+        // Создание новой заявки
+        const { data: appointment, error } = await supabase
+          .from('appointments')
+          .insert({
+            customer_id: data.customer_id,
+            vehicle_id: data.vehicle_id,
+            scheduled_date: data.scheduledDate,
+            status: 'in_progress',
+            notes: data.notes,
+            work_items: data.workItems,
+            part_items: data.partItems,
+            total_work_cost: totalWork,
+            total_parts_cost: totalParts,
+            total_cost: totalWork + totalParts,
+            sto_company_id: profile?.sto_company_id,
+            created_by: profile?.id,
+            assigned_to: data.assigned_to || profile?.id,
+            parts_paid: false,
+            work_paid: false,
+          })
+          .select()
+          .single()
+
+        if (error) throw error
+        return appointment
+      }
     },
     onSuccess: (appointment) => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
-      toast.success('Запись успешно создана!')
+      queryClient.invalidateQueries({ queryKey: ['worker_appointments'] })
+      toast.success(appointmentId ? 'Запись успешно обновлена!' : 'Запись успешно создана!')
       onSuccess?.(appointment.id)
       onClose()
     },
     onError: (error: any) => {
       toast.error(`Ошибка: ${error.message}`)
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!appointmentId) throw new Error('No appointment ID')
+      
+      // Работник отправляет на удаление (статус pending_deletion)
+      if (isStoWorker && !isStoOwner) {
+        const { error } = await supabase
+          .from('appointments')
+          .update({ status: 'pending_deletion' })
+          .eq('id', appointmentId)
+
+        if (error) throw error
+      } else {
+        // Владелец может удалить окончательно
+        const { error } = await supabase
+          .from('appointments')
+          .update({ status: 'deleted' })
+          .eq('id', appointmentId)
+
+        if (error) throw error
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] })
+      queryClient.invalidateQueries({ queryKey: ['worker_appointments'] })
+      toast.success(
+        isStoWorker && !isStoOwner 
+          ? 'Заявка отправлена на удаление' 
+          : 'Заявка удалена'
+      )
+      onClose()
+    },
+    onError: (error: any) => {
+      toast.error(`Ошибка удаления: ${error.message}`)
     },
   })
 
@@ -90,6 +226,10 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
 
   const handleBack = () => {
     if (currentStep > 1) {
+      // Для работников шаг 1 и 2 недоступны при редактировании
+      if (isStoWorker && !isStoOwner && appointmentId && currentStep === 3) {
+        return
+      }
       setCurrentStep(currentStep - 1)
     }
   }
@@ -108,6 +248,21 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
       default:
         return false
     }
+  }
+
+  const handleDelete = () => {
+    if (!appointmentId) return
+    
+    const confirmMessage = isStoWorker && !isStoOwner
+      ? 'Отправить заявку на удаление? Она будет отправлена владельцу на подтверждение.'
+      : 'Вы уверены, что хотите удалить эту заявку?'
+    
+    showConfirm(confirmMessage, () => {
+      deleteMutation.mutate()
+    }, {
+      confirmText: isStoWorker && !isStoOwner ? 'Отправить' : 'Удалить',
+      cancelText: 'Отмена'
+    })
   }
 
   return (
@@ -202,20 +357,32 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
             <AppointmentSummary
               formData={formData}
               onUpdate={(data) => setFormData({ ...formData, ...data })}
+              isEditing={!!appointmentId}
             />
           )}
         </div>
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between gap-3">
-          <div>
-            {currentStep > 1 && (
+          <div className="flex items-center gap-3">
+            {currentStep > 1 && !(isStoWorker && !isStoOwner && appointmentId && currentStep === 3) && (
               <button
                 onClick={handleBack}
                 className="flex items-center px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Назад
+              </button>
+            )}
+            
+            {appointmentId && (
+              <button
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+                className="flex items-center px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {deleteMutation.isPending ? 'Удаление...' : 'Удалить'}
               </button>
             )}
           </div>
@@ -243,7 +410,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
                 disabled={createMutation.isPending}
                 className="px-6 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors font-semibold"
               >
-                {createMutation.isPending ? 'Сохранение...' : 'Создать запись'}
+                {createMutation.isPending ? 'Сохранение...' : (appointmentId ? 'Сохранить изменения' : 'Создать запись')}
               </button>
             )}
           </div>

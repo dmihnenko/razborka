@@ -1,12 +1,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { Toaster } from 'sonner'
 import { AlertProvider } from './components/CustomAlert'
+import VersionChecker from './components/VersionChecker'
 import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
 import Dashboard from './pages/Dashboard'
 import Customers from './pages/Customers'
 import Vehicles from './pages/Vehicles'
 import Appointments from './pages/Appointments'
+import AppointmentDetails from './pages/AppointmentDetails'
 import WorkOrders from './pages/WorkOrders'
 import Services from './pages/Services'
 import Parts from './pages/Parts'
@@ -26,13 +29,42 @@ import AdminSupport from './pages/AdminSupport'
 import MyVehicles from './pages/MyVehicles'
 import MyVehiclesArchive from './pages/MyVehiclesArchive'
 import PublicPersonalVehicleView from './pages/PublicPersonalVehicleView'
+import PublicCustomerView from './pages/PublicCustomerView'
+import CustomerProfile from './pages/CustomerProfile'
 import VehicleAccessPage from './pages/VehicleAccessPage'
+import Analytics from './pages/Analytics'
+import MonthlyDetails from './pages/MonthlyDetails'
+import MonthlyStatistics from './pages/MonthlyStatistics'
+import ActivityHistory from './pages/ActivityHistory'
+import PartsDashboard from './pages/PartsDashboard'
+import PartsVehicles from './pages/PartsVehicles'
+import PartsInventory from './pages/PartsInventory'
+import PartsOrders from './pages/PartsOrders'
+import PartsEmployees from './pages/PartsEmployees'
+import PartsAnalytics from './pages/PartsAnalytics'
+import PartsCustomers from './pages/PartsCustomers'
 import { useAuth } from './hooks/useAuth'
 import { useUserProfile } from './hooks/useUserProfile'
+import { useQueryClient } from '@tanstack/react-query'
+import { supabase } from './lib/supabase'
 
 function App() {
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    // Очищаем кэш при смене пользователя
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
+        queryClient.clear()
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [queryClient])
+
   return (
     <AlertProvider>
+      <VersionChecker />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Toaster position="top-right" />
         <Routes>
@@ -42,11 +74,18 @@ function App() {
         <Route path="/vehicle-access" element={<VehicleAccessPage />} />
         <Route path="/public/personal-vehicle/:vehicleId" element={<PublicPersonalVehicleView />} />
         
+        {/* Публичный профиль клиента */}
+        <Route path="/public/customer/:id" element={<PublicCustomerView />} />
+        
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
           <Route path="customers" element={<Customers />} />
+          <Route path="customer/:id" element={<CustomerProfile />} />
           <Route path="vehicles" element={<Vehicles />} />
           <Route path="appointments" element={<Appointments />} />
+          <Route path="appointments/statistics" element={<MonthlyStatistics />} />
+          <Route path="appointments/month/:month" element={<MonthlyDetails />} />
+          <Route path="sto/appointments/:appointmentId" element={<AppointmentDetails />} />
           <Route path="work-orders" element={<WorkOrders />} />
           <Route path="services" element={<Services />} />
           <Route path="parts" element={<Parts />} />
@@ -55,12 +94,23 @@ function App() {
           <Route path="sto/employees" element={<StoEmployees />} />
           <Route path="sto/employees/:employeeId" element={<EmployeeProfile />} />
           <Route path="worker/dashboard" element={<WorkerDashboard />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="history" element={<ActivityHistory />} />
           <Route path="support" element={<Support />} />
           
           {/* Личные автомобили */}
           <Route path="my-vehicles" element={<MyVehicles />} />
           <Route path="my-vehicles/archive" element={<MyVehiclesArchive />} />
           <Route path="my-appointments" element={<Appointments />} />
+          
+          {/* Parts (Авторазборка) - Полностью отдельная система */}
+          <Route path="parts/dashboard" element={<PartsDashboard />} />
+          <Route path="parts/vehicles" element={<PartsVehicles />} />
+          <Route path="parts/inventory" element={<PartsInventory />} />
+          <Route path="parts/orders" element={<PartsOrders />} />
+          <Route path="parts/customers" element={<PartsCustomers />} />
+          <Route path="parts/employees" element={<PartsEmployees />} />
+          <Route path="parts/analytics" element={<PartsAnalytics />} />
         </Route>
         
         {/* Admin Panel - полностью отдельный layout */}

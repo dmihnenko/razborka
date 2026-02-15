@@ -55,6 +55,7 @@ export default function ReassignWorkerModal({
         .from('user_profiles')
         .select('id, full_name, email')
         .eq('sto_company_id', profile?.sto_company_id)
+        .eq('is_active', true)
         .in('id', userIds)
         .order('full_name')
 

@@ -11,7 +11,8 @@ import {
   Store,
   ShoppingCart,
   TrendingUp,
-  MessageSquare
+  MessageSquare,
+  BarChart3
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -32,31 +33,31 @@ export const stoOwnerMenu: MenuItem[] = [
   { name: 'Клиенты', href: '/customers', icon: Users },
   { name: 'Автомобили', href: '/vehicles', icon: Car },
   { name: 'Записи', href: '/appointments', icon: Calendar },
-  { name: 'Заказ-наряды', href: '/work-orders', icon: FileText },
+  { name: 'Статистика', href: '/appointments/statistics', icon: BarChart3 },
   { name: 'Услуги', href: '/services', icon: Wrench },
   { name: 'Счета', href: '/invoices', icon: Receipt },
   { name: 'Сотрудники', href: '/sto/employees', icon: Users },
-  { name: 'Аналитика', href: '/sto/analytics', icon: TrendingUp },
+  { name: 'Аналитика', href: '/analytics', icon: TrendingUp },
   { name: 'Поддержка', href: '/support', icon: MessageSquare },
 ];
 
 // Меню для работника СТО
 export const stoWorkerMenu: MenuItem[] = [
-  { name: 'Моя статистика', href: '/worker/dashboard', icon: LayoutDashboard },
+  { name: 'Дашборд', href: '/', icon: LayoutDashboard },
   { name: 'Клиенты', href: '/customers', icon: Users },
   { name: 'Автомобили', href: '/vehicles', icon: Car },
   { name: 'Записи', href: '/appointments', icon: Calendar },
-  { name: 'Заказ-наряды', href: '/work-orders', icon: FileText },
+  { name: 'Статистика', href: '/appointments/statistics', icon: BarChart3 },
   { name: 'Услуги', href: '/services', icon: Wrench },
 ];
 
 // Меню для владельца разборки
 export const partsOwnerMenu: MenuItem[] = [
-  { name: 'Дашборд', href: '/parts-dashboard', icon: LayoutDashboard },
-  { name: 'Мои авто', href: '/my-vehicles', icon: Car },
-  { name: 'Запчасти', href: '/parts', icon: Package },
-  { name: 'Заказы', href: '/parts-orders', icon: ShoppingCart },
-  { name: 'Клиенты', href: '/customers', icon: Users },
+  { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutDashboard },
+  { name: 'Автомобили', href: '/parts/vehicles', icon: Car },
+  { name: 'Склад запчастей', href: '/parts/inventory', icon: Package },
+  { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart },
+  { name: 'Клиенты', href: '/parts/customers', icon: Users },
   { name: 'Сотрудники', href: '/parts/employees', icon: Users },
   { name: 'Аналитика', href: '/parts/analytics', icon: TrendingUp },
   { name: 'Поддержка', href: '/support', icon: MessageSquare },
@@ -64,10 +65,11 @@ export const partsOwnerMenu: MenuItem[] = [
 
 // Меню для работника разборки
 export const partsWorkerMenu: MenuItem[] = [
-  { name: 'Дашборд', href: '/parts-dashboard', icon: LayoutDashboard },
-  { name: 'Запчасти', href: '/parts', icon: Package },
-  { name: 'Заказы', href: '/parts-orders', icon: ShoppingCart },
-  { name: 'Клиенты', href: '/customers', icon: Users },
+  { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutDashboard },
+  { name: 'Автомобили', href: '/parts/vehicles', icon: Car },
+  { name: 'Склад запчастей', href: '/parts/inventory', icon: Package },
+  { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart },
+  { name: 'Клиенты', href: '/parts/customers', icon: Users },
 ];
 
 // Меню для владельца магазина
@@ -129,7 +131,7 @@ export function getMenuForRoles(roleNames: string[]): MenuItem[] {
 export function getDefaultRouteForRoles(roleNames: string[]): string {
   if (roleNames.includes('admin')) return '/admin';
   if (roleNames.includes('sto_owner') || roleNames.includes('sto_worker')) return '/';
-  if (roleNames.includes('parts_owner') || roleNames.includes('parts_worker')) return '/parts-dashboard';
+  if (roleNames.includes('parts_owner') || roleNames.includes('parts_worker')) return '/parts/dashboard';
   if (roleNames.includes('store_owner') || roleNames.includes('store_worker')) return '/store-dashboard';
   return '/';
 }

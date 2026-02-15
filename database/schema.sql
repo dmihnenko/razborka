@@ -1,4 +1,4 @@
--- CRM для СТО - Схема базы данных Supabase
+-- CRM - Схема базы данных Supabase
 
 -- Включаем расширение для UUID
 create extension if not exists "uuid-ossp";

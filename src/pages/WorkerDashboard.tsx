@@ -19,6 +19,7 @@ export default function WorkerDashboard() {
         .from('appointments')
         .select('*, customers(name), vehicles(brand, model, license_plate)')
         .eq('assigned_to', currentUser?.id)
+        .not('status', 'in', '(pending_deletion,deleted)')
         .order('created_at', { ascending: false })
 
       if (error) {

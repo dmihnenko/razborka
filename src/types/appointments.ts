@@ -1,10 +1,19 @@
 export type AppointmentStatus = 
-  | 'pending'      // ⏳ Ожидает
-  | 'confirmed'    // ✅ Подтверждена
+  | 'scheduled'    // 📅 Запланирована
   | 'in_progress'  // 🔧 В работе
+  | 'ready'        // ✅ Готова
   | 'completed'    // ✔️ Завершена
+  | 'archived'     // 🗄️ Архив
   | 'cancelled'    // ❌ Отменена
-  | 'paid';        // 💰 Оплачена
+  | 'pending_deletion' // 🗑️ Ожидает удаления
+  | 'deleted';     // 🚫 Удалена
+
+export interface AppointmentPart {
+  id: string;
+  appointment_id: string;
+  description: string;
+  created_at: string;
+}
 
 export interface WorkItem {
   id: string;
@@ -22,6 +31,8 @@ export interface PartItem {
   articleNumber?: string;
   quantity: number;
   price: number;
+  // markup: number;
+  // markupType: 'percentage' | 'fixed';
   totalPrice: number;
   condition?: 'new-original' | 'used-original' | 'aftermarket';
   isPaid: boolean;
@@ -37,14 +48,27 @@ export interface Appointment {
   vehicle_id: string;
   status: AppointmentStatus;
   scheduled_date: string;
+  scheduled_time?: string;
   work_items?: WorkItem[];
   part_items?: PartItem[];
+  appointment_parts?: AppointmentPart[]; // Запчасти из Firebase
   total_work_cost: number;
   total_parts_cost: number;
   total_cost: number;
   notes?: string;
   created_at: string;
   updated_at: string;
+  assigned_to?: string;
+  assigned_to_name?: string;
+  parts_paid: boolean;
+  work_paid: boolean;
+  parts_cost?: number;
+  parts_client_cost?: number;
+  ready_for_pickup?: boolean;
+  completed_at?: string;
+  request_number?: string;
+  description?: string;
+  firebase_id?: string;
 }
 
 export interface AppointmentFormValues {
@@ -58,4 +82,6 @@ export interface AppointmentFormValues {
   selectedClient?: any;
   selectedVehicle?: any;
   assigned_to?: string;
+  parts_paid?: boolean;
+  work_paid?: boolean;
 }

@@ -10,14 +10,41 @@ export function useUserProfile() {
       
       if (!user) return null
 
-      // Получаем профиль
-      const { data: profile, error: profileError } = await supabase
+      // Получаем профиль - НЕ используем .single() чтобы избежать ошибки если профиля нет
+      const { data: profiles, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', user.id)
-        .single()
 
-      if (profileError) throw profileError
+      if (profileError) {
+        console.error('Profile error:', profileError)
+        throw profileError
+      }
+
+      // Если профиль не найден, создаем его
+      if (!profiles || profiles.length === 0) {
+        console.log('Profile not found, creating one for user:', user.id)
+        
+        const { data: newProfile, error: createError } = await supabase
+          .from('user_profiles')
+          .insert({
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+            is_active: true
+          })
+          .select()
+          .single()
+
+        if (createError) {
+          console.error('Error creating profile:', createError)
+          throw createError
+        }
+
+        return { ...newProfile, roles: [] }
+      }
+
+      const profile = profiles[0]
       
       // Получаем все роли пользователя через таблицу user_roles
       const { data: userRolesData, error: userRolesError } = await supabase
@@ -25,7 +52,10 @@ export function useUserProfile() {
         .select('role_id, is_primary')
         .eq('user_id', user.id)
       
-      if (userRolesError) throw userRolesError
+      if (userRolesError) {
+        console.error('User roles error:', userRolesError)
+        throw userRolesError
+      }
       
       // Если нет ролей, возвращаем профиль с пустым массивом
       if (!userRolesData || userRolesData.length === 0) {
@@ -39,7 +69,10 @@ export function useUserProfile() {
         .select('*')
         .in('id', roleIds)
       
-      if (rolesError) throw rolesError
+      if (rolesError) {
+        console.error('Roles error:', rolesError)
+        throw rolesError
+      }
 
       // Добавляем информацию об is_primary к каждой роли
       const rolesWithPrimary = rolesData?.map(role => ({

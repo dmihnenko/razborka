@@ -8,8 +8,17 @@ interface AlertData {
   type: AlertType
 }
 
+interface ConfirmData {
+  message: string
+  onConfirm: () => void
+  onCancel?: () => void
+  confirmText?: string
+  cancelText?: string
+}
+
 interface AlertContextType {
   showAlert: (message: string, type?: AlertType) => void
+  showConfirm: (message: string, onConfirm: () => void, options?: { onCancel?: () => void, confirmText?: string, cancelText?: string }) => void
 }
 
 const AlertContext = createContext<AlertContextType | undefined>(undefined)
@@ -24,13 +33,42 @@ export function useAlert() {
 
 export function AlertProvider({ children }: { children: ReactNode }) {
   const [alert, setAlert] = useState<AlertData | null>(null)
+  const [confirm, setConfirm] = useState<ConfirmData | null>(null)
 
   const showAlert = (message: string, type: AlertType = 'info') => {
     setAlert({ message, type })
   }
 
+  const showConfirm = (
+    message: string, 
+    onConfirm: () => void, 
+    options?: { onCancel?: () => void, confirmText?: string, cancelText?: string }
+  ) => {
+    setConfirm({
+      message,
+      onConfirm,
+      onCancel: options?.onCancel,
+      confirmText: options?.confirmText || 'Да',
+      cancelText: options?.cancelText || 'Отмена',
+    })
+  }
+
   const closeAlert = () => {
     setAlert(null)
+  }
+
+  const handleConfirm = () => {
+    if (confirm) {
+      confirm.onConfirm()
+      setConfirm(null)
+    }
+  }
+
+  const handleCancel = () => {
+    if (confirm?.onCancel) {
+      confirm.onCancel()
+    }
+    setConfirm(null)
   }
 
   const getIcon = () => {
@@ -56,9 +94,10 @@ export function AlertProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AlertContext.Provider value={{ showAlert }}>
+    <AlertContext.Provider value={{ showAlert, showConfirm }}>
       {children}
       
+      {/* Alert Modal */}
       {alert && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
           <div className={`bg-white rounded-lg shadow-xl max-w-md w-full p-6 border-2 ${getColors()}`}>
@@ -84,6 +123,39 @@ export function AlertProvider({ children }: { children: ReactNode }) {
                 className="px-6 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors font-medium"
               >
                 OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Modal */}
+      {confirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 mt-0.5">
+                <AlertCircle className="w-6 h-6 text-orange-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Подтверждение</h3>
+                <p className="text-gray-700 text-base leading-relaxed">
+                  {confirm.message}
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex gap-3 justify-end">
+              <button
+                onClick={handleCancel}
+                className="px-5 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors font-medium"
+              >
+                {confirm.cancelText}
+              </button>
+              <button
+                onClick={handleConfirm}
+                className="px-5 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors font-medium"
+              >
+                {confirm.confirmText}
               </button>
             </div>
           </div>

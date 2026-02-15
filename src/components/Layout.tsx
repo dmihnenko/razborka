@@ -8,11 +8,13 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
 import { getMenuForRoles } from '../config/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 
 export default function Layout() {
   const location = useLocation()
   const isAdmin = useIsAdmin()
   const { data: profile, isLoading, refetch } = useUserProfile()
+  const queryClient = useQueryClient()
   
   // Получаем PRIMARY роль пользователя
   // Приоритет ролей: admin > sto_owner > parts_owner > store_owner > worker roles > user
@@ -66,6 +68,9 @@ export default function Layout() {
   const navigation = getMenuForRoles(roleNames)
 
   const handleLogout = async () => {
+    // Очищаем весь кэш React Query перед выходом
+    queryClient.clear()
+    
     const { error } = await supabase.auth.signOut()
     if (error) {
       toast.error('Ошибка при выходе')

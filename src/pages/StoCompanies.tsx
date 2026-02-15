@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, Building2, Users, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
-import InputMask from 'react-input-mask';
 import { Link } from 'react-router-dom';
 
 interface StoCompany {
@@ -55,10 +54,21 @@ export default function StoCompanies() {
       
       // Получаем количество работников для каждой СТО
       const companiesWithWorkers = await Promise.all((data || []).map(async (company) => {
-        const { count } = await supabase
+        // Считаем пользователей с ролью sto_worker через запрос к user_roles
+        const { data: workers } = await supabase
+          .from('user_roles')
+          .select('user_id, roles!inner(name)')
+          .eq('roles.name', 'sto_worker');
+        
+        // Фильтруем только тех, кто в этой компании И активен
+        const { data: companyUsers } = await supabase
           .from('user_profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('sto_company_id', company.id);
+          .select('id')
+          .eq('sto_company_id', company.id)
+          .eq('is_active', true)
+          .in('id', workers?.map(w => w.user_id) || []);
+        
+        const workersCount = companyUsers?.length || 0;
         
         // Получаем подписку компании
         const { data: subscription } = await supabase
@@ -71,7 +81,7 @@ export default function StoCompanies() {
         
         return {
           ...company,
-          workers_count: count || 0,
+          workers_count: workersCount,
           subscription: subscription ? {
             id: subscription.id,
             type: subscription.subscription?.type || '',
@@ -311,13 +321,6 @@ export default function StoCompanies() {
 
             <div className="flex justify-between items-center pt-4 border-t">
               <div className="flex space-x-2">
-                <Link
-                  to={`/admin/sto-subscriptions/${sto.id}`}
-                  className="text-sm font-medium text-purple-600 hover:text-purple-700 flex items-center space-x-1"
-                >
-                  <CreditCard className="h-4 w-4" />
-                  <span>Подписка</span>
-                </Link>
                 <button
                   onClick={() => toggleActiveMutation.mutate({ id: sto.id, isActive: sto.is_active })}
                   className={`text-sm font-medium ${
@@ -393,20 +396,13 @@ export default function StoCompanies() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Телефон
                 </label>
-                <InputMask
-                  mask="+380 99 999-99-99"
+                <input
+                  type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                >
-                  {(inputProps: any) => (
-                    <input
-                      {...inputProps}
-                      type="tel"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="+380 XX XXX-XX-XX"
-                    />
-                  )}
-                </InputMask>
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="+380 XX XXX-XX-XX"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
