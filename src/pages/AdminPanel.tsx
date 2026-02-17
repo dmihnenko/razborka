@@ -76,36 +76,36 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mb-4 sm:mb-6 lg:mb-8">
-        <h1 className="text-3xl font-bold mb-2">Панель администратора</h1>
-        <p className="text-gray-600">
+    <div className="container-mobile">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2">Панель администратора</h1>
+        <p className="text-sm sm:text-base text-gray-600">
           Добро пожаловать, {profile?.full_name || 'Администратор'}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {adminSections.map((section) => {
           const Icon = section.icon
           return (
             <Link
               key={section.path}
               to={section.path}
-              className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-4 sm:p-5 lg:p-6 border border-gray-200 hover:border-blue-300"
+              className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-3 sm:p-4 lg:p-5 border border-gray-200 hover:border-blue-300"
             >
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-3">
                 <div
-                  className={`p-3 rounded-lg ${
+                  className={`p-2 sm:p-2.5 rounded-lg ${
                     colorClasses[section.color as keyof typeof colorClasses]
                   }`}
                 >
-                  <Icon size={24} />
+                  <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold mb-2">
+                  <h3 className="text-sm sm:text-base lg:text-lg font-semibold mb-1">
                     {section.title}
                   </h3>
-                  <p className="text-sm text-gray-600">{section.description}</p>
+                  <p className="text-xs sm:text-sm text-gray-600">{section.description}</p>
                 </div>
               </div>
             </Link>
@@ -114,7 +114,7 @@ export default function AdminPanel() {
       </div>
 
       {/* Быстрая статистика */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="mt-6 sm:mt-8 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <StatCard 
           title="Всего пользователей" 
           value={stats?.usersCount || 0} 

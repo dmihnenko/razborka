@@ -75,18 +75,19 @@ export default function WorkOrders() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Заказ-наряды</h1>
+    <div className="container-mobile">
+      <div className="flex items-center justify-between mb-4 sm:mb-6 gap-3">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Заказ-наряды</h1>
         <button
           onClick={() => {
             setEditingWorkOrder(null)
             setIsModalOpen(true)
           }}
-          className="flex items-center px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
+          className="btn-touch-sm bg-primary text-white hover:bg-primary/90 flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
         >
-          <Plus className="w-5 h-5 mr-2" />
-          Новый заказ-наряд
+          <Plus className="w-4 h-4 flex-shrink-0" />
+          <span className="hidden sm:inline">Новый</span>
+          <span className="sm:hidden">+</span>
         </button>
       </div>
 

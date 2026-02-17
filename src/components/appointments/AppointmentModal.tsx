@@ -373,7 +373,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
             <button
               type="button"
               onClick={handleBack}
-              className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium text-center"
             >
               Назад
             </button>
@@ -384,7 +384,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
               type="button"
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
-              className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors font-medium"
+              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors font-medium text-center"
             >
               {deleteMutation.isPending ? 'Удаление...' : 'Удалить'}
             </button>
@@ -393,7 +393,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium border-2 border-gray-300"
+            className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium border-2 border-gray-300 text-center"
           >
             Отмена
           </button>
@@ -403,7 +403,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
               type="button"
               onClick={handleNext}
               disabled={!canProceed()}
-              className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-center"
             >
               Далее
             </button>
@@ -412,7 +412,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
               type="button"
               onClick={() => createMutation.mutate(formData)}
               disabled={createMutation.isPending}
-              className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors font-semibold"
+              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors font-medium text-center whitespace-nowrap"
             >
               {createMutation.isPending ? 'Сохранение...' : (appointmentId ? 'Сохранить' : 'Создать')}
             </button>

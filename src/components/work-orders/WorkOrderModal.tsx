@@ -150,15 +150,15 @@ export default function WorkOrderModal({ isOpen, onClose, workOrderId }: Props) 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+      <div className="bg-white rounded-lg sm:rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-3 sm:py-5 border-b border-gray-200 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
               {workOrderId ? 'Редактировать заказ-наряд' : 'Новый заказ-наряд'}
             </h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">
               {workOrderId ? 'Изменение существующего заказ-наряда' : 'Создание нового заказ-наряда'}
             </p>
           </div>
@@ -176,10 +176,10 @@ export default function WorkOrderModal({ isOpen, onClose, workOrderId }: Props) 
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
           {/* Клиент */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Клиент</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Клиент</h3>
             <ClientSelector
               selectedId={formData.customer_id}
               onSelect={(id, customer) =>
@@ -191,7 +191,7 @@ export default function WorkOrderModal({ isOpen, onClose, workOrderId }: Props) 
           {/* Автомобиль */}
           {formData.customer_id && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Автомобиль</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Автомобиль</h3>
               <VehicleSelector
                 customerId={formData.customer_id}
                 selectedId={formData.vehicle_id}
@@ -204,14 +204,14 @@ export default function WorkOrderModal({ isOpen, onClose, workOrderId }: Props) 
           {formData.vehicle_id && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   Описание работ
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Опишите выполняемые работы..."
                 />
               </div>
@@ -225,13 +225,13 @@ export default function WorkOrderModal({ isOpen, onClose, workOrderId }: Props) 
               {/* Статус (только при редактировании) */}
               {workOrderId && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                     Статус заказ-наряда
                   </label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="draft">Черновик</option>
                     <option value="in_progress">В работе</option>
@@ -245,11 +245,11 @@ export default function WorkOrderModal({ isOpen, onClose, workOrderId }: Props) 
         </form>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between gap-3">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex items-center gap-2 sm:gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium border-2 border-gray-300 text-center"
           >
             Отмена
           </button>
@@ -257,13 +257,13 @@ export default function WorkOrderModal({ isOpen, onClose, workOrderId }: Props) 
           <button
             onClick={handleSubmit}
             disabled={createMutation.isPending || !formData.customer_id || !formData.vehicle_id}
-            className="px-6 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
+            className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-center whitespace-nowrap"
           >
             {createMutation.isPending
               ? 'Сохранение...'
               : workOrderId
-              ? 'Сохранить изменения'
-              : 'Создать заказ-наряд'}
+              ? 'Сохранить'
+              : 'Создать'}
           </button>
         </div>
       </div>

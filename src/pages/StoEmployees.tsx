@@ -95,66 +95,68 @@ export default function StoEmployees() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="container-mobile">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Сотрудники СТО</h1>
-          <p className="text-sm text-gray-600 mt-1">Управление работниками вашего СТО</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Сотрудники СТО</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Управление работниками вашего СТО</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3 flex-wrap">
           {employees.length > 0 && (
             <button
               onClick={() => setIsBulkAssignModalOpen(true)}
-              className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 flex items-center gap-1.5"
             >
-              <UserCog className="w-5 h-5 mr-2" />
-              Назначить заявки
+              <UserCog className="w-4 h-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Назначить заявки</span>
+              <span className="sm:hidden">Назначить</span>
             </button>
           )}
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
+            className="btn-touch-sm bg-primary text-white hover:bg-primary/90 flex items-center gap-1.5 whitespace-nowrap"
           >
-            <Plus className="w-5 h-5 mr-2" />
-            Добавить работника
+            <Plus className="w-4 h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Добавить работника</span>
+            <span className="sm:hidden">Добавить</span>
           </button>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center">
+        <div className="flex justify-center py-8 sm:py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : employees.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <UserCog className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Нет работников</h3>
-          <p className="text-gray-600 mb-4">Добавьте первого работника для вашего СТО</p>
+        <div className="bg-white rounded-lg shadow p-8 sm:p-12 text-center">
+          <UserCog className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Нет работников</h3>
+          <p className="text-sm sm:text-base text-gray-600 mb-4">Добавьте первого работника для вашего СТО</p>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
+            className="btn-touch-sm bg-primary text-white hover:bg-primary/90 inline-flex items-center gap-2"
           >
-            <Plus className="w-5 h-5 mr-2" />
+            <Plus className="w-4 h-4" />
             Добавить работника
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           {employees.map((employee) => (
             <div
               key={employee.id}
-              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6"
+              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-4 sm:p-6"
             >
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start justify-between mb-3 sm:mb-4">
                 <div className="flex items-center">
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-lg">
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-base sm:text-lg">
                     {employee.full_name?.charAt(0) || employee.username?.charAt(0)?.toUpperCase() || 'W'}
                   </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                  <div className="ml-3 sm:ml-4">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                       {employee.full_name || 'Без имени'}
                     </h3>
-                    <p className="text-sm text-gray-500">Работник СТО</p>
+                    <p className="text-xs sm:text-sm text-gray-500">Работник СТО</p>
                   </div>
                 </div>
               </div>

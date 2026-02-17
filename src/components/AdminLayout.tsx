@@ -82,21 +82,21 @@ export default function AdminLayout() {
       {/* Mobile Header */}
       <div className="md:hidden bg-white border-b sticky top-0 z-10">
         {/* User Info with Logout */}
-        <div className="px-4 py-2.5 border-b bg-purple-50 flex items-center justify-between gap-3">
+        <div className="px-3 sm:px-4 py-2 border-b bg-purple-50 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <Shield className="w-5 h-5 text-purple-700 flex-shrink-0" />
+            <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-purple-700 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-purple-900 truncate">
+              <p className="text-xs sm:text-sm font-semibold text-purple-900 truncate">
                 Админ панель
               </p>
-              <p className="text-xs text-purple-700 truncate">
+              <p className="text-[10px] sm:text-xs text-purple-700 truncate">
                 {profile?.full_name || profile?.email}
               </p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 flex-shrink-0 hover:bg-red-100 transition-colors"
+            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 flex-shrink-0 hover:bg-red-100 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             <span>Выйти</span>
@@ -104,13 +104,13 @@ export default function AdminLayout() {
         </div>
         
         {/* Mobile Navigation - Grouped */}
-        <div className="p-3 space-y-3 max-h-[calc(100vh-80px)] overflow-y-auto">
+        <div className="p-2 sm:p-3 space-y-2 sm:space-y-3 max-h-[calc(100vh-80px)] overflow-y-auto">
           {adminNavigationGroups.map((group) => (
             <div key={group.title}>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 mb-2">
+              <h3 className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 mb-1.5 sm:mb-2">
                 {group.title}
               </h3>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                 {group.items.map((item) => {
                   const Icon = item.icon
                   const isActive = location.pathname === item.href
@@ -118,13 +118,13 @@ export default function AdminLayout() {
                     <Link
                       key={item.href}
                       to={item.href}
-                      className={`flex flex-col items-center justify-center gap-1.5 px-2 py-3 text-xs font-medium transition-colors rounded-lg min-h-[70px] ${
+                      className={`flex flex-col items-center justify-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-2 sm:py-3 text-[10px] sm:text-xs font-medium transition-colors rounded-lg min-h-[60px] sm:min-h-[70px] ${
                         isActive
                           ? 'bg-purple-600 text-white shadow-sm'
                           : 'text-gray-700 bg-gray-50 hover:bg-gray-100'
                       }`}
                     >
-                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                       <span className="text-center leading-tight line-clamp-2">{item.name}</span>
                     </Link>
                   )
@@ -135,16 +135,16 @@ export default function AdminLayout() {
           
           {/* Quick Access */}
           <div>
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 mb-2">
+            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 mb-1.5 sm:mb-2">
               Быстрый доступ
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <button
                 onClick={() => {
                   localStorage.setItem('activeRole', 'user')
                   navigate('/my-vehicles')
                 }}
-                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"
+                className="w-full flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"
               >
                 <Car className="w-4 h-4 flex-shrink-0" />
                 <span>Мои авто</span>
@@ -246,7 +246,7 @@ export default function AdminLayout() {
 
       {/* Main content */}
       <div className="flex-1 overflow-auto">
-        <div className="p-3 sm:p-4 md:p-6 lg:p-8">
+        <div className="p-3 sm:p-4 md:p-6">
           <Breadcrumbs />
           <Outlet />
         </div>

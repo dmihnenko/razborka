@@ -76,27 +76,28 @@ export default function Services() {
   const selectedCategory = categories?.find((cat: any) => cat.id === categoryFilter)
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Услуги</h1>
+    <div className="container-mobile">
+      <div className="flex items-center justify-between mb-4 sm:mb-6 gap-3">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Услуги</h1>
         <button
           onClick={() => {
             setEditingService(null)
             setIsModalOpen(true)
           }}
-          className="flex items-center px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
+          className="btn-touch-sm bg-primary text-white hover:bg-primary/90 flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
         >
-          <Plus className="w-5 h-5 mr-2" />
-          Добавить услугу
+          <Plus className="w-4 h-4 flex-shrink-0" />
+          <span className="hidden sm:inline">Добавить</span>
+          <span className="sm:hidden">Услуга</span>
         </button>
       </div>
 
       {/* Фильтры */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-white rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           {/* Поиск по названию */}
           <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Поиск по названию</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Поиск по названию</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
