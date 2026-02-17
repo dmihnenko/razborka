@@ -11,7 +11,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
-        name: 'CRM - Система управления СТО',
+        name: 'CRM',
         short_name: 'CRM СТО',
         description: 'Система управления автосервисом: клиенты, заявки, склад, сотрудники',
         theme_color: '#2563eb',
