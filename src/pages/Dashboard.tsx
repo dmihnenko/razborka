@@ -157,6 +157,8 @@ export default function Dashboard() {
   const readyCount = appointmentsStats?.ready || 0
   const unpaidCount = appointmentsStats?.unpaid || 0
 
+  console.log('Dashboard readyCount:', readyCount, 'appointmentsStats:', appointmentsStats)
+
   const partsCost = monthlyStats?.parts || 0
   const workCost = monthlyStats?.work || 0
   const totalCost = monthlyStats?.total || 0
@@ -259,7 +261,9 @@ export default function Dashboard() {
                   </div>
                   <p className="text-mobile-sm text-gray-600">Готовые</p>
                 </div>
-                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{readyCount}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">
+                  {readyCount}
+                </p>
               </div>
             </div>
           </div>
