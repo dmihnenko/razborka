@@ -172,7 +172,7 @@ export interface CreatePartsCustomerInput {
 }
 
 export interface CreatePartsInventoryInput {
-  category_id: string
+  category_id?: string
   source_vehicle_id?: string
   name: string
   part_number?: string
