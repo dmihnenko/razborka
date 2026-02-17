@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Archive, Car, Edit, Share2, Trash2 } from 'lucide-react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getPersonalVehicles, deletePersonalVehicle } from '@/services/personalVehicles'
+import { Plus, Archive, Car, Edit } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { getPersonalVehicles } from '@/services/personalVehicles'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import PersonalVehicleModal from '@/components/personal-vehicles/PersonalVehicleModal'
 import ShareLinkModal from '@/components/personal-vehicles/ShareLinkModal'
@@ -12,7 +12,6 @@ const NO_IMAGE_URL = '/noimage_final.png'
 export default function MyVehicles() {
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
-  const queryClient = useQueryClient()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [shareVehicleId, setShareVehicleId] = useState<string | null>(null)
 
@@ -22,7 +21,7 @@ export default function MyVehicles() {
     enabled: !!profile?.id
   })
 
-  const deleteMutation = useMutation({
+  /* const deleteMutation = useMutation({
     mutationFn: deletePersonalVehicle,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['personal-vehicles'] })
@@ -31,9 +30,9 @@ export default function MyVehicles() {
       console.error('Failed to delete vehicle:', error)
       alert('Ошибка при удалении автомобиля')
     }
-  })
+  }) */
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  /* const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
     if (confirm('Удалить этот автомобиль? Это действие нельзя отменить.')) {
       deleteMutation.mutate(id)
@@ -43,7 +42,7 @@ export default function MyVehicles() {
   const handleShare = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
     setShareVehicleId(id)
-  }
+  } */
 
   const handleEdit = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -152,34 +151,36 @@ export default function MyVehicles() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Заголовок с мягким оформлением */}
-        <div className="mb-6 bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-          <div className="flex items-center justify-between gap-4">
+        <div className="mb-6 bg-white border border-gray-200 rounded-xl shadow-sm p-4 sm:p-6">
+          <div className="flex flex-col gap-4">
+            {/* Заголовок с иконкой */}
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <Car className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
+              <div className="p-2 sm:p-3 bg-blue-50 rounded-lg">
+                <Car className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-blue-600" />
               </div>
-              <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900">
                   Личные автомобили с аукционов США
                 </h1>
-                <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">
                   Отслеживайте расходы и историю ваших автомобилей
                 </p>
               </div>
             </div>
             
+            {/* Кнопки */}
             <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={() => navigate('/my-vehicles/archive')}
-                className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 text-sm sm:text-base border border-gray-300 shadow-sm"
+                className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 text-sm sm:text-base border border-gray-300 shadow-sm flex-1 sm:flex-none"
               >
                 <Archive className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="hidden sm:inline">Архив</span>
+                <span className="sm:inline">Архив</span>
               </button>
               
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 text-sm sm:text-base shadow-sm hover:shadow-md font-medium"
+                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 text-sm sm:text-base shadow-sm hover:shadow-md font-medium flex-1 sm:flex-none"
               >
                 <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Добавить</span>

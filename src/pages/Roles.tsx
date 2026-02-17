@@ -3,7 +3,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { Plus, Edit2, Trash2, Shield } from 'lucide-react'
 import { toast } from 'sonner'
-import type { Role } from '../types/database'
+
+type Role = {
+  id: string
+  name: string
+  display_name: string
+  is_active: boolean
+  description: string | null
+  created_at: string
+}
 
 export default function Roles() {
   const [isModalOpen, setIsModalOpen] = useState(false)

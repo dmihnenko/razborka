@@ -5,7 +5,6 @@ import {
   Settings, 
   BarChart3, 
   Database,
-  ArrowLeft,
   LogOut,
   Building2,
   Store,

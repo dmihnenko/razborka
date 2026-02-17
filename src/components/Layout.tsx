@@ -122,7 +122,7 @@ export default function Layout() {
   return (
     <div className="flex flex-col md:flex-row md:h-screen bg-gray-100">
       {/* Mobile Header */}
-      <div className="md:hidden bg-white border-b sticky top-0 z-10">
+      <div className="md:hidden bg-white border-b">
         {/* User Name Display with Logout */}
         <div className="px-4 py-2.5 border-b bg-gray-50 flex items-center justify-between gap-3">
           <p className="text-sm font-medium text-gray-700 truncate flex-1">

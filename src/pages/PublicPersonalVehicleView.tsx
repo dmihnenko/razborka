@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Edit, Share2, Trash2, DollarSign, Upload, X } from 'lucide-react'
+import { ArrowLeft, Share2, Trash2, DollarSign, Upload } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPersonalVehicleById, deletePersonalVehicle, markVehicleAsSold, updatePersonalVehicle } from '@/services/personalVehicles'
 import { uploadToImgBB, validateImageFile } from '@/utils/imageStorage'

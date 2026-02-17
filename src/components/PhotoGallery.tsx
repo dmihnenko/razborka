@@ -86,7 +86,6 @@ interface SinglePhotoViewProps {
 export function SinglePhotoView({
   src,
   alt = 'Фото',
-  className = '',
   thumbnailClassName = '',
 }: SinglePhotoViewProps) {
   return (

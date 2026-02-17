@@ -51,7 +51,7 @@ export default function MonthlyDetails() {
   const [year, monthNum] = (month || '').split('-')
   const monthName = monthNum ? `${monthNames[parseInt(monthNum) - 1]} ${year}` : ''
 
-  const statusColors = {
+  /* const statusColors = {
     scheduled: 'bg-purple-100 text-purple-800',
     in_progress: 'bg-orange-100 text-orange-800',
     ready: 'bg-blue-100 text-blue-800',
@@ -67,7 +67,7 @@ export default function MonthlyDetails() {
     completed: 'Завершена',
     archived: 'Архив',
     cancelled: 'Отменена',
-  }
+  } */
 
   return (
     <div className="container-mobile">

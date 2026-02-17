@@ -85,7 +85,7 @@ export default function Customers() {
       deleteMutation.mutate(id)
     }
   }
-  const handleCopyPublicLink = async (customerId: string) => {
+  /* const handleCopyPublicLink = async (customerId: string) => {
     const publicUrl = `${window.location.origin}/public/customer/${customerId}`
     try {
       await navigator.clipboard.writeText(publicUrl)
@@ -93,7 +93,8 @@ export default function Customers() {
     } catch (err) {
       toast.error('Не удалось скопировать ссылку')
     }
-  }
+  } */
+
   return (
     <div className="container-mobile">
       {/* Search and Actions */}

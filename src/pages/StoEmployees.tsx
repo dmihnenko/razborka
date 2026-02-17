@@ -253,7 +253,7 @@ function AddEmployeeModal({ onClose, stoCompanyId }: { onClose: () => void; stoC
   const createEmployeeMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       // Проверяем, не существует ли уже пользователь с таким username
-      const { data: existingUser, error: checkError } = await supabase
+      const { data: existingUser } = await supabase
         .from('user_profiles')
         .select('id')
         .eq('username', data.username)

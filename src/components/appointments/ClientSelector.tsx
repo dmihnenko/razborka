@@ -15,7 +15,7 @@ export default function ClientSelector({ selectedId, onSelect }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
   const [newClientData, setNewClientData] = useState({ name: '', phone: '' })
-  const { data: profile, isLoading: profileLoading } = useUserProfile()
+  const { data: profile } = useUserProfile()
   const queryClient = useQueryClient()
 
   const { data: customers, isLoading, error: queryError } = useQuery({

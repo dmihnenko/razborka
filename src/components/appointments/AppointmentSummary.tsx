@@ -1,5 +1,5 @@
 import { AppointmentFormValues, AppointmentStatus } from '@/types/appointments'
-import { User, Car, Wrench, Package, Calendar, FileText, UserCog } from 'lucide-react'
+import { User, Car, Wrench, Package, FileText, UserCog } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
@@ -10,7 +10,7 @@ interface Props {
   isEditing?: boolean
 }
 
-const statusLabels: Record<AppointmentStatus, string> = {
+const statusLabels: Partial<Record<AppointmentStatus, string>> = {
   'in_progress': '🔧 В работе',
   'ready': '✅ Готова',
   'completed': '✔️ Завершена',

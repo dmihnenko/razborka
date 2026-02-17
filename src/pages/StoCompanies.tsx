@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, Building2, Users, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
 
 interface StoCompany {
   id: string;
@@ -84,7 +83,7 @@ export default function StoCompanies() {
           workers_count: workersCount,
           subscription: subscription ? {
             id: subscription.id,
-            type: subscription.subscription?.type || '',
+            type: (subscription.subscription as any)?.type || '',
             end_date: subscription.end_date
           } : undefined
         };

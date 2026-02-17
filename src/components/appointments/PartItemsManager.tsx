@@ -12,7 +12,7 @@ export default function PartItemsManager({ items, onChange }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [textInput, setTextInput] = useState('')
 
-  const calculateTotalPrice = (
+  /* const calculateTotalPrice = (
     price: number,
     markup: number,
     markupType: 'percentage' | 'fixed',
@@ -25,7 +25,7 @@ export default function PartItemsManager({ items, onChange }: Props) {
       pricePerUnit = price + markup
     }
     return pricePerUnit * quantity
-  }
+  } */
 
   const handleSave = () => {
     if (!textInput.trim()) return

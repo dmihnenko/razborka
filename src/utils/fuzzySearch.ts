@@ -1,7 +1,7 @@
 import Fuse from 'fuse.js'
 import { useMemo } from 'react'
 
-interface FuseSearchOptions<T> {
+interface FuseSearchOptions {
   keys: string[]
   threshold?: number
   distance?: number
@@ -25,7 +25,7 @@ interface FuseSearchOptions<T> {
 export function useFuzzySearch<T>(
   data: T[],
   searchQuery: string,
-  options: FuseSearchOptions<T>
+  options: FuseSearchOptions
 ): T[] {
   return useMemo(() => {
     if (!searchQuery || searchQuery.trim() === '') {

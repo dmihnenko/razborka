@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import type { UserProfile } from '../types/database'
 
 export function useUserProfile() {
   return useQuery({

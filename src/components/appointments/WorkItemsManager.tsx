@@ -20,7 +20,7 @@ export default function WorkItemsManager({ items, onChange }: Props) {
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
 
   // Загружаем настройки СТО
-  const { data: stoCompany, isLoading: stoCompanyLoading } = useQuery({
+  const { data: stoCompany } = useQuery({
     queryKey: ['sto_company', profile?.sto_company_id],
     queryFn: async () => {
       if (!profile?.sto_company_id) return null

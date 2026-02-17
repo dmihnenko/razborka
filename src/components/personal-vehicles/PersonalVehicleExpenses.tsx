@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { DollarSign } from 'lucide-react'
 import ExpenseCategory from './ExpenseCategory'
 import ExpenseModal from './ExpenseModal'
 import type { PersonalVehicle, PersonalCostItem, CostCategory } from '@/types/personalVehicles'
@@ -83,7 +82,7 @@ export default function PersonalVehicleExpenses({ vehicleId, vehicle, isOwner, o
     }
   }
 
-  const calculateGrandTotal = () => {
+  /* const calculateGrandTotal = () => {
     const usdRate = vehicle.usdRate || 1
     const allItems = [
       ...vehicle.lotItems,
@@ -103,9 +102,23 @@ export default function PersonalVehicleExpenses({ vehicleId, vehicle, isOwner, o
     const grandTotal = totalUSD + (totalUAH / usdRate)
 
     return { totalUSD, totalUAH, grandTotal }
-  }
+  } */
 
-  const { totalUSD, totalUAH, grandTotal } = calculateGrandTotal()
+  const handleDeleteExpense = async (category: CostCategory, id: string) => {
+    if (!confirm('Удалить этот расход?')) return
+
+    setLoading(true)
+    try {
+      await deleteExpenseItem(vehicleId, category, id)
+      showAlert('Расход удален', 'success')
+      onUpdate()
+    } catch (error) {
+      console.error('Failed to delete expense:', error)
+      showAlert('Ошибка при удалении расхода', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6">

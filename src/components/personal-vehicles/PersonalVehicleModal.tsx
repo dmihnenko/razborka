@@ -29,7 +29,7 @@ export default function PersonalVehicleModal({ isOpen, onClose, onSuccess, userI
 
     const validation = validateImageFile(file)
     if (!validation.valid) {
-      showAlert(validation.error, 'error')
+      showAlert(validation.error || 'Ошибка валидации', 'error')
       return
     }
 

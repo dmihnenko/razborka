@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CreditCard, TrendingUp, Plus, Edit, Trash2, Calendar, Building2, CheckCircle, XCircle } from 'lucide-react'
+import { CreditCard, TrendingUp, Plus, Trash2, Calendar, Building2, CheckCircle, XCircle } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { 

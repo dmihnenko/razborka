@@ -151,7 +151,7 @@ export default function AdminSupport() {
 
           if (!chatData) return
 
-          const senderName = chatData.owner?.full_name || chatData.owner?.username || 'Пользователь'
+          const senderName = (chatData.owner as any)?.full_name || (chatData.owner as any)?.username || 'Пользователь'
           const subject = chatData.subject || 'Обращение'
 
           // Обновляем список чатов

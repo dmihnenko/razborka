@@ -167,7 +167,7 @@ function App() {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
-  const { data: profile, isLoading: profileLoading } = useUserProfile()
+  const { isLoading: profileLoading } = useUserProfile()
 
   if (loading || profileLoading) {
     return (

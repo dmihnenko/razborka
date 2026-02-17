@@ -3,6 +3,8 @@
  * Используется для включения/выключения функциональности в продакшене
  */
 
+import React from 'react'
+
 export interface FeatureFlags {
   // Модуль разборок
   enablePartsModule: boolean
@@ -107,6 +109,6 @@ export function FeatureFlag({
   flag: keyof FeatureFlags
   children: React.ReactNode
   fallback?: React.ReactNode
-}) {
-  return featureFlags[flag] ? <>{children}</> : <>{fallback}</>
+}): React.ReactElement | null {
+  return featureFlags[flag] ? (children as React.ReactElement) : (fallback as React.ReactElement | null)
 }

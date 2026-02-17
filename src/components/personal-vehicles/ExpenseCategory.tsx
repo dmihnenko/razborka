@@ -18,7 +18,6 @@ export default function ExpenseCategory({
   usdRate,
   onAdd,
   onEdit,
-  onDelete,
   isOwner
 }: Props) {
   const calculateTotal = () => {

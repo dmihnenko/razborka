@@ -15,7 +15,6 @@ interface Props {
 
 export default function ShareLinkModal({ isOpen, onClose, vehicleId, userId }: Props) {
   const { showAlert } = useAlert()
-  const [expiresInDays, setExpiresInDays] = useState('')
   const [selectedDuration, setSelectedDuration] = useState<'1hour' | '7days' | 'permanent'>('permanent')
   const [newCode, setNewCode] = useState<string | null>(null)
   const queryClient = useQueryClient()

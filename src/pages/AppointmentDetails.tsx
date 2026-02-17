@@ -652,8 +652,10 @@ export default function AppointmentDetails() {
           onClose={() => setReassignModal(null)}
           appointmentId={reassignModal.appointmentId}
           currentWorkerId={reassignModal.currentWorkerId}
-          customerName={reassignModal.customerName}
-          vehicleName={reassignModal.vehicleName}
+          appointmentInfo={{
+            customerName: reassignModal.customerName,
+            vehicleName: reassignModal.vehicleName
+          }}
         />
       )}
 

@@ -364,7 +364,7 @@ export default function Users() {
 
   // Переключение активности пользователя
   const toggleActiveMutation = useMutation({
-    mutationFn: async (user: User) => {
+    mutationFn: async (user: UserProfile) => {
       const { error } = await supabase
         .from('users')
         .update({ is_active: !user.is_active })
@@ -414,7 +414,7 @@ export default function Users() {
     }
   });
 
-  const handleToggleActive = (user: User) => {
+  const handleToggleActive = (user: UserProfile) => {
     toggleActiveMutation.mutate(user);
   };
 

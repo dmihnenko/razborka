@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, ChevronLeft, ChevronRight, Check, Trash2 } from 'lucide-react'
-import { AppointmentFormValues, AppointmentStatus } from '@/types/appointments'
+import { AppointmentFormValues } from '@/types/appointments'
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'

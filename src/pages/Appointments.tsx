@@ -41,7 +41,8 @@ export default function Appointments() {
   }
 
   // Получаем количество работников СТО
-  const { data: workersCount = 0 } = useQuery({
+  // Workers count for dashboard stats
+  useQuery({
     queryKey: ['sto_workers_count', profile?.sto_company_id],
     queryFn: async () => {
       const { data: workerRole } = await supabase
@@ -127,7 +128,8 @@ export default function Appointments() {
 
   const customerGroups = groupedAppointments ? Object.values(groupedAppointments) : []
 
-  const deleteMutation = useMutation({
+  // Delete mutation for appointments
+  useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('appointments').delete().eq('id', id)
       if (error) throw error

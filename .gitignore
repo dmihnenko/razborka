@@ -30,3 +30,6 @@ dist-ssr
 
 # Private documentation
 README.md
+
+# Local Netlify folder
+.netlify
