@@ -6,6 +6,8 @@ import { getDefaultRouteForRoles } from '../config/navigation'
 
 export default function Login() {
   const [emailOrUsername, setEmailOrUsername] = useState('')
+  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -19,28 +21,40 @@ export default function Login() {
       toast.error('Пароли не совпадают')
       return
     }
+
+    // Валидация username
+    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
+    if (!usernameRegex.test(username)) {
+      toast.error('Username должен содержать 3-20 символов (латиница, цифры, подчёркивание)')
+      return
+    }
     
     setLoading(true)
 
-    let email = emailOrUsername
-    let username = emailOrUsername
+    // Проверяем уникальность username
+    const { data: existingUser } = await supabase
+      .from('user_profiles')
+      .select('username')
+      .eq('username', username.toLowerCase())
+      .maybeSingle()
 
-    // Если введен email, генерируем username
-    if (emailOrUsername.includes('@')) {
-      email = emailOrUsername
-      username = emailOrUsername.split('@')[0]
-    } else {
-      // Если введен username, генерируем email
-      username = emailOrUsername
-      email = `${emailOrUsername}@example.com`
+    if (existingUser) {
+      toast.error('Этот username уже занят')
+      setLoading(false)
+      return
     }
 
+    // Генерируем email для Supabase (если не введен реальный)
+    const authEmail = email.trim() || `${username.toLowerCase()}@internal.local`
+    const realEmail = email.trim() || null
+
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: authEmail,
       password,
       options: {
         data: {
-          username: username,
+          username: username.toLowerCase(),
+          real_email: realEmail,
           plain_password: password
         }
       }
@@ -56,6 +70,8 @@ export default function Login() {
     if (data.user) {
       toast.success('Регистрация успешна! Войдите в систему')
       setIsRegisterMode(false)
+      setUsername('')
+      setEmail('')
       setConfirmPassword('')
     }
 
@@ -70,8 +86,36 @@ export default function Login() {
 
     // Проверяем, это email или username
     if (!emailOrUsername.includes('@')) {
-      // Это username, генерируем email по паттерну username@example.com
-      loginEmail = `${emailOrUsername}@example.com`
+      // Это username, ищем пользователя в базе
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('username', emailOrUsername.toLowerCase())
+        .maybeSingle()
+
+      if (profile) {
+        // Пробуем новый формат email
+        loginEmail = `${emailOrUsername.toLowerCase()}@internal.local`
+        
+        // Если не получится, попробуем старый формат
+        const { error: newFormatError } = await supabase.auth.signInWithPassword({
+          email: loginEmail,
+          password,
+        })
+        
+        if (newFormatError) {
+          // Пробуем старый формат
+          loginEmail = `${emailOrUsername}@example.com`
+        } else {
+          // Успешный вход с новым форматом
+          await handleSuccessfulLogin()
+          setLoading(false)
+          return
+        }
+      } else {
+        // Если не нашли в новом формате, пробуем старый
+        loginEmail = `${emailOrUsername}@example.com`
+      }
     }
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -85,6 +129,11 @@ export default function Login() {
       return
     }
 
+    await handleSuccessfulLogin()
+    setLoading(false)
+  }
+
+  const handleSuccessfulLogin = async () => {
     // Получаем профиль пользователя для определения ролей
     const { data: { user } } = await supabase.auth.getUser()
     
@@ -121,8 +170,6 @@ export default function Login() {
       
       navigate(defaultRoute)
     }
-
-    setLoading(false)
   }
 
   return (
@@ -132,21 +179,58 @@ export default function Login() {
           {isRegisterMode ? 'Регистрация' : 'CRM'}
         </h2>
         <form onSubmit={isRegisterMode ? handleRegister : handleLogin} className="space-y-4">
-          <div>
-            <label htmlFor="emailOrUsername" className="block text-sm font-medium text-gray-700">
-              Email или Логин
-            </label>
-            <input
-              id="emailOrUsername"
-              type="text"
-              value={emailOrUsername}
-              onChange={(e) => setEmailOrUsername(e.target.value)}
-              required
-              autoComplete="username"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-              placeholder="email@example.com или username"
-            />
-          </div>
+          {isRegisterMode ? (
+            <>
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                  Username *
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  autoComplete="username"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                  placeholder="username (латиница, цифры, _)"
+                  pattern="[a-zA-Z0-9_]{3,20}"
+                />
+                <p className="mt-1 text-xs text-gray-500">3-20 символов: латиница, цифры, подчёркивание</p>
+              </div>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email (необязательно)
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                  placeholder="email@example.com"
+                />
+                <p className="mt-1 text-xs text-gray-500">Для восстановления пароля и уведомлений</p>
+              </div>
+            </>
+          ) : (
+            <div>
+              <label htmlFor="emailOrUsername" className="block text-sm font-medium text-gray-700">
+                Email или Username
+              </label>
+              <input
+                id="emailOrUsername"
+                type="text"
+                value={emailOrUsername}
+                onChange={(e) => setEmailOrUsername(e.target.value)}
+                required
+                autoComplete="username"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                placeholder="email@example.com или username"
+              />
+            </div>
+          )}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Пароль
@@ -191,6 +275,8 @@ export default function Login() {
           <button
             onClick={() => {
               setIsRegisterMode(!isRegisterMode)
+              setUsername('')
+              setEmail('')
               setConfirmPassword('')
             }}
             className="text-sm text-primary hover:underline"
