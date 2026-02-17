@@ -59,8 +59,16 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
           <h2 className="text-xl font-semibold">
             {vehicle ? 'Редактировать автомобиль' : 'Добавить автомобиль на разборку'}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X size={24} />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Закрыть"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
 

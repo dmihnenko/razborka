@@ -5,17 +5,19 @@ import App from './App.tsx'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
 
-// Регистрация Service Worker для PWA
-const updateSW = registerSW({
-  onNeedRefresh() {
-    if (confirm('Доступно новое обновление. Обновить приложение?')) {
-      updateSW(true)
-    }
-  },
-  onOfflineReady() {
-    console.log('Приложение готово к работе оффлайн')
-  },
-})
+// Регистрация Service Worker только для production
+if (import.meta.env.PROD) {
+  const updateSW = registerSW({
+    onNeedRefresh() {
+      if (confirm('Доступно новое обновление. Обновить приложение?')) {
+        updateSW(true)
+      }
+    },
+    onOfflineReady() {
+      console.log('Приложение готово к работе оффлайн')
+    },
+  })
+}
 
 // Подавляем безопасные AbortError от Supabase в режиме разработки
 // Это известная проблема с React StrictMode и Navigator Locks API

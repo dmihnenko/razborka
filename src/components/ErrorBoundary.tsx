@@ -78,7 +78,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                 Произошла непредвиденная ошибка. Мы уже работаем над её исправлением.
               </p>
 
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {import.meta.env.DEV && this.state.error && (
                 <div className="w-full bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-left">
                   <p className="text-sm font-mono text-red-800 mb-2">
                     {this.state.error.toString()}

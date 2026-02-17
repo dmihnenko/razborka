@@ -178,25 +178,41 @@ export default function ExpenseModal({ isOpen, onClose, category, editItem, onSa
             {editItem ? 'Редактировать расход' : 'Добавить расход'}
           </h3>
           <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Закрыть"
           >
-            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-3 sm:p-4 md:p-6">
           {!editItem && !showParsedPreview && onSaveBulk && (
-            <div className="flex items-center gap-2 pb-3 sm:pb-4 border-b mb-3 sm:mb-4">
-              <input
-                type="checkbox"
-                id="bulk-mode"
-                checked={isBulkMode}
-                onChange={(e) => setIsBulkMode(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="bulk-mode" className="text-xs sm:text-sm font-medium text-gray-700 cursor-pointer">
-                Добавить списком
+            <div className="flex items-center gap-3 pb-3 sm:pb-4 border-b mb-3 sm:mb-4">
+              <label htmlFor="bulk-mode" className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    id="bulk-mode"
+                    checked={isBulkMode}
+                    onChange={(e) => setIsBulkMode(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-5 h-5 border-2 border-gray-300 rounded flex items-center justify-center transition-all peer-checked:bg-blue-600 peer-checked:border-blue-600 group-hover:border-blue-400">
+                    {isBulkMode && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <span className="text-xs sm:text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                  Добавить списком
+                </span>
               </label>
             </div>
           )}

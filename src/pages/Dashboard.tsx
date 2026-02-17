@@ -58,9 +58,18 @@ export default function Dashboard() {
 
       // Подсчитываем статистику
       const active = data?.filter(a => a.status !== 'archived' && a.status !== 'deleted') || []
-      const scheduled = data?.filter(a => a.status === 'scheduled') || []
-      const inProgress = data?.filter(a => a.status === 'in_progress') || []
-      const ready = data?.filter(a => a.status === 'ready') || []
+      const scheduled = active.filter(a => a.status === 'scheduled')
+      const inProgress = active.filter(a => a.status === 'in_progress')
+      const ready = active.filter(a => a.status === 'ready' || a.status === 'completed')
+      
+      console.log('Dashboard stats:', {
+        total: data?.length,
+        active: active.length,
+        scheduled: scheduled.length,
+        inProgress: inProgress.length,
+        ready: ready.length,
+        readyItems: ready
+      })
       
       // Неоплаченные
       const unpaid = active.filter(a => {
@@ -240,7 +249,7 @@ export default function Dashboard() {
 
             {/* Готовые */}
             <div 
-              onClick={() => navigate('/appointments')}
+              onClick={() => navigate('/appointments?status=ready')}
               className="card-mobile cursor-pointer hover:shadow-md transition-shadow"
             >
               <div className="flex flex-col">

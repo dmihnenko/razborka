@@ -90,10 +90,8 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
         parts_paid: existingAppointment.parts_paid || false,
         work_paid: existingAppointment.work_paid || false,
       })
-      // При редактировании работником, начинаем с шага 3
-      if (isStoWorker && !isStoOwner) {
-        setCurrentStep(3)
-      }
+      // При редактировании начинаем с шага 3 (работы)
+      setCurrentStep(3)
     } else {
       // Сбросить форму при создании новой заявки
       setFormData({
@@ -269,7 +267,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+        <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between relative">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
               {appointmentId ? 'Редактировать запись' : 'Новая запись на обслуживание'}
@@ -279,10 +277,15 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
             </p>
           </div>
           <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            className="absolute top-4 right-4 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-900 hover:text-gray-700 transition-colors"
+            aria-label="Закрыть"
           >
-            <X className="w-6 h-6 text-gray-500" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -299,17 +302,19 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
 
             {steps.map((step) => (
               <div key={step.id} className="flex flex-col items-center flex-1">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 ${
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(step.id)}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 cursor-pointer hover:scale-110 ${
                     step.id < currentStep
-                      ? 'bg-green-500 text-white'
+                      ? 'bg-green-500 text-white hover:bg-green-600'
                       : step.id === currentStep
                       ? 'bg-primary text-white ring-4 ring-primary/20'
-                      : 'bg-gray-200 text-gray-500'
+                      : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
                   }`}
                 >
                   {step.id < currentStep ? <Check className="w-5 h-5" /> : step.id}
-                </div>
+                </button>
                 <span
                   className={`mt-2 text-xs font-medium ${
                     step.id === currentStep ? 'text-primary' : 'text-gray-500'
@@ -363,57 +368,55 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            {currentStep > 1 && !(isStoWorker && !isStoOwner && appointmentId && currentStep === 3) && (
-              <button
-                onClick={handleBack}
-                className="flex items-center px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                Назад
-              </button>
-            )}
-            
-            {appointmentId && (
-              <button
-                onClick={handleDelete}
-                disabled={deleteMutation.isPending}
-                className="flex items-center px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                {deleteMutation.isPending ? 'Удаление...' : 'Удалить'}
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3">
+        <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex items-center gap-2 sm:gap-3">
+          {currentStep > 1 && !(isStoWorker && !isStoOwner && appointmentId && currentStep === 3) && (
             <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              type="button"
+              onClick={handleBack}
+              className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
             >
-              Отмена
+              Назад
             </button>
+          )}
+          
+          {appointmentId && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors font-medium"
+            >
+              {deleteMutation.isPending ? 'Удаление...' : 'Удалить'}
+            </button>
+          )}
+          
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium border-2 border-gray-300"
+          >
+            Отмена
+          </button>
 
-            {currentStep < steps.length ? (
-              <button
-                onClick={handleNext}
-                disabled={!canProceed()}
-                className="flex items-center px-6 py-2 text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                Далее
-                <ChevronRight className="w-4 h-4 ml-2" />
-              </button>
-            ) : (
-              <button
-                onClick={() => createMutation.mutate(formData)}
-                disabled={createMutation.isPending}
-                className="px-6 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors font-semibold"
-              >
-                {createMutation.isPending ? 'Сохранение...' : (appointmentId ? 'Сохранить изменения' : 'Создать запись')}
-              </button>
-            )}
-          </div>
+          {currentStep < steps.length ? (
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={!canProceed()}
+              className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+            >
+              Далее
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => createMutation.mutate(formData)}
+              disabled={createMutation.isPending}
+              className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors font-semibold"
+            >
+              {createMutation.isPending ? 'Сохранение...' : (appointmentId ? 'Сохранить' : 'Создать')}
+            </button>
+          )}
         </div>
       </div>
     </div>

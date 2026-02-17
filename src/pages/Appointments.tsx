@@ -7,9 +7,11 @@ import { toast } from 'sonner'
 import { Plus, List, TrendingUp, Check } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 import ReassignWorkerModal from '@/components/appointments/ReassignWorkerModal'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 export default function Appointments() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const statusFilter = searchParams.get('status')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingAppointment, setEditingAppointment] = useState<any>(null)
   const [showArchived, setShowArchived] = useState(false)
@@ -73,7 +75,7 @@ export default function Appointments() {
   })
 
   const { data: appointments, isLoading } = useQuery({
-    queryKey: ['appointments', profile?.id, showArchived],
+    queryKey: ['appointments', profile?.id, showArchived, statusFilter],
     queryFn: async () => {
       let query = supabase
         .from('appointments')
@@ -96,6 +98,16 @@ export default function Appointments() {
         query = query.eq('status', 'archived')
       } else {
         query = query.neq('status', 'archived')
+      }
+
+      // Фильтруем по статусу из URL параметров
+      if (statusFilter && !showArchived) {
+        // Для фильтра "ready" показываем также "completed"
+        if (statusFilter === 'ready') {
+          query = query.in('status', ['ready', 'completed'])
+        } else {
+          query = query.eq('status', statusFilter)
+        }
       }
 
       // Если пользователь - работник (не владелец), показываем только его заявки
@@ -166,6 +178,14 @@ export default function Appointments() {
     <div className="container-mobile">
       {/* Actions */}
       <div className="flex justify-end gap-2 flex-wrap mb-4 sm:mb-6">
+        {statusFilter && (
+          <button
+            onClick={() => setSearchParams({})}
+            className="btn-touch-sm text-gray-700 bg-blue-50 border border-blue-300 hover:bg-blue-100 flex items-center gap-1.5"
+          >
+            <span>Показать все ({statusLabels[statusFilter as keyof typeof statusLabels]})</span>
+          </button>
+        )}
         <button
           onClick={() => setShowArchived(!showArchived)}
           className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 flex items-center gap-1.5"

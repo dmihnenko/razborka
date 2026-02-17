@@ -88,7 +88,7 @@ export function handleError(error: any, customMessage?: string): AppError {
   const message = customMessage || normalizedError.message
   
   // Логирование в консоль для разработки
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.error('Error handled:', {
       type: normalizedError.type,
       message,

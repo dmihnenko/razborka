@@ -139,7 +139,7 @@ export default function Layout() {
         
         {/* Mobile Navigation - Grid для лучшей адаптивности */}
         <nav className="grid grid-cols-3 gap-2 p-2">
-          {filteredNavigation.map((item) => {
+          {filteredNavigation.filter(item => !item.mobileHidden).map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
             return (

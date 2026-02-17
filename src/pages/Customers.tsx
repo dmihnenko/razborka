@@ -348,24 +348,26 @@ function CustomerModal({ customer, onClose }: CustomerModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">
-          {customer ? 'Редактировать клиента' : 'Добавить клиента'}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto relative">
+        <div className="sticky top-0 bg-white px-4 sm:px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg sm:text-xl font-bold">
+            {customer ? 'Редактировать клиента' : 'Добавить клиента'}
+          </h2>
+        </div>
+        <form onSubmit={handleSubmit} className="px-4 sm:px-6 py-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Имя *</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Имя *</label>
             <input
               type="text"
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Телефон *</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Телефон *</label>
             <IMaskInput
               mask="+380 (00) 000-00-00"
               value={formData.phone}
@@ -374,53 +376,54 @@ function CustomerModal({ customer, onClose }: CustomerModalProps) {
               type="tel"
               required
               placeholder="+380 (XX) XXX-XX-XX"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Адрес</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Адрес</label>
             <input
               type="text"
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Заметки</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Заметки</label>
             <textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
             />
           </div>
-          <div className="flex justify-end space-x-3 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
-            >
-              {mutation.isPending ? 'Сохранение...' : 'Сохранить'}
-            </button>
-          </div>
         </form>
+        <div className="sticky bottom-0 bg-white px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium border-2 border-gray-300"
+          >
+            Отмена
+          </button>
+          <button
+            type="submit"
+            onClick={handleSubmit}
+            disabled={mutation.isPending}
+            className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
+          >
+            {mutation.isPending ? 'Сохранение...' : 'Сохранить'}
+          </button>
+        </div>
       </div>
     </div>
   )

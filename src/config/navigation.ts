@@ -18,6 +18,7 @@ export interface MenuItem {
   href: string;
   icon: any;
   roles?: string[]; // Если не указано, доступно всем
+  mobileHidden?: boolean; // Скрыть в мобильной версии
 }
 
 // Меню для администратора
@@ -91,7 +92,7 @@ export const storeWorkerMenu: MenuItem[] = [
 
 // Общее меню для обычного пользователя
 export const userMenu: MenuItem[] = [
-  { name: 'Мои автомобили', href: '/my-vehicles', icon: Car },
+  { name: 'Мои автомобили', href: '/my-vehicles', icon: Car, mobileHidden: true },
 ];
 
 // Маппинг ролей на меню

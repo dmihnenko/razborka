@@ -86,17 +86,23 @@ export default function Vehicles() {
   })
 
   return (
-    <div>
-      {/* Мобильная версия - без заголовка */}
-      <div className="flex md:hidden items-center justify-between mb-4">
-        <div className="relative flex-1 mr-2">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+    <div className="container-mobile">
+      {customerId && vehicles && vehicles.length > 0 && (
+        <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
+          Клиент: <Link to="/customers" className="text-primary hover:underline font-medium">{vehicles[0].customers?.name}</Link>
+        </p>
+      )}
+
+      {/* Search and Actions */}
+      <div className="flex justify-end gap-3 mb-4 sm:mb-6 flex-wrap">
+        <div className="relative flex-1 sm:flex-initial">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Поиск..."
+            placeholder="Поиск по марке, модели, VIN..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-full text-sm"
+            className="w-full sm:w-80 pl-9 sm:pl-10 pr-4 py-2 text-mobile-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           />
         </div>
         <button
@@ -105,45 +111,12 @@ export default function Vehicles() {
             setCustomerSearch('')
             setIsModalOpen(true)
           }}
-          className="flex items-center px-3 py-2 text-white bg-primary rounded-md hover:bg-primary/90 text-sm font-medium whitespace-nowrap"
+          className="btn-touch-sm bg-primary text-white hover:bg-primary/90 flex items-center gap-1.5 whitespace-nowrap"
         >
-          <Plus className="w-4 h-4 mr-1" />
-          Добавить
+          <Plus className="w-4 h-4 flex-shrink-0" />
+          <span className="hidden sm:inline">Добавить</span>
+          <span className="sm:hidden">Авто</span>
         </button>
-      </div>
-
-      {/* Десктопная версия - с заголовком */}
-      <div className="hidden md:flex items-center justify-between mb-6">
-        <div>
-          {customerId && vehicles && vehicles.length > 0 && (
-            <p className="text-sm text-gray-600">
-              Клиент: <Link to="/customers" className="text-primary hover:underline">{vehicles[0].customers?.name}</Link>
-            </p>
-          )}
-        </div>
-        <div className="flex gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Поиск по марке, модели, номеру, VIN..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-80"
-            />
-          </div>
-          <button
-            onClick={() => {
-              setEditingVehicle(null)
-              setCustomerSearch('')
-              setIsModalOpen(true)
-            }}
-            className="flex items-center px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Добавить автомобиль
-          </button>
-        </div>
       </div>
 
       {isLoading ? (
@@ -413,14 +386,16 @@ function VehicleModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4">
-          {vehicle ? 'Редактировать автомобиль' : 'Добавить автомобиль'}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto relative">
+        <div className="sticky top-0 bg-white px-4 sm:px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg sm:text-xl font-bold">
+            {vehicle ? 'Редактировать автомобиль' : 'Добавить автомобиль'}
+          </h2>
+        </div>
+        <form onSubmit={handleSubmit} className="px-4 sm:px-6 py-4 space-y-4">
           <div className="relative">
-            <label className="block text-sm font-medium text-gray-700">Владелец *</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Владелец *</label>
             <input
               type="text"
               required
@@ -431,7 +406,7 @@ function VehicleModal({
               }}
               onFocus={() => setShowCustomerDropdown(true)}
               placeholder="Введите имя клиента..."
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
             {showCustomerDropdown && customerSearch && (
               <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
@@ -461,27 +436,27 @@ function VehicleModal({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Марка *</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Марка *</label>
             <input
               type="text"
               required
               value={formData.brand}
               onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Модель *</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Модель *</label>
             <input
               type="text"
               required
               value={formData.model}
               onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Год выпуска *</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Год выпуска *</label>
             <input
               type="number"
               required
@@ -489,45 +464,46 @@ function VehicleModal({
               max={new Date().getFullYear() + 1}
               value={formData.year}
               onChange={(e) => setFormData({ ...formData, year: Number(e.target.value) })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">VIN *</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">VIN *</label>
             <input
               type="text"
               required
               value={formData.vin}
               onChange={(e) => setFormData({ ...formData, vin: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Пробег (км)</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Пробег (км)</label>
             <input
               type="number"
               value={formData.mileage}
               onChange={(e) => setFormData({ ...formData, mileage: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
-          <div className="flex justify-end space-x-3 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
-            >
-              {mutation.isPending ? 'Сохранение...' : 'Сохранить'}
-            </button>
-          </div>
         </form>
+        <div className="sticky bottom-0 bg-white px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium border-2 border-gray-300"
+          >
+            Отмена
+          </button>
+          <button
+            type="submit"
+            onClick={handleSubmit}
+            disabled={mutation.isPending}
+            className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
+          >
+            {mutation.isPending ? 'Сохранение...' : 'Сохранить'}
+          </button>
+        </div>
       </div>
     </div>
   )
