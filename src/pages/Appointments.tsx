@@ -277,11 +277,11 @@ export default function Appointments() {
                           </td>
                           {!isStoOwner && (
                             <td className="px-4 py-3 whitespace-nowrap text-sm">
-                              {((appointment.parts_cost || 0) + (appointment.total_work_cost || 0)) > 0 && (
+                              {(((appointment.parts_cost || appointment.total_parts_cost) || 0) + (appointment.total_work_cost || 0)) > 0 && (
                                 <div className="space-y-1">
-                                  {(appointment.parts_cost || 0) > 0 && (
+                                  {((appointment.parts_cost || appointment.total_parts_cost) || 0) > 0 && (
                                     <div className="text-black">
-                                      ₴{(appointment.parts_cost || 0).toLocaleString('ru-RU')}
+                                      ₴{((appointment.parts_cost || appointment.total_parts_cost) || 0).toLocaleString('ru-RU')}
                                     </div>
                                   )}
                                   {(appointment.total_work_cost || 0) > 0 && (
@@ -371,9 +371,9 @@ export default function Appointments() {
                         {!isStoOwner && (
                           <td className="px-4 py-3 whitespace-nowrap text-sm">
                             <div className="flex flex-col gap-1">
-                              {(appointment.parts_cost || 0) > 0 && (
+                              {((appointment.parts_cost || appointment.total_parts_cost) || 0) > 0 && (
                                 <div className="font-semibold text-black">
-                                  ₴{(appointment.parts_cost || 0).toLocaleString('ru-RU')}
+                                  ₴{((appointment.parts_cost || appointment.total_parts_cost) || 0).toLocaleString('ru-RU')}
                                 </div>
                               )}
                               {(appointment.total_work_cost || 0) > 0 && (
@@ -381,9 +381,9 @@ export default function Appointments() {
                                   ₴{(appointment.total_work_cost || 0).toLocaleString('ru-RU')}
                                 </div>
                               )}
-                              {((appointment.parts_cost || 0) + (appointment.total_work_cost || 0)) > 0 && (
+                              {(((appointment.parts_cost || appointment.total_parts_cost) || 0) + (appointment.total_work_cost || 0)) > 0 && (
                                 <div className="text-gray-900 font-bold border-t border-gray-200 pt-1">
-                                  ₴{((appointment.parts_cost || 0) + (appointment.total_work_cost || 0)).toLocaleString('ru-RU')}
+                                  ₴{(((appointment.parts_cost || appointment.total_parts_cost) || 0) + (appointment.total_work_cost || 0)).toLocaleString('ru-RU')}
                                 </div>
                               )}
                             </div>
@@ -497,13 +497,13 @@ export default function Appointments() {
                 </div>
 
                 {/* Дополнительная информация - цены */}
-                {!isStoOwner && ((appointment.parts_cost || 0) + (appointment.total_work_cost || 0)) > 0 && (
+                {!isStoOwner && (((appointment.parts_cost || appointment.total_parts_cost) || 0) + (appointment.total_work_cost || 0)) > 0 && (
                   <div className="mt-2 space-y-1">
-                    {(appointment.parts_cost || 0) > 0 && (
+                    {((appointment.parts_cost || appointment.total_parts_cost) || 0) > 0 && (
                       <div className="flex items-center justify-between">
                         <span className="text-mobile-sm text-gray-600">Запчасти:</span>
                         <span className="font-semibold text-mobile-base text-black">
-                          ₴{(appointment.parts_cost || 0).toLocaleString('ru-RU')}
+                          ₴{((appointment.parts_cost || appointment.total_parts_cost) || 0).toLocaleString('ru-RU')}
                         </span>
                       </div>
                     )}
@@ -518,7 +518,7 @@ export default function Appointments() {
                     <div className="flex items-center justify-between pt-1 border-t border-gray-200">
                       <span className="text-mobile-base font-medium text-gray-900">Итого:</span>
                       <span className="font-bold text-primary text-mobile-lg">
-                        ₴{((appointment.parts_cost || 0) + (appointment.total_work_cost || 0)).toLocaleString('ru-RU')}
+                        ₴{(((appointment.parts_cost || appointment.total_parts_cost) || 0) + (appointment.total_work_cost || 0)).toLocaleString('ru-RU')}
                       </span>
                     </div>
                   </div>

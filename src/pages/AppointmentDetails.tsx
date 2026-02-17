@@ -328,66 +328,114 @@ export default function AppointmentDetails() {
           </div>
 
           {/* Запчасти */}
-          {appointment.appointment_parts && appointment.appointment_parts.length > 0 && (
-            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-              <h2 className="heading-mobile-2 mb-4 flex items-center">
-                <Package className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-                Запчасти ({appointment.appointment_parts.length})
-              </h2>
-              <div className="space-y-2 sm:space-y-3">
-                {appointment.appointment_parts.map((part: any) => (
-                  <div key={part.id} className="flex items-start justify-between border-b border-gray-100 pb-2">
-                    <p className="text-mobile-base text-black flex-1">{part.description}</p>
-                    {part.store_cost !== null && part.store_cost > 0 && (
-                      <span className="text-mobile-base text-black font-medium ml-4">₴{(part.store_cost * (part.quantity || 1)).toFixed(2)}</span>
-                    )}
-                  </div>
-                ))}
-                {appointment.appointment_parts.some((p: any) => p.store_cost) && (
-                  <div className="pt-2 border-t-2 border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <span className="text-mobile-base font-semibold text-black">Итого запчасти:</span>
-                      <span className="text-mobile-lg font-bold text-black">
-                        ₴{appointment.appointment_parts.reduce((sum: number, p: any) => 
-                          sum + ((p.store_cost || 0) * (p.quantity || 1)), 0).toFixed(2)}
-                      </span>
+          {(() => {
+            const hasOldParts = appointment.appointment_parts && appointment.appointment_parts.length > 0
+            const hasNewParts = appointment.part_items && appointment.part_items.length > 0
+            const hasCost = (appointment.parts_cost || appointment.total_parts_cost) && (appointment.parts_cost || appointment.total_parts_cost) > 0
+            const partsCost = appointment.parts_cost || appointment.total_parts_cost || 0
+            
+            if (!hasOldParts && !hasNewParts && !hasCost) return null
+            
+            return (
+              <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+                <h2 className="heading-mobile-2 mb-4 flex items-center">
+                  <Package className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                  Запчасти {(hasOldParts || hasNewParts) && `(${(appointment.appointment_parts?.length || 0) + (appointment.part_items?.length || 0)})`}
+                </h2>
+                <div className="space-y-2 sm:space-y-3">
+                  {/* Старый формат - appointment_parts */}
+                  {hasOldParts && appointment.appointment_parts.map((part: any) => (
+                    <div key={part.id} className="flex items-start justify-between border-b border-gray-100 pb-2">
+                      <p className="text-mobile-base text-black flex-1">{part.description}</p>
+                      {part.store_cost !== null && part.store_cost > 0 && (
+                        <span className="text-mobile-base text-black font-medium ml-4">₴{(part.store_cost * (part.quantity || 1)).toFixed(2)}</span>
+                      )}
                     </div>
-                  </div>
-                )}
+                  ))}
+                  
+                  {/* Новый формат - part_items */}
+                  {hasNewParts && appointment.part_items.map((part: any, index: number) => (
+                    <div key={`part-${index}`} className="flex items-start justify-between border-b border-gray-100 pb-2">
+                      <div className="flex-1">
+                        <p className="text-mobile-base text-black">{part.name}</p>
+                        {part.quantity > 1 && (
+                          <p className="text-mobile-sm text-gray-500">Количество: {part.quantity}</p>
+                        )}
+                      </div>
+                      <span className="text-mobile-base text-black font-medium ml-4">₴{part.totalPrice.toFixed(2)}</span>
+                    </div>
+                  ))}
+                  
+                  {!hasOldParts && !hasNewParts && hasCost && (
+                    <p className="text-mobile-sm text-gray-500 italic">Детали не указаны</p>
+                  )}
+                  
+                  {hasCost && (
+                    <div className="pt-2 border-t-2 border-gray-200">
+                      <div className="flex justify-between items-center">
+                        <span className="text-mobile-base font-semibold text-black">Итого запчасти:</span>
+                        <span className="text-mobile-lg font-bold text-black">
+                          ₴{partsCost.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* Работы */}
-          {appointment.appointment_services && appointment.appointment_services.length > 0 && (
-            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-              <h2 className="heading-mobile-2 mb-4 flex items-center">
-                <Wrench className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-                Работы ({appointment.appointment_services.length})
-              </h2>
-              <div className="space-y-2 sm:space-y-3">
-                {appointment.appointment_services.map((service: any) => (
-                  <div key={service.id} className="flex items-start justify-between border-b border-gray-100 pb-2">
-                    <p className="text-mobile-base text-black flex-1">{service.description}</p>
-                    {service.cost !== null && service.cost > 0 && (
-                      <span className="text-mobile-base text-black font-medium ml-4">₴{service.cost.toFixed(2)}</span>
-                    )}
-                  </div>
-                ))}
-                {appointment.appointment_services.some((s: any) => s.cost) && (
-                  <div className="pt-2 border-t-2 border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <span className="text-mobile-base font-semibold text-black">Итого работы:</span>
-                      <span className="text-mobile-lg font-bold text-black">
-                        ₴{appointment.appointment_services.reduce((sum: number, s: any) => 
-                          sum + (s.cost || 0), 0).toFixed(2)}
-                      </span>
+          {(() => {
+            const hasOldServices = appointment.appointment_services && appointment.appointment_services.length > 0
+            const hasNewServices = appointment.work_items && appointment.work_items.length > 0
+            const hasCost = appointment.total_work_cost && appointment.total_work_cost > 0
+            
+            if (!hasOldServices && !hasNewServices && !hasCost) return null
+            
+            return (
+              <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+                <h2 className="heading-mobile-2 mb-4 flex items-center">
+                  <Wrench className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
+                  Работы {(hasOldServices || hasNewServices) && `(${(appointment.appointment_services?.length || 0) + (appointment.work_items?.length || 0)})`}
+                </h2>
+                <div className="space-y-2 sm:space-y-3">
+                  {/* Старый формат - appointment_services */}
+                  {hasOldServices && appointment.appointment_services.map((service: any) => (
+                    <div key={service.id} className="flex items-start justify-between border-b border-gray-100 pb-2">
+                      <p className="text-mobile-base text-black flex-1">{service.description}</p>
+                      {service.cost !== null && service.cost > 0 && (
+                        <span className="text-mobile-base text-black font-medium ml-4">₴{service.cost.toFixed(2)}</span>
+                      )}
                     </div>
-                  </div>
-                )}
+                  ))}
+                  
+                  {/* Новый формат - work_items */}
+                  {hasNewServices && appointment.work_items.map((work: any, index: number) => (
+                    <div key={`work-${index}`} className="flex items-start justify-between border-b border-gray-100 pb-2">
+                      <p className="text-mobile-base text-black flex-1">{work.name}</p>
+                      <span className="text-mobile-base text-black font-medium ml-4">₴{work.price.toFixed(2)}</span>
+                    </div>
+                  ))}
+                  
+                  {!hasOldServices && !hasNewServices && hasCost && (
+                    <p className="text-mobile-sm text-gray-500 italic">Детали не указаны</p>
+                  )}
+                  
+                  {hasCost && (
+                    <div className="pt-2 border-t-2 border-gray-200">
+                      <div className="flex justify-between items-center">
+                        <span className="text-mobile-base font-semibold text-black">Итого работы:</span>
+                        <span className="text-mobile-lg font-bold text-black">
+                          ₴{appointment.total_work_cost.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
         </div>
 
         {/* Боковая панель */}
@@ -441,10 +489,22 @@ export default function AppointmentDetails() {
             
             <div className="space-y-3">
               {/* Запчасти */}
-              {appointment.appointment_parts && appointment.appointment_parts.length > 0 && (() => {
-                const calculatedPartsCost = appointment.appointment_parts.reduce((sum: number, p: any) => 
-                  sum + ((p.store_cost || 0) * (p.quantity || 1)), 0);
-                const partsCost = appointment.parts_cost || calculatedPartsCost;
+              {(() => {
+                // Старый формат
+                const hasOldParts = appointment.appointment_parts && appointment.appointment_parts.length > 0
+                const calculatedOldPartsCost = hasOldParts 
+                  ? appointment.appointment_parts.reduce((sum: number, p: any) => sum + ((p.store_cost || 0) * (p.quantity || 1)), 0)
+                  : 0
+                
+                // Новый формат
+                const hasNewParts = appointment.part_items && appointment.part_items.length > 0
+                const calculatedNewPartsCost = hasNewParts
+                  ? appointment.part_items.reduce((sum: number, p: any) => sum + (p.totalPrice || 0), 0)
+                  : 0
+                
+                const partsCost = appointment.parts_cost || appointment.total_parts_cost || calculatedOldPartsCost || calculatedNewPartsCost
+                
+                if (!hasOldParts && !hasNewParts && partsCost === 0) return null
                 
                 return (
                   <div className="pb-3 border-b border-gray-100">
@@ -485,10 +545,22 @@ export default function AppointmentDetails() {
               })()}
               
               {/* Работы */}
-              {appointment.appointment_services && appointment.appointment_services.length > 0 && (() => {
-                const calculatedServicesCost = appointment.appointment_services.reduce((sum: number, s: any) => 
-                  sum + (s.cost || 0), 0);
-                const workCost = appointment.total_work_cost || calculatedServicesCost;
+              {(() => {
+                // Старый формат
+                const hasOldServices = appointment.appointment_services && appointment.appointment_services.length > 0
+                const calculatedOldServicesCost = hasOldServices
+                  ? appointment.appointment_services.reduce((sum: number, s: any) => sum + (s.cost || 0), 0)
+                  : 0
+                
+                // Новый формат
+                const hasNewServices = appointment.work_items && appointment.work_items.length > 0
+                const calculatedNewServicesCost = hasNewServices
+                  ? appointment.work_items.reduce((sum: number, w: any) => sum + (w.price || 0), 0)
+                  : 0
+                
+                const workCost = appointment.total_work_cost || calculatedOldServicesCost || calculatedNewServicesCost
+                
+                if (!hasOldServices && !hasNewServices && workCost === 0) return null
                 
                 return (
                   <div className="pb-3 border-b border-gray-100">
@@ -530,11 +602,19 @@ export default function AppointmentDetails() {
               
               {/* Итого */}
               {(() => {
-                const calculatedPartsCost = appointment.appointment_parts?.reduce((sum: number, p: any) => 
-                  sum + ((p.store_cost || 0) * (p.quantity || 1)), 0) || 0;
-                const calculatedServicesCost = appointment.appointment_services?.reduce((sum: number, s: any) => 
-                  sum + (s.cost || 0), 0) || 0;
-                const totalCost = (appointment.parts_cost || calculatedPartsCost) + (appointment.total_work_cost || calculatedServicesCost);
+                // Считаем общую сумму из всех возможных источников
+                const oldPartsCost = appointment.appointment_parts?.reduce((sum: number, p: any) => 
+                  sum + ((p.store_cost || 0) * (p.quantity || 1)), 0) || 0
+                const newPartsCost = appointment.part_items?.reduce((sum: number, p: any) => 
+                  sum + (p.totalPrice || 0), 0) || 0
+                const oldServicesCost = appointment.appointment_services?.reduce((sum: number, s: any) => 
+                  sum + (s.cost || 0), 0) || 0
+                const newServicesCost = appointment.work_items?.reduce((sum: number, w: any) => 
+                  sum + (w.price || 0), 0) || 0
+                
+                const totalParts = appointment.parts_cost || appointment.total_parts_cost || oldPartsCost || newPartsCost
+                const totalWork = appointment.total_work_cost || oldServicesCost || newServicesCost
+                const totalCost = totalParts + totalWork
                 
                 return totalCost > 0 && (
                   <div className="pt-3">
