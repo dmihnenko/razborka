@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 import { getDefaultRouteForRoles } from '../config/navigation'
 
 export default function Login() {
@@ -13,6 +14,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [isRegisterMode, setIsRegisterMode] = useState(false)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -162,6 +164,11 @@ export default function Login() {
           primaryRoleName = rolesData?.find(r => r.id === primaryRoleId)?.name || null
         }
       }
+
+      // КРИТИЧНО: Инвалидируем кэш профиля и дожидаемся его загрузки
+      await queryClient.invalidateQueries({ queryKey: ['userProfile'] })
+      // Даём время на загрузку профиля в кэш
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       // Определяем куда направить пользователя на основе основной роли
       const defaultRoute = primaryRoleName 
