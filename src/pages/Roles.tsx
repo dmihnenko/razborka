@@ -156,6 +156,7 @@ export default function Roles() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {isModalOpen && (
