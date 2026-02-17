@@ -3,6 +3,7 @@ import { useEffect, lazy, Suspense } from 'react'
 import { Toaster } from 'sonner'
 import { AlertProvider } from './components/CustomAlert'
 import VersionChecker from './components/VersionChecker'
+import Version from './components/Version'
 import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
@@ -93,6 +94,7 @@ function App() {
     <ErrorBoundary>
       <AlertProvider>
         <VersionChecker />
+        <Version />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Toaster position="top-right" />
           <Suspense fallback={<PageLoader />}>
