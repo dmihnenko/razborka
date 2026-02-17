@@ -98,7 +98,7 @@ export default function MyVehicles() {
           {vehicle.makeModel}
         </h3>
         
-        <div className="space-y-0.5 sm:space-y-1 mb-3 sm:mb-4">
+        <div className="space-y-0.5 sm:space-y-1 mb-2.5 sm:mb-3 md:mb-4">
           <p className="text-gray-600 text-xs sm:text-sm">
             <span className="font-medium">Год:</span> {vehicle.year}
           </p>

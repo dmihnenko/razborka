@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { 
   LogOut,
   Shield
@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
 import { getMenuForRoles } from '../config/navigation'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
 import Breadcrumbs from './Breadcrumbs'
 
 export default function Layout() {
@@ -29,6 +29,28 @@ export default function Layout() {
   }
   
   const primaryRole = profile?.roles?.length ? getRoleByPriority(profile.roles) : null
+  
+  // Проверяем, является ли пользователь работником СТО
+  const isStoWorker = profile?.roles?.some((r: any) => r.name === 'sto_worker')
+  const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
+  
+  // Загружаем настройки СТО для работников
+  const { data: stoCompany } = useQuery({
+    queryKey: ['sto_company', profile?.sto_company_id],
+    queryFn: async () => {
+      if (!profile?.sto_company_id) return null
+      const { data, error } = await supabase
+        .from('sto_companies')
+        .select('services_menu_enabled')
+        .eq('id', profile.sto_company_id)
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+    enabled: !!profile?.sto_company_id && (isStoWorker || isStoOwner),
+    staleTime: 0,
+  })
   
   // Управляем activeRole в localStorage
   useEffect(() => {
@@ -65,6 +87,18 @@ export default function Layout() {
   }
   
   const navigation = getMenuForRoles(roleNames)
+  
+  // Фильтруем меню для работников СТО
+  const filteredNavigation = useMemo(() => {
+    // Если работник СТО и меню услуг выключено - убираем пункт Услуги
+    if (isStoWorker && !isStoOwner) {
+      const servicesMenuEnabled = stoCompany?.services_menu_enabled ?? true
+      if (!servicesMenuEnabled) {
+        return navigation.filter(item => item.href !== '/services')
+      }
+    }
+    return navigation
+  }, [navigation, isStoWorker, isStoOwner, stoCompany])
 
   const handleLogout = async () => {
     // Очищаем весь кэш React Query перед выходом
@@ -77,7 +111,7 @@ export default function Layout() {
   }
 
   // Показываем загрузчик только при первой загрузке профиля или если нет меню
-  if (isLoading || (!navigation || navigation.length === 0)) {
+  if (isLoading || (!filteredNavigation || filteredNavigation.length === 0)) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -105,7 +139,7 @@ export default function Layout() {
         
         {/* Mobile Navigation - Grid для лучшей адаптивности */}
         <nav className="grid grid-cols-3 gap-2 p-2">
-          {navigation.map((item) => {
+          {filteredNavigation.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
             return (
@@ -152,7 +186,7 @@ export default function Layout() {
           </p>
         </div>
         <nav className="mt-6 flex-1 overflow-y-auto pb-20">
-          {navigation.map((item) => {
+          {filteredNavigation.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
             return (

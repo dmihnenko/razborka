@@ -1,8 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { Link } from 'react-router-dom'
 import { TrendingUp } from 'lucide-react'
 
+/**
+ * Страница статистики по месяцам - только таблица
+ * Доступна через /statistics
+ */
 export default function MonthlyStatistics() {
   const { data: profile } = useUserProfile()
 
@@ -116,9 +121,14 @@ export default function MonthlyStatistics() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {monthlyStats.map((stat: any) => (
-                    <tr key={stat.monthKey} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {stat.month}
+                    <tr key={stat.monthKey} className="hover:bg-blue-50 transition-colors cursor-pointer">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                        <Link 
+                          to={`/statistics/month/${stat.monthKey}`}
+                          className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
+                        >
+                          {stat.month}
+                        </Link>
                       </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
                         {stat.count}
@@ -142,9 +152,13 @@ export default function MonthlyStatistics() {
           {/* Mobile карточки */}
           <div className="md:hidden space-y-3">
             {monthlyStats.map((stat: any) => (
-              <div key={stat.monthKey} className="card-mobile">
+              <Link 
+                key={stat.monthKey}
+                to={`/statistics/month/${stat.monthKey}`}
+                className="card-mobile block hover:shadow-md transition-shadow"
+              >
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base font-semibold text-gray-900">{stat.month}</h3>
+                  <h3 className="text-base font-semibold text-primary">{stat.month}</h3>
                   <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
                     {stat.count} {stat.count === 1 ? 'заявка' : stat.count < 5 ? 'заявки' : 'заявок'}
                   </span>
@@ -172,7 +186,7 @@ export default function MonthlyStatistics() {
                     </span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </>

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Calendar, DollarSign, Check } from 'lucide-react'
 
 export default function MonthlyDetails() {
@@ -70,68 +70,68 @@ export default function MonthlyDetails() {
   }
 
   return (
-    <div>
+    <div className="container-mobile">
       {/* Шапка */}
-      <div className="mb-6">
-        <button
-          onClick={() => navigate('/appointments')}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+      <div className="mb-4 sm:mb-6">
+        <Link
+          to="/statistics"
+          className="inline-flex items-center text-mobile-sm text-gray-600 hover:text-gray-900 mb-3 sm:mb-4"
         >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          Назад к архиву
-        </button>
-        <h1 className="text-3xl font-bold text-gray-900">
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" />
+          Назад к статистике
+        </Link>
+        <h1 className="heading-mobile-1">
           Детали за {monthName}
         </h1>
       </div>
 
       {/* Статистика */}
       {stats && (
-        <div className="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="bg-blue-500 p-3 rounded-lg">
-                <Calendar className="w-6 h-6 text-white" />
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8 lg:grid-cols-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+              <div className="bg-blue-500 p-2 sm:p-3 rounded-lg self-start">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Всего заявок</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.count}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="bg-orange-500 p-3 rounded-lg">
-                <DollarSign className="w-6 h-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Запчасти</p>
-                <p className="text-2xl font-semibold text-gray-900">₴{Math.round(stats.totalParts).toLocaleString()}</p>
+              <div className="sm:ml-3 md:ml-4">
+                <p className="text-mobile-sm font-medium text-gray-600">Всего заявок</p>
+                <p className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900">{stats.count}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="bg-green-500 p-3 rounded-lg">
-                <DollarSign className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+              <div className="bg-orange-500 p-2 sm:p-3 rounded-lg self-start">
+                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Работы</p>
-                <p className="text-2xl font-semibold text-gray-900">₴{Math.round(stats.totalWork).toLocaleString()}</p>
+              <div className="sm:ml-3 md:ml-4">
+                <p className="text-mobile-sm font-medium text-gray-600">Запчасти</p>
+                <p className="text-sm sm:text-lg md:text-2xl font-semibold text-gray-900">₴{Math.round(stats.totalParts).toLocaleString()}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="bg-purple-500 p-3 rounded-lg">
-                <DollarSign className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+              <div className="bg-green-500 p-2 sm:p-3 rounded-lg self-start">
+                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Итого</p>
-                <p className="text-2xl font-semibold text-gray-900">
+              <div className="sm:ml-3 md:ml-4">
+                <p className="text-mobile-sm font-medium text-gray-600">Работы</p>
+                <p className="text-sm sm:text-lg md:text-2xl font-semibold text-gray-900">₴{Math.round(stats.totalWork).toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+              <div className="bg-purple-500 p-2 sm:p-3 rounded-lg self-start">
+                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
+              </div>
+              <div className="sm:ml-3 md:ml-4">
+                <p className="text-mobile-sm font-medium text-gray-600">Итого</p>
+                <p className="text-sm sm:text-lg md:text-2xl font-semibold text-gray-900">
                   ₴{Math.round(stats.totalParts + stats.totalWork).toLocaleString()}
                 </p>
               </div>
@@ -142,17 +142,19 @@ export default function MonthlyDetails() {
 
       {/* Таблица заявок */}
       {isLoading ? (
-        <div className="flex justify-center">
+        <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b bg-gray-50">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Заявки ({appointments?.length || 0})
-            </h2>
-          </div>
-          <div className="overflow-x-auto">
+        <>
+          {/* Desktop таблица */}
+          <div className="hidden md:block bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b bg-gray-50">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Заявки ({appointments?.length || 0})
+              </h2>
+            </div>
+            <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -258,6 +260,71 @@ export default function MonthlyDetails() {
             </table>
           </div>
         </div>
+
+        {/* Mobile карточки */}
+        <div className="md:hidden space-y-3">
+          {appointments?.map((appointment: any) => (
+            <Link
+              key={appointment.id}
+              to={`/sto/appointments/${appointment.id}`}
+              className="card-mobile block hover:shadow-md transition-shadow"
+            >
+              {/* Клиент и авто */}
+              <div className="mb-3">
+                <h3 className="text-mobile-base font-semibold text-gray-900 mb-1">
+                  {appointment.customers?.name}
+                </h3>
+                <p className="text-mobile-sm text-gray-600">
+                  {appointment.vehicles?.brand} {appointment.vehicles?.model}
+                </p>
+                <p className="text-mobile-sm text-gray-500">
+                  {appointment.vehicles?.license_plate}
+                </p>
+              </div>
+
+              {/* Работник */}
+              {appointment.assigned_to_profile && (
+                <div className="mb-3 pb-3 border-b border-gray-100">
+                  <span className="text-mobile-sm text-gray-600">Работник: </span>
+                  <span className="text-mobile-sm text-gray-900">
+                    {appointment.assigned_to_profile?.full_name || appointment.assigned_to_profile?.email}
+                  </span>
+                </div>
+              )}
+
+              {/* Суммы */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-mobile-sm text-gray-600">Запчасти:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-mobile-base font-semibold text-gray-900">
+                      ₴{(appointment.parts_cost || 0).toLocaleString()}
+                    </span>
+                    {appointment.parts_paid && <Check className="w-4 h-4 text-green-600" />}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-mobile-sm text-gray-600">Работы:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-mobile-base font-semibold text-gray-900">
+                      ₴{(appointment.total_work_cost || 0).toLocaleString()}
+                    </span>
+                    {appointment.work_paid && <Check className="w-4 h-4 text-green-600" />}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                  <span className="text-mobile-base font-medium text-gray-900">Итого:</span>
+                  <span className="text-lg font-bold text-primary">
+                    ₴{((appointment.parts_cost || 0) + (appointment.total_work_cost || 0)).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </>
       )}
     </div>
   )

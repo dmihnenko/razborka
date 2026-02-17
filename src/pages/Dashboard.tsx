@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 import MyVehicles from './MyVehicles'
-import MonthlyStatistics from './MonthlyStatistics.tsx'
+import WorkerDashboard from './WorkerDashboard'
 import { useNavigate } from 'react-router-dom'
 
 export default function Dashboard() {
@@ -40,9 +40,9 @@ export default function Dashboard() {
   // Проверяем, является ли пользователь владельцем СТО
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
 
-  // Если работник, показываем статистику
+  // Если работник, показываем worker dashboard
   if (!isStoOwner) {
-    return <MonthlyStatistics />
+    return <WorkerDashboard />
   }
 
   // Получаем детальную статистику по заявкам
@@ -161,12 +161,12 @@ export default function Dashboard() {
   return (
     <div className="container-mobile">
       {/* Header с кнопками */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
         <h1 className="heading-mobile-1">Панель управления</h1>
         
         <div className="flex gap-2">
           <button
-            onClick={() => navigate('/appointments/statistics')}
+            onClick={() => navigate('/statistics')}
             className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 flex items-center gap-1.5"
           >
             <TrendingUp className="w-4 h-4 flex-shrink-0" />

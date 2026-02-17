@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Search } from 'lucide-react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { useUserProfile } from '@/hooks/useUserProfile'
 
 interface VehicleModalProps {
@@ -16,6 +16,7 @@ interface VehicleModalProps {
 }
 
 export default function Vehicles() {
+  const navigate = useNavigate()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingVehicle, setEditingVehicle] = useState<any>(null)
   const [searchParams] = useSearchParams()
@@ -86,11 +87,36 @@ export default function Vehicles() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      {/* Мобильная версия - без заголовка */}
+      <div className="flex md:hidden items-center justify-between mb-4">
+        <div className="relative flex-1 mr-2">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Поиск..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-full text-sm"
+          />
+        </div>
+        <button
+          onClick={() => {
+            setEditingVehicle(null)
+            setCustomerSearch('')
+            setIsModalOpen(true)
+          }}
+          className="flex items-center px-3 py-2 text-white bg-primary rounded-md hover:bg-primary/90 text-sm font-medium whitespace-nowrap"
+        >
+          <Plus className="w-4 h-4 mr-1" />
+          Добавить
+        </button>
+      </div>
+
+      {/* Десктопная версия - с заголовком */}
+      <div className="hidden md:flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Автомобили</h1>
           {customerId && vehicles && vehicles.length > 0 && (
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-gray-600">
               Клиент: <Link to="/customers" className="text-primary hover:underline">{vehicles[0].customers?.name}</Link>
             </p>
           )}
@@ -125,8 +151,10 @@ export default function Vehicles() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
+        <>
+          {/* Десктопная таблица */}
+          <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -199,6 +227,95 @@ export default function Vehicles() {
             </tbody>
           </table>
         </div>
+
+        {/* Мобильные карточки */}
+        <div className="md:hidden space-y-3">
+          {filteredVehicles?.map((vehicle: any) => (
+            <div key={vehicle.id} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+              {/* Заголовок карточки - кликабельный */}
+              <div 
+                onClick={() => navigate(`/appointments?vehicle_id=${vehicle.id}`)}
+                className="bg-gradient-to-r from-indigo-50 to-white px-3 py-2 border-b border-gray-100 cursor-pointer hover:from-indigo-100 hover:to-blue-50 transition-colors"
+              >
+                <div className="text-base font-semibold text-gray-900">
+                  {vehicle.brand} {vehicle.model}
+                </div>
+                <div className="text-sm text-gray-500 mt-0.5">
+                  {vehicle.year} г. • {vehicle.color}
+                </div>
+              </div>
+
+              {/* Основная информация */}
+              <div className="p-3 space-y-2.5">
+                {/* Владелец */}
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <Link 
+                    to={`/appointments?vehicle_id=${vehicle.id}`}
+                    className="text-sm text-gray-700 font-medium hover:text-primary flex items-center"
+                  >
+                    {vehicle.customers?.name}
+                  </Link>
+                </div>
+
+                {/* Номер и VIN */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900">{vehicle.license_plate}</div>
+                      {vehicle.vin && (
+                        <div className="text-xs text-gray-500">VIN: {vehicle.vin}</div>
+                      )}
+                    </div>
+                  </div>
+                  {vehicle.mileage && (
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium">{vehicle.mileage.toLocaleString()}</span> км
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Кнопки действий */}
+              <div className="px-3 py-2 bg-gray-50 flex items-center justify-end gap-2 border-t border-gray-100">
+                <button
+                  onClick={() => {
+                    setEditingVehicle(vehicle)
+                    setCustomerSearch(vehicle.customers?.name || '')
+                    setIsModalOpen(true)
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-primary hover:bg-blue-50 rounded transition-colors font-medium"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span>Изменить</span>
+                </button>
+                {isStoOwner && (
+                  <button
+                    onClick={() => {
+                      if (confirm('Удалить этот автомобиль?')) {
+                        deleteMutation.mutate(vehicle.id)
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded transition-colors font-medium"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Удалить</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
       )}
 
       {isModalOpen && (

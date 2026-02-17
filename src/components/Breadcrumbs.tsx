@@ -1,9 +1,13 @@
 import { Link, useLocation } from 'react-router-dom'
 import { ChevronRight, Home } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import { useUserProfile } from '@/hooks/useUserProfile'
 
 interface BreadcrumbItem {
   label: string
   path: string
+  count?: number
 }
 
 /**
@@ -11,6 +15,47 @@ interface BreadcrumbItem {
  */
 export default function Breadcrumbs() {
   const location = useLocation()
+  const { data: profile } = useUserProfile()
+  
+  // Проверяем, является ли пользователь владельцем СТО
+  const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
+  
+  // Определяем, находимся ли мы на странице заявок
+  const isAppointmentsPage = location.pathname.startsWith('/appointments')
+  const showArchived = location.pathname.includes('/archive')
+  
+  // Получаем количество заявок для breadcrumbs
+  const { data: appointmentsCount } = useQuery({
+    queryKey: ['appointments-count', profile?.id, showArchived],
+    queryFn: async () => {
+      let query = supabase
+        .from('appointments')
+        .select('id', { count: 'exact', head: true })
+
+      // Фильтруем по СТО пользователя
+      if (profile?.sto_company_id) {
+        query = query.eq('sto_company_id', profile.sto_company_id)
+      }
+
+      // Фильтруем по архиву
+      if (showArchived) {
+        query = query.eq('status', 'archived')
+      } else {
+        query = query.neq('status', 'archived')
+      }
+
+      // Если пользователь - работник (не владелец), показываем только его заявки
+      if (!isStoOwner && profile?.id) {
+        query = query.eq('assigned_to', profile.id)
+      }
+
+      const { count, error } = await query
+      
+      if (error) throw error
+      return count || 0
+    },
+    enabled: !!profile?.id && isAppointmentsPage,
+  })
   
   // Маппинг путей на читаемые названия
   const pathLabels: Record<string, string> = {
@@ -58,9 +103,13 @@ export default function Breadcrumbs() {
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment)
       
       if (!isUuid) {
+        const label = pathLabels[segment] || segment.replace(/-/g, ' ')
+        const count = segment === 'appointments' ? appointmentsCount : undefined
+        
         breadcrumbs.push({
-          label: pathLabels[segment] || segment.replace(/-/g, ' '),
-          path: currentPath
+          label,
+          path: currentPath,
+          count
         })
       }
     })
@@ -76,7 +125,7 @@ export default function Breadcrumbs() {
   }
 
   return (
-    <nav className="flex flex-wrap items-center gap-1 text-sm text-gray-600 mb-4">
+    <nav className="flex items-center flex-wrap gap-1 text-sm text-gray-600 mb-4">
       <Link
         to="/"
         className="inline-flex items-center hover:text-blue-600 transition-colors"
@@ -89,18 +138,24 @@ export default function Breadcrumbs() {
         const isLast = index === breadcrumbs.length - 1
         
         return (
-          <div key={crumb.path} className="inline-flex items-center">
+          <div key={crumb.path} className="flex items-center">
             <ChevronRight className="w-4 h-4 mx-1 text-gray-400 flex-shrink-0" />
             {isLast ? (
-              <span className="text-gray-900 font-medium whitespace-nowrap">
+              <span className="flex items-center text-gray-900 font-medium whitespace-nowrap leading-none">
                 {crumb.label}
+                {crumb.count !== undefined && (
+                  <span className="ml-1.5 text-sm text-gray-500">({crumb.count})</span>
+                )}
               </span>
             ) : (
               <Link
                 to={crumb.path}
-                className="hover:text-blue-600 transition-colors whitespace-nowrap"
+                className="flex items-center hover:text-blue-600 transition-colors whitespace-nowrap leading-none"
               >
                 {crumb.label}
+                {crumb.count !== undefined && (
+                  <span className="ml-1.5 text-sm text-gray-500">({crumb.count})</span>
+                )}
               </Link>
             )}
           </div>

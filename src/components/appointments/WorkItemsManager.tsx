@@ -1,17 +1,64 @@
 import { useState } from 'react'
 import { WorkItem } from '@/types/appointments'
-import { Trash2, Wrench } from 'lucide-react'
+import { Trash2, Wrench, Plus } from 'lucide-react'
 import { v4 as uuidv4 } from 'uuid'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import { useUserProfile } from '@/hooks/useUserProfile'
 
 interface Props {
   items: WorkItem[]
-  onChange: (items: WorkItem[]) => void
+  onChange: (items: WorkItem[])=> void
 }
 
 export default function WorkItemsManager({ items, onChange }: Props) {
   const [workListText, setWorkListText] = useState('')
+  const [showServicesList, setShowServicesList] = useState(false)
+  const { data: profile } = useUserProfile()
+
+  const isStoWorker = profile?.roles?.some((r: any) => r.name === 'sto_worker')
+  const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
+
+  // Загружаем настройки СТО
+  const { data: stoCompany, isLoading: stoCompanyLoading } = useQuery({
+    queryKey: ['sto_company', profile?.sto_company_id],
+    queryFn: async () => {
+      if (!profile?.sto_company_id) return null
+      const { data, error } = await supabase
+        .from('sto_companies')
+        .select('services_menu_enabled')
+        .eq('id', profile.sto_company_id)
+        .single()
+      
+      if (error) {
+        console.error('Error loading STO settings:', error)
+        throw error
+      }
+      return data
+    },
+    enabled: !!profile?.sto_company_id,
+    staleTime: 0, // Всегда перезагружать при монтировании
+  })
+
+  // Загружаем услуги из справочника
+  const { data: services } = useQuery({
+    queryKey: ['services'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('services')
+        .select('*, service_categories(name, color)')
+        .order('name')
+      
+      if (error) throw error
+      return data
+    },
+  })
 
   const totalCost = items.reduce((sum, item) => sum + item.price, 0)
+  
+  // Проверяем, доступно ли меню услуг
+  const servicesMenuEnabled = stoCompany?.services_menu_enabled ?? true
+  const canUseServicesMenu = isStoOwner || (servicesMenuEnabled && isStoWorker)
 
   const parseWorkItems = (text: string): WorkItem[] => {
     const lines = text.split('\n').filter(line => line.trim())
@@ -51,9 +98,75 @@ export default function WorkItemsManager({ items, onChange }: Props) {
     onChange(items.filter(item => item.id !== id))
   }
 
+  const handleAddService = (service: any) => {
+    const newItem: WorkItem = {
+      id: uuidv4(),
+      name: service.name,
+      price: Number(service.price),
+      isPaid: false,
+    }
+    onChange([...items, newItem])
+    setShowServicesList(false)
+  }
+
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-900">Работы</h3>
+      {/* Кнопка добавления из справочника - только для владельца или если включено для работников */}
+      {canUseServicesMenu && (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setShowServicesList(!showServicesList)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Добавить из справочника
+          </button>
+        </div>
+      )}
+
+      {/* Список услуг */}
+      {showServicesList && (
+        <div className="bg-white border border-gray-300 rounded-lg p-4 max-h-96 overflow-y-auto">
+          <h4 className="font-semibold mb-3">Выберите услугу:</h4>
+          <div className="space-y-2">
+            {services?.map((service: any) => (
+              <button
+                key={service.id}
+                type="button"
+                onClick={() => handleAddService(service)}
+                className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-all"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900">
+                        {service.name}
+                      </span>
+                      {service.service_categories && (
+                        <span
+                          className="px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                          style={{ backgroundColor: service.service_categories.color }}
+                        >
+                          {service.service_categories.name}
+                        </span>
+                      )}
+                    </div>
+                    {service.description && (
+                      <p className="text-sm mt-1 text-gray-500">
+                        {service.description}
+                      </p>
+                    )}
+                  </div>
+                  <span className="font-semibold ml-4 text-blue-600">
+                    {service.price} ₴
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
         <div>

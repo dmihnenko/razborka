@@ -4,6 +4,22 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App.tsx'
 import './index.css'
 
+// Подавляем безопасные AbortError от Supabase в режиме разработки
+// Это известная проблема с React StrictMode и Navigator Locks API
+if (import.meta.env.DEV) {
+  const originalError = console.error
+  console.error = (...args) => {
+    if (
+      typeof args[0] === 'string' &&
+      args[0].includes('AbortError') &&
+      args[0].includes('signal is aborted without reason')
+    ) {
+      return
+    }
+    originalError.apply(console, args)
+  }
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

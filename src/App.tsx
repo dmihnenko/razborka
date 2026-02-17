@@ -27,6 +27,7 @@ const StoCompanies = lazy(() => import('./pages/StoCompanies'))
 const PartsCompanies = lazy(() => import('./pages/PartsCompanies'))
 const Subscriptions = lazy(() => import('./pages/Subscriptions'))
 const StoEmployees = lazy(() => import('./pages/StoEmployees'))
+const StoSettings = lazy(() => import('./pages/StoSettings'))
 const EmployeeProfile = lazy(() => import('./pages/EmployeeProfile'))
 const WorkerDashboard = lazy(() => import('./pages/WorkerDashboard'))
 const Support = lazy(() => import('./pages/Support'))
@@ -67,8 +68,12 @@ function App() {
   const queryClient = useQueryClient()
 
   useEffect(() => {
+    let mounted = true
+
     // Управляем кешем при изменении состояния аутентификации
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (!mounted) return
+      
       if (event === 'SIGNED_OUT') {
         queryClient.clear()
       }
@@ -78,7 +83,10 @@ function App() {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [queryClient])
 
   return (
@@ -104,16 +112,18 @@ function App() {
           <Route path="customer/:id" element={<CustomerProfile />} />
           <Route path="vehicles" element={<Vehicles />} />
           <Route path="appointments" element={<Appointments />} />
-          <Route path="appointments/statistics" element={<MonthlyStatistics />} />
-          <Route path="appointments/month/:month" element={<MonthlyDetails />} />
+          <Route path="statistics" element={<MonthlyStatistics />} />
+          <Route path="statistics/month/:month" element={<MonthlyDetails />} />
           <Route path="sto/appointments/:appointmentId" element={<AppointmentDetails />} />
           <Route path="work-orders" element={<WorkOrders />} />
           <Route path="services" element={<Services />} />
           <Route path="parts" element={<Parts />} />
           <Route path="invoices" element={<Invoices />} />
           <Route path="users" element={<Users />} />
+          <Route path="sto" element={<Navigate to="/" replace />} />
           <Route path="sto/employees" element={<StoEmployees />} />
           <Route path="sto/employees/:employeeId" element={<EmployeeProfile />} />
+          <Route path="sto/settings" element={<StoSettings />} />
           <Route path="worker/dashboard" element={<WorkerDashboard />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="history" element={<ActivityHistory />} />

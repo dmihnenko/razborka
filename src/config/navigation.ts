@@ -12,7 +12,8 @@ import {
   ShoppingCart,
   TrendingUp,
   MessageSquare,
-  BarChart3
+  BarChart3,
+  Settings
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -33,11 +34,12 @@ export const stoOwnerMenu: MenuItem[] = [
   { name: 'Клиенты', href: '/customers', icon: Users },
   { name: 'Автомобили', href: '/vehicles', icon: Car },
   { name: 'Записи', href: '/appointments', icon: Calendar },
-  { name: 'Статистика', href: '/appointments/statistics', icon: BarChart3 },
+  { name: 'Статистика', href: '/statistics', icon: BarChart3 },
   { name: 'Услуги', href: '/services', icon: Wrench },
   { name: 'Счета', href: '/invoices', icon: Receipt },
   { name: 'Сотрудники', href: '/sto/employees', icon: Users },
   { name: 'Аналитика', href: '/analytics', icon: TrendingUp },
+  { name: 'Настройки', href: '/sto/settings', icon: Settings },
   { name: 'Поддержка', href: '/support', icon: MessageSquare },
 ];
 
@@ -47,7 +49,7 @@ export const stoWorkerMenu: MenuItem[] = [
   { name: 'Клиенты', href: '/customers', icon: Users },
   { name: 'Автомобили', href: '/vehicles', icon: Car },
   { name: 'Записи', href: '/appointments', icon: Calendar },
-  { name: 'Статистика', href: '/appointments/statistics', icon: BarChart3 },
+  { name: 'Статистика', href: '/statistics', icon: BarChart3 },
   { name: 'Услуги', href: '/services', icon: Wrench },
 ];
 

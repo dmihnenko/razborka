@@ -13,6 +13,7 @@ export default function AppointmentDetails() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
   const [paymentConfirmModal, setPaymentConfirmModal] = useState<{
     isOpen: boolean
     type: 'parts' | 'work'
@@ -103,6 +104,33 @@ export default function AppointmentDetails() {
     }
   })
 
+  // Мутация для обновления статуса заявки
+  const updateStatusMutation = useMutation({
+    mutationFn: async (status: string) => {
+      const { data, error } = await supabase
+        .from('appointments')
+        .update({ status })
+        .eq('id', appointmentId)
+        .select()
+      
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointment', appointmentId] })
+      queryClient.invalidateQueries({ queryKey: ['appointments'] })
+      toast.success('Статус заявки обновлен')
+      setShowStatusDropdown(false)
+    },
+    onError: (error: any) => {
+      console.error('Update status error:', error)
+      toast.error(`Ошибка при обновлении статуса: ${error.message || 'Неизвестная ошибка'}`)
+    }
+  })
+
   const handlePaymentChange = (type: 'parts' | 'work', currentValue: boolean) => {
     setPaymentConfirmModal({
       isOpen: true,
@@ -121,11 +149,22 @@ export default function AppointmentDetails() {
     }
   }
 
+  const handleStatusChange = (newStatus: string) => {
+    updateStatusMutation.mutate(newStatus)
+  }
+
+  const availableStatuses = appointment?.status === 'archived'
+    ? []
+    : [
+        { value: 'scheduled', label: 'Запланирована' },
+        { value: 'in_progress', label: 'В работе' },
+        { value: 'completed', label: 'Готова' },
+      ]
+
   const statusColors = {
     scheduled: 'bg-purple-100 text-purple-800',
     in_progress: 'bg-blue-100 text-blue-800',
-    ready: 'bg-green-100 text-green-800',
-    completed: 'bg-gray-100 text-gray-800',
+    completed: 'bg-green-100 text-green-800',
     cancelled: 'bg-red-100 text-red-800',
     archived: 'bg-gray-200 text-gray-600'
   }
@@ -133,8 +172,7 @@ export default function AppointmentDetails() {
   const statusLabels = {
     scheduled: 'Запланирована',
     in_progress: 'В работе',
-    ready: 'Готова',
-    completed: 'Выполнена',
+    completed: 'Готова',
     cancelled: 'Отменена',
     archived: 'Архив'
   }
@@ -149,7 +187,7 @@ export default function AppointmentDetails() {
 
   if (!appointment) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Заявка не найдена</h2>
           <button
@@ -164,9 +202,9 @@ export default function AppointmentDetails() {
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
       {/* Хедер с кнопкой назад */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <button
           onClick={() => navigate(-1)}
           className="flex items-center text-mobile-base text-gray-600 hover:text-gray-900 mb-4"
@@ -177,21 +215,37 @@ export default function AppointmentDetails() {
         
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="heading-mobile-1">
-              {isStoOwner ? (
-                <>Заявка {appointment.request_number || `#${appointment.id.slice(0, 8)}`}</>
-              ) : (
-                <>Заявка</>  
-              )}
-            </h1>
+            <h1 className="heading-mobile-1">Заявка</h1>
             <p className="text-mobile-sm text-gray-500 mt-1">
               Создана {new Date(appointment.created_at).toLocaleDateString('ru-RU')}
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <span className={`px-4 py-2 text-sm font-semibold rounded-full ${statusColors[appointment.status as keyof typeof statusColors]}`}>
-              {statusLabels[appointment.status as keyof typeof statusLabels]}
-            </span>
+            {/* Статус с выпадающим списком */}
+            <div className="relative">
+              <button
+                onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                disabled={appointment.status === 'archived'}
+                className={`px-4 py-2 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} ${appointment.status !== 'archived' ? 'hover:opacity-80 transition-opacity cursor-pointer' : 'cursor-default'}`}
+              >
+                {statusLabels[appointment.status as keyof typeof statusLabels]}
+              </button>
+              {showStatusDropdown && appointment.status !== 'archived' && (
+                <div className="absolute right-0 z-10 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200">
+                  {availableStatuses.map((status) => (
+                    <button
+                      key={status.value}
+                      onClick={() => handleStatusChange(status.value)}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-md last:rounded-b-md"
+                    >
+                      {status.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Кнопка переназначения */}
             {isStoOwner && workersCount > 1 && (
               <button
                 onClick={() => setReassignModal({
@@ -201,7 +255,7 @@ export default function AppointmentDetails() {
                   customerName: appointment.customers?.name || 'Неизвестно',
                   vehicleName: `${appointment.vehicles?.brand || ''} ${appointment.vehicles?.model || ''}`.trim(),
                 })}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-mobile-sm text-blue-600 hover:text-blue-800 border border-blue-600 hover:border-blue-800 rounded-md transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} hover:opacity-80 transition-opacity"
               >
                 <UserCog className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                 <span className="hidden sm:inline">Переназначить</span>
@@ -209,7 +263,7 @@ export default function AppointmentDetails() {
             )}
             <button
               onClick={() => setIsEditModalOpen(true)}
-              className="px-4 py-2 text-sm font-semibold bg-primary text-white hover:bg-primary/90 rounded-full transition-colors"
+              className={`px-4 py-2 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} hover:opacity-80 transition-opacity`}
             >
               Изменить
             </button>
@@ -217,9 +271,9 @@ export default function AppointmentDetails() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Основная информация */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {/* Клиент и автомобиль */}
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <h2 className="heading-mobile-2 mb-4">Информация о клиенте</h2>
@@ -257,7 +311,16 @@ export default function AppointmentDetails() {
                   <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mt-1 mr-2 sm:mr-3 flex-shrink-0" />
                   <div>
                     <p className="text-mobile-sm text-gray-500">VIN</p>
-                    <p className="text-mobile-sm text-gray-900 font-mono">{appointment.vehicles.vin}</p>
+                    <p 
+                      className="text-mobile-sm text-gray-900 font-mono cursor-pointer hover:text-blue-600 transition-colors"
+                      onClick={() => {
+                        navigator.clipboard.writeText(appointment.vehicles.vin)
+                        toast.success('VIN скопирован', { duration: 500 })
+                      }}
+                      title="Нажмите, чтобы скопировать"
+                    >
+                      {appointment.vehicles.vin}
+                    </p>
                   </div>
                 </div>
               )}
@@ -274,17 +337,17 @@ export default function AppointmentDetails() {
               <div className="space-y-2 sm:space-y-3">
                 {appointment.appointment_parts.map((part: any) => (
                   <div key={part.id} className="flex items-start justify-between border-b border-gray-100 pb-2">
-                    <p className="text-mobile-base text-gray-900 flex-1">{part.description}</p>
+                    <p className="text-mobile-base text-black flex-1">{part.description}</p>
                     {part.store_cost !== null && part.store_cost > 0 && (
-                      <span className="text-mobile-base text-gray-900 font-medium ml-4">₴{(part.store_cost * (part.quantity || 1)).toFixed(2)}</span>
+                      <span className="text-mobile-base text-black font-medium ml-4">₴{(part.store_cost * (part.quantity || 1)).toFixed(2)}</span>
                     )}
                   </div>
                 ))}
                 {appointment.appointment_parts.some((p: any) => p.store_cost) && (
                   <div className="pt-2 border-t-2 border-gray-200">
                     <div className="flex justify-between items-center">
-                      <span className="text-mobile-base font-semibold text-gray-900">Итого запчасти:</span>
-                      <span className="text-mobile-lg font-bold text-gray-900">
+                      <span className="text-mobile-base font-semibold text-black">Итого запчасти:</span>
+                      <span className="text-mobile-lg font-bold text-black">
                         ₴{appointment.appointment_parts.reduce((sum: number, p: any) => 
                           sum + ((p.store_cost || 0) * (p.quantity || 1)), 0).toFixed(2)}
                       </span>
@@ -305,17 +368,17 @@ export default function AppointmentDetails() {
               <div className="space-y-2 sm:space-y-3">
                 {appointment.appointment_services.map((service: any) => (
                   <div key={service.id} className="flex items-start justify-between border-b border-gray-100 pb-2">
-                    <p className="text-mobile-base text-gray-900 flex-1">{service.description}</p>
+                    <p className="text-mobile-base text-black flex-1">{service.description}</p>
                     {service.cost !== null && service.cost > 0 && (
-                      <span className="text-mobile-base text-gray-900 font-medium ml-4">₴{service.cost.toFixed(2)}</span>
+                      <span className="text-mobile-base text-black font-medium ml-4">₴{service.cost.toFixed(2)}</span>
                     )}
                   </div>
                 ))}
                 {appointment.appointment_services.some((s: any) => s.cost) && (
                   <div className="pt-2 border-t-2 border-gray-200">
                     <div className="flex justify-between items-center">
-                      <span className="text-mobile-base font-semibold text-gray-900">Итого работы:</span>
-                      <span className="text-mobile-lg font-bold text-gray-900">
+                      <span className="text-mobile-base font-semibold text-black">Итого работы:</span>
+                      <span className="text-mobile-lg font-bold text-black">
                         ₴{appointment.appointment_services.reduce((sum: number, s: any) => 
                           sum + (s.cost || 0), 0).toFixed(2)}
                       </span>
@@ -328,7 +391,7 @@ export default function AppointmentDetails() {
         </div>
 
         {/* Боковая панель */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Даты и время */}
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <h2 className="heading-mobile-3 mb-4 flex items-center">
@@ -387,7 +450,7 @@ export default function AppointmentDetails() {
                   <div className="pb-3 border-b border-gray-100">
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col gap-2">
-                        <span className="text-mobile-base font-semibold text-gray-900">Запчасти</span>
+                        <span className="text-mobile-base font-semibold text-black">Запчасти</span>
                         {isStoOwner ? (
                           <label className="flex items-center gap-2 cursor-pointer group">
                             <div className="relative">
@@ -414,7 +477,7 @@ export default function AppointmentDetails() {
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="text-mobile-lg font-bold text-gray-900">₴{partsCost.toFixed(2)}</p>
+                        <p className="text-mobile-lg font-bold text-black">₴{partsCost.toFixed(2)}</p>
                       </div>
                     </div>
                   </div>
@@ -431,7 +494,7 @@ export default function AppointmentDetails() {
                   <div className="pb-3 border-b border-gray-100">
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col gap-2">
-                        <span className="text-mobile-base font-semibold text-gray-900">Работы</span>
+                        <span className="text-mobile-base font-semibold text-black">Работы</span>
                         {isStoOwner ? (
                           <label className="flex items-center gap-2 cursor-pointer group">
                             <div className="relative">
@@ -458,7 +521,7 @@ export default function AppointmentDetails() {
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="text-mobile-lg font-bold text-gray-900">₴{workCost.toFixed(2)}</p>
+                        <p className="text-mobile-lg font-bold text-black">₴{workCost.toFixed(2)}</p>
                       </div>
                     </div>
                   </div>
@@ -476,7 +539,7 @@ export default function AppointmentDetails() {
                 return totalCost > 0 && (
                   <div className="pt-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-mobile-lg font-bold text-gray-900">Итого</span>
+                      <span className="text-mobile-lg font-bold text-black">Итого</span>
                       <span className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
                         ₴{totalCost.toFixed(2)}
                       </span>

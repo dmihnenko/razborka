@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Search, Plus, User, Phone } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { IMaskInput } from 'react-imask'
 
 interface Props {
   selectedId: string
@@ -17,13 +18,9 @@ export default function ClientSelector({ selectedId, onSelect }: Props) {
   const { data: profile, isLoading: profileLoading } = useUserProfile()
   const queryClient = useQueryClient()
 
-  // Диагностика профиля
-  console.log('Profile:', profile, 'STO Company ID:', profile?.sto_company_id, 'Loading:', profileLoading)
-
   const { data: customers, isLoading, error: queryError } = useQuery({
     queryKey: ['customers', profile?.sto_company_id],
     queryFn: async () => {
-      console.log('Загрузка клиентов для company_id:', profile?.sto_company_id)
       const { data, error } = await supabase
         .from('customers')
         .select('*')
@@ -34,7 +31,6 @@ export default function ClientSelector({ selectedId, onSelect }: Props) {
         console.error('Ошибка загрузки клиентов:', error)
         throw error
       }
-      console.log('Загружено клиентов:', data?.length, data)
       return data
     },
     enabled: !!profile?.sto_company_id,
@@ -74,19 +70,11 @@ export default function ClientSelector({ selectedId, onSelect }: Props) {
   const filteredCustomers = customers?.filter((c) => {
     if (!searchQuery.trim()) return true
     const query = searchQuery.toLowerCase().trim()
-    const matches = (
+    return (
       c.name?.toLowerCase().includes(query) ||
       c.phone?.toLowerCase().includes(query)
     )
-    // Діагностика
-    if (searchQuery) {
-      console.log('Пошук:', query, '| Клієнт:', c.name, '| Збіг:', matches)
-    }
-    return matches
   })
-
-  // Показуємо загальну інформацію
-  console.log('Всього клієнтів:', customers?.length, '| Знайдено:', filteredCustomers?.length, '| Запит:', searchQuery)
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
@@ -136,13 +124,15 @@ export default function ClientSelector({ selectedId, onSelect }: Props) {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Телефон *
               </label>
-              <input
+              <IMaskInput
+                mask="+380 (00) 000-00-00"
+                value={newClientData.phone}
+                unmask={false}
+                onAccept={(value) => setNewClientData({ ...newClientData, phone: value })}
                 type="tel"
                 required
-                value={newClientData.phone}
-                onChange={(e) => setNewClientData({ ...newClientData, phone: e.target.value })}
+                placeholder="+380 (XX) XXX-XX-XX"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="+380501234567"
               />
             </div>
           </div>

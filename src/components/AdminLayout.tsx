@@ -13,27 +13,48 @@ import {
   MessageSquare,
   Car
 } from 'lucide-react'
-import { useIsAdmin } from '../hooks/useUserProfile'
+import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
 import { supabase } from '../lib/supabase'
 import { toast } from 'sonner'
+import Breadcrumbs from './Breadcrumbs'
 
-const adminNavigation = [
-  { name: 'Обзор', href: '/admin', icon: Shield },
-  { name: 'Пользователи', href: '/admin/users', icon: Users },
-  { name: 'Роли', href: '/admin/roles', icon: Shield },
-  { name: 'СТО', href: '/admin/sto', icon: Building2 },
-  { name: 'Разборки', href: '/admin/parts-companies', icon: Store },
-  { name: 'Подписки', href: '/admin/subscriptions', icon: CreditCard },
-  { name: 'Поддержка', href: '/admin/support', icon: MessageSquare },
-  { name: 'Настройки', href: '/admin/settings', icon: Settings },
-  { name: 'Аналитика', href: '/admin/analytics', icon: BarChart3 },
-  { name: 'База данных', href: '/admin/database', icon: Database },
+// Группировка меню для удобства
+const adminNavigationGroups = [
+  {
+    title: 'Основное',
+    items: [
+      { name: 'Обзор', href: '/admin', icon: Shield },
+      { name: 'Пользователи', href: '/admin/users', icon: Users },
+      { name: 'Роли', href: '/admin/roles', icon: Shield },
+    ]
+  },
+  {
+    title: 'Компании',
+    items: [
+      { name: 'СТО', href: '/admin/sto', icon: Building2 },
+      { name: 'Разборки', href: '/admin/parts-companies', icon: Store },
+    ]
+  },
+  {
+    title: 'Система',
+    items: [
+      { name: 'Подписки', href: '/admin/subscriptions', icon: CreditCard },
+      { name: 'Поддержка', href: '/admin/support', icon: MessageSquare },
+      { name: 'Настройки', href: '/admin/settings', icon: Settings },
+      { name: 'Аналитика', href: '/admin/analytics', icon: BarChart3 },
+      { name: 'База данных', href: '/admin/database', icon: Database },
+    ]
+  }
 ]
+
+// Плоский список для desktop sidebar
+const adminNavigation = adminNavigationGroups.flatMap(group => group.items)
 
 export default function AdminLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const isAdmin = useIsAdmin()
+  const { data: profile } = useUserProfile()
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut()
@@ -58,9 +79,104 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Admin Sidebar */}
-      <div className="w-64 bg-purple-900 text-white shadow-md">
+    <div className="flex flex-col md:flex-row md:h-screen bg-gray-100">
+      {/* Mobile Header */}
+      <div className="md:hidden bg-white border-b sticky top-0 z-10">
+        {/* User Info with Logout */}
+        <div className="px-4 py-2.5 border-b bg-purple-50 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <Shield className="w-5 h-5 text-purple-700 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-purple-900 truncate">
+                Админ панель
+              </p>
+              <p className="text-xs text-purple-700 truncate">
+                {profile?.full_name || profile?.email}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 flex-shrink-0 hover:bg-red-100 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Выйти</span>
+          </button>
+        </div>
+        
+        {/* Mobile Navigation - Grouped */}
+        <div className="p-3 space-y-3 max-h-[calc(100vh-80px)] overflow-y-auto">
+          {adminNavigationGroups.map((group) => (
+            <div key={group.title}>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 mb-2">
+                {group.title}
+              </h3>
+              <div className="grid grid-cols-3 gap-2">
+                {group.items.map((item) => {
+                  const Icon = item.icon
+                  const isActive = location.pathname === item.href
+                  return (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      className={`flex flex-col items-center justify-center gap-1.5 px-2 py-3 text-xs font-medium transition-colors rounded-lg min-h-[70px] ${
+                        isActive
+                          ? 'bg-purple-600 text-white shadow-sm'
+                          : 'text-gray-700 bg-gray-50 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      <span className="text-center leading-tight line-clamp-2">{item.name}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+          
+          {/* Quick Access */}
+          <div>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 mb-2">
+              Быстрый доступ
+            </h3>
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  localStorage.setItem('activeRole', 'user')
+                  navigate('/my-vehicles')
+                }}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"
+              >
+                <Car className="w-4 h-4 flex-shrink-0" />
+                <span>Мои авто</span>
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.setItem('activeRole', 'sto_owner')
+                  navigate('/')
+                }}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-green-700 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors"
+              >
+                <Building2 className="w-4 h-4 flex-shrink-0" />
+                <span>Мое СТО</span>
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.setItem('activeRole', 'parts_owner')
+                  navigate('/parts/dashboard')
+                }}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-orange-700 bg-orange-50 rounded-lg border border-orange-200 hover:bg-orange-100 transition-colors"
+              >
+                <Store className="w-4 h-4 flex-shrink-0" />
+                <span>Моя разборка</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Sidebar */}
+      <div className="hidden md:block w-64 bg-purple-900 text-white shadow-md">
         <div className="p-4 border-b border-purple-800">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Shield size={24} />
@@ -112,7 +228,7 @@ export default function AdminLayout() {
           <button
             onClick={() => {
               localStorage.setItem('activeRole', 'parts_owner')
-              navigate('/parts-dashboard')
+              navigate('/parts/dashboard')
             }}
             className="flex items-center w-full px-6 py-3 text-sm font-medium text-purple-100 hover:bg-purple-800 transition-colors"
           >
@@ -129,9 +245,10 @@ export default function AdminLayout() {
         </div>
       </div>
 
-      {/* Admin Content */}
+      {/* Main content */}
       <div className="flex-1 overflow-auto">
-        <div className="p-8">
+        <div className="p-3 sm:p-4 md:p-6 lg:p-8">
+          <Breadcrumbs />
           <Outlet />
         </div>
       </div>

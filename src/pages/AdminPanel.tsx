@@ -76,22 +76,22 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="mb-4 sm:mb-6 lg:mb-8">
         <h1 className="text-3xl font-bold mb-2">Панель администратора</h1>
         <p className="text-gray-600">
           Добро пожаловать, {profile?.full_name || 'Администратор'}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         {adminSections.map((section) => {
           const Icon = section.icon
           return (
             <Link
               key={section.path}
               to={section.path}
-              className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200 hover:border-blue-300"
+              className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-4 sm:p-5 lg:p-6 border border-gray-200 hover:border-blue-300"
             >
               <div className="flex items-start gap-4">
                 <div
