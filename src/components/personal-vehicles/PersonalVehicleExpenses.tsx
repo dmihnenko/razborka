@@ -235,20 +235,6 @@ export default function PersonalVehicleExpenses({ vehicleId, vehicle, isOwner, o
           </div>
         </div>
       )}
-
-      {/* Модалка расхода */}
-      {activeCategory && (
-        <ExpenseModal
-          isOpen={true}
-          onClose={() => { setActiveCategory(null); setEditingItem(undefined); }}
-          category={activeCategory}
-          editItem={editingItem}
-          onSave={handleSaveExpense}
-          onSaveBulk={handleSaveBulkExpenses}
-          vehicleId={vehicleId}
-          onUpdate={onUpdate}
-        />
-      )}
     </div>
   )
 }
