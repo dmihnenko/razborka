@@ -90,7 +90,7 @@ export default function AdminLayout() {
   return (
     <div className="flex flex-col md:flex-row md:h-screen bg-gray-100">
       {/* Mobile Header */}
-      <div className="md:hidden bg-white border-b sticky top-0 z-10">
+      <div className="md:hidden bg-white border-b">{/* User Info with Logout */}
         {/* User Info with Logout */}
         <div className="px-3 sm:px-4 py-2 border-b bg-purple-50 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
