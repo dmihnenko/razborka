@@ -304,13 +304,16 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
               <div key={step.id} className="flex flex-col items-center flex-1">
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(step.id)}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 cursor-pointer hover:scale-110 ${
+                  onClick={() => appointmentId ? setCurrentStep(step.id) : null}
+                  disabled={!appointmentId && step.id !== currentStep}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 ${
+                    appointmentId || step.id <= currentStep ? 'cursor-pointer hover:scale-110' : 'cursor-not-allowed opacity-60'
+                  } ${
                     step.id < currentStep
                       ? 'bg-green-500 text-white hover:bg-green-600'
                       : step.id === currentStep
                       ? 'bg-primary text-white ring-4 ring-primary/20'
-                      : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                      : 'bg-gray-200 text-gray-500 ' + (appointmentId ? 'hover:bg-gray-300' : '')
                   }`}
                 >
                   {step.id < currentStep ? <Check className="w-5 h-5" /> : step.id}
