@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Users, Grid, List, ArrowLeft, Phone, Mail, TrendingUp, DollarSign } from 'lucide-react'
+import { Plus, Search, Users, Grid, List, ArrowLeft, Phone, Mail, TrendingUp, DollarSign, Link2 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -93,6 +93,22 @@ export default function PartsCustomers() {
     if (confirm('Удалить клиента? Это действие нельзя отменить.')) {
       deleteMutation.mutate(customerId)
     }
+  }
+
+  const handleCopyPublicLink = async (customerId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const publicUrl = `${window.location.origin}/public/parts-customer/${customerId}`
+    try {
+      await navigator.clipboard.writeText(publicUrl)
+      toast.success('Публичная ссылка скопирована в буфер обмена', { duration: 2000 })
+    } catch (err) {
+      toast.error('Не удалось скопировать ссылку')
+    }
+  }
+
+  const handleViewProfile = (customerId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+    navigate(`/parts/customers/${customerId}`)
   }
 
   if (!partsCompanyId) {
@@ -291,10 +307,23 @@ export default function PartsCustomers() {
                 {/* Actions Footer */}
                 <div className="bg-gray-50 px-4 py-3 flex gap-2">
                   <button
-                    onClick={(e) => handleEdit(customer, e)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    onClick={(e) => handleViewProfile(customer.id, e)}
+                    className="flex-1 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
                   >
-                    Редактировать
+                    Просмотр
+                  </button>
+                  <button
+                    onClick={(e) => handleCopyPublicLink(customer.id, e)}
+                    className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Скопировать публичную ссылку"
+                  >
+                    <Link2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => handleEdit(customer, e)}
+                    className="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Изменить
                   </button>
                   <button
                     onClick={(e) => handleDelete(customer.id, e)}
@@ -331,7 +360,11 @@ export default function PartsCustomers() {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {filteredCustomers.map((customer) => (
-                    <tr key={customer.id} className="hover:bg-gray-50 transition-colors">
+                    <tr 
+                      key={customer.id} 
+                      onClick={() => handleViewProfile(customer.id)}
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                    >
                       <td className="px-4 py-4 whitespace-nowrap">
                         <div>
                           <div className="font-medium text-gray-900">{customer.full_name}</div>
@@ -364,6 +397,13 @@ export default function PartsCustomers() {
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right text-sm">
                         <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={(e) => handleCopyPublicLink(customer.id, e)}
+                            className="text-blue-600 hover:text-blue-800"
+                            title="Публичная ссылка"
+                          >
+                            <Link2 className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={(e) => handleEdit(customer, e)}
                             className="text-primary hover:text-primary/80"

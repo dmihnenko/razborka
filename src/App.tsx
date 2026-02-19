@@ -54,6 +54,8 @@ const PartsCreateOrder = lazy(() => import('./pages/PartsCreateOrder'))
 const PartsEmployees = lazy(() => import('./pages/PartsEmployees'))
 const PartsAnalytics = lazy(() => import('./pages/PartsAnalytics'))
 const PartsCustomers = lazy(() => import('./pages/PartsCustomers'))
+const PartsCustomerProfile = lazy(() => import('./pages/PartsCustomerProfile'))
+const PublicPartsCustomerView = lazy(() => import('./pages/PublicPartsCustomerView'))
 
 import { useAuth } from './hooks/useAuth'
 import { useUserProfile } from './hooks/useUserProfile'
@@ -109,8 +111,11 @@ function App() {
         <Route path="/vehicle-access" element={<VehicleAccessPage />} />
         <Route path="/public/personal-vehicle/:vehicleId" element={<PublicPersonalVehicleView />} />
         
-        {/* Публичный профиль клиента */}
+        {/* Публичный профиль клиента СТО */}
         <Route path="/public/customer/:id" element={<PublicCustomerView />} />
+        
+        {/* Публичный профиль клиента разборки */}
+        <Route path="/public/parts-customer/:id" element={<PublicPartsCustomerView />} />
         
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
@@ -151,6 +156,7 @@ function App() {
           <Route path="parts/orders/create" element={<PartsCreateOrder />} />
           <Route path="parts/orders/:id" element={<PartsOrderDetails />} />
           <Route path="parts/customers" element={<PartsCustomers />} />
+          <Route path="parts/customers/:id" element={<PartsCustomerProfile />} />
           <Route path="parts/employees" element={<PartsEmployees />} />
           <Route path="parts/analytics" element={<PartsAnalytics />} />
         </Route>
