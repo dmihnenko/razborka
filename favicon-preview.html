@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Выбор Favicon для CRM Автосервиса</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .icon-card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+        
+        .icon-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        
+        .icon-large {
+            font-size: 80px;
+            margin-bottom: 20px;
+            display: block;
+        }
+        
+        .icon-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .icon-desc {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .svg-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+        }
+        
+        .category {
+            margin-bottom: 50px;
+        }
+        
+        .category-title {
+            color: white;
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            padding-left: 10px;
+            border-left: 5px solid #fbbf24;
+        }
+        
+        .instructions {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-top: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .instructions h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .instructions ol {
+            padding-left: 25px;
+            line-height: 1.8;
+            color: #555;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        
+        .instructions code {
+            background: #f3f4f6;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #e11d48;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 Выберите Favicon для CRM Автосервиса</h1>
+        
+        <div class="category">
+            <h2 class="category-title">🚗 Автомобили (12 вариантов)</h2>
+            <div class="grid">
+                <div class="icon-card" onclick="selectIcon('🚗', 'Автомобиль')">
+                    <span class="icon-large">🚗</span>
+                    <div class="icon-name">Автомобиль</div>
+                    <div class="icon-desc">Классика</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🚙', 'Внедорожник')">
+                    <span class="icon-large">🚙</span>
+                    <div class="icon-name">Внедорожник</div>
+                    <div class="icon-desc">SUV</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🚕', 'Такси')">
+                    <span class="icon-large">🚕</span>
+                    <div class="icon-name">Такси</div>
+                    <div class="icon-desc">Желтое авто</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🚓', 'Полиция')">
+                    <span class="icon-large">🚓</span>
+                    <div class="icon-name">Патрульное</div>
+                    <div class="icon-desc">Синий цвет</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🚘', 'Встречка')">
+                    <span class="icon-large">🚘</span>
+                    <div class="icon-name">Встречная</div>
+                    <div class="icon-desc">Спереди</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🚔', 'Полицейское')">
+                    <span class="icon-large">🚔</span>
+                    <div class="icon-name">Встречное патруль</div>
+                    <div class="icon-desc">Спереди</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🏎️', 'Гоночная')">
+                    <span class="icon-large">🏎️</span>
+                    <div class="icon-name">Гоночная</div>
+                    <div class="icon-de💼 Бизнес и CRM (16 вариантов)</h2>
+            <div class="grid">
+                <div class="icon-card" onclick="selectIcon('📊', 'График столбцы')">
+                    <span class="icon-large">📊</span>
+                    <div class="icon-name">График</div>
+                    <div class="icon-desc">Аналитика</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('📈', 'Рост')">
+                    <span class="icon-large">📈</span>
+                    <div class="icon-name">Рост</div>
+                    <div class="icon-desc">Тренд вверх</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('📉', 'Падение')">
+                    <span class="icon-large">📉</span>
+                    <div class="icon-name">Спад</div>
+                    <div class="icon-desc">Тренд вниз</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('📋', 'Планшет')">
+                    <span class="icon-large">📋</span>
+                    <div class="icon-name">Планшет</div>
+                    <div class="icon-desc">Заявки</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('📝', 'Блокнот')">
+                    <span class="icon-large">📝</span>
+                    <div class="icon-name">Блокнот</div>
+                    <div class="icon-desc">Заметки</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('💼', 'Портфель')">
+                    <span class="icon-large">💼</span>
+                    <div class="icon-name">Портфель</div>
+                    <div class="icon-desc">Бизнес</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🎯', 'Цель')">
+                    <span class="icon-large">🎯</span>
+                    <div class="icon-name">Цель</div>
+                    <div class="icon-desc">Точность</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('✅', 'Галочка зеленая')">
+                    <span class="icon-large">✅</span>
+                    <div class="icon-name">Выполнено</div>
+                    <div class="icon-desc">Задачи</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('☑️', 'Галочка белая')">
+                    <span class="icon-large">☑️</span>
+                    <div class="icon-name">Чекбокс</div>
+                    <div class="icon-desc">Отметка</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('✔️', 'Галочка жирная')">
+                    <span class="icon-large">✔️</span>
+                    <div class="icon-name">Готово</div>
+                    <div class="icon-desc">Завершено</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('📌', 'Кнопка')">
+                    <span class="icon-large">📌</span>
+                    <div class="icon-name">Пин</div>
+                    <div class="icon-desc">Закрепить</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('📍', 'Локация')">
+                    <span class="icon-large">📍</span>
+                    <div class="icon-name">Локация</div>
+                    <div class="icon-desc">Место</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('💰', 'Деньги мешок')">
+                    <span class="icon-large">💰</span>
+                    <div class="icon-name">Деньги</div>
+                    <div class="icon-desc">Прибыль</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('💵', 'Доллар')">
+                    <span class="icon-large">💵</span>
+                    <div class="icon-name">Доллар</div>
+                    <div class="icon-desc">Оплата</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('💳', 'Карта')">
+                    <span class="icon-large">💳</span>
+                    <div class="icon-name">Карта</div>
+                    <div class="icon-desc">Безнал</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🏢', 'Офис')">
+                    <span class="icon-large">🏢</span>
+                    <div class="icon-name">Офис</div>
+                    <div class="icon-desc">Компания</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="category">
+            <h2 class="category-title">⏱️ Время и процессы (10 вариантов)</h2>
+            <div class="grid">
+                <div class="icon-card" onclick="selectIcon('⏱️', 'Секундомер')">
+                    <span class="icon-large">⏱️</span>
+                    <div class="icon-name">Секундомер</div>
+                    <div class="icon-desc">Быстро</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('⏰', 'Будильник')">
+                    <span class="icon-large">⏰</span>
+                    <div class="icon-name">Будильник</div>
+                    <div class="icon-desc">Напоминание</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('⏲️', 'Таймер')">
+                    <span class="icon-large">⏲️</span>
+                    <div class="icon-name">Таймер</div>
+                    <div class="icon-desc">Отсчет</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🕐', 'Часы 1')">
+                    <span class="icon-large">🕐</span>
+                    <div class="icon-name">Час дня</div>
+                    <div class="icon-desc">Время</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('📅', 'Календарь')">
+                    <span class="icon-large">📅</span>
+                    <div class="icon-name">Календарь</div>
+                    <div class="icon-desc">Даты</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('📆', 'Календарь страница')">
+                    <span class="icon-large">📆</span>
+                    <div class="icon-name">День</div>
+                    <div class="icon-desc">Расписание</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🔄', 'Обновление')">
+                    <span class="icon-large">🔄</span>
+                    <div class="icon-name">Обновить</div>
+                    <div class="icon-desc">Цикл</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🔁', 'Повтор')">
+                    <span class="icon-large">🔁</span>
+                    <div class="icon-name">Повтор</div>
+                    <div class="icon-desc">Рекурсия</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('▶️', 'Play')">
+                    <span class="icon-large">▶️</span>
+                    <div class="icon-name">Старт</div>
+                    <div class="icon-desc">Начать</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('⏸️', 'Пауза')">
+                    <span class="icon-large">⏸️</span>
+                    <div class="icon-name">Пауза</div>
+                    <div class="icon-desc">Остановка</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="category">
+            <h2 class="category-title">👥 Клиенты и команда (10 вариантов)</h2>
+            <div class="grid">
+                <div class="icon-card" onclick="selectIcon('👤', 'Человек')">
+                    <span class="icon-large">👤</span>
+                    <div class="icon-name">Клиент</div>
+                    <div class="icon-desc">Персона</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('👥', 'Люди')">
+                    <span class="icon-large">👥</span>
+                    <div class="icon-name">Клиенты</div>
+                    <div class="icon-desc">Группа</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('👨‍💼', 'Менеджер')">
+                    <span class="icon-large">👨‍💼</span>
+                    <div class="icon-name">Менеджер</div>
+                    <div class="icon-desc">Управление</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('👷', 'Рабочий')">
+                    <span class="icon-large">👷</span>
+                    <div class="icon-name">Механик</div>
+                    <div class="icon-desc">Работник</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🙋', 'Вопрос')">
+                    <span class="icon-large">🙋</span>
+                    <div class="icon-name">Вопрос</div>
+                    <div class="icon-desc">Поддержка</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('💬', 'Чат')">
+                    <span class="icon-large">💬</span>
+                    <div class="icon-name">Чат</div>
+                    <div class="icon-desc">Сообщения</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('📞', 'Телефон')">
+                    <span class="icon-large">📞</span>
+                    <div class="icon-name">Звонок</div>
+                    <div class="icon-de🎨 SVG Дизайны - Современные (20 вариантов
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('📧', 'Email')">
+                    <span class="icon-large">📧</span>
+                    <div class="icon-name">Email</div>
+                    <div class="icon-desc">Почта</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🔔', 'Колокольчик')">
+                    <span class="icon-large">🔔</span>
+                    <div class="icon-name">Уведомления</div>
+                    <div class="icon-desc">Алерты</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('📢', 'Мегафон')">
+                    <span class="icon-large">📢</span>
+                    <div class="icon-name">Объявление</div>
+                    <div class="icon-desc">Важно
+            <h2 class="category-title">🔧 Инструменты и ремонт (12 вариантов)</h2>
+            <div class="grid">
+                <div class="icon-card" onclick="selectIcon('🔧', 'Гаечный ключ')">
+                    <span class="icon-large">🔧</span>
+                    <div class="icon-name">Гаечный ключ</div>
+                    <div class="icon-desc">Основной</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🛠️', 'Инструменты')">
+                    <span class="icon-large">🛠️</span>
+                    <div class="icon-name">Молоток+Ключ</div>
+                    <div class="icon-desc">Набор</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('⚙️', 'Шестеренка')">
+                    <span class="icon-large">⚙️</span>
+                    <div class="icon-name">Шестеренка</div>
+                    <div class="icon-desc">Механизм</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🔩', 'Болт и гайка')">
+                    <span class="icon-large">🔩</span>
+                    <div class="icon-name">Болт+Гайка</div>
+                    <div class="icon-desc">Крепеж</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🪛', 'Отвертка')">
+                    <span class="icon-large">🪛</span>
+                    <div class="icon-name">Отвертка</div>
+                    <div class="icon-desc">Точность</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🔨', 'Молоток')">
+                    <span class="icon-large">🔨</span>
+                    <div class="icon-name">Молоток</div>
+                    <div class="icon-desc">Мощь</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('⛏️', 'Кирка')">
+                    <span class="icon-large">⛏️</span>
+                    <div class="icon-name">Кирка</div>
+                    <div class="icon-desc">Работа</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🧰', 'Ящик инструментов')">
+                    <span class="icon-large">🧰</span>
+                    <div class="icon-name">Ящик</div>
+                    <div class="icon-desc">Комплект</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🛢️', 'Бочка масла')">
+                    <span class="icon-large">🛢️</span>
+                    <div class="icon-name">Масло</div>
+                    <div class="icon-desc">ТО</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('⚡', 'Молния')">
+                    <span class="icon-large">⚡</span>
+                    <div class="icon-name">Молния</div>
+                    <div class="icon-desc">Электрика</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🔋', 'Батарея')">
+                    <span class="icon-large">🔋</span>
+                    <div class="icon-name">Батарея</div>
+                    <div class="icon-desc">Аккумулятор</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🪫', 'Разряд')">
+                    <span class="icon-large">🪫</span>
+                    <div class="icon-name">Разряд</div>
+                    <div class="icon-desc">Нужна зарядка</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="category">
+            <h2 class="category-title">🏁 Скорость и качество (8 вариантов)</h2>
+            <div class="grid">
+                <div class="icon-card" onclick="selectIcon('🏁', 'Финиш')">
+                    <span class="icon-large">🏁</span>
+                    <div class="icon-name">Финишный флаг</div>
+                    <div class="icon-desc">Гонки</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🏆', 'Кубок')">
+                    <span class="icon-large">🏆</span>
+                    <div class="icon-name">Кубок</div>
+                    <div class="icon-desc">Победа</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('⭐', 'Звезда')">
+                    <span class="icon-large">⭐</span>
+                    <div class="icon-name">Звезда</div>
+                    <div class="icon-desc">Качество</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🎖️', 'Медаль')">
+                    <span class="icon-large">🎖️</span>
+                    <div class="icon-name">Медаль</div>
+                    <div class="icon-desc">Награда</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('💎', 'Бриллиант')">
+                    <span class="icon-large">💎</span>
+                    <div class="icon-name">Бриллиант</div>
+                    <div class="icon-desc">Премиум</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('✨', 'Искры')">
+                    <span class="icon-large">✨</span>
+                    <div class="icon-name">Искры</div>
+                    <div class="icon-desc">Блеск</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('💫', 'Головокружение')">
+                    <span class="icon-large">💫</span>
+                    <div class="icon-name">Вихрь</div>
+                    <div class="icon-desc">Динамика</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🌟', 'Сияние')">
+                    <span class="icon-large">🌟</span>
+                    <div class="icon-name">Сияющая звезда</div>
+                    <div class="icon-desc">Отличие</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="category">
+            <h2 class="category-title">Бизнес и управление</h2>
+            <div class="grid">
+                <div class="icon-card" onclick="selectIcon('📊', 'График')">
+                    <span class="icon-large">📊</span>
+                    <div class="icon-name">График</div>
+                    <div class="icon-desc">Аналитика и статистика</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('📋', 'Планшет')">
+                    <span class="icon-large">📋</span>
+                    <div class="icon-name">Планшет</div>
+                    <div class="icon-desc">Заявки и документы</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('💼', 'Портфель')">
+                    <span class="icon-large">💼</span>
+                    <div class="icon-name">Портфель</div>
+                    <div class="icon-desc">Деловой подход</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('📈', 'Рост')">
+                    <span class="icon-large">📈</span>
+                    <div class="icon-name">Рост</div>
+                    <div class="icon-desc">Развитие бизнеса</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('🎯', 'Цель')">
+                    <span class="icon-large">🎯</span>
+                    <div class="icon-name">Цель</div>
+                    <div class="icon-desc">Точность и результат</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('✅', 'Галочка')">
+                    <span class="icon-large">✅</span>
+                    <div class="icon-name">Выполнено</div>
+                    <div class="icon-desc">Завершенные задачи</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="category">
+            <h2 class="category-title">Комбинированные варианты (SVG)</h2>
+            <div class="grid">
+                <div class="icon-card" onclick="selectIcon('svg1', 'Авто + Ключ')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="45" fill="#2563eb"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">🚗</text>
+                    </svg>
+                    <div class="icon-name">Авто на фоне</div>
+                    <div class="icon-desc">Синий круг + авто</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg2', 'Ключ + Круг')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="45" fill="#dc2626"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">🔧</text>
+                    </svg>
+                    <div class="icon-name">Ключ на фоне</div>
+                    <div class="icon-desc">Красный круг + ключ</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg3', 'График + Круг')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="45" fill="#059669"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">📊</text>
+                    </svg>
+                    <div class="icon-name">График на фоне</div>
+                    <div class="icon-desc">Зеленый круг + график</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg4', 'Квадрат + Авто')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="5" y="5" width="90" height="90" rx="15" fill="#7c3aed"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">🚗</text>
+                    </svg>
+                    <div class="icon-name">Авто в квадрате</div>
+                    <div class="icon-desc">Фиолетовый + авто</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg5', 'Градиент + Инструменты')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="50" cy="50" r="45" fill="url(#grad1)"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">🛠️</text>
+                    </svg>
+                    <div class="icon-name">Градиент + инструменты</div>
+                    <div class="icon-desc">Современный стиль</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg6', 'Шестеренка минимализм')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100" height="100" rx="20" fill="#f59e0b"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">⚙️</text>
+                    </svg>
+                    <div class="icon-name">Оранжевая шестеренка</div>
+                    <div class="icon-desc">Яркий акцент</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg7', 'График бирюза')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="45" fill="#14b8a6"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">📊</text>
+                    </svg>
+                    <div class="icon-name">Бирюзовый график</div>
+                    <div class="icon-desc">Свежий</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg8', 'Розовый ключ')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="5" y="5padding: 15px; background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 8px;">
+                <strong style="color: #059669;">💡 ТОП рекомендации:</strong><br>
+                <span style="color: #666; line-height: 1.8;">
+                    🚗 <strong>Автомобиль</strong> - универсально для автосервиса<br>
+                    🔧 <strong>Гаечный ключ</strong> - акцент на ремонт<br>
+                    📊 <strong>График</strong> - акцент на CRM/управление<br>
+                    🛠️ <strong>Инструменты</strong> - профессионализм<br>
+                    ⚙️ <strong>Шестеренка</strong> - техника и механизмы
+                </span>
+            </p>
+            <p style="margin-top: 15px; padding: 15px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px;">
+                <strong style="color: #d97706;">📊 Статистика выбора:</strong><br>
+                <span style="color: #666; line-height: 1.8;">
+                    Всего вариантов: <strong>88 иконок</strong><br>
+                    Категории: 7 разделов<br>
+                    Emoji: 68 вариантов | SVG: 20 дизайнов
+                </span>ite">🔧</text>
+                    </svg>
+                    <div class="icon-name">Розовый ключ</div>
+                    <div class="icon-desc">Необычно</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg9', 'Индиго авто')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="45" fill="#6366f1"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">🚗</text>
+                    </svg>
+                    <div class="icon-name">Индиго авто</div>
+                    <div class="icon-desc">Стильно</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg10', 'Лайм инструменты')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100" height="100" rx="25" fill="#84cc16"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">🛠️</text>
+                    </svg>
+                    <div class="icon-name">Лаймовые инструменты</div>
+                    <div class="icon-desc">Энергично</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg11', 'Тёмно-синий график')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="45" fill="#1e40af"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">📊</text>
+                    </svg>
+                    <div class="icon-name">Тёмно-синий</div>
+                    <div class="icon-desc">Деловой</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg12', 'Бордо авто')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="5" y="5" width="90" height="90" rx="15" fill="#be123c"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">🚙</text>
+                    </svg>
+                    <div class="icon-name">Бордовый внедорожник</div>
+                    <div class="icon-desc">Премиум</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg13', 'Серый минимализм')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="45" fill="#6b7280"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">🔧</text>
+                    </svg>
+                    <div class="icon-name">Серый ключ</div>
+                    <div class="icon-desc">Минимализм</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg14', 'Чёрная классика')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100" height="100" rx="20" fill="#1f2937"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">🚗</text>
+                    </svg>
+                    <div class="icon-name">Чёрное авто</div>
+                    <div class="icon-desc">Классика</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg15', 'Янтарь цель')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="45" fill="#d97706"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">🎯</text>
+                    </svg>
+                    <div class="icon-name">Янтарная цель</div>
+                    <div class="icon-desc">Тепло</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg16', 'Изумруд галочка')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="5" y="5" width="90" height="90" rx="20" fill="#047857"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">✅</text>
+                    </svg>
+                    <div class="icon-name">Изумруд OK</div>
+                    <div class="icon-desc">Успех</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg17', 'Голубой ящик')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="45" fill="#0ea5e9"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">🧰</text>
+                    </svg>
+                    <div class="icon-name">Голубой ящик</div>
+                    <div class="icon-desc">Инструменты</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg18', 'Розовый планшет')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100" height="100" rx="25" fill="#db2777"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">📋</text>
+                    </svg>
+                    <div class="icon-name">Розовый планшет</div>
+                    <div class="icon-desc">Заявки</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg19', 'Фиолетовый флаг')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="45" fill="#9333ea"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">🏁</text>
+                    </svg>
+                    <div class="icon-name">Фиолетовый финиш</div>
+                    <div class="icon-desc">Скорость</div>
+                </div>
+                
+                <div class="icon-card" onclick="selectIcon('svg20', 'Радуга градиент')">
+                    <svg class="svg-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#ef4444;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#f59e0b;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#eab308;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="50" cy="50" r="45" fill="url(#grad2)"/>
+                        <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">⚡</text>
+                    </svg>
+                    <div class="icon-name">Радужная молния</div>
+                    <div class="icon-desc">Энергия</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h2>📝 Как установить выбранный favicon:</h2>
+            <ol>
+                <li>Кликните на понравившийся вариант выше</li>
+                <li>Скопируйте emoji (например: 🚗) или скажите какой SVG вариант</li>
+                <li>Я создам HTML с этим favicon и обновлю проект</li>
+                <li>Для emoji можно использовать генератор: <code>https://favicon.io/emoji-favicons/</code></li>
+                <li>Для SVG - я создам оптимизированную иконку</li>
+            </ol>
+            <p style="margin-top: 20px; color: #666; font-style: italic;">
+                💡 Совет: Для автосервиса лучше всего подходят 🚗 🔧 или 📊 (CRM-аспект)
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        function selectIcon(icon, name) {
+            alert(`✅ Выбрано: ${name}\n\n` +
+                  `Иконка: ${icon}\n\n` +
+                  `Скопируйте это сообщение и отправьте мне:\n` +
+                  `"Установи favicon: ${icon} (${name})"`);
+        }
+    </script>
+</body>
+</html>
