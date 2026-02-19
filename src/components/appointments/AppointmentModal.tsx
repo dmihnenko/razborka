@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useAlert } from '@/components/CustomAlert'
 import { toast } from 'sonner'
+import { useBlockScroll } from '@/hooks/useBlockScroll'
 import ClientSelector from './ClientSelector'
 import VehicleSelector from './VehicleSelector'
 import WorkItemsManager from './WorkItemsManager'
@@ -43,6 +44,8 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
     parts_paid: false,
     work_paid: false,
   })
+
+  useBlockScroll(isOpen)
 
   // Проверка роли работника
   const isStoWorker = profile?.roles?.some((r: any) => r.name === 'sto_worker')
@@ -119,15 +122,17 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
         const { data: appointment, error } = await supabase
           .from('appointments')
           .update({
+            customer_id: data.customer_id,
+            vehicle_id: data.vehicle_id,
             scheduled_date: data.scheduledDate,
             status: data.status,
-            notes: data.notes,
+            notes: data.notes || null,
             work_items: data.workItems,
             part_items: data.partItems,
             total_work_cost: totalWork,
             total_parts_cost: totalParts,
             total_cost: totalWork + totalParts,
-            assigned_to: data.assigned_to,
+            assigned_to: data.assigned_to || null,
             parts_paid: data.parts_paid || false,
             work_paid: data.work_paid || false,
           })
@@ -135,7 +140,10 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
           .select()
           .single()
 
-        if (error) throw error
+        if (error) {
+          console.error('Supabase update error:', error)
+          throw error
+        }
         return appointment
       } else {
         // Создание новой заявки
@@ -173,6 +181,8 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
       onClose()
     },
     onError: (error: any) => {
+      console.error('Save mutation error:', error)
+      console.error('Error details:', JSON.stringify(error, null, 2))
       toast.error(`Ошибка: ${error.message}`)
     },
   })
@@ -181,27 +191,42 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
     mutationFn: async () => {
       if (!appointmentId) throw new Error('No appointment ID')
       
-      // Работник отправляет на удаление (статус pending_deletion)
+      // Работник помечает заявку как удаленную (статус deleted)
       if (isStoWorker && !isStoOwner) {
+        const currentNotes = formData.notes || ''
+        const updatedNotes = currentNotes + (currentNotes ? '\n' : '') + '[Работник запросил удаление]'
+        
         const { error } = await supabase
           .from('appointments')
-          .update({ status: 'pending_deletion' })
+          .update({ 
+            status: 'deleted',
+            notes: updatedNotes
+          })
           .eq('id', appointmentId)
 
-        if (error) throw error
+        if (error) {
+          console.error('Delete mutation error (worker):', error)
+          throw error
+        }
       } else {
         // Владелец может удалить окончательно
         const { error } = await supabase
           .from('appointments')
-          .update({ status: 'deleted' })
+          .delete()
           .eq('id', appointmentId)
 
-        if (error) throw error
+        if (error) {
+          console.error('Delete mutation error (owner):', error)
+          throw error
+        }
       }
     },
     onSuccess: () => {
+      // Инвалидируем все queries связанные с appointments
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
       queryClient.invalidateQueries({ queryKey: ['worker_appointments'] })
+      // Принудительно рефетчим данные
+      queryClient.refetchQueries({ queryKey: ['appointments'] })
       toast.success(
         isStoWorker && !isStoOwner 
           ? 'Заявка отправлена на удаление' 

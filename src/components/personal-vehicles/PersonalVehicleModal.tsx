@@ -3,6 +3,7 @@ import { X, Upload } from 'lucide-react'
 import { uploadToImgBB, validateImageFile } from '@/utils/imageStorage'
 import type { CreatePersonalVehicleInput } from '@/types/personalVehicles'
 import { useAlert } from '../CustomAlert'
+import { useBlockScroll } from '@/hooks/useBlockScroll'
 
 interface Props {
   isOpen: boolean
@@ -22,6 +23,8 @@ export default function PersonalVehicleModal({ isOpen, onClose, onSuccess, userI
   })
   const [uploading, setUploading] = useState(false)
   const [creating, setCreating] = useState(false)
+
+  useBlockScroll(isOpen)
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

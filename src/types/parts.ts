@@ -31,7 +31,7 @@ export type PartsVehicleStatus = 'awaiting' | 'in_progress' | 'dismantled' | 'di
 export interface PartsVehicle {
   id: string
   parts_company_id: string
-  brand: string
+  make: string
   model: string
   year?: number
   vin?: string
@@ -84,7 +84,7 @@ export interface PartsInventoryItem {
   id: string
   parts_company_id: string
   category_id: string
-  source_vehicle_id?: string
+  vehicle_id?: string
   name: string
   part_number?: string
   description?: string
@@ -106,7 +106,7 @@ export interface PartsInventoryItem {
   
   // Relations
   category?: PartsCategory
-  source_vehicle?: PartsVehicle
+  vehicle?: PartsVehicle
 }
 
 export type PartsOrderStatus = 'pending' | 'processing' | 'ready' | 'completed' | 'cancelled'
@@ -149,7 +149,7 @@ export interface PartsOrderItem {
 
 // Form types
 export interface CreatePartsVehicleInput {
-  brand: string
+  make: string
   model: string
   year?: number
   vin?: string
@@ -173,7 +173,7 @@ export interface CreatePartsCustomerInput {
 
 export interface CreatePartsInventoryInput {
   category_id?: string
-  source_vehicle_id?: string
+  vehicle_id?: string
   name: string
   part_number?: string
   description?: string
@@ -193,4 +193,50 @@ export interface CreatePartsCategoryInput {
   icon?: string
   color?: string
   sort_order?: number
+}
+
+// ============================================================================
+// Types для заказов разборки
+// ============================================================================
+
+export type PartsOrderStatus = 'new' | 'in_progress' | 'completed' | 'cancelled'
+
+export interface PartsOrder {
+  id: string
+  parts_company_id: string
+  customer_id?: string
+  order_number: string
+  order_date: string
+  status: PartsOrderStatus
+  total_amount: number
+  notes?: string
+  created_by?: string
+  created_at: string
+  updated_at: string
+  // Joined data
+  customer?: PartsCustomer
+  items?: PartsOrderItem[]
+}
+
+export interface PartsOrderItem {
+  id: string
+  order_id: string
+  inventory_item_id: string
+  quantity: number
+  price_at_sale: number
+  subtotal: number
+  created_at: string
+  // Joined data
+  inventory_item?: PartsInventoryItem
+}
+
+export interface CreatePartsOrderInput {
+  customer_id?: string
+  notes?: string
+}
+
+export interface CreatePartsOrderItemInput {
+  inventory_item_id: string
+  quantity: number
+  price_at_sale: number
 }

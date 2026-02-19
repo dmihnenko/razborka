@@ -6,6 +6,7 @@ import { Plus, Pencil, Trash2, Phone, Mail, Car, Search } from 'lucide-react'
 import { IMaskInput } from 'react-imask'
 import { useNavigate, Link } from 'react-router-dom'
 import { useHasAnyRole } from '@/hooks/useUserProfile'
+import { useBlockScroll } from '@/hooks/useBlockScroll'
 
 interface CustomerModalProps {
   customer: any
@@ -316,6 +317,8 @@ function CustomerModal({ customer, onClose }: CustomerModalProps) {
     address: customer?.address || '',
     notes: customer?.notes || '',
   })
+
+  useBlockScroll(true)
 
   const queryClient = useQueryClient()
 

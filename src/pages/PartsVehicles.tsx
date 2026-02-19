@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Plus, Search, Car, Calendar, DollarSign, Trash2, Edit } from 'lucide-react'
+import { Plus, Search, Car, Filter, Grid, List, ArrowLeft } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, updateVehicleStatus, deletePartsVehicle } from '@/services/partsService'
+import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle } from '@/services/partsService'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 import type { PartsVehicle, CreatePartsVehicleInput, PartsVehicleStatus } from '@/types/parts'
 
@@ -15,15 +16,19 @@ const statusLabels: Record<PartsVehicleStatus, string> = {
 }
 
 const statusColors: Record<PartsVehicleStatus, string> = {
-  awaiting: 'bg-yellow-100 text-yellow-800',
-  in_progress: 'bg-blue-100 text-blue-800',
-  dismantled: 'bg-green-100 text-green-800',
-  disposed: 'bg-gray-100 text-gray-800'
+  awaiting: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
+  dismantled: 'bg-green-100 text-green-800 border-green-200',
+  disposed: 'bg-gray-100 text-gray-800 border-gray-200'
 }
 
+type ViewMode = 'grid' | 'list'
+
 export default function PartsVehicles() {
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState<PartsVehicle | null>(null)
   
@@ -59,19 +64,6 @@ export default function PartsVehicles() {
     }
   })
 
-  // Update status
-  const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: PartsVehicleStatus }) => 
-      updateVehicleStatus(id, status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['parts-vehicles'] })
-      toast.success('Статус обновлён')
-    },
-    onError: () => {
-      toast.error('Ошибка при обновлении статуса')
-    }
-  })
-
   // Delete vehicle
   const deleteMutation = useMutation({
     mutationFn: deletePartsVehicle,
@@ -87,7 +79,7 @@ export default function PartsVehicles() {
   // Filter vehicles
   const filteredVehicles = vehicles.filter(vehicle => {
     const matchesSearch = searchQuery === '' || 
-      vehicle.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      vehicle.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
       vehicle.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
       vehicle.vin?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       vehicle.license_plate?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -97,168 +89,373 @@ export default function PartsVehicles() {
     return matchesSearch && matchesStatus
   })
 
-  const handleDelete = (vehicle: PartsVehicle) => {
-    if (confirm(`Удалить ${vehicle.brand} ${vehicle.model}?`)) {
-      deleteMutation.mutate(vehicle.id)
+  // Group by status for statistics
+  const stats = {
+    total: vehicles.length,
+    awaiting: vehicles.filter(v => v.status === 'awaiting').length,
+    in_progress: vehicles.filter(v => v.status === 'in_progress').length,
+    dismantled: vehicles.filter(v => v.status === 'dismantled').length,
+    disposed: vehicles.filter(v => v.status === 'disposed').length,
+  }
+
+  const handleEdit = (vehicle: PartsVehicle, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSelectedVehicle(vehicle)
+    setIsModalOpen(true)
+  }
+
+  const handleDelete = (vehicleId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (confirm('Удалить автомобиль? Это действие нельзя отменить.')) {
+      deleteMutation.mutate(vehicleId)
     }
   }
 
-  return (
-    <div className="p-8">
-      <div className="mb-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Автомобили на разборке</h1>
-          <p className="text-gray-600 mt-2">Управление автомобилями для разборки</p>
-        </div>
-        <button 
-          onClick={() => {
-            setSelectedVehicle(null)
-            setIsModalOpen(true)
-          }}
-          className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 flex items-center gap-2"
-        >
-          <Plus size={20} />
-          Добавить авто
-        </button>
-      </div>
+  const formatCurrency = (amount?: number) => {
+    if (!amount) return '—'
+    return new Intl.NumberFormat('ru-RU', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount) + ' ₴'
+  }
 
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Поиск по VIN, марке, модели..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
+  if (!partsCompanyId) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <Car className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600">У вас нет доступа к разборке</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-4 flex-1">
+              <button
+                onClick={() => navigate('/parts')}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Автомобили</h1>
+                <p className="text-sm text-gray-500 hidden sm:block">Всего: {stats.total}</p>
+              </div>
             </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            <button
+              onClick={() => {
+                setSelectedVehicle(null)
+                setIsModalOpen(true)
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
             >
-              <option value="all">Все статусы</option>
-              <option value="awaiting">Ожидает разборки</option>
-              <option value="in_progress">В процессе</option>
-              <option value="dismantled">Разобран</option>
-              <option value="disposed">Утилизирован</option>
-            </select>
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Добавить</span>
+            </button>
           </div>
         </div>
+      </div>
 
-        <div className="p-6">
-          {isLoading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all ${
+              statusFilter === 'all' ? 'ring-2 ring-primary' : ''
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs sm:text-sm text-gray-600">Всего</p>
+              <Car className="w-4 h-4 text-gray-400" />
             </div>
-          ) : filteredVehicles.length === 0 ? (
-            <div className="text-center text-gray-500 py-12">
-              <Car className="mx-auto mb-4 text-gray-400" size={48} />
-              <p className="text-lg">Нет автомобилей</p>
-              <p className="text-sm mt-2">Добавьте первый автомобиль для разборки</p>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.total}</p>
+          </button>
+
+          <button
+            onClick={() => setStatusFilter('awaiting')}
+            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all ${
+              statusFilter === 'awaiting' ? 'ring-2 ring-yellow-500' : ''
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs sm:text-sm text-gray-600">Ожидают</p>
+              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredVehicles.map((vehicle) => (
-                <div key={vehicle.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold">
-                          {vehicle.brand} {vehicle.model} {vehicle.year && `(${vehicle.year})`}
-                        </h3>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[vehicle.status]}`}>
-                          {statusLabels[vehicle.status]}
-                        </span>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
-                        {vehicle.vin && (
-                          <div>
-                            <span className="font-medium">VIN:</span> {vehicle.vin}
-                          </div>
-                        )}
-                        {vehicle.license_plate && (
-                          <div>
-                            <span className="font-medium">Номер:</span> {vehicle.license_plate}
-                          </div>
-                        )}
-                        {vehicle.purchase_price && (
-                          <div className="flex items-center gap-1">
-                            <DollarSign size={14} />
-                            <span>{vehicle.purchase_price} ₴</span>
-                          </div>
-                        )}
-                        {vehicle.purchase_date && (
-                          <div className="flex items-center gap-1">
-                            <Calendar size={14} />
-                            <span>{new Date(vehicle.purchase_date).toLocaleDateString('ru-RU')}</span>
-                          </div>
-                        )}
-                      </div>
+            <p className="text-2xl sm:text-3xl font-bold text-yellow-600">{stats.awaiting}</p>
+          </button>
 
-                      {vehicle.notes && (
-                        <p className="mt-2 text-sm text-gray-500">{vehicle.notes}</p>
-                      )}
-                    </div>
+          <button
+            onClick={() => setStatusFilter('in_progress')}
+            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all ${
+              statusFilter === 'in_progress' ? 'ring-2 ring-blue-500' : ''
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs sm:text-sm text-gray-600">В работе</p>
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+            </div>
+            <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.in_progress}</p>
+          </button>
 
-                    <div className="flex gap-2 ml-4">
-                      {/* Status dropdown */}
-                      <select
-                        value={vehicle.status}
-                        onChange={(e) => statusMutation.mutate({ 
-                          id: vehicle.id, 
-                          status: e.target.value as PartsVehicleStatus 
-                        })}
-                        className="px-3 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
-                      >
-                        <option value="awaiting">Ожидает</option>
-                        <option value="in_progress">В процессе</option>
-                        <option value="dismantled">Разобран</option>
-                        <option value="disposed">Утилизирован</option>
-                      </select>
+          <button
+            onClick={() => setStatusFilter('dismantled')}
+            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all ${
+              statusFilter === 'dismantled' ? 'ring-2 ring-green-500' : ''
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs sm:text-sm text-gray-600">Разобраны</p>
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+            </div>
+            <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.dismantled}</p>
+          </button>
 
-                      <button
-                        onClick={() => {
-                          setSelectedVehicle(vehicle)
-                          setIsModalOpen(true)
-                        }}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                        title="Редактировать"
-                      >
-                        <Edit size={18} />
-                      </button>
+          <button
+            onClick={() => setStatusFilter('disposed')}
+            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all ${
+              statusFilter === 'disposed' ? 'ring-2 ring-gray-500' : ''
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs sm:text-sm text-gray-600">Утилизированы</p>
+              <div className="w-2 h-2 rounded-full bg-gray-500"></div>
+            </div>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-600">{stats.disposed}</p>
+          </button>
+        </div>
 
-                      <button
-                        onClick={() => handleDelete(vehicle)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded"
-                        title="Удалить"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+        {/* Filters & View Controls */}
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Поиск по марке, модели, VIN, номеру..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+              >
+                <Grid className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+              >
+                <List className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {statusFilter !== 'all' && (
+            <div className="mt-3 flex items-center gap-2">
+              <Filter className="w-4 h-4 text-gray-500" />
+              <span className="text-sm text-gray-600">
+                Фильтр: <span className="font-medium">{statusLabels[statusFilter as PartsVehicleStatus]}</span>
+              </span>
+              <button
+                onClick={() => setStatusFilter('all')}
+                className="ml-2 text-sm text-primary hover:underline"
+              >
+                Сбросить
+              </button>
             </div>
           )}
         </div>
+
+        {/* Vehicles List/Grid */}
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : filteredVehicles.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <Car className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 mb-2">
+              {searchQuery || statusFilter !== 'all' ? 'Автомобили не найдены' : 'Нет автомобилей'}
+            </p>
+            {!searchQuery && statusFilter === 'all' && (
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="mt-4 text-primary hover:underline"
+              >
+                Добавить первый автомобиль
+              </button>
+            )}
+          </div>
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredVehicles.map((vehicle) => (
+              <div
+                key={vehicle.id}
+                onClick={() => navigate(`/parts/vehicles/${vehicle.id}`)}
+                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden group"
+              >
+                <div className="p-3 sm:p-4">
+                  {/* Status Badge */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[vehicle.status]}`}>
+                      {statusLabels[vehicle.status]}
+                    </span>
+                  </div>
+
+                  {/* Vehicle Info */}
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary transition-colors">
+                      {vehicle.make} {vehicle.model}
+                    </h3>
+                    {vehicle.year && (
+                      <p className="text-sm text-gray-600">{vehicle.year} год</p>
+                    )}
+                  </div>
+
+                  {/* Details */}
+                  <div className="space-y-2 text-sm">
+                    {vehicle.vin && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <span className="font-medium">VIN:</span>
+                        <span className="truncate font-mono text-xs">{vehicle.vin}</span>
+                      </div>
+                    )}
+                    {vehicle.color && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <span className="font-medium">Цвет:</span>
+                        <span>{vehicle.color}</span>
+                      </div>
+                    )}
+                    {vehicle.purchase_price && (
+                      <div className="flex items-center gap-2 text-gray-900 font-medium">
+                        <span className="text-gray-600 font-normal">Покупка:</span>
+                        <span>{formatCurrency(vehicle.purchase_price)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions Footer */}
+                <div className="bg-gray-50 px-4 py-3 flex gap-2">
+                  <button
+                    onClick={(e) => handleEdit(vehicle, e)}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Редактировать
+                  </button>
+                  <button
+                    onClick={(e) => handleDelete(vehicle.id, e)}
+                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    Удалить
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Автомобиль
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                      VIN
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                      Статус
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                      Цена покупки
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Действия
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredVehicles.map((vehicle) => (
+                    <tr
+                      key={vehicle.id}
+                      onClick={() => navigate(`/parts/vehicles/${vehicle.id}`)}
+                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {vehicle.make} {vehicle.model}
+                          </div>
+                          {vehicle.year && (
+                            <div className="text-sm text-gray-500">{vehicle.year} • {vehicle.color}</div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-mono hidden lg:table-cell">
+                        {vehicle.vin ? (
+                          <span className="truncate max-w-[150px] inline-block">{vehicle.vin}</span>
+                        ) : '—'}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap hidden md:table-cell">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[vehicle.status]}`}>
+                          {statusLabels[vehicle.status]}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 hidden sm:table-cell">
+                        {formatCurrency(vehicle.purchase_price)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-right text-sm">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={(e) => handleEdit(vehicle, e)}
+                            className="text-primary hover:text-primary/80"
+                          >
+                            Изменить
+                          </button>
+                          <button
+                            onClick={(e) => handleDelete(vehicle.id, e)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            Удалить
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
-      <PartsVehicleModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false)
-          setSelectedVehicle(null)
-        }}
-        onSubmit={async (data) => {
-          await saveMutation.mutateAsync(data)
-        }}
-        vehicle={selectedVehicle}
-      />
+      {/* Modal */}
+      {isModalOpen && (
+        <PartsVehicleModal
+          vehicle={selectedVehicle}
+          onClose={() => {
+            setIsModalOpen(false)
+            setSelectedVehicle(null)
+          }}
+          onSave={(data) => saveMutation.mutate(data)}
+        />
+      )}
     </div>
   )
 }

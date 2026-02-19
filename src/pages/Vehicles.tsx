@@ -324,6 +324,8 @@ function VehicleModal({
     mileage: vehicle?.mileage || '',
   })
 
+  useBlockScroll(true)
+
   const queryClient = useQueryClient()
 
   const { data: customers } = useQuery({

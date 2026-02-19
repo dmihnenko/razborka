@@ -88,16 +88,55 @@ export default function AppointmentDetails() {
   const updatePaymentMutation = useMutation({
     mutationFn: async ({ type, value }: { type: 'parts' | 'work', value: boolean }) => {
       const field = type === 'parts' ? 'parts_paid' : 'work_paid'
+      
+      // Получаем текущие данные заявки
+      const { data: current } = await supabase
+        .from('appointments')
+        .select('parts_paid, work_paid, parts_cost, total_parts_cost, total_work_cost, status')
+        .eq('id', appointmentId)
+        .single()
+      
+      if (!current) throw new Error('Appointment not found')
+      
+      // Обновляем поле оплаты
+      const updatedData: any = { [field]: value }
+      
+      // Проверяем, должны ли мы архивировать заявку
+      const hasParts = ((current.parts_cost || current.total_parts_cost) || 0) > 0
+      const hasWork = (current.total_work_cost || 0) > 0
+      
+      const willBePartsPaid = type === 'parts' ? value : current.parts_paid
+      const willBeWorkPaid = type === 'work' ? value : current.work_paid
+      
+      const shouldArchive = 
+        current.status === 'completed' &&
+        (!hasParts || willBePartsPaid) &&
+        (!hasWork || willBeWorkPaid)
+      
+      if (shouldArchive) {
+        updatedData.status = 'archived'
+        updatedData.closed_date = new Date().toISOString()
+      }
+      
       const { error } = await supabase
         .from('appointments')
-        .update({ [field]: value })
+        .update(updatedData)
         .eq('id', appointmentId)
       
       if (error) throw error
+      
+      return { archived: shouldArchive }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['appointment', appointmentId] })
-      toast.success('Статус оплаты обновлен')
+      queryClient.invalidateQueries({ queryKey: ['appointments'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-monthly-revenue'] })
+      
+      if (result.archived) {
+        toast.success('Оплата подтверждена. Заявка отправлена в архив')
+      } else {
+        toast.success('Статус оплаты обновлен')
+      }
     },
     onError: () => {
       toast.error('Ошибка при обновлении статуса оплаты')

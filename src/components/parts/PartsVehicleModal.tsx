@@ -11,17 +11,13 @@ interface PartsVehicleModalProps {
 
 export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }: PartsVehicleModalProps) {
   const [formData, setFormData] = useState<CreatePartsVehicleInput>({
-    brand: vehicle?.brand || '',
+    make: vehicle?.make || '',
     model: vehicle?.model || '',
     year: vehicle?.year,
     vin: vehicle?.vin || '',
-    license_plate: vehicle?.license_plate || '',
     color: vehicle?.color || '',
-    engine_type: vehicle?.engine_type || '',
-    transmission_type: vehicle?.transmission_type || '',
     mileage: vehicle?.mileage,
     purchase_price: vehicle?.purchase_price,
-    purchase_date: vehicle?.purchase_date || '',
     notes: vehicle?.notes || ''
   })
   const [loading, setLoading] = useState(false)
@@ -32,7 +28,19 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
     e.preventDefault()
     setLoading(true)
     try {
-      await onSubmit(formData)
+      // Убираем undefined значения перед отправкой
+      const cleanData: CreatePartsVehicleInput = {
+        make: formData.make,
+        model: formData.model,
+        ...(formData.year && { year: formData.year }),
+        ...(formData.vin && { vin: formData.vin }),
+        ...(formData.color && { color: formData.color }),
+        ...(formData.mileage && { mileage: formData.mileage }),
+        ...(formData.purchase_price && { purchase_price: formData.purchase_price }),
+        ...(formData.notes && { notes: formData.notes })
+      }
+      
+      await onSubmit(cleanData)
       onClose()
     } catch (error) {
       console.error('Error submitting vehicle:', error)
@@ -45,19 +53,18 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: value === '' ? undefined : 
-             (name === 'year' || name === 'mileage' || name === 'purchase_price') 
-               ? parseFloat(value) 
+      [name]: (name === 'year' || name === 'mileage' || name === 'purchase_price') 
+               ? (value ? parseFloat(value) : undefined)
                : value
     }))
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h2 className="text-xl font-semibold">
-            {vehicle ? 'Редактировать автомобиль' : 'Добавить автомобиль на разборку'}
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-lg max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
+          <h2 className="text-lg sm:text-xl font-semibold pr-2">
+            {vehicle ? 'Редактировать' : 'Добавить авто'}
           </h2>
           <button
             type="button"
@@ -65,34 +72,34 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
               e.stopPropagation();
               onClose();
             }}
-            className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+            className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 active:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
             aria-label="Закрыть"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {/* Марка */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 Марка <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                name="brand"
-                value={formData.brand}
+                name="make"
+                value={formData.make}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="Toyota, BMW, Mercedes..."
+                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="Toyota, BMW..."
               />
             </div>
 
             {/* Модель */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 Модель <span className="text-red-500">*</span>
               </label>
               <input
@@ -101,14 +108,14 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                 value={formData.model}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="Camry, X5, E-Class..."
+                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="Camry, X5..."
               />
             </div>
 
             {/* Год */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 Год выпуска
               </label>
               <input
@@ -118,13 +125,13 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                 onChange={handleChange}
                 min="1900"
                 max={new Date().getFullYear() + 1}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
 
             {/* VIN */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 VIN номер
               </label>
               <input
@@ -133,28 +140,14 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                 value={formData.vin || ''}
                 onChange={handleChange}
                 maxLength={17}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 placeholder="17 символов"
-              />
-            </div>
-
-            {/* Номер */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Гос. номер
-              </label>
-              <input
-                type="text"
-                name="license_plate"
-                value={formData.license_plate || ''}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
 
             {/* Цвет */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 Цвет
               </label>
               <input
@@ -162,47 +155,13 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                 name="color"
                 value={formData.color || ''}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
-            </div>
-
-            {/* Двигатель */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Тип двигателя
-              </label>
-              <input
-                type="text"
-                name="engine_type"
-                value={formData.engine_type || ''}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="Бензин, Дизель, Электро..."
-              />
-            </div>
-
-            {/* КПП */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Коробка передач
-              </label>
-              <select
-                name="transmission_type"
-                value={formData.transmission_type || ''}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              >
-                <option value="">Выберите...</option>
-                <option value="МКПП">МКПП</option>
-                <option value="АКПП">АКПП</option>
-                <option value="Робот">Робот</option>
-                <option value="Вариатор">Вариатор</option>
-              </select>
             </div>
 
             {/* Пробег */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 Пробег (км)
               </label>
               <input
@@ -211,13 +170,13 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                 value={formData.mileage || ''}
                 onChange={handleChange}
                 min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
 
             {/* Цена покупки */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 Цена покупки (₴)
               </label>
               <input
@@ -227,28 +186,14 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                 onChange={handleChange}
                 min="0"
                 step="0.01"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-            </div>
-
-            {/* Дата покупки */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Дата покупки
-              </label>
-              <input
-                type="date"
-                name="purchase_date"
-                value={formData.purchase_date || ''}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
           </div>
 
           {/* Примечания */}
-          <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="mt-4 sm:mt-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
               Примечания
             </label>
             <textarea
@@ -256,24 +201,24 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
               value={formData.notes || ''}
               onChange={handleChange}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="Дополнительная информация об автомобиле..."
+              className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="Дополнительная информация..."
             />
           </div>
 
           {/* Buttons */}
-          <div className="mt-6 flex justify-end gap-3">
+          <div className="mt-6 flex gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              className="flex-1 sm:flex-none px-4 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 active:bg-gray-300 font-medium"
               disabled={loading}
             >
               Отмена
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+              className="flex-1 sm:flex-none px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 active:bg-primary/80 disabled:opacity-50 font-medium"
               disabled={loading}
             >
               {loading ? 'Сохранение...' : vehicle ? 'Сохранить' : 'Добавить'}

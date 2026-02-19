@@ -101,7 +101,31 @@ export async function getPartsCustomers(partsCompanyId: string) {
     .order('created_at', { ascending: false })
   
   if (error) throw error
-  return data as PartsCustomer[]
+  
+  // Добавляем подсчет заказов и суммы для каждого клиента
+  const customersWithStats = await Promise.all(
+    (data || []).map(async (customer) => {
+      const { count } = await supabase
+        .from('parts_orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('customer_id', customer.id)
+      
+      const { data: orders } = await supabase
+        .from('parts_orders')
+        .select('total_amount')
+        .eq('customer_id', customer.id)
+      
+      const totalSpent = (orders || []).reduce((sum, order) => sum + (order.total_amount || 0), 0)
+      
+      return {
+        ...customer,
+        total_orders: count || 0,
+        total_spent: totalSpent
+      }
+    })
+  )
+  
+  return customersWithStats as PartsCustomer[]
 }
 
 export async function createPartsCustomer(input: CreatePartsCustomerInput, partsCompanyId: string) {
@@ -252,8 +276,8 @@ export async function getPartsInventory(partsCompanyId: string) {
     .from('parts_inventory')
     .select(`
       *,
-      category:parts_categories(id, name, icon, color),
-      source_vehicle:parts_vehicles(id, brand, model, year, vin)
+      category:parts_categories(id, name),
+      vehicle:parts_vehicles(id, make, model, year, vin)
     `)
     .eq('parts_company_id', partsCompanyId)
     .order('created_at', { ascending: false })
@@ -273,8 +297,8 @@ export async function createPartsInventoryItem(input: CreatePartsInventoryInput,
     })
     .select(`
       *,
-      category:parts_categories(id, name, icon, color),
-      source_vehicle:parts_vehicles(id, brand, model, year, vin)
+      category:parts_categories(id, name),
+      vehicle:parts_vehicles(id, make, model, year, vin)
     `)
     .single()
   
@@ -289,8 +313,8 @@ export async function updatePartsInventoryItem(id: string, updates: Partial<Part
     .eq('id', id)
     .select(`
       *,
-      category:parts_categories(id, name, icon, color),
-      source_vehicle:parts_vehicles(id, brand, model, year, vin)
+      category:parts_categories(id, name),
+      vehicle:parts_vehicles(id, make, model, year, vin)
     `)
     .single()
   

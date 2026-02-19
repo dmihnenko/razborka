@@ -97,7 +97,7 @@ export default function Appointments() {
       if (showArchived) {
         query = query.eq('status', 'archived')
       } else {
-        query = query.neq('status', 'archived')
+        query = query.not('status', 'in', '(archived,deleted)')
       }
 
       // Фильтруем по статусу из URL параметров
@@ -138,7 +138,12 @@ export default function Appointments() {
     return acc
   }, {})
 
-  const customerGroups = groupedAppointments ? Object.values(groupedAppointments) : []
+  // Сортируем: сначала клиенты с 1 заявкой, потом с 2+
+  const customerGroups = groupedAppointments 
+    ? Object.values(groupedAppointments).sort((a: any, b: any) => {
+        return a.appointments.length - b.appointments.length
+      })
+    : []
 
   // Delete mutation for appointments
   useMutation({
@@ -241,6 +246,9 @@ export default function Appointments() {
                       Автомобиль
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Дата создания
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Статус
                     </th>
                     {!isStoOwner && (
@@ -291,6 +299,13 @@ export default function Appointments() {
                             {appointment.vehicles?.license_plate && (
                               <div className="text-xs text-gray-500">{appointment.vehicles.license_plate}</div>
                             )}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                            {new Date(appointment.created_at).toLocaleDateString('ru-RU', { 
+                              day: '2-digit', 
+                              month: '2-digit', 
+                              year: 'numeric' 
+                            })}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]}`}>
@@ -348,7 +363,7 @@ export default function Appointments() {
                           }}
                           className="cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors"
                         >
-                          <td className="px-4 py-3" colSpan={!isStoOwner ? (!showArchived ? 5 : 4) : (!showArchived ? 4 : 3)}>
+                          <td className="px-4 py-3" colSpan={!isStoOwner ? (!showArchived ? 6 : 5) : (!showArchived ? 5 : 4)}>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <svg 
@@ -384,6 +399,13 @@ export default function Appointments() {
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                           {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU')}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                          {new Date(appointment.created_at).toLocaleDateString('ru-RU', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric' 
+                          })}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]}`}>
@@ -459,7 +481,7 @@ export default function Appointments() {
                       hasMultiple ? 'cursor-pointer active:bg-blue-100' : ''
                     }`}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
                       {hasMultiple && (
                         <svg 
                           className={`w-4 h-4 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
@@ -470,15 +492,25 @@ export default function Appointments() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       )}
-                      <h3 className="text-base font-semibold text-gray-900">
+                      <h3 className="text-base font-semibold text-gray-900 truncate">
                         {group.customer.name}
                       </h3>
                     </div>
-                    {hasMultiple && (
-                      <span className="px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded">
-                        {group.appointments.length} {group.appointments.length === 1 ? 'заявка' : group.appointments.length < 5 ? 'заявки' : 'заявок'}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {!hasMultiple && (
+                        <span className="text-xs text-gray-500">
+                          {new Date(group.appointments[0].created_at).toLocaleDateString('ru-RU', { 
+                            day: '2-digit', 
+                            month: '2-digit' 
+                          })}
+                        </span>
+                      )}
+                      {hasMultiple && (
+                        <span className="px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded">
+                          {group.appointments.length} {group.appointments.length === 1 ? 'заявка' : group.appointments.length < 5 ? 'заявки' : 'заявок'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Заявки клиента */}

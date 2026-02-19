@@ -99,9 +99,10 @@ export default function Dashboard() {
 
       const { data, error } = await supabase
         .from('appointments')
-        .select('parts_cost, total_work_cost')
+        .select('parts_cost, total_work_cost, exclude_from_stats')
         .eq('sto_company_id', profile?.sto_company_id)
         .eq('status', 'archived')
+        .eq('exclude_from_stats', false)
         .gte('closed_date', firstDay.toISOString())
         .lte('closed_date', lastDay.toISOString())
       
@@ -311,7 +312,10 @@ export default function Dashboard() {
           </div>
 
           {/* Статистика текущего месяца */}
-          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5 md:p-6">
+          <div 
+            onClick={() => navigate(`/monthly-revenue?year=${new Date().getFullYear()}&month=${new Date().getMonth() + 1}`)}
+            className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5 md:p-6 cursor-pointer hover:shadow-md transition-shadow"
+          >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base sm:text-lg font-semibold text-gray-900">
                 Доход за {currentMonth}

@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
-import { MessageSquare, Send, X } from 'lucide-react'
-import { useUserProfile } from '@/hooks/useUserProfile'
-
+import { MessageSquare, Send, X, ArrowLeft, CheckCheck, Clock, AlertCircle, Menu } from 'lucide-react'
+import { useUserProfile } from '@/hooks/useUserProfile'import { useBlockScroll } from '@/hooks/useBlockScroll'
 interface Chat {
   id: string
   owner_id: string
@@ -12,6 +11,7 @@ interface Chat {
   subject: string | null
   created_at: string
   updated_at: string
+  unread_count?: number
 }
 
 interface Message {
@@ -20,6 +20,7 @@ interface Message {
   sender_id: string
   message: string
   created_at: string
+  is_read: boolean
   sender?: {
     full_name: string | null
   }
@@ -28,10 +29,15 @@ interface Message {
 export default function Support() {
   const [selectedChat, setSelectedChat] = useState<string | null>(null)
   const [isNewChatOpen, setIsNewChatOpen] = useState(false)
+  const [isChatListOpen, setIsChatListOpen] = useState(true)
   const [newMessage, setNewMessage] = useState('')
   const [newChatSubject, setNewChatSubject] = useState('')
   const [newChatMessage, setNewChatMessage] = useState('')
+  const messagesEndRef = useRef<HTMLDivElement>(null)
   const { data: currentUserProfile } = useUserProfile()
+  
+  useBlockScroll(isNewChatOpen)
+  
   const queryClient = useQueryClient()
 
   // Загрузка чатов текущего пользователя
@@ -73,6 +79,18 @@ export default function Support() {
     enabled: !!selectedChat,
     refetchInterval: 30000 // Автообновление каждые 30 секунд
   })
+
+  // Автопрокрутка к последнему сообщению
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  // Закрыть список чатов на мобильных при выборе чата
+  useEffect(() => {
+    if (selectedChat && window.innerWidth < 1024) {
+      setIsChatListOpen(false)
+    }
+  }, [selectedChat])
 
   // Realtime подписка на новые сообщения
   useEffect(() => {
@@ -203,187 +221,371 @@ export default function Support() {
     createChatMutation.mutate()
   }
 
+  const handleBackToList = () => {
+    setSelectedChat(null)
+    setIsChatListOpen(true)
+  }
+
+  const formatMessageTime = (date: string) => {
+    const messageDate = new Date(date)
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    if (messageDate.toDateString() === today.toDateString()) {
+      return messageDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+    } else if (messageDate.toDateString() === yesterday.toDateString()) {
+      return 'Вчера ' + messageDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+    } else {
+      return messageDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ' ' + 
+             messageDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+    }
+  }
+
+  const activeChats = chats.filter(c => c.status === 'active')
+  const closedChats = chats.filter(c => c.status === 'closed')
+
   if (chatsLoading) {
-    return <div className="p-6">Загрузка...</div>
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Поддержка</h1>
-        <button
-          onClick={() => setIsNewChatOpen(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          <MessageSquare className="w-5 h-5" />
-          <span>Новое обращение</span>
-        </button>
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-3 sm:px-4 py-3 sm:py-4 flex-shrink-0">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <div className="flex items-center gap-3">
+            <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Поддержка</h1>
+          </div>
+          <button
+            onClick={() => setIsNewChatOpen(true)}
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm sm:text-base"
+          >
+            <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">Новое обращение</span>
+            <span className="sm:hidden">Новый чат</span>
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Список чатов */}
-        <div className="lg:col-span-1 bg-white rounded-lg shadow">
-          <div className="p-4 border-b">
-            <h2 className="font-semibold">Мои обращения</h2>
-          </div>
-          <div className="divide-y max-h-[600px] overflow-y-auto">
-            {chats.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                Нет обращений
-              </div>
-            ) : (
-              chats.map((chat) => (
-                <div
-                  key={chat.id}
-                  onClick={() => setSelectedChat(chat.id)}
-                  className={`p-4 cursor-pointer hover:bg-gray-50 ${
-                    selectedChat === chat.id ? 'bg-blue-50' : ''
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-medium truncate">
-                      {chat.subject || 'Обращение'}
-                    </h3>
-                    <span
-                      className={`text-xs px-2 py-1 rounded ${
-                        chat.status === 'active'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {chat.status === 'active' ? 'Активен' : 'Закрыт'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    {new Date(chat.updated_at).toLocaleDateString('ru-RU')}
-                  </p>
+      <div className="flex-1 overflow-hidden max-w-7xl mx-auto w-full">
+        <div className="h-full flex">
+          {/* Список чатов */}
+          <div 
+            className={`
+              ${isChatListOpen ? 'flex' : 'hidden'} 
+              lg:flex flex-col bg-white border-r border-gray-200
+              w-full lg:w-80 xl:w-96 flex-shrink-0
+            `}
+          >
+            <div className="p-3 sm:p-4 border-b border-gray-200 flex-shrink-0">
+              <h2 className="font-semibold text-sm sm:text-base text-gray-900">Мои обращения</h2>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto">
+              {chats.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+                  <MessageSquare className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mb-3 sm:mb-4" />
+                  <p className="text-sm sm:text-base text-gray-500 mb-2">Нет обращений</p>
+                  <p className="text-xs sm:text-sm text-gray-400">Создайте новое обращение для связи с поддержкой</p>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
+              ) : (
+                <>
+                  {/* Активные чаты */}
+                  {activeChats.length > 0 && (
+                    <div>
+                      <div className="px-3 sm:px-4 py-2 bg-gray-50 border-b border-gray-100">
+                        <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Активные ({activeChats.length})</p>
+                      </div>
+                      {activeChats.map((chat) => (
+                        <div
+                          key={chat.id}
+                          onClick={() => {
+                            setSelectedChat(chat.id)
+                            if (window.innerWidth < 1024) setIsChatListOpen(false)
+                          }}
+                          className={`
+                            p-3 sm:p-4 cursor-pointer border-b border-gray-100 
+                            hover:bg-gray-50 transition-colors
+                            ${selectedChat === chat.id ? 'bg-primary/5 border-l-4 border-l-primary' : ''}
+                          `}
+                        >
+                          <div className="flex items-start justify-between mb-1 sm:mb-2">
+                            <h3 className="font-medium text-sm sm:text-base text-gray-900 truncate pr-2 flex-1">
+                              {chat.subject || 'Обращение'}
+                            </h3>
+                            <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 flex-shrink-0">
+                              <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                              Активен
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {formatMessageTime(chat.updated_at)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-        {/* Чат */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow flex flex-col" style={{ height: '650px' }}>
-          {selectedChat ? (
-            <>
-              <div className="p-4 border-b flex justify-between items-center">
-                <h2 className="font-semibold">
-                  {chats.find((c) => c.id === selectedChat)?.subject || 'Чат'}
-                </h2>
+                  {/* Закрытые чаты */}
+                  {closedChats.length > 0 && (
+                    <div>
+                      <div className="px-3 sm:px-4 py-2 bg-gray-50 border-b border-gray-100">
+                        <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Закрытые ({closedChats.length})</p>
+                      </div>
+                      {closedChats.map((chat) => (
+                        <div
+                          key={chat.id}
+                          onClick={() => {
+                            setSelectedChat(chat.id)
+                            if (window.innerWidth < 1024) setIsChatListOpen(false)
+                          }}
+                          className={`
+                            p-3 sm:p-4 cursor-pointer border-b border-gray-100 
+                            hover:bg-gray-50 transition-colors opacity-60
+                            ${selectedChat === chat.id ? 'bg-primary/5 border-l-4 border-l-primary opacity-100' : ''}
+                          `}
+                        >
+                          <div className="flex items-start justify-between mb-1 sm:mb-2">
+                            <h3 className="font-medium text-sm sm:text-base text-gray-900 truncate pr-2 flex-1">
+                              {chat.subject || 'Обращение'}
+                            </h3>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 flex-shrink-0">
+                              Закрыт
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {formatMessageTime(chat.updated_at)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Область чата */}
+          <div className={`
+            ${selectedChat && !isChatListOpen ? 'flex' : 'hidden'} 
+            lg:flex flex-col flex-1 bg-white
+          `}>
+            {selectedChat ? (
+              <>
+                {/* Заголовок чата */}
+                <div className="px-3 sm:px-4 py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <button
+                      onClick={handleBackToList}
+                      className="lg:hidden p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="font-semibold text-sm sm:text-base text-gray-900 truncate">
+                        {chats.find((c) => c.id === selectedChat)?.subject || 'Чат'}
+                      </h2>
+                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                        {chats.find((c) => c.id === selectedChat)?.status === 'active' ? (
+                          <>
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                            Активный чат
+                          </>
+                        ) : (
+                          <>
+                            <CheckCheck className="w-3 h-3" />
+                            Чат закрыт
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  {chats.find((c) => c.id === selectedChat)?.status === 'active' && (
+                    <button
+                      onClick={() => closeChatMutation.mutate(selectedChat)}
+                      className="text-red-600 hover:text-red-700 text-xs sm:text-sm font-medium px-2 sm:px-3 py-1.5 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                    >
+                      Закрыть
+                    </button>
+                  )}
+                </div>
+
+                {/* Сообщения */}
+                <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 bg-gray-50">
+                  {messages.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-sm text-gray-400">Нет сообщений</p>
+                    </div>
+                  ) : (
+                    <>
+                      {messages.map((msg, index) => {
+                        const isOwn = msg.sender_id === currentUserProfile?.id
+                        const showDate = index === 0 || 
+                          new Date(messages[index - 1].created_at).toDateString() !== new Date(msg.created_at).toDateString()
+                        
+                        return (
+                          <div key={msg.id}>
+                            {showDate && (
+                              <div className="flex items-center justify-center my-3 sm:my-4">
+                                <div className="px-3 py-1 bg-white rounded-full shadow-sm">
+                                  <p className="text-xs text-gray-500">
+                                    {new Date(msg.created_at).toLocaleDateString('ru-RU', { 
+                                      day: 'numeric', 
+                                      month: 'long',
+                                      year: new Date(msg.created_at).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                                    })}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`
+                                max-w-[85%] sm:max-w-[70%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm
+                                ${isOwn 
+                                  ? 'bg-primary text-white rounded-br-sm' 
+                                  : 'bg-white text-gray-900 rounded-bl-sm'
+                                }
+                              `}>
+                                {!isOwn && msg.sender?.full_name && (
+                                  <p className="text-xs font-medium mb-1 text-gray-600">
+                                    {msg.sender.full_name}
+                                  </p>
+                                )}
+                                <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words">
+                                  {msg.message}
+                                </p>
+                                <div className="flex items-center justify-end gap-1 mt-1">
+                                  <p className={`text-[10px] sm:text-xs ${isOwn ? 'text-blue-100' : 'text-gray-400'}`}>
+                                    {new Date(msg.created_at).toLocaleTimeString('ru-RU', { 
+                                      hour: '2-digit', 
+                                      minute: '2-digit' 
+                                    })}
+                                  </p>
+                                  {isOwn && (
+                                    <CheckCheck className={`w-3 h-3 ${msg.is_read ? 'text-blue-200' : 'text-blue-300'}`} />
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                      <div ref={messagesEndRef} />
+                    </>
+                  )}
+                </div>
+
+                {/* Форма отправки */}
+                {chats.find((c) => c.id === selectedChat)?.status === 'active' ? (
+                  <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-white border-t border-gray-200 flex-shrink-0">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Введите сообщение..."
+                        className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        autoFocus={window.innerWidth > 768}
+                      />
+                      <button
+                        type="submit"
+                        disabled={sendMessageMutation.isPending || !newMessage.trim()}
+                        className="px-3 sm:px-4 py-2 sm:py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                      >
+                        <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="p-3 sm:p-4 bg-gray-50 border-t border-gray-200">
+                    <div className="flex items-center justify-center gap-2 text-gray-500 text-sm">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>Чат закрыт. Создайте новое обращение для продолжения общения.</span>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
+                <MessageSquare className="w-16 h-16 sm:w-20 sm:h-20 text-gray-300 mb-4" />
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Выберите чат</h3>
+                <p className="text-sm sm:text-base text-gray-500 mb-4 max-w-sm">
+                  Выберите существующий чат из списка или создайте новое обращение
+                </p>
                 <button
-                  onClick={() => closeChatMutation.mutate(selectedChat)}
-                  className="text-red-600 hover:text-red-700 text-sm"
+                  onClick={() => setIsNewChatOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
                 >
-                  Закрыть чат
+                  <MessageSquare className="w-5 h-5" />
+                  <span>Новое обращение</span>
                 </button>
               </div>
-
-              {/* Сообщения */}
-              <div className="flex-1 p-4 overflow-y-auto space-y-4">
-                {messages.map((msg) => {
-                  const isOwn = msg.sender_id === currentUserProfile?.id
-                  return (
-                    <div
-                      key={msg.id}
-                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-[70%] rounded-lg p-3 ${
-                          isOwn
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-900'
-                        }`}
-                      >
-                        <p className="text-sm mb-1">{msg.message}</p>
-                        <p className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
-                          {new Date(msg.created_at).toLocaleString('ru-RU')}
-                        </p>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Форма отправки */}
-              <form onSubmit={handleSendMessage} className="p-4 border-t">
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Введите сообщение..."
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={sendMessageMutation.isPending || !newMessage.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    <Send className="w-5 h-5" />
-                  </button>
-                </div>
-              </form>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-500">
-              Выберите чат или создайте новое обращение
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
       {/* Модальное окно создания чата */}
       {isNewChatOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Новое обращение</h2>
-              <button onClick={() => setIsNewChatOpen(false)}>
-                <X className="w-6 h-6" />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+          <div className="bg-white rounded-t-2xl sm:rounded-lg w-full sm:max-w-md sm:w-full animate-slide-up sm:animate-none shadow-xl">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Новое обращение</h2>
+              <button 
+                onClick={() => setIsNewChatOpen(false)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500" />
               </button>
             </div>
-            <form onSubmit={handleCreateChat} className="space-y-4">
+            <form onSubmit={handleCreateChat} className="p-4 sm:p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Тема обращения *
+                  Тема обращения <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={newChatSubject}
                   onChange={(e) => setNewChatSubject(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Краткое описание проблемы"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  placeholder="Например: Проблема с оплатой"
                   required
+                  autoFocus
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Сообщение *
+                  Сообщение <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={newChatMessage}
                   onChange={(e) => setNewChatMessage(e.target.value)}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Опишите вашу проблему или вопрос"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                  placeholder="Опишите вашу проблему или вопрос подробно"
                   required
                 />
               </div>
-              <div className="flex justify-end space-x-3">
+              <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsNewChatOpen(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  className="w-full sm:w-auto px-4 py-2.5 text-sm sm:text-base text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
                   disabled={createChatMutation.isPending}
-                  className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 py-2.5 text-sm sm:text-base text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
-                  {createChatMutation.isPending ? 'Создание...' : 'Создать'}
+                  {createChatMutation.isPending ? 'Создание...' : 'Создать обращение'}
                 </button>
               </div>
             </form>

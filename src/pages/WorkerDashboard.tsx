@@ -64,9 +64,10 @@ export default function WorkerDashboard() {
 
       const { data, error } = await supabase
         .from('appointments')
-        .select('parts_cost, total_work_cost')
+        .select('parts_cost, total_work_cost, exclude_from_stats')
         .eq('assigned_to', profile?.id)
         .eq('status', 'archived')
+        .eq('exclude_from_stats', false)
         .gte('closed_date', firstDay.toISOString())
         .lte('closed_date', lastDay.toISOString())
       
@@ -78,7 +79,8 @@ export default function WorkerDashboard() {
       return {
         parts: Math.round(totalParts),
         work: Math.round(totalWork),
-        total: Math.round(totalParts + totalWork)
+        total: Math.round(totalParts + totalWork),
+        count: data?.length || 0
       }
     },
     enabled: !!profile?.id,
@@ -93,8 +95,11 @@ export default function WorkerDashboard() {
   const partsCost = monthlyStats?.parts || 0
   const workCost = monthlyStats?.work || 0
   const totalCost = monthlyStats?.total || 0
+  const completedCount = monthlyStats?.count || 0
 
   const isLoading = statsLoading || monthlyLoading
+
+  const currentMonth = new Date().toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
 
   return (
     <div className="container-mobile">
@@ -191,7 +196,18 @@ export default function WorkerDashboard() {
           )}
 
           {/* Статистика текущего месяца */}
-          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5 md:p-6">
+          <div 
+            onClick={() => navigate(`/monthly-revenue?year=${new Date().getFullYear()}&month=${new Date().getMonth() + 1}`)}
+            className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5 md:p-6 cursor-pointer hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+                Доход за {currentMonth}
+              </h2>
+              <span className="text-mobile-sm text-gray-600">
+                Закрыто: {completedCount}
+              </span>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               {/* Сумма запчастей */}
               <div className="p-3 sm:p-4 rounded-lg bg-green-50 border border-green-100">

@@ -10,9 +10,9 @@ import AdminLayout from './components/AdminLayout'
 
 // Критичные страницы - загружаем сразу
 import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
 
 // Lazy loading для остальных страниц
+const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Customers = lazy(() => import('./pages/Customers'))
 const Vehicles = lazy(() => import('./pages/Vehicles'))
 const Appointments = lazy(() => import('./pages/Appointments'))
@@ -42,11 +42,15 @@ const VehicleAccessPage = lazy(() => import('./pages/VehicleAccessPage'))
 const Analytics = lazy(() => import('./pages/Analytics'))
 const MonthlyDetails = lazy(() => import('./pages/MonthlyDetails'))
 const MonthlyStatistics = lazy(() => import('./pages/MonthlyStatistics'))
+const MonthlyRevenue = lazy(() => import('./pages/MonthlyRevenue'))
 const ActivityHistory = lazy(() => import('./pages/ActivityHistory'))
 const PartsDashboard = lazy(() => import('./pages/PartsDashboard'))
 const PartsVehicles = lazy(() => import('./pages/PartsVehicles'))
+const PartsVehicleDetails = lazy(() => import('./pages/PartsVehicleDetails'))
 const PartsInventory = lazy(() => import('./pages/PartsInventory'))
 const PartsOrders = lazy(() => import('./pages/PartsOrders'))
+const PartsOrderDetails = lazy(() => import('./pages/PartsOrderDetails'))
+const PartsCreateOrder = lazy(() => import('./pages/PartsCreateOrder'))
 const PartsEmployees = lazy(() => import('./pages/PartsEmployees'))
 const PartsAnalytics = lazy(() => import('./pages/PartsAnalytics'))
 const PartsCustomers = lazy(() => import('./pages/PartsCustomers'))
@@ -110,6 +114,7 @@ function App() {
         
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
+          <Route path="dashboard" element={<Navigate to="/" replace />} />
           <Route path="customers" element={<Customers />} />
           <Route path="customer/:id" element={<CustomerProfile />} />
           <Route path="vehicles" element={<Vehicles />} />
@@ -128,6 +133,7 @@ function App() {
           <Route path="sto/settings" element={<StoSettings />} />
           <Route path="worker/dashboard" element={<WorkerDashboard />} />
           <Route path="analytics" element={<Analytics />} />
+          <Route path="monthly-revenue" element={<MonthlyRevenue />} />
           <Route path="history" element={<ActivityHistory />} />
           <Route path="support" element={<Support />} />
           
@@ -139,8 +145,11 @@ function App() {
           {/* Parts (Авторазборка) - Полностью отдельная система */}
           <Route path="parts/dashboard" element={<PartsDashboard />} />
           <Route path="parts/vehicles" element={<PartsVehicles />} />
+          <Route path="parts/vehicles/:id" element={<PartsVehicleDetails />} />
           <Route path="parts/inventory" element={<PartsInventory />} />
           <Route path="parts/orders" element={<PartsOrders />} />
+          <Route path="parts/orders/create" element={<PartsCreateOrder />} />
+          <Route path="parts/orders/:id" element={<PartsOrderDetails />} />
           <Route path="parts/customers" element={<PartsCustomers />} />
           <Route path="parts/employees" element={<PartsEmployees />} />
           <Route path="parts/analytics" element={<PartsAnalytics />} />

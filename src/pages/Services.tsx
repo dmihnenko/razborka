@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Search, X } from 'lucide-react'
+import { useBlockScroll } from '@/hooks/useBlockScroll'
 
 export default function Services() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -335,6 +336,8 @@ function ServiceModal({ service, onClose }: { service: any; onClose: () => void 
   })
   const [categorySearch, setCategorySearch] = useState('')
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
+
+  useBlockScroll(true)
 
   const queryClient = useQueryClient()
 
