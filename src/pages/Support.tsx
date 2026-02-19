@@ -3,7 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { MessageSquare, Send, X, ArrowLeft, CheckCheck, Clock, AlertCircle, Menu } from 'lucide-react'
-import { useUserProfile } from '@/hooks/useUserProfile'import { useBlockScroll } from '@/hooks/useBlockScroll'
+import { useUserProfile } from '@/hooks/useUserProfile'
+import { useBlockScroll } from '@/hooks/useBlockScroll'
+
 interface Chat {
   id: string
   owner_id: string
