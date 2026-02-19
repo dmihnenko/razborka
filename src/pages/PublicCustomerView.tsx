@@ -39,7 +39,7 @@ export default function PublicCustomerView() {
   })
 
   // Получаем заявки клиента
-  const { data: appointments, isLoading: appointmentsLoading } = useQuery({
+  const { data: appointments, isLoading: appointmentsLoading, error: appointmentsError } = useQuery({
     queryKey: ['public-customer-appointments', id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -56,7 +56,11 @@ export default function PublicCustomerView() {
         .eq('customer_id', id)
         .order('appointment_date', { ascending: false })
       
-      if (error) throw error
+      if (error) {
+        console.error('Appointments error:', error)
+        throw error
+      }
+      console.log('Appointments data:', data)
       return data
     },
   })
