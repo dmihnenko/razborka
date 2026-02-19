@@ -65,14 +65,18 @@ export default function Customers() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('customers').delete().eq('id', id)
-      if (error) throw error
+      if (error) {
+        console.error('Delete error:', error)
+        throw error
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] })
       toast.success('Клиент удален')
     },
-    onError: () => {
-      toast.error('Ошибка при удалении')
+    onError: (error: any) => {
+      console.error('Delete mutation error:', error)
+      toast.error('Ошибка при удалении: ' + (error.message || 'Недостаточно прав'))
     },
   })
 
