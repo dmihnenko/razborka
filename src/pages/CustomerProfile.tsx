@@ -1,13 +1,16 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Car, FileText, Phone, Mail, MapPin, Link2, Package } from 'lucide-react'
+import { ArrowLeft, Car, FileText, Phone, Mail, MapPin, Link2, Package, Plus } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { toast } from 'sonner'
+import { useState } from 'react'
+import VehicleModal from '@/components/VehicleModal'
 
 export default function CustomerProfile() {
   const { id } = useParams<{ id: string }>()
+  const [showVehicleModal, setShowVehicleModal] = useState(false)
 
   const handleCopyPublicLink = async () => {
     const publicUrl = `${window.location.origin}/public/customer/${id}`
@@ -224,11 +227,20 @@ export default function CustomerProfile() {
           </div>
         )}
       </div>
-
-      {/* Автомобили */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <div className="flex items-center mb-4">
-          <Car className="w-6 h-6 mr-2 text-primary" />
+justify-between mb-4">
+          <div className="flex items-center">
+            <Car className="w-6 h-6 mr-2 text-primary" />
+            <h2 className="text-xl font-bold text-gray-900">
+              Автомобили ({vehicles?.length || 0})
+            </h2>
+          </div>
+          <button
+            onClick={() => setShowVehicleModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Добавить авто
+          </button className="w-6 h-6 mr-2 text-primary" />
           <h2 className="text-xl font-bold text-gray-900">
             Автомобили ({vehicles?.length || 0})
           </h2>
@@ -402,5 +414,15 @@ export default function CustomerProfile() {
         </div>
       )}
     </div>
+
+    {/* Модалка добавления автомобиля */}
+    {showVehicleModal && (
+      <VehicleModal
+        onClose={() => setShowVehicleModal(false)}
+        customerId={id}
+        customerName={customer.name}
+      />
+    )}
+  </div>
   )
 }
