@@ -1,12 +1,27 @@
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { Car, FileText, Clock } from 'lucide-react'
+import { Car, FileText, Clock, Package } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 
 export default function PublicCustomerView() {
   const { id } = useParams<{ id: string }>()
+
+  // Получаем данные клиента СТО (нужны для телефона)
+  const { data: customer } = useQuery({
+    queryKey: ['public-customer', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('phone')
+        .eq('id', id)
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+  })
 
   // Получаем автомобили клиента
   const { data: vehicles, isLoading: vehiclesLoading } = useQuery({
@@ -46,6 +61,47 @@ export default function PublicCustomerView() {
     },
   })
 
+  // Получаем заказы запчастей клиента (через связь по телефону)
+  const { data: partsOrders, isLoading: partsOrdersLoading } = useQuery({
+    queryKey: ['public-customer-parts-orders', customer?.phone],
+    queryFn: async () => {
+      if (!customer?.phone) return []
+      
+      // Сначала находим parts_customer по телефону
+      const { data: partsCustomers, error: customerError } = await supabase
+        .from('parts_customers')
+        .select('id')
+        .eq('phone', customer.phone)
+      
+      if (customerError) throw customerError
+      if (!partsCustomers || partsCustomers.length === 0) return []
+      
+      // Получаем все заказы для найденных parts_customers
+      const customerIds = partsCustomers.map(c => c.id)
+      const { data, error } = await supabase
+        .from('parts_orders')
+        .select(`
+          *,
+          items:parts_order_items(
+            id,
+            quantity,
+            unit_price,
+            subtotal,
+            inventory_item:parts_inventory(
+              name,
+              part_number
+            )
+          )
+        `)
+        .in('customer_id', customerIds)
+        .order('order_date', { ascending: false })
+      
+      if (error) throw error
+      return data
+    },
+    enabled: !!customer?.phone
+  })
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       pending: 'bg-yellow-100 text-yellow-800',
@@ -68,7 +124,34 @@ export default function PublicCustomerView() {
     return statuses[status] || status
   }
 
-  if (vehiclesLoading || appointmentsLoading) {
+  const getOrderStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      new: 'bg-blue-100 text-blue-800',
+      in_progress: 'bg-yellow-100 text-yellow-800',
+      completed: 'bg-green-100 text-green-800',
+      cancelled: 'bg-red-100 text-red-800',
+    }
+    return colors[status] || 'bg-gray-100 text-gray-800'
+  }
+
+  const getOrderStatusText = (status: string) => {
+    const statuses: Record<string, string> = {
+      new: 'Новый',
+      in_progress: 'В обработке',
+      completed: 'Выполнен',
+      cancelled: 'Отменен',
+    }
+    return statuses[status] || status
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('ru-RU', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount) + ' ₴'
+  }
+
+  if (vehiclesLoading || appointmentsLoading || partsOrdersLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex justify-center items-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -87,12 +170,24 @@ export default function PublicCustomerView() {
                 Клиент: ******
               </h1>
               <p className="text-sm text-gray-500">
-                Публичная страница для просмотра заявок
+                Публичная страница для просмотра заявок и заказов
               </p>
             </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-500">Автомобилей</div>
-              <div className="text-2xl font-bold text-primary">{vehicles?.length || 0}</div>
+            <div className="flex gap-4 text-right">
+              <div>
+                <div className="text-sm text-gray-500">Автомобилей</div>
+                <div className="text-2xl font-bold text-primary">{vehicles?.length || 0}</div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-500">Заявок</div>
+                <div className="text-2xl font-bold text-blue-600">{appointments?.length || 0}</div>
+              </div>
+              {partsOrders && partsOrders.length > 0 && (
+                <div>
+                  <div className="text-sm text-gray-500">Заказов</div>
+                  <div className="text-2xl font-bold text-green-600">{partsOrders.length}</div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -228,6 +323,99 @@ export default function PublicCustomerView() {
             <p className="text-gray-500 text-center py-8">История обслуживания пуста</p>
           )}
         </div>
+
+        {/* Заказы запчастей */}
+        {partsOrders && partsOrders.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center mb-4">
+              <Package className="w-6 h-6 mr-2 text-primary" />
+              <h2 className="text-xl font-bold text-gray-900">
+                Заказы запчастей
+              </h2>
+            </div>
+
+            <div className="space-y-4">
+              {partsOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="border border-gray-200 rounded-lg p-5 bg-gray-50"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-semibold text-gray-900 text-lg">
+                          Заказ {order.order_number}
+                        </h3>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getOrderStatusColor(order.status)}`}>
+                          {getOrderStatusText(order.status)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-primary">
+                        {formatCurrency(order.total_amount)}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Список позиций */}
+                  {order.items && order.items.length > 0 && (
+                    <div className="mb-3 p-3 bg-white rounded border border-gray-100">
+                      <div className="space-y-2">
+                        {order.items.map((item: any) => (
+                          <div key={item.id} className="flex justify-between text-sm">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900">
+                                {item.inventory_item?.name || 'Запчасть'}
+                              </div>
+                              {item.inventory_item?.part_number && (
+                                <div className="text-xs text-gray-500">
+                                  Артикул: {item.inventory_item.part_number}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <div className="text-gray-900">
+                                {item.quantity} шт × {formatCurrency(item.unit_price)}
+                              </div>
+                              <div className="font-medium text-primary">
+                                {formatCurrency(item.subtotal)}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Примечания */}
+                  {order.notes && (
+                    <div className="mb-3 p-3 bg-blue-50 rounded border border-blue-100">
+                      <p className="text-sm text-gray-700">{order.notes}</p>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Clock className="w-4 h-4 mr-1" />
+                      {new Date(order.order_date).toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {formatDistanceToNow(new Date(order.created_at), { 
+                        addSuffix: true,
+                        locale: ru 
+                      })}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Футер */}
         <div className="mt-8 text-center text-sm text-gray-500">
