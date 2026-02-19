@@ -6,6 +6,7 @@
 DROP POLICY IF EXISTS "Allow authenticated users to read appointments" ON appointments;
 DROP POLICY IF EXISTS "Allow public access to appointments by customer_id" ON appointments;
 DROP POLICY IF EXISTS "Allow public read appointments" ON appointments;
+DROP POLICY IF EXISTS "appointments_select_policy" ON appointments;
 CREATE POLICY "Allow public read appointments"
   ON appointments FOR SELECT
   USING (true);  -- Публичный доступ ко всем заявкам для чтения
@@ -14,6 +15,7 @@ CREATE POLICY "Allow public read appointments"
 DROP POLICY IF EXISTS "Allow authenticated users to read vehicles" ON vehicles;
 DROP POLICY IF EXISTS "Allow public access to vehicles by customer_id" ON vehicles;
 DROP POLICY IF EXISTS "Allow public read vehicles" ON vehicles;
+DROP POLICY IF EXISTS "vehicles_select_policy" ON vehicles;
 CREATE POLICY "Allow public read vehicles"
   ON vehicles FOR SELECT
   USING (true);  -- Публичный доступ ко всем автомобилям для чтения
@@ -21,6 +23,7 @@ CREATE POLICY "Allow public read vehicles"
 -- Разрешаем анонимный доступ к клиентам СТО (только для получения телефона)
 DROP POLICY IF EXISTS "Allow authenticated users to read customers" ON customers;
 DROP POLICY IF EXISTS "Allow public access to customers for phone lookup" ON customers;
+DROP POLICY IF EXISTS "customers_select_policy" ON customers;
 DROP POLICY IF EXISTS "Allow public read customers" ON customers;
 CREATE POLICY "Allow public read customers"
   ON customers FOR SELECT
