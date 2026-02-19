@@ -54,7 +54,7 @@ export default function PublicCustomerView() {
           )
         `)
         .eq('customer_id', id)
-        .order('appointment_date', { ascending: false })
+        .order('scheduled_date', { ascending: false })
       
       if (error) {
         console.error('Appointments error:', error)
@@ -283,7 +283,7 @@ export default function PublicCustomerView() {
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-2 sm:pt-3 border-t border-gray-200 gap-2">
                     <div className="flex items-center text-xs sm:text-sm text-gray-600">
                       <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                      {new Date(appointment.appointment_date).toLocaleDateString('ru-RU', {
+                      {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU', {
                         day: 'numeric',
                         month: 'long',
                         year: 'numeric'
