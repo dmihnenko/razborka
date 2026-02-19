@@ -160,7 +160,10 @@ export async function deletePartsCustomer(id: string) {
     .delete()
     .eq('id', id)
   
-  if (error) throw error
+  if (error) {
+    console.error('Delete parts customer error:', error)
+    throw error
+  }
 }
 
 // ============================================================================

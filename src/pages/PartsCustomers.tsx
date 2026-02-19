@@ -52,8 +52,9 @@ export default function PartsCustomers() {
       queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
       toast.success('Клиент удалён')
     },
-    onError: () => {
-      toast.error('Ошибка при удалении')
+    onError: (error: any) => {
+      console.error('Delete parts customer mutation error:', error)
+      toast.error('Ошибка при удалении: ' + (error.message || 'Недостаточно прав'))
     }
   })
 
