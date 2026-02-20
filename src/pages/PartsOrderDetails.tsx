@@ -5,6 +5,8 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsOrder, PartsOrderItem, CreatePartsOrderItemInput } from '@/types/parts'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Plus, Trash2, Edit2, Search, CheckCircle } from 'lucide-react'
+import { formatCurrency } from '@/utils/currency'
+import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 
 export default function PartsOrderDetails() {
   const { id } = useParams<{ id: string }>()
@@ -76,39 +78,12 @@ export default function PartsOrderDetails() {
     },
   })
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      new: 'bg-blue-100 text-blue-800',
-      in_progress: 'bg-yellow-100 text-yellow-800',
-      completed: 'bg-green-100 text-green-800',
-      cancelled: 'bg-gray-100 text-gray-800',
-    }
-    const labels = {
-      new: 'Новый',
-      in_progress: 'В работе',
-      completed: 'Завершен',
-      cancelled: 'Отменен',
-    }
-    return (
-      <span className={`px-3 py-1 rounded-full text-sm font-medium ${styles[status as keyof typeof styles]}`}>
-        {labels[status as keyof typeof labels]}
-      </span>
-    )
-  }
-
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
     })
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount)
   }
 
   const canEdit = order && (order.status === 'new' || order.status === 'in_progress')
@@ -157,7 +132,9 @@ export default function PartsOrderDetails() {
               <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
                 {order.order_number}
               </h1>
-              {getStatusBadge(order.status)}
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPartsOrderStatusColor(order.status)}`}>
+                {getPartsOrderStatusText(order.status)}
+              </span>
             </div>
           </div>
         </div>

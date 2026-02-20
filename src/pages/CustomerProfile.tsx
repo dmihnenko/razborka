@@ -7,6 +7,8 @@ import { ru } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { useState } from 'react'
 import VehicleModal from '@/components/VehicleModal'
+import { formatCurrency } from '@/utils/currency'
+import { getStatusColor, getStatusText, getOrderStatusColor, getOrderStatusText } from '@/utils/status'
 
 export default function CustomerProfile() {
   const { id } = useParams<{ id: string }>()
@@ -124,54 +126,7 @@ export default function CustomerProfile() {
     )
   }
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      in_progress: 'bg-blue-100 text-blue-800',
-      completed: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800',
-      archived: 'bg-gray-100 text-gray-800',
-    }
-    return colors[status] || 'bg-gray-100 text-gray-800'
-  }
 
-  const getStatusText = (status: string) => {
-    const statuses: Record<string, string> = {
-      pending: 'Ожидает',
-      in_progress: 'В работе',
-      completed: 'Завершено',
-      cancelled: 'Отменено',
-      archived: 'Архив',
-    }
-    return statuses[status] || status
-  }
-
-  const getOrderStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      new: 'bg-blue-100 text-blue-800',
-      in_progress: 'bg-yellow-100 text-yellow-800',
-      completed: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800',
-    }
-    return colors[status] || 'bg-gray-100 text-gray-800'
-  }
-
-  const getOrderStatusText = (status: string) => {
-    const statuses: Record<string, string> = {
-      new: 'Новый',
-      in_progress: 'В обработке',
-      completed: 'Выполнен',
-      cancelled: 'Отменен',
-    }
-    return statuses[status] || status
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount) + ' ₴'
-  }
 
   return (
     <div className="max-w-7xl mx-auto">

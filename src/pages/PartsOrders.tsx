@@ -5,6 +5,10 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsOrder } from '@/types/parts'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, Search, Grid, List, ShoppingCart, DollarSign } from 'lucide-react'
+import { formatCurrency } from '@/utils/currency'
+import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
+import { formatCurrency } from '@/utils/currency'
+import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 
 type ViewMode = 'grid' | 'list'
 
@@ -68,39 +72,12 @@ export default function PartsOrders() {
       .reduce((sum, o) => sum + o.total_amount, 0),
   }
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      new: 'bg-blue-100 text-blue-800 border-blue-200',
-      in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      completed: 'bg-green-100 text-green-800 border-green-200',
-      cancelled: 'bg-gray-100 text-gray-800 border-gray-200',
-    }
-    const labels = {
-      new: 'Новый',
-      in_progress: 'В работе',
-      completed: 'Завершен',
-      cancelled: 'Отменен',
-    }
-    return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${styles[status as keyof typeof styles]}`}>
-        {labels[status as keyof typeof labels]}
-      </span>
-    )
-  }
-
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
     })
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount) + ' ₴'
   }
 
   if (!partsCompanyId) {
@@ -287,7 +264,9 @@ export default function PartsOrders() {
                     <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary transition-colors">
                       {order.order_number}
                     </h3>
-                    {getStatusBadge(order.status)}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getPartsOrderStatusColor(order.status)} border-current`}>
+                      {getPartsOrderStatusText(order.status)}
+                    </span>
                   </div>
 
                   {/* Customer Info */}
@@ -388,7 +367,9 @@ export default function PartsOrders() {
                         {formatDate(order.order_date)}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap hidden sm:table-cell">
-                        {getStatusBadge(order.status)}
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getPartsOrderStatusColor(order.status)} border-current`}>
+                          {getPartsOrderStatusText(order.status)}
+                        </span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right">
                         <div className="text-lg font-bold text-primary">{formatCurrency(order.total_amount)}</div>

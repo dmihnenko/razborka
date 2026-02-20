@@ -76,12 +76,7 @@ export default function PartsCustomers() {
     avgSpent: customers.length > 0 ? customers.reduce((sum, c) => sum + c.total_spent, 0) / customers.length : 0,
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount) + ' ₴'
-  }
+
 
   const handleEdit = (customer: PartsCustomer, e: React.MouseEvent) => {
     e.stopPropagation()

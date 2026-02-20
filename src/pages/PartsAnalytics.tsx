@@ -100,12 +100,7 @@ export default function PartsAnalytics() {
     enabled: !!partsCompanyId,
   })
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount) + ' ₴'
-  }
+
 
   if (!partsCompanyId) {
     return (

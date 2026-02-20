@@ -3,6 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { Car, Package, ShoppingCart, Users, DollarSign, AlertCircle, TrendingUp, ArrowRight } from 'lucide-react'
+import { formatCurrency } from '@/utils/currency'
+import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
+import { formatCurrency } from '@/utils/currency'
+import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 
 export default function PartsDashboard() {
   const navigate = useNavigate()
@@ -120,39 +124,12 @@ export default function PartsDashboard() {
     enabled: !!partsCompanyId,
   })
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount) + ' ₴'
-  }
-
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
     })
-  }
-
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      new: 'bg-blue-100 text-blue-800 border-blue-200',
-      in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      completed: 'bg-green-100 text-green-800 border-green-200',
-      cancelled: 'bg-gray-100 text-gray-800 border-gray-200',
-    }
-    const labels = {
-      new: 'Новый',
-      in_progress: 'В работе',
-      completed: 'Завершен',
-      cancelled: 'Отменен',
-    }
-    return (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${styles[status as keyof typeof styles]}`}>
-        {labels[status as keyof typeof labels]}
-      </span>
-    )
   }
 
   if (!partsCompanyId) {
@@ -338,7 +315,9 @@ export default function PartsDashboard() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <span className="font-semibold text-gray-900">{order.order_number}</span>
-                      {getStatusBadge(order.status)}
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getPartsOrderStatusColor(order.status)} border-current`}>
+                        {getPartsOrderStatusText(order.status)}
+                      </span>
                     </div>
                     <span className="font-bold text-primary">{formatCurrency(order.total_amount)}</span>
                   </div>

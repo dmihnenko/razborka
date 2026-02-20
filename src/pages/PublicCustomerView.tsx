@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase'
 import { Car, FileText, Clock, Package } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
+import { formatCurrency } from '@/utils/currency'
+import { getAppointmentStatusColor, getAppointmentStatusText, getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 
 export default function PublicCustomerView() {
   const { id } = useParams<{ id: string }>()
@@ -105,55 +107,6 @@ export default function PublicCustomerView() {
     },
     enabled: !!customer?.phone
   })
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      in_progress: 'bg-blue-100 text-blue-800',
-      completed: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800',
-      archived: 'bg-gray-100 text-gray-800',
-    }
-    return colors[status] || 'bg-gray-100 text-gray-800'
-  }
-
-  const getStatusText = (status: string) => {
-    const statuses: Record<string, string> = {
-      pending: 'Ожидает',
-      in_progress: 'В работе',
-      completed: 'Завершено',
-      cancelled: 'Отменено',
-      archived: 'Архив',
-    }
-    return statuses[status] || status
-  }
-
-  const getOrderStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      new: 'bg-blue-100 text-blue-800',
-      in_progress: 'bg-yellow-100 text-yellow-800',
-      completed: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800',
-    }
-    return colors[status] || 'bg-gray-100 text-gray-800'
-  }
-
-  const getOrderStatusText = (status: string) => {
-    const statuses: Record<string, string> = {
-      new: 'Новый',
-      in_progress: 'В обработке',
-      completed: 'Выполнен',
-      cancelled: 'Отменен',
-    }
-    return statuses[status] || status
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount) + ' ₴'
-  }
 
   if (vehiclesLoading || appointmentsLoading || partsOrdersLoading) {
     return (
@@ -266,8 +219,8 @@ export default function PublicCustomerView() {
                         <h3 className="font-semibold text-gray-900 text-base sm:text-lg">
                           Заявка #{appointment.request_number}
                         </h3>
-                        <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)} w-fit`}>
-                          {getStatusText(appointment.status)}
+                        <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getAppointmentStatusColor(appointment.status)} w-fit`}>
+                          {getAppointmentStatusText(appointment.status)}
                         </span>
                       </div>
                       <p className="text-xs sm:text-sm text-gray-600">
@@ -350,8 +303,8 @@ export default function PublicCustomerView() {
                         <h3 className="font-semibold text-gray-900 text-base sm:text-lg">
                           Заказ {order.order_number}
                         </h3>
-                        <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getOrderStatusColor(order.status)} w-fit`}>
-                          {getOrderStatusText(order.status)}
+                        <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getPartsOrderStatusColor(order.status)} w-fit`}>
+                          {getPartsOrderStatusText(order.status)}
                         </span>
                       </div>
                     </div>

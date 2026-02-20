@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase'
 import { Package, Clock } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
+import { formatCurrency } from '@/utils/currency'
+import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 
 export default function PublicPartsCustomerView() {
   const { id } = useParams<{ id: string }>()
@@ -113,8 +115,8 @@ export default function PublicPartsCustomerView() {
                         <h3 className="font-semibold text-gray-900 text-base sm:text-lg">
                           Заказ {order.order_number}
                         </h3>
-                        <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)} w-fit`}>
-                          {getStatusText(order.status)}
+                        <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getPartsOrderStatusColor(order.status)} w-fit`}>
+                          {getPartsOrderStatusText(order.status)}
                         </span>
                       </div>
                     </div>
