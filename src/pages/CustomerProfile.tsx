@@ -182,7 +182,10 @@ export default function CustomerProfile() {
           </div>
         )}
       </div>
-justify-between mb-4">
+
+      {/* Секция автомобилей */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
             <Car className="w-6 h-6 mr-2 text-primary" />
             <h2 className="text-xl font-bold text-gray-900">
@@ -195,10 +198,7 @@ justify-between mb-4">
           >
             <Plus className="w-4 h-4" />
             Добавить авто
-          </button className="w-6 h-6 mr-2 text-primary" />
-          <h2 className="text-xl font-bold text-gray-900">
-            Автомобили ({vehicles?.length || 0})
-          </h2>
+          </button>
         </div>
 
         {vehiclesLoading ? (
@@ -368,16 +368,15 @@ justify-between mb-4">
           </div>
         </div>
       )}
-    </div>
 
-    {/* Модалка добавления автомобиля */}
-    {showVehicleModal && (
-      <VehicleModal
-        onClose={() => setShowVehicleModal(false)}
-        customerId={id}
-        customerName={customer.name}
-      />
-    )}
-  </div>
+      {/* Модалка добавления автомобиля */}
+      {showVehicleModal && (
+        <VehicleModal
+          onClose={() => setShowVehicleModal(false)}
+          customerId={id}
+          customerName={customer.name}
+        />
+      )}
+    </div>
   )
 }

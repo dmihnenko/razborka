@@ -10,7 +10,8 @@ import {
   TrendingUp,
   MessageSquare,
   BarChart3,
-  Settings
+  Settings,
+  Tag
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -60,6 +61,7 @@ export const partsOwnerMenu: MenuItem[] = [
   { name: 'Клиенты', href: '/parts/customers', icon: Users },
   { name: 'Сотрудники', href: '/parts/employees', icon: Users },
   { name: 'Аналитика', href: '/parts/analytics', icon: TrendingUp },
+  { name: 'Категории', href: '/parts/categories', icon: Tag },
   { name: 'Поддержка', href: '/support', icon: MessageSquare },
 ];
 

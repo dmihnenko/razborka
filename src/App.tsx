@@ -56,6 +56,7 @@ const PartsAnalytics = lazy(() => import('./pages/PartsAnalytics'))
 const PartsCustomers = lazy(() => import('./pages/PartsCustomers'))
 const PartsCustomerProfile = lazy(() => import('./pages/PartsCustomerProfile'))
 const PublicPartsCustomerView = lazy(() => import('./pages/PublicPartsCustomerView'))
+const PartsCategories = lazy(() => import('./pages/PartsCategories'))
 
 import { useAuth } from './hooks/useAuth'
 import { useUserProfile } from './hooks/useUserProfile'
@@ -145,7 +146,6 @@ function App() {
           {/* Личные автомобили */}
           <Route path="my-vehicles" element={<MyVehicles />} />
           <Route path="my-vehicles/archive" element={<MyVehiclesArchive />} />
-          <Route path="my-appointments" element={<Appointments />} />
           
           {/* Parts (Авторазборка) - Полностью отдельная система */}
           <Route path="parts/dashboard" element={<PartsDashboard />} />
@@ -159,6 +159,7 @@ function App() {
           <Route path="parts/customers/:id" element={<PartsCustomerProfile />} />
           <Route path="parts/employees" element={<PartsEmployees />} />
           <Route path="parts/analytics" element={<PartsAnalytics />} />
+          <Route path="parts/categories" element={<PartsCategories />} />
         </Route>
         
         {/* Admin Panel - полностью отдельный layout */}

@@ -99,21 +99,6 @@ export default function PartsEmployees() {
     }
   }
 
-  // Мутация для удаления сотрудника
-  const removeEmployeeMutation = useMutation({
-    mutationFn: async (employeeId: string) => {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ parts_company_id: null })
-        .eq('id', employeeId)
-
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['parts-employees'] })
-    },
-  })
-
   const stats = {
     total: employees.length,
     active: employees.filter(e => e.email).length,

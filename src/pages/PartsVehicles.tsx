@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle } from '@/services/partsService'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
+import { formatCurrency } from '@/utils/currency'
 import type { PartsVehicle, CreatePartsVehicleInput, PartsVehicleStatus } from '@/types/parts'
 
 const statusLabels: Record<PartsVehicleStatus, string> = {
@@ -109,14 +110,6 @@ export default function PartsVehicles() {
     if (confirm('Удалить автомобиль? Это действие нельзя отменить.')) {
       deleteMutation.mutate(vehicleId)
     }
-  }
-
-  const formatCurrency = (amount?: number) => {
-    if (!amount) return '—'
-    return new Intl.NumberFormat('ru-RU', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount) + ' ₴'
   }
 
   if (!partsCompanyId) {
@@ -448,12 +441,15 @@ export default function PartsVehicles() {
       {/* Modal */}
       {isModalOpen && (
         <PartsVehicleModal
+          isOpen={isModalOpen}
           vehicle={selectedVehicle}
           onClose={() => {
             setIsModalOpen(false)
             setSelectedVehicle(null)
           }}
-          onSave={(data) => saveMutation.mutate(data)}
+          onSubmit={async (data) => {
+            await saveMutation.mutateAsync(data)
+          }}
         />
       )}
     </div>

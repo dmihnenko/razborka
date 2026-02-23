@@ -7,8 +7,6 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, Search, Grid, List, ShoppingCart, DollarSign } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
-import { formatCurrency } from '@/utils/currency'
-import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 
 type ViewMode = 'grid' | 'list'
 

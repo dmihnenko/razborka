@@ -7,19 +7,22 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus } from '@/types/parts'
 import { supabase } from '@/lib/supabase'
+import { formatCurrency, formatPrice } from '@/utils/currency'
 
 type ViewMode = 'grid' | 'list'
 
 const statusLabels: Record<PartsInventoryStatus, string> = {
   available: 'В наличии',
   reserved: 'Зарезервировано',
-  sold: 'Продано'
+  sold: 'Продано',
+  damaged: 'Повреждено'
 }
 
 const statusColors: Record<PartsInventoryStatus, string> = {
   available: 'bg-green-100 text-green-800 border-green-200',
   reserved: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  sold: 'bg-gray-100 text-gray-800 border-gray-200'
+  sold: 'bg-gray-100 text-gray-800 border-gray-200',
+  damaged: 'bg-red-100 text-red-800 border-red-200'
 }
 
 const conditionLabels = {
@@ -129,14 +132,6 @@ export default function PartsInventory() {
     totalValue: inventory.reduce((sum: number, item: PartsInventoryItem) => 
       sum + (item.selling_price || 0) * item.quantity, 0
     )
-  }
-
-  const formatCurrency = (amount?: number) => {
-    if (!amount) return '—'
-    return new Intl.NumberFormat('ru-RU', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount) + ' ₴'
   }
 
   const handleEdit = (item: PartsInventoryItem, e: React.MouseEvent) => {
@@ -369,8 +364,8 @@ export default function PartsInventory() {
                     </div>
                     {item.selling_price && (
                       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                        <span className="text-gray-600">Цена продажи:</span>
-                        <span className="font-bold text-primary text-lg">{formatCurrency(item.selling_price)}</span>
+                        <span className="text-gray-600">Цена:</span>
+                        <span className="font-bold text-primary text-lg">{formatPrice(item.selling_price, item.price_currency as 'UAH' | 'USD')}</span>
                       </div>
                     )}
                   </div>
@@ -462,7 +457,7 @@ export default function PartsInventory() {
                         </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-primary hidden sm:table-cell">
-                        {formatCurrency(item.selling_price)}
+                        {formatPrice(item.selling_price, item.price_currency as 'UAH' | 'USD')}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right text-sm">
                         <div className="flex items-center justify-end gap-2">
@@ -495,7 +490,6 @@ export default function PartsInventory() {
           item={editingItem}
           categories={categories}
           vehicles={vehicles}
-          partsCompanyId={partsCompanyId}
           onClose={() => {
             setIsModalOpen(false)
             setEditingItem(null)
@@ -512,12 +506,11 @@ interface PartsInventoryModalProps {
   item: PartsInventoryItem | null
   categories: any[]
   vehicles: any[]
-  partsCompanyId: string
   onClose: () => void
   onSave: (data: CreatePartsInventoryInput) => void
 }
 
-function PartsInventoryModal({ item, categories, vehicles, partsCompanyId, onClose, onSave }: PartsInventoryModalProps) {
+function PartsInventoryModal({ item, categories, vehicles, onClose, onSave }: PartsInventoryModalProps) {
   const [formData, setFormData] = useState<CreatePartsInventoryInput>({
     category_id: item?.category_id || '',
     vehicle_id: item?.vehicle_id || '',
@@ -527,6 +520,7 @@ function PartsInventoryModal({ item, categories, vehicles, partsCompanyId, onClo
     condition: item?.condition || 'used',
     quantity: item?.quantity || 1,
     selling_price: item?.selling_price || undefined,
+    price_currency: (item?.price_currency as 'UAH' | 'USD') || 'UAH',
     location: item?.location || '',
     shelf: item?.shelf || '',
     bin: item?.bin || '',
@@ -645,7 +639,7 @@ function PartsInventoryModal({ item, categories, vehicles, partsCompanyId, onClo
                   />
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Количество</label>
                     <input
@@ -657,16 +651,34 @@ function PartsInventoryModal({ item, categories, vehicles, partsCompanyId, onClo
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Цена продажи (₴) *</label>
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      step="0.01"
-                      value={formData.selling_price || ''}
-                      onChange={(e) => setFormData({ ...formData, selling_price: e.target.value ? Number(e.target.value) : undefined })}
-                      className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Цена *</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        step="0.01"
+                        value={formData.selling_price || ''}
+                        onChange={(e) => setFormData({ ...formData, selling_price: e.target.value ? Number(e.target.value) : undefined })}
+                        className="flex-1 min-w-0 px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      <div className="flex gap-1 flex-shrink-0">
+                        {(['UAH', 'USD'] as const).map(c => (
+                          <button
+                            type="button"
+                            key={c}
+                            onClick={() => setFormData({ ...formData, price_currency: c })}
+                            className={`px-2.5 py-2 rounded-md text-sm font-semibold transition-colors ${
+                              (formData.price_currency || 'UAH') === c
+                                ? 'bg-primary text-white'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                          >
+                            {c === 'UAH' ? '₴' : '$'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
 

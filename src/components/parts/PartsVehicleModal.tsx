@@ -145,6 +145,8 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
               />
             </div>
 
+
+
             {/* Цвет */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">

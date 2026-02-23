@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useNavigate } from 'react-router-dom'
+import { formatCurrency } from '@/utils/currency'
 import { 
   ArrowLeft, 
   BarChart3, 
@@ -11,7 +12,6 @@ import {
   ShoppingCart,
   Car,
   Calendar,
-  TrendingDown,
   AlertCircle
 } from 'lucide-react'
 

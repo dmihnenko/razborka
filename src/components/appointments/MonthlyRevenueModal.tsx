@@ -127,13 +127,13 @@ export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: Mo
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-gray-900">
-                                {appointment.customers?.name}
+                                {appointment.customers?.[0]?.name}
                               </p>
                               <p className="text-sm text-gray-600">
-                                {appointment.vehicles?.brand} {appointment.vehicles?.model}
-                                {appointment.vehicles?.license_plate && (
+                                {appointment.vehicles?.[0]?.brand} {appointment.vehicles?.[0]?.model}
+                                {appointment.vehicles?.[0]?.license_plate && (
                                   <span className="ml-2 text-gray-500">
-                                    {appointment.vehicles.license_plate}
+                                    {appointment.vehicles[0].license_plate}
                                   </span>
                                 )}
                               </p>
@@ -195,13 +195,13 @@ export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: Mo
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-gray-700">
-                                {appointment.customers?.name}
+                                {appointment.customers?.[0]?.name}
                               </p>
                               <p className="text-sm text-gray-500">
-                                {appointment.vehicles?.brand} {appointment.vehicles?.model}
-                                {appointment.vehicles?.license_plate && (
+                                {appointment.vehicles?.[0]?.brand} {appointment.vehicles?.[0]?.model}
+                                {appointment.vehicles?.[0]?.license_plate && (
                                   <span className="ml-2">
-                                    {appointment.vehicles.license_plate}
+                                    {appointment.vehicles[0].license_plate}
                                   </span>
                                 )}
                               </p>

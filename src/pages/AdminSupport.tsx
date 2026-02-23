@@ -60,11 +60,6 @@ export default function AdminSupport() {
     }
   })
 
-  // Автопрокрутка к последнему сообщению
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
   // Закрыть список чатов на мобильных при выборе чата
   useEffect(() => {
     if (selectedChat && window.innerWidth < 1024) {
@@ -116,6 +111,11 @@ export default function AdminSupport() {
     enabled: !!selectedChat,
     refetchInterval: 10000
   })
+
+  // Автопрокрутка к последнему сообщению
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   // Realtime подписка
   useEffect(() => {

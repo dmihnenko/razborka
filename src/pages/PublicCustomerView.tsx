@@ -41,7 +41,7 @@ export default function PublicCustomerView() {
   })
 
   // Получаем заявки клиента
-  const { data: appointments, isLoading: appointmentsLoading, error: appointmentsError } = useQuery({
+  const { data: appointments, isLoading: appointmentsLoading } = useQuery({
     queryKey: ['public-customer-appointments', id],
     queryFn: async () => {
       const { data, error } = await supabase

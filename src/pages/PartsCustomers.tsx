@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsCustomers, createPartsCustomer, updatePartsCustomer, deletePartsCustomer } from '@/services/partsService'
+import { formatCurrency } from '@/utils/currency'
 import PartsCustomerModal from '@/components/parts/PartsCustomerModal'
 import type { PartsCustomer, CreatePartsCustomerInput } from '@/types/parts'
 

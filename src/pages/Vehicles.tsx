@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Search } from 'lucide-react'
 import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { useBlockScroll } from '@/hooks/useBlockScroll'
 
 interface VehicleModalProps {
   vehicle: any

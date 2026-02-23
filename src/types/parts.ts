@@ -92,6 +92,7 @@ export interface PartsInventoryItem {
   quantity: number
   purchase_price?: number
   selling_price?: number
+  price_currency?: 'UAH' | 'USD'
   location?: string
   shelf?: string
   bin?: string
@@ -107,44 +108,6 @@ export interface PartsInventoryItem {
   // Relations
   category?: PartsCategory
   vehicle?: PartsVehicle
-}
-
-export type PartsOrderStatus = 'pending' | 'processing' | 'ready' | 'completed' | 'cancelled'
-export type PartsOrderPaymentStatus = 'unpaid' | 'partial' | 'paid'
-
-export interface PartsOrder {
-  id: string
-  parts_company_id: string
-  customer_id?: string
-  order_number: string
-  status: PartsOrderStatus
-  payment_status: PartsOrderPaymentStatus
-  total_amount: number
-  discount_amount: number
-  paid_amount: number
-  notes?: string
-  created_at: string
-  updated_at: string
-  completed_at?: string
-  created_by?: string
-  
-  // Relations
-  customer?: PartsCustomer
-  items?: PartsOrderItem[]
-}
-
-export interface PartsOrderItem {
-  id: string
-  order_id: string
-  inventory_item_id: string
-  quantity: number
-  unit_price: number
-  discount_percent: number
-  total_price: number
-  notes?: string
-  
-  // Relations
-  inventory_item?: PartsInventoryItem
 }
 
 // Form types
@@ -181,6 +144,7 @@ export interface CreatePartsInventoryInput {
   quantity: number
   purchase_price?: number
   selling_price?: number
+  price_currency?: 'UAH' | 'USD'
   location?: string
   shelf?: string
   bin?: string
@@ -224,6 +188,7 @@ export interface PartsOrderItem {
   inventory_item_id: string
   quantity: number
   price_at_sale: number
+  price_at_sale_currency?: 'UAH' | 'USD'
   subtotal: number
   created_at: string
   // Joined data
@@ -239,4 +204,5 @@ export interface CreatePartsOrderItemInput {
   inventory_item_id: string
   quantity: number
   price_at_sale: number
+  price_at_sale_currency?: 'UAH' | 'USD'
 }

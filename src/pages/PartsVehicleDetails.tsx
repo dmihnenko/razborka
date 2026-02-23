@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Edit, DollarSign, TrendingUp, TrendingDown } from 'lucide-react'
+import { ArrowLeft, Edit, TrendingUp, TrendingDown, Plus, X, Package } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useUserProfile } from '@/hooks/useUserProfile'
+import { toast } from 'sonner'
 import type { PartsVehicle, PartsVehicleStatus } from '@/types/parts'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 
@@ -25,6 +27,10 @@ export default function PartsVehicleDetails() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isAddPartOpen, setIsAddPartOpen] = useState(false)
+
+  const { data: profile } = useUserProfile()
+  const partsCompanyId = profile?.parts_company_id
 
   // Fetch vehicle
   const { data: vehicle, isLoading } = useQuery({
@@ -40,6 +46,55 @@ export default function PartsVehicleDetails() {
       return data as PartsVehicle
     },
     enabled: !!id
+  })
+
+  // Fetch categories for add-part modal
+  const { data: categories = [] } = useQuery({
+    queryKey: ['parts-categories', partsCompanyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('parts_categories')
+        .select('id, name')
+        .eq('parts_company_id', partsCompanyId)
+        .order('name')
+      if (error) throw error
+      return data
+    },
+    enabled: !!partsCompanyId && isAddPartOpen
+  })
+
+  // Add part mutation
+  const addPartMutation = useMutation({
+    mutationFn: async (data: {
+      name: string
+      part_number: string
+      condition: string
+      quantity: number
+      selling_price?: number
+      price_currency?: 'UAH' | 'USD'
+      category_id?: string
+      notes: string
+    }) => {
+      const { error } = await supabase
+        .from('parts_inventory')
+        .insert({
+          ...data,
+          vehicle_id: id,
+          parts_company_id: partsCompanyId,
+          status: 'available',
+          reserved_quantity: 0,
+          category_id: data.category_id || null,
+          selling_price: data.selling_price || 0,
+          price_currency: data.price_currency || 'UAH',
+        })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vehicle-parts', id] })
+      toast.success('Запчасть добавлена')
+      setIsAddPartOpen(false)
+    },
+    onError: () => toast.error('Ошибка при добавлении')
   })
 
   // Fetch parts for this vehicle
@@ -240,7 +295,16 @@ export default function PartsVehicleDetails() {
 
           {/* Parts list */}
           <div className="bg-white rounded-lg shadow p-4 md:p-6">
-            <h2 className="text-lg font-semibold mb-4">Запчасти ({parts.length})</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Запчасти ({parts.length})</h2>
+              <button
+                onClick={() => setIsAddPartOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm"
+              >
+                <Plus size={16} />
+                Добавить
+              </button>
+            </div>
             {parts.length === 0 ? (
               <p className="text-gray-500 text-center py-8">Запчастей пока нет</p>
             ) : (
@@ -364,6 +428,209 @@ export default function PartsVehicleDetails() {
         }}
         vehicle={vehicle}
       />
+
+      {/* Add Part Modal */}
+      {isAddPartOpen && (
+        <AddPartModal
+          vehicleName={`${vehicle.make} ${vehicle.model}${vehicle.year ? ` (${vehicle.year})` : ''}`}
+          categories={categories}
+          onClose={() => setIsAddPartOpen(false)}
+          onSave={(data) => addPartMutation.mutate(data)}
+          loading={addPartMutation.isPending}
+        />
+      )}
+    </div>
+  )
+}
+
+interface AddPartModalProps {
+  vehicleName: string
+  categories: { id: string; name: string }[]
+  onClose: () => void
+  onSave: (data: {
+    name: string
+    part_number: string
+    condition: string
+    quantity: number
+    selling_price?: number
+    price_currency?: 'UAH' | 'USD'
+    category_id?: string
+    notes: string
+  }) => void
+  loading: boolean
+}
+
+function AddPartModal({ vehicleName, categories, onClose, onSave, loading }: AddPartModalProps) {
+  const [form, setForm] = useState({
+    name: '',
+    part_number: '',
+    condition: 'used',
+    quantity: 1,
+    selling_price: '' as string | number,
+    price_currency: 'UAH' as 'UAH' | 'USD',
+    category_id: '',
+    notes: '',
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSave({
+      name: form.name,
+      part_number: form.part_number,
+      condition: form.condition,
+      quantity: form.quantity,
+      selling_price: form.selling_price ? Number(form.selling_price) : undefined,
+      price_currency: form.price_currency,
+      category_id: form.category_id || undefined,
+      notes: form.notes,
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-[95vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-semibold">Добавить запчасть</h2>
+            </div>
+            <p className="text-xs text-gray-500 mt-0.5">{vehicleName}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {/* Название */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Название *</label>
+            <input
+              type="text"
+              required
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base"
+              placeholder="Например: Головка блока"
+            />
+          </div>
+
+          {/* Категория + Артикул */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Категория</label>
+              <select
+                value={form.category_id}
+                onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base"
+              >
+                <option value="">Без категории</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Артикул</label>
+              <input
+                type="text"
+                value={form.part_number}
+                onChange={e => setForm(f => ({ ...f, part_number: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base"
+                placeholder="OEM…"
+              />
+            </div>
+          </div>
+
+          {/* Состояние + Количество */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Состояние *</label>
+              <select
+                value={form.condition}
+                onChange={e => setForm(f => ({ ...f, condition: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base"
+              >
+                <option value="new">Новая</option>
+                <option value="used">Б/У хорошее</option>
+                <option value="damaged">Повреждена</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Количество</label>
+              <input
+                type="number"
+                min={1}
+                value={form.quantity}
+                onChange={e => setForm(f => ({ ...f, quantity: Number(e.target.value) }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base"
+              />
+            </div>
+          </div>
+
+          {/* Цена */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Цена</label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.selling_price}
+                onChange={e => setForm(f => ({ ...f, selling_price: e.target.value }))}
+                className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base"
+                placeholder="0"
+              />
+              <div className="flex gap-1 flex-shrink-0">
+                {(['UAH', 'USD'] as const).map(c => (
+                  <button
+                    type="button"
+                    key={c}
+                    onClick={() => setForm(f => ({ ...f, price_currency: c }))}
+                    className={`px-2.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                      form.price_currency === c
+                        ? 'bg-primary text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {c === 'UAH' ? '₴' : '$'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="mt-1 text-xs text-gray-500">Прайс-цена. При продаже можно указать фактическую цену</p>
+          </div>
+
+          {/* Примечания */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Примечания</label>
+            <textarea
+              value={form.notes}
+              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base resize-none"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 font-medium"
+            >
+              {loading ? 'Добавление...' : 'Добавить'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

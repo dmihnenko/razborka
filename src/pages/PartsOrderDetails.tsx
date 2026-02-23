@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { PartsOrder, PartsOrderItem, CreatePartsOrderItemInput } from '@/types/parts'
+import { PartsOrder, CreatePartsOrderItemInput } from '@/types/parts'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Plus, Trash2, Edit2, Search, CheckCircle } from 'lucide-react'
-import { formatCurrency } from '@/utils/currency'
+import { formatCurrency, formatPrice } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 
 export default function PartsOrderDetails() {
@@ -271,7 +271,7 @@ export default function PartsOrderDetails() {
                           <p>Категория: {item.inventory_item.category.name}</p>
                         )}
                         <p>Количество: {item.quantity} шт.</p>
-                        <p>Цена: {formatCurrency(item.price_at_sale)} ₴</p>
+                        <p>Цена: {formatPrice(item.price_at_sale, item.price_at_sale_currency as 'UAH' | 'USD')}</p>
                       </div>
                     </div>
 
@@ -356,6 +356,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
   const [selectedItem, setSelectedItem] = useState<any>(null)
   const [quantity, setQuantity] = useState(1)
   const [price, setPrice] = useState(0)
+  const [currency, setCurrency] = useState<'UAH' | 'USD'>('UAH')
 
   // Получить доступный инвентарь
   const { data: inventory = [] } = useQuery({
@@ -364,7 +365,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
       const { data, error } = await supabase
         .from('parts_inventory')
         .select(`
-          id, name, part_number, quantity, selling_price,
+          id, name, part_number, quantity, selling_price, price_currency,
           category:parts_categories(name)
         `)
         .eq('parts_company_id', partsCompanyId)
@@ -394,6 +395,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
           inventory_item_id: input.inventory_item_id,
           quantity: input.quantity,
           price_at_sale: input.price_at_sale,
+          price_at_sale_currency: input.price_at_sale_currency || 'UAH',
         })
 
       if (error) throw error
@@ -407,6 +409,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
   const handleSelectItem = (item: any) => {
     setSelectedItem(item)
     setPrice(item.selling_price || 0)
+    setCurrency((item.price_currency as 'UAH' | 'USD') || 'UAH')
     setQuantity(1)
   }
 
@@ -421,6 +424,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
       inventory_item_id: selectedItem.id,
       quantity,
       price_at_sale: price,
+      price_at_sale_currency: currency,
     })
   }
 
@@ -468,9 +472,9 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
                       <div className="font-medium text-gray-900">{item.name}</div>
                       <div className="text-sm text-gray-600">
                         {item.part_number && <span>Артикул: {item.part_number} • </span>}
-                        {item.category && <span>{item.category.name} • </span>}
+                        {item.category?.[0]?.name && <span>{item.category[0].name} • </span>}
                         <span>В наличии: {item.quantity} шт. • </span>
-                        <span className="font-medium">{item.selling_price || 0} ₴</span>
+                        <span className="font-medium">{formatPrice(item.selling_price || 0, item.price_currency || 'UAH')}</span>
                       </div>
                     </button>
                   ))}
@@ -507,16 +511,35 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Цена (₴) *
+                      Цена продажи *
                     </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={price}
-                      onChange={(e) => setPrice(Number(e.target.value))}
-                      className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={price}
+                        onChange={(e) => setPrice(Number(e.target.value))}
+                        className="flex-1 min-w-0 px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      <div className="flex gap-1 flex-shrink-0">
+                        {(['UAH', 'USD'] as const).map(c => (
+                          <button
+                            type="button"
+                            key={c}
+                            onClick={() => setCurrency(c)}
+                            className={`px-2.5 py-2 rounded-md text-sm font-semibold transition-colors ${
+                              currency === c
+                                ? 'bg-primary text-white'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                          >
+                            {c === 'UAH' ? '₴' : '$'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">Заполнено из прайса, можно изменить</p>
                   </div>
                 </div>
 

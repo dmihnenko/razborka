@@ -2,9 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { Car, Package, ShoppingCart, Users, DollarSign, AlertCircle, TrendingUp, ArrowRight } from 'lucide-react'
-import { formatCurrency } from '@/utils/currency'
-import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
+import { Car, Package, ShoppingCart, DollarSign, AlertCircle, TrendingUp, ArrowRight } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 
@@ -26,7 +24,7 @@ export default function PartsDashboard() {
 
       return {
         total: data?.length || 0,
-        awaiting: data?.filter(v => v.status === 'awaiting_disassembly').length || 0,
+        awaiting: data?.filter(v => v.status === 'awaiting').length || 0,
         in_progress: data?.filter(v => v.status === 'in_progress').length || 0,
         dismantled: data?.filter(v => v.status === 'dismantled').length || 0,
       }
