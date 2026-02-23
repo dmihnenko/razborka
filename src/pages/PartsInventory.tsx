@@ -520,7 +520,7 @@ function PartsInventoryModal({ item, categories, vehicles, onClose, onSave }: Pa
     condition: item?.condition || 'used',
     quantity: item?.quantity || 1,
     selling_price: item?.selling_price || undefined,
-    price_currency: (item?.price_currency as 'UAH' | 'USD') || 'UAH',
+    price_currency: (item?.price_currency as 'UAH' | 'USD') || 'USD',
     location: item?.location || '',
     shelf: item?.shelf || '',
     bin: item?.bin || '',
@@ -662,22 +662,14 @@ function PartsInventoryModal({ item, categories, vehicles, onClose, onSave }: Pa
                         onChange={(e) => setFormData({ ...formData, selling_price: e.target.value ? Number(e.target.value) : undefined })}
                         className="flex-1 min-w-0 px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       />
-                      <div className="flex gap-1 flex-shrink-0">
-                        {(['UAH', 'USD'] as const).map(c => (
-                          <button
-                            type="button"
-                            key={c}
-                            onClick={() => setFormData({ ...formData, price_currency: c })}
-                            className={`px-2.5 py-2 rounded-md text-sm font-semibold transition-colors ${
-                              (formData.price_currency || 'UAH') === c
-                                ? 'bg-primary text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
-                          >
-                            {c === 'UAH' ? '₴' : '$'}
-                          </button>
-                        ))}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, price_currency: formData.price_currency === 'USD' ? 'UAH' : 'USD' })}
+                        className="px-3 py-2 rounded-md text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition-colors flex-shrink-0 w-10 text-center"
+                        title="Сменить валюту"
+                      >
+                        {formData.price_currency === 'USD' ? '$' : '₴'}
+                      </button>
                     </div>
                   </div>
                 </div>
