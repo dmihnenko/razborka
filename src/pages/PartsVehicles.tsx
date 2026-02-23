@@ -59,8 +59,9 @@ export default function PartsVehicles() {
       setIsModalOpen(false)
       setSelectedVehicle(null)
     },
-    onError: (error) => {
-      toast.error('Ошибка при сохранении')
+    onError: (error: any) => {
+      const msg = error?.message || error?.details || 'Ошибка при сохранении'
+      toast.error(msg)
       console.error(error)
     }
   })

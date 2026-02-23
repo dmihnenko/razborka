@@ -21,12 +21,14 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
     notes: vehicle?.notes || ''
   })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (!isOpen) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setError(null)
     try {
       // Убираем undefined значения перед отправкой
       const cleanData: CreatePartsVehicleInput = {
@@ -42,8 +44,10 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
       
       await onSubmit(cleanData)
       onClose()
-    } catch (error) {
-      console.error('Error submitting vehicle:', error)
+    } catch (err: any) {
+      const msg = err?.message || err?.details || 'Ошибка при сохранении'
+      setError(msg)
+      console.error('Error submitting vehicle:', err)
     } finally {
       setLoading(false)
     }
@@ -80,6 +84,11 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              {error}
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {/* Марка */}
             <div>
