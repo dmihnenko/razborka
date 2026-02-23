@@ -35,7 +35,6 @@ export default function PartsCategories() {
   const [bulkText, setBulkText] = useState('')
 
   const [templateBrand, setTemplateBrand] = useState(searchParams.get('brand') || '')
-  const [templateModel, setTemplateModel] = useState(searchParams.get('model') || '')
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<Set<string>>(new Set())
 
   const { data: categories = [], isLoading } = useQuery({
@@ -65,10 +64,9 @@ export default function PartsCategories() {
   })
 
   const { data: templates = [], isFetching: loadingTemplates } = useQuery({
-    queryKey: ['parts-category-templates', templateBrand, templateModel],
+    queryKey: ['parts-category-templates', templateBrand],
     queryFn: () => getPartsCategoryTemplates(
-      templateBrand.trim() || undefined,
-      templateModel.trim() || undefined
+      templateBrand.trim() || undefined
     ),
     enabled: tab === 'templates',
   })
@@ -350,17 +348,12 @@ export default function PartsCategories() {
         {tab === 'templates' && (
           <>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
-              <p className="text-sm text-gray-500 mb-3">Стандартные категории от администратора. Выберите нужные и импортируйте в свой список.</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  <input type="text" value={templateBrand} onChange={e => setTemplateBrand(e.target.value)}
-                    placeholder="Марка (Toyota…)"
-                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base" />
-                </div>
-                <input type="text" value={templateModel} onChange={e => setTemplateModel(e.target.value)}
-                  placeholder="Модель (Camry…)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base" />
+              <p className="text-sm text-gray-500 mb-3">Стандартные категории от администратора по марке авто. Выберите нужные и импортируйте в свой список.</p>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <input type="text" value={templateBrand} onChange={e => setTemplateBrand(e.target.value)}
+                  placeholder="Марка (Toyota, BMW, Ford…)"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base" />
               </div>
             </div>
 
@@ -387,8 +380,8 @@ export default function PartsCategories() {
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
                 <Tag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500">Стандартных категорий не найдено</p>
-                {(templateBrand || templateModel) && (
-                  <button onClick={() => { setTemplateBrand(''); setTemplateModel('') }}
+                {templateBrand && (
+                  <button onClick={() => setTemplateBrand('')}
                     className="mt-2 text-primary hover:underline text-sm">Показать все</button>
                 )}
               </div>

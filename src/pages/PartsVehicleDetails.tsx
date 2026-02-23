@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Edit, TrendingUp, TrendingDown, Plus, X, Package, Settings, Camera, Trash2 } from 'lucide-react'
+import { ArrowLeft, Edit, TrendingUp, TrendingDown, Plus, X, Package, Settings, Camera, Trash2, Tag, Sparkles } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { getPartsCategoryTemplates } from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { toast } from 'sonner'
 import type { PartsVehicle, PartsVehicleStatus } from '@/types/parts'
@@ -32,6 +33,7 @@ export default function PartsVehicleDetails() {
   const queryClient = useQueryClient()
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isAddPartOpen, setIsAddPartOpen] = useState(false)
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false)
   const { rate: globalRate, isStale: rateIsStale } = usePartsExchangeRate()
 
   const { data: profile } = useUserProfile()
@@ -53,7 +55,7 @@ export default function PartsVehicleDetails() {
     enabled: !!id
   })
 
-  // Fetch categories for add-part modal
+  // Fetch all company categories (for add-part modal + template suggestion)
   const { data: categories = [] } = useQuery({
     queryKey: ['parts-categories', partsCompanyId],
     queryFn: async () => {
@@ -67,6 +69,34 @@ export default function PartsVehicleDetails() {
     },
     enabled: !!partsCompanyId && isAddPartOpen
   })
+
+  // Fetch brand-level template categories for suggestion banner
+  const { data: brandTemplates = [] } = useQuery({
+    queryKey: ['parts-brand-templates', vehicle?.make],
+    queryFn: () => getPartsCategoryTemplates(vehicle!.make),
+    enabled: !!vehicle?.make && !!partsCompanyId && !suggestionDismissed,
+    staleTime: 1000 * 60 * 10,
+  })
+
+  // Company's own category names (for dedup check)
+  const { data: myCategoryNames = [] } = useQuery<string[]>({
+    queryKey: ['parts-category-names', partsCompanyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('parts_categories')
+        .select('name')
+        .eq('parts_company_id', partsCompanyId)
+        .eq('is_active', true)
+      if (error) throw error
+      return (data || []).map(c => c.name.toLowerCase())
+    },
+    enabled: !!partsCompanyId && !suggestionDismissed,
+    staleTime: 1000 * 60 * 5,
+  })
+
+  const unimportedTemplates = brandTemplates.filter(
+    t => !myCategoryNames.includes(t.name.toLowerCase())
+  )
 
   // Add part mutation
   const addPartMutation = useMutation({
@@ -514,21 +544,59 @@ export default function PartsVehicleDetails() {
             </div>
           </div>
 
-          {/* Category import hint */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
-            <p className="font-medium text-blue-800 mb-1">Категории запчастей</p>
-            <p className="text-blue-600 text-xs mb-3">
-              Импортируйте стандартные категории для {vehicle.make} {vehicle.model} из справочника
-            </p>
-            <button
-              onClick={() => navigate(
-                `/parts/categories?tab=templates&brand=${encodeURIComponent(vehicle.make)}&model=${encodeURIComponent(vehicle.model)}`
-              )}
-              className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs font-medium transition-colors"
-            >
-              Открыть стандартные категории
-            </button>
-          </div>
+          {/* Brand template suggestion */}
+          {!suggestionDismissed && unimportedTemplates.length > 0 && (
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 text-sm">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
+                  <p className="font-medium text-indigo-900">
+                    {unimportedTemplates.length} стандартных категорий для {vehicle.make}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSuggestionDismissed(true)}
+                  className="text-indigo-400 hover:text-indigo-600 flex-shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-indigo-600 text-xs mb-3 pl-6">
+                Добавлены администратором. Можно импортировать или создать свои.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigate(
+                    `/parts/categories?tab=templates&brand=${encodeURIComponent(vehicle.make)}`
+                  )}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-xs font-medium transition-colors"
+                >
+                  <Tag className="w-3.5 h-3.5" />
+                  Импортировать
+                </button>
+                <button
+                  onClick={() => navigate('/parts/categories')}
+                  className="flex-1 px-3 py-2 bg-white border border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-50 text-xs font-medium transition-colors"
+                >
+                  Создать свои
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Categories link when no unimported templates */}
+          {(suggestionDismissed || unimportedTemplates.length === 0) && myCategoryNames.length === 0 && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-center">
+              <Tag className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p className="text-gray-500 text-xs mb-2">Категорий нет</p>
+              <button
+                onClick={() => navigate('/parts/categories')}
+                className="text-primary hover:underline text-xs font-medium"
+              >
+                Добавить категории
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

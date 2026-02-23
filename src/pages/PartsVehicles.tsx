@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
-import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle } from '@/services/partsService'
+import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle, getPartsCategoryTemplates } from '@/services/partsService'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 import { formatCurrency } from '@/utils/currency'
 import type { PartsVehicle, CreatePartsVehicleInput, PartsVehicleStatus } from '@/types/parts'
@@ -62,10 +62,26 @@ export default function PartsVehicles() {
         return createPartsVehicle(data, partsCompanyId!)
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['parts-vehicles'] })
       toast.success(selectedVehicle ? 'Автомобиль обновлён' : 'Автомобиль добавлен')
       setIsModalOpen(false)
+      // Check for brand templates when creating new vehicle
+      if (!selectedVehicle && data?.make) {
+        const make = data.make
+        getPartsCategoryTemplates(make).then(templates => {
+          if (templates.length > 0) {
+            toast(`${templates.length} стандартных категорий для ${make}`, {
+              description: 'Импортируйте или создайте свои — удобнее сортировать запчасти',
+              action: {
+                label: 'Открыть',
+                onClick: () => navigate(`/parts/categories?tab=templates&brand=${encodeURIComponent(make)}`),
+              },
+              duration: 9000,
+            })
+          }
+        }).catch(() => {})
+      }
       setSelectedVehicle(null)
     },
     onError: (error: any) => {
