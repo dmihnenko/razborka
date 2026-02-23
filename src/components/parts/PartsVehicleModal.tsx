@@ -3,15 +3,24 @@ import { X } from 'lucide-react'
 import type { PartsVehicle, CreatePartsVehicleInput } from '@/types/parts'
 import { formatCurrency } from '@/utils/currency'
 
-function parseExpression(expr: string, rate: number): number {
-  // Ищем токены вида: $500 или 500$ или просто 500
+function parseExpression(expr: string, rate: number): { totalUSD: number; totalUAH: number } {
+  // Токены: $500 или 500$ — доллары, просто 500 — гривна
   const tokens = expr.match(/\$?\d+(\.\d+)?\$?/g)
-  if (!tokens) return 0
-  return tokens.reduce((sum, token) => {
+  if (!tokens) return { totalUSD: 0, totalUAH: 0 }
+  let totalUSD = 0
+  let totalUAH = 0
+  for (const token of tokens) {
     const isUSD = token.includes('$')
     const num = parseFloat(token.replace(/\$/g, ''))
-    return sum + (isUSD ? num * rate : num)
-  }, 0)
+    if (isUSD) {
+      totalUSD += num
+      totalUAH += num * rate
+    } else {
+      totalUAH += num
+      totalUSD += num / rate
+    }
+  }
+  return { totalUSD, totalUAH }
 }
 
 interface PartsVehicleModalProps {
@@ -38,7 +47,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const priceTotal = parseExpression(priceExpr, exchangeRate)
+  const { totalUSD, totalUAH } = parseExpression(priceExpr, exchangeRate)
 
   if (!isOpen) return null
 
@@ -55,7 +64,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
         ...(formData.vin && { vin: formData.vin }),
         ...(formData.color && { color: formData.color }),
         ...(formData.mileage && { mileage: formData.mileage }),
-        ...(priceTotal > 0 && { purchase_price: priceTotal }),
+        ...(totalUAH > 0 && { purchase_price: totalUAH }),
         ...(formData.notes && { notes: formData.notes })
       }
       
@@ -226,13 +235,13 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                   value={priceExpr}
                   onChange={e => setPriceExpr(e.target.value)}
                   className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="500$ + 3000 + 200$"
+                  placeholder="17000$ + 1500 (₴ → $)"
                 />
-                {priceTotal > 0 && (
+                {totalUSD > 0 && (
                   <p className="mt-1.5 text-sm text-gray-700">
-                    Итого: <span className="font-semibold">{formatCurrency(priceTotal)}</span>
-                    {' ≈ '}
-                    <span className="font-semibold text-green-700">${Math.round(priceTotal / exchangeRate).toLocaleString('ru-RU')}</span>
+                    Итого: <span className="font-semibold text-green-700">${totalUSD.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
+                    {' = '}
+                    <span className="font-semibold">{formatCurrency(totalUAH)}</span>
                   </p>
                 )}
               </div>
