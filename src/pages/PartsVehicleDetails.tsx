@@ -147,9 +147,13 @@ export default function PartsVehicleDetails() {
   })
 
   // Calculate profitability
+  const exchangeRate = vehicle?.exchange_rate || 41
   const purchasePrice = vehicle?.purchase_price || 0
-  const totalRevenue = parts.reduce((sum, part) => sum + (part.sold_price || 0), 0)
+  const purchasePriceUSD = purchasePrice / exchangeRate
+  const totalRevenue = parts.reduce((sum: number, part: any) => sum + (part.sold_price || 0), 0)
+  const totalRevenueUSD = totalRevenue / exchangeRate
   const profit = totalRevenue - purchasePrice
+  const profitUSD = profit / exchangeRate
   const isProfitable = profit > 0
 
   if (isLoading) {
@@ -356,16 +360,30 @@ export default function PartsVehicleDetails() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Цена покупки:</span>
-                <span className="font-semibold text-red-600">
-                  {purchasePrice.toLocaleString()} ₴
-                </span>
+                <div className="text-right">
+                  <div className="font-semibold text-red-600">
+                    {purchasePrice.toLocaleString()} ₴
+                  </div>
+                  {purchasePrice > 0 && (
+                    <div className="text-xs text-gray-500">
+                      ≈ ${purchasePriceUSD.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} (курс {exchangeRate} ₴)
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Доход от продаж:</span>
-                <span className="font-semibold text-green-600">
-                  {totalRevenue.toLocaleString()} ₴
-                </span>
+                <div className="text-right">
+                  <div className="font-semibold text-green-600">
+                    {totalRevenue.toLocaleString()} ₴
+                  </div>
+                  {totalRevenue > 0 && (
+                    <div className="text-xs text-gray-500">
+                      ≈ ${totalRevenueUSD.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div className="pt-4 border-t border-gray-200">
@@ -377,11 +395,18 @@ export default function PartsVehicleDetails() {
                     ) : (
                       <TrendingDown className="text-red-600" size={20} />
                     )}
-                    <span className={`text-xl font-bold ${
-                      isProfitable ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {profit > 0 ? '+' : ''}{profit.toLocaleString()} ₴
-                    </span>
+                    <div className="text-right">
+                      <div className={`text-xl font-bold ${
+                        isProfitable ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {profit > 0 ? '+' : ''}{profit.toLocaleString()} ₴
+                      </div>
+                      <div className={`text-sm font-medium ${
+                        isProfitable ? 'text-green-500' : 'text-red-500'
+                      }`}>
+                        {profitUSD > 0 ? '+' : ''}${profitUSD.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 

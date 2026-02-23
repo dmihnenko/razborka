@@ -43,7 +43,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
   const [priceExpr, setPriceExpr] = useState<string>(
     vehicle?.purchase_price ? String(vehicle.purchase_price) : ''
   )
-  const [exchangeRate, setExchangeRate] = useState<number>(41)
+  const [exchangeRate, setExchangeRate] = useState<number>(vehicle?.exchange_rate || 41)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -65,6 +65,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
         ...(formData.color && { color: formData.color }),
         ...(formData.mileage && { mileage: formData.mileage }),
         ...(totalUAH > 0 && { purchase_price: totalUAH }),
+        exchange_rate: exchangeRate,
         ...(formData.notes && { notes: formData.notes })
       }
       

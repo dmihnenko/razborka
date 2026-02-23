@@ -42,6 +42,7 @@ export interface PartsVehicle {
   mileage?: number
   purchase_price?: number
   purchase_date?: string
+  exchange_rate?: number
   status: PartsVehicleStatus
   notes?: string
   photos?: string[]
@@ -123,6 +124,7 @@ export interface CreatePartsVehicleInput {
   mileage?: number
   purchase_price?: number
   purchase_date?: string
+  exchange_rate?: number
   notes?: string
 }
 
