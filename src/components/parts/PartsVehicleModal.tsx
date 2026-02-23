@@ -3,10 +3,15 @@ import { X } from 'lucide-react'
 import type { PartsVehicle, CreatePartsVehicleInput } from '@/types/parts'
 import { formatCurrency } from '@/utils/currency'
 
-function parseExpression(expr: string): number {
-  const numbers = expr.match(/\d+(\.\d+)?/g)
-  if (!numbers) return 0
-  return numbers.reduce((sum, n) => sum + parseFloat(n), 0)
+function parseExpression(expr: string, rate: number): number {
+  // Ищем токены вида: $500 или 500$ или просто 500
+  const tokens = expr.match(/\$?\d+(\.\d+)?\$?/g)
+  if (!tokens) return 0
+  return tokens.reduce((sum, token) => {
+    const isUSD = token.includes('$')
+    const num = parseFloat(token.replace(/\$/g, ''))
+    return sum + (isUSD ? num * rate : num)
+  }, 0)
 }
 
 interface PartsVehicleModalProps {
@@ -33,7 +38,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const priceTotal = parseExpression(priceExpr)
+  const priceTotal = parseExpression(priceExpr, exchangeRate)
 
   if (!isOpen) return null
 
@@ -221,7 +226,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                   value={priceExpr}
                   onChange={e => setPriceExpr(e.target.value)}
                   className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="15000 + 3000 + 500"
+                  placeholder="500$ + 3000 + 200$"
                 />
                 {priceTotal > 0 && (
                   <p className="mt-1.5 text-sm text-gray-700">
