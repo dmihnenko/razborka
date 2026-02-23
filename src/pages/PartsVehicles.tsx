@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle } from '@/services/partsService'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 import { formatCurrency } from '@/utils/currency'
@@ -28,6 +29,14 @@ type ViewMode = 'grid' | 'list'
 export default function PartsVehicles() {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
+  const { rate: globalRate } = usePartsExchangeRate()
+
+  const formatPriceUSD = (vehicle: PartsVehicle) => {
+    if (!vehicle.purchase_price) return '—'
+    const rate = vehicle.exchange_rate || globalRate || 41
+    const usd = vehicle.purchase_price / rate
+    return '$' + usd.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+  }
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -337,7 +346,7 @@ export default function PartsVehicles() {
                     {vehicle.purchase_price && (
                       <div className="flex items-center gap-2 text-gray-900 font-medium">
                         <span className="text-gray-600 font-normal">Покупка:</span>
-                        <span>{formatCurrency(vehicle.purchase_price)}</span>
+                        <span>{formatPriceUSD(vehicle)}</span>
                       </div>
                     )}
                   </div>
@@ -412,7 +421,7 @@ export default function PartsVehicles() {
                         </span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 hidden sm:table-cell">
-                        {formatCurrency(vehicle.purchase_price)}
+                        {formatPriceUSD(vehicle)}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right text-sm">
                         <div className="flex items-center justify-end gap-2">

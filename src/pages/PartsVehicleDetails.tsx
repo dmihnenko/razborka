@@ -280,7 +280,7 @@ export default function PartsVehicleDetails() {
               {vehicle.purchase_price && (
                 <div>
                   <span className="text-gray-600">Цена покупки:</span>
-                  <span className="ml-2 font-medium">{vehicle.purchase_price.toLocaleString()} ₴</span>
+                  <span className="ml-2 font-medium">${purchasePriceUSD.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
                 </div>
               )}
               {vehicle.purchase_date && (
@@ -379,11 +379,11 @@ export default function PartsVehicleDetails() {
                 <span className="text-gray-600">Цена покупки:</span>
                 <div className="text-right">
                   <div className="font-semibold text-red-600">
-                    {purchasePrice.toLocaleString()} ₴
+                    ${purchasePriceUSD.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </div>
                   {purchasePrice > 0 && (
                     <div className="text-xs text-gray-500">
-                      ≈ ${purchasePriceUSD.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} (курс {exchangeRate} ₴)
+                      {purchasePrice.toLocaleString()} ₴ (курс {exchangeRate})
                     </div>
                   )}
                 </div>
@@ -393,11 +393,11 @@ export default function PartsVehicleDetails() {
                 <span className="text-gray-600">Доход от продаж:</span>
                 <div className="text-right">
                   <div className="font-semibold text-green-600">
-                    {totalRevenue.toLocaleString()} ₴
+                    ${totalRevenueUSD.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </div>
                   {totalRevenue > 0 && (
                     <div className="text-xs text-gray-500">
-                      ≈ ${totalRevenueUSD.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      {totalRevenue.toLocaleString()} ₴
                     </div>
                   )}
                 </div>
@@ -416,12 +416,12 @@ export default function PartsVehicleDetails() {
                       <div className={`text-xl font-bold ${
                         isProfitable ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {profit > 0 ? '+' : ''}{profit.toLocaleString()} ₴
+                        {profitUSD > 0 ? '+' : ''}${profitUSD.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </div>
                       <div className={`text-sm font-medium ${
-                        isProfitable ? 'text-green-500' : 'text-red-500'
+                        isProfitable ? 'text-green-400' : 'text-red-400'
                       }`}>
-                        {profitUSD > 0 ? '+' : ''}${profitUSD.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        {profit > 0 ? '+' : ''}{profit.toLocaleString()} ₴
                       </div>
                     </div>
                   </div>
