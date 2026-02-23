@@ -46,9 +46,7 @@ export function usePartsExchangeRate() {
     setFetching(true)
     setFetchError(null)
     try {
-      const res = await fetch(
-        'https://api.privatbank.ua/p24api/pubinfo?json&exchange&coursid=5'
-      )
+      const res = await fetch('/api/privatbank-rate')
       if (!res.ok) throw new Error('Ошибка сети')
       const list: Array<{ ccy: string; base_ccy: string; buy: string; sale: string }> = await res.json()
       const usd = list.find(i => i.ccy === 'USD' && i.base_ccy === 'UAH')

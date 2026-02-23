@@ -5,6 +5,13 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Proxy PrivatBank exchange rate API (avoid CORS)
+[[redirects]]
+  from = "/api/privatbank-rate"
+  to = "https://api.privatbank.ua/p24api/pubinfo?json&exchange&coursid=5"
+  status = 200
+  force = true
+
 # Redirect all requests to index.html for SPA routing
 [[redirects]]
   from = "/*"
