@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import type { PartsVehicle, CreatePartsVehicleInput } from '@/types/parts'
+import { formatCurrency } from '@/utils/currency'
+
+function parseExpression(expr: string): number {
+  const numbers = expr.match(/\d+(\.\d+)?/g)
+  if (!numbers) return 0
+  return numbers.reduce((sum, n) => sum + parseFloat(n), 0)
+}
 
 interface PartsVehicleModalProps {
   isOpen: boolean
@@ -17,11 +24,16 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
     vin: vehicle?.vin || '',
     color: vehicle?.color || '',
     mileage: vehicle?.mileage,
-    purchase_price: vehicle?.purchase_price,
     notes: vehicle?.notes || ''
   })
+  const [priceExpr, setPriceExpr] = useState<string>(
+    vehicle?.purchase_price ? String(vehicle.purchase_price) : ''
+  )
+  const [exchangeRate, setExchangeRate] = useState<number>(41)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const priceTotal = parseExpression(priceExpr)
 
   if (!isOpen) return null
 
@@ -38,7 +50,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
         ...(formData.vin && { vin: formData.vin }),
         ...(formData.color && { color: formData.color }),
         ...(formData.mileage && { mileage: formData.mileage }),
-        ...(formData.purchase_price && { purchase_price: formData.purchase_price }),
+        ...(priceTotal > 0 && { purchase_price: priceTotal }),
         ...(formData.notes && { notes: formData.notes })
       }
       
@@ -57,7 +69,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: (name === 'year' || name === 'mileage' || name === 'purchase_price') 
+      [name]: (name === 'year' || name === 'mileage') 
                ? (value ? parseFloat(value) : undefined)
                : value
     }))
@@ -187,19 +199,37 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
 
             {/* Цена покупки — только при редактировании */}
             {vehicle && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                  Цена покупки (₴)
-                </label>
+              <div className="sm:col-span-2">
+                <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Цена покупки (₴)
+                  </label>
+                  <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                    <span>Курс:</span>
+                    <input
+                      type="number"
+                      value={exchangeRate}
+                      onChange={e => setExchangeRate(Number(e.target.value) || 41)}
+                      min="1"
+                      className="w-16 px-2 py-1 border border-gray-300 rounded-md text-sm text-center focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                    <span>₴/$</span>
+                  </div>
+                </div>
                 <input
-                  type="number"
-                  name="purchase_price"
-                  value={formData.purchase_price || ''}
-                  onChange={handleChange}
-                  min="0"
-                  step="0.01"
+                  type="text"
+                  value={priceExpr}
+                  onChange={e => setPriceExpr(e.target.value)}
                   className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  placeholder="15000 + 3000 + 500"
                 />
+                {priceTotal > 0 && (
+                  <p className="mt-1.5 text-sm text-gray-700">
+                    Итого: <span className="font-semibold">{formatCurrency(priceTotal)}</span>
+                    {' ≈ '}
+                    <span className="font-semibold text-green-700">${Math.round(priceTotal / exchangeRate).toLocaleString('ru-RU')}</span>
+                  </p>
+                )}
               </div>
             )}
           </div>
