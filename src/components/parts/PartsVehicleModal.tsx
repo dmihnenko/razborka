@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { IMaskInput } from 'react-imask'
 import type { PartsVehicle, CreatePartsVehicleInput } from '@/types/parts'
 import { formatCurrency } from '@/utils/currency'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
@@ -157,14 +158,14 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
               <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 Год выпуска
               </label>
-              <input
-                type="number"
-                name="year"
-                value={formData.year || ''}
-                onChange={handleChange}
-                min="1900"
+              <IMaskInput
+                mask={Number}
+                min={1900}
                 max={new Date().getFullYear() + 1}
+                value={String(formData.year || '')}
+                onAccept={(value: string) => setFormData(prev => ({ ...prev, year: value ? Number(value) : undefined }))}
                 className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="2020"
               />
             </div>
 
@@ -173,15 +174,19 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
               <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 VIN номер
               </label>
-              <input
-                type="text"
-                name="vin"
+              <IMaskInput
+                mask={/^[A-HJ-NPR-Z0-9]{0,17}$/i}
+                prepare={(str: string) => str.toUpperCase()}
                 value={formData.vin || ''}
-                onChange={handleChange}
-                maxLength={17}
-                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                onAccept={(value: string) => setFormData(prev => ({ ...prev, vin: value }))}
+                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-mono tracking-widest"
                 placeholder="17 символов"
               />
+              {formData.vin && (
+                <p className={`text-xs mt-1 ${formData.vin.length === 17 ? 'text-green-600' : 'text-gray-400'}`}>
+                  {formData.vin.length}/17 символов
+                </p>
+              )}
             </div>
 
 

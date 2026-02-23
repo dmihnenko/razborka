@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { ArrowLeft, RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
+import { getImgbbKey, setImgbbKey } from '@/utils/imgbbKey'
 import { toast } from 'sonner'
 
 export default function PartsSettings() {
@@ -22,6 +23,13 @@ export default function PartsSettings() {
   } = usePartsExchangeRate()
 
   const [manualInput, setManualInput] = useState<string>(String(rate))
+  const [imgbbKeyInput, setImgbbKeyInput] = useState<string>(getImgbbKey)
+
+  const handleSaveImgbbKey = () => {
+    const trimmed = imgbbKeyInput.trim()
+    setImgbbKey(trimmed)
+    toast.success(trimmed ? 'API ключ ImgBB сохранён' : 'API ключ удалён')
+  }
 
   const handleFetchPrivatBank = async () => {
     try {
@@ -176,6 +184,53 @@ export default function PartsSettings() {
             <li>Каждый автомобиль может иметь свой курс (указывается при редактировании авто)</li>
             <li>Если курс не обновлялся сегодня — используется последний установленный</li>
           </ul>
+        </div>
+
+        {/* ImgBB API ключ */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Key className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">ImgBB API ключ</h2>
+              <p className="text-xs text-gray-500">
+                Нужен для хранения фотографий запчастей
+              </p>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={imgbbKeyInput}
+                onChange={e => setImgbbKeyInput(e.target.value)}
+                className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-mono text-sm"
+                placeholder="Вставьте ключ API..."
+              />
+              <button
+                onClick={handleSaveImgbbKey}
+                className="px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium flex items-center gap-2 transition-colors"
+              >
+                <Save className="w-4 h-4" />
+                Сохранить
+              </button>
+            </div>
+            {imgbbKeyInput && (
+              <p className="text-xs text-green-600 mt-1">✓ Ключ установлен</p>
+            )}
+          </div>
+
+          <a
+            href="https://api.imgbb.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            Получить бесплатный ключ на imgbb.com
+          </a>
         </div>
 
       </div>

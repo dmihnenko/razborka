@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Edit, TrendingUp, TrendingDown, Plus, X, Package, Settings } from 'lucide-react'
+import { ArrowLeft, Edit, TrendingUp, TrendingDown, Plus, X, Package, Settings, Camera, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { toast } from 'sonner'
 import type { PartsVehicle, PartsVehicleStatus } from '@/types/parts'
+import type { ImgbbPhoto } from '@/services/imgbbService'
+import { uploadToImgbb, deletePhotosFromImgbb } from '@/services/imgbbService'
+import { getImgbbKey } from '@/utils/imgbbKey'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 
 const statusColors = {
@@ -76,6 +79,7 @@ export default function PartsVehicleDetails() {
       price_currency?: 'UAH' | 'USD'
       category_id?: string
       notes: string
+      photos?: ImgbbPhoto[]
     }) => {
       const { error } = await supabase
         .from('parts_inventory')
@@ -87,7 +91,8 @@ export default function PartsVehicleDetails() {
           reserved_quantity: 0,
           category_id: data.category_id || null,
           selling_price: data.selling_price || 0,
-          price_currency: data.price_currency || 'UAH',
+          price_currency: data.price_currency || 'USD',
+          photos: data.photos || [],
         })
       if (error) throw error
     },
@@ -97,6 +102,25 @@ export default function PartsVehicleDetails() {
       setIsAddPartOpen(false)
     },
     onError: () => toast.error('Ошибка при добавлении')
+  })
+
+  // Delete part mutation
+  const deletePartMutation = useMutation({
+    mutationFn: async (part: { id: string; photos?: ImgbbPhoto[] }) => {
+      if (part.photos?.length) {
+        await deletePhotosFromImgbb(part.photos)
+      }
+      const { error } = await supabase
+        .from('parts_inventory')
+        .delete()
+        .eq('id', part.id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vehicle-parts', id] })
+      toast.success('Запчасть удалена')
+    },
+    onError: () => toast.error('Ошибка при удалении')
   })
 
   // Fetch parts for this vehicle
@@ -328,26 +352,57 @@ export default function PartsVehicleDetails() {
                           <p className="text-sm text-gray-600">№ {part.part_number}</p>
                         )}
                       </div>
-                      <div className="text-right">
-                        {part.status === 'sold' ? (
-                          <div className="text-green-600 font-medium">
-                            {part.sold_price} ₴
+                      <div className="flex items-start gap-2">
+                        <div className="text-right">
+                          {part.status === 'sold' ? (
+                            <div className="text-green-600 font-medium">
+                              {part.sold_price} ₴
+                            </div>
+                          ) : (
+                            <div className="text-gray-600">
+                              {part.price} ₴
+                            </div>
+                          )}
+                          <div className={`text-xs ${
+                            part.status === 'available' ? 'text-green-600' :
+                            part.status === 'sold' ? 'text-gray-500' :
+                            'text-yellow-600'
+                          }`}>
+                            {part.status === 'available' ? 'В наличии' :
+                             part.status === 'sold' ? 'Продано' : 'Зарезервировано'}
                           </div>
-                        ) : (
-                          <div className="text-gray-600">
-                            {part.price} ₴
-                          </div>
-                        )}
-                        <div className={`text-xs ${
-                          part.status === 'available' ? 'text-green-600' :
-                          part.status === 'sold' ? 'text-gray-500' :
-                          'text-yellow-600'
-                        }`}>
-                          {part.status === 'available' ? 'В наличии' :
-                           part.status === 'sold' ? 'Продано' : 'Зарезервировано'}
                         </div>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Удалить "${part.name}"?`)) {
+                              deletePartMutation.mutate({ id: part.id, photos: part.photos })
+                            }
+                          }}
+                          disabled={deletePartMutation.isPending}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                          title="Удалить запчасть"
+                        >
+                          <Trash2 size={15} />
+                        </button>
                       </div>
                     </div>
+                    {part.photos?.length > 0 && (
+                      <div className="mt-2 flex gap-1.5 flex-wrap">
+                        {part.photos.slice(0, 4).map((photo: ImgbbPhoto, i: number) => (
+                          <img
+                            key={i}
+                            src={photo.thumb_url || photo.url}
+                            alt={part.name}
+                            className="w-12 h-12 object-cover rounded border border-gray-200"
+                          />
+                        ))}
+                        {part.photos.length > 4 && (
+                          <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded border border-gray-200 text-xs text-gray-600">
+                            +{part.photos.length - 4}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -498,6 +553,7 @@ interface AddPartModalProps {
     price_currency?: 'UAH' | 'USD'
     category_id?: string
     notes: string
+    photos?: ImgbbPhoto[]
   }) => void
   loading: boolean
 }
@@ -509,10 +565,41 @@ function AddPartModal({ vehicleName, categories, onClose, onSave, loading }: Add
     condition: 'used',
     quantity: 1,
     selling_price: '' as string | number,
-    price_currency: 'UAH' as 'UAH' | 'USD',
+    price_currency: 'USD' as 'UAH' | 'USD',
     category_id: '',
     notes: '',
   })
+  const [photos, setPhotos] = useState<ImgbbPhoto[]>([])
+  const [uploading, setUploading] = useState(false)
+
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    const apiKey = getImgbbKey()
+    if (!apiKey) {
+      toast.error('Укажите API ключ ImgBB в настройках')
+      return
+    }
+    setUploading(true)
+    try {
+      const uploaded: ImgbbPhoto[] = []
+      for (const file of files) {
+        const photo = await uploadToImgbb(file, apiKey)
+        uploaded.push(photo)
+      }
+      setPhotos(prev => [...prev, ...uploaded])
+      toast.success(`${uploaded.length} фото загружено`)
+    } catch {
+      toast.error('Ошибка загрузки фото')
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index))
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -525,6 +612,7 @@ function AddPartModal({ vehicleName, categories, onClose, onSave, loading }: Add
       price_currency: form.price_currency,
       category_id: form.category_id || undefined,
       notes: form.notes,
+      photos,
     })
   }
 
@@ -624,24 +712,57 @@ function AddPartModal({ vehicleName, categories, onClose, onSave, loading }: Add
                 className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base"
                 placeholder="0"
               />
-              <div className="flex gap-1 flex-shrink-0">
-                {(['UAH', 'USD'] as const).map(c => (
-                  <button
-                    type="button"
-                    key={c}
-                    onClick={() => setForm(f => ({ ...f, price_currency: c }))}
-                    className={`px-2.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                      form.price_currency === c
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {c === 'UAH' ? '₴' : '$'}
-                  </button>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={() => setForm(f => ({ ...f, price_currency: f.price_currency === 'USD' ? 'UAH' : 'USD' }))}
+                className="px-3 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition-colors flex-shrink-0 w-10 text-center"
+                title="Сменить валюту"
+              >
+                {form.price_currency === 'USD' ? '$' : '₴'}
+              </button>
             </div>
             <p className="mt-1 text-xs text-gray-500">Прайс-цена. При продаже можно указать фактическую цену</p>
+          </div>
+
+          {/* Фотографии */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Фотографии</label>
+            <label className={`flex items-center justify-center gap-2 w-full h-11 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+              uploading ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300 hover:border-primary hover:bg-primary/5'
+            }`}>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                disabled={uploading}
+                onChange={handlePhotoSelect}
+                className="sr-only"
+              />
+              <Camera className={`w-4 h-4 ${uploading ? 'text-gray-300' : 'text-gray-500'}`} />
+              <span className={`text-sm ${uploading ? 'text-gray-400' : 'text-gray-600'}`}>
+                {uploading ? 'Загрузка...' : 'Добавить фото'}
+              </span>
+            </label>
+            {photos.length > 0 && (
+              <div className="mt-2 flex gap-2 flex-wrap">
+                {photos.map((photo, i) => (
+                  <div key={i} className="relative group">
+                    <img
+                      src={photo.thumb_url || photo.url}
+                      alt={`Фото ${i + 1}`}
+                      className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(i)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Примечания */}
@@ -665,7 +786,7 @@ function AddPartModal({ vehicleName, categories, onClose, onSave, loading }: Add
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || uploading}
               className="flex-1 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 font-medium"
             >
               {loading ? 'Добавление...' : 'Добавить'}

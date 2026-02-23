@@ -2,6 +2,8 @@
 // Types для системы Разборки (ОТДЕЛЬНО от STO!)
 // ============================================================================
 
+import type { ImgbbPhoto } from '@/services/imgbbService'
+
 export interface PartsCompany {
   id: string
   name: string
@@ -97,7 +99,7 @@ export interface PartsInventoryItem {
   location?: string
   shelf?: string
   bin?: string
-  photos?: string[]
+  photos?: ImgbbPhoto[]
   qr_code?: string
   status: PartsInventoryStatus
   reserved_quantity: number
@@ -150,6 +152,7 @@ export interface CreatePartsInventoryInput {
   location?: string
   shelf?: string
   bin?: string
+  photos?: ImgbbPhoto[]
   notes?: string
 }
 
