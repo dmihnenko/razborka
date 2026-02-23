@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Edit, TrendingUp, TrendingDown, Plus, X, Package } from 'lucide-react'
+import { ArrowLeft, Edit, TrendingUp, TrendingDown, Plus, X, Package, Settings } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { toast } from 'sonner'
 import type { PartsVehicle, PartsVehicleStatus } from '@/types/parts'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
@@ -28,6 +29,7 @@ export default function PartsVehicleDetails() {
   const queryClient = useQueryClient()
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isAddPartOpen, setIsAddPartOpen] = useState(false)
+  const { rate: globalRate, isStale: rateIsStale } = usePartsExchangeRate()
 
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
@@ -147,7 +149,8 @@ export default function PartsVehicleDetails() {
   })
 
   // Calculate profitability
-  const exchangeRate = vehicle?.exchange_rate || 41
+  // Приоритет: курс авто → глобальный курс из настроек → 41
+  const exchangeRate = vehicle?.exchange_rate || globalRate || 41
   const purchasePrice = vehicle?.purchase_price || 0
   const purchasePriceUSD = purchasePrice / exchangeRate
   const totalRevenue = parts.reduce((sum: number, part: any) => sum + (part.sold_price || 0), 0)
@@ -356,6 +359,20 @@ export default function PartsVehicleDetails() {
         <div className="space-y-6">
           <div className="bg-white rounded-lg shadow p-4 md:p-6">
             <h2 className="text-lg font-semibold mb-4">Окупаемость</h2>
+            
+            {/* Предупреждение о курсе */}
+            {!vehicle?.exchange_rate && rateIsStale && (
+              <div className="mb-3 flex items-center justify-between text-xs bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+                <span className="text-yellow-700">Курс не обновлён сегодня</span>
+                <button
+                  onClick={() => navigate('/parts/settings')}
+                  className="flex items-center gap-1 text-yellow-700 font-medium hover:underline"
+                >
+                  <Settings size={12} />
+                  Обновить
+                </button>
+              </div>
+            )}
             
             <div className="space-y-4">
               <div className="flex justify-between items-center">

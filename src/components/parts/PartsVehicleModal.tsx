@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 import type { PartsVehicle, CreatePartsVehicleInput } from '@/types/parts'
 import { formatCurrency } from '@/utils/currency'
+import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 
 function parseExpression(expr: string, rate: number): { totalUSD: number; totalUAH: number } {
   // Токены: $500 или 500$ — доллары, просто 500 — гривна
@@ -31,6 +32,7 @@ interface PartsVehicleModalProps {
 }
 
 export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }: PartsVehicleModalProps) {
+  const { rate: globalRate } = usePartsExchangeRate()
   const [formData, setFormData] = useState<CreatePartsVehicleInput>({
     make: vehicle?.make || '',
     model: vehicle?.model || '',
@@ -43,7 +45,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
   const [priceExpr, setPriceExpr] = useState<string>(
     vehicle?.purchase_price ? String(vehicle.purchase_price) : ''
   )
-  const [exchangeRate, setExchangeRate] = useState<number>(vehicle?.exchange_rate || 41)
+  const [exchangeRate, setExchangeRate] = useState<number>(vehicle?.exchange_rate || globalRate || 41)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
