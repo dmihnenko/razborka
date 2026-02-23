@@ -185,21 +185,23 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
               />
             </div>
 
-            {/* Цена покупки */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                Цена покупки (₴)
-              </label>
-              <input
-                type="number"
-                name="purchase_price"
-                value={formData.purchase_price || ''}
-                onChange={handleChange}
-                min="0"
-                step="0.01"
-                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-            </div>
+            {/* Цена покупки — только при редактировании */}
+            {vehicle && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                  Цена покупки (₴)
+                </label>
+                <input
+                  type="number"
+                  name="purchase_price"
+                  value={formData.purchase_price || ''}
+                  onChange={handleChange}
+                  min="0"
+                  step="0.01"
+                  className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+            )}
           </div>
 
           {/* Примечания */}
