@@ -513,6 +513,22 @@ export default function PartsVehicleDetails() {
               </div>
             </div>
           </div>
+
+          {/* Category import hint */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+            <p className="font-medium text-blue-800 mb-1">Категории запчастей</p>
+            <p className="text-blue-600 text-xs mb-3">
+              Импортируйте стандартные категории для {vehicle.make} {vehicle.model} из справочника
+            </p>
+            <button
+              onClick={() => navigate(
+                `/parts/categories?tab=templates&brand=${encodeURIComponent(vehicle.make)}&model=${encodeURIComponent(vehicle.model)}`
+              )}
+              className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs font-medium transition-colors"
+            >
+              Открыть стандартные категории
+            </button>
+          </div>
         </div>
       </div>
 

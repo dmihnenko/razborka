@@ -174,7 +174,7 @@ export async function getPartsCategories(partsCompanyId: string) {
   const { data, error } = await supabase
     .from('parts_categories')
     .select('*')
-    .or(`parts_company_id.eq.${partsCompanyId},is_template.eq.true`)
+    .or(`parts_company_id.eq.${partsCompanyId},is_template.is.true`)
     .eq('is_active', true)
     .order('sort_order', { ascending: true })
   
@@ -247,6 +247,22 @@ export async function createPartsCategory(input: CreatePartsCategoryInput, parts
   
   if (error) throw error
   return data as PartsCategory
+}
+
+export async function createPartsCategoriesBulk(names: string[], partsCompanyId: string) {
+  const rows = names.map((name, i) => ({
+    name: name.trim(),
+    parts_company_id: partsCompanyId,
+    is_template: false,
+    is_active: true,
+    sort_order: i,
+  }))
+  const { data, error } = await supabase
+    .from('parts_categories')
+    .insert(rows)
+    .select()
+  if (error) throw error
+  return data as PartsCategory[]
 }
 
 export async function updatePartsCategory(id: string, updates: Partial<PartsCategory>) {
