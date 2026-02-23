@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { X, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import type { PartsVehicle, CreatePartsVehicleInput } from '@/types/parts'
 import { formatCurrency } from '@/utils/currency'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 
 function parseExpression(expr: string, rate: number): { totalUSD: number; totalUAH: number } {
-  // Токены: $500 или 500$ — доллары, просто 500 — гривна
+  // Каждая строка — отдельная статья расхода. $500 или 500$ — доллары, просто 500 — гривна
   const tokens = expr.match(/\$?\d+(\.\d+)?\$?/g)
   if (!tokens) return { totalUSD: 0, totalUAH: 0 }
   let totalUSD = 0
@@ -48,6 +48,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
   const [exchangeRate, setExchangeRate] = useState<number>(vehicle?.exchange_rate || globalRate || 41)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showHint, setShowHint] = useState(false)
 
   const { totalUSD, totalUAH } = parseExpression(priceExpr, exchangeRate)
 
@@ -218,9 +219,18 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
             {vehicle && (
               <div className="sm:col-span-2">
                 <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Цена покупки (₴)
-                  </label>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Цена покупки (₴)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowHint(h => !h)}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showHint ? <ChevronUp className="w-4 h-4" /> : <HelpCircle className="w-4 h-4" />}
+                    </button>
+                  </div>
                   <div className="flex items-center gap-1.5 text-sm text-gray-500">
                     <span>Курс:</span>
                     <input
@@ -233,12 +243,27 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                     <span>₴/$</span>
                   </div>
                 </div>
-                <input
-                  type="text"
+
+                {/* Подсказка */}
+                {showHint && (
+                  <div className="mb-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700 space-y-1">
+                    <p className="font-medium">Как заполнять:</p>
+                    <p>• Каждую статью расхода — с новой строки</p>
+                    <p>• Число со знаком <span className="font-mono font-semibold">$</span> — это доллары: <span className="font-mono">17000$</span></p>
+                    <p>• Просто число — это гривна: <span className="font-mono">1500</span> (конвертируется по курсу)</p>
+                    <p className="pt-1 text-blue-600">Пример:<br />
+                      <span className="font-mono">17000$<br />1500<br />500$</span><br />
+                      → Итого считается автоматически
+                    </p>
+                  </div>
+                )}
+
+                <textarea
                   value={priceExpr}
                   onChange={e => setPriceExpr(e.target.value)}
-                  className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="17000$ + 1500 (₴ → $)"
+                  rows={4}
+                  className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none font-mono"
+                  placeholder={`17000$\n1500\n500$`}
                 />
                 {totalUSD > 0 && (
                   <p className="mt-1.5 text-sm text-gray-700">
