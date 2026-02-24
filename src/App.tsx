@@ -59,6 +59,7 @@ const PublicPartsCustomerView = lazy(() => import('./pages/PublicPartsCustomerVi
 const PartsCategories = lazy(() => import('./pages/PartsCategories'))
 const PartsSettings = lazy(() => import('./pages/PartsSettings'))
 const PartsWarehouse = lazy(() => import('./pages/PartsWarehouse'))
+const PartsNoPricePage = lazy(() => import('./pages/PartsNoPricePage'))
 
 import { useAuth } from './hooks/useAuth'
 import { useUserProfile } from './hooks/useUserProfile'
@@ -154,6 +155,7 @@ function App() {
           <Route path="parts/vehicles" element={<PartsVehicles />} />
           <Route path="parts/vehicles/:id" element={<PartsVehicleDetails />} />
           <Route path="parts/inventory" element={<PartsInventory />} />
+          <Route path="parts/inventory/no-price" element={<PartsNoPricePage />} />
           <Route path="parts/orders" element={<PartsOrders />} />
           <Route path="parts/orders/create" element={<PartsCreateOrder />} />
           <Route path="parts/orders/:id" element={<PartsOrderDetails />} />

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -160,6 +160,7 @@ export default function PartsInventory() {
     reserved: inventory.filter((i: PartsInventoryItem) => i.status === 'reserved').length,
     sold: inventory.filter((i: PartsInventoryItem) => i.status === 'sold').length,
     lowStock: inventory.filter((i: PartsInventoryItem) => i.quantity <= 2 && i.status === 'available').length,
+    noPrice: inventory.filter((i: PartsInventoryItem) => !i.selling_price).length,
     totalValue: inventory.reduce((sum: number, item: PartsInventoryItem) => 
       sum + (item.selling_price || 0) * item.quantity, 0
     )
@@ -223,6 +224,25 @@ export default function PartsInventory() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        {/* No-price banner */}
+        {stats.noPrice > 0 && (
+          <div className="mb-4 flex items-center justify-between gap-3 bg-amber-50 border border-amber-300 rounded-lg px-4 py-3">
+            <div className="flex items-center gap-2">
+              <Tag className="w-5 h-5 text-amber-600 flex-shrink-0" />
+              <span className="text-sm text-amber-800">
+                <span className="font-semibold">{stats.noPrice}</span>
+                {' '}запчаст{stats.noPrice === 1 ? 'ь' : stats.noPrice < 5 ? 'и' : 'ей'} без цены
+              </span>
+            </div>
+            <button
+              onClick={() => navigate('/parts/inventory/no-price')}
+              className="flex-shrink-0 px-3 py-1.5 text-sm font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+            >
+              Заполнить
+            </button>
+          </div>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <button
@@ -768,7 +788,7 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
                       <div className="grid gap-0 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 border-b border-gray-200" style={{ gridTemplateColumns: '1fr 90px 130px 32px' }}>
                         <span>Название *</span>
-                        <span>Цена *</span>
+                        <span>Цена</span>
                         <span>Ориг. номер</span>
                         <span></span>
                       </div>
@@ -941,11 +961,10 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Цена *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Цена</label>
                     <div className="flex gap-2">
                       <input
                         type="number"
-                        required
                         min="0"
                         step="0.01"
                         value={formData.selling_price || ''}
