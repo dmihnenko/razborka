@@ -155,6 +155,7 @@ export interface CreatePartsInventoryInput {
   photos?: ImgbbPhoto[]
   notes?: string
   storage_location_id?: string
+  status?: PartsInventoryStatus
 }
 
 // ============================================================================

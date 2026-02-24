@@ -311,7 +311,7 @@ export async function createPartsInventoryItem(input: CreatePartsInventoryInput,
     .insert({
       ...input,
       parts_company_id: partsCompanyId,
-      status: 'available',
+      status: input.status || 'available',
       reserved_quantity: 0
     })
     .select(`

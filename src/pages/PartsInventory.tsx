@@ -556,15 +556,40 @@ export default function PartsInventory() {
 
 // Parse pasted text into BulkRow[]. Columns separated by tab.
 // Skips blank lines and lines with no meaningful name.
+// 4th column (optional): status keywords
+const STATUS_KEYWORDS: Record<string, PartsInventoryStatus> = {
+  // reserved
+  'бронь': 'reserved', 'брон': 'reserved', 'резерв': 'reserved', 'reserved': 'reserved',
+  'зарезервировано': 'reserved', 'зарез': 'reserved',
+  // sold
+  'продано': 'sold', 'продан': 'sold', 'sold': 'sold', '✅': 'sold', '✔': 'sold',
+  'продано/бронь': 'sold',
+  // damaged
+  'повреждено': 'damaged', 'поврежден': 'damaged', 'damaged': 'damaged',
+}
+
+function parseStatusKeyword(raw: string): PartsInventoryStatus {
+  const cleaned = raw.toLowerCase().replace(/[-_\s]+/g, ' ').trim()
+  // direct match
+  if (STATUS_KEYWORDS[cleaned]) return STATUS_KEYWORDS[cleaned]
+  // partial match
+  for (const [key, val] of Object.entries(STATUS_KEYWORDS)) {
+    if (cleaned.includes(key)) return val
+  }
+  return 'available'
+}
+
 function parseBulkText(text: string): BulkRow[] {
   return text
     .split('\n')
     .map(line => {
       const cols = line.split('\t')
-      const name = (cols[0] || '').trim()
+      const name  = (cols[0] || '').trim()
       const price = (cols[1] || '').trim().replace(',', '.')
       const oem   = (cols[2] || '').trim()
-      return { name, selling_price: price, part_number: oem }
+      const stat  = (cols[3] || '').trim()
+      const status: PartsInventoryStatus = stat ? parseStatusKeyword(stat) : 'available'
+      return { name, selling_price: price, part_number: oem, status }
     })
     .filter(r => r.name && !/^[-\s=]+$/.test(r.name))
 }
@@ -590,6 +615,7 @@ interface BulkRow {
   name: string
   selling_price: string
   part_number: string
+  status: PartsInventoryStatus
 }
 
 interface PartsInventoryModalProps {
@@ -606,7 +632,7 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
   const [bulkMode, setBulkMode] = useState(false)
   const [showPasteArea, setShowPasteArea] = useState(false)
   const [pasteText, setPasteText] = useState('')
-  const [bulkItems, setBulkItems] = useState<BulkRow[]>([{ name: '', selling_price: '', part_number: '' }])
+  const [bulkItems, setBulkItems] = useState<BulkRow[]>([{ name: '', selling_price: '', part_number: '', status: 'available' }])
   const [bulkShared, setBulkShared] = useState({
     category_id: '',
     vehicle_id: '',
@@ -666,14 +692,14 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (bulkMode) {
-      const valid = bulkItems.filter(r => r.name.trim() && r.selling_price)
+      const valid = bulkItems.filter(r => r.name.trim())
       if (!valid.length) {
-        toast.error('Добавьте хотя бы одну запчасть с названием и ценой')
+        toast.error('Добавьте хотя бы одну запчасть с названием')
         return
       }
       onSaveBulk?.(valid.map(r => ({
         name: r.name.trim(),
-        selling_price: Number(r.selling_price),
+        selling_price: Number(r.selling_price) || undefined,
         part_number: r.part_number.trim() || undefined,
         category_id: bulkShared.category_id || undefined,
         vehicle_id: bulkShared.vehicle_id || undefined,
@@ -682,6 +708,7 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
         price_currency: bulkShared.price_currency,
         quantity: 1,
         photos: [],
+        status: r.status,
       })))
     } else {
       onSave({ ...formData, photos })
@@ -834,14 +861,14 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                     {showPasteArea && (
                       <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <p className="text-xs text-blue-700 mb-2">
-                          Вставьте список в формате: <span className="font-mono font-semibold">Название [Tab] Цена [Tab] Ориг.номер</span><br />
-                          Цена и оригинальный номер — необязательны. Пустые строки игнорируются.
+                          Вставьте список в формате: <span className="font-mono font-semibold">Название [Tab] Цена [Tab] Ориг.номер [Tab] Статус</span><br />
+                          Цена, номер и статус — необязательны. Статус: <span className="font-mono">бронь / продано / повреждено</span> — остальное → в наличии.
                         </p>
                         <textarea
                           value={pasteText}
                           onChange={(e) => setPasteText(e.target.value)}
                           rows={6}
-                          placeholder={'Капот\t800\t\nКрыло\t650\t1234567-00-A\nПанорама\t750'}
+                          placeholder={'Капот\t800\t\t\nКрыло\t650\t1234567-00-A\nПанорама\t750\t\tБронь\nДверь передняя\t\t\tПродано'}
                           className="w-full px-3 py-2 text-sm border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono resize-none bg-white"
                         />
                         <div className="flex items-center justify-between mt-2">
@@ -867,15 +894,16 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                       </div>
                     )}
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="grid gap-0 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 border-b border-gray-200" style={{ gridTemplateColumns: '1fr 90px 130px 32px' }}>
+                      <div className="grid gap-0 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 border-b border-gray-200" style={{ gridTemplateColumns: '1fr 80px 110px 108px 32px' }}>
                         <span>Название *</span>
                         <span>Цена</span>
                         <span>Ориг. номер</span>
+                        <span>Статус</span>
                         <span></span>
                       </div>
                       <div className="divide-y divide-gray-100">
                         {bulkItems.map((row, idx) => (
-                          <div key={idx} className="grid gap-0 items-center px-3 py-1.5" style={{ gridTemplateColumns: '1fr 90px 130px 32px' }}>
+                          <div key={idx} className="grid gap-0 items-center px-3 py-1.5" style={{ gridTemplateColumns: '1fr 80px 110px 108px 32px' }}>
                             <input
                               type="text"
                               value={row.name}
@@ -911,6 +939,25 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                               placeholder="Ориг. номер"
                               className="w-full pr-2 py-1.5 text-sm border-0 border-l border-gray-200 pl-2 focus:outline-none focus:ring-0"
                             />
+                            <select
+                              value={row.status}
+                              onChange={(e) => {
+                                const next = [...bulkItems]
+                                next[idx] = { ...next[idx], status: e.target.value as PartsInventoryStatus }
+                                setBulkItems(next)
+                              }}
+                              className={`w-full py-1.5 text-xs border-0 border-l border-gray-200 pl-2 pr-1 focus:outline-none focus:ring-0 font-medium ${
+                                row.status === 'available' ? 'text-green-700 bg-green-50' :
+                                row.status === 'reserved' ? 'text-yellow-700 bg-yellow-50' :
+                                row.status === 'sold'     ? 'text-gray-500 bg-gray-50' :
+                                                            'text-red-700 bg-red-50'
+                              }`}
+                            >
+                              <option value="available">В наличии</option>
+                              <option value="reserved">Бронь</option>
+                              <option value="sold">Продано</option>
+                              <option value="damaged">Повреждено</option>
+                            </select>
                             <button
                               type="button"
                               onClick={() => {
@@ -926,7 +973,7 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                     </div>
                     <button
                       type="button"
-                      onClick={() => setBulkItems(prev => [...prev, { name: '', selling_price: '', part_number: '' }])}
+                      onClick={() => setBulkItems(prev => [...prev, { name: '', selling_price: '', part_number: '', status: 'available' }])}
                       className="mt-2 flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
                     >
                       <Plus className="w-4 h-4" />
@@ -1156,7 +1203,7 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                 className="flex-1 sm:flex-none px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
               >
                 {bulkMode
-                  ? `Добавить ${bulkItems.filter(r => r.name.trim() && r.selling_price).length || ''} запчастей`
+                  ? `Добавить ${bulkItems.filter(r => r.name.trim()).length || ''} запчастей`
                   : item ? 'Сохранить' : 'Добавить'}
               </button>
             </div>
