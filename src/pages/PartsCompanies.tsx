@@ -204,7 +204,7 @@ export default function PartsCompanies() {
         </div>
         <button
           onClick={handleCreate}
-          className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+          className="flex items-center space-x-2 px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800"
         >
           <Plus className="h-5 w-5" />
           <span>Создать разборку</span>
@@ -385,7 +385,7 @@ export default function PartsCompanies() {
               <button
                 onClick={handleSubmit}
                 disabled={!formData.name.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:bg-gray-400"
+                className="px-4 py-2 text-sm font-medium text-white bg-purple-700 rounded-md hover:bg-purple-800 disabled:bg-gray-400"
               >
                 {selectedCompany ? 'Сохранить' : 'Создать'}
               </button>

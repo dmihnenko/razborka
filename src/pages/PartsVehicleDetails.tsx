@@ -262,7 +262,7 @@ export default function PartsVehicleDetails() {
           </div>
           <button
             onClick={() => setIsEditModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex-shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-700 text-white rounded-lg hover:bg-blue-800 flex-shrink-0"
           >
             <Edit size={16} />
             <span className="hidden sm:inline">Редактировать</span>
@@ -576,7 +576,7 @@ export default function PartsVehicleDetails() {
                   onClick={() => navigate(
                     `/parts/categories?tab=templates&brand=${encodeURIComponent(vehicle.make)}`
                   )}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-xs font-medium transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800 text-xs font-medium transition-colors"
                 >
                   <Tag className="w-3.5 h-3.5" />
                   Импортировать

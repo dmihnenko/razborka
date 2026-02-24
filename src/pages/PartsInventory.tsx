@@ -273,7 +273,7 @@ export default function PartsInventory() {
                   }
                 }}
                 disabled={deleteAllMutation.isPending}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors disabled:opacity-50"
                 title="Удалить весь склад"
               >
                 <Trash2 className="w-5 h-5" />
@@ -525,7 +525,7 @@ export default function PartsInventory() {
                   {item.status !== 'sold' && (
                     <button
                       onClick={(e) => handleSell(item, e)}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors"
                     >
                       <DollarSign className="w-4 h-4" />
                       Продать
@@ -693,7 +693,7 @@ export default function PartsInventory() {
                     }
                     sellMutation.mutate({ item: sellingItem, price, currency: sellCurrency })
                   }}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50"
                 >
                   {sellMutation.isPending ? 'Сохранение...' : 'Продать'}
                 </button>

@@ -67,7 +67,7 @@ export default function VersionChecker() {
     return (
       <button
         onClick={() => window.location.reload()}
-        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-colors"
+        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg shadow-lg hover:bg-blue-800 transition-colors"
       >
         <RefreshCw className="w-4 h-4" />
         Обновить приложение

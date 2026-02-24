@@ -158,7 +158,7 @@ export default function PublicPersonalVehicleView() {
         <p className="text-gray-500 mb-4">Автомобиль не найден</p>
         <button
           onClick={() => navigate('/my-vehicles')}
-          className="px-4 py-2 bg-blue-600 bg-opacity-80 text-white rounded-md hover:bg-opacity-100 transition-all"
+          className="px-4 py-2 bg-blue-700 bg-opacity-80 text-white rounded-md hover:bg-opacity-100 transition-all"
         >
           Вернуться к списку
         </button>
@@ -192,7 +192,7 @@ export default function PublicPersonalVehicleView() {
               />
               {vehicle.isSold && (
                 <div className="absolute top-2 right-2 sm:top-4 sm:right-4">
-                  <span className="px-2 py-1 sm:px-4 sm:py-2 bg-red-600 text-white font-bold rounded-lg shadow-lg text-sm sm:text-base md:text-lg">
+                  <span className="px-2 py-1 sm:px-4 sm:py-2 bg-red-700 text-white font-bold rounded-lg shadow-lg text-sm sm:text-base md:text-lg">
                     ПРОДАН
                   </span>
                 </div>
@@ -201,7 +201,7 @@ export default function PublicPersonalVehicleView() {
                 <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-4">
                   <button
                     onClick={() => setShowPhotoMenu(!showPhotoMenu)}
-                    className="flex items-center gap-1 sm:gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors shadow-lg"
+                    className="flex items-center gap-1 sm:gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm bg-blue-700 text-white rounded-md hover:bg-blue-800 transition-colors shadow-lg"
                   >
                     <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
                     <span className="hidden sm:inline">{uploadingPhoto ? 'Загрузка...' : 'Изменить фото'}</span>
@@ -260,7 +260,7 @@ export default function PublicPersonalVehicleView() {
                   {isOwner && (
                     <button
                       onClick={() => setShowRateModal(true)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xl bg-green-600 bg-opacity-80 text-white rounded hover:bg-opacity-100 transition-all"
+                      className="flex items-center gap-1 px-3 py-1.5 text-xl bg-green-700 bg-opacity-80 text-white rounded hover:bg-opacity-100 transition-all"
                       title="Установить курс USD"
                     >
                       <DollarSign className="w-5 h-5" />
@@ -396,7 +396,7 @@ export default function PublicPersonalVehicleView() {
                 <div className="flex flex-col sm:flex-row gap-2 mt-auto">
                   <button
                     onClick={() => setShowShareModal(true)}
-                    className="flex-1 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 text-xs sm:text-sm bg-green-600 bg-opacity-80 text-white rounded-md hover:bg-opacity-100 transition-all"
+                    className="flex-1 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 text-xs sm:text-sm bg-green-700 bg-opacity-80 text-white rounded-md hover:bg-opacity-100 transition-all"
                   >
                     <Share2 className="w-3 h-3 sm:w-4 sm:h-4" />
                     Поделиться
@@ -412,7 +412,7 @@ export default function PublicPersonalVehicleView() {
 
                   <button
                     onClick={handleDelete}
-                    className="flex-1 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 text-xs sm:text-sm bg-red-600 bg-opacity-80 text-white rounded-md hover:bg-opacity-100 transition-all"
+                    className="flex-1 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 text-xs sm:text-sm bg-red-700 bg-opacity-80 text-white rounded-md hover:bg-opacity-100 transition-all"
                   >
                     <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                     Удалить
@@ -524,7 +524,7 @@ export default function PublicPersonalVehicleView() {
                 <button
                   type="submit"
                   disabled={updatePhotoMutation.isPending}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className="flex-1 px-4 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 disabled:opacity-50 transition-colors"
                 >
                   {updatePhotoMutation.isPending ? 'Сохранение...' : 'Сохранить'}
                 </button>
@@ -553,7 +553,7 @@ export default function PublicPersonalVehicleView() {
                 type="button"
                 onClick={confirmDelete}
                 disabled={deleteMutation.isPending}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
+                className="flex-1 px-4 py-2 bg-red-700 text-white rounded-md hover:bg-red-800 disabled:opacity-50 transition-colors"
               >
                 {deleteMutation.isPending ? 'Удаление...' : 'Да, удалить'}
               </button>

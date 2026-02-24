@@ -336,7 +336,7 @@ export default function AdminSupport() {
                 <button onClick={() => setFilterStatus('all')} className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${filterStatus === 'all' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                   Все ({stats.total})
                 </button>
-                <button onClick={() => setFilterStatus('active')} className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${filterStatus === 'active' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                <button onClick={() => setFilterStatus('active')} className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${filterStatus === 'active' ? 'bg-green-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                   Активные ({stats.active})
                 </button>
                 <button onClick={() => setFilterStatus('closed')} className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${filterStatus === 'closed' ? 'bg-gray-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>

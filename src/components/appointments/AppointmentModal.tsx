@@ -335,7 +335,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
                     appointmentId || step.id <= currentStep ? 'cursor-pointer hover:scale-110' : 'cursor-not-allowed opacity-60'
                   } ${
                     step.id < currentStep
-                      ? 'bg-green-500 text-white hover:bg-green-600'
+                      ? 'bg-green-500 text-white hover:bg-green-700'
                       : step.id === currentStep
                       ? 'bg-primary text-white ring-4 ring-primary/20'
                       : 'bg-gray-200 text-gray-500 ' + (appointmentId ? 'hover:bg-gray-300' : '')
@@ -412,7 +412,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
               type="button"
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
-              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors font-medium text-center"
+              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-white bg-red-700 rounded-lg hover:bg-red-800 disabled:opacity-50 transition-colors font-medium text-center"
             >
               {deleteMutation.isPending ? 'Удаление...' : 'Удалить'}
             </button>
@@ -440,7 +440,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
               type="button"
               onClick={() => createMutation.mutate(formData)}
               disabled={createMutation.isPending}
-              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors font-medium text-center whitespace-nowrap"
+              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-white bg-green-700 rounded-lg hover:bg-green-800 disabled:opacity-50 transition-colors font-medium text-center whitespace-nowrap"
             >
               {createMutation.isPending ? 'Сохранение...' : (appointmentId ? 'Сохранить' : 'Создать')}
             </button>

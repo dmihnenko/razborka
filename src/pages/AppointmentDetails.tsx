@@ -559,7 +559,7 @@ export default function AppointmentDetails() {
                                 onChange={() => handlePaymentChange('parts', appointment.parts_paid)}
                                 className="sr-only peer"
                               />
-                              <div className="w-5 h-5 border-2 rounded border-gray-300 peer-checked:bg-green-600 peer-checked:border-green-600 transition-all flex items-center justify-center">
+                              <div className="w-5 h-5 border-2 rounded border-gray-300 peer-checked:bg-green-700 peer-checked:border-green-600 transition-all flex items-center justify-center">
                                 {appointment.parts_paid && (
                                   <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -615,7 +615,7 @@ export default function AppointmentDetails() {
                                 onChange={() => handlePaymentChange('work', appointment.work_paid)}
                                 className="sr-only peer"
                               />
-                              <div className="w-5 h-5 border-2 rounded border-gray-300 peer-checked:bg-green-600 peer-checked:border-green-600 transition-all flex items-center justify-center">
+                              <div className="w-5 h-5 border-2 rounded border-gray-300 peer-checked:bg-green-700 peer-checked:border-green-600 transition-all flex items-center justify-center">
                                 {appointment.work_paid && (
                                   <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />

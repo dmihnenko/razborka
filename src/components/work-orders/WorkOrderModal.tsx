@@ -257,7 +257,7 @@ export default function WorkOrderModal({ isOpen, onClose, workOrderId }: Props) 
           <button
             onClick={handleSubmit}
             disabled={createMutation.isPending || !formData.customer_id || !formData.vehicle_id}
-            className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-center whitespace-nowrap"
+            className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-white bg-green-700 rounded-lg hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-center whitespace-nowrap"
           >
             {createMutation.isPending
               ? 'Сохранение...'

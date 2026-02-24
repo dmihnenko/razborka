@@ -219,7 +219,7 @@ export default function PersonalVehicleExpenses({ vehicleId, vehicle, isOwner, o
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className="flex-1 px-4 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 disabled:opacity-50 transition-colors"
                 >
                   {loading ? 'Сохранение...' : 'Сохранить'}
                 </button>

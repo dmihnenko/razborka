@@ -73,7 +73,7 @@ export default function Roles() {
             setEditingRole(null)
             setIsModalOpen(true)
           }}
-          className="btn-touch-sm bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
+          className="btn-touch-sm bg-blue-700 text-white hover:bg-blue-800 flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">Добавить</span>
@@ -288,7 +288,7 @@ function RoleModal({
           <div className="flex gap-2">
             <button
               type="submit"
-              className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              className="flex-1 bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800"
             >
               Сохранить
             </button>

@@ -107,7 +107,7 @@ export default function ShareLinkModal({ isOpen, onClose, vehicleId, userId }: P
                 onClick={() => setSelectedDuration('1hour')}
                 className={`flex-1 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all ${
                   selectedDuration === '1hour'
-                    ? 'bg-blue-600 text-white shadow-sm'
+                    ? 'bg-blue-700 text-white shadow-sm'
                     : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -117,7 +117,7 @@ export default function ShareLinkModal({ isOpen, onClose, vehicleId, userId }: P
                 onClick={() => setSelectedDuration('7days')}
                 className={`flex-1 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all ${
                   selectedDuration === '7days'
-                    ? 'bg-blue-600 text-white shadow-sm'
+                    ? 'bg-blue-700 text-white shadow-sm'
                     : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -127,7 +127,7 @@ export default function ShareLinkModal({ isOpen, onClose, vehicleId, userId }: P
                 onClick={() => setSelectedDuration('permanent')}
                 className={`flex-1 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all ${
                   selectedDuration === 'permanent'
-                    ? 'bg-blue-600 text-white shadow-sm'
+                    ? 'bg-blue-700 text-white shadow-sm'
                     : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -137,7 +137,7 @@ export default function ShareLinkModal({ isOpen, onClose, vehicleId, userId }: P
             <button
               onClick={() => createMutation.mutate()}
               disabled={createMutation.isPending}
-              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-green-600 text-white font-medium text-xs sm:text-sm rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-green-700 text-white font-medium text-xs sm:text-sm rounded-md hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
             >
               {createMutation.isPending ? 'Создание...' : '✓ Сгенерировать код'}
             </button>

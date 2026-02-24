@@ -101,7 +101,7 @@ export default function StoSettings() {
                   onClick={() => toggleServicesMenuMutation.mutate(!servicesMenuEnabled)}
                   disabled={toggleServicesMenuMutation.isPending}
                   className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-                    servicesMenuEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                    servicesMenuEnabled ? 'bg-blue-700' : 'bg-gray-300'
                   } ${toggleServicesMenuMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <span

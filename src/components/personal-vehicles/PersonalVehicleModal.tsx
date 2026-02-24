@@ -197,7 +197,7 @@ export default function PersonalVehicleModal({ isOpen, onClose, onSuccess, userI
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, photoUrl: '' })}
-                  className="absolute top-1 sm:top-2 right-1 sm:right-2 p-1 sm:p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                  className="absolute top-1 sm:top-2 right-1 sm:right-2 p-1 sm:p-2 bg-red-700 text-white rounded-full hover:bg-red-800 transition-colors"
                 >
                   <X className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
@@ -225,7 +225,7 @@ export default function PersonalVehicleModal({ isOpen, onClose, onSuccess, userI
             <button
               type="submit"
               disabled={creating || uploading}
-              className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base bg-blue-700 text-white rounded-md hover:bg-blue-800 disabled:opacity-50 transition-colors"
             >
               {creating ? 'Создание...' : 'Создать'}
             </button>

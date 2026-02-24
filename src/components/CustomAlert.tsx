@@ -153,7 +153,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
               </button>
               <button
                 onClick={handleConfirm}
-                className="px-5 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors font-medium"
+                className="px-5 py-2 bg-red-700 text-white rounded-md hover:bg-red-800 transition-colors font-medium"
               >
                 {confirm.confirmText}
               </button>

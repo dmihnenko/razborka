@@ -306,7 +306,7 @@ export default function PartsOrderDetails() {
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 sm:static sm:bg-transparent sm:border-0 sm:shadow-none sm:p-0">
             <button
               onClick={() => setShowCompleteModal(true)}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors font-medium"
             >
               <CheckCircle className="w-5 h-5" />
               Завершить заказ
@@ -721,7 +721,7 @@ function ConfirmCompleteModal({ onConfirm, onClose, isLoading }: ConfirmComplete
             <button
               onClick={onConfirm}
               disabled={isLoading}
-              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-700 text-base font-medium text-white hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
             >
               {isLoading ? 'Завершение...' : 'Да, завершить'}
             </button>

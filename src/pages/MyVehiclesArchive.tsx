@@ -98,7 +98,7 @@ export default function MyVehiclesArchive() {
                       />
                     </div>
                     <div className="absolute top-4 right-4">
-                      <span className="px-4 py-2 bg-red-600 text-white font-bold rounded-lg shadow-lg">
+                      <span className="px-4 py-2 bg-red-700 text-white font-bold rounded-lg shadow-lg">
                         ПРОДАН
                       </span>
                     </div>

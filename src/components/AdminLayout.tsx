@@ -130,7 +130,7 @@ export default function AdminLayout() {
                       to={item.href}
                       className={`flex flex-col items-center justify-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-2 sm:py-3 text-[10px] sm:text-xs font-medium transition-colors rounded-lg min-h-[60px] sm:min-h-[70px] ${
                         isActive
-                          ? 'bg-purple-600 text-white shadow-sm'
+                          ? 'bg-purple-700 text-white shadow-sm'
                           : 'text-gray-700 bg-gray-50 hover:bg-gray-100'
                       }`}
                     >

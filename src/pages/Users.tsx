@@ -579,7 +579,7 @@ export default function Users() {
         </div>
         <button
           onClick={handleCreateUser}
-          className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+          className="flex items-center space-x-2 px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800"
         >
           <Plus className="h-5 w-5" />
           <span>{isAdmin ? 'Добавить пользователя' : 'Добавить сотрудника'}</span>
@@ -930,7 +930,7 @@ export default function Users() {
               <button
                 onClick={() => createUserMutation.mutate(formData)}
                 disabled={!formData.email || !formData.password || formData.password.length < 6}
-                className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:bg-gray-400"
+                className="px-4 py-2 text-sm font-medium text-white bg-purple-700 rounded-md hover:bg-purple-800 disabled:bg-gray-400"
               >
                 Создать
               </button>
@@ -1094,7 +1094,7 @@ export default function Users() {
                   userId: selectedUser.id,
                   data: formData
                 })}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-700 rounded-md hover:bg-blue-800"
               >
                 Сохранить
               </button>
@@ -1231,7 +1231,7 @@ export default function Users() {
                     parts_company_id: selectedUser.parts_company_id
                   });
                 }}
-                className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700"
+                className="px-4 py-2 text-sm font-medium text-white bg-purple-700 rounded-md hover:bg-purple-800"
               >
                 Сохранить
               </button>

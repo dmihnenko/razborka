@@ -202,7 +202,7 @@ export default function ExpenseModal({ isOpen, onClose, category, editItem, onSa
                     onChange={(e) => setIsBulkMode(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-5 h-5 border-2 border-gray-300 rounded flex items-center justify-center transition-all peer-checked:bg-blue-600 peer-checked:border-blue-600 group-hover:border-blue-400">
+                  <div className="w-5 h-5 border-2 border-gray-300 rounded flex items-center justify-center transition-all peer-checked:bg-blue-700 peer-checked:border-blue-600 group-hover:border-blue-400">
                     {isBulkMode && (
                       <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -247,7 +247,7 @@ export default function ExpenseModal({ isOpen, onClose, category, editItem, onSa
                           onClick={() => handleChangeCurrency(index, 'USD')}
                           className={`px-1.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-sm rounded transition-colors ${
                             item.currency === 'USD'
-                              ? 'bg-blue-600 text-white'
+                              ? 'bg-blue-700 text-white'
                               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                           }`}
                         >
@@ -259,7 +259,7 @@ export default function ExpenseModal({ isOpen, onClose, category, editItem, onSa
                           onClick={() => handleChangeCurrency(index, 'UAH')}
                           className={`px-1.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-sm rounded transition-colors ${
                             item.currency === 'UAH'
-                              ? 'bg-blue-600 text-white'
+                              ? 'bg-blue-700 text-white'
                               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                           }`}
                         >
@@ -276,7 +276,7 @@ export default function ExpenseModal({ isOpen, onClose, category, editItem, onSa
                 <button
                   type="button"
                   onClick={handleSaveParsedItems}
-                  className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium text-xs sm:text-sm"
+                  className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 transition-colors font-medium text-xs sm:text-sm"
                 >
                   Добавить выбранные ({parsedItems.filter(i => i.selected).length})
                 </button>
@@ -312,7 +312,7 @@ export default function ExpenseModal({ isOpen, onClose, category, editItem, onSa
               </div>
               <button
                 type="submit"
-                className="w-full mt-3 sm:mt-4 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium text-xs sm:text-sm"
+                className="w-full mt-3 sm:mt-4 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 transition-colors font-medium text-xs sm:text-sm"
               >
                 Далее
               </button>
@@ -387,7 +387,7 @@ export default function ExpenseModal({ isOpen, onClose, category, editItem, onSa
                 <div className="flex gap-2 sm:gap-3">
                   <button
                     type="submit"
-                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium text-xs sm:text-sm"
+                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 transition-colors font-medium text-xs sm:text-sm"
                   >
                     {editItem ? 'Сохранить' : 'Добавить'}
                   </button>
@@ -403,7 +403,7 @@ export default function ExpenseModal({ isOpen, onClose, category, editItem, onSa
                   <button
                     type="button"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors font-medium text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-1.5"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-red-700 text-white rounded-md hover:bg-red-800 transition-colors font-medium text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-1.5"
                   >
                     <X className="w-3 h-3 sm:w-4 sm:h-4" />
                     Удалить
@@ -436,7 +436,7 @@ export default function ExpenseModal({ isOpen, onClose, category, editItem, onSa
                     setShowDeleteConfirm(false)
                   }
                 }}
-                className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors font-medium text-xs sm:text-sm"
+                className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-red-700 text-white rounded-md hover:bg-red-800 transition-colors font-medium text-xs sm:text-sm"
               >
                 Удалить
               </button>

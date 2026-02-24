@@ -36,7 +36,7 @@ export default function ExpenseCategory({
         {isOwner && (
           <button
             onClick={onAdd}
-            className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-blue-600 text-white text-xs sm:text-sm rounded-md hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-blue-700 text-white text-xs sm:text-sm rounded-md hover:bg-blue-800 transition-colors"
           >
             <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
             Добавить

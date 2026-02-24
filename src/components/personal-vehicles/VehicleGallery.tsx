@@ -153,7 +153,7 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate }
               <p className="text-gray-700 font-medium mb-2">Загрузка... {uploadProgress.toFixed(0)}%</p>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
-                  className="bg-blue-600 h-2 rounded-full transition-all"
+                  className="bg-blue-700 h-2 rounded-full transition-all"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
@@ -243,7 +243,7 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate }
               {isOwner && (
                 <button
                   onClick={() => handleDeletePhoto(modalPhoto.index)}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-red-700 text-white rounded-md hover:bg-red-800 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                   Удалить

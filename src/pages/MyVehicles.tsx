@@ -129,7 +129,7 @@ export default function MyVehicles() {
 
         <button
           onClick={(e) => handleEdit(vehicle.id, e)}
-          className="w-full flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs sm:text-sm font-medium"
+          className="w-full flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-700 text-white rounded-md hover:bg-blue-800 transition-colors text-xs sm:text-sm font-medium"
         >
           <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
           Открыть
@@ -180,7 +180,7 @@ export default function MyVehicles() {
               
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 text-sm sm:text-base shadow-sm hover:shadow-md font-medium flex-1 sm:flex-none"
+                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition-all duration-200 text-sm sm:text-base shadow-sm hover:shadow-md font-medium flex-1 sm:flex-none"
               >
                 <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Добавить</span>
@@ -207,7 +207,7 @@ export default function MyVehicles() {
             </p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
+              className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm sm:text-base"
             >
               <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
               Добавить автомобиль

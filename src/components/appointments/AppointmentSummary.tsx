@@ -193,7 +193,7 @@ export default function AppointmentSummary({ formData, onUpdate, isEditing }: Pr
               onChange={(e) => onUpdate({ parts_paid: e.target.checked })}
               className="sr-only peer"
             />
-            <div className="relative w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-green-600 peer-checked:border-green-600 transition-all duration-200 flex items-center justify-center">
+            <div className="relative w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-green-700 peer-checked:border-green-600 transition-all duration-200 flex items-center justify-center">
               <svg
                 className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
                 fill="none"
@@ -215,7 +215,7 @@ export default function AppointmentSummary({ formData, onUpdate, isEditing }: Pr
               onChange={(e) => onUpdate({ work_paid: e.target.checked })}
               className="sr-only peer"
             />
-            <div className="relative w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-green-600 peer-checked:border-green-600 transition-all duration-200 flex items-center justify-center">
+            <div className="relative w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-green-700 peer-checked:border-green-600 transition-all duration-200 flex items-center justify-center">
               <svg
                 className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
                 fill="none"
