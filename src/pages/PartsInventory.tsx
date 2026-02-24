@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag, ClipboardList, Trash2 } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag, ClipboardList, Trash2, DollarSign } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -41,6 +41,9 @@ export default function PartsInventory() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<PartsInventoryItem | null>(null)
+  const [sellingItem, setSellingItem] = useState<PartsInventoryItem | null>(null)
+  const [sellPrice, setSellPrice] = useState('')
+  const [sellCurrency, setSellCurrency] = useState<'UAH' | 'USD'>('USD')
   
   const { data: profile } = useUserProfile()
   const queryClient = useQueryClient()
@@ -186,10 +189,34 @@ export default function PartsInventory() {
         : sum, 0)
   }
 
+  const sellMutation = useMutation({
+    mutationFn: async ({ item, price, currency }: { item: PartsInventoryItem, price: number, currency: 'UAH' | 'USD' }) => {
+      return updatePartsInventoryItem(item.id, {
+        status: 'sold',
+        selling_price: price,
+        price_currency: currency,
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      toast.success('Запчасть отмечена как проданная')
+      setSellingItem(null)
+      setSellPrice('')
+    },
+    onError: () => toast.error('Ошибка при сохранении'),
+  })
+
   const handleEdit = (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
     setEditingItem(item)
     setIsModalOpen(true)
+  }
+
+  const handleSell = (item: PartsInventoryItem, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSellingItem(item)
+    setSellPrice(item.selling_price ? String(item.selling_price) : '')
+    setSellCurrency((item.price_currency as 'UAH' | 'USD') || 'USD')
   }
 
   const handleDelete = (item: PartsInventoryItem, e: React.MouseEvent) => {
@@ -488,6 +515,15 @@ export default function PartsInventory() {
                   >
                     Редактировать
                   </button>
+                  {item.status !== 'sold' && (
+                    <button
+                      onClick={(e) => handleSell(item, e)}
+                      className="px-3 py-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                      title="Продать"
+                    >
+                      <DollarSign className="w-4 h-4" />
+                    </button>
+                  )}
                   <button
                     onClick={(e) => handleDelete(item, e)}
                     className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -568,6 +604,14 @@ export default function PartsInventory() {
                           >
                             Изменить
                           </button>
+                          {item.status !== 'sold' && (
+                            <button
+                              onClick={(e) => handleSell(item, e)}
+                              className="text-green-600 hover:text-green-800"
+                            >
+                              Продать
+                            </button>
+                          )}
                           <button
                             onClick={(e) => handleDelete(item, e)}
                             className="text-red-600 hover:text-red-800"
@@ -584,6 +628,63 @@ export default function PartsInventory() {
           </div>
         )}
       </div>
+
+      {/* Sell Modal */}
+      {sellingItem && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center px-4">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setSellingItem(null)} />
+            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm p-6 z-10">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">Продать запчасть</h3>
+              <p className="text-sm text-gray-500 mb-4 line-clamp-2">{sellingItem.name}</p>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Сумма продажи</label>
+              <div className="flex gap-2 mb-5">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={sellPrice}
+                  onChange={(e) => setSellPrice(e.target.value)}
+                  placeholder="0"
+                  autoFocus
+                  className="flex-1 px-3 py-2 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <button
+                  type="button"
+                  onClick={() => setSellCurrency(c => c === 'USD' ? 'UAH' : 'USD')}
+                  className="px-3 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-primary/90 w-12 text-center"
+                >
+                  {sellCurrency === 'USD' ? '$' : '₴'}
+                </button>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSellingItem(null)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  disabled={sellMutation.isPending}
+                  onClick={() => {
+                    const price = parseFloat(sellPrice)
+                    if (isNaN(price) || price < 0) {
+                      toast.error('Введите корректную сумму')
+                      return
+                    }
+                    sellMutation.mutate({ item: sellingItem, price, currency: sellCurrency })
+                  }}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
+                >
+                  {sellMutation.isPending ? 'Сохранение...' : 'Продать'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       {isModalOpen && (
