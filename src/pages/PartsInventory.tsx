@@ -518,17 +518,18 @@ export default function PartsInventory() {
                   {item.status !== 'sold' && (
                     <button
                       onClick={(e) => handleSell(item, e)}
-                      className="px-3 py-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                      title="Продать"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                     >
                       <DollarSign className="w-4 h-4" />
+                      Продать
                     </button>
                   )}
                   <button
                     onClick={(e) => handleDelete(item, e)}
                     className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Удалить"
                   >
-                    Удалить
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -597,7 +598,7 @@ export default function PartsInventory() {
                         {formatPrice(item.selling_price, item.price_currency as 'UAH' | 'USD')}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right text-sm">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-3">
                           <button
                             onClick={(e) => handleEdit(item, e)}
                             className="text-primary hover:text-primary/80"
@@ -607,16 +608,17 @@ export default function PartsInventory() {
                           {item.status !== 'sold' && (
                             <button
                               onClick={(e) => handleSell(item, e)}
-                              className="text-green-600 hover:text-green-800"
+                              className="text-green-600 hover:text-green-800 font-medium"
                             >
                               Продать
                             </button>
                           )}
                           <button
                             onClick={(e) => handleDelete(item, e)}
-                            className="text-red-600 hover:text-red-800"
+                            className="text-red-500 hover:text-red-700"
+                            title="Удалить"
                           >
-                            Удалить
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
