@@ -314,11 +314,7 @@ export async function createPartsInventoryItem(input: CreatePartsInventoryInput,
       status: input.status || 'available',
       reserved_quantity: 0
     })
-    .select(`
-      *,
-      category:parts_categories(id, name),
-      vehicle:parts_vehicles!vehicle_id(id, make, model, year, vin)
-    `)
+    .select('*')
     .single()
   
   if (error) throw error
@@ -330,11 +326,7 @@ export async function updatePartsInventoryItem(id: string, updates: Partial<Part
     .from('parts_inventory')
     .update(updates)
     .eq('id', id)
-    .select(`
-      *,
-      category:parts_categories(id, name),
-      vehicle:parts_vehicles!vehicle_id(id, make, model, year, vin)
-    `)
+    .select('*')
     .single()
   
   if (error) throw error
