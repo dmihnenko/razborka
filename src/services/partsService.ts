@@ -296,7 +296,7 @@ export async function getPartsInventory(partsCompanyId: string) {
     .select(`
       *,
       category:parts_categories(id, name),
-      vehicle:parts_vehicles(id, make, model, year, vin)
+      vehicle:parts_vehicles!vehicle_id(id, make, model, year, vin)
     `)
     .eq('parts_company_id', partsCompanyId)
     .order('created_at', { ascending: false })
@@ -317,7 +317,7 @@ export async function createPartsInventoryItem(input: CreatePartsInventoryInput,
     .select(`
       *,
       category:parts_categories(id, name),
-      vehicle:parts_vehicles(id, make, model, year, vin)
+      vehicle:parts_vehicles!vehicle_id(id, make, model, year, vin)
     `)
     .single()
   
@@ -333,7 +333,7 @@ export async function updatePartsInventoryItem(id: string, updates: Partial<Part
     .select(`
       *,
       category:parts_categories(id, name),
-      vehicle:parts_vehicles(id, make, model, year, vin)
+      vehicle:parts_vehicles!vehicle_id(id, make, model, year, vin)
     `)
     .single()
   
