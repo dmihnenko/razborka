@@ -95,6 +95,7 @@ export interface PartsInventoryItem {
   quantity: number
   purchase_price?: number
   selling_price?: number
+  sold_price?: number
   price_currency?: 'UAH' | 'USD'
   location?: string
   shelf?: string

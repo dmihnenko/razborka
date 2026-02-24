@@ -179,21 +179,21 @@ export default function PartsInventory() {
     sold: inventory.filter((i: PartsInventoryItem) => i.status === 'sold').length,
     lowStock: inventory.filter((i: PartsInventoryItem) => !i.vehicle_id && i.quantity <= 2 && i.status === 'available').length,
     noPrice: inventory.filter((i: PartsInventoryItem) => !i.selling_price).length,
-    totalUAH: inventory.reduce((sum: number, item: PartsInventoryItem) =>
-      item.price_currency === 'UAH'
-        ? sum + (item.selling_price || 0) * item.quantity
-        : sum, 0),
-    totalUSD: inventory.reduce((sum: number, item: PartsInventoryItem) =>
-      (item.price_currency === 'USD' || !item.price_currency)
-        ? sum + (item.selling_price || 0) * item.quantity
-        : sum, 0)
+    totalUAH: inventory.reduce((sum: number, item: PartsInventoryItem) => {
+      const price = item.status === 'sold' ? (item.sold_price ?? item.selling_price ?? 0) : (item.selling_price || 0)
+      return item.price_currency === 'UAH' ? sum + price * item.quantity : sum
+    }, 0),
+    totalUSD: inventory.reduce((sum: number, item: PartsInventoryItem) => {
+      const price = item.status === 'sold' ? (item.sold_price ?? item.selling_price ?? 0) : (item.selling_price || 0)
+      return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum
+    }, 0)
   }
 
   const sellMutation = useMutation({
     mutationFn: async ({ item, price, currency }: { item: PartsInventoryItem, price: number, currency: 'UAH' | 'USD' }) => {
       return updatePartsInventoryItem(item.id, {
         status: 'sold',
-        selling_price: price,
+        sold_price: price,
         price_currency: currency,
       })
     },
@@ -637,7 +637,10 @@ export default function PartsInventory() {
             <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm p-6 z-10">
               <h3 className="text-lg font-semibold text-gray-900 mb-1">Продать запчасть</h3>
               <p className="text-sm text-gray-500 mb-4 line-clamp-2">{sellingItem.name}</p>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Сумма продажи</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Фактическая цена продажи</label>
+              {sellingItem.selling_price && (
+                <p className="text-xs text-gray-400 mb-2">Цена на сайте: {formatPrice(sellingItem.selling_price, (sellingItem.price_currency as 'UAH' | 'USD') || 'USD')} — можно изменить</p>
+              )}
               <div className="flex gap-2 mb-5">
                 <input
                   type="number"

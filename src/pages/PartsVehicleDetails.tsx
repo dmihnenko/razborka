@@ -211,7 +211,7 @@ export default function PartsVehicleDetails() {
   const totalRevenue = parts
     .filter((p: any) => p.status === 'sold')
     .reduce((sum: number, p: any) => {
-      const price = p.selling_price || 0
+      const price = (p.sold_price != null ? p.sold_price : p.selling_price) || 0
       const inUAH = (p.price_currency === 'UAH') ? price : price * exchangeRate
       return sum + inUAH
     }, 0)
