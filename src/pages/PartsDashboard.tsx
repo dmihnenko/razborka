@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { Car, Package, ShoppingCart, DollarSign, AlertCircle, TrendingUp, ArrowRight, Warehouse } from 'lucide-react'
+import { Car, Package, ShoppingCart, DollarSign, AlertCircle, TrendingUp, ArrowRight, Warehouse, LayoutGrid, Users, BarChart2, Settings } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 
@@ -259,7 +259,7 @@ export default function PartsDashboard() {
         </div>
 
         {/* Secondary Stats Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
           {/* Inventory Value */}
           <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
             <div className="flex items-center justify-between mb-2">
@@ -270,7 +270,7 @@ export default function PartsDashboard() {
           </div>
 
           {/* Completed Orders */}
-          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-5">
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm text-gray-600">Завершено заказов</p>
               <ShoppingCart className="w-5 h-5 text-gray-400" />
@@ -279,25 +279,67 @@ export default function PartsDashboard() {
           </div>
 
           {/* Active Vehicles */}
-          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-5">
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm text-gray-600">Авто в ожидании</p>
               <Car className="w-5 h-5 text-gray-400" />
             </div>
             <p className="text-2xl font-bold text-gray-900">{vehiclesStats?.awaiting || 0}</p>
           </div>
+        </div>
 
-          {/* Warehouse */}
-          <button
-            onClick={() => navigate('/parts/warehouse')}
-            className="bg-white rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-all text-left group"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-600">Места хранения</p>
-              <Warehouse className="w-5 h-5 text-amber-500" />
-            </div>
-            <p className="text-sm font-medium text-primary group-hover:underline">Настроить склад →</p>
-          </button>
+        {/* Management Tools */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <p className="text-sm font-semibold text-gray-700">Управление</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 divide-x divide-y sm:divide-y-0 divide-gray-100">
+            <button
+              onClick={() => navigate('/parts/warehouse')}
+              className="flex flex-col items-center gap-2 p-4 hover:bg-amber-50 transition-colors group"
+            >
+              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                <Warehouse className="w-5 h-5 text-amber-600" />
+              </div>
+              <span className="text-xs font-medium text-gray-700">Склад</span>
+            </button>
+            <button
+              onClick={() => navigate('/parts/categories')}
+              className="flex flex-col items-center gap-2 p-4 hover:bg-blue-50 transition-colors group"
+            >
+              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                <LayoutGrid className="w-5 h-5 text-blue-600" />
+              </div>
+              <span className="text-xs font-medium text-gray-700">Категории</span>
+            </button>
+            <button
+              onClick={() => navigate('/parts/employees')}
+              className="flex flex-col items-center gap-2 p-4 hover:bg-green-50 transition-colors group"
+            >
+              <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                <Users className="w-5 h-5 text-green-600" />
+              </div>
+              <span className="text-xs font-medium text-gray-700">Сотрудники</span>
+            </button>
+            <button
+              onClick={() => navigate('/parts/analytics')}
+              className="flex flex-col items-center gap-2 p-4 hover:bg-purple-50 transition-colors group"
+            >
+              <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                <BarChart2 className="w-5 h-5 text-purple-600" />
+              </div>
+              <span className="text-xs font-medium text-gray-700">Аналитика</span>
+            </button>
+            <button
+              onClick={() => navigate('/parts/settings')}
+              className="flex flex-col items-center gap-2 p-4 hover:bg-gray-50 transition-colors group col-span-2 sm:col-span-1"
+            >
+              <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                <Settings className="w-5 h-5 text-gray-600" />
+              </div>
+              <span className="text-xs font-medium text-gray-700">Настройки</span>
+            </button>
+          </div>
         </div>
 
         {/* Recent Activity */}
