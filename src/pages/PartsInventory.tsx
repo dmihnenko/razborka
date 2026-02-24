@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag, ClipboardList, Trash2 } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag, ClipboardList } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -45,7 +45,6 @@ export default function PartsInventory() {
   const { data: profile } = useUserProfile()
   const queryClient = useQueryClient()
   const partsCompanyId = profile?.parts_company_id
-  const isPartsOwner = profile?.roles?.some((r: any) => r.name === 'parts_owner' || r.name === 'admin')
 
   const { data: inventory = [], isLoading } = useQuery({
     queryKey: ['parts-inventory', partsCompanyId],
@@ -141,21 +140,6 @@ export default function PartsInventory() {
     }
   })
 
-  const deleteAllMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('parts_inventory')
-        .delete()
-        .eq('parts_company_id', partsCompanyId!)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success('Все запчасти удалены')
-    },
-    onError: () => toast.error('Ошибка при удалении'),
-  })
-
   // Filter inventory
   const filteredInventory = inventory.filter((item: PartsInventoryItem) => {
     const matchesSearch = searchQuery === '' ||
@@ -234,21 +218,7 @@ export default function PartsInventory() {
               <Plus className="w-5 h-5" />
               <span className="hidden sm:inline">Добавить</span>
             </button>
-            {isPartsOwner && inventory.length > 0 && (
-              <button
-                onClick={() => {
-                  if (confirm(`Удалить все ${inventory.length} запчастей? Это действие нельзя отменить.`)) {
-                    deleteAllMutation.mutate()
-                  }
-                }}
-                disabled={deleteAllMutation.isPending}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                title="Очистить склад"
-              >
-                <Trash2 className="w-5 h-5" />
-                <span className="hidden sm:inline">{deleteAllMutation.isPending ? 'Удаление...' : 'Очистить склад'}</span>
-              </button>
-            )}
+
           </div>
         </div>
       </div>
