@@ -335,7 +335,20 @@ export async function createPartsInventoryItem(input: CreatePartsInventoryInput,
 
 export async function updatePartsInventoryItem(id: string, updates: Partial<PartsInventoryItem>) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { purchase_price, category, vehicle, ...safeUpdates } = updates as any
+  const { purchase_price, category, vehicle, ...rest } = updates as any
+  // Convert empty strings to null for UUID and optional fields to avoid 400 errors
+  const safeUpdates = {
+    ...rest,
+    category_id: rest.category_id || null,
+    vehicle_id: rest.vehicle_id || null,
+    storage_location_id: rest.storage_location_id || null,
+    part_number: rest.part_number || null,
+    description: rest.description || null,
+    location: rest.location || null,
+    shelf: rest.shelf || null,
+    bin: rest.bin || null,
+    notes: rest.notes || null,
+  }
   const { data, error } = await supabase
     .from('parts_inventory')
     .update(safeUpdates)
