@@ -64,13 +64,15 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Минимальный размер touch target - 44x44px (Apple HIG) */
-  button,
-  a,
-  input[type="checkbox"],
-  input[type="radio"] {
-    min-height: 44px;
-    min-width: 44px;
+  /* Минимальный размер touch target - только на тач-устройствах */
+  @media (pointer: coarse) {
+    button,
+    a,
+    input[type="checkbox"],
+    input[type="radio"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
   }
 
   /* Убираем highlight на touch устройствах */
