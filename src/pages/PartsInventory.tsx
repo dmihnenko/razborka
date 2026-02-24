@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag, ClipboardList, Trash2, DollarSign } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations } from '@/services/partsService'
-import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation } from '@/types/parts'
+import { getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal } from '@/services/partsService'
+import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { uploadToImgbb, deletePhotosFromImgbb } from '@/services/imgbbService'
 import { getImgbbKey } from '@/utils/imgbbKey'
@@ -44,6 +44,10 @@ export default function PartsInventory() {
   const [sellingItem, setSellingItem] = useState<PartsInventoryItem | null>(null)
   const [sellPrice, setSellPrice] = useState('')
   const [sellCurrency, setSellCurrency] = useState<'UAH' | 'USD'>('USD')
+  const [sellCustomerId, setSellCustomerId] = useState<string>('')
+  const [showNewCustomer, setShowNewCustomer] = useState(false)
+  const [newCustomerName, setNewCustomerName] = useState('')
+  const [newCustomerPhone, setNewCustomerPhone] = useState('')
   
   const { data: profile } = useUserProfile()
   const queryClient = useQueryClient()
@@ -90,6 +94,13 @@ export default function PartsInventory() {
     queryKey: ['parts-storage-locations', partsCompanyId],
     queryFn: () => getStorageLocations(partsCompanyId!),
     enabled: !!partsCompanyId && isModalOpen,
+  })
+
+  // Get customers for sell modal
+  const { data: customers = [] } = useQuery<PartsCustomer[]>({
+    queryKey: ['parts-customers', partsCompanyId],
+    queryFn: () => getPartsCustomers(partsCompanyId!),
+    enabled: !!partsCompanyId && !!sellingItem,
   })
 
   const saveMutation = useMutation({
@@ -190,7 +201,42 @@ export default function PartsInventory() {
   }
 
   const sellMutation = useMutation({
-    mutationFn: async ({ item, price, currency }: { item: PartsInventoryItem, price: number, currency: 'UAH' | 'USD' }) => {
+    mutationFn: async ({ item, price, currency, customerId, newCustomer }: {
+      item: PartsInventoryItem
+      price: number
+      currency: 'UAH' | 'USD'
+      customerId?: string
+      newCustomer?: { name: string; phone: string }
+    }) => {
+      let resolvedCustomerId: string | null = customerId || null
+
+      // Create new customer if provided
+      if (newCustomer?.name?.trim()) {
+        const created = await createPartsCustomer(
+          { full_name: newCustomer.name.trim(), phone: newCustomer.phone.trim() || undefined },
+          partsCompanyId!
+        )
+        resolvedCustomerId = created.id
+      }
+
+      // Create order
+      const order = await createPartsOrder(partsCompanyId!, {
+        customer_id: resolvedCustomerId,
+        order_date: new Date().toISOString(),
+      })
+
+      // Add item to order
+      await createPartsOrderItem(order.id, {
+        inventory_item_id: item.id,
+        quantity: 1,
+        price_at_sale: price,
+        price_at_sale_currency: currency,
+      })
+
+      // Update order total
+      await updatePartsOrderTotal(order.id)
+
+      // Mark part as sold
       return updatePartsInventoryItem(item.id, {
         status: 'sold',
         sold_price: price,
@@ -199,9 +245,15 @@ export default function PartsInventory() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success('Запчасть отмечена как проданная')
+      queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
+      toast.success('Запчасть продана, заказ создан')
       setSellingItem(null)
       setSellPrice('')
+      setSellCustomerId('')
+      setShowNewCustomer(false)
+      setNewCustomerName('')
+      setNewCustomerPhone('')
     },
     onError: () => toast.error('Ошибка при сохранении'),
   })
@@ -217,6 +269,10 @@ export default function PartsInventory() {
     setSellingItem(item)
     setSellPrice(item.selling_price ? String(item.selling_price) : '')
     setSellCurrency((item.price_currency as 'UAH' | 'USD') || 'USD')
+    setSellCustomerId('')
+    setShowNewCustomer(false)
+    setNewCustomerName('')
+    setNewCustomerPhone('')
   }
 
   const handleDelete = (item: PartsInventoryItem, e: React.MouseEvent) => {
@@ -651,11 +707,13 @@ export default function PartsInventory() {
             <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm p-6 z-10">
               <h3 className="text-lg font-semibold text-gray-900 mb-1">Продать запчасть</h3>
               <p className="text-sm text-gray-500 mb-4 line-clamp-2">{sellingItem.name}</p>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Фактическая цена продажи</label>
+
+              {/* Price */}
+              <label className="block text-sm font-medium text-gray-700 mb-1">Цена продажи</label>
               {sellingItem.selling_price && (
-                <p className="text-xs text-gray-400 mb-2">Цена на сайте: {formatPrice(sellingItem.selling_price, (sellingItem.price_currency as 'UAH' | 'USD') || 'USD')} — можно изменить</p>
+                <p className="text-xs text-gray-400 mb-2">Объявленная: {formatPrice(sellingItem.selling_price, (sellingItem.price_currency as 'UAH' | 'USD') || 'USD')}</p>
               )}
-              <div className="flex gap-2 mb-5">
+              <div className="flex gap-2 mb-4">
                 <input
                   type="number"
                   min="0"
@@ -674,6 +732,60 @@ export default function PartsInventory() {
                   {sellCurrency === 'USD' ? '$' : '₴'}
                 </button>
               </div>
+
+              {/* Customer selection */}
+              <label className="block text-sm font-medium text-gray-700 mb-1">Клиент <span className="text-gray-400 font-normal">(необязательно)</span></label>
+              {!showNewCustomer ? (
+                <div className="flex gap-2 mb-4">
+                  <div className="relative flex-1">
+                    <select
+                      value={sellCustomerId}
+                      onChange={(e) => setSellCustomerId(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none pr-8"
+                    >
+                      <option value="">— Без клиента —</option>
+                      {customers.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.full_name}{c.phone ? ` (${c.phone})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewCustomer(true)}
+                    className="flex items-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 flex-shrink-0"
+                    title="Новый клиент"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-gray-700">Новый клиент</span>
+                    <button type="button" onClick={() => setShowNewCustomer(false)} className="text-gray-400 hover:text-gray-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={newCustomerName}
+                    onChange={(e) => setNewCustomerName(e.target.value)}
+                    placeholder="Имя *"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <input
+                    type="text"
+                    value={newCustomerPhone}
+                    onChange={(e) => setNewCustomerPhone(e.target.value)}
+                    placeholder="Телефон"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <button
                   type="button"
@@ -691,7 +803,17 @@ export default function PartsInventory() {
                       toast.error('Введите корректную сумму')
                       return
                     }
-                    sellMutation.mutate({ item: sellingItem, price, currency: sellCurrency })
+                    if (showNewCustomer && !newCustomerName.trim()) {
+                      toast.error('Введите имя клиента')
+                      return
+                    }
+                    sellMutation.mutate({
+                      item: sellingItem,
+                      price,
+                      currency: sellCurrency,
+                      customerId: sellCustomerId || undefined,
+                      newCustomer: showNewCustomer ? { name: newCustomerName, phone: newCustomerPhone } : undefined,
+                    })
                   }}
                   className="flex-1 px-4 py-2 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50"
                 >

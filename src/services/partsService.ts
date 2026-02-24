@@ -419,6 +419,73 @@ export async function getPartsOrder(id: string) {
   return data as PartsOrder
 }
 
+export async function createPartsOrder(
+  partsCompanyId: string,
+  input: { customer_id?: string | null; notes?: string; order_date?: string }
+) {
+  // Generate order number via RPC or fallback
+  let orderNumber = `P-${Date.now()}`
+  try {
+    const { data: rpcData } = await supabase.rpc('generate_parts_order_number', {
+      company_id: partsCompanyId,
+    })
+    if (rpcData) orderNumber = rpcData
+  } catch (_) { /* use fallback */ }
+
+  const { data, error } = await supabase
+    .from('parts_orders')
+    .insert({
+      parts_company_id: partsCompanyId,
+      customer_id: input.customer_id || null,
+      order_number: orderNumber,
+      order_date: input.order_date || new Date().toISOString(),
+      status: 'completed',
+      total_amount: 0,
+      notes: input.notes || null,
+    })
+    .select('*')
+    .single()
+
+  if (error) throw error
+  return data as PartsOrder
+}
+
+export async function createPartsOrderItem(
+  orderId: string,
+  item: { inventory_item_id: string; quantity: number; price_at_sale: number; price_at_sale_currency?: 'UAH' | 'USD' }
+) {
+  const { data, error } = await supabase
+    .from('parts_order_items')
+    .insert({
+      order_id: orderId,
+      inventory_item_id: item.inventory_item_id,
+      quantity: item.quantity,
+      price_at_sale: item.price_at_sale,
+      price_at_sale_currency: item.price_at_sale_currency || 'USD',
+    })
+    .select('*')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function updatePartsOrderTotal(orderId: string) {
+  const { data: items } = await supabase
+    .from('parts_order_items')
+    .select('price_at_sale, quantity')
+    .eq('order_id', orderId)
+  
+  const total = (items || []).reduce((s, i) => s + (i.price_at_sale * i.quantity), 0)
+
+  const { error } = await supabase
+    .from('parts_orders')
+    .update({ total_amount: total })
+    .eq('id', orderId)
+
+  if (error) throw error
+}
+
 // ============================================================================
 // СКЛАД (иерархические места хранения)
 // ============================================================================
