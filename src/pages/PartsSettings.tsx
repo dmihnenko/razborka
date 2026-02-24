@@ -141,7 +141,7 @@ export default function PartsSettings() {
               <p className="text-xs text-red-600 mt-1">{fetchError}</p>
             )}
             <p className="text-xs text-gray-400 mt-1 text-center">
-              Курс покупки USD/UAH на сегодня
+              Курс продажи USD/UAH на сегодня
             </p>
           </div>
 
