@@ -185,78 +185,74 @@ export default function AdminLayout() {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:block w-64 bg-purple-900 text-white shadow-md">
-        <div className="p-4 border-b border-purple-800">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Shield size={24} />
-            Админ панель
-          </h2>
+      <div className="hidden md:flex md:flex-col w-56 bg-slate-800 text-white flex-shrink-0">
+        <div className="flex items-center gap-2.5 px-4 h-14 border-b border-slate-700">
+          <Shield size={18} className="text-purple-300 flex-shrink-0" />
+          <span className="text-sm font-semibold text-white">Админ панель</span>
         </div>
-        <nav className="mt-4">
-          {adminNavigation.map((item) => {
-            const Icon = item.icon
-            const isActive = location.pathname === item.href
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`flex items-center px-6 py-3 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-purple-700 text-white'
-                    : 'text-purple-100 hover:bg-purple-800'
-                }`}
-              >
-                <Icon className="w-5 h-5 mr-3" />
-                {item.name}
-              </Link>
-            )
-          })}
+        <nav className="flex-1 overflow-y-auto py-3 px-2">
+          {adminNavigationGroups.map((group) => (
+            <div key={group.title} className="mb-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 px-3 mb-1">
+                {group.title}
+              </p>
+              {group.items.map((item) => {
+                const Icon = item.icon
+                const isActive = location.pathname === item.href
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`flex items-center gap-2.5 px-3 py-2 mb-0.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-purple-600 text-white'
+                        : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    {item.name}
+                  </Link>
+                )
+              })}
+            </div>
+          ))}
         </nav>
-        
-        <div className="absolute bottom-0 w-64 border-t border-purple-800">
+
+        <div className="px-2 py-3 border-t border-slate-700 space-y-0.5">
           <button
-            onClick={() => {
-              localStorage.setItem('activeRole', 'user')
-              navigate('/my-vehicles')
-            }}
-            className="flex items-center w-full px-6 py-3 text-sm font-medium text-purple-100 hover:bg-purple-800 transition-colors"
+            onClick={() => { localStorage.setItem('activeRole', 'user'); navigate('/my-vehicles') }}
+            className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
           >
-            <Car className="w-5 h-5 mr-3" />
+            <Car className="w-4 h-4 flex-shrink-0" />
             Мои авто
           </button>
           <button
-            onClick={() => {
-              localStorage.setItem('activeRole', 'sto_owner')
-              navigate('/')
-            }}
-            className="flex items-center w-full px-6 py-3 text-sm font-medium text-purple-100 hover:bg-purple-800 transition-colors"
+            onClick={() => { localStorage.setItem('activeRole', 'sto_owner'); navigate('/') }}
+            className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
           >
-            <Building2 className="w-5 h-5 mr-3" />
+            <Building2 className="w-4 h-4 flex-shrink-0" />
             Мое СТО
           </button>
           <button
-            onClick={() => {
-              localStorage.setItem('activeRole', 'parts_owner')
-              navigate('/parts/dashboard')
-            }}
-            className="flex items-center w-full px-6 py-3 text-sm font-medium text-purple-100 hover:bg-purple-800 transition-colors"
+            onClick={() => { localStorage.setItem('activeRole', 'parts_owner'); navigate('/parts/dashboard') }}
+            className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
           >
-            <Store className="w-5 h-5 mr-3" />
-            Моя разборка
+            <Store className="w-4 h-4 flex-shrink-0" />
+            Разборка
           </button>
           <button
             onClick={handleLogout}
-            className="flex items-center w-full px-6 py-3 text-sm font-medium text-purple-100 hover:bg-purple-800 transition-colors"
+            className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
           >
-            <LogOut className="w-5 h-5 mr-3" />
+            <LogOut className="w-4 h-4 flex-shrink-0" />
             Выход
           </button>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 overflow-auto">
-        <div className="p-3 sm:p-4 md:p-6">
+      <div className="flex-1 overflow-auto bg-gray-50">
+        <div className="mx-auto max-w-[1440px] w-full px-4 py-4 sm:px-6 sm:py-5 md:px-8 md:py-6">
           <Breadcrumbs />
           <Outlet />
         </div>

@@ -89,6 +89,31 @@
   *:focus-visible {
     @apply outline-none ring-2 ring-primary ring-offset-2;
   }
+
+  /* Десктоп: чуть больше базовый размер шрифта */
+  @media (min-width: 768px) {
+    html {
+      font-size: 15px;
+    }
+  }
+
+  /* Скроллбар для десктопа */
+  @media (pointer: fine) {
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #9ca3af;
+    }
+  }
 }
 
 @layer components {
