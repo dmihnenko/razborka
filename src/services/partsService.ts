@@ -306,10 +306,12 @@ export async function getPartsInventory(partsCompanyId: string) {
 }
 
 export async function createPartsInventoryItem(input: CreatePartsInventoryInput, partsCompanyId: string) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { purchase_price, ...rest } = input
   const { data, error } = await supabase
     .from('parts_inventory')
     .insert({
-      ...input,
+      ...rest,
       parts_company_id: partsCompanyId,
       status: input.status || 'available',
       reserved_quantity: 0
@@ -322,9 +324,11 @@ export async function createPartsInventoryItem(input: CreatePartsInventoryInput,
 }
 
 export async function updatePartsInventoryItem(id: string, updates: Partial<PartsInventoryItem>) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { purchase_price, category, vehicle, ...safeUpdates } = updates as any
   const { data, error } = await supabase
     .from('parts_inventory')
-    .update(updates)
+    .update(safeUpdates)
     .eq('id', id)
     .select('*')
     .single()
