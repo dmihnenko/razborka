@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus } from '@/types/parts'
+import type { ImgbbPhoto } from '@/services/imgbbService'
+import { uploadToImgbb, deletePhotosFromImgbb } from '@/services/imgbbService'
+import { getImgbbKey } from '@/utils/imgbbKey'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency, formatPrice } from '@/utils/currency'
 
@@ -99,7 +102,12 @@ export default function PartsInventory() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: deletePartsInventoryItem,
+    mutationFn: async (item: PartsInventoryItem) => {
+      if (item.photos?.length) {
+        await deletePhotosFromImgbb(item.photos as ImgbbPhoto[])
+      }
+      await deletePartsInventoryItem(item.id)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       toast.success('Запчасть удалена')
@@ -140,10 +148,10 @@ export default function PartsInventory() {
     setIsModalOpen(true)
   }
 
-  const handleDelete = (itemId: string, e: React.MouseEvent) => {
+  const handleDelete = (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
     if (confirm('Удалить запчасть? Это действие нельзя отменить.')) {
-      deleteMutation.mutate(itemId)
+      deleteMutation.mutate(item)
     }
   }
 
@@ -392,7 +400,7 @@ export default function PartsInventory() {
                     Редактировать
                   </button>
                   <button
-                    onClick={(e) => handleDelete(item.id, e)}
+                    onClick={(e) => handleDelete(item, e)}
                     className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     Удалить
@@ -468,7 +476,7 @@ export default function PartsInventory() {
                             Изменить
                           </button>
                           <button
-                            onClick={(e) => handleDelete(item.id, e)}
+                            onClick={(e) => handleDelete(item, e)}
                             className="text-red-600 hover:text-red-800"
                           >
                             Удалить
@@ -526,10 +534,41 @@ function PartsInventoryModal({ item, categories, vehicles, onClose, onSave }: Pa
     bin: item?.bin || '',
     notes: item?.notes || '',
   })
+  const [photos, setPhotos] = useState<ImgbbPhoto[]>((item?.photos as ImgbbPhoto[]) || [])
+  const [uploading, setUploading] = useState(false)
+
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    const apiKey = getImgbbKey()
+    if (!apiKey) {
+      toast.error('Укажите API ключ ImgBB в Настройках')
+      return
+    }
+    setUploading(true)
+    try {
+      const uploaded: ImgbbPhoto[] = []
+      for (const file of files) {
+        const photo = await uploadToImgbb(file, apiKey)
+        uploaded.push(photo)
+      }
+      setPhotos(prev => [...prev, ...uploaded])
+      toast.success(`${uploaded.length} фото загружено`)
+    } catch {
+      toast.error('Ошибка загрузки фото')
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index))
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
+    onSave({ ...formData, photos })
   }
 
   return (
@@ -682,6 +721,46 @@ function PartsInventoryModal({ item, categories, vehicles, onClose, onSave }: Pa
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Фотографии</label>
+                  <label className={`flex items-center justify-center gap-2 w-full h-11 border-2 border-dashed rounded-md cursor-pointer transition-colors ${
+                    uploading ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300 hover:border-primary hover:bg-primary/5'
+                  }`}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      disabled={uploading}
+                      onChange={handlePhotoSelect}
+                      className="sr-only"
+                    />
+                    <Camera className={`w-4 h-4 ${uploading ? 'text-gray-300' : 'text-gray-500'}`} />
+                    <span className={`text-sm ${uploading ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {uploading ? 'Загрузка...' : 'Добавить фото'}
+                    </span>
+                  </label>
+                  {photos.length > 0 && (
+                    <div className="mt-2 flex gap-2 flex-wrap">
+                      {photos.map((photo, i) => (
+                        <div key={i} className="relative group">
+                          <img
+                            src={photo.thumb_url || photo.url}
+                            alt={`Фото ${i + 1}`}
+                            className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removePhoto(i)}
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div>
