@@ -207,7 +207,14 @@ export default function PartsVehicleDetails() {
   const exchangeRate = vehicle?.exchange_rate || globalRate || 41
   const purchasePrice = vehicle?.purchase_price || 0
   const purchasePriceUSD = purchasePrice / exchangeRate
-  const totalRevenue = parts.reduce((sum: number, part: any) => sum + (part.sold_price || 0), 0)
+  // Для дохода: берём selling_price проданных запчастей + конвертируем USD→UAH
+  const totalRevenue = parts
+    .filter((p: any) => p.status === 'sold')
+    .reduce((sum: number, p: any) => {
+      const price = p.selling_price || 0
+      const inUAH = (p.price_currency === 'UAH') ? price : price * exchangeRate
+      return sum + inUAH
+    }, 0)
   const totalRevenueUSD = totalRevenue / exchangeRate
   const profit = totalRevenue - purchasePrice
   const profitUSD = profit / exchangeRate
