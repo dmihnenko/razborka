@@ -174,7 +174,7 @@ export default function PartsInventory() {
     available: inventory.filter((i: PartsInventoryItem) => i.status === 'available').length,
     reserved: inventory.filter((i: PartsInventoryItem) => i.status === 'reserved').length,
     sold: inventory.filter((i: PartsInventoryItem) => i.status === 'sold').length,
-    lowStock: inventory.filter((i: PartsInventoryItem) => i.quantity <= 2 && i.status === 'available').length,
+    lowStock: inventory.filter((i: PartsInventoryItem) => !i.vehicle_id && i.quantity <= 2 && i.status === 'available').length,
     noPrice: inventory.filter((i: PartsInventoryItem) => !i.selling_price).length,
     totalUAH: inventory.reduce((sum: number, item: PartsInventoryItem) =>
       item.price_currency === 'UAH'
