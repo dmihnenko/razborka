@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag, ClipboardList } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -554,6 +554,21 @@ export default function PartsInventory() {
   )
 }
 
+// Parse pasted text into BulkRow[]. Columns separated by tab.
+// Skips blank lines and lines with no meaningful name.
+function parseBulkText(text: string): BulkRow[] {
+  return text
+    .split('\n')
+    .map(line => {
+      const cols = line.split('\t')
+      const name = (cols[0] || '').trim()
+      const price = (cols[1] || '').trim().replace(',', '.')
+      const oem   = (cols[2] || '').trim()
+      return { name, selling_price: price, part_number: oem }
+    })
+    .filter(r => r.name && !/^[-\s=]+$/.test(r.name))
+}
+
 // Build flat option list with indentation for storage location select
 function buildLocationOptions(locations: StorageLocation[]): { id: string; label: string }[] {
   const map = new Map<string, StorageLocation>()
@@ -589,6 +604,8 @@ interface PartsInventoryModalProps {
 
 function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk }: PartsInventoryModalProps) {
   const [bulkMode, setBulkMode] = useState(false)
+  const [showPasteArea, setShowPasteArea] = useState(false)
+  const [pasteText, setPasteText] = useState('')
   const [bulkItems, setBulkItems] = useState<BulkRow[]>([{ name: '', selling_price: '', part_number: '' }])
   const [bulkShared, setBulkShared] = useState({
     category_id: '',
@@ -774,6 +791,21 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                         Список запчастей
                       </label>
                       <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowPasteArea(v => !v)
+                            setPasteText('')
+                          }}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                            showPasteArea
+                              ? 'bg-primary text-white border-primary'
+                              : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <ClipboardList className="w-3.5 h-3.5" />
+                          Вставить списком
+                        </button>
                         <span className="text-xs text-gray-500">Валюта:</span>
                         <button
                           type="button"
@@ -785,6 +817,43 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                         </button>
                       </div>
                     </div>
+
+                    {/* Paste area */}
+                    {showPasteArea && (
+                      <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-xs text-blue-700 mb-2">
+                          Вставьте список в формате: <span className="font-mono font-semibold">Название [Tab] Цена [Tab] Ориг.номер</span><br />
+                          Цена и оригинальный номер — необязательны. Пустые строки игнорируются.
+                        </p>
+                        <textarea
+                          value={pasteText}
+                          onChange={(e) => setPasteText(e.target.value)}
+                          rows={6}
+                          placeholder={'Капот\t800\t\nКрыло\t650\t1234567-00-A\nПанорама\t750'}
+                          className="w-full px-3 py-2 text-sm border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono resize-none bg-white"
+                        />
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-blue-600">
+                            {pasteText.trim() ? `${parseBulkText(pasteText).length} строк распознано` : ''}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={!pasteText.trim()}
+                            onClick={() => {
+                              const parsed = parseBulkText(pasteText)
+                              if (parsed.length) {
+                                setBulkItems(parsed)
+                                setShowPasteArea(false)
+                                setPasteText('')
+                              }
+                            }}
+                            className="px-3 py-1.5 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-40"
+                          >
+                            Применить
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
                       <div className="grid gap-0 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 border-b border-gray-200" style={{ gridTemplateColumns: '1fr 90px 130px 32px' }}>
                         <span>Название *</span>
