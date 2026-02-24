@@ -424,7 +424,7 @@ export default function PartsInventory() {
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[item.status]}`}>
                       {statusLabels[item.status]}
                     </span>
-                    {item.quantity <= 2 && item.status === 'available' && (
+                    {!item.vehicle_id && item.quantity <= 2 && item.status === 'available' && (
                       <div className="flex items-center gap-1 text-red-600">
                         <AlertTriangle className="w-4 h-4" />
                         <span className="text-xs font-medium">Мало</span>
@@ -451,12 +451,14 @@ export default function PartsInventory() {
                       <span className="text-gray-600">Состояние:</span>
                       <span className="font-medium">{conditionLabels[item.condition as keyof typeof conditionLabels]}</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Количество:</span>
-                      <span className={`font-bold ${item.quantity <= 2 ? 'text-red-600' : 'text-gray-900'}`}>
-                        {item.quantity} шт
-                      </span>
-                    </div>
+                    {!item.vehicle_id && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Количество:</span>
+                        <span className={`font-bold ${item.quantity <= 2 ? 'text-red-600' : 'text-gray-900'}`}>
+                          {item.quantity} шт
+                        </span>
+                      </div>
+                    )}
                     {item.selling_price && (
                       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                         <span className="text-gray-600">Цена:</span>
@@ -542,14 +544,18 @@ export default function PartsInventory() {
                         </span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-sm font-bold ${item.quantity <= 2 ? 'text-red-600' : 'text-gray-900'}`}>
-                            {item.quantity}
-                          </span>
-                          {item.quantity <= 2 && item.status === 'available' && (
-                            <AlertTriangle className="w-4 h-4 text-red-600" />
-                          )}
-                        </div>
+                        {item.vehicle_id ? (
+                          <span className="text-sm text-gray-400">—</span>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-bold ${item.quantity <= 2 ? 'text-red-600' : 'text-gray-900'}`}>
+                              {item.quantity}
+                            </span>
+                            {item.quantity <= 2 && item.status === 'available' && (
+                              <AlertTriangle className="w-4 h-4 text-red-600" />
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-primary hidden sm:table-cell">
                         {formatPrice(item.selling_price, item.price_currency as 'UAH' | 'USD')}
@@ -1124,16 +1130,18 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Количество</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={formData.quantity}
-                      onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
-                      className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
+                  {!formData.vehicle_id && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Количество</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={formData.quantity}
+                        onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
+                        className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  )}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Цена</label>
                     <div className="flex gap-2">

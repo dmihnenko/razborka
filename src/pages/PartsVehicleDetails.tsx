@@ -771,16 +771,7 @@ function AddPartModal({ vehicleName, categories, onClose, onSave, loading }: Add
                 <option value="damaged">Повреждена</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Количество</label>
-              <input
-                type="number"
-                min={1}
-                value={form.quantity}
-                onChange={e => setForm(f => ({ ...f, quantity: Number(e.target.value) }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base"
-              />
-            </div>
+            {/* quantity hardcoded to 1 for vehicle parts — hidden */}
           </div>
 
           {/* Цена */}
