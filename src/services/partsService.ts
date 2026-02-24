@@ -314,7 +314,17 @@ export async function createPartsInventoryItem(input: CreatePartsInventoryInput,
       ...rest,
       parts_company_id: partsCompanyId,
       status: input.status || 'available',
-      reserved_quantity: 0
+      reserved_quantity: 0,
+      // convert empty strings to null for UUID/optional fields
+      category_id: input.category_id || null,
+      vehicle_id: input.vehicle_id || null,
+      storage_location_id: input.storage_location_id || null,
+      location: input.location || null,
+      shelf: input.shelf || null,
+      bin: input.bin || null,
+      part_number: input.part_number || null,
+      description: input.description || null,
+      notes: input.notes || null,
     })
     .select('*')
     .single()
