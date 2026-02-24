@@ -251,7 +251,7 @@ export default function PartsVehicleDetails() {
           <span>Назад к списку</span>
         </button>
         
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+        <div className="flex flex-row justify-between items-start gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
               {vehicle.make} {vehicle.model} {vehicle.year && `(${vehicle.year})`}
@@ -260,6 +260,13 @@ export default function PartsVehicleDetails() {
               <p className="text-gray-600 mt-1 text-sm md:text-base">VIN: {vehicle.vin}</p>
             )}
           </div>
+          <button
+            onClick={() => setIsEditModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex-shrink-0"
+          >
+            <Edit size={16} />
+            <span className="hidden sm:inline">Редактировать</span>
+          </button>
         </div>
       </div>
 
@@ -268,15 +275,8 @@ export default function PartsVehicleDetails() {
         <div className="lg:col-span-2 space-y-6">
           {/* Vehicle details with status */}
           <div className="bg-white rounded-lg shadow p-4 md:p-6">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
+            <div className="mb-6">
               <h2 className="text-lg font-semibold">Информация об автомобиле</h2>
-              <button
-                onClick={() => setIsEditModalOpen(true)}
-                className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                <Edit size={16} />
-                Редактировать
-              </button>
             </div>
 
             {/* Status buttons */}
@@ -288,7 +288,7 @@ export default function PartsVehicleDetails() {
                     key={status}
                     onClick={() => statusMutation.mutate(status)}
                     disabled={statusMutation.isPending}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                       vehicle.status === status
                         ? statusColors[status]
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300'
@@ -367,10 +367,10 @@ export default function PartsVehicleDetails() {
               <h2 className="text-lg font-semibold">Запчасти ({parts.length})</h2>
               <button
                 onClick={() => setIsAddPartOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm"
               >
                 <Plus size={16} />
-                Добавить
+                <span className="hidden sm:inline">Добавить</span>
               </button>
             </div>
             {parts.length === 0 ? (
