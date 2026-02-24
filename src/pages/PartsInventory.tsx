@@ -108,6 +108,22 @@ export default function PartsInventory() {
     }
   })
 
+  const saveBulkMutation = useMutation({
+    mutationFn: async (items: CreatePartsInventoryInput[]) => {
+      for (const item of items) {
+        await createPartsInventoryItem(item, partsCompanyId!)
+      }
+    },
+    onSuccess: (_, items) => {
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      toast.success(`Добавлено ${items.length} запчастей`)
+      setIsModalOpen(false)
+    },
+    onError: () => {
+      toast.error('Ошибка при сохранении')
+    }
+  })
+
   const deleteMutation = useMutation({
     mutationFn: async (item: PartsInventoryItem) => {
       if (item.photos?.length) {
@@ -511,6 +527,7 @@ export default function PartsInventory() {
             setEditingItem(null)
           }}
           onSave={(data) => saveMutation.mutate(data)}
+          onSaveBulk={(items) => saveBulkMutation.mutate(items)}
         />
       )}
     </div>
@@ -534,6 +551,12 @@ function buildLocationOptions(locations: StorageLocation[]): { id: string; label
 }
 
 // Modal Component
+interface BulkRow {
+  name: string
+  selling_price: string
+  part_number: string
+}
+
 interface PartsInventoryModalProps {
   item: PartsInventoryItem | null
   categories: any[]
@@ -541,9 +564,20 @@ interface PartsInventoryModalProps {
   storageLocations: StorageLocation[]
   onClose: () => void
   onSave: (data: CreatePartsInventoryInput) => void
+  onSaveBulk?: (items: CreatePartsInventoryInput[]) => void
 }
 
-function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave }: PartsInventoryModalProps) {
+function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk }: PartsInventoryModalProps) {
+  const [bulkMode, setBulkMode] = useState(false)
+  const [bulkItems, setBulkItems] = useState<BulkRow[]>([{ name: '', selling_price: '', part_number: '' }])
+  const [bulkShared, setBulkShared] = useState({
+    category_id: '',
+    vehicle_id: '',
+    condition: 'used',
+    storage_location_id: '',
+    price_currency: 'USD' as 'UAH' | 'USD',
+  })
+
   const [formData, setFormData] = useState<CreatePartsInventoryInput>({
     category_id: item?.category_id || '',
     vehicle_id: item?.vehicle_id || '',
@@ -594,7 +628,27 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSave({ ...formData, photos })
+    if (bulkMode) {
+      const valid = bulkItems.filter(r => r.name.trim() && r.selling_price)
+      if (!valid.length) {
+        toast.error('Добавьте хотя бы одну запчасть с названием и ценой')
+        return
+      }
+      onSaveBulk?.(valid.map(r => ({
+        name: r.name.trim(),
+        selling_price: Number(r.selling_price),
+        part_number: r.part_number.trim() || undefined,
+        category_id: bulkShared.category_id || undefined,
+        vehicle_id: bulkShared.vehicle_id || undefined,
+        condition: bulkShared.condition,
+        storage_location_id: bulkShared.storage_location_id || undefined,
+        price_currency: bulkShared.price_currency,
+        quantity: 1,
+        photos: [],
+      })))
+    } else {
+      onSave({ ...formData, photos })
+    }
   }
 
   return (
@@ -609,6 +663,177 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                 {item ? 'Редактировать запчасть' : 'Добавить запчасть'}
               </h3>
 
+              {!item && (
+                <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <input
+                    type="checkbox"
+                    id="bulk-mode-toggle"
+                    checked={bulkMode}
+                    onChange={(e) => setBulkMode(e.target.checked)}
+                    className="w-4 h-4 accent-primary cursor-pointer"
+                  />
+                  <label htmlFor="bulk-mode-toggle" className="text-sm font-medium text-blue-800 cursor-pointer select-none">
+                    Добавить списком (несколько запчастей сразу)
+                  </label>
+                </div>
+              )}
+
+              {bulkMode ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Категория</label>
+                      <select
+                        value={bulkShared.category_id}
+                        onChange={(e) => setBulkShared({ ...bulkShared, category_id: e.target.value })}
+                        className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="">Без категории</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Автомобиль-источник</label>
+                      <select
+                        value={bulkShared.vehicle_id}
+                        onChange={(e) => setBulkShared({ ...bulkShared, vehicle_id: e.target.value })}
+                        className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="">Не привязано</option>
+                        {vehicles.map((vehicle) => (
+                          <option key={vehicle.id} value={vehicle.id}>
+                            {vehicle.make} {vehicle.model} {vehicle.year}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Состояние</label>
+                      <select
+                        value={bulkShared.condition}
+                        onChange={(e) => setBulkShared({ ...bulkShared, condition: e.target.value })}
+                        className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="new">Новая</option>
+                        <option value="used">Б/У хорошее</option>
+                        <option value="damaged">Повреждена</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Место хранения</label>
+                      {storageLocations.length > 0 ? (
+                        <select
+                          value={bulkShared.storage_location_id}
+                          onChange={(e) => setBulkShared({ ...bulkShared, storage_location_id: e.target.value })}
+                          className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">Не указано</option>
+                          {buildLocationOptions(storageLocations).map(opt => (
+                            <option key={opt.id} value={opt.id}>{opt.label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          placeholder="Например: Бокс 1, Полка 3..."
+                          className="w-full px-3 py-2 text-base border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
+                          disabled
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bulk items table */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Список запчастей
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">Валюта:</span>
+                        <button
+                          type="button"
+                          onClick={() => setBulkShared(prev => ({ ...prev, price_currency: prev.price_currency === 'USD' ? 'UAH' : 'USD' }))}
+                          className="px-3 py-1 rounded text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition-colors"
+                          title="Сменить валюту"
+                        >
+                          {bulkShared.price_currency === 'USD' ? '$' : '₴'}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="grid gap-0 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 border-b border-gray-200" style={{ gridTemplateColumns: '1fr 90px 130px 32px' }}>
+                        <span>Название *</span>
+                        <span>Цена *</span>
+                        <span>Ориг. номер</span>
+                        <span></span>
+                      </div>
+                      <div className="divide-y divide-gray-100">
+                        {bulkItems.map((row, idx) => (
+                          <div key={idx} className="grid gap-0 items-center px-3 py-1.5" style={{ gridTemplateColumns: '1fr 90px 130px 32px' }}>
+                            <input
+                              type="text"
+                              value={row.name}
+                              onChange={(e) => {
+                                const next = [...bulkItems]
+                                next[idx] = { ...next[idx], name: e.target.value }
+                                setBulkItems(next)
+                              }}
+                              placeholder="Название"
+                              className="w-full pr-2 py-1.5 text-sm border-0 focus:outline-none focus:ring-0"
+                            />
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={row.selling_price}
+                              onChange={(e) => {
+                                const next = [...bulkItems]
+                                next[idx] = { ...next[idx], selling_price: e.target.value }
+                                setBulkItems(next)
+                              }}
+                              placeholder="0"
+                              className="w-full pr-2 py-1.5 text-sm border-0 border-l border-gray-200 pl-2 focus:outline-none focus:ring-0"
+                            />
+                            <input
+                              type="text"
+                              value={row.part_number}
+                              onChange={(e) => {
+                                const next = [...bulkItems]
+                                next[idx] = { ...next[idx], part_number: e.target.value }
+                                setBulkItems(next)
+                              }}
+                              placeholder="Ориг. номер"
+                              className="w-full pr-2 py-1.5 text-sm border-0 border-l border-gray-200 pl-2 focus:outline-none focus:ring-0"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (bulkItems.length > 1) setBulkItems(prev => prev.filter((_, i) => i !== idx))
+                              }}
+                              className="flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBulkItems(prev => [...prev, { name: '', selling_price: '', part_number: '' }])}
+                      className="mt-2 flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Добавить строку
+                    </button>
+                  </div>
+                </div>
+              ) : (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -815,6 +1040,7 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                   />
                 </div>
               </div>
+              )}
             </div>
 
             <div className="bg-gray-50 px-4 py-3 sm:px-6 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
@@ -829,7 +1055,9 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                 type="submit"
                 className="flex-1 sm:flex-none px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
               >
-                {item ? 'Сохранить' : 'Добавить'}
+                {bulkMode
+                  ? `Добавить ${bulkItems.filter(r => r.name.trim() && r.selling_price).length || ''} запчастей`
+                  : item ? 'Сохранить' : 'Добавить'}
               </button>
             </div>
           </form>
