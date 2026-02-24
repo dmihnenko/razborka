@@ -451,12 +451,19 @@ export default function PartsInventory() {
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[item.status]}`}>
                       {statusLabels[item.status]}
                     </span>
-                    {!item.vehicle_id && item.quantity <= 2 && item.status === 'available' && (
-                      <div className="flex items-center gap-1 text-red-600">
-                        <AlertTriangle className="w-4 h-4" />
-                        <span className="text-xs font-medium">Мало</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {item.vehicle && (
+                        <span className="text-xs text-gray-500 font-medium truncate max-w-[120px]">
+                          {item.vehicle.make} {item.vehicle.model} {item.vehicle.year}
+                        </span>
+                      )}
+                      {!item.vehicle_id && item.quantity <= 2 && item.status === 'available' && (
+                        <div className="flex items-center gap-1 text-red-600">
+                          <AlertTriangle className="w-4 h-4" />
+                          <span className="text-xs font-medium">Мало</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Part Info */}
@@ -579,6 +586,11 @@ export default function PartsInventory() {
                         <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[item.status]}`}>
                           {statusLabels[item.status]}
                         </span>
+                        {item.vehicle && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            {item.vehicle.make} {item.vehicle.model} {item.vehicle.year}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         {item.vehicle_id ? (
