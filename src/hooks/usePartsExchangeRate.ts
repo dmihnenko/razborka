@@ -51,7 +51,7 @@ export function usePartsExchangeRate() {
       const list: Array<{ ccy: string; base_ccy: string; buy: string; sale: string }> = await res.json()
       const usd = list.find(i => i.ccy === 'USD' && i.base_ccy === 'UAH')
       if (!usd) throw new Error('USD не найден в ответе')
-      const parsed = parseFloat(usd.sale)
+      const parsed = parseFloat(usd.buy)
       if (!parsed) throw new Error('Некорректный курс')
       const data: StoredRate = { rate: parsed, date: today, source: 'privatbank' }
       saveStored(data)
