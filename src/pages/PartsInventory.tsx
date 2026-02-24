@@ -162,11 +162,11 @@ export default function PartsInventory() {
     lowStock: inventory.filter((i: PartsInventoryItem) => i.quantity <= 2 && i.status === 'available').length,
     noPrice: inventory.filter((i: PartsInventoryItem) => !i.selling_price).length,
     totalUAH: inventory.reduce((sum: number, item: PartsInventoryItem) =>
-      (item.price_currency === 'UAH' || !item.price_currency)
+      item.price_currency === 'UAH'
         ? sum + (item.selling_price || 0) * item.quantity
         : sum, 0),
     totalUSD: inventory.reduce((sum: number, item: PartsInventoryItem) =>
-      item.price_currency === 'USD'
+      (item.price_currency === 'USD' || !item.price_currency)
         ? sum + (item.selling_price || 0) * item.quantity
         : sum, 0)
   }
