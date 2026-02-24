@@ -161,9 +161,14 @@ export default function PartsInventory() {
     sold: inventory.filter((i: PartsInventoryItem) => i.status === 'sold').length,
     lowStock: inventory.filter((i: PartsInventoryItem) => i.quantity <= 2 && i.status === 'available').length,
     noPrice: inventory.filter((i: PartsInventoryItem) => !i.selling_price).length,
-    totalValue: inventory.reduce((sum: number, item: PartsInventoryItem) => 
-      sum + (item.selling_price || 0) * item.quantity, 0
-    )
+    totalUAH: inventory.reduce((sum: number, item: PartsInventoryItem) =>
+      (item.price_currency === 'UAH' || !item.price_currency)
+        ? sum + (item.selling_price || 0) * item.quantity
+        : sum, 0),
+    totalUSD: inventory.reduce((sum: number, item: PartsInventoryItem) =>
+      item.price_currency === 'USD'
+        ? sum + (item.selling_price || 0) * item.quantity
+        : sum, 0)
   }
 
   const handleEdit = (item: PartsInventoryItem, e: React.MouseEvent) => {
@@ -299,7 +304,15 @@ export default function PartsInventory() {
               <p className="text-xs sm:text-sm text-gray-600">Стоимость</p>
               <TrendingDown className="w-4 h-4 text-blue-500" />
             </div>
-            <p className="text-lg sm:text-xl font-bold text-blue-600">{formatCurrency(stats.totalValue)}</p>
+            {stats.totalUAH > 0 && (
+              <p className="text-lg sm:text-xl font-bold text-blue-600">{formatCurrency(stats.totalUAH)}</p>
+            )}
+            {stats.totalUSD > 0 && (
+              <p className="text-lg sm:text-xl font-bold text-blue-600">{formatPrice(stats.totalUSD, 'USD')}</p>
+            )}
+            {stats.totalUAH === 0 && stats.totalUSD === 0 && (
+              <p className="text-lg sm:text-xl font-bold text-gray-400">—</p>
+            )}
           </div>
         </div>
 
