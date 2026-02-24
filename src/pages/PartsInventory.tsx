@@ -701,17 +701,29 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
               </h3>
 
               {!item && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <input
-                    type="checkbox"
-                    id="bulk-mode-toggle"
-                    checked={bulkMode}
-                    onChange={(e) => setBulkMode(e.target.checked)}
-                    className="w-4 h-4 accent-primary cursor-pointer"
-                  />
-                  <label htmlFor="bulk-mode-toggle" className="text-sm font-medium text-blue-800 cursor-pointer select-none">
-                    Добавить списком (несколько запчастей сразу)
-                  </label>
+                <div className="flex mb-5 bg-gray-100 rounded-xl p-1 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setBulkMode(false)}
+                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                      !bulkMode
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Одна запчасть
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBulkMode(true)}
+                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                      bulkMode
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Списком
+                  </button>
                 </div>
               )}
 
