@@ -399,3 +399,57 @@ export async function getPartsOrder(id: string) {
   if (error) throw error
   return data as PartsOrder
 }
+
+// ============================================================================
+// СКЛАД (иерархические места хранения)
+// ============================================================================
+
+export async function getStorageLocations(partsCompanyId: string) {
+  const { data, error } = await supabase
+    .from('parts_storage_locations')
+    .select('*')
+    .eq('parts_company_id', partsCompanyId)
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true })
+  if (error) throw error
+  return data
+}
+
+export async function createStorageLocation(input: {
+  parts_company_id: string
+  parent_id?: string | null
+  name: string
+  sort_order?: number
+}) {
+  const { data, error } = await supabase
+    .from('parts_storage_locations')
+    .insert({
+      parts_company_id: input.parts_company_id,
+      parent_id: input.parent_id ?? null,
+      name: input.name.trim(),
+      sort_order: input.sort_order ?? 0,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateStorageLocation(id: string, updates: { name?: string; sort_order?: number }) {
+  const { data, error } = await supabase
+    .from('parts_storage_locations')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteStorageLocation(id: string) {
+  const { error } = await supabase
+    .from('parts_storage_locations')
+    .delete()
+    .eq('id', id)
+  if (error) throw error
+}

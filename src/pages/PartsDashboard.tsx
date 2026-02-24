@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { Car, Package, ShoppingCart, DollarSign, AlertCircle, TrendingUp, ArrowRight } from 'lucide-react'
+import { Car, Package, ShoppingCart, DollarSign, AlertCircle, TrendingUp, ArrowRight, Warehouse } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 
@@ -259,7 +259,7 @@ export default function PartsDashboard() {
         </div>
 
         {/* Secondary Stats Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           {/* Inventory Value */}
           <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
             <div className="flex items-center justify-between mb-2">
@@ -270,7 +270,7 @@ export default function PartsDashboard() {
           </div>
 
           {/* Completed Orders */}
-          <div className="bg-white rounded-lg shadow-sm p-5">
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-5">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm text-gray-600">Завершено заказов</p>
               <ShoppingCart className="w-5 h-5 text-gray-400" />
@@ -279,13 +279,25 @@ export default function PartsDashboard() {
           </div>
 
           {/* Active Vehicles */}
-          <div className="bg-white rounded-lg shadow-sm p-5">
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-5">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm text-gray-600">Авто в ожидании</p>
               <Car className="w-5 h-5 text-gray-400" />
             </div>
             <p className="text-2xl font-bold text-gray-900">{vehiclesStats?.awaiting || 0}</p>
           </div>
+
+          {/* Warehouse */}
+          <button
+            onClick={() => navigate('/parts/warehouse')}
+            className="bg-white rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-all text-left group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-gray-600">Места хранения</p>
+              <Warehouse className="w-5 h-5 text-amber-500" />
+            </div>
+            <p className="text-sm font-medium text-primary group-hover:underline">Настроить склад →</p>
+          </button>
         </div>
 
         {/* Recent Activity */}

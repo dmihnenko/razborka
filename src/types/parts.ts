@@ -154,6 +154,28 @@ export interface CreatePartsInventoryInput {
   bin?: string
   photos?: ImgbbPhoto[]
   notes?: string
+  storage_location_id?: string
+}
+
+// ============================================================================
+// Склад (иерархические места хранения)
+// ============================================================================
+
+export interface StorageLocation {
+  id: string
+  parts_company_id: string
+  parent_id: string | null
+  name: string
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateStorageLocationInput {
+  parts_company_id: string
+  parent_id?: string | null
+  name: string
+  sort_order?: number
 }
 
 export interface CreatePartsCategoryInput {

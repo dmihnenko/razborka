@@ -4,8 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem } from '@/services/partsService'
-import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus } from '@/types/parts'
+import { getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations } from '@/services/partsService'
+import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { uploadToImgbb, deletePhotosFromImgbb } from '@/services/imgbbService'
 import { getImgbbKey } from '@/utils/imgbbKey'
@@ -80,6 +80,13 @@ export default function PartsInventory() {
       return data
     },
     enabled: !!partsCompanyId && isModalOpen
+  })
+
+  // Get storage locations for dropdown in modal
+  const { data: storageLocations = [] } = useQuery({
+    queryKey: ['parts-storage-locations', partsCompanyId],
+    queryFn: () => getStorageLocations(partsCompanyId!),
+    enabled: !!partsCompanyId && isModalOpen,
   })
 
   const saveMutation = useMutation({
@@ -498,6 +505,7 @@ export default function PartsInventory() {
           item={editingItem}
           categories={categories}
           vehicles={vehicles}
+          storageLocations={storageLocations as StorageLocation[]}
           onClose={() => {
             setIsModalOpen(false)
             setEditingItem(null)
@@ -509,16 +517,33 @@ export default function PartsInventory() {
   )
 }
 
+// Build flat option list with indentation for storage location select
+function buildLocationOptions(locations: StorageLocation[]): { id: string; label: string }[] {
+  const map = new Map<string, StorageLocation>()
+  locations.forEach(l => map.set(l.id, l))
+
+  function getPath(id: string): string {
+    const node = map.get(id)
+    if (!node) return ''
+    if (!node.parent_id) return node.name
+    return getPath(node.parent_id) + ' → ' + node.name
+  }
+
+  return locations.map(l => ({ id: l.id, label: getPath(l.id) }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
 // Modal Component
 interface PartsInventoryModalProps {
   item: PartsInventoryItem | null
   categories: any[]
   vehicles: any[]
+  storageLocations: StorageLocation[]
   onClose: () => void
   onSave: (data: CreatePartsInventoryInput) => void
 }
 
-function PartsInventoryModal({ item, categories, vehicles, onClose, onSave }: PartsInventoryModalProps) {
+function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave }: PartsInventoryModalProps) {
   const [formData, setFormData] = useState<CreatePartsInventoryInput>({
     category_id: item?.category_id || '',
     vehicle_id: item?.vehicle_id || '',
@@ -533,6 +558,7 @@ function PartsInventoryModal({ item, categories, vehicles, onClose, onSave }: Pa
     shelf: item?.shelf || '',
     bin: item?.bin || '',
     notes: item?.notes || '',
+    storage_location_id: (item as any)?.storage_location_id || '',
   })
   const [photos, setPhotos] = useState<ImgbbPhoto[]>((item?.photos as ImgbbPhoto[]) || [])
   const [uploading, setUploading] = useState(false)
@@ -715,12 +741,28 @@ function PartsInventoryModal({ item, categories, vehicles, onClose, onSave }: Pa
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Место хранения</label>
-                  <input
-                    type="text"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
+                  {storageLocations.length > 0 ? (
+                    <select
+                      value={formData.storage_location_id || ''}
+                      onChange={(e) => setFormData({ ...formData, storage_location_id: e.target.value || undefined })}
+                      className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="">Не указано</option>
+                      {buildLocationOptions(storageLocations).map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        value={formData.location || ''}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        placeholder="Например: Бокс 1, Полка 3..."
+                        className="flex-1 px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>

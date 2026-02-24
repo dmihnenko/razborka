@@ -58,6 +58,7 @@ const PartsCustomerProfile = lazy(() => import('./pages/PartsCustomerProfile'))
 const PublicPartsCustomerView = lazy(() => import('./pages/PublicPartsCustomerView'))
 const PartsCategories = lazy(() => import('./pages/PartsCategories'))
 const PartsSettings = lazy(() => import('./pages/PartsSettings'))
+const PartsWarehouse = lazy(() => import('./pages/PartsWarehouse'))
 
 import { useAuth } from './hooks/useAuth'
 import { useUserProfile } from './hooks/useUserProfile'
@@ -162,6 +163,7 @@ function App() {
           <Route path="parts/analytics" element={<PartsAnalytics />} />
           <Route path="parts/categories" element={<PartsCategories />} />
           <Route path="parts/settings" element={<PartsSettings />} />
+          <Route path="parts/warehouse" element={<PartsWarehouse />} />
         </Route>
         
         {/* Admin Panel - полностью отдельный layout */}
