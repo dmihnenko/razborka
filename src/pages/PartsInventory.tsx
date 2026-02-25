@@ -82,7 +82,7 @@ export default function PartsInventory() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('parts_categories')
-        .select('id, name')
+        .select('id, name, brand, model')
         .eq('parts_company_id', partsCompanyId)
         .order('name')
       if (error) throw error
@@ -185,6 +185,17 @@ export default function PartsInventory() {
     },
     onError: () => toast.error('Ошибка при удалении'),
   })
+
+  // Categories filtered by selected vehicle (brand match or brandless)
+  const getCategoriesForVehicle = (vehicleId: string) => {
+    const vehicle = (vehicles as any[]).find(v => v.id === vehicleId)
+    if (!vehicle) return categories
+    const make = (vehicle.make || '').toLowerCase()
+    const relevantCats = categories.filter((cat: any) =>
+      !cat.brand || cat.brand.toLowerCase() === make
+    )
+    return relevantCats.length > 0 ? relevantCats : categories
+  }
 
   // Filter inventory
   const filteredInventory = inventory.filter((item: PartsInventoryItem) => {
@@ -1106,6 +1117,21 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Автомобиль-источник</label>
+                      <select
+                        value={bulkShared.vehicle_id}
+                        onChange={(e) => setBulkShared({ ...bulkShared, vehicle_id: e.target.value, category_id: '' })}
+                        className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="">Не привязано</option>
+                        {(vehicles as any[]).map((vehicle) => (
+                          <option key={vehicle.id} value={vehicle.id}>
+                            {vehicle.make} {vehicle.model} {vehicle.year}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Категория</label>
                       <select
                         value={bulkShared.category_id}
@@ -1113,23 +1139,11 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                         className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       >
                         <option value="">Без категории</option>
-                        {categories.map((cat) => (
+                        {(bulkShared.vehicle_id
+                          ? getCategoriesForVehicle(bulkShared.vehicle_id)
+                          : categories
+                        ).map((cat: any) => (
                           <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Автомобиль-источник</label>
-                      <select
-                        value={bulkShared.vehicle_id}
-                        onChange={(e) => setBulkShared({ ...bulkShared, vehicle_id: e.target.value })}
-                        className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        <option value="">Не привязано</option>
-                        {vehicles.map((vehicle) => (
-                          <option key={vehicle.id} value={vehicle.id}>
-                            {vehicle.make} {vehicle.model} {vehicle.year}
-                          </option>
                         ))}
                       </select>
                     </div>
@@ -1334,31 +1348,18 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Категория
-                    </label>
-                    <select
-                      value={formData.category_id}
-                      onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                      className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      <option value="">Без категории</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Автомобиль-источник
                     </label>
                     <select
                       value={formData.vehicle_id || ''}
-                      onChange={(e) => setFormData({ ...formData, vehicle_id: e.target.value || undefined })}
+                      onChange={(e) => {
+                        const newVehicleId = e.target.value || undefined
+                        setFormData({ ...formData, vehicle_id: newVehicleId, category_id: '' })
+                      }}
                       className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                       <option value="">Не привязано к автомобилю</option>
-                      {vehicles.map((vehicle) => (
+                      {(vehicles as any[]).map((vehicle) => (
                         <option key={vehicle.id} value={vehicle.id}>
                           {vehicle.make} {vehicle.model} {vehicle.year}
                         </option>
@@ -1367,6 +1368,25 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                     <p className="mt-1 text-xs text-gray-500">
                       Укажите автомобиль, из которого снята эта запчасть
                     </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Категория
+                    </label>
+                    <select
+                      value={formData.category_id}
+                      onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                      className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="">Без категории</option>
+                      {(formData.vehicle_id
+                        ? getCategoriesForVehicle(formData.vehicle_id)
+                        : categories
+                      ).map((cat: any) => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
