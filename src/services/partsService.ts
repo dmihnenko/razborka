@@ -305,6 +305,21 @@ export async function getPartsInventory(partsCompanyId: string) {
   return data as PartsInventoryItem[]
 }
 
+export async function getPartsInventoryItem(id: string) {
+  const { data, error } = await supabase
+    .from('parts_inventory')
+    .select(`
+      *,
+      category:parts_categories(id, name),
+      vehicle:parts_vehicles!vehicle_id(id, make, model, year, vin, license_plate, color)
+    `)
+    .eq('id', id)
+    .single()
+
+  if (error) throw error
+  return data as PartsInventoryItem
+}
+
 export async function createPartsInventoryItem(input: CreatePartsInventoryInput, partsCompanyId: string) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { purchase_price, ...rest } = input

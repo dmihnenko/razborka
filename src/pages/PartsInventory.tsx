@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal } from '@/services/partsService'
@@ -36,6 +36,7 @@ const conditionLabels = {
 
 export default function PartsInventory() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -58,6 +59,20 @@ export default function PartsInventory() {
     queryFn: () => getPartsInventory(partsCompanyId!),
     enabled: !!partsCompanyId
   })
+
+  // Auto-open edit modal when navigated back with editItemId in state
+  useEffect(() => {
+    const editItemId = location.state?.editItemId
+    if (editItemId && inventory.length > 0) {
+      const found = inventory.find((i: PartsInventoryItem) => i.id === editItemId)
+      if (found) {
+        setEditingItem(found)
+        setIsModalOpen(true)
+        // Clear state so it doesn't reopen on re-render
+        window.history.replaceState({}, '')
+      }
+    }
+  }, [location.state, inventory])
 
   // Get categories for dropdown
   const { data: categories = [] } = useQuery({
@@ -524,7 +539,10 @@ export default function PartsInventory() {
 
                   {/* Part Info */}
                   <div className="mb-4">
-                    <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary transition-colors line-clamp-2">
+                    <h3
+                      className="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary transition-colors line-clamp-2 cursor-pointer hover:text-primary"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/parts/inventory/${item.id}`) }}
+                    >
                       {item.name}
                     </h3>
                     {item.part_number && (
@@ -629,7 +647,10 @@ export default function PartsInventory() {
                     <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-4">
                         <div>
-                          <div className="font-medium text-gray-900">{item.name}</div>
+                          <div
+                            className="font-medium text-gray-900 hover:text-primary cursor-pointer transition-colors"
+                            onClick={() => navigate(`/parts/inventory/${item.id}`)}
+                          >{item.name}</div>
                           {item.category && (
                             <div className="text-xs text-gray-500">{item.category.name}</div>
                           )}
