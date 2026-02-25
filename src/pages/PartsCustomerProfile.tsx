@@ -19,6 +19,7 @@ interface CartItem {
   currency: 'UAH' | 'USD'
   quantity: number
   maxQty: number
+  vehicleInfo?: string  // e.g. "Tesla Model 3 2021 · AB1234"
 }
 
 export default function PartsCustomerProfile() {
@@ -132,6 +133,10 @@ export default function PartsCustomerProfile() {
   const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0)
 
   const addToCart = (item: any) => {
+    const vinShort = item.vehicle?.vin ? '·\u00a0' + item.vehicle.vin.slice(-6) : ''
+    const vehicleInfo = item.vehicle
+      ? `${item.vehicle.make} ${item.vehicle.model} ${item.vehicle.year ?? ''}${vinShort}`.trim()
+      : undefined
     setCart(prev => {
       const existing = prev.find(c => c.id === item.id)
       if (existing) return prev.map(c => c.id === item.id ? { ...c, quantity: Math.min(c.quantity + 1, c.maxQty) } : c)
@@ -143,6 +148,7 @@ export default function PartsCustomerProfile() {
         currency: (item.price_currency as 'UAH' | 'USD') || 'USD',
         quantity: 1,
         maxQty: item.quantity || 1,
+        vehicleInfo,
       }]
     })
   }
@@ -388,65 +394,77 @@ export default function PartsCustomerProfile() {
 
       {/* Order from inventory modal */}
       {isOrderModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div className="fixed inset-0 bg-black/60" onClick={() => setIsOrderModalOpen(false)} />
-          <div className="relative w-full sm:max-w-4xl h-[95dvh] sm:h-[85vh] bg-white rounded-t-2xl sm:rounded-xl shadow-2xl flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsOrderModalOpen(false)} />
+          <div className="relative w-full sm:max-w-4xl h-[96dvh] sm:h-[88vh] bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
 
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3.5 border-b flex-shrink-0">
-              <div className="flex items-center gap-3">
-                {/* Mobile tabs */}
-                <div className="flex md:hidden bg-gray-100 rounded-lg p-0.5 text-sm">
-                  <button
-                    onClick={() => setMobileTab('parts')}
-                    className={`px-3 py-1.5 rounded-md font-medium transition-colors ${mobileTab === 'parts' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}
-                  >
-                    Запчасти
-                  </button>
-                  <button
-                    onClick={() => setMobileTab('cart')}
-                    className={`px-3 py-1.5 rounded-md font-medium transition-colors ${mobileTab === 'cart' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}
-                  >
-                    Корзина {cart.length > 0 && <span className="ml-1 bg-green-700 text-white text-xs rounded-full px-1.5 py-0.5">{cart.length}</span>}
-                  </button>
-                </div>
-                <div className="hidden md:block">
-                  <h2 className="text-base font-semibold text-gray-900">Новый заказ</h2>
-                  <p className="text-xs text-gray-500">{customer.full_name}</p>
-                </div>
+            {/* ── Header ── */}
+            <div className="flex items-center gap-3 px-4 py-3 border-b bg-white flex-shrink-0">
+              {/* Mobile: tabs left, close right */}
+              <div className="flex md:hidden bg-gray-100 rounded-xl p-0.5 flex-1">
+                <button
+                  onClick={() => setMobileTab('parts')}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${mobileTab === 'parts' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}
+                >
+                  Запчасти
+                </button>
+                <button
+                  onClick={() => setMobileTab('cart')}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${mobileTab === 'cart' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}
+                >
+                  Корзина
+                  {cart.length > 0 && (
+                    <span className="bg-green-600 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
+                      {cart.length}
+                    </span>
+                  )}
+                </button>
               </div>
-              <button onClick={() => setIsOrderModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg flex-shrink-0">
-                <X className="w-5 h-5" />
+              {/* Desktop: title */}
+              <div className="hidden md:flex flex-col">
+                <span className="text-base font-semibold text-gray-900">Новый заказ</span>
+                <span className="text-xs text-gray-400">{customer.full_name}</span>
+              </div>
+              <div className="hidden md:block ml-auto" />
+              <button
+                onClick={() => setIsOrderModalOpen(false)}
+                className="flex-shrink-0 p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
 
             <div className="flex flex-1 min-h-0">
-              {/* Left / Mobile-parts: vehicle wizard + parts list */}
-              <div className={`flex-1 min-h-0 flex flex-col border-r border-gray-100 ${mobileTab === 'cart' ? 'hidden md:flex' : 'flex'}`}>
+
+              {/* ══ LEFT PANEL: Vehicle wizard + parts list ══ */}
+              <div className={`flex-1 min-h-0 flex flex-col ${mobileTab === 'cart' ? 'hidden md:flex' : 'flex'} md:border-r border-gray-100`}>
 
                 {/* ── Step 1: Pick make ── */}
                 {selectedMake === null && (
-                  <div className="flex-1 overflow-y-auto p-4">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Выберите автомобиль</p>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {makes.map(({ make, count }) => (
-                        <button
-                          key={make}
-                          onClick={() => { setSelectedMake(make); setSelectedModel(null); setPartsSearch('') }}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-gray-200 hover:border-primary hover:bg-primary/5 transition-colors text-sm font-medium text-gray-800"
-                        >
-                          <Car className="w-4 h-4 text-gray-400" />
-                          {make}
-                          <span className="text-xs text-gray-400 font-normal">{count}</span>
-                        </button>
-                      ))}
-                      {makes.length === 0 && (
-                        <p className="text-gray-400 text-sm">Нет запчастей в наличии</p>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Марка автомобиля</p>
+                      {makes.length === 0 ? (
+                        <div className="text-center py-12 text-gray-400 text-sm">Нет запчастей в наличии</div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2.5">
+                          {makes.map(({ make, count }) => (
+                            <button
+                              key={make}
+                              onClick={() => { setSelectedMake(make); setSelectedModel(null); setPartsSearch('') }}
+                              className="group flex flex-col items-start gap-1 p-4 rounded-2xl border-2 border-gray-100 hover:border-primary hover:bg-primary/5 active:scale-[0.97] transition-all text-left"
+                            >
+                              <Car className="w-5 h-5 text-gray-300 group-hover:text-primary transition-colors mb-0.5" />
+                              <span className="font-semibold text-gray-900 text-sm leading-tight">{make}</span>
+                              <span className="text-xs text-gray-400">{count} позиций</span>
+                            </button>
+                          ))}
+                        </div>
                       )}
                     </div>
                     <button
                       onClick={() => { setSelectedMake('__all__'); setSelectedModel('__all__'); setPartsSearch('') }}
-                      className="text-sm text-primary hover:underline"
+                      className="w-full py-3 rounded-2xl border-2 border-dashed border-gray-200 text-sm font-medium text-gray-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
                     >
                       Показать все запчасти без фильтра
                     </button>
@@ -455,29 +473,36 @@ export default function PartsCustomerProfile() {
 
                 {/* ── Step 2: Pick model ── */}
                 {selectedMake !== null && selectedMake !== '__all__' && selectedModel === null && (
-                  <div className="flex-1 overflow-y-auto p-4">
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     {/* Breadcrumb */}
-                    <div className="flex items-center gap-1.5 mb-4 text-sm">
-                      <button onClick={() => { setSelectedMake(null); setSelectedModel(null) }} className="text-primary hover:underline font-medium">Марка</button>
-                      <ChevronRight className="w-4 h-4 text-gray-400" />
-                      <span className="font-semibold text-gray-900">{selectedMake}</span>
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <button
+                        onClick={() => { setSelectedMake(null); setSelectedModel(null) }}
+                        className="text-primary hover:underline font-medium"
+                      >
+                        Марка
+                      </button>
+                      <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                      <span className="font-bold text-gray-900">{selectedMake}</span>
                     </div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Выберите модель</p>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {models.map(({ model, count }) => (
-                        <button
-                          key={model}
-                          onClick={() => { setSelectedModel(model); setPartsSearch('') }}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-gray-200 hover:border-primary hover:bg-primary/5 transition-colors text-sm font-medium text-gray-800"
-                        >
-                          {model}
-                          <span className="text-xs text-gray-400 font-normal">{count}</span>
-                        </button>
-                      ))}
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Модель</p>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {models.map(({ model, count }) => (
+                          <button
+                            key={model}
+                            onClick={() => { setSelectedModel(model); setPartsSearch('') }}
+                            className="group flex flex-col items-start gap-1 p-4 rounded-2xl border-2 border-gray-100 hover:border-primary hover:bg-primary/5 active:scale-[0.97] transition-all text-left"
+                          >
+                            <span className="font-semibold text-gray-900 text-sm leading-tight">{model}</span>
+                            <span className="text-xs text-gray-400">{count} позиций</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     <button
                       onClick={() => { setSelectedModel('__all__'); setPartsSearch('') }}
-                      className="text-sm text-primary hover:underline"
+                      className="w-full py-3 rounded-2xl border-2 border-dashed border-gray-200 text-sm font-medium text-gray-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
                     >
                       Все модели {selectedMake}
                     </button>
@@ -487,20 +512,36 @@ export default function PartsCustomerProfile() {
                 {/* ── Step 3: Search + parts list ── */}
                 {selectedMake !== null && (selectedMake === '__all__' || selectedModel !== null) && (
                   <div className="flex-1 min-h-0 flex flex-col">
-                    {/* Breadcrumb + search bar */}
-                    <div className="px-4 pt-3 pb-2 flex-shrink-0 space-y-2">
+                    {/* Breadcrumb + search */}
+                    <div className="px-4 pt-3 pb-2 flex-shrink-0 space-y-2.5 border-b border-gray-50">
                       <div className="flex items-center gap-1.5 text-sm flex-wrap">
-                        <button onClick={() => { setSelectedMake(null); setSelectedModel(null); setPartsSearch('') }} className="text-primary hover:underline font-medium">Марка</button>
+                        <button
+                          onClick={() => { setSelectedMake(null); setSelectedModel(null); setPartsSearch('') }}
+                          className="text-primary hover:underline font-medium"
+                        >
+                          Марка
+                        </button>
                         {selectedMake !== '__all__' && (
                           <>
-                            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                            <button onClick={() => { setSelectedModel(null); setPartsSearch('') }} className="text-primary hover:underline font-medium">{selectedMake}</button>
-                            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                            <span className="font-semibold text-gray-900">{selectedModel === '__all__' ? 'Все модели' : selectedModel}</span>
+                            <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                            <button
+                              onClick={() => { setSelectedModel(null); setPartsSearch('') }}
+                              className="text-primary hover:underline font-medium"
+                            >
+                              {selectedMake}
+                            </button>
+                            <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                            <span className="font-bold text-gray-900 truncate">
+                              {selectedModel === '__all__' ? 'Все модели' : selectedModel}
+                            </span>
                           </>
                         )}
-                        {selectedMake === '__all__' && <span className="font-semibold text-gray-900">Все запчасти</span>}
-                        <span className="ml-auto text-xs text-gray-400">{filteredInventory.length} шт.</span>
+                        {selectedMake === '__all__' && (
+                          <span className="font-bold text-gray-900">Все запчасти</span>
+                        )}
+                        <span className="ml-auto flex-shrink-0 text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5 font-medium">
+                          {filteredInventory.length} шт.
+                        </span>
                       </div>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -509,34 +550,80 @@ export default function PartsCustomerProfile() {
                           value={partsSearch}
                           onChange={e => setPartsSearch(e.target.value)}
                           placeholder="Поиск по названию или артикулу..."
-                          className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full pl-9 pr-9 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-colors"
                           autoFocus
                         />
+                        {partsSearch && (
+                          <button
+                            onClick={() => setPartsSearch('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
+
+                    {/* Parts list */}
+                    <div className="flex-1 min-h-0 overflow-y-auto p-3">
                       {filteredInventory.length === 0 ? (
-                        <p className="text-gray-400 text-sm text-center py-8">{partsSearch ? 'Ничего не найдено' : 'Нет запчастей'}</p>
+                        <div className="text-center py-12 text-gray-400 text-sm">
+                          {partsSearch ? 'Ничего не найдено' : 'Нет запчастей в наличии'}
+                        </div>
                       ) : (
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           {filteredInventory.map((item: any) => {
                             const inCart = cart.find(c => c.id === item.id)
+                            const vinShort = item.vehicle?.vin ? item.vehicle.vin.slice(-6) : null
+                            const vehicleLabel = item.vehicle
+                              ? `${item.vehicle.make} ${item.vehicle.model}${item.vehicle.year ? ' ' + item.vehicle.year : ''}${vinShort ? ' · ' + vinShort : ''}`
+                              : null
                             return (
-                              <div key={item.id} className={`flex items-center justify-between p-3 rounded-lg border ${inCart ? 'border-green-300 bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                              <div
+                                key={item.id}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
+                                  inCart
+                                    ? 'border-green-200 bg-green-50'
+                                    : 'border-gray-100 bg-gray-50/60 hover:border-gray-200 hover:bg-white'
+                                }`}
+                              >
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
-                                  <p className="text-xs text-gray-500">
-                                    {item.part_number && `Арт: ${item.part_number} · `}
-                                    {item.selling_price ? formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD') : 'Без цены'}
+                                  <p className={`text-sm font-semibold leading-tight truncate ${inCart ? 'text-green-900' : 'text-gray-900'}`}>
+                                    {item.name}
                                   </p>
+                                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                    {vehicleLabel && (
+                                      <span className="text-xs text-gray-400 truncate">
+                                        {vehicleLabel}
+                                      </span>
+                                    )}
+                                    {item.part_number && (
+                                      <span className="text-xs text-gray-300">·</span>
+                                    )}
+                                    {item.part_number && (
+                                      <span className="text-xs font-mono text-gray-400">{item.part_number}</span>
+                                    )}
+                                  </div>
                                 </div>
-                                <button
-                                  onClick={() => addToCart(item)}
-                                  disabled={!!inCart && inCart.quantity >= inCart.maxQty}
-                                  className="ml-3 flex-shrink-0 p-1.5 rounded-lg bg-green-700 text-white hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                  <Plus className="w-4 h-4" />
-                                </button>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <span className="text-sm font-bold text-gray-800 whitespace-nowrap">
+                                    {item.selling_price
+                                      ? formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')
+                                      : <span className="text-gray-300 font-normal text-xs">—</span>
+                                    }
+                                  </span>
+                                  <button
+                                    onClick={() => addToCart(item)}
+                                    disabled={!!inCart && inCart.quantity >= inCart.maxQty}
+                                    className={`p-1.5 rounded-lg transition-all ${
+                                      inCart
+                                        ? 'bg-green-600 text-white shadow-sm disabled:opacity-40'
+                                        : 'bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-40'
+                                    } disabled:cursor-not-allowed`}
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </button>
+                                </div>
                               </div>
                             )
                           })}
@@ -547,33 +634,51 @@ export default function PartsCustomerProfile() {
                 )}
               </div>
 
-              {/* Right / Mobile-cart: Cart */}
-              <div className={`w-full md:w-72 md:flex flex-col flex-shrink-0 ${mobileTab === 'cart' ? 'flex' : 'hidden md:flex'}`}>
-                <div className="flex-1 min-h-0 overflow-y-auto p-4">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Корзина ({cart.length})</h3>
+              {/* ══ RIGHT PANEL: Cart ══ */}
+              <div className={`w-full md:w-[280px] md:flex flex-col flex-shrink-0 bg-gray-50/50 ${mobileTab === 'cart' ? 'flex' : 'hidden md:flex'}`}>
+                {/* Cart items */}
+                <div className="flex-1 min-h-0 overflow-y-auto p-3">
                   {cart.length === 0 ? (
-                    <p className="text-gray-400 text-sm text-center py-8">Добавьте запчасти<br/>из списка</p>
+                    <div className="flex flex-col items-center justify-center h-full text-center py-12 text-gray-400">
+                      <ShoppingCart className="w-10 h-10 mb-3 opacity-20" />
+                      <p className="text-sm">Добавьте запчасти<br/>из списка слева</p>
+                    </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {cart.map((item) => (
-                        <div key={item.id} className="p-3 bg-gray-50 rounded-lg">
+                        <div key={item.id} className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
                           <div className="flex items-start justify-between gap-2 mb-2">
-                            <p className="text-sm font-medium text-gray-900 leading-tight">{item.name}</p>
-                            <button onClick={() => removeFromCart(item.id)} className="text-gray-400 hover:text-red-600 flex-shrink-0">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-gray-900 leading-tight">{item.name}</p>
+                              {item.vehicleInfo && (
+                                <p className="text-xs text-gray-400 mt-0.5 truncate">{item.vehicleInfo}</p>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => removeFromCart(item.id)}
+                              className="flex-shrink-0 p-1 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1">
-                              <button onClick={() => updateCartQty(item.id, item.quantity - 1)} className="p-1 rounded border border-gray-200 hover:bg-gray-100">
-                                <Minus className="w-3 h-3" />
+                              <button
+                                onClick={() => updateCartQty(item.id, item.quantity - 1)}
+                                className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                              >
+                                <Minus className="w-3 h-3 text-gray-600" />
                               </button>
-                              <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
-                              <button onClick={() => updateCartQty(item.id, item.quantity + 1)} disabled={item.quantity >= item.maxQty} className="p-1 rounded border border-gray-200 hover:bg-gray-100 disabled:opacity-40">
-                                <Plus className="w-3 h-3" />
+                              <span className="text-sm font-bold w-7 text-center text-gray-900">{item.quantity}</span>
+                              <button
+                                onClick={() => updateCartQty(item.id, item.quantity + 1)}
+                                disabled={item.quantity >= item.maxQty}
+                                className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <Plus className="w-3 h-3 text-gray-600" />
                               </button>
                             </div>
-                            <span className="text-sm font-semibold text-primary">
+                            <span className="text-sm font-bold text-primary">
                               {formatPrice(item.price * item.quantity, item.currency)}
                             </span>
                           </div>
@@ -582,27 +687,33 @@ export default function PartsCustomerProfile() {
                     </div>
                   )}
                 </div>
+
                 {/* Footer */}
-                <div className="p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+                <div className="p-3 border-t border-gray-200 flex-shrink-0 space-y-2.5">
                   <textarea
                     value={orderNotes}
                     onChange={(e) => setOrderNotes(e.target.value)}
                     placeholder="Примечания к заказу..."
                     rows={2}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-primary resize-none placeholder:text-gray-400"
                   />
                   {cart.length > 0 && (
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-sm text-gray-600">Итого:</span>
-                      <span className="text-base font-bold text-primary">{formatCurrency(cartTotal)}</span>
+                    <div className="flex justify-between items-center px-1">
+                      <span className="text-sm text-gray-500 font-medium">Итого</span>
+                      <span className="text-lg font-bold text-primary">{formatCurrency(cartTotal)}</span>
                     </div>
                   )}
                   <button
                     onClick={() => createOrderMutation.mutate()}
                     disabled={cart.length === 0 || createOrderMutation.isPending}
-                    className="w-full px-4 py-2.5 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full py-3 bg-green-700 text-white rounded-xl text-sm font-semibold hover:bg-green-800 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
                   >
-                    {createOrderMutation.isPending ? 'Создание...' : `Создать заказ (${cart.length} поз.)`}
+                    {createOrderMutation.isPending
+                      ? 'Создание...'
+                      : cart.length === 0
+                        ? 'Корзина пуста'
+                        : `Создать заказ · ${cart.length} поз.`
+                    }
                   </button>
                 </div>
               </div>
