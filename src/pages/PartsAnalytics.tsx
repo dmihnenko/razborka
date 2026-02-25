@@ -33,7 +33,7 @@ export default function PartsAnalytics() {
           .eq('parts_company_id', partsCompanyId),
         supabase
           .from('parts_inventory')
-          .select('quantity, sold_quantity, selling_price, status')
+          .select('quantity, selling_price, status')
           .eq('parts_company_id', partsCompanyId),
         supabase
           .from('parts_vehicles')
@@ -47,26 +47,31 @@ export default function PartsAnalytics() {
 
       const completedOrders = orders.filter(o => o.status === 'completed')
       const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total_amount, 0)
-      const totalSoldParts = inventory.reduce((sum, i) => sum + i.sold_quantity, 0)
+      // Count by status='sold' — sold_quantity is not updated by sellMutation
+      const totalSoldParts = inventory.filter(i => i.status === 'sold').length
       const avgCheck = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0
       const inventoryValue = inventory
         .filter(i => i.status !== 'sold')
         .reduce((sum, i) => sum + (i.quantity * (i.selling_price || 0)), 0)
 
-      // Данные по месяцам
+      // Данные по месяцам — ключ YYYY-MM чтобы сортировка работала корректно
       const monthlyData: Record<string, { revenue: number; orders: number }> = {}
       completedOrders.forEach(order => {
-        const month = new Date(order.order_date).toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' })
-        if (!monthlyData[month]) {
-          monthlyData[month] = { revenue: 0, orders: 0 }
+        const monthKey = new Date(order.order_date).toISOString().slice(0, 7) // 'YYYY-MM'
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = { revenue: 0, orders: 0 }
         }
-        monthlyData[month].revenue += order.total_amount
-        monthlyData[month].orders += 1
+        monthlyData[monthKey].revenue += order.total_amount
+        monthlyData[monthKey].orders += 1
       })
 
       const monthlyRevenue = Object.entries(monthlyData)
-        .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+        .sort((a, b) => a[0].localeCompare(b[0]))
         .slice(-6)
+        .map(([key, data]) => [
+          new Date(key + '-01').toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }),
+          data,
+        ] as [string, { revenue: number; orders: number }])
 
       return {
         totalRevenue,
@@ -89,15 +94,27 @@ export default function PartsAnalytics() {
     queryFn: async () => {
       if (!partsCompanyId) return []
 
+      // Fetch all sold items — group by name client-side
+      // (sold_quantity is not reliably updated; status='sold' is the source of truth)
       const { data } = await supabase
         .from('parts_inventory')
-        .select('name, sold_quantity, selling_price')
+        .select('name, sold_price, selling_price, price_currency')
         .eq('parts_company_id', partsCompanyId)
-        .gt('sold_quantity', 0)
-        .order('sold_quantity', { ascending: false })
-        .limit(5)
+        .eq('status', 'sold')
 
-      return data || []
+      const grouped: Record<string, { name: string; sold_quantity: number; revenue: number; selling_price: number }> = {}
+      for (const item of data || []) {
+        const price = item.sold_price || item.selling_price || 0
+        if (!grouped[item.name]) {
+          grouped[item.name] = { name: item.name, sold_quantity: 0, revenue: 0, selling_price: price }
+        }
+        grouped[item.name].sold_quantity += 1
+        grouped[item.name].revenue += price
+      }
+
+      return Object.values(grouped)
+        .sort((a, b) => b.sold_quantity - a.sold_quantity)
+        .slice(0, 5)
     },
     enabled: !!partsCompanyId,
   })
@@ -270,7 +287,7 @@ export default function PartsAnalytics() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-gray-900">
-                        {formatCurrency(part.selling_price * part.sold_quantity)}
+                        {formatCurrency(part.revenue)}
                       </p>
                       <p className="text-xs text-gray-500">{formatCurrency(part.selling_price)}/шт</p>
                     </div>
