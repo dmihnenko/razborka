@@ -98,27 +98,41 @@ export default function PartsCustomerProfile() {
 
   // Vehicle filter derived data
   const makes = useMemo(() => {
-    const counts: Record<string, number> = {}
+    const vehicles: Record<string, Set<string>> = {}
     availableInventory.forEach((i: any) => {
-      if (i.vehicle?.make) counts[i.vehicle.make] = (counts[i.vehicle.make] || 0) + 1
+      if (i.vehicle?.make && i.vehicle?.id) {
+        if (!vehicles[i.vehicle.make]) vehicles[i.vehicle.make] = new Set()
+        vehicles[i.vehicle.make].add(i.vehicle.id)
+      }
     })
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([make, count]) => ({ make, count }))
+    return Object.entries(vehicles)
+      .sort((a, b) => b[1].size - a[1].size)
+      .map(([make, ids]) => ({ make, count: ids.size }))
   }, [availableInventory])
 
   const models = useMemo(() => {
     if (!selectedMake || selectedMake === '__all__') return []
-    const counts: Record<string, number> = {}
+    const vehicles: Record<string, Set<string>> = {}
     availableInventory
       .filter((i: any) => i.vehicle?.make === selectedMake)
-      .forEach((i: any) => { if (i.vehicle?.model) counts[i.vehicle.model] = (counts[i.vehicle.model] || 0) + 1 })
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([model, count]) => ({ model, count }))
+      .forEach((i: any) => {
+        if (i.vehicle?.model && i.vehicle?.id) {
+          if (!vehicles[i.vehicle.model]) vehicles[i.vehicle.model] = new Set()
+          vehicles[i.vehicle.model].add(i.vehicle.id)
+        }
+      })
+    return Object.entries(vehicles)
+      .sort((a, b) => b[1].size - a[1].size)
+      .map(([model, ids]) => ({ model, count: ids.size }))
   }, [availableInventory, selectedMake])
 
+  // Filter by selected make+model (strict equality — Model 3 never shown when Model Y selected)
   const vehicleFilteredInventory = useMemo(() => {
     if (selectedMake === null) return []
     if (selectedMake === '__all__') return availableInventory
     if (selectedModel === null) return []
     if (selectedModel === '__all__') return availableInventory.filter((i: any) => i.vehicle?.make === selectedMake)
+    // Exact match: all parts from ALL vehicles of this make+model are shown as separate rows
     return availableInventory.filter((i: any) => i.vehicle?.make === selectedMake && i.vehicle?.model === selectedModel)
   }, [availableInventory, selectedMake, selectedModel])
 
@@ -456,7 +470,7 @@ export default function PartsCustomerProfile() {
                             >
                               <Car className="w-5 h-5 text-gray-300 group-hover:text-primary transition-colors mb-0.5" />
                               <span className="font-semibold text-gray-900 text-sm leading-tight">{make}</span>
-                              <span className="text-xs text-gray-400">{count} позиций</span>
+                              <span className="text-xs text-gray-400">{count} авт.</span>
                             </button>
                           ))}
                         </div>
@@ -495,7 +509,7 @@ export default function PartsCustomerProfile() {
                             className="group flex flex-col items-start gap-1 p-4 rounded-2xl border-2 border-gray-100 hover:border-primary hover:bg-primary/5 active:scale-[0.97] transition-all text-left"
                           >
                             <span className="font-semibold text-gray-900 text-sm leading-tight">{model}</span>
-                            <span className="text-xs text-gray-400">{count} позиций</span>
+                            <span className="text-xs text-gray-400">{count} авт.</span>
                           </button>
                         ))}
                       </div>
