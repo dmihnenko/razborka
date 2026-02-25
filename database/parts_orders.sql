@@ -50,7 +50,10 @@ BEGIN
   
   RETURN order_number;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION generate_parts_order_number(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION generate_parts_order_number(UUID) TO anon;
 
 -- Триггер для автоматического обновления updated_at
 CREATE OR REPLACE FUNCTION update_parts_order_timestamp()
