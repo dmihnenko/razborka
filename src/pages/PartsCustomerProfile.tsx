@@ -365,7 +365,7 @@ export default function PartsCustomerProfile() {
 
               <div className="flex flex-col md:flex-row flex-1 min-h-0">
                 {/* Left: Available parts */}
-                <div className="flex-1 overflow-y-auto p-4 border-r border-gray-100">
+                <div className="flex-1 min-h-0 overflow-y-auto p-4 border-b md:border-b-0 md:border-r border-gray-100">
                   <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Склад в наличии ({availableInventory.length})</h3>
                   {availableInventory.length === 0 ? (
                     <p className="text-gray-400 text-sm text-center py-8">Нет доступных запчастей</p>
@@ -397,8 +397,8 @@ export default function PartsCustomerProfile() {
                 </div>
 
                 {/* Right: Cart */}
-                <div className="w-full md:w-72 flex flex-col border-t md:border-t-0 border-gray-100">
-                  <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 min-h-0 md:flex-none md:w-72 flex flex-col border-gray-100">
+                  <div className="flex-1 min-h-0 overflow-y-auto p-4">
                     <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Корзина ({cart.length})</h3>
                     {cart.length === 0 ? (
                       <p className="text-gray-400 text-sm text-center py-8">Добавьте запчасти из списка</p>
