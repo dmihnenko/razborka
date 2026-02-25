@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { useUserProfile } from '@/hooks/useUserProfile'
+import { useUserProfile, useHasRole } from '@/hooks/useUserProfile'
 import { PartsOrder, CreatePartsOrderItemInput } from '@/types/parts'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Plus, Trash2, Edit2, Search, CheckCircle } from 'lucide-react'
@@ -138,7 +138,7 @@ export default function PartsOrderDetails() {
   }
 
   const canEdit = order && (order.status === 'new' || order.status === 'in_progress')
-  const isOwner = profile?.roles?.some((r: any) => r.name === 'parts_owner')
+  const isOwner = useHasRole('parts_owner')
 
   if (!partsCompanyId) {
     return (
