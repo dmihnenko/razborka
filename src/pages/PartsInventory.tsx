@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, Wrench, Store } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -38,7 +38,7 @@ export default function PartsInventory() {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
-  const sourceFilter = searchParams.get('source') ?? 'all' // 'all' | 'vehicles' | 'shop'
+  const sourceFilter = searchParams.get('source') ?? 'vehicles' // 'vehicles' | 'shop'
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -320,47 +320,73 @@ export default function PartsInventory() {
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4 flex-1">
+          {/* Top row */}
+          <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
               <button
                 onClick={() => navigate('/parts')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  {sourceFilter === 'vehicles' ? 'Запчасти с разборки' : sourceFilter === 'shop' ? 'Магазин запчастей' : 'Склад запчастей'}
-                </h1>
-                <p className="text-sm text-gray-500 hidden sm:block">Всего: {stats.total} позиций</p>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">Запчасти</h1>
+                <p className="text-xs text-gray-500 hidden sm:block">Всего: {stats.total} позиций</p>
               </div>
             </div>
-            <button
-              onClick={() => {
-                setEditingItem(null)
-                setIsModalOpen(true)
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              <span className="hidden sm:inline">Добавить</span>
-            </button>
-            {inventory.length > 0 && (
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={() => {
-                  if (confirm(`Удалить все ${inventory.length} запчастей? Это действие нельзя отменить.`)) {
-                    deleteAllMutation.mutate()
-                  }
+                  setEditingItem(null)
+                  setIsModalOpen(true)
                 }}
-                disabled={deleteAllMutation.isPending}
-                className="flex items-center gap-2 px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors disabled:opacity-50"
-                title="Удалить весь склад"
+                className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm"
               >
-                <Trash2 className="w-5 h-5" />
-                <span className="hidden sm:inline">{deleteAllMutation.isPending ? 'Удаление...' : 'Удалить всё'}</span>
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Добавить</span>
               </button>
-            )}
+              {inventory.length > 0 && (
+                <button
+                  onClick={() => {
+                    if (confirm(`Удалить все ${inventory.length} запчастей? Это действие нельзя отменить.`)) {
+                      deleteAllMutation.mutate()
+                    }
+                  }}
+                  disabled={deleteAllMutation.isPending}
+                  className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors disabled:opacity-50 text-sm"
+                  title="Удалить весь склад"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">{deleteAllMutation.isPending ? 'Удаление...' : 'Удалить всё'}</span>
+                </button>
+              )}
+            </div>
+          </div>
 
+          {/* Tab bar */}
+          <div className="flex border-t border-gray-100 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+            <button
+              onClick={() => navigate('/parts/inventory?source=vehicles')}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                sourceFilter === 'vehicles'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Wrench className="w-4 h-4" />
+              Разборка
+            </button>
+            <button
+              onClick={() => navigate('/parts/inventory?source=shop')}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                sourceFilter === 'shop'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Store className="w-4 h-4" />
+              Магазин
+            </button>
           </div>
         </div>
       </div>
@@ -483,25 +509,17 @@ export default function PartsInventory() {
             </div>
           </div>
 
-          {(statusFilter !== 'all' || sourceFilter !== 'all') && (
-            <div className="mt-3 flex items-center gap-2 flex-wrap">
-              {sourceFilter !== 'all' && (
-                <span className="inline-flex items-center gap-1 text-sm px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
-                  {sourceFilter === 'vehicles' ? 'Разборка' : 'Магазин'}
-                  <button onClick={() => navigate('/parts/inventory')} className="ml-1 hover:text-blue-900">×</button>
-                </span>
-              )}
-              {statusFilter !== 'all' && (
-                <span className="inline-flex items-center gap-1 text-sm">
-                  Фильтр: <span className="font-medium">{statusLabels[statusFilter as PartsInventoryStatus]}</span>
-                  <button
-                    onClick={() => setStatusFilter('all')}
-                    className="ml-2 text-sm text-primary hover:underline"
-                  >
-                    Сбросить
-                  </button>
-                </span>
-              )}
+          {statusFilter !== 'all' && (
+            <div className="mt-3 flex items-center gap-2">
+              <span className="text-sm text-gray-600">
+                Фильтр: <span className="font-medium">{statusLabels[statusFilter as PartsInventoryStatus]}</span>
+              </span>
+              <button
+                onClick={() => setStatusFilter('all')}
+                className="ml-2 text-sm text-primary hover:underline"
+              >
+                Сбросить
+              </button>
             </div>
           )}
         </div>
@@ -515,9 +533,9 @@ export default function PartsInventory() {
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 mb-2">
-              {searchQuery || statusFilter !== 'all' || sourceFilter !== 'all' ? 'Запчасти не найдены' : 'Нет запчастей'}
+              {searchQuery || statusFilter !== 'all' ? 'Запчасти не найдены' : 'Нет запчастей'}
             </p>
-            {!searchQuery && statusFilter === 'all' && sourceFilter === 'all' && (
+            {!searchQuery && statusFilter === 'all' && (
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="mt-4 text-primary hover:underline"
