@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import { formatCurrency, formatPrice } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { getPartsInventory, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, updatePartsInventoryItem } from '@/services/partsService'
+import { getPartsInventory, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal } from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 
 interface CartItem {
@@ -196,8 +196,7 @@ export default function PartsCustomerProfile() {
           price_at_sale: cartItem.price,
           price_at_sale_currency: cartItem.currency,
         })
-        // Mark as sold if quantity becomes 0
-        await updatePartsInventoryItem(cartItem.id, { status: 'sold', sold_price: cartItem.price, price_currency: cartItem.currency })
+        // Parts stay 'available' until order is marked completed by staff
       }
       await updatePartsOrderTotal(order.id)
       return order

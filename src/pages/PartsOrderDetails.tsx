@@ -67,8 +67,26 @@ export default function PartsOrderDetails() {
         .from('parts_orders')
         .update({ status })
         .eq('id', id)
-
       if (error) throw error
+
+      // Sync inventory item statuses based on order status
+      const inventoryIds = (order?.items ?? []).map((i: any) => i.inventory_item_id)
+      if (inventoryIds.length > 0) {
+        if (status === 'completed') {
+          // Mark all parts sold
+          await supabase
+            .from('parts_inventory')
+            .update({ status: 'sold' })
+            .in('id', inventoryIds)
+        } else if (status === 'cancelled' || status === 'new' || status === 'in_progress') {
+          // Restore parts to available (only if they were sold via this order)
+          await supabase
+            .from('parts_inventory')
+            .update({ status: 'available' })
+            .in('id', inventoryIds)
+            .eq('status', 'sold')
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-order', id] })

@@ -140,6 +140,7 @@ CREATE TABLE IF NOT EXISTS parts_order_items (
   inventory_item_id UUID NOT NULL REFERENCES parts_inventory(id) ON DELETE RESTRICT,
   quantity INTEGER NOT NULL CHECK (quantity > 0),
   price_at_sale DECIMAL(10, 2) NOT NULL CHECK (price_at_sale >= 0),
+  price_at_sale_currency VARCHAR(3) NOT NULL DEFAULT 'UAH' CHECK (price_at_sale_currency IN ('UAH', 'USD')),
   subtotal DECIMAL(10, 2) NOT NULL GENERATED ALWAYS AS (quantity * price_at_sale) STORED,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

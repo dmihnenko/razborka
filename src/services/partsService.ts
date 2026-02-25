@@ -452,7 +452,7 @@ export async function createPartsOrder(
       customer_id: input.customer_id || null,
       order_number: orderNumber,
       order_date: input.order_date || new Date().toISOString(),
-      status: 'completed',
+      status: 'in_progress',
       total_amount: 0,
       notes: input.notes || null,
     })
