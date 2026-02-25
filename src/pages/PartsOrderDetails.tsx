@@ -347,12 +347,12 @@ export default function PartsOrderDetails() {
                     <div className="flex items-start gap-2">
                       <div className="text-right">
                         <p className="text-base font-semibold text-gray-500">
-                          {formatPrice(item.price_at_sale, (item as any).price_at_sale_currency || 'UAH')}
+                          {formatPrice(item.price_at_sale, item.price_at_sale_currency || 'UAH')}
                         </p>
                         <p className="text-lg font-bold text-gray-900">
                           {formatPrice(
                             (item.price_at_sale || 0) * (item.quantity || 1),
-                            (item as any).price_at_sale_currency || 'UAH'
+                            item.price_at_sale_currency || 'UAH'
                           )}
                         </p>
                       </div>
