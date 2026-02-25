@@ -10,6 +10,7 @@ import { formatCurrency, formatPrice } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsInventory, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, updatePartsInventoryItem } from '@/services/partsService'
+import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 
 interface CartItem {
   id: string
@@ -143,8 +144,15 @@ export default function PartsCustomerProfile() {
       )
     : vehicleFilteredInventory
 
-  // Cart helpers
-  const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0)
+  const { rate: usdRate } = usePartsExchangeRate()
+
+  const cartTotalUAH = cart.reduce((s, i) => {
+    const inUAH = i.currency === 'USD' ? i.price * usdRate : i.price
+    return s + inUAH * i.quantity
+  }, 0)
+  const hasUSD = cart.some(i => i.currency === 'USD')
+  const hasUAH = cart.some(i => i.currency === 'UAH')
+  const mixedCurrencies = hasUSD && hasUAH
 
   const addToCart = (item: any) => {
     const vinShort = item.vehicle?.vin ? '·\u00a0' + item.vehicle.vin.slice(-6) : ''
@@ -712,9 +720,27 @@ export default function PartsCustomerProfile() {
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-primary resize-none placeholder:text-gray-400"
                   />
                   {cart.length > 0 && (
-                    <div className="flex justify-between items-center px-1">
-                      <span className="text-sm text-gray-500 font-medium">Итого</span>
-                      <span className="text-lg font-bold text-primary">{formatCurrency(cartTotal)}</span>
+                    <div className="space-y-1 px-1">
+                      {mixedCurrencies && (
+                        <>
+                          {hasUSD && (
+                            <div className="flex justify-between items-center text-xs text-gray-400">
+                              <span>Долларовые позиции ×{usdRate}</span>
+                              <span>{formatCurrency(cart.filter(i => i.currency === 'USD').reduce((s, i) => s + i.price * i.quantity, 0) * usdRate)}</span>
+                            </div>
+                          )}
+                          {hasUAH && (
+                            <div className="flex justify-between items-center text-xs text-gray-400">
+                              <span>Гривневые позиции</span>
+                              <span>{formatCurrency(cart.filter(i => i.currency === 'UAH').reduce((s, i) => s + i.price * i.quantity, 0))}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      <div className="flex justify-between items-center pt-1 border-t border-gray-200">
+                        <span className="text-sm text-gray-500 font-medium">Итого</span>
+                        <span className="text-lg font-bold text-primary">{formatCurrency(cartTotalUAH)}</span>
+                      </div>
                     </div>
                   )}
                   <button
