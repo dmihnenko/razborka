@@ -356,21 +356,6 @@ export default function PartsInventory() {
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">Добавить</span>
               </button>
-              {inventory.length > 0 && (
-                <button
-                  onClick={() => {
-                    if (confirm(`Удалить все ${inventory.length} запчастей? Это действие нельзя отменить.`)) {
-                      deleteAllMutation.mutate()
-                    }
-                  }}
-                  disabled={deleteAllMutation.isPending}
-                  className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors disabled:opacity-50 text-sm"
-                  title="Удалить весь склад"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">{deleteAllMutation.isPending ? 'Удаление...' : 'Удалить всё'}</span>
-                </button>
-              )}
             </div>
           </div>
 
