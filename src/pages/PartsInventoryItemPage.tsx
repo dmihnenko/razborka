@@ -1,16 +1,15 @@
-import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   ArrowLeft, Pencil, Trash2, DollarSign, Package,
-  MapPin, Tag, Car, ChevronLeft, ChevronRight, X,
+  MapPin, Tag, Car, ChevronRight,
   Hash, FileText, AlertTriangle, CheckCircle, Clock, Wrench,
 } from 'lucide-react'
 import { getPartsInventoryItem, deletePartsInventoryItem } from '@/services/partsService'
 import { formatPrice } from '@/utils/currency'
-import type { PartsInventoryItem, PartsInventoryStatus } from '@/types/parts'
-import type { ImgbbPhoto } from '@/services/imgbbService'
+import type { PartsInventoryStatus } from '@/types/parts'
+import PhotoGallery from '@/components/parts/PhotoGallery'
 
 const statusLabels: Record<PartsInventoryStatus, string> = {
   available: 'В наличии',
@@ -43,8 +42,6 @@ export default function PartsInventoryItemPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-
   const { data: item, isLoading, error } = useQuery({
     queryKey: ['parts-inventory-item', id],
     queryFn: () => getPartsInventoryItem(id!),
@@ -66,12 +63,7 @@ export default function PartsInventoryItemPage() {
     }
   }
 
-  const photos: ImgbbPhoto[] = item?.photos || []
-
-  const openLightbox = (index: number) => setLightboxIndex(index)
-  const closeLightbox = () => setLightboxIndex(null)
-  const prevPhoto = () => setLightboxIndex(i => (i !== null ? (i - 1 + photos.length) % photos.length : 0))
-  const nextPhoto = () => setLightboxIndex(i => (i !== null ? (i + 1) % photos.length : 0))
+  const photos = item?.photos || []
 
   if (isLoading) {
     return (
@@ -138,42 +130,11 @@ export default function PartsInventoryItemPage() {
 
         {/* Photos */}
         {photos.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            {/* Main photo */}
-            <div
-              className="relative aspect-video sm:aspect-[16/7] bg-black cursor-zoom-in"
-              onClick={() => openLightbox(0)}
-            >
-              <img
-                src={photos[0].url}
-                alt={item.name}
-                className="absolute inset-0 w-full h-full object-contain"
-              />
-              {photos.length > 1 && (
-                <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs font-medium px-2 py-1 rounded-full">
-                  1 / {photos.length}
-                </div>
-              )}
-            </div>
-            {/* Thumbnails */}
-            {photos.length > 1 && (
-              <div className="flex gap-2 p-3 overflow-x-auto">
-                {photos.map((photo, i) => (
-                  <button
-                    key={i}
-                    onClick={() => openLightbox(i)}
-                    className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-colors hover:border-primary border-transparent"
-                  >
-                    <img
-                      src={photo.thumb_url || photo.url}
-                      alt={`${item.name} ${i + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <PhotoGallery
+            photos={photos as any[]}
+            alt={item.name}
+            mainAspect="aspect-video sm:aspect-[16/7]"
+          />
         )}
 
         {/* Main info */}
@@ -347,51 +308,6 @@ export default function PartsInventoryItemPage() {
         )}
 
       </div>
-
-      {/* Lightbox */}
-      {lightboxIndex !== null && photos.length > 0 && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-          onClick={closeLightbox}
-        >
-          <button
-            onClick={closeLightbox}
-            className="absolute top-4 right-4 p-2 text-white hover:text-gray-300"
-          >
-            <X className="w-6 h-6" />
-          </button>
-
-          {photos.length > 1 && (
-            <>
-              <button
-                onClick={e => { e.stopPropagation(); prevPhoto() }}
-                className="absolute left-3 p-2 text-white hover:text-gray-300 bg-black/40 rounded-full"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <button
-                onClick={e => { e.stopPropagation(); nextPhoto() }}
-                className="absolute right-3 p-2 text-white hover:text-gray-300 bg-black/40 rounded-full"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            </>
-          )}
-
-          <img
-            src={photos[lightboxIndex].url}
-            alt={item.name}
-            className="max-w-full max-h-full object-contain p-4 sm:p-12"
-            onClick={e => e.stopPropagation()}
-          />
-
-          {photos.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm">
-              {lightboxIndex + 1} / {photos.length}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }
