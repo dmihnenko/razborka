@@ -40,13 +40,14 @@ export default function PartsDashboard() {
 
       const { data } = await supabase
         .from('parts_inventory')
-        .select('quantity, reserved_quantity, selling_price, min_stock_level')
+        .select('quantity, reserved_quantity, selling_price, min_stock_level, status')
         .eq('parts_company_id', partsCompanyId)
 
-      const total = data?.reduce((sum, item) => sum + item.quantity, 0) || 0
-      const available = data?.reduce((sum, item) => sum + (item.quantity - item.reserved_quantity), 0) || 0
-      const lowStock = data?.filter(item => item.quantity <= item.min_stock_level).length || 0
-      const value = data?.reduce((sum, item) => sum + (item.quantity * item.selling_price), 0) || 0
+      const available_items = data?.filter(item => item.status !== 'sold') || []
+      const total = available_items.reduce((sum, item) => sum + item.quantity, 0)
+      const available = available_items.reduce((sum, item) => sum + (item.quantity - item.reserved_quantity), 0)
+      const lowStock = available_items.filter(item => item.quantity <= item.min_stock_level).length
+      const value = available_items.reduce((sum, item) => sum + (item.quantity * (item.selling_price || 0)), 0)
 
       return { total, available, lowStock, value }
     },

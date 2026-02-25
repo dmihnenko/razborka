@@ -33,7 +33,7 @@ export default function PartsAnalytics() {
           .eq('parts_company_id', partsCompanyId),
         supabase
           .from('parts_inventory')
-          .select('quantity, sold_quantity, selling_price')
+          .select('quantity, sold_quantity, selling_price, status')
           .eq('parts_company_id', partsCompanyId),
         supabase
           .from('parts_vehicles')
@@ -49,7 +49,9 @@ export default function PartsAnalytics() {
       const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total_amount, 0)
       const totalSoldParts = inventory.reduce((sum, i) => sum + i.sold_quantity, 0)
       const avgCheck = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0
-      const inventoryValue = inventory.reduce((sum, i) => sum + (i.quantity * i.selling_price), 0)
+      const inventoryValue = inventory
+        .filter(i => i.status !== 'sold')
+        .reduce((sum, i) => sum + (i.quantity * (i.selling_price || 0)), 0)
 
       // Данные по месяцам
       const monthlyData: Record<string, { revenue: number; orders: number }> = {}
