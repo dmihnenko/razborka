@@ -8,6 +8,7 @@ import { ArrowLeft, Plus, Trash2, Edit2, Search, CheckCircle } from 'lucide-reac
 import { formatCurrency, formatPrice } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 import { updatePartsOrderTotal } from '@/services/partsService'
+import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 
 export default function PartsOrderDetails() {
   const { id } = useParams<{ id: string }>()
@@ -19,6 +20,8 @@ export default function PartsOrderDetails() {
   const [showAddItemModal, setShowAddItemModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showCompleteModal, setShowCompleteModal] = useState(false)
+
+  const { rate: exchangeRate } = usePartsExchangeRate()
 
   // Получить заказ с деталями
   const { data: order, isLoading } = useQuery({
@@ -143,6 +146,14 @@ export default function PartsOrderDetails() {
   const isOwner = useHasRole('parts_owner')
   // Owner can always manage the order; workers only when new/in_progress
   const canManage = Boolean(order) && (!!canEdit || isOwner)
+
+  // Compute total client-side so it's always correct regardless of DB stored value
+  const computedTotalUAH = (order?.items ?? []).reduce((sum, item) => {
+    const amount = (item.price_at_sale || 0) * (item.quantity || 1)
+    return sum + ((item.price_at_sale_currency || 'UAH') === 'USD' ? amount * (exchangeRate || 41) : amount)
+  }, 0)
+  const hasUSD = (order?.items ?? []).some(i => i.price_at_sale_currency === 'USD')
+  const hasUAH = (order?.items ?? []).some(i => (i.price_at_sale_currency || 'UAH') === 'UAH')
 
   if (!partsCompanyId) {
     return (
@@ -280,7 +291,10 @@ export default function PartsOrderDetails() {
 
             <div>
               <p className="text-sm text-gray-500">Общая сумма</p>
-              <p className="text-2xl font-bold text-primary">{formatCurrency(order.total_amount)}</p>
+              <p className="text-2xl font-bold text-primary">{formatCurrency(computedTotalUAH)}</p>
+              {hasUSD && hasUAH && (
+                <p className="text-xs text-gray-400 mt-0.5">С курсом {exchangeRate || 41} ₴/$</p>
+              )}
             </div>
           </div>
 
