@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
@@ -83,6 +83,39 @@ export default function PartsSettings() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+        {/* Каталог */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="px-5 py-3 border-b border-gray-100">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Каталог</h2>
+          </div>
+          <button
+            onClick={() => navigate('/parts/categories')}
+            className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+          >
+            <div className="p-2 bg-orange-100 rounded-lg flex-shrink-0">
+              <Tag className="w-5 h-5 text-orange-600" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-medium text-gray-900">Категории запчастей</p>
+              <p className="text-xs text-gray-500">Управление категориями и шаблонами</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          </button>
+          <button
+            onClick={() => navigate('/parts/warehouse')}
+            className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors"
+          >
+            <div className="p-2 bg-indigo-100 rounded-lg flex-shrink-0">
+              <Warehouse className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-medium text-gray-900">Места хранения</p>
+              <p className="text-xs text-gray-500">Стеллажи, полки, ячейки склада</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          </button>
+        </div>
 
         {/* Курс доллара */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">

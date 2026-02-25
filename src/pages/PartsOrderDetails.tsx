@@ -47,16 +47,24 @@ export default function PartsOrderDetails() {
 
   // Удалить позицию из заказа
   const deleteItemMutation = useMutation({
-    mutationFn: async (itemId: string) => {
+    mutationFn: async ({ itemId, inventoryItemId }: { itemId: string; inventoryItemId: string }) => {
       const { error } = await supabase
         .from('parts_order_items')
         .delete()
         .eq('id', itemId)
 
       if (error) throw error
+
+      // Restore inventory item to available
+      await supabase
+        .from('parts_inventory')
+        .update({ status: 'available' })
+        .eq('id', inventoryItemId)
+        .eq('status', 'reserved')
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-order', id] })
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
     },
   })
 
@@ -79,12 +87,12 @@ export default function PartsOrderDetails() {
             .update({ status: 'sold' })
             .in('id', inventoryIds)
         } else if (status === 'cancelled' || status === 'new' || status === 'in_progress') {
-          // Restore parts to available (only if they were sold via this order)
+          // Restore parts to available (reserved or sold via this order)
           await supabase
             .from('parts_inventory')
             .update({ status: 'available' })
             .in('id', inventoryIds)
-            .eq('status', 'sold')
+            .in('status', ['reserved', 'sold'])
         }
       }
     },
@@ -93,6 +101,31 @@ export default function PartsOrderDetails() {
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       setShowCompleteModal(false)
+    },
+  })
+
+  // Удалить заказ целиком (только владелец)
+  const deleteOrderMutation = useMutation({
+    mutationFn: async () => {
+      if (!id) return
+      // Restore all reserved/sold inventory items back to available
+      const inventoryIds = (order?.items ?? []).map((i: any) => i.inventory_item_id).filter(Boolean)
+      if (inventoryIds.length > 0) {
+        await supabase
+          .from('parts_inventory')
+          .update({ status: 'available' })
+          .in('id', inventoryIds)
+          .in('status', ['reserved', 'sold'])
+      }
+      // Delete all order items first, then the order
+      await supabase.from('parts_order_items').delete().eq('order_id', id)
+      const { error } = await supabase.from('parts_orders').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      navigate('/parts/orders')
     },
   })
 
@@ -105,6 +138,7 @@ export default function PartsOrderDetails() {
   }
 
   const canEdit = order && (order.status === 'new' || order.status === 'in_progress')
+  const isOwner = profile?.roles?.some((r: any) => r.name === 'parts_owner')
 
   if (!partsCompanyId) {
     return (
@@ -154,6 +188,20 @@ export default function PartsOrderDetails() {
                 {getPartsOrderStatusText(order.status)}
               </span>
             </div>
+            {isOwner && (
+              <button
+                onClick={() => {
+                  if (confirm(`Удалить заказ ${order.order_number}? Забронированные запчасти вернутся в статус "В наличии".`)) {
+                    deleteOrderMutation.mutate()
+                  }
+                }}
+                disabled={deleteOrderMutation.isPending}
+                className="p-2 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0 ml-2"
+                title="Удалить заказ"
+              >
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -303,7 +351,10 @@ export default function PartsOrderDetails() {
                         <button
                           onClick={() => {
                             if (confirm('Удалить позицию из заказа?')) {
-                              deleteItemMutation.mutate(item.id)
+                              deleteItemMutation.mutate({
+                                itemId: item.id,
+                                inventoryItemId: item.inventory_item_id,
+                              })
                             }
                           }}
                           className="p-2 hover:bg-red-50 rounded-lg transition-colors"

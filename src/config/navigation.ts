@@ -58,12 +58,10 @@ export const partsOwnerMenu: MenuItem[] = [
   { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutDashboard },
   { name: 'Автомобили', href: '/parts/vehicles', icon: Car },
   { name: 'Запчасти', href: '/parts/inventory', icon: Package },
-  { name: 'Места хранения', href: '/parts/warehouse', icon: Warehouse },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart },
   { name: 'Клиенты', href: '/parts/customers', icon: Users },
   { name: 'Сотрудники', href: '/parts/employees', icon: Users },
   { name: 'Аналитика', href: '/parts/analytics', icon: TrendingUp },
-  { name: 'Категории', href: '/parts/categories', icon: Tag },
   { name: 'Настройки', href: '/parts/settings', icon: Settings },
   { name: 'Поддержка', href: '/support', icon: MessageSquare },
 ];
