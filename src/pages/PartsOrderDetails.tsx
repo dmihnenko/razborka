@@ -139,6 +139,8 @@ export default function PartsOrderDetails() {
 
   const canEdit = order && (order.status === 'new' || order.status === 'in_progress')
   const isOwner = useHasRole('parts_owner')
+  // Owner can always manage the order; workers only when new/in_progress
+  const canManage = Boolean(order) && (!!canEdit || isOwner)
 
   if (!partsCompanyId) {
     return (
@@ -208,8 +210,8 @@ export default function PartsOrderDetails() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6">
-        {/* Status Actions (only for non-completed/cancelled) */}
-        {canEdit && (
+        {/* Status Actions */}
+        {canManage && (
           <div className="bg-white rounded-lg shadow-sm p-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Статус заказа:
@@ -243,7 +245,7 @@ export default function PartsOrderDetails() {
         <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Информация о заказе</h2>
-            {canEdit && (
+            {canManage && (
               <button
                 onClick={() => setShowEditModal(true)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -294,7 +296,7 @@ export default function PartsOrderDetails() {
             <h2 className="text-lg font-semibold text-gray-900">
               Позиции заказа ({order.items?.length || 0})
             </h2>
-            {canEdit && (
+            {canManage && (
               <button
                 onClick={() => setShowAddItemModal(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm"
@@ -308,7 +310,7 @@ export default function PartsOrderDetails() {
           {!order.items || order.items.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <p>Нет позиций в заказе</p>
-              {canEdit && (
+              {canManage && (
                 <button
                   onClick={() => setShowAddItemModal(true)}
                   className="mt-2 text-primary hover:underline"
@@ -347,7 +349,7 @@ export default function PartsOrderDetails() {
                           {formatCurrency(item.subtotal)} ₴
                         </p>
                       </div>
-                      {canEdit && (
+                      {canManage && (
                         <button
                           onClick={() => {
                             if (confirm('Удалить позицию из заказа?')) {
@@ -371,7 +373,7 @@ export default function PartsOrderDetails() {
         </div>
 
         {/* Complete Order Button */}
-        {canEdit && order.items && order.items.length > 0 && (
+        {canManage && order.status !== 'completed' && order.items && order.items.length > 0 && (
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 sm:static sm:bg-transparent sm:border-0 sm:shadow-none sm:p-0">
             <button
               onClick={() => setShowCompleteModal(true)}
