@@ -486,10 +486,24 @@ export async function createPartsOrderItem(
 export async function updatePartsOrderTotal(orderId: string) {
   const { data: items } = await supabase
     .from('parts_order_items')
-    .select('price_at_sale, quantity')
+    .select('price_at_sale, quantity, price_at_sale_currency')
     .eq('order_id', orderId)
-  
-  const total = (items || []).reduce((s, i) => s + (i.price_at_sale * i.quantity), 0)
+
+  // Read exchange rate from localStorage (same key as usePartsExchangeRate hook)
+  let exchangeRate = 41
+  try {
+    const raw = localStorage.getItem('parts_exchange_rate')
+    if (raw) {
+      const stored = JSON.parse(raw)
+      if (stored?.rate > 0) exchangeRate = stored.rate
+    }
+  } catch { /* use default */ }
+
+  const total = (items || []).reduce((s, i) => {
+    const amount = (i.price_at_sale || 0) * (i.quantity || 1)
+    const amountUAH = (i.price_at_sale_currency || 'UAH') === 'USD' ? amount * exchangeRate : amount
+    return s + amountUAH
+  }, 0)
 
   const { error } = await supabase
     .from('parts_orders')

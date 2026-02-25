@@ -7,6 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Plus, Trash2, Edit2, Search, CheckCircle } from 'lucide-react'
 import { formatCurrency, formatPrice } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
+import { updatePartsOrderTotal } from '@/services/partsService'
 
 export default function PartsOrderDetails() {
   const { id } = useParams<{ id: string }>()
@@ -62,7 +63,8 @@ export default function PartsOrderDetails() {
         .eq('id', inventoryItemId)
         .eq('status', 'reserved')
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      if (id) await updatePartsOrderTotal(id)
       queryClient.invalidateQueries({ queryKey: ['parts-order', id] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
     },
@@ -278,7 +280,7 @@ export default function PartsOrderDetails() {
 
             <div>
               <p className="text-sm text-gray-500">Общая сумма</p>
-              <p className="text-2xl font-bold text-primary">{formatCurrency(order.total_amount)} ₴</p>
+              <p className="text-2xl font-bold text-primary">{formatCurrency(order.total_amount)}</p>
             </div>
           </div>
 
@@ -339,14 +341,19 @@ export default function PartsOrderDetails() {
                           <p>Категория: {item.inventory_item.category.name}</p>
                         )}
                         <p>Количество: {item.quantity} шт.</p>
-                        <p>Цена: {formatPrice(item.price_at_sale, item.price_at_sale_currency as 'UAH' | 'USD')}</p>
                       </div>
                     </div>
 
                     <div className="flex items-start gap-2">
                       <div className="text-right">
+                        <p className="text-base font-semibold text-gray-500">
+                          {formatPrice(item.price_at_sale, (item as any).price_at_sale_currency || 'UAH')}
+                        </p>
                         <p className="text-lg font-bold text-gray-900">
-                          {formatCurrency(item.subtotal)} ₴
+                          {formatPrice(
+                            (item.price_at_sale || 0) * (item.quantity || 1),
+                            (item as any).price_at_sale_currency || 'UAH'
+                          )}
                         </p>
                       </div>
                       {canManage && (
@@ -471,7 +478,8 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
 
       if (error) throw error
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await updatePartsOrderTotal(orderId)
       queryClient.invalidateQueries({ queryKey: ['parts-order', orderId] })
       onClose()
     },
