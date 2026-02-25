@@ -627,8 +627,8 @@ export default function PartsCustomerProfile() {
                                     )}
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                  <span className="text-sm font-bold text-gray-800 whitespace-nowrap">
+                                <div className="flex items-center gap-2.5 flex-shrink-0">
+                                  <span className="text-sm font-bold text-gray-800 whitespace-nowrap tabular-nums">
                                     {item.selling_price
                                       ? formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')
                                       : <span className="text-gray-300 font-normal text-xs">—</span>
@@ -637,7 +637,7 @@ export default function PartsCustomerProfile() {
                                   <button
                                     onClick={() => addToCart(item)}
                                     disabled={!!inCart && inCart.quantity >= inCart.maxQty}
-                                    className={`p-1.5 rounded-lg transition-all ${
+                                    className={`w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0 transition-all ${
                                       inCart
                                         ? 'bg-green-600 text-white shadow-sm disabled:opacity-40'
                                         : 'bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-40'
