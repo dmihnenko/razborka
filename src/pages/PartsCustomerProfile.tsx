@@ -67,7 +67,7 @@ export default function PartsCustomerProfile() {
           items:parts_order_items(
             id,
             quantity,
-            unit_price,
+            price_at_sale,
             subtotal,
             inventory_item:parts_inventory(
               name,
@@ -309,7 +309,7 @@ export default function PartsCustomerProfile() {
                           </div>
                           <div className="text-right">
                             <div className="text-gray-900">
-                              {item.quantity} шт × {formatCurrency(item.unit_price)}
+                              {item.quantity} шт × {formatCurrency(item.price_at_sale)}
                             </div>
                             <div className="font-medium text-primary">
                               {formatCurrency(item.subtotal)}
