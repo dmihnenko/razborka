@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Package, Phone, Mail, Link2, ShoppingCart, Plus, Minus, X, Trash2 } from 'lucide-react'
+import { ArrowLeft, Package, Phone, Mail, Link2, ShoppingCart, Plus, Minus, X, Trash2, Search } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { toast } from 'sonner'
@@ -30,6 +30,7 @@ export default function PartsCustomerProfile() {
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
   const [cart, setCart] = useState<CartItem[]>([])
   const [orderNotes, setOrderNotes] = useState('')
+  const [partsSearch, setPartsSearch] = useState('')
 
   const handleCopyPublicLink = async () => {
     const publicUrl = `${window.location.origin}/public/parts-customer/${id}`
@@ -90,6 +91,12 @@ export default function PartsCustomerProfile() {
     enabled: !!partsCompanyId && isOrderModalOpen,
   })
   const availableInventory = inventory.filter((i: any) => i.status === 'available')
+  const filteredInventory = partsSearch.trim()
+    ? availableInventory.filter((i: any) =>
+        i.name?.toLowerCase().includes(partsSearch.toLowerCase()) ||
+        i.part_number?.toLowerCase().includes(partsSearch.toLowerCase())
+      )
+    : availableInventory
 
   // Cart helpers
   const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0)
@@ -183,7 +190,7 @@ export default function PartsCustomerProfile() {
           <h1 className="text-3xl font-bold text-gray-900">{customer.full_name}</h1>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => { setCart([]); setIsOrderModalOpen(true) }}
+              onClick={() => { setCart([]); setPartsSearch(''); setIsOrderModalOpen(true) }}
               className="flex items-center gap-2 px-4 py-2 bg-green-700 text-white rounded-md hover:bg-green-800 transition-colors"
             >
               <ShoppingCart className="w-5 h-5" />
@@ -365,13 +372,28 @@ export default function PartsCustomerProfile() {
 
               <div className="flex flex-col md:flex-row flex-1 min-h-0">
                 {/* Left: Available parts */}
-                <div className="flex-1 min-h-0 overflow-y-auto p-4 border-b md:border-b-0 md:border-r border-gray-100">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Склад в наличии ({availableInventory.length})</h3>
-                  {availableInventory.length === 0 ? (
-                    <p className="text-gray-400 text-sm text-center py-8">Нет доступных запчастей</p>
+                <div className="flex-1 min-h-0 flex flex-col border-b md:border-b-0 md:border-r border-gray-100">
+                  <div className="p-4 pb-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={partsSearch}
+                        onChange={e => setPartsSearch(e.target.value)}
+                        placeholder="Поиск по названию или артикулу..."
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1.5 mb-0">
+                      {filteredInventory.length} из {availableInventory.length} запчастей
+                    </p>
+                  </div>
+                  <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
+                  {filteredInventory.length === 0 ? (
+                    <p className="text-gray-400 text-sm text-center py-8">{partsSearch ? 'Ничего не найдено' : 'Нет доступных запчастей'}</p>
                   ) : (
                     <div className="space-y-2">
-                      {availableInventory.map((item: any) => {
+                      {filteredInventory.map((item: any) => {
                         const inCart = cart.find(c => c.id === item.id)
                         return (
                           <div key={item.id} className={`flex items-center justify-between p-3 rounded-lg border ${inCart ? 'border-green-300 bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}>
@@ -394,6 +416,7 @@ export default function PartsCustomerProfile() {
                       })}
                     </div>
                   )}
+                  </div>
                 </div>
 
                 {/* Right: Cart */}
