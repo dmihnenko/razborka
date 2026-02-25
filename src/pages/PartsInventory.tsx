@@ -499,9 +499,9 @@ export default function PartsInventory() {
             {filteredInventory.map((item) => (
               <div
                 key={item.id}
-                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all overflow-hidden group"
+                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all overflow-hidden group flex flex-col"
               >
-                <div className="p-5">
+                <div className="p-5 flex-1">
                   {/* Status & Low Stock Warning */}
                   <div className="flex items-center justify-between mb-3">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[item.status]}`}>
