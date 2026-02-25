@@ -325,9 +325,9 @@ export default function PartsVehicles() {
               <div
                 key={vehicle.id}
                 onClick={() => navigate(`/parts/vehicles/${vehicle.id}`)}
-                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden group"
+                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden group flex flex-col"
               >
-                <div className="p-3 sm:p-4">
+                <div className="p-3 sm:p-4 flex-1">
                   {/* Status Badge */}
                   <div className="flex items-center justify-between mb-3">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[vehicle.status]}`}>
