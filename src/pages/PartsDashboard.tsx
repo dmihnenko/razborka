@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { Car, Package, ShoppingCart, DollarSign, AlertCircle, TrendingUp, ArrowRight, Warehouse, LayoutGrid, Users, BarChart2, Settings } from 'lucide-react'
+import { Car, ShoppingCart, DollarSign, AlertCircle, TrendingUp, ArrowRight, Warehouse, LayoutGrid, Users, BarChart2, Settings, Wrench, Store } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 
@@ -36,11 +36,11 @@ export default function PartsDashboard() {
   const { data: inventoryStats } = useQuery({
     queryKey: ['parts-inventory-stats', partsCompanyId],
     queryFn: async () => {
-      if (!partsCompanyId) return { total: 0, available: 0, lowStock: 0, value: 0 }
+      if (!partsCompanyId) return { total: 0, available: 0, lowStock: 0, value: 0, fromVehicles: 0, fromShop: 0 }
 
       const { data } = await supabase
         .from('parts_inventory')
-        .select('quantity, reserved_quantity, selling_price, min_stock_level, status')
+        .select('quantity, reserved_quantity, selling_price, min_stock_level, status, vehicle_id')
         .eq('parts_company_id', partsCompanyId)
 
       const available_items = data?.filter(item => item.status !== 'sold') || []
@@ -48,8 +48,10 @@ export default function PartsDashboard() {
       const available = available_items.reduce((sum, item) => sum + (item.quantity - item.reserved_quantity), 0)
       const lowStock = available_items.filter(item => item.quantity <= item.min_stock_level).length
       const value = available_items.reduce((sum, item) => sum + (item.quantity * (item.selling_price || 0)), 0)
+      const fromVehicles = available_items.reduce((sum, item) => sum + (item.vehicle_id ? item.quantity : 0), 0)
+      const fromShop = available_items.reduce((sum, item) => sum + (!item.vehicle_id ? item.quantity : 0), 0)
 
-      return { total, available, lowStock, value }
+      return { total, available, lowStock, value, fromVehicles, fromShop }
     },
     enabled: !!partsCompanyId,
   })
@@ -155,7 +157,7 @@ export default function PartsDashboard() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Quick Stats - Main Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
           {/* Vehicles Card */}
           <button
             onClick={() => navigate('/parts/vehicles')}
@@ -181,30 +183,45 @@ export default function PartsDashboard() {
             </div>
           </button>
 
-          {/* Inventory Card */}
+          {/* Inventory - Разборка Card */}
           <button
-            onClick={() => navigate('/parts/inventory')}
+            onClick={() => navigate('/parts/inventory?source=vehicles')}
+            className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all p-3 sm:p-5 text-left group"
+          >
+            <div className="flex items-start justify-between mb-2 sm:mb-3">
+              <div className="bg-orange-100 p-2 sm:p-3 rounded-lg group-hover:bg-orange-200 transition-colors">
+                <Wrench className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
+              </div>
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-primary transition-colors" />
+            </div>
+            <p className="text-xs sm:text-sm text-gray-600 mb-1">З/ч с разборки</p>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{inventoryStats?.fromVehicles || 0}</p>
+            <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-500">Всего:</span>
+                <span className="font-medium text-orange-600">{inventoryStats?.fromVehicles || 0} шт</span>
+              </div>
+            </div>
+          </button>
+
+          {/* Inventory - Магазин Card */}
+          <button
+            onClick={() => navigate('/parts/inventory?source=shop')}
             className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all p-3 sm:p-5 text-left group"
           >
             <div className="flex items-start justify-between mb-2 sm:mb-3">
               <div className="bg-green-100 p-2 sm:p-3 rounded-lg group-hover:bg-green-200 transition-colors">
-                <Package className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+                <Store className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
               </div>
-              <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-primary transition-colors" />
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-primary transition-colors" />
             </div>
-            <p className="text-sm text-gray-600 mb-1">Запчастей на складе</p>
-            <p className="text-3xl font-bold text-gray-900">{inventoryStats?.total || 0}</p>
-            <div className="mt-3 pt-3 border-t border-gray-100">
+            <p className="text-xs sm:text-sm text-gray-600 mb-1">Магазин</p>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{inventoryStats?.fromShop || 0}</p>
+            <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500">Доступно:</span>
-                <span className="font-medium text-green-600">{inventoryStats?.available || 0}</span>
+                <span className="text-gray-500">Всего:</span>
+                <span className="font-medium text-green-600">{inventoryStats?.fromShop || 0} шт</span>
               </div>
-              {inventoryStats?.lowStock ? (
-                <div className="flex items-center justify-between text-xs mt-1">
-                  <span className="text-gray-500">Низкий остаток:</span>
-                  <span className="font-medium text-red-600">{inventoryStats.lowStock}</span>
-                </div>
-              ) : null}
             </div>
           </button>
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal } from '@/services/partsService'
@@ -37,6 +37,8 @@ const conditionLabels = {
 export default function PartsInventory() {
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const sourceFilter = searchParams.get('source') ?? 'all' // 'all' | 'vehicles' | 'shop'
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -192,8 +194,13 @@ export default function PartsInventory() {
       item.description?.toLowerCase().includes(searchQuery.toLowerCase())
     
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter
+
+    const matchesSource =
+      sourceFilter === 'all' ||
+      (sourceFilter === 'vehicles' && !!item.vehicle_id) ||
+      (sourceFilter === 'shop' && !item.vehicle_id)
     
-    return matchesSearch && matchesStatus
+    return matchesSearch && matchesStatus && matchesSource
   })
 
   // Statistics
@@ -322,7 +329,9 @@ export default function PartsInventory() {
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Склад запчастей</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                  {sourceFilter === 'vehicles' ? 'Запчасти с разборки' : sourceFilter === 'shop' ? 'Магазин запчастей' : 'Склад запчастей'}
+                </h1>
                 <p className="text-sm text-gray-500 hidden sm:block">Всего: {stats.total} позиций</p>
               </div>
             </div>
@@ -474,17 +483,25 @@ export default function PartsInventory() {
             </div>
           </div>
 
-          {statusFilter !== 'all' && (
-            <div className="mt-3 flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                Фильтр: <span className="font-medium">{statusLabels[statusFilter as PartsInventoryStatus]}</span>
-              </span>
-              <button
-                onClick={() => setStatusFilter('all')}
-                className="ml-2 text-sm text-primary hover:underline"
-              >
-                Сбросить
-              </button>
+          {(statusFilter !== 'all' || sourceFilter !== 'all') && (
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
+              {sourceFilter !== 'all' && (
+                <span className="inline-flex items-center gap-1 text-sm px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                  {sourceFilter === 'vehicles' ? 'Разборка' : 'Магазин'}
+                  <button onClick={() => navigate('/parts/inventory')} className="ml-1 hover:text-blue-900">×</button>
+                </span>
+              )}
+              {statusFilter !== 'all' && (
+                <span className="inline-flex items-center gap-1 text-sm">
+                  Фильтр: <span className="font-medium">{statusLabels[statusFilter as PartsInventoryStatus]}</span>
+                  <button
+                    onClick={() => setStatusFilter('all')}
+                    className="ml-2 text-sm text-primary hover:underline"
+                  >
+                    Сбросить
+                  </button>
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -498,9 +515,9 @@ export default function PartsInventory() {
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 mb-2">
-              {searchQuery || statusFilter !== 'all' ? 'Запчасти не найдены' : 'Нет запчастей'}
+              {searchQuery || statusFilter !== 'all' || sourceFilter !== 'all' ? 'Запчасти не найдены' : 'Нет запчастей'}
             </p>
-            {!searchQuery && statusFilter === 'all' && (
+            {!searchQuery && statusFilter === 'all' && sourceFilter === 'all' && (
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="mt-4 text-primary hover:underline"

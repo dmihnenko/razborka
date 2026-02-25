@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { useNavigate } from 'react-router-dom'
-import { formatCurrency } from '@/utils/currency'
+import { formatPrice } from '@/utils/currency'
 import { 
   ArrowLeft, 
   BarChart3, 
@@ -19,25 +20,26 @@ export default function PartsAnalytics() {
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
+  const { rate: globalRate } = usePartsExchangeRate()
 
   // Общая статистика
   const { data: overallStats } = useQuery({
-    queryKey: ['parts-analytics-overall', partsCompanyId],
+    queryKey: ['parts-analytics-overall', partsCompanyId, globalRate],
     queryFn: async () => {
       if (!partsCompanyId) return null
 
       const [ordersRes, inventoryRes, vehiclesRes] = await Promise.all([
         supabase
           .from('parts_orders')
-          .select('status, total_amount, order_date, items:parts_order_items(quantity, subtotal)')
+          .select('status, order_date, items:parts_order_items(price_at_sale, price_at_sale_currency, quantity)')
           .eq('parts_company_id', partsCompanyId),
         supabase
           .from('parts_inventory')
-          .select('quantity, selling_price, status')
+          .select('quantity, selling_price, sold_price, status, price_currency, vehicle_id')
           .eq('parts_company_id', partsCompanyId),
         supabase
           .from('parts_vehicles')
-          .select('status')
+          .select('id, status, exchange_rate')
           .eq('parts_company_id', partsCompanyId),
       ])
 
@@ -45,23 +47,50 @@ export default function PartsAnalytics() {
       const inventory = inventoryRes.data || []
       const vehicles = vehiclesRes.data || []
 
-      const completedOrders = orders.filter(o => o.status === 'completed')
-      const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total_amount, 0)
-      // Count by status='sold' — sold_quantity is not updated by sellMutation
-      const totalSoldParts = inventory.filter(i => i.status === 'sold').length
+      // Карта курсов по автомобилю
+      const vehicleRateMap: Record<string, number> = {}
+      for (const v of vehicles) {
+        if (v.id && v.exchange_rate) vehicleRateMap[v.id] = v.exchange_rate
+      }
+
+      // Конвертация в USD
+      const toUSD = (price: number, currency: string | null | undefined, vehicleId: string | null | undefined): number => {
+        if (!price) return 0
+        if (currency === 'USD') return price
+        const rate = (vehicleId && vehicleRateMap[vehicleId]) || globalRate || 41
+        return price / rate
+      }
+
+      // Выручка из проданных запчастей (status='sold')
+      const soldItems = inventory.filter(i => i.status === 'sold')
+      const totalRevenue = soldItems.reduce((sum, i) => {
+        const price = i.sold_price || i.selling_price || 0
+        return sum + toUSD(price, i.price_currency, i.vehicle_id)
+      }, 0)
+
+      // Count by status='sold'
+      const totalSoldParts = soldItems.length
+
+      const completedOrders = orders.filter((o: any) => o.status === 'completed')
       const avgCheck = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0
+
+      // Стоимость склада (не проданные)
       const inventoryValue = inventory
         .filter(i => i.status !== 'sold')
-        .reduce((sum, i) => sum + (i.quantity * (i.selling_price || 0)), 0)
+        .reduce((sum, i) => sum + toUSD(i.quantity * (i.selling_price || 0), i.price_currency, i.vehicle_id), 0)
 
-      // Данные по месяцам — ключ YYYY-MM чтобы сортировка работала корректно
+      // Данные по месяцам — суммируем позиции заказов с конвертацией
       const monthlyData: Record<string, { revenue: number; orders: number }> = {}
-      completedOrders.forEach(order => {
+      completedOrders.forEach((order: any) => {
         const monthKey = new Date(order.order_date).toISOString().slice(0, 7) // 'YYYY-MM'
         if (!monthlyData[monthKey]) {
           monthlyData[monthKey] = { revenue: 0, orders: 0 }
         }
-        monthlyData[monthKey].revenue += order.total_amount
+        const orderRevenue = (order.items || []).reduce((s: number, item: any) => {
+          const amount = (item.price_at_sale || 0) * (item.quantity || 1)
+          return s + toUSD(amount, item.price_at_sale_currency, null)
+        }, 0)
+        monthlyData[monthKey].revenue += orderRevenue
         monthlyData[monthKey].orders += 1
       })
 
@@ -81,7 +110,7 @@ export default function PartsAnalytics() {
         avgCheck,
         inventoryValue,
         totalVehicles: vehicles.length,
-        dismantledVehicles: vehicles.filter(v => v.status === 'dismantled').length,
+        dismantledVehicles: vehicles.filter((v: any) => v.status === 'dismantled').length,
         monthlyRevenue,
       }
     },
@@ -90,26 +119,44 @@ export default function PartsAnalytics() {
 
   // Топ запчастей
   const { data: topParts } = useQuery({
-    queryKey: ['parts-analytics-top-parts', partsCompanyId],
+    queryKey: ['parts-analytics-top-parts', partsCompanyId, globalRate],
     queryFn: async () => {
       if (!partsCompanyId) return []
 
-      // Fetch all sold items — group by name client-side
-      // (sold_quantity is not reliably updated; status='sold' is the source of truth)
-      const { data } = await supabase
-        .from('parts_inventory')
-        .select('name, sold_price, selling_price, price_currency')
-        .eq('parts_company_id', partsCompanyId)
-        .eq('status', 'sold')
+      // Fetch sold items + vehicles for per-vehicle exchange rate
+      const [inventoryRes, vehiclesRes] = await Promise.all([
+        supabase
+          .from('parts_inventory')
+          .select('name, sold_price, selling_price, price_currency, vehicle_id')
+          .eq('parts_company_id', partsCompanyId)
+          .eq('status', 'sold'),
+        supabase
+          .from('parts_vehicles')
+          .select('id, exchange_rate')
+          .eq('parts_company_id', partsCompanyId),
+      ])
+
+      const vehicleRateMap: Record<string, number> = {}
+      for (const v of vehiclesRes.data || []) {
+        if (v.id && v.exchange_rate) vehicleRateMap[v.id] = v.exchange_rate
+      }
+
+      const toUSD = (price: number, currency: string | null | undefined, vehicleId: string | null | undefined): number => {
+        if (!price) return 0
+        if (currency === 'USD') return price
+        const rate = (vehicleId && vehicleRateMap[vehicleId]) || globalRate || 41
+        return price / rate
+      }
 
       const grouped: Record<string, { name: string; sold_quantity: number; revenue: number; selling_price: number }> = {}
-      for (const item of data || []) {
-        const price = item.sold_price || item.selling_price || 0
+      for (const item of inventoryRes.data || []) {
+        const rawPrice = item.sold_price || item.selling_price || 0
+        const priceUSD = toUSD(rawPrice, item.price_currency, item.vehicle_id)
         if (!grouped[item.name]) {
-          grouped[item.name] = { name: item.name, sold_quantity: 0, revenue: 0, selling_price: price }
+          grouped[item.name] = { name: item.name, sold_quantity: 0, revenue: 0, selling_price: priceUSD }
         }
         grouped[item.name].sold_quantity += 1
-        grouped[item.name].revenue += price
+        grouped[item.name].revenue += priceUSD
       }
 
       return Object.values(grouped)
@@ -165,7 +212,7 @@ export default function PartsAnalytics() {
             </div>
             <p className="text-sm text-gray-600 mb-1">Общая выручка</p>
             <p className="text-2xl font-bold text-gray-900">
-              {formatCurrency(overallStats?.totalRevenue || 0)}
+              {formatPrice(overallStats?.totalRevenue || 0, 'USD')}
             </p>
             <p className="text-xs text-gray-500 mt-2">
               {overallStats?.completedOrders || 0} завершенных заказов
@@ -181,7 +228,7 @@ export default function PartsAnalytics() {
             </div>
             <p className="text-sm text-gray-600 mb-1">Средний чек</p>
             <p className="text-2xl font-bold text-gray-900">
-              {formatCurrency(overallStats?.avgCheck || 0)}
+              {formatPrice(overallStats?.avgCheck || 0, 'USD')}
             </p>
             <p className="text-xs text-gray-500 mt-2">
               На основе {overallStats?.completedOrders || 0} заказов
@@ -198,7 +245,7 @@ export default function PartsAnalytics() {
             <p className="text-sm text-gray-600 mb-1">Продано запчастей</p>
             <p className="text-2xl font-bold text-gray-900">{overallStats?.totalSoldParts || 0}</p>
             <p className="text-xs text-gray-500 mt-2">
-              Стоимость склада: {formatCurrency(overallStats?.inventoryValue || 0)}
+              Стоимость склада: {formatPrice(overallStats?.inventoryValue || 0, 'USD')}
             </p>
           </div>
 
@@ -239,7 +286,7 @@ export default function PartsAnalytics() {
                       <div className="flex items-center justify-between text-sm mb-1">
                         <span className="text-gray-600 font-medium">{month}</span>
                         <span className="text-gray-900 font-semibold">
-                          {formatCurrency(data.revenue)}
+                          {formatPrice(data.revenue, 'USD')}
                         </span>
                       </div>
                       <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
@@ -287,9 +334,9 @@ export default function PartsAnalytics() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-gray-900">
-                        {formatCurrency(part.revenue)}
+                        {formatPrice(part.revenue, 'USD')}
                       </p>
-                      <p className="text-xs text-gray-500">{formatCurrency(part.selling_price)}/шт</p>
+                      <p className="text-xs text-gray-500">{formatPrice(part.selling_price, 'USD')}/шт</p>
                     </div>
                   </div>
                 ))}
@@ -333,8 +380,8 @@ export default function PartsAnalytics() {
             </div>
             <p className="text-xl font-bold text-gray-900">
               {overallStats?.totalSoldParts && overallStats?.totalRevenue
-                ? formatCurrency(overallStats.totalRevenue / overallStats.totalSoldParts)
-                : '₴0'}
+                ? formatPrice(overallStats.totalRevenue / overallStats.totalSoldParts, 'USD')
+                : '$0'}
             </p>
           </div>
 
