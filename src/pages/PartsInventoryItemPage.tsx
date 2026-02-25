@@ -249,9 +249,6 @@ export default function PartsInventoryItemPage() {
                 {(item.vehicle as any).vin && (
                   <p className="text-xs text-gray-500 font-mono mt-0.5">VIN: {(item.vehicle as any).vin}</p>
                 )}
-                {(item.vehicle as any).license_plate && (
-                  <p className="text-xs text-gray-500 mt-0.5">{(item.vehicle as any).license_plate}</p>
-                )}
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
             </div>

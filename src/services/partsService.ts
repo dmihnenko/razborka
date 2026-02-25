@@ -311,7 +311,7 @@ export async function getPartsInventoryItem(id: string) {
     .select(`
       *,
       category:parts_categories(id, name),
-      vehicle:parts_vehicles(id, make, model, year, vin, license_plate, color)
+      vehicle:parts_vehicles!vehicle_id(id, make, model, year, vin)
     `)
     .eq('id', id)
     .single()
