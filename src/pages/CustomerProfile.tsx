@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Car, FileText, Phone, Mail, MapPin, Link2, Package, Plus } from 'lucide-react'
@@ -12,6 +12,7 @@ import { getStatusColor, getStatusText, getOrderStatusColor, getOrderStatusText 
 
 export default function CustomerProfile() {
   const { id } = useParams<{ id: string }>()
+  const location = useLocation()
   const [showVehicleModal, setShowVehicleModal] = useState(false)
 
   const handleCopyPublicLink = async () => {
@@ -245,6 +246,7 @@ export default function CustomerProfile() {
               <Link
                 key={appointment.id}
                 to={`/sto/appointments/${appointment.id}`}
+                state={{ from: location.pathname }}
                 className="block border border-gray-200 rounded-lg p-4 hover:border-primary transition-colors"
               >
                 <div className="flex items-start justify-between mb-2">

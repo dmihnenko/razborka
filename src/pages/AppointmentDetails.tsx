@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 export default function AppointmentDetails() {
   const { appointmentId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
@@ -245,7 +246,7 @@ export default function AppointmentDetails() {
       {/* Хедер с кнопкой назад */}
       <div className="mb-4 sm:mb-6">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => location.state?.from ? navigate(location.state.from) : navigate(-1)}
           className="flex items-center text-mobile-base text-gray-600 hover:text-gray-900 mb-4"
         >
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
