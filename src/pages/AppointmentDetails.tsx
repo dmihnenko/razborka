@@ -117,6 +117,9 @@ export default function AppointmentDetails() {
       if (shouldArchive) {
         updatedData.status = 'archived'
         updatedData.closed_date = new Date().toISOString()
+        // Если запчастей/работ нет — авто-отмечаем как оплачено
+        if (!hasParts) updatedData.parts_paid = true
+        if (!hasWork) updatedData.work_paid = true
       }
       
       const { error } = await supabase
@@ -148,12 +151,21 @@ export default function AppointmentDetails() {
   const updateStatusMutation = useMutation({
     mutationFn: async (status: string) => {
       const isUnarchiving = appointment?.status === 'archived'
+      const isArchiving = status === 'archived'
       const updateData: any = { status }
       // При возврате из архива — сбрасываем дату закрытия и оплаты
       if (isUnarchiving) {
         updateData.closed_date = null
         updateData.parts_paid = false
         updateData.work_paid = false
+      }
+      // При архивировании вручную — авто-оплачиваем то, чего нет
+      if (isArchiving) {
+        const hasParts = ((appointment?.parts_cost || appointment?.total_parts_cost) || 0) > 0
+        const hasWork = (appointment?.total_work_cost || 0) > 0
+        updateData.closed_date = new Date().toISOString()
+        if (!hasParts) updateData.parts_paid = true
+        if (!hasWork) updateData.work_paid = true
       }
       const { data, error } = await supabase
         .from('appointments')
