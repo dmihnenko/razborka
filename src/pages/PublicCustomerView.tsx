@@ -251,10 +251,10 @@ export default function PublicCustomerView() {
                   </div>
 
                   {/* Информация об оплате */}
-                  {(appointment.parts_paid !== null || appointment.work_paid !== null) && (
+                  {((appointment.parts_cost || appointment.total_parts_cost || 0) > 0 || (appointment.total_work_cost || 0) > 0) && (
                     <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200">
                       <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-xs sm:text-sm">
-                        {appointment.parts_paid !== null && (
+                        {(appointment.parts_cost || appointment.total_parts_cost || 0) > 0 && (
                           <div className="flex items-center">
                             <span className="text-gray-600 mr-2">Запчасти:</span>
                             <span className={`font-medium ${appointment.parts_paid ? 'text-green-600' : 'text-red-600'}`}>
@@ -262,7 +262,7 @@ export default function PublicCustomerView() {
                             </span>
                           </div>
                         )}
-                        {appointment.work_paid !== null && (
+                        {(appointment.total_work_cost || 0) > 0 && (
                           <div className="flex items-center">
                             <span className="text-gray-600 mr-2">Работы:</span>
                             <span className={`font-medium ${appointment.work_paid ? 'text-green-600' : 'text-red-600'}`}>

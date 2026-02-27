@@ -436,22 +436,26 @@ export default function Appointments() {
                         {!showArchived && (
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                             <div className="flex flex-col gap-1 items-start">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-600">Запчасти:</span>
-                                {appointment.parts_paid ? (
-                                  <Check className="w-4 h-4 text-green-600" />
-                                ) : (
-                                  <span className="text-xs text-gray-400">—</span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-600">Работы:</span>
-                                {appointment.work_paid ? (
-                                  <Check className="w-4 h-4 text-green-600" />
-                                ) : (
-                                  <span className="text-xs text-gray-400">—</span>
-                                )}
-                              </div>
+                              {((appointment.parts_cost || appointment.total_parts_cost) || 0) > 0 && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-gray-600">Запчасти:</span>
+                                  {appointment.parts_paid ? (
+                                    <Check className="w-4 h-4 text-green-600" />
+                                  ) : (
+                                    <span className="text-xs text-gray-400">—</span>
+                                  )}
+                                </div>
+                              )}
+                              {(appointment.total_work_cost || 0) > 0 && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-gray-600">Работы:</span>
+                                  {appointment.work_paid ? (
+                                    <Check className="w-4 h-4 text-green-600" />
+                                  ) : (
+                                    <span className="text-xs text-gray-400">—</span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </td>
                         )}
