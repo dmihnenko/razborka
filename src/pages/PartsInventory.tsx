@@ -187,15 +187,8 @@ export default function PartsInventory() {
   })
 
   // Categories filtered by selected vehicle (brand match or brandless)
-  const getCategoriesForVehicle = (vehicleId: string) => {
-    const vehicle = (vehicles as any[]).find(v => v.id === vehicleId)
-    if (!vehicle) return categories
-    const make = (vehicle.make || '').toLowerCase()
-    const relevantCats = categories.filter((cat: any) =>
-      !cat.brand || cat.brand.toLowerCase() === make
-    )
-    return relevantCats.length > 0 ? relevantCats : categories
-  }
+  const getCategoriesForVehicleLocal = (vehicleId: string) =>
+    getCategoriesForVehicle(vehicleId, vehicles as any[], categories as any[])
 
   // Filter inventory
   const filteredInventory = inventory.filter((item: PartsInventoryItem) => {
@@ -953,6 +946,17 @@ function buildLocationOptions(locations: StorageLocation[]): { id: string; label
     .sort((a, b) => a.label.localeCompare(b.label))
 }
 
+// Module-level helper — used by both main component and modal
+function getCategoriesForVehicle(vehicleId: string, vehicles: any[], categories: any[]) {
+  const vehicle = vehicles.find(v => v.id === vehicleId)
+  if (!vehicle) return categories
+  const make = (vehicle.make || '').toLowerCase()
+  const relevantCats = categories.filter((cat: any) =>
+    !cat.brand || cat.brand.toLowerCase() === make
+  )
+  return relevantCats.length > 0 ? relevantCats : categories
+}
+
 // Modal Component
 interface BulkRow {
   name: string
@@ -1125,7 +1129,7 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                       >
                         <option value="">Без категории</option>
                         {(bulkShared.vehicle_id
-                          ? getCategoriesForVehicle(bulkShared.vehicle_id)
+                          ? getCategoriesForVehicle(bulkShared.vehicle_id, vehicles, categories)
                           : categories
                         ).map((cat: any) => (
                           <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -1366,7 +1370,7 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                     >
                       <option value="">Без категории</option>
                       {(formData.vehicle_id
-                        ? getCategoriesForVehicle(formData.vehicle_id)
+                        ? getCategoriesForVehicle(formData.vehicle_id, vehicles, categories)
                         : categories
                       ).map((cat: any) => (
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
