@@ -12,7 +12,8 @@ import {
   BarChart3,
   Settings,
   Tag,
-  Warehouse
+  Warehouse,
+  Store
 } from 'lucide-react';
 
 export interface MenuItem {

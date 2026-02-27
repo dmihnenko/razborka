@@ -141,7 +141,9 @@ export default function Layout() {
         <nav className="grid grid-cols-3 gap-2 p-2">
           {filteredNavigation.filter(item => !item.mobileHidden).map((item) => {
             const Icon = item.icon
-            const isActive = location.pathname === item.href
+            const isActive = item.href.includes('?')
+              ? location.pathname + location.search === item.href
+              : location.pathname === item.href
             return (
               <Link
                 key={item.href}
@@ -189,7 +191,9 @@ export default function Layout() {
         <nav className="flex-1 overflow-y-auto py-3 px-2">
           {filteredNavigation.map((item) => {
             const Icon = item.icon
-            const isActive = location.pathname === item.href
+            const isActive = item.href.includes('?')
+              ? location.pathname + location.search === item.href
+              : location.pathname === item.href
             return (
               <Link
                 key={item.href}
