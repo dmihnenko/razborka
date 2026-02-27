@@ -127,11 +127,11 @@ export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: Mo
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-gray-900">
-                                {appointment.customers?.[0]?.name || <span className="text-gray-400 italic">Клиент не указан</span>}
+                                {appointment.customers?.name || <span className="text-gray-400 italic">Клиент не указан</span>}
                               </p>
                               <p className="text-sm text-gray-600">
-                                {appointment.vehicles?.[0]
-                                  ? <>{appointment.vehicles[0].brand} {appointment.vehicles[0].model}{appointment.vehicles[0].license_plate && <span className="ml-2 text-gray-500">{appointment.vehicles[0].license_plate}</span>}</>
+                                {appointment.vehicles
+                                  ? <>{appointment.vehicles.brand} {appointment.vehicles.model}{appointment.vehicles.license_plate && <span className="ml-2 text-gray-500">{appointment.vehicles.license_plate}</span>}</>
                                   : <span className="text-gray-400 italic">Авто не указано</span>}
                               </p>
                               <div className="flex items-center gap-3 mt-2 text-sm">
@@ -192,11 +192,11 @@ export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: Mo
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-gray-700">
-                                {appointment.customers?.[0]?.name || <span className="text-gray-400 italic">Клиент не указан</span>}
+                                {appointment.customers?.name || <span className="text-gray-400 italic">Клиент не указан</span>}
                               </p>
                               <p className="text-sm text-gray-500">
-                                {appointment.vehicles?.[0]
-                                  ? <>{appointment.vehicles[0].brand} {appointment.vehicles[0].model}{appointment.vehicles[0].license_plate && <span className="ml-2">{appointment.vehicles[0].license_plate}</span>}</>
+                                {appointment.vehicles
+                                  ? <>{appointment.vehicles.brand} {appointment.vehicles.model}{appointment.vehicles.license_plate && <span className="ml-2">{appointment.vehicles.license_plate}</span>}</>
                                   : <span className="text-gray-400 italic">Авто не указано</span>}
                               </p>
                               <div className="flex items-center gap-3 mt-2 text-sm">
