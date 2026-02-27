@@ -130,15 +130,12 @@ export default function MonthlyRevenue() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900 mb-1">
-                            {appointment.customers?.[0]?.name}
+                            {appointment.customers?.[0]?.name || <span className="text-gray-400 italic">Клиент не указан</span>}
                           </p>
                           <p className="text-sm text-gray-600 mb-2">
-                            {appointment.vehicles?.[0]?.brand} {appointment.vehicles?.[0]?.model}
-                            {appointment.vehicles?.[0]?.license_plate && (
-                              <span className="ml-2 text-gray-500">
-                                {appointment.vehicles[0].license_plate}
-                              </span>
-                            )}
+                            {appointment.vehicles?.[0]
+                              ? <>{appointment.vehicles[0].brand} {appointment.vehicles[0].model}{appointment.vehicles[0].license_plate && <span className="ml-2 text-gray-500">{appointment.vehicles[0].license_plate}</span>}</>
+                              : <span className="text-gray-400 italic">Авто не указано</span>}
                           </p>
                           <div className="flex items-center gap-4 text-sm">
                             {partsCost > 0 && (
@@ -200,15 +197,12 @@ export default function MonthlyRevenue() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-700 mb-1">
-                            {appointment.customers?.[0]?.name}
+                            {appointment.customers?.[0]?.name || <span className="text-gray-400 italic">Клиент не указан</span>}
                           </p>
                           <p className="text-sm text-gray-500 mb-2">
-                            {appointment.vehicles?.[0]?.brand} {appointment.vehicles?.[0]?.model}
-                            {appointment.vehicles?.[0]?.license_plate && (
-                              <span className="ml-2">
-                                {appointment.vehicles[0].license_plate}
-                              </span>
-                            )}
+                            {appointment.vehicles?.[0]
+                              ? <>{appointment.vehicles[0].brand} {appointment.vehicles[0].model}{appointment.vehicles[0].license_plate && <span className="ml-2">{appointment.vehicles[0].license_plate}</span>}</>
+                              : <span className="text-gray-400 italic">Авто не указано</span>}
                           </p>
                           <div className="flex items-center gap-4 text-sm">
                             {partsCost > 0 && (
