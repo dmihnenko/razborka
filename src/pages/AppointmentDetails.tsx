@@ -147,9 +147,17 @@ export default function AppointmentDetails() {
   // Мутация для обновления статуса заявки
   const updateStatusMutation = useMutation({
     mutationFn: async (status: string) => {
+      const isUnarchiving = appointment?.status === 'archived'
+      const updateData: any = { status }
+      // При возврате из архива — сбрасываем дату закрытия и оплаты
+      if (isUnarchiving) {
+        updateData.closed_date = null
+        updateData.parts_paid = false
+        updateData.work_paid = false
+      }
       const { data, error } = await supabase
         .from('appointments')
-        .update({ status })
+        .update(updateData)
         .eq('id', appointmentId)
         .select()
       
@@ -162,6 +170,7 @@ export default function AppointmentDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointment', appointmentId] })
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-monthly-revenue'] })
       toast.success('Статус заявки обновлен')
       setShowStatusDropdown(false)
     },
@@ -194,7 +203,10 @@ export default function AppointmentDetails() {
   }
 
   const availableStatuses = appointment?.status === 'archived'
-    ? []
+    ? (isStoOwner ? [
+        { value: 'in_progress', label: 'В работе' },
+        { value: 'completed', label: 'Готова' },
+      ] : [])
     : [
         { value: 'scheduled', label: 'Запланирована' },
         { value: 'in_progress', label: 'В работе' },
@@ -265,12 +277,12 @@ export default function AppointmentDetails() {
             <div className="relative">
               <button
                 onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                disabled={appointment.status === 'archived'}
-                className={`px-4 py-2 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} ${appointment.status !== 'archived' ? 'hover:opacity-80 transition-opacity cursor-pointer' : 'cursor-default'}`}
+                disabled={appointment.status === 'archived' && !isStoOwner}
+                className={`px-4 py-2 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} ${(appointment.status !== 'archived' || isStoOwner) ? 'hover:opacity-80 transition-opacity cursor-pointer' : 'cursor-default'}`}
               >
                 {statusLabels[appointment.status as keyof typeof statusLabels]}
               </button>
-              {showStatusDropdown && appointment.status !== 'archived' && (
+              {showStatusDropdown && availableStatuses.length > 0 && (
                 <div className="absolute right-0 z-10 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200">
                   {availableStatuses.map((status) => (
                     <button
