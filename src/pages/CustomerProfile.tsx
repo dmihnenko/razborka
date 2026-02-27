@@ -1,7 +1,7 @@
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Car, FileText, Phone, Mail, MapPin, Link2, Package, Plus } from 'lucide-react'
+import { ArrowLeft, Car, FileText, Phone, Mail, MapPin, Link2, Package, Plus, ChevronDown } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { toast } from 'sonner'
@@ -14,6 +14,7 @@ export default function CustomerProfile() {
   const { id } = useParams<{ id: string }>()
   const location = useLocation()
   const [showVehicleModal, setShowVehicleModal] = useState(false)
+  const [vehiclesExpanded, setVehiclesExpanded] = useState(false)
 
   const handleCopyPublicLink = async () => {
     const publicUrl = `${window.location.origin}/public/customer/${id}`
@@ -187,12 +188,16 @@ export default function CustomerProfile() {
       {/* Секция автомобилей */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <Car className="w-6 h-6 mr-2 text-primary" />
+          <button
+            onClick={() => setVehiclesExpanded(!vehiclesExpanded)}
+            className="flex items-center gap-2 flex-1 text-left"
+          >
+            <Car className="w-6 h-6 text-primary" />
             <h2 className="text-xl font-bold text-gray-900">
               Автомобили ({vehicles?.length || 0})
             </h2>
-          </div>
+            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ml-1 ${vehiclesExpanded ? 'rotate-180' : ''}`} />
+          </button>
           <button
             onClick={() => setShowVehicleModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
@@ -202,28 +207,30 @@ export default function CustomerProfile() {
           </button>
         </div>
 
-        {vehiclesLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : vehicles && vehicles.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {vehicles.map((vehicle) => (
-              <div key={vehicle.id} className="border border-gray-200 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-2">
-                  {vehicle.brand} {vehicle.model}
-                </h3>
-                <div className="space-y-1 text-sm text-gray-600">
-                  <p>Номер: <span className="font-medium">{vehicle.license_plate}</span></p>
-                  {vehicle.year && <p>Год: {vehicle.year}</p>}
-                  {vehicle.vin && <p>VIN: {vehicle.vin}</p>}
-                  {vehicle.color && <p>Цвет: {vehicle.color}</p>}
+        {vehiclesExpanded && (
+          vehiclesLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : vehicles && vehicles.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {vehicles.map((vehicle) => (
+                <div key={vehicle.id} className="border border-gray-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">
+                    {vehicle.brand} {vehicle.model}
+                  </h3>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <p>Номер: <span className="font-medium">{vehicle.license_plate}</span></p>
+                    {vehicle.year && <p>Год: {vehicle.year}</p>}
+                    {vehicle.vin && <p>VIN: {vehicle.vin}</p>}
+                    {vehicle.color && <p>Цвет: {vehicle.color}</p>}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 text-center py-8">Автомобили не добавлены</p>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-8">Автомобили не добавлены</p>
+          )
         )}
       </div>
 
