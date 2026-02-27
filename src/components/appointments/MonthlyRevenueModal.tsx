@@ -19,7 +19,7 @@ export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: Mo
     queryKey: ['monthly-appointments', profile?.sto_company_id, year, month],
     queryFn: async () => {
       const firstDay = new Date(year, month - 1, 1)
-      const lastDay = new Date(year, month, 0, 23, 59, 59)
+      const nextMonth = new Date(year, month, 1)
 
       const { data, error } = await supabase
         .from('appointments')
@@ -36,7 +36,7 @@ export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: Mo
         .eq('sto_company_id', profile?.sto_company_id)
         .eq('status', 'archived')
         .gte('closed_date', firstDay.toISOString())
-        .lte('closed_date', lastDay.toISOString())
+        .lt('closed_date', nextMonth.toISOString())
         .order('closed_date', { ascending: false })
 
       if (error) throw error

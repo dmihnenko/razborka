@@ -95,7 +95,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const now = new Date()
       const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
 
       const { data, error } = await supabase
         .from('appointments')
@@ -104,7 +104,7 @@ export default function Dashboard() {
         .eq('status', 'archived')
         .eq('exclude_from_stats', false)
         .gte('closed_date', firstDay.toISOString())
-        .lte('closed_date', lastDay.toISOString())
+        .lt('closed_date', nextMonth.toISOString())
       
       if (error) throw error
 

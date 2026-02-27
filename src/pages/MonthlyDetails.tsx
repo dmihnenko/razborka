@@ -17,7 +17,7 @@ export default function MonthlyDetails() {
 
       const [year, monthNum] = month.split('-')
       const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1)
-      const endDate = new Date(parseInt(year), parseInt(monthNum), 0, 23, 59, 59)
+      const nextMonth = new Date(parseInt(year), parseInt(monthNum), 1)
 
       const { data } = await supabase
         .from('appointments')
@@ -30,7 +30,7 @@ export default function MonthlyDetails() {
         .eq('sto_company_id', profile?.sto_company_id)
         .eq('status', 'archived')
         .gte('closed_date', startDate.toISOString())
-        .lte('closed_date', endDate.toISOString())
+        .lt('closed_date', nextMonth.toISOString())
         .order('closed_date', { ascending: false })
 
       return data || []
