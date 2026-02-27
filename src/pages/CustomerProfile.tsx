@@ -241,8 +241,10 @@ export default function CustomerProfile() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : appointments && appointments.length > 0 ? (
-          <div className="space-y-4">
-            {appointments.map((appointment) => (
+          (() => {
+            const active = appointments.filter((a: any) => a.status !== 'archived')
+            const archived = appointments.filter((a: any) => a.status === 'archived')
+            const renderCard = (appointment: any) => (
               <Link
                 key={appointment.id}
                 to={`/sto/appointments/${appointment.id}`}
@@ -262,23 +264,34 @@ export default function CustomerProfile() {
                     {getStatusText(appointment.status)}
                   </span>
                 </div>
-                
                 <p className="text-sm text-gray-700 mb-2">{appointment.description}</p>
-                
                 <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>
-                    {new Date(appointment.appointment_date).toLocaleDateString('ru-RU')}
-                  </span>
-                  <span>
-                    {formatDistanceToNow(new Date(appointment.created_at), { 
-                      addSuffix: true,
-                      locale: ru 
-                    })}
-                  </span>
+                  <span>{new Date(appointment.appointment_date).toLocaleDateString('ru-RU')}</span>
+                  <span>{formatDistanceToNow(new Date(appointment.created_at), { addSuffix: true, locale: ru })}</span>
                 </div>
               </Link>
-            ))}
-          </div>
+            )
+            return (
+              <div className="space-y-4">
+                {active.length > 0 && (
+                  <div className="space-y-3">
+                    {active.length > 0 && archived.length > 0 && (
+                      <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Активные</p>
+                    )}
+                    {active.map(renderCard)}
+                  </div>
+                )}
+                {archived.length > 0 && (
+                  <div className="space-y-3">
+                    {active.length > 0 && (
+                      <p className="text-sm font-medium text-gray-400 uppercase tracking-wide mt-2">Архив</p>
+                    )}
+                    {archived.map(renderCard)}
+                  </div>
+                )}
+              </div>
+            )
+          })()
         ) : (
           <p className="text-gray-500 text-center py-8">Заявки не найдены</p>
         )}
