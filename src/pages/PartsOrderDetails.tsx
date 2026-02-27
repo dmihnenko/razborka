@@ -35,7 +35,7 @@ export default function PartsOrderDetails() {
           items:parts_order_items(
             *,
             inventory_item:parts_inventory(
-              id, name, part_number, category_id, quantity,
+              id, name, part_number, category_id, quantity, price_currency,
               category:parts_categories(name)
             )
           )
@@ -148,12 +148,16 @@ export default function PartsOrderDetails() {
   const canManage = Boolean(order) && (!!canEdit || isOwner)
 
   // Compute total client-side so it's always correct regardless of DB stored value
-  const computedTotalUAH = (order?.items ?? []).reduce((sum, item) => {
+  // Use price_at_sale_currency from order item; fall back to inventory item's price_currency
+  const getItemCurrency = (item: any): 'UAH' | 'USD' =>
+    item.price_at_sale_currency || item.inventory_item?.price_currency || 'UAH'
+
+  const computedTotalUAH = (order?.items ?? []).reduce((sum, item: any) => {
     const amount = (item.price_at_sale || 0) * (item.quantity || 1)
-    return sum + ((item.price_at_sale_currency || 'UAH') === 'USD' ? amount * (exchangeRate || 41) : amount)
+    return sum + (getItemCurrency(item) === 'USD' ? amount * (exchangeRate || 41) : amount)
   }, 0)
-  const hasUSD = (order?.items ?? []).some(i => i.price_at_sale_currency === 'USD')
-  const hasUAH = (order?.items ?? []).some(i => (i.price_at_sale_currency || 'UAH') === 'UAH')
+  const hasUSD = (order?.items ?? []).some((i: any) => getItemCurrency(i) === 'USD')
+  const hasUAH = (order?.items ?? []).some((i: any) => getItemCurrency(i) === 'UAH')
 
   if (!partsCompanyId) {
     return (
@@ -361,12 +365,12 @@ export default function PartsOrderDetails() {
                     <div className="flex items-start gap-2">
                       <div className="text-right">
                         <p className="text-base font-semibold text-gray-500">
-                          {formatPrice(item.price_at_sale, item.price_at_sale_currency || 'UAH')}
+                          {formatPrice(item.price_at_sale, getItemCurrency(item))}
                         </p>
                         <p className="text-lg font-bold text-gray-900">
                           {formatPrice(
                             (item.price_at_sale || 0) * (item.quantity || 1),
-                            item.price_at_sale_currency || 'UAH'
+                            getItemCurrency(item)
                           )}
                         </p>
                       </div>
