@@ -441,7 +441,7 @@ export async function createPartsOrder(
   // Generate order number via RPC or fallback
   let orderNumber = `P-${Date.now()}`
   const { data: rpcData, error: rpcError } = await supabase.rpc('generate_parts_order_number', {
-    company_id: partsCompanyId,
+    p_company_id: partsCompanyId,
   })
   if (!rpcError && rpcData) orderNumber = rpcData as string
 

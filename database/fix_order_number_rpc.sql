@@ -1,21 +1,31 @@
 -- ============================================================================
--- Fix generate_parts_order_number RPC: recreate with SECURITY DEFINER + GRANT
--- Run this in Supabase SQL editor if you get 400 on order creation
+-- Fix generate_parts_order_number RPC
+-- Fixes: INTEGER overflow when fallback timestamp-based order numbers exist (P-1702345678901)
+-- Also fixes: variable name conflict with column "order_number" in PL/pgSQL scope
+-- Run this in Supabase SQL editor
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION generate_parts_order_number(company_id UUID)
+CREATE OR REPLACE FUNCTION generate_parts_order_number(p_company_id UUID)
 RETURNS TEXT AS $$
 DECLARE
-  next_number INTEGER;
-  order_number TEXT;
+  next_number BIGINT;
+  result TEXT;
 BEGIN
-  SELECT COALESCE(MAX(CAST(SUBSTRING(order_number FROM 'P-(\d+)$') AS INTEGER)), 0) + 1
+  SELECT COALESCE(
+    MAX(
+      CASE
+        WHEN po.order_number ~ '^P-\d+$'
+        THEN CAST(SUBSTRING(po.order_number FROM 3) AS BIGINT)
+        ELSE 0
+      END
+    ), 0
+  ) + 1
   INTO next_number
-  FROM parts_orders
-  WHERE parts_company_id = company_id;
+  FROM parts_orders po
+  WHERE po.parts_company_id = p_company_id;
 
-  order_number := 'P-' || LPAD(next_number::TEXT, 6, '0');
-  RETURN order_number;
+  result := 'P-' || LPAD(next_number::TEXT, 6, '0');
+  RETURN result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

@@ -36,10 +36,10 @@ export default function PartsCreateOrder() {
   const createMutation = useMutation({
     mutationFn: async (input: CreatePartsOrderInput) => {
       // Генерация номера заказа
-      const { data: orderNumber, error: numberError } = await supabase
-        .rpc('generate_parts_order_number', { company_id: partsCompanyId })
-
-      if (numberError) throw numberError
+      let orderNumber = `P-${Date.now()}`
+      const { data: rpcOrderNumber, error: numberError } = await supabase
+        .rpc('generate_parts_order_number', { p_company_id: partsCompanyId })
+      if (!numberError && rpcOrderNumber) orderNumber = rpcOrderNumber as string
 
       // Создание заказа
       const { data, error } = await supabase
