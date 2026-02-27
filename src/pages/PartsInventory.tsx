@@ -76,6 +76,12 @@ export default function PartsInventory() {
     }
   }, [location.state, inventory])
 
+  // Reset status filter when switching between Разборка / Магазин
+  useEffect(() => {
+    setStatusFilter('all')
+    setSearchQuery('')
+  }, [sourceFilter])
+
   // Get categories for dropdown
   const { data: categories = [] } = useQuery({
     queryKey: ['parts-categories', partsCompanyId],
@@ -190,37 +196,39 @@ export default function PartsInventory() {
   const getCategoriesForVehicleLocal = (vehicleId: string) =>
     getCategoriesForVehicle(vehicleId, vehicles as any[], categories as any[])
 
+  // Filter by source first (for stats and list)
+  const inventoryBySource = inventory.filter((item: PartsInventoryItem) =>
+    sourceFilter === 'all' ||
+    (sourceFilter === 'vehicles' && !!item.vehicle_id) ||
+    (sourceFilter === 'shop' && !item.vehicle_id)
+  )
+
   // Filter inventory
-  const filteredInventory = inventory.filter((item: PartsInventoryItem) => {
+  const filteredInventory = inventoryBySource.filter((item: PartsInventoryItem) => {
     const matchesSearch = searchQuery === '' ||
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.part_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchQuery.toLowerCase())
     
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter
-
-    const matchesSource =
-      sourceFilter === 'all' ||
-      (sourceFilter === 'vehicles' && !!item.vehicle_id) ||
-      (sourceFilter === 'shop' && !item.vehicle_id)
     
-    return matchesSearch && matchesStatus && matchesSource
+    return matchesSearch && matchesStatus
   })
 
-  // Statistics
+  // Statistics — scoped to current source section
   const stats = {
-    total: inventory.length,
-    totalQuantity: inventory.reduce((sum: number, item: PartsInventoryItem) => sum + item.quantity, 0),
-    available: inventory.filter((i: PartsInventoryItem) => i.status === 'available').length,
-    reserved: inventory.filter((i: PartsInventoryItem) => i.status === 'reserved').length,
-    sold: inventory.filter((i: PartsInventoryItem) => i.status === 'sold').length,
-    lowStock: inventory.filter((i: PartsInventoryItem) => !i.vehicle_id && i.quantity <= 2 && i.status === 'available').length,
-    noPrice: inventory.filter((i: PartsInventoryItem) => !i.selling_price).length,
-    totalUAH: inventory.reduce((sum: number, item: PartsInventoryItem) => {
+    total: inventoryBySource.length,
+    totalQuantity: inventoryBySource.reduce((sum: number, item: PartsInventoryItem) => sum + item.quantity, 0),
+    available: inventoryBySource.filter((i: PartsInventoryItem) => i.status === 'available').length,
+    reserved: inventoryBySource.filter((i: PartsInventoryItem) => i.status === 'reserved').length,
+    sold: inventoryBySource.filter((i: PartsInventoryItem) => i.status === 'sold').length,
+    lowStock: inventoryBySource.filter((i: PartsInventoryItem) => !i.vehicle_id && i.quantity <= 2 && i.status === 'available').length,
+    noPrice: inventoryBySource.filter((i: PartsInventoryItem) => !i.selling_price).length,
+    totalUAH: inventoryBySource.reduce((sum: number, item: PartsInventoryItem) => {
       const price = item.status === 'sold' ? (item.sold_price ?? item.selling_price ?? 0) : (item.selling_price || 0)
       return item.price_currency === 'UAH' ? sum + price * item.quantity : sum
     }, 0),
-    totalUSD: inventory.reduce((sum: number, item: PartsInventoryItem) => {
+    totalUSD: inventoryBySource.reduce((sum: number, item: PartsInventoryItem) => {
       const price = item.status === 'sold' ? (item.sold_price ?? item.selling_price ?? 0) : (item.selling_price || 0)
       return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum
     }, 0)
