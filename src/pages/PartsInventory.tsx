@@ -275,6 +275,7 @@ export default function PartsInventory() {
         status: 'sold',
         sold_price: price,
         price_currency: currency,
+        sold_to_customer_id: resolvedCustomerId || undefined,
       })
     },
     onSuccess: () => {
@@ -605,6 +606,18 @@ export default function PartsInventory() {
                         <span className="font-bold text-primary text-lg">{formatPrice(item.selling_price, item.price_currency as 'UAH' | 'USD')}</span>
                       </div>
                     )}
+                    {item.status === 'sold' && item.sold_to_customer && (
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <span className="text-gray-600">Покупатель:</span>
+                        <span className="font-medium text-gray-900 truncate ml-2">{item.sold_to_customer.full_name}</span>
+                      </div>
+                    )}
+                    {item.status === 'sold' && item.sold_price && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Продано за:</span>
+                        <span className="font-bold text-green-700">{formatPrice(item.sold_price, item.price_currency as 'UAH' | 'USD')}</span>
+                      </div>
+                    )}
                   </div>
 
                   {item.location && (
@@ -698,6 +711,11 @@ export default function PartsInventory() {
                         {item.vehicle && (
                           <div className="text-xs text-gray-500 mt-1">
                             {item.vehicle.make} {item.vehicle.model} {item.vehicle.year}
+                          </div>
+                        )}
+                        {item.status === 'sold' && item.sold_to_customer && (
+                          <div className="text-xs text-blue-600 mt-1 font-medium">
+                            👤 {item.sold_to_customer.full_name}
                           </div>
                         )}
                       </td>

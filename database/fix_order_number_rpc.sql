@@ -5,6 +5,9 @@
 -- Run this in Supabase SQL editor
 -- ============================================================================
 
+-- Must drop first because parameter name is being changed (company_id → p_company_id)
+DROP FUNCTION IF EXISTS generate_parts_order_number(UUID);
+
 CREATE OR REPLACE FUNCTION generate_parts_order_number(p_company_id UUID)
 RETURNS TEXT AS $$
 DECLARE

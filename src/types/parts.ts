@@ -109,9 +109,13 @@ export interface PartsInventoryItem {
   updated_at: string
   created_by?: string
   
+  // Buyer info (set when status = 'sold')
+  sold_to_customer_id?: string
+
   // Relations
   category?: PartsCategory
   vehicle?: PartsVehicle
+  sold_to_customer?: Pick<PartsCustomer, 'id' | 'full_name' | 'phone'>
 }
 
 // Form types

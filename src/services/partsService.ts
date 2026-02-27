@@ -290,14 +290,17 @@ export async function deletePartsCategory(id: string) {
 // PARTS INVENTORY (Склад запчастей)
 // ============================================================================
 
+const INVENTORY_SELECT = `
+  *,
+  category:parts_categories(id, name),
+  vehicle:parts_vehicles!vehicle_id(id, make, model, year, vin),
+  sold_to_customer:parts_customers!sold_to_customer_id(id, full_name, phone)
+`
+
 export async function getPartsInventory(partsCompanyId: string) {
   const { data, error } = await supabase
     .from('parts_inventory')
-    .select(`
-      *,
-      category:parts_categories(id, name),
-      vehicle:parts_vehicles!vehicle_id(id, make, model, year, vin)
-    `)
+    .select(INVENTORY_SELECT)
     .eq('parts_company_id', partsCompanyId)
     .order('created_at', { ascending: false })
   
@@ -308,11 +311,7 @@ export async function getPartsInventory(partsCompanyId: string) {
 export async function getPartsInventoryItem(id: string) {
   const { data, error } = await supabase
     .from('parts_inventory')
-    .select(`
-      *,
-      category:parts_categories(id, name),
-      vehicle:parts_vehicles!vehicle_id(id, make, model, year, vin)
-    `)
+    .select(INVENTORY_SELECT)
     .eq('id', id)
     .single()
 
