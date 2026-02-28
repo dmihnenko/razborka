@@ -11,6 +11,7 @@ import { uploadToImgbb, deletePhotosFromImgbb } from '@/services/imgbbService'
 import { getImgbbKey } from '@/utils/imgbbKey'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency, formatPrice } from '@/utils/currency'
+import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 
 type ViewMode = 'grid' | 'list'
 
@@ -53,6 +54,7 @@ export default function PartsInventory() {
   const [newCustomerPhone, setNewCustomerPhone] = useState('')
   
   const { data: profile } = useUserProfile()
+  const { rate: usdRate } = usePartsExchangeRate()
   const queryClient = useQueryClient()
   const partsCompanyId = profile?.parts_company_id
 
@@ -465,15 +467,11 @@ export default function PartsInventory() {
               <p className="text-xs sm:text-sm text-gray-600">Стоимость</p>
               <TrendingDown className="w-4 h-4 text-blue-500" />
             </div>
-            {stats.totalUAH > 0 && (
-              <p className="text-lg sm:text-xl font-bold text-blue-600">{formatCurrency(stats.totalUAH)}</p>
-            )}
-            {stats.totalUSD > 0 && (
-              <p className="text-lg sm:text-xl font-bold text-blue-600">{formatPrice(stats.totalUSD, 'USD')}</p>
-            )}
-            {stats.totalUAH === 0 && stats.totalUSD === 0 && (
-              <p className="text-lg sm:text-xl font-bold text-gray-400">—</p>
-            )}
+            <p className="text-lg sm:text-xl font-bold text-blue-600">
+              {stats.totalUAH === 0 && stats.totalUSD === 0
+                ? '—'
+                : `$${Math.round(stats.totalUSD + stats.totalUAH / (usdRate || 41)).toLocaleString('ru-RU')}`}
+            </p>
           </div>
         </div>
 
