@@ -76,9 +76,14 @@ export default function PartsOrderDetails() {
   // Изменить статус заказа
   const updateStatusMutation = useMutation({
     mutationFn: async (status: string) => {
+      const updateData: any = { status }
+      // Фиксируем курс на момент завершения — он никогда не изменится
+      if (status === 'completed' && exchangeRate) {
+        updateData.exchange_rate_at_sale = exchangeRate
+      }
       const { error } = await supabase
         .from('parts_orders')
-        .update({ status })
+        .update(updateData)
         .eq('id', id)
       if (error) throw error
 

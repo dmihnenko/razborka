@@ -26,10 +26,12 @@ export default function PartsOrders() {
   // Считаем сумму заказа в USD: USD-позиции напрямую, UAH-позиции делим на курс
   const computeOrderUSD = (order: any): number | null => {
     if (!order.items || order.items.length === 0) return null
-    if (!usdRate) return null
+    // Используем курс, зафиксированный при закрытии заказа, или текущий глобальный
+    const rate = order.exchange_rate_at_sale || usdRate
+    if (!rate) return null
     return order.items.reduce((sum: number, item: any) => {
       const amount = (item.price_at_sale ?? 0) * (item.quantity ?? 1)
-      return sum + (item.price_at_sale_currency === 'USD' ? amount : amount / usdRate)
+      return sum + (item.price_at_sale_currency === 'USD' ? amount : amount / rate)
     }, 0)
   }
 

@@ -116,6 +116,7 @@ export default function PartsDashboard() {
           order_date,
           status,
           total_amount,
+          exchange_rate_at_sale,
           customer:parts_customers(full_name),
           items:parts_order_items(price_at_sale, quantity, price_at_sale_currency)
         `)
@@ -129,10 +130,12 @@ export default function PartsDashboard() {
   })
 
   const computeOrderUSD = (order: any): number | null => {
-    if (!order.items || order.items.length === 0 || !usdRate) return null
+    if (!order.items || order.items.length === 0) return null
+    const rate = order.exchange_rate_at_sale || usdRate
+    if (!rate) return null
     return order.items.reduce((sum: number, item: any) => {
       const amount = (item.price_at_sale ?? 0) * (item.quantity ?? 1)
-      return sum + (item.price_at_sale_currency === 'USD' ? amount : amount / usdRate)
+      return sum + (item.price_at_sale_currency === 'USD' ? amount : amount / rate)
     }, 0)
   }
 
