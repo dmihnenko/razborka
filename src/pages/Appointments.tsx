@@ -508,9 +508,9 @@ export default function Appointments() {
                             
                             return `${brand} ${model}`.trim()
                           })()}
-                          {appointment.vehicles?.license_plate && (
-                            <span className="ml-2 text-gray-500">
-                              {appointment.vehicles.license_plate}
+                          {appointment.vehicles?.vin && (
+                            <span className="ml-2 text-gray-400 text-xs">
+                              {appointment.vehicles.vin}
                             </span>
                           )}
                         </p>
