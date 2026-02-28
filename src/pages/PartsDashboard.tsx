@@ -38,22 +38,36 @@ export default function PartsDashboard() {
   const { data: inventoryStats } = useQuery({
     queryKey: ['parts-inventory-stats', partsCompanyId],
     queryFn: async () => {
-      if (!partsCompanyId) return { total: 0, available: 0, lowStock: 0, value: 0, fromVehicles: 0, fromShop: 0 }
+      if (!partsCompanyId) return { total: 0, available: 0, lowStock: 0, valueUSD: 0, valueUAH: 0, fromVehicles: 0, fromShop: 0 }
 
       const { data } = await supabase
         .from('parts_inventory')
-        .select('quantity, reserved_quantity, selling_price, min_stock_level, status, vehicle_id')
+        .select('quantity, reserved_quantity, selling_price, price_currency, min_stock_level, status, vehicle_id')
         .eq('parts_company_id', partsCompanyId)
 
       const available_items = data?.filter(item => item.status !== 'sold') || []
       const total = available_items.reduce((sum, item) => sum + item.quantity, 0)
       const available = available_items.reduce((sum, item) => sum + (item.quantity - item.reserved_quantity), 0)
       const lowStock = available_items.filter(item => item.quantity <= item.min_stock_level).length
-      const value = available_items.reduce((sum, item) => sum + (item.quantity * (item.selling_price || 0)), 0)
+      // value будет в USD
+      const valueUSD = available_items.reduce((sum, item: any) => {
+        const price = item.selling_price || 0
+        const qty = item.quantity || 0
+        const isUSD = item.price_currency === 'USD'
+        // UAH цены конвертируем позже (нет курса внутри queryFn)
+        // храним как { uah, usd } — объединим снаружи
+        return sum + (isUSD ? price * qty : 0)
+      }, 0)
+      const valueUAH = available_items.reduce((sum, item: any) => {
+        const price = item.selling_price || 0
+        const qty = item.quantity || 0
+        const isUAH = item.price_currency !== 'USD'
+        return sum + (isUAH ? price * qty : 0)
+      }, 0)
       const fromVehicles = available_items.reduce((sum, item) => sum + (item.vehicle_id ? item.quantity : 0), 0)
       const fromShop = available_items.reduce((sum, item) => sum + (!item.vehicle_id ? item.quantity : 0), 0)
 
-      return { total, available, lowStock, value, fromVehicles, fromShop }
+      return { total, available, lowStock, valueUSD, valueUAH, fromVehicles, fromShop }
     },
     enabled: !!partsCompanyId,
   })
@@ -298,7 +312,11 @@ export default function PartsDashboard() {
               <p className="text-sm text-gray-600">Стоимость склада</p>
               <TrendingUp className="w-5 h-5 text-gray-400" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(inventoryStats?.value || 0)}</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {usdRate
+                ? `$${Math.round((inventoryStats?.valueUSD || 0) + (inventoryStats?.valueUAH || 0) / usdRate).toLocaleString('ru-RU')}`
+                : formatCurrency((inventoryStats?.valueUAH || 0))}
+            </p>
           </div>
 
           {/* Completed Orders */}
