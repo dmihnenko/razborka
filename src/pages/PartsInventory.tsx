@@ -42,7 +42,7 @@ export default function PartsInventory() {
   const sourceFilter = searchParams.get('source') ?? 'vehicles' // 'vehicles' | 'shop'
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<PartsInventoryItem | null>(null)
   const [sellingItem, setSellingItem] = useState<PartsInventoryItem | null>(null)
@@ -491,16 +491,18 @@ export default function PartsInventory() {
 
             <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
               <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
-              >
-                <Grid className="w-5 h-5" />
-              </button>
-              <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+                className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                title="Список (таблица)"
               >
                 <List className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                title="Карточки"
+              >
+                <Grid className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -668,16 +670,19 @@ export default function PartsInventory() {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Запчасть
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
                       Артикул
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                      Машина
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                       Статус
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                       Кол-во
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Цена
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -685,74 +690,92 @@ export default function PartsInventory() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-100">
                   {filteredInventory.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-4">
+                    <tr
+                      key={item.id}
+                      className="hover:bg-blue-50/40 transition-colors group/row cursor-pointer"
+                      onClick={() => navigate(`/parts/inventory/${item.id}`)}
+                    >
+                      <td className="px-4 py-3">
                         <div>
-                          <div
-                            className="font-medium text-gray-900 hover:text-primary cursor-pointer transition-colors"
-                            onClick={() => navigate(`/parts/inventory/${item.id}`)}
-                          >{item.name}</div>
+                          <div className="font-medium text-gray-900 group-hover/row:text-primary transition-colors leading-tight">
+                            {item.name}
+                          </div>
                           {item.category && (
-                            <div className="text-xs text-gray-500">{item.category.name}</div>
+                            <div className="text-xs text-gray-400 mt-0.5">{item.category.name}</div>
+                          )}
+                          {item.location && (
+                            <div className="text-xs text-gray-400 mt-0.5">📍 {item.location}</div>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-4 text-sm text-gray-600 font-mono hidden lg:table-cell">
-                        {item.part_number || '—'}
+                      <td className="px-4 py-3 text-sm text-gray-500 font-mono hidden xl:table-cell">
+                        {item.part_number || <span className="text-gray-300">—</span>}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap hidden md:table-cell">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[item.status]}`}>
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        {item.vehicle ? (
+                          <div>
+                            <div className="text-sm font-medium text-gray-700">{item.vehicle.make} {item.vehicle.model}</div>
+                            <div className="text-xs text-gray-400">{item.vehicle.year} · {item.vehicle.vin?.slice(-6) ?? ''}</div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">Магазин</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[item.status]}`}>
                           {statusLabels[item.status]}
                         </span>
-                        {item.vehicle && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {item.vehicle.make} {item.vehicle.model} {item.vehicle.year}
-                          </div>
-                        )}
                         {item.status === 'sold' && item.sold_to_customer && (
-                          <div className="text-xs text-blue-600 mt-1 font-medium">
-                            👤 {item.sold_to_customer.full_name}
+                          <div className="text-xs text-blue-600 mt-1 font-medium truncate max-w-[120px]">
+                            {item.sold_to_customer.full_name}
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      <td className="px-4 py-3 whitespace-nowrap hidden sm:table-cell">
                         {item.vehicle_id ? (
-                          <span className="text-sm text-gray-400">—</span>
+                          <span className="text-sm text-gray-300">—</span>
                         ) : (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <span className={`text-sm font-bold ${item.quantity <= 2 ? 'text-red-600' : 'text-gray-900'}`}>
                               {item.quantity}
                             </span>
+                            {item.reserved_quantity > 0 && (
+                              <span className="text-xs text-yellow-600 font-medium">({item.reserved_quantity} рез.)</span>
+                            )}
                             {item.quantity <= 2 && item.status === 'available' && (
-                              <AlertTriangle className="w-4 h-4 text-red-600" />
+                              <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
                             )}
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-primary hidden sm:table-cell">
-                        {formatPrice(item.selling_price, item.price_currency as 'UAH' | 'USD')}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-primary">
+                          {formatPrice(item.selling_price, item.price_currency as 'UAH' | 'USD')}
+                        </span>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-right text-sm">
-                        <div className="flex items-center justify-end gap-3">
+                      <td className="px-4 py-3 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
                           <button
                             onClick={(e) => handleEdit(item, e)}
-                            className="text-primary hover:text-primary/80"
+                            className="p-1.5 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                            title="Редактировать"
                           >
-                            Изменить
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                           </button>
                           {item.status !== 'sold' && (
                             <button
                               onClick={(e) => handleSell(item, e)}
-                              className="text-green-600 hover:text-green-800 font-medium"
+                              className="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                              title="Продать"
                             >
-                              Продать
+                              <DollarSign className="w-4 h-4" />
                             </button>
                           )}
                           <button
                             onClick={(e) => handleDelete(item, e)}
-                            className="text-red-500 hover:text-red-700"
+                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Удалить"
                           >
                             <Trash2 className="w-4 h-4" />
