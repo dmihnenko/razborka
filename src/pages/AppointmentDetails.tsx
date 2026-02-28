@@ -747,7 +747,7 @@ export default function AppointmentDetails() {
             </div>
           )}
 
-          {/* Дополнительная информация */}}
+          {/* Дополнительная информация */}
           {appointment.ready_for_pickup && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <p className="text-mobile-base text-green-800 font-medium">✓ Готово к выдаче</p>
