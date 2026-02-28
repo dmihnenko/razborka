@@ -53,15 +53,14 @@ export default function PartsDashboard() {
       const valueUSD = available_items.reduce((sum, item: any) => {
         const price = item.selling_price || 0
         const qty = item.quantity || 0
-        const isUSD = item.price_currency === 'USD'
-        // UAH цены конвертируем позже (нет курса внутри queryFn)
-        // храним как { uah, usd } — объединим снаружи
+        // NULL price_currency = USD (системный дефолт)
+        const isUSD = item.price_currency === 'USD' || !item.price_currency
         return sum + (isUSD ? price * qty : 0)
       }, 0)
       const valueUAH = available_items.reduce((sum, item: any) => {
         const price = item.selling_price || 0
         const qty = item.quantity || 0
-        const isUAH = item.price_currency !== 'USD'
+        const isUAH = item.price_currency === 'UAH'
         return sum + (isUAH ? price * qty : 0)
       }, 0)
       const fromVehicles = available_items.reduce((sum, item) => sum + (item.vehicle_id ? item.quantity : 0), 0)
