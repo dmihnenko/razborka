@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, Search, Grid, List, ShoppingCart, DollarSign } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
+import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 
 type ViewMode = 'grid' | 'list'
 
@@ -14,6 +15,13 @@ export default function PartsOrders() {
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
+
+  const { rate: usdRate } = usePartsExchangeRate()
+
+  const formatUSD = (amount?: number | null) => {
+    if (!amount || !usdRate) return formatCurrency(amount)
+    return `$${Math.round(amount / usdRate).toLocaleString('ru-RU')}`
+  }
 
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -179,7 +187,7 @@ export default function PartsOrders() {
               <p className="text-xs sm:text-sm text-gray-600">Выручка</p>
               <DollarSign className="w-4 h-4 text-purple-500" />
             </div>
-            <p className="text-lg sm:text-xl font-bold text-purple-600">{formatCurrency(stats.totalRevenue)}</p>
+            <p className="text-lg sm:text-xl font-bold text-purple-600">{formatUSD(stats.totalRevenue)}</p>
           </div>
         </div>
 
@@ -297,7 +305,7 @@ export default function PartsOrders() {
                   <div className="pt-3 border-t border-gray-100">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Сумма:</span>
-                      <span className="text-xl font-bold text-primary">{formatCurrency(order.total_amount)}</span>
+                      <span className="text-xl font-bold text-primary">{formatUSD(order.total_amount)}</span>
                     </div>
                   </div>
 
@@ -370,7 +378,7 @@ export default function PartsOrders() {
                         </span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right">
-                        <div className="text-lg font-bold text-primary">{formatCurrency(order.total_amount)}</div>
+                        <div className="text-lg font-bold text-primary">{formatUSD(order.total_amount)}</div>
                       </td>
                     </tr>
                   ))}
