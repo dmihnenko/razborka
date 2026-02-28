@@ -290,8 +290,7 @@ export default function PartsOrders() {
                     </span>
                   </div>
 
-                  {/* Order Number */}
-                  <p className="text-xs text-gray-400 mb-2">{order.order_number}</p>
+
 
                   {/* Customer Info */}
                   {order.customer && (
@@ -374,7 +373,7 @@ export default function PartsOrders() {
                               ? order.items.map((i: any) => i.inventory_item?.name).filter(Boolean).join(', ')
                               : '—'}
                           </div>
-                          <div className="text-xs text-gray-400 mt-0.5">{order.order_number}</div>
+
                         </div>
                       </td>
                       <td className="px-4 py-4 hidden md:table-cell">
