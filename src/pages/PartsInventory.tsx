@@ -581,7 +581,7 @@ export default function PartsInventory() {
                     {item.selling_price && (
                       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                         <span className="text-gray-600">Цена:</span>
-                        <span className="font-bold text-primary text-lg">{formatPrice(item.selling_price, item.price_currency as 'UAH' | 'USD')}</span>
+                        <span className="font-bold text-primary text-lg">{formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}</span>
                       </div>
                     )}
                     {item.status === 'sold' && item.sold_to_customer && (
@@ -593,7 +593,7 @@ export default function PartsInventory() {
                     {item.status === 'sold' && item.sold_price && (
                       <div className="flex items-center justify-between">
                         <span className="text-gray-600">Продано за:</span>
-                        <span className="font-bold text-green-700">{formatPrice(item.sold_price, item.price_currency as 'UAH' | 'USD')}</span>
+                        <span className="font-bold text-green-700">{formatPrice(item.sold_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}</span>
                       </div>
                     )}
                   </div>
@@ -730,7 +730,7 @@ export default function PartsInventory() {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-sm font-semibold text-primary">
-                          {formatPrice(item.selling_price, item.price_currency as 'UAH' | 'USD')}
+                          {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-right">

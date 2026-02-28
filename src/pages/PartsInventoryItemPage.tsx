@@ -167,12 +167,12 @@ export default function PartsInventoryItemPage() {
                 <p className="text-xs text-gray-500 mb-1">Продано за</p>
                 <p className="text-2xl sm:text-3xl font-bold text-gray-700">
                   {item.sold_price
-                    ? formatPrice(item.sold_price, (item.price_currency as 'UAH' | 'USD') || 'UAH')
+                    ? formatPrice(item.sold_price, (item.price_currency as 'UAH' | 'USD') || 'USD')
                     : '—'}
                 </p>
                 {item.selling_price && (
                   <p className="text-xs text-gray-400 mt-1">
-                    Была объявленная: {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'UAH')}
+                    Была объявленная: {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
                   </p>
                 )}
               </div>
@@ -180,7 +180,7 @@ export default function PartsInventoryItemPage() {
               <div>
                 <p className="text-xs text-gray-500 mb-1">Цена продажи</p>
                 <p className="text-2xl sm:text-3xl font-bold text-primary">
-                  {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'UAH')}
+                  {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
                 </p>
               </div>
             ) : (
