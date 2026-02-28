@@ -48,7 +48,7 @@ export default function PartsOrders() {
         .select(`
           *,
           customer:parts_customers(id, full_name, phone),
-          items:parts_order_items(id, quantity, subtotal, price_at_sale, price_at_sale_currency)
+          items:parts_order_items(id, quantity, subtotal, price_at_sale, price_at_sale_currency, inventory_item:parts_inventory(name))
         `)
         .eq('parts_company_id', partsCompanyId)
         .order('order_date', { ascending: false })
@@ -278,15 +278,20 @@ export default function PartsOrders() {
                 className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden group"
               >
                 <div className="p-3 sm:p-4">
-                  {/* Header */}
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary transition-colors">
-                      {order.order_number}
+                  {/* Header: names of parts as title */}
+                  <div className="flex items-start justify-between mb-2 gap-2">
+                    <h3 className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors leading-snug line-clamp-2 flex-1">
+                      {order.items && order.items.length > 0
+                        ? order.items.map((i: any) => i.inventory_item?.name).filter(Boolean).join(', ')
+                        : '—'}
                     </h3>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getPartsOrderStatusColor(order.status)} border-current`}>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium border flex-shrink-0 ${getPartsOrderStatusColor(order.status)} border-current`}>
                       {getPartsOrderStatusText(order.status)}
                     </span>
                   </div>
+
+                  {/* Order Number */}
+                  <p className="text-xs text-gray-400 mb-2">{order.order_number}</p>
 
                   {/* Customer Info */}
                   {order.customer && (
@@ -339,7 +344,7 @@ export default function PartsOrders() {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Номер заказа
+                      Запчасти
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                       Клиент
@@ -362,12 +367,14 @@ export default function PartsOrders() {
                       onClick={() => navigate(`/parts/orders/${order.id}`)}
                       className="hover:bg-gray-50 cursor-pointer transition-colors"
                     >
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4">
                         <div>
-                          <div className="font-medium text-gray-900">{order.order_number}</div>
-                          {order.items && order.items.length > 0 && (
-                            <div className="text-xs text-gray-500">{order.items.length} позиций</div>
-                          )}
+                          <div className="font-medium text-gray-900 line-clamp-2 max-w-xs">
+                            {order.items && order.items.length > 0
+                              ? order.items.map((i: any) => i.inventory_item?.name).filter(Boolean).join(', ')
+                              : '—'}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-0.5">{order.order_number}</div>
                         </div>
                       </td>
                       <td className="px-4 py-4 hidden md:table-cell">
