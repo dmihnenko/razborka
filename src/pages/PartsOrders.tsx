@@ -19,8 +19,18 @@ export default function PartsOrders() {
   const { rate: usdRate } = usePartsExchangeRate()
 
   const formatUSD = (amount?: number | null) => {
-    if (!amount || !usdRate) return formatCurrency(amount)
-    return `$${Math.round(amount / usdRate).toLocaleString('ru-RU')}`
+    if (amount == null || amount === 0) return '—'
+    return `$${Math.round(amount).toLocaleString('ru-RU')}`
+  }
+
+  // Считаем сумму заказа в USD: USD-позиции напрямую, UAH-позиции делим на курс
+  const computeOrderUSD = (order: any): number | null => {
+    if (!order.items || order.items.length === 0) return null
+    if (!usdRate) return null
+    return order.items.reduce((sum: number, item: any) => {
+      const amount = (item.price_at_sale ?? 0) * (item.quantity ?? 1)
+      return sum + (item.price_at_sale_currency === 'USD' ? amount : amount / usdRate)
+    }, 0)
   }
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -38,7 +48,7 @@ export default function PartsOrders() {
         .select(`
           *,
           customer:parts_customers(id, full_name, phone),
-          items:parts_order_items(id, quantity, subtotal)
+          items:parts_order_items(id, quantity, subtotal, price_at_sale, price_at_sale_currency)
         `)
         .eq('parts_company_id', partsCompanyId)
         .order('order_date', { ascending: false })
@@ -73,9 +83,12 @@ export default function PartsOrders() {
     in_progress: orders.filter(o => o.status === 'in_progress').length,
     completed: orders.filter(o => o.status === 'completed').length,
     cancelled: orders.filter(o => o.status === 'cancelled').length,
-    totalRevenue: orders
-      .filter(o => o.status === 'completed')
-      .reduce((sum, o) => sum + o.total_amount, 0),
+    totalRevenue: (() => {
+      if (!usdRate) return 0
+      return orders
+        .filter(o => o.status === 'completed')
+        .reduce((sum, o) => sum + (computeOrderUSD(o) ?? 0), 0)
+    })(),
   }
 
   const formatDate = (date: string) => {
@@ -305,7 +318,7 @@ export default function PartsOrders() {
                   <div className="pt-3 border-t border-gray-100">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Сумма:</span>
-                      <span className="text-xl font-bold text-primary">{formatUSD(order.total_amount)}</span>
+                      <span className="text-xl font-bold text-primary">{formatUSD(computeOrderUSD(order))}</span>
                     </div>
                   </div>
 
@@ -378,7 +391,7 @@ export default function PartsOrders() {
                         </span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right">
-                        <div className="text-lg font-bold text-primary">{formatUSD(order.total_amount)}</div>
+                        <div className="text-lg font-bold text-primary">{formatUSD(computeOrderUSD(order))}</div>
                       </td>
                     </tr>
                   ))}
