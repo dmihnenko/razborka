@@ -58,7 +58,8 @@ export const stoWorkerMenu: MenuItem[] = [
 export const partsOwnerMenu: MenuItem[] = [
   { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutDashboard },
   { name: 'Автомобили', href: '/parts/vehicles', icon: Car },
-  { name: 'Запчасти', href: '/parts/inventory', icon: Package },
+  { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package },
+  { name: 'Магазин', href: '/parts/inventory?source=shop', icon: Store },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart },
   { name: 'Клиенты', href: '/parts/customers', icon: Users },
   { name: 'Сотрудники', href: '/parts/employees', icon: Users },
@@ -71,7 +72,8 @@ export const partsOwnerMenu: MenuItem[] = [
 export const partsWorkerMenu: MenuItem[] = [
   { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutDashboard },
   { name: 'Автомобили', href: '/parts/vehicles', icon: Car },
-  { name: 'Запчасти', href: '/parts/inventory', icon: Package },
+  { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package },
+  { name: 'Магазин', href: '/parts/inventory?source=shop', icon: Store },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart },
   { name: 'Клиенты', href: '/parts/customers', icon: Users },
 ];
