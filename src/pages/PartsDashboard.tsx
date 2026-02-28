@@ -5,11 +5,13 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { Car, ShoppingCart, DollarSign, AlertCircle, TrendingUp, ArrowRight, Warehouse, LayoutGrid, Users, BarChart2, Settings, Wrench, Store } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
+import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 
 export default function PartsDashboard() {
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
+  const { rate: usdRate } = usePartsExchangeRate()
 
   // Статистика автомобилей
   const { data: vehiclesStats } = useQuery({
@@ -389,7 +391,11 @@ export default function PartsDashboard() {
                         {getPartsOrderStatusText(order.status)}
                       </span>
                     </div>
-                    <span className="font-bold text-primary">{formatCurrency(order.total_amount)}</span>
+                    <span className="font-bold text-primary">
+                      {order.total_amount && usdRate
+                        ? `$${(order.total_amount / usdRate).toFixed(0)}`
+                        : formatCurrency(order.total_amount)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-gray-500">
                     <span>{order.customer?.full_name || 'Без клиента'}</span>
