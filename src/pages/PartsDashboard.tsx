@@ -75,11 +75,14 @@ export default function PartsDashboard() {
   const { data: ordersStats } = useQuery({
     queryKey: ['parts-orders-stats', partsCompanyId],
     queryFn: async () => {
-      if (!partsCompanyId) return { total: 0, new: 0, in_progress: 0, completed: 0, revenue: 0 }
+      if (!partsCompanyId) return { total: 0, new: 0, in_progress: 0, completed: 0, completedOrders: [] }
 
       const { data } = await supabase
         .from('parts_orders')
-        .select('status, total_amount')
+        .select(`
+          id, status, total_amount, exchange_rate_at_sale,
+          items:parts_order_items(price_at_sale, quantity, price_at_sale_currency)
+        `)
         .eq('parts_company_id', partsCompanyId)
 
       return {
@@ -87,7 +90,7 @@ export default function PartsDashboard() {
         new: data?.filter(o => o.status === 'new').length || 0,
         in_progress: data?.filter(o => o.status === 'in_progress').length || 0,
         completed: data?.filter(o => o.status === 'completed').length || 0,
-        revenue: data?.filter(o => o.status === 'completed').reduce((sum, o) => sum + o.total_amount, 0) || 0,
+        completedOrders: data?.filter(o => o.status === 'completed') || [],
       }
     },
     enabled: !!partsCompanyId,
@@ -151,6 +154,11 @@ export default function PartsDashboard() {
       return sum + (item.price_at_sale_currency === 'USD' ? amount : amount / rate)
     }, 0)
   }
+
+  // Выручка в USD — считаем по каждой позиции с учётом валюты
+  const revenueUSD = (ordersStats?.completedOrders || []).reduce((sum: number, order: any) => {
+    return sum + (computeOrderUSD(order) ?? 0)
+  }, 0)
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('ru-RU', {
@@ -289,7 +297,9 @@ export default function PartsDashboard() {
               <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-primary transition-colors" />
             </div>
             <p className="text-sm text-gray-600 mb-1">Выручка</p>
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(ordersStats?.revenue || 0)}</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {revenueUSD > 0 ? `$${Math.round(revenueUSD).toLocaleString('ru-RU')}` : '—'}
+            </p>
             <div className="mt-3 pt-3 border-t border-gray-100">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-gray-500">Клиентов:</span>
