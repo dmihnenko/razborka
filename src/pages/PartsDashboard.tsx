@@ -313,9 +313,7 @@ export default function PartsDashboard() {
               <TrendingUp className="w-5 h-5 text-gray-400" />
             </div>
             <p className="text-2xl font-bold text-gray-900">
-              {usdRate
-                ? `$${Math.round((inventoryStats?.valueUSD || 0) + (inventoryStats?.valueUAH || 0) / usdRate).toLocaleString('ru-RU')}`
-                : formatCurrency((inventoryStats?.valueUAH || 0))}
+              {`$${Math.round((inventoryStats?.valueUSD || 0) + (inventoryStats?.valueUAH || 0) / (usdRate || 41)).toLocaleString('ru-RU')}`}
             </p>
           </div>
 
