@@ -42,38 +42,6 @@ export default function Appointments() {
     })
   }
 
-  // Получаем количество работников СТО
-  // Workers count for dashboard stats
-  useQuery({
-    queryKey: ['sto_workers_count', profile?.sto_company_id],
-    queryFn: async () => {
-      const { data: workerRole } = await supabase
-        .from('roles')
-        .select('id')
-        .eq('name', 'sto_worker')
-        .single()
-
-      if (!workerRole) return 0
-
-      const { data: userRoles } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role_id', workerRole.id)
-
-      if (!userRoles) return 0
-
-      const { count } = await supabase
-        .from('user_profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('sto_company_id', profile?.sto_company_id)
-        .eq('is_active', true)
-        .in('id', userRoles.map(ur => ur.user_id))
-
-      return count || 0
-    },
-    enabled: !!profile?.sto_company_id && isStoOwner,
-  })
-
   const { data: appointments, isLoading } = useQuery({
     queryKey: ['appointments', profile?.id, showArchived, statusFilter],
     queryFn: async () => {

@@ -183,52 +183,56 @@ export default function AppointmentSummary({ formData, onUpdate, isEditing }: Pr
         </div>
       )}
 
-      {isStoOwner && (
+      {isStoOwner && (totalParts > 0 || totalWork > 0) && (
         <div className="space-y-3">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              id="parts_paid"
-              checked={formData.parts_paid || false}
-              onChange={(e) => onUpdate({ parts_paid: e.target.checked })}
-              className="sr-only peer"
-            />
-            <div className="relative w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-green-700 peer-checked:border-green-600 transition-all duration-200 flex items-center justify-center">
-              <svg
-                className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <span className="text-sm font-medium text-gray-700">
-              🔧 Запчасти оплачены
-            </span>
-          </label>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              id="work_paid"
-              checked={formData.work_paid || false}
-              onChange={(e) => onUpdate({ work_paid: e.target.checked })}
-              className="sr-only peer"
-            />
-            <div className="relative w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-green-700 peer-checked:border-green-600 transition-all duration-200 flex items-center justify-center">
-              <svg
-                className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <span className="text-sm font-medium text-gray-700">
-              🔩 Работы оплачены
-            </span>
-          </label>
+          {totalParts > 0 && (
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                id="parts_paid"
+                checked={formData.parts_paid || false}
+                onChange={(e) => onUpdate({ parts_paid: e.target.checked })}
+                className="sr-only peer"
+              />
+              <div className="relative w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-green-700 peer-checked:border-green-600 transition-all duration-200 flex items-center justify-center">
+                <svg
+                  className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span className="text-sm font-medium text-gray-700">
+                🔧 Запчасти оплачены
+              </span>
+            </label>
+          )}
+          {totalWork > 0 && (
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                id="work_paid"
+                checked={formData.work_paid || false}
+                onChange={(e) => onUpdate({ work_paid: e.target.checked })}
+                className="sr-only peer"
+              />
+              <div className="relative w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-green-700 peer-checked:border-green-600 transition-all duration-200 flex items-center justify-center">
+                <svg
+                  className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span className="text-sm font-medium text-gray-700">
+                🔩 Работы оплачены
+              </span>
+            </label>
+          )}
         </div>
       )}
 

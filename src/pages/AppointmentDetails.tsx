@@ -20,6 +20,7 @@ export default function AppointmentDetails() {
     type: 'parts' | 'work'
     currentValue: boolean
   } | null>(null)
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
   const [reassignModal, setReassignModal] = useState<{
     isOpen: boolean
     appointmentId: string
@@ -110,7 +111,7 @@ export default function AppointmentDetails() {
       const willBeWorkPaid = type === 'work' ? value : current.work_paid
       
       const shouldArchive = 
-        current.status === 'completed' &&
+        (current.status === 'completed' || current.status === 'ready') &&
         (!hasParts || willBePartsPaid) &&
         (!hasWork || willBeWorkPaid)
       
@@ -210,7 +211,31 @@ export default function AppointmentDetails() {
     }
   }
 
+  // Мутация для exclude_from_stats
+  const updateExcludeFromStatsMutation = useMutation({
+    mutationFn: async (value: boolean) => {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ exclude_from_stats: value })
+        .eq('id', appointmentId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointment', appointmentId] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-monthly-revenue'] })
+      toast.success(appointment?.exclude_from_stats ? 'Включена в статистику' : 'Исключена из статистики')
+    },
+    onError: () => {
+      toast.error('Ошибка при обновлении')
+    }
+  })
+
   const handleStatusChange = (newStatus: string) => {
+    if (newStatus === 'archived') {
+      setShowStatusDropdown(false)
+      setShowArchiveConfirm(true)
+      return
+    }
     updateStatusMutation.mutate(newStatus)
   }
 
@@ -223,6 +248,7 @@ export default function AppointmentDetails() {
         { value: 'scheduled', label: 'Запланирована' },
         { value: 'in_progress', label: 'В работе' },
         { value: 'completed', label: 'Готова' },
+        ...(isStoOwner ? [{ value: 'archived', label: 'В архив' }] : []),
       ]
 
   const statusColors = {
@@ -694,7 +720,34 @@ export default function AppointmentDetails() {
             </div>
           </div>
 
-          {/* Дополнительная информация */}
+          {/* Исключить из статистики (только для владельца, только для архивных) */}
+          {isStoOwner && appointment.status === 'archived' && (
+            <div className="bg-white rounded-lg shadow p-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={!!appointment.exclude_from_stats}
+                    onChange={() => updateExcludeFromStatsMutation.mutate(!appointment.exclude_from_stats)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-5 h-5 border-2 rounded border-gray-300 peer-checked:bg-orange-500 peer-checked:border-orange-500 transition-all flex items-center justify-center">
+                    {appointment.exclude_from_stats && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-mobile-sm font-medium text-gray-900">Исключить из статистики</p>
+                  <p className="text-xs text-gray-500">Не учитывать в отчётах за месяц</p>
+                </div>
+              </label>
+            </div>
+          )}
+
+          {/* Дополнительная информация */}}
           {appointment.ready_for_pickup && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <p className="text-mobile-base text-green-800 font-medium">✓ Готово к выдаче</p>
@@ -721,6 +774,34 @@ export default function AppointmentDetails() {
             vehicleName: reassignModal.vehicleName
           }}
         />
+      )}
+
+      {/* Модалка подтверждения архивирования */}
+      {showArchiveConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 max-w-md w-full mx-4">
+            <h3 className="heading-mobile-3 mb-4">Перенести в архив?</h3>
+            <p className="text-mobile-base text-gray-600 mb-6">
+              Заявка будет перенесена в архив и попадёт в статистику текущего месяца.
+              Вернуть её из архива можно будет позже.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowArchiveConfirm(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={() => { updateStatusMutation.mutate('archived'); setShowArchiveConfirm(false) }}
+                disabled={updateStatusMutation.isPending}
+                className="px-4 py-2 bg-gray-700 text-white hover:bg-gray-800 rounded-md transition-colors disabled:opacity-50"
+              >
+                {updateStatusMutation.isPending ? 'Обновление...' : 'В архив'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Модалка подтверждения оплаты */}
