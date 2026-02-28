@@ -35,6 +35,28 @@ if (import.meta.env.DEV) {
   }
 }
 
+// Авто-перезагрузка при ошибке загрузки JS-чанков после нового деплоя
+// Браузер кеширует старые хеши файлов, которых уже нет на сервере
+window.addEventListener('vite:preloadError', () => {
+  window.location.reload()
+})
+// Fallback для браузеров без vite:preloadError
+if (import.meta.env.PROD) {
+  window.addEventListener('error', (event) => {
+    const isChunkError =
+      event.message?.includes('Failed to fetch dynamically imported module') ||
+      event.message?.includes('Importing a module script failed')
+    if (isChunkError) {
+      const reloadKey = 'chunk_reload_ts'
+      const lastReload = Number(sessionStorage.getItem(reloadKey) || 0)
+      if (Date.now() - lastReload > 10_000) {
+        sessionStorage.setItem(reloadKey, String(Date.now()))
+        window.location.reload()
+      }
+    }
+  })
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
