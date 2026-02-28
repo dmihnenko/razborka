@@ -12,6 +12,7 @@ import type { ImgbbPhoto } from '@/services/imgbbService'
 import { uploadToImgbb, deletePhotosFromImgbb } from '@/services/imgbbService'
 import { getImgbbKey } from '@/utils/imgbbKey'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
+import { formatPrice } from '@/utils/currency'
 
 const statusColors = {
   awaiting: 'bg-yellow-100 text-yellow-800',
@@ -393,11 +394,11 @@ export default function PartsVehicleDetails() {
                         <div className="text-right">
                           {part.status === 'sold' ? (
                             <div className="text-green-600 font-medium">
-                              {part.sold_price} ₴
+                              {formatPrice(part.sold_price ?? part.selling_price, (part.price_currency || 'USD') as 'UAH' | 'USD')}
                             </div>
                           ) : (
-                            <div className="text-gray-600">
-                              {part.price} ₴
+                            <div className="text-gray-700 font-medium">
+                              {formatPrice(part.selling_price, (part.price_currency || 'USD') as 'UAH' | 'USD')}
                             </div>
                           )}
                           <div className={`text-xs ${
