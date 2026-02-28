@@ -116,7 +116,8 @@ export default function PartsDashboard() {
           order_date,
           status,
           total_amount,
-          customer:parts_customers(full_name)
+          customer:parts_customers(full_name),
+          items:parts_order_items(price_at_sale, quantity, price_at_sale_currency)
         `)
         .eq('parts_company_id', partsCompanyId)
         .order('order_date', { ascending: false })
@@ -126,6 +127,14 @@ export default function PartsDashboard() {
     },
     enabled: !!partsCompanyId,
   })
+
+  const computeOrderUSD = (order: any): number | null => {
+    if (!order.items || order.items.length === 0 || !usdRate) return null
+    return order.items.reduce((sum: number, item: any) => {
+      const amount = (item.price_at_sale ?? 0) * (item.quantity ?? 1)
+      return sum + (item.price_at_sale_currency === 'USD' ? amount : amount / usdRate)
+    }, 0)
+  }
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('ru-RU', {
@@ -392,9 +401,10 @@ export default function PartsDashboard() {
                       </span>
                     </div>
                     <span className="font-bold text-primary">
-                      {order.total_amount && usdRate
-                        ? `$${(order.total_amount / usdRate).toFixed(0)}`
-                        : formatCurrency(order.total_amount)}
+                      {(() => {
+                        const usd = computeOrderUSD(order)
+                        return usd != null ? `$${Math.round(usd).toLocaleString('ru-RU')}` : '—'
+                      })()}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-gray-500">
