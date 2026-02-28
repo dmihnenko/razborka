@@ -27,7 +27,7 @@ export default function Customers() {
       const { data, error } = await supabase
         .from('customers')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('name', { ascending: true })
       
       if (error) throw error
 

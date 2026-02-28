@@ -261,7 +261,7 @@ export default function CustomerProfile() {
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <h3 className="font-semibold text-gray-900">
-                      Заявка #{appointment.request_number}
+                      Заявка <span className="text-gray-400 font-normal opacity-60">#{appointment.request_number}</span>
                     </h3>
                     <p className="text-sm text-gray-600">
                       {appointment.vehicles?.brand} {appointment.vehicles?.model} • {appointment.vehicles?.license_plate}

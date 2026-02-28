@@ -217,7 +217,7 @@ export default function PublicCustomerView() {
                     <div className="flex-1">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
                         <h3 className="font-semibold text-gray-900 text-base sm:text-lg">
-                          Заявка #{appointment.request_number}
+                          Заявка <span className="text-gray-400 font-normal opacity-60">#{appointment.request_number}</span>
                         </h3>
                         <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getAppointmentStatusColor(appointment.status)} w-fit`}>
                           {getAppointmentStatusText(appointment.status)}
