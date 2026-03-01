@@ -10,7 +10,7 @@ interface VehicleData {
   brand: string
   model: string
   year: number
-  license_plate: string
+  license_plate?: string
   vin?: string
   color?: string
   mileage?: number | null
@@ -135,10 +135,9 @@ export default function VehicleModal({ onClose, customerId, customerName, vehicl
 
           {/* Номер */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Гос. номер <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Гос. номер</label>
             <input
               type="text"
-              required
               value={form.license_plate}
               onChange={e => set('license_plate', e.target.value.toUpperCase())}
               placeholder="АА1234ВВ"
