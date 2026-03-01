@@ -325,11 +325,6 @@ function AppointmentCard({ appointment }: { appointment: any }) {
             <span className="text-sm font-semibold text-gray-900 shrink-0">
               {appointment.vehicles.brand} {appointment.vehicles.model}
             </span>
-            {appointment.vehicles.license_plate && (
-              <span className="font-mono text-xs text-gray-500 tracking-widest shrink-0">
-                {appointment.vehicles.license_plate}
-              </span>
-            )}
             {appointment.vehicles.vin && (
               <span className="font-mono text-[10px] text-gray-400 shrink-0">
                 {appointment.vehicles.vin}

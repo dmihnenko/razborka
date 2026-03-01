@@ -114,14 +114,6 @@ export default function CustomerProfile() {
     enabled: !!customer?.phone
   })
 
-  if (customerLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
-
   const deleteVehicleMutation = useMutation({
     mutationFn: async (vehicleId: string) => {
       const { error } = await supabase.from('vehicles').delete().eq('id', vehicleId)
@@ -133,6 +125,14 @@ export default function CustomerProfile() {
     },
     onError: () => toast.error('Ошибка при удалении'),
   })
+
+  if (customerLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
 
   if (!customer) {
     return (
@@ -282,9 +282,14 @@ export default function CustomerProfile() {
 
                 {/* Main info */}
                 <div className="flex-1 min-w-0 sm:w-full">
-                  <p className="text-sm font-bold text-gray-900 truncate sm:text-base sm:mb-0.5">
-                    {vehicle.brand} {vehicle.model}
-                  </p>
+                    <Link
+                      to={`/appointments?vehicleId=${vehicle.id}`}
+                      className="block hover:text-primary transition-colors"
+                    >
+                      <p className="text-sm font-bold text-gray-900 truncate sm:text-base sm:mb-0.5">
+                        {vehicle.brand} {vehicle.model}
+                      </p>
+                    </Link>
                   {/* mobile: year+color inline | desktop: separate line */}
                   <p className="text-xs text-gray-400 sm:text-sm sm:mb-2">
                     {[vehicle.year, vehicle.color].filter(Boolean).join(' · ')}
