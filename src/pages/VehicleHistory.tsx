@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Car, Calendar, Wrench, TrendingUp, Clock } from 'lucide-react'
+import { ArrowLeft, Car, Calendar, Wrench, Package, Clock } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { formatCurrency } from '@/utils/currency'
@@ -28,7 +28,7 @@ export default function VehicleHistory() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('appointments')
-        .select('*, appointment_services(id, cost)')
+        .select('*, appointment_services(id, cost), appointment_parts(id, store_cost, quantity)')
         .eq('vehicle_id', vehicleId!)
         .order('scheduled_date', { ascending: false })
       if (error) throw error
@@ -62,8 +62,15 @@ export default function VehicleHistory() {
     return fromField || fromOldServices || fromWorkItems
   }
 
+  const calcPartsCost = (a: any) => {
+    const fromField = a.total_parts_cost || a.parts_cost || 0
+    const fromPartItems = (a.part_items ?? []).reduce((s: number, p: any) => s + (p.totalPrice || 0), 0)
+    const fromOldParts = (a.appointment_parts ?? []).reduce((s: number, p: any) => s + ((p.store_cost || 0) * (p.quantity || 1)), 0)
+    return fromField || fromOldParts || fromPartItems
+  }
+
   const totalWork = allAppts.reduce((s, a) => s + calcWorkCost(a), 0)
-  const totalSpent = totalWork
+  const totalParts = allAppts.reduce((s, a) => s + calcPartsCost(a), 0)
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -121,9 +128,9 @@ export default function VehicleHistory() {
           <p className="text-xs text-gray-400">Всего заявок</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-          <TrendingUp className="w-5 h-5 text-green-500 mx-auto mb-1" />
-          <p className="text-lg font-bold text-gray-900">{formatCurrency(totalSpent)}</p>
-          <p className="text-xs text-gray-400">Итого потрачено</p>
+          <Package className="w-5 h-5 text-purple-500 mx-auto mb-1" />
+          <p className="text-lg font-bold text-gray-900">{formatCurrency(totalParts)}</p>
+          <p className="text-xs text-gray-400">Итого запчасти</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <Wrench className="w-5 h-5 text-orange-500 mx-auto mb-1" />
