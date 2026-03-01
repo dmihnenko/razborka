@@ -30,7 +30,7 @@ export default function VehicleHistory() {
         .from('appointments')
         .select(`
           *,
-          appointment_parts(id, description, cost)
+          appointment_parts(id, description, quantity, store_cost, client_cost)
         `)
         .eq('vehicle_id', vehicleId!)
         .order('scheduled_date', { ascending: false })
@@ -61,7 +61,7 @@ export default function VehicleHistory() {
   const totalWork = completed.reduce((s, a) => s + (a.total_work_cost ?? a.work_cost ?? 0), 0)
   const totalParts = completed.reduce((s, a) => {
     const fromField = a.total_parts_cost ?? a.parts_cost ?? 0
-    const fromItems = (a.appointment_parts ?? []).reduce((ps: number, p: any) => ps + (p.cost ?? 0), 0)
+    const fromItems = (a.appointment_parts ?? []).reduce((ps: number, p: any) => ps + ((p.store_cost ?? 0) * (p.quantity ?? 1)), 0)
     return s + (fromItems > 0 ? fromItems : fromField)
   }, 0)
   const totalSpent = totalWork + totalParts
@@ -155,7 +155,7 @@ export default function VehicleHistory() {
               const workCost = appt.total_work_cost ?? appt.work_cost ?? 0
               const partsCostField = appt.total_parts_cost ?? appt.parts_cost ?? 0
               const partsCostItems = (appt.appointment_parts ?? []).reduce(
-                (s: number, p: any) => s + (p.cost ?? 0), 0
+                (s: number, p: any) => s + ((p.store_cost ?? 0) * (p.quantity ?? 1)), 0
               )
               const partsCost = partsCostItems > 0 ? partsCostItems : partsCostField
               const total = workCost + partsCost
