@@ -239,25 +239,81 @@ export default function CustomerProfile() {
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
           </div>
         ) : vehicles && vehicles.length > 0 ? (
-          <ul className="divide-y divide-gray-100">
+          /* Mobile: compact list rows | Desktop: grid cards */
+          <div className="divide-y divide-gray-100 sm:divide-y-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-3 sm:p-4">
             {vehicles.map((vehicle) => (
-              <li key={vehicle.id} className="flex items-center gap-3 px-4 sm:px-6 py-3 hover:bg-gray-50 transition-colors group">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Car className="w-4 h-4 text-primary" />
+              <div
+                key={vehicle.id}
+                className={[
+                  'group',
+                  /* mobile row */
+                  'flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors',
+                  /* desktop card */
+                  'sm:flex-col sm:items-start sm:px-4 sm:py-4 sm:rounded-xl sm:border sm:border-gray-200',
+                  'sm:hover:border-primary/40 sm:hover:shadow-sm sm:bg-white sm:transition-all',
+                ].join(' ')}
+              >
+                {/* Card top row: icon + actions */}
+                <div className="shrink-0 sm:w-full sm:flex sm:items-center sm:justify-between sm:mb-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Car className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="hidden sm:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => { setEditingVehicle(vehicle); setShowVehicleModal(true) }}
+                      className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
+                      title="Редактировать"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Удалить ${vehicle.brand} ${vehicle.model} (${vehicle.license_plate})?`)) {
+                          deleteVehicleMutation.mutate(vehicle.id)
+                        }
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                      title="Удалить"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
+
+                {/* Main info */}
+                <div className="flex-1 min-w-0 sm:w-full">
+                  <p className="text-sm font-bold text-gray-900 truncate sm:text-base sm:mb-0.5">
                     {vehicle.brand} {vehicle.model}
-                    {vehicle.year && <span className="font-normal text-gray-400"> · {vehicle.year}</span>}
-                    {vehicle.color && <span className="font-normal text-gray-400"> · {vehicle.color}</span>}
                   </p>
-                  <p className="text-xs text-gray-500 font-mono truncate">
+                  {/* mobile: year+color inline | desktop: separate line */}
+                  <p className="text-xs text-gray-400 sm:text-sm sm:mb-2">
+                    {[vehicle.year, vehicle.color].filter(Boolean).join(' · ')}
+                  </p>
+                  {/* Plate */}
+                  <p className="font-mono text-xs font-semibold text-gray-700 tracking-widest uppercase
+                                sm:inline-block sm:bg-gray-100 sm:px-2 sm:py-0.5 sm:rounded sm:text-sm sm:mb-2">
                     {vehicle.license_plate}
-                    {vehicle.vin && <span className="ml-2 text-gray-400">{vehicle.vin}</span>}
-                    {vehicle.mileage && <span className="ml-2 text-gray-400">{vehicle.mileage.toLocaleString('ru-RU')} км</span>}
+                  </p>
+                  {/* VIN */}
+                  {vehicle.vin && (
+                    <p className="hidden sm:block text-xs font-mono text-gray-400 truncate mb-1">{vehicle.vin}</p>
+                  )}
+                  {/* Mileage */}
+                  {vehicle.mileage && (
+                    <p className="hidden sm:block text-xs text-gray-400">
+                      {vehicle.mileage.toLocaleString('ru-RU')} км
+                    </p>
+                  )}
+                  {/* Mobile: vin + mileage inline */}
+                  <p className="text-xs text-gray-400 font-mono truncate sm:hidden">
+                    {vehicle.vin && <span>{vehicle.vin}</span>}
+                    {vehicle.vin && vehicle.mileage && <span> · </span>}
+                    {vehicle.mileage && <span>{vehicle.mileage.toLocaleString('ru-RU')} км</span>}
                   </p>
                 </div>
-                <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+
+                {/* Mobile-only actions */}
+                <div className="flex items-center gap-1 shrink-0 sm:hidden opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => { setEditingVehicle(vehicle); setShowVehicleModal(true) }}
                     className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
@@ -277,9 +333,9 @@ export default function CustomerProfile() {
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         ) : (
           <div className="py-8 text-center">
             <Car className="w-8 h-8 text-gray-200 mx-auto mb-2" />
