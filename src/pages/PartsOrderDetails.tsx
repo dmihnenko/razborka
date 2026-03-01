@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { useUserProfile, useHasRole } from '@/hooks/useUserProfile'
+import { useUserProfile, useHasRole, useIsAdmin } from '@/hooks/useUserProfile'
 import { PartsOrder, CreatePartsOrderItemInput } from '@/types/parts'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Plus, Trash2, Edit2, Search, CheckCircle } from 'lucide-react'
@@ -148,7 +148,8 @@ export default function PartsOrderDetails() {
   }
 
   const canEdit = order && (order.status === 'new' || order.status === 'in_progress')
-  const isOwner = useHasRole('parts_owner')
+  const isAdmin = useIsAdmin()
+  const isOwner = useHasRole('parts_owner') || isAdmin
   // Owner can always manage the order; workers only when new/in_progress
   const canManage = Boolean(order) && (!!canEdit || isOwner)
 
