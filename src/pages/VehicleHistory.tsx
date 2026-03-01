@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Car, Calendar, Wrench, Package, TrendingUp, Clock } from 'lucide-react'
+import { ArrowLeft, Car, Calendar, Wrench, TrendingUp, Clock } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { formatCurrency } from '@/utils/currency'
@@ -28,10 +28,7 @@ export default function VehicleHistory() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('appointments')
-        .select(`
-          *,
-          appointment_parts(id, description, quantity, store_cost, client_cost)
-        `)
+        .select('*')
         .eq('vehicle_id', vehicleId!)
         .order('scheduled_date', { ascending: false })
       if (error) throw error
@@ -56,15 +53,10 @@ export default function VehicleHistory() {
   }
 
   // ── Статистика ──
-  const completed = appointments?.filter(a => ['completed', 'ready'].includes(a.status)) ?? []
+  const allAppts = appointments ?? []
 
-  const totalWork = completed.reduce((s, a) => s + (a.total_work_cost ?? a.work_cost ?? 0), 0)
-  const totalParts = completed.reduce((s, a) => {
-    const fromField = a.total_parts_cost ?? a.parts_cost ?? 0
-    const fromItems = (a.appointment_parts ?? []).reduce((ps: number, p: any) => ps + ((p.store_cost ?? 0) * (p.quantity ?? 1)), 0)
-    return s + (fromItems > 0 ? fromItems : fromField)
-  }, 0)
-  const totalSpent = totalWork + totalParts
+  const totalWork = allAppts.reduce((s, a) => s + (a.total_work_cost ?? a.work_cost ?? 0), 0)
+  const totalSpent = totalWork
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -115,7 +107,7 @@ export default function VehicleHistory() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+      <div className="grid grid-cols-3 gap-3 mb-5">
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
           <Calendar className="w-5 h-5 text-blue-500 mx-auto mb-1" />
           <p className="text-2xl font-bold text-gray-900">{appointments?.length ?? 0}</p>
@@ -130,11 +122,6 @@ export default function VehicleHistory() {
           <Wrench className="w-5 h-5 text-orange-500 mx-auto mb-1" />
           <p className="text-lg font-bold text-gray-900">{formatCurrency(totalWork)}</p>
           <p className="text-xs text-gray-400">На работы</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-          <Package className="w-5 h-5 text-purple-500 mx-auto mb-1" />
-          <p className="text-lg font-bold text-gray-900">{formatCurrency(totalParts)}</p>
-          <p className="text-xs text-gray-400">На запчасти</p>
         </div>
       </div>
 
@@ -152,12 +139,6 @@ export default function VehicleHistory() {
           <ul className="divide-y divide-gray-100">
             {appointments.map((appt) => {
               const workCost = appt.total_work_cost ?? appt.work_cost ?? 0
-              const partsCostField = appt.total_parts_cost ?? appt.parts_cost ?? 0
-              const partsCostItems = (appt.appointment_parts ?? []).reduce(
-                (s: number, p: any) => s + ((p.store_cost ?? 0) * (p.quantity ?? 1)), 0
-              )
-              const partsCost = partsCostItems > 0 ? partsCostItems : partsCostField
-              const total = workCost + partsCost
 
               return (
                 <li key={appt.id}>
@@ -188,28 +169,20 @@ export default function VehicleHistory() {
                       )}
 
                       {/* Costs breakdown */}
-                      {total > 0 && (
+                      {workCost > 0 && (
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
-                          {workCost > 0 && (
-                            <span className="text-xs text-orange-600 flex items-center gap-1">
-                              <Wrench className="w-3 h-3" />
-                              {formatCurrency(workCost)}
-                            </span>
-                          )}
-                          {partsCost > 0 && (
-                            <span className="text-xs text-purple-600 flex items-center gap-1">
-                              <Package className="w-3 h-3" />
-                              {formatCurrency(partsCost)}
-                            </span>
-                          )}
+                          <span className="text-xs text-orange-600 flex items-center gap-1">
+                            <Wrench className="w-3 h-3" />
+                            {formatCurrency(workCost)}
+                          </span>
                         </div>
                       )}
                     </div>
 
                     {/* Total */}
-                    {total > 0 && (
+                    {workCost > 0 && (
                       <div className="text-right shrink-0">
-                        <p className="font-bold text-primary text-sm">{formatCurrency(total)}</p>
+                        <p className="font-bold text-primary text-sm">{formatCurrency(workCost)}</p>
                       </div>
                     )}
                   </Link>
