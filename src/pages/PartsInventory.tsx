@@ -42,6 +42,7 @@ export default function PartsInventory() {
   const sourceFilter = searchParams.get('source') ?? 'vehicles' // 'vehicles' | 'shop'
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [vehicleFilter, setVehicleFilter] = useState<string>('all') // vehicle_id or 'all'
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<PartsInventoryItem | null>(null)
@@ -82,6 +83,7 @@ export default function PartsInventory() {
   useEffect(() => {
     setStatusFilter('all')
     setSearchQuery('')
+    setVehicleFilter('all')
   }, [sourceFilter])
 
   // Get categories for dropdown
@@ -209,6 +211,17 @@ export default function PartsInventory() {
     (sourceFilter === 'shop' && !item.vehicle_id)
   )
 
+  // Unique vehicles from current source for filter buttons
+  const uniqueVehicles = sourceFilter === 'vehicles'
+    ? Array.from(
+        new Map(
+          inventoryBySource
+            .filter((i: PartsInventoryItem) => i.vehicle_id && i.vehicle)
+            .map((i: PartsInventoryItem) => [i.vehicle_id, i.vehicle])
+        ).entries()
+      ).map(([id, v]) => ({ id, ...(v as any) }))
+    : []
+
   // Filter inventory
   const filteredInventory = inventoryBySource.filter((item: PartsInventoryItem) => {
     const matchesSearch = searchQuery === '' ||
@@ -217,8 +230,9 @@ export default function PartsInventory() {
       item.description?.toLowerCase().includes(searchQuery.toLowerCase())
     
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter
+    const matchesVehicle = vehicleFilter === 'all' || item.vehicle_id === vehicleFilter
     
-    return matchesSearch && matchesStatus
+    return matchesSearch && matchesStatus && matchesVehicle
   })
 
   // Statistics — scoped to current source section
@@ -500,6 +514,35 @@ export default function PartsInventory() {
               >
                 Сбросить
               </button>
+            </div>
+          )}
+
+          {/* Vehicle filter — only in Разборка mode */}
+          {uniqueVehicles.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setVehicleFilter('all')}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  vehicleFilter === 'all'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-primary hover:text-primary'
+                }`}
+              >
+                Все машины
+              </button>
+              {uniqueVehicles.map((v: any) => (
+                <button
+                  key={v.id}
+                  onClick={() => setVehicleFilter(vehicleFilter === v.id ? 'all' : v.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    vehicleFilter === v.id
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-primary hover:text-primary'
+                  }`}
+                >
+                  {v.make} {v.model} {v.year ? `(${v.year})` : ''}
+                </button>
+              ))}
             </div>
           )}
         </div>
