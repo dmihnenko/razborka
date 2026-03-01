@@ -133,7 +133,7 @@ export default function PublicCustomerView() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
-                {customer?.name ?? 'Клиент'}
+                ******
               </h1>
               {customer?.phone && (
                 <a

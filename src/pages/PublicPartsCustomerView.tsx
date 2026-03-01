@@ -168,7 +168,7 @@ export default function PublicPartsCustomerView() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
-                {customer?.full_name ?? 'Мои заказы'}
+                ******
               </h1>
               {customer?.phone && (
                 <a
