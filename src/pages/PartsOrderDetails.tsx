@@ -155,7 +155,7 @@ export default function PartsOrderDetails() {
   // Compute total client-side so it's always correct regardless of DB stored value
   // Use price_at_sale_currency from order item; fall back to inventory item's price_currency
   const getItemCurrency = (item: any): 'UAH' | 'USD' =>
-    item.price_at_sale_currency || item.inventory_item?.price_currency || 'UAH'
+    item.price_at_sale_currency || item.inventory_item?.price_currency || 'USD'
 
   const computedTotalUAH = (order?.items ?? []).reduce((sum, item: any) => {
     const amount = (item.price_at_sale || 0) * (item.quantity || 1)
@@ -220,10 +220,10 @@ export default function PartsOrderDetails() {
                   }
                 }}
                 disabled={deleteOrderMutation.isPending}
-                className="p-2 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0 ml-2"
-                title="Удалить заказ"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors flex-shrink-0 ml-2 text-sm font-medium"
               >
-                <Trash2 className="w-5 h-5 text-red-600" />
+                <Trash2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Удалить</span>
               </button>
             )}
           </div>
@@ -496,7 +496,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
           inventory_item_id: input.inventory_item_id,
           quantity: input.quantity,
           price_at_sale: input.price_at_sale,
-          price_at_sale_currency: input.price_at_sale_currency || 'UAH',
+          price_at_sale_currency: input.price_at_sale_currency || 'USD',
         })
 
       if (error) throw error
@@ -576,7 +576,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
                         {item.part_number && <span>Артикул: {item.part_number} • </span>}
                         {item.category?.[0]?.name && <span>{item.category[0].name} • </span>}
                         <span>В наличии: {item.quantity} шт. • </span>
-                        <span className="font-medium">{formatPrice(item.selling_price || 0, item.price_currency || 'UAH')}</span>
+                        <span className="font-medium">{formatPrice(item.selling_price || 0, (item.price_currency || 'USD') as 'UAH' | 'USD')}</span>
                       </div>
                     </button>
                   ))}
