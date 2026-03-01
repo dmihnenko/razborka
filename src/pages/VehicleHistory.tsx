@@ -28,7 +28,7 @@ export default function VehicleHistory() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('appointments')
-        .select('*')
+        .select('*, appointment_services(id, cost)')
         .eq('vehicle_id', vehicleId!)
         .order('scheduled_date', { ascending: false })
       if (error) throw error
@@ -55,7 +55,14 @@ export default function VehicleHistory() {
   // ── Статистика ──
   const allAppts = appointments ?? []
 
-  const totalWork = allAppts.reduce((s, a) => s + (a.total_work_cost ?? a.work_cost ?? 0), 0)
+  const calcWorkCost = (a: any) => {
+    const fromField = a.total_work_cost || 0
+    const fromWorkItems = (a.work_items ?? []).reduce((s: number, w: any) => s + (w.price || 0), 0)
+    const fromOldServices = (a.appointment_services ?? []).reduce((s: number, w: any) => s + (w.cost || 0), 0)
+    return fromField || fromOldServices || fromWorkItems
+  }
+
+  const totalWork = allAppts.reduce((s, a) => s + calcWorkCost(a), 0)
   const totalSpent = totalWork
 
   return (
@@ -138,7 +145,7 @@ export default function VehicleHistory() {
         {appointments && appointments.length > 0 ? (
           <ul className="divide-y divide-gray-100">
             {appointments.map((appt) => {
-              const workCost = appt.total_work_cost ?? appt.work_cost ?? 0
+              const workCost = calcWorkCost(appt)
 
               return (
                 <li key={appt.id}>
