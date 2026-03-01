@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { Package, Clock, ChevronDown, ChevronUp, Archive, Car } from 'lucide-react'
+import { Package, Clock, ChevronDown, ChevronUp, Archive, Car, Phone } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
@@ -109,6 +109,19 @@ export default function PublicPartsCustomerView() {
   const { id } = useParams<{ id: string }>()
   const [archiveOpen, setArchiveOpen] = useState(false)
 
+  const { data: customer } = useQuery({
+    queryKey: ['public-parts-customer', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('parts_customers')
+        .select('full_name, phone')
+        .eq('id', id)
+        .single()
+      if (error) throw error
+      return data
+    },
+  })
+
   const { data: orders, isLoading } = useQuery({
     queryKey: ['public-parts-customer-orders', id],
     queryFn: async () => {
@@ -154,8 +167,19 @@ export default function PublicPartsCustomerView() {
         <div className="bg-white rounded-xl shadow-sm px-4 sm:px-6 py-4 mb-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Мои заказы</h1>
-              <p className="text-xs text-gray-500 mt-0.5">Авторазборка · публичная страница</p>
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
+                {customer?.full_name ?? 'Мои заказы'}
+              </h1>
+              {customer?.phone && (
+                <a
+                  href={`tel:${customer.phone}`}
+                  className="flex items-center gap-1 text-xs sm:text-sm text-primary mt-0.5 hover:underline"
+                >
+                  <Phone className="w-3 h-3" />
+                  {customer.phone}
+                </a>
+              )}
+              <p className="text-xs text-gray-400 mt-0.5">Авторазборка · публичная страница</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-primary">{orders?.length ?? 0}</p>
