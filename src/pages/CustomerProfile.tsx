@@ -298,11 +298,6 @@ export default function CustomerProfile() {
                   <p className="text-xs text-gray-400 sm:text-sm sm:mb-2">
                     {vehicle.year}
                   </p>
-                  {/* Plate */}
-                  <p className="font-mono text-xs font-semibold text-gray-700 tracking-widest uppercase
-                                sm:inline-block sm:bg-gray-100 sm:px-2 sm:py-0.5 sm:rounded sm:text-sm sm:mb-2">
-                    {vehicle.license_plate}
-                  </p>
                   {/* VIN */}
                   {vehicle.vin && (
                     <p className="hidden sm:block text-xs font-mono text-gray-400 truncate mb-1">{vehicle.vin}</p>
@@ -390,7 +385,7 @@ export default function CustomerProfile() {
                       Заявка <span className="text-gray-400 font-normal opacity-60">#{appointment.request_number}</span>
                     </h3>
                     <p className="text-sm text-gray-600">
-                      {appointment.vehicles?.brand} {appointment.vehicles?.model} • {appointment.vehicles?.license_plate}
+                      {appointment.vehicles?.brand} {appointment.vehicles?.model}
                     </p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>

@@ -131,7 +131,7 @@ export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: Mo
                               </p>
                               <p className="text-sm text-gray-600">
                                 {appointment.vehicles
-                                  ? <>{appointment.vehicles.brand} {appointment.vehicles.model}{appointment.vehicles.license_plate && <span className="ml-2 text-gray-500">{appointment.vehicles.license_plate}</span>}</>
+                                  ? <>{appointment.vehicles.brand} {appointment.vehicles.model}</>
                                   : <span className="text-gray-400 italic">Авто не указано</span>}
                               </p>
                               <div className="flex items-center gap-3 mt-2 text-sm">
@@ -196,7 +196,7 @@ export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: Mo
                               </p>
                               <p className="text-sm text-gray-500">
                                 {appointment.vehicles
-                                  ? <>{appointment.vehicles.brand} {appointment.vehicles.model}{appointment.vehicles.license_plate && <span className="ml-2">{appointment.vehicles.license_plate}</span>}</>
+                                  ? <>{appointment.vehicles.brand} {appointment.vehicles.model}</>
                                   : <span className="text-gray-400 italic">Авто не указано</span>}
                               </p>
                               <div className="flex items-center gap-3 mt-2 text-sm">

@@ -392,7 +392,7 @@ export default function AppointmentDetails() {
                   <p className="text-mobile-base text-gray-900 font-medium">
                     {appointment.vehicles?.brand} {appointment.vehicles?.model}
                   </p>
-                  <p className="text-mobile-sm text-gray-500">{appointment.vehicles?.license_plate}</p>
+
                 </div>
               </div>
               

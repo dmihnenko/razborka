@@ -12,6 +12,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 export default function Appointments() {
   const [searchParams, setSearchParams] = useSearchParams()
   const statusFilter = searchParams.get('status')
+  const vehicleIdFilter = searchParams.get('vehicleId')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingAppointment, setEditingAppointment] = useState<any>(null)
   const [showArchived, setShowArchived] = useState(false)
@@ -43,7 +44,7 @@ export default function Appointments() {
   }
 
   const { data: appointments, isLoading } = useQuery({
-    queryKey: ['appointments', profile?.id, showArchived, statusFilter],
+    queryKey: ['appointments', profile?.id, showArchived, statusFilter, vehicleIdFilter],
     queryFn: async () => {
       let query = supabase
         .from('appointments')
@@ -76,6 +77,11 @@ export default function Appointments() {
         } else {
           query = query.eq('status', statusFilter)
         }
+      }
+
+      // Фильтруем по автомобилю
+      if (vehicleIdFilter) {
+        query = query.eq('vehicle_id', vehicleIdFilter)
       }
 
       // Если пользователь - работник (не владелец), показываем только его заявки
@@ -264,9 +270,7 @@ export default function Appointments() {
                               
                               return `${brand} ${model}`.trim()
                             })()}
-                            {appointment.vehicles?.license_plate && (
-                              <div className="text-xs text-gray-500">{appointment.vehicles.license_plate}</div>
-                            )}
+
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                             {new Date(appointment.created_at).toLocaleDateString('ru-RU', { 
@@ -363,7 +367,6 @@ export default function Appointments() {
                       >
                         <td className="px-4 py-3 pl-10 whitespace-nowrap">
                           <div className="text-sm text-gray-600">{appointment.vehicles?.brand} {appointment.vehicles?.model}</div>
-                          <div className="text-xs text-gray-500">{appointment.vehicles?.license_plate}</div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                           {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU')}
