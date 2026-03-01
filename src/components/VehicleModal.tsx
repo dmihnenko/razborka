@@ -12,7 +12,6 @@ interface VehicleData {
   year: number
   license_plate?: string
   vin?: string
-  color?: string
   mileage?: number | null
 }
 
@@ -31,7 +30,6 @@ export default function VehicleModal({ onClose, customerId, customerName, vehicl
     year: vehicle?.year ?? new Date().getFullYear(),
     license_plate: vehicle?.license_plate ?? '',
     vin: vehicle?.vin ?? '',
-    color: vehicle?.color ?? '',
     mileage: vehicle?.mileage != null ? String(vehicle.mileage) : '',
   })
 
@@ -49,7 +47,6 @@ export default function VehicleModal({ onClose, customerId, customerName, vehicl
         year: Number(form.year),
         license_plate: form.license_plate.trim().toUpperCase(),
         vin: form.vin.trim().toUpperCase() || null,
-        color: form.color.trim() || null,
         mileage: form.mileage ? Number(form.mileage) : null,
         customer_id: customerId,
       }
@@ -145,30 +142,18 @@ export default function VehicleModal({ onClose, customerId, customerName, vehicl
             />
           </div>
 
-          {/* Год + Цвет */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Год <span className="text-red-500">*</span></label>
-              <input
-                type="number"
-                required
-                value={form.year}
-                onChange={e => set('year', e.target.value)}
-                min="1900"
-                max={new Date().getFullYear() + 1}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Цвет</label>
-              <input
-                type="text"
-                value={form.color}
-                onChange={e => set('color', e.target.value)}
-                placeholder="Чёрный"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-            </div>
+          {/* Год */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Год <span className="text-red-500">*</span></label>
+            <input
+              type="number"
+              required
+              value={form.year}
+              onChange={e => set('year', e.target.value)}
+              min="1900"
+              max={new Date().getFullYear() + 1}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
           </div>
 
           {/* VIN */}

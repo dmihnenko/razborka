@@ -98,7 +98,6 @@ export default function VehicleHistory() {
             </h1>
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-500">
               {vehicle.year && <span>{vehicle.year} г.</span>}
-              {vehicle.color && <span>{vehicle.color}</span>}
               {vehicle.license_plate && (
                 <span className="font-mono font-semibold text-gray-700 tracking-widest">
                   {vehicle.license_plate}

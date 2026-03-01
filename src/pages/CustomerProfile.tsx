@@ -296,7 +296,7 @@ export default function CustomerProfile() {
                     </Link>
                   {/* mobile: year+color inline | desktop: separate line */}
                   <p className="text-xs text-gray-400 sm:text-sm sm:mb-2">
-                    {[vehicle.year, vehicle.color].filter(Boolean).join(' · ')}
+                    {vehicle.year}
                   </p>
                   {/* Plate */}
                   <p className="font-mono text-xs font-semibold text-gray-700 tracking-widest uppercase
