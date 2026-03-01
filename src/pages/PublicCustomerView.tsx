@@ -315,23 +315,27 @@ export default function PublicCustomerView() {
 function AppointmentCard({ appointment }: { appointment: any }) {
   return (
     <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 sm:p-4">
-      {/* Шапка: статус + авто */}
-      <div className="flex items-start justify-between gap-2 mb-2">
+      {/* Шапка: статус + авто + номер + VIN — одна строка */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
         <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${getAppointmentStatusColor(appointment.status)}`}>
           {getAppointmentStatusText(appointment.status)}
         </span>
         {appointment.vehicles && (
-          <div className="text-right min-w-0">
-            <p className="text-sm font-semibold text-gray-900 truncate">
+          <>
+            <span className="text-sm font-semibold text-gray-900 shrink-0">
               {appointment.vehicles.brand} {appointment.vehicles.model}
-            </p>
+            </span>
             {appointment.vehicles.license_plate && (
-              <p className="font-mono text-xs text-gray-500 tracking-widest">{appointment.vehicles.license_plate}</p>
+              <span className="font-mono text-xs text-gray-500 tracking-widest shrink-0">
+                {appointment.vehicles.license_plate}
+              </span>
             )}
             {appointment.vehicles.vin && (
-              <p className="font-mono text-[10px] text-gray-400 truncate">{appointment.vehicles.vin}</p>
+              <span className="font-mono text-[10px] text-gray-400 shrink-0">
+                {appointment.vehicles.vin}
+              </span>
             )}
-          </div>
+          </>
         )}
       </div>
 
