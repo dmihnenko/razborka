@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { Car, FileText, Clock, Package, ChevronDown, ChevronUp, CheckCircle, Archive } from 'lucide-react'
+import { Car, FileText, Clock, Package, ChevronDown, ChevronUp, CheckCircle, Archive, Phone } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { formatCurrency } from '@/utils/currency'
@@ -21,7 +21,7 @@ export default function PublicCustomerView() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('customers')
-        .select('phone')
+        .select('name, phone')
         .eq('id', id)
         .single()
       
@@ -132,7 +132,18 @@ export default function PublicCustomerView() {
         <div className="bg-white rounded-xl shadow-sm p-4 sm:p-5 mb-3 sm:mb-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Клиент: ******</h1>
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
+                {customer?.name ?? 'Клиент'}
+              </h1>
+              {customer?.phone && (
+                <a
+                  href={`tel:${customer.phone}`}
+                  className="flex items-center gap-1 text-xs sm:text-sm text-primary mt-0.5 hover:underline"
+                >
+                  <Phone className="w-3 h-3" />
+                  {customer.phone}
+                </a>
+              )}
               <p className="text-xs text-gray-400 mt-0.5">История обслуживания и заявок</p>
             </div>
             <div className="flex gap-3 sm:gap-4 shrink-0">
