@@ -1,35 +1,61 @@
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { Package, Clock, ChevronDown, ChevronUp, Archive } from 'lucide-react'
+import { Package, Clock, ChevronDown, ChevronUp, Archive, Car } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 import { formatCurrency } from '@/utils/currency'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 
 const ACTIVE_STATUSES = new Set(['new', 'in_progress'])
 
 function OrderCard({ order }: { order: any }) {
   const [itemsOpen, setItemsOpen] = useState(false)
 
+  // Уникальные авто из позиций
+  const vehicles = useMemo(() => {
+    const map = new Map<string, any>()
+    order.items?.forEach((item: any) => {
+      const v = item.inventory_item?.vehicle
+      if (v?.id) map.set(v.id, v)
+    })
+    return Array.from(map.values())
+  }, [order.items])
+
   return (
     <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
       {/* Header row */}
-      <div className="flex items-center gap-3 px-3 sm:px-4 py-3">
+      <div className="flex items-start gap-3 px-3 sm:px-4 py-3">
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
-            <span className="font-semibold text-gray-900 text-sm">{order.order_number}</span>
+          {/* Status badge */}
+          <div className="flex flex-wrap items-center gap-1.5 mb-1">
             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getPartsOrderStatusColor(order.status)}`}>
               {getPartsOrderStatusText(order.status)}
             </span>
           </div>
-          <div className="flex items-center gap-1 text-xs text-gray-500">
+          {/* Vehicles */}
+          {vehicles.length > 0 ? (
+            <div className="space-y-0.5 mb-1">
+              {vehicles.map((v: any) => (
+                <div key={v.id} className="flex items-center gap-1.5">
+                  <Car className="w-3 h-3 text-gray-400 shrink-0" />
+                  <span className="text-sm font-semibold text-gray-900 truncate">
+                    {v.make} {v.model}{v.year ? ` ${v.year}` : ''}
+                  </span>
+                  {v.vin && (
+                    <span className="text-xs font-mono text-gray-400 tracking-wide">{v.vin}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <div className="flex items-center gap-1 text-xs text-gray-400">
             <Clock className="w-3 h-3 shrink-0" />
             {new Date(order.order_date).toLocaleDateString('ru-RU', {
               day: 'numeric', month: 'short', year: 'numeric',
             })}
-            <span className="text-gray-400">·</span>
+            <span>·</span>
             <span>{formatDistanceToNow(new Date(order.created_at), { addSuffix: true, locale: ru })}</span>
           </div>
         </div>
@@ -95,7 +121,11 @@ export default function PublicPartsCustomerView() {
             quantity,
             price_at_sale,
             subtotal,
-            inventory_item:parts_inventory(name, part_number)
+            inventory_item:parts_inventory(
+              name,
+              part_number,
+              vehicle:parts_vehicles(id, make, model, year, vin)
+            )
           )
         `)
         .eq('customer_id', id)

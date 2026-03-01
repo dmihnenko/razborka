@@ -1,7 +1,7 @@
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Car, FileText, Phone, Mail, MapPin, Link2, Package, Plus, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Car, FileText, Phone, Mail, MapPin, Link2, Package, Plus, Pencil, Trash2, ChevronDown } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { toast } from 'sonner'
@@ -16,6 +16,7 @@ export default function CustomerProfile() {
   const queryClient = useQueryClient()
   const [showVehicleModal, setShowVehicleModal] = useState(false)
   const [editingVehicle, setEditingVehicle] = useState<any>(null)
+  const [vehiclesMobileOpen, setVehiclesMobileOpen] = useState(false)
 
   const handleCopyPublicLink = async () => {
     const publicUrl = `${window.location.origin}/public/customer/${id}`
@@ -200,8 +201,14 @@ export default function CustomerProfile() {
 
       {/* Секция автомобилей */}
       <div className="bg-white rounded-lg shadow-sm mb-6">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
+        {/* Header — on mobile acts as toggle */}
+        <div
+          className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100 sm:cursor-default cursor-pointer select-none"
+          onClick={(e) => {
+            // only toggle on mobile (no sm: equivalent clicks here)
+            if (window.innerWidth < 640) setVehiclesMobileOpen(v => !v)
+          }}
+        >
           <div className="flex items-center gap-2">
             <Car className="w-5 h-5 text-primary" />
             <h2 className="text-base sm:text-lg font-bold text-gray-900">Автомобили</h2>
@@ -211,17 +218,22 @@ export default function CustomerProfile() {
               </span>
             )}
           </div>
-          <button
-            onClick={() => { setEditingVehicle(null); setShowVehicleModal(true) }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 transition-colors font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Добавить авто</span>
-            <span className="sm:hidden">Добавить</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); setEditingVehicle(null); setShowVehicleModal(true) }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 transition-colors font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Добавить авто</span>
+              <span className="sm:hidden">Добавить</span>
+            </button>
+            {/* Chevron only on mobile */}
+            <ChevronDown className={`w-4 h-4 text-gray-400 sm:hidden transition-transform ${vehiclesMobileOpen ? 'rotate-180' : ''}`} />
+          </div>
         </div>
 
-        {/* Vehicle list */}
+        {/* Vehicle list — always visible on sm+, toggleable on mobile */}
+        <div className={`${vehiclesMobileOpen ? 'block' : 'hidden'} sm:block`}>
         {vehiclesLoading ? (
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
@@ -280,6 +292,7 @@ export default function CustomerProfile() {
             </button>
           </div>
         )}
+        </div>
       </div>
 
       {/* История заявок */}
