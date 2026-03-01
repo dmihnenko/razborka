@@ -222,6 +222,11 @@ export default function PartsInventory() {
       ).map(([id, v]) => ({ id, ...(v as any) }))
     : []
 
+  // If only one vehicle exists — apply it automatically, hide buttons
+  const singleVehicle = uniqueVehicles.length === 1 ? uniqueVehicles[0] : null
+  const effectiveVehicleFilter = singleVehicle ? singleVehicle.id : vehicleFilter
+  const showVehicleButtons = uniqueVehicles.length > 1
+
   // Filter inventory
   const filteredInventory = inventoryBySource.filter((item: PartsInventoryItem) => {
     const matchesSearch = searchQuery === '' ||
@@ -230,7 +235,7 @@ export default function PartsInventory() {
       item.description?.toLowerCase().includes(searchQuery.toLowerCase())
     
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter
-    const matchesVehicle = vehicleFilter === 'all' || item.vehicle_id === vehicleFilter
+    const matchesVehicle = effectiveVehicleFilter === 'all' || item.vehicle_id === effectiveVehicleFilter
     
     return matchesSearch && matchesStatus && matchesVehicle
   })
@@ -517,13 +522,13 @@ export default function PartsInventory() {
             </div>
           )}
 
-          {/* Vehicle filter — only in Разборка mode */}
-          {uniqueVehicles.length > 0 && (
+          {/* Vehicle filter — only in Разборка mode with 2+ vehicles */}
+          {showVehicleButtons && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               <button
                 onClick={() => setVehicleFilter('all')}
                 className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  vehicleFilter === 'all'
+                  effectiveVehicleFilter === 'all'
                     ? 'bg-primary text-white border-primary'
                     : 'bg-white text-gray-600 border-gray-300 hover:border-primary hover:text-primary'
                 }`}
@@ -535,7 +540,7 @@ export default function PartsInventory() {
                   key={v.id}
                   onClick={() => setVehicleFilter(vehicleFilter === v.id ? 'all' : v.id)}
                   className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                    vehicleFilter === v.id
+                    effectiveVehicleFilter === v.id
                       ? 'bg-primary text-white border-primary'
                       : 'bg-white text-gray-600 border-gray-300 hover:border-primary hover:text-primary'
                   }`}
