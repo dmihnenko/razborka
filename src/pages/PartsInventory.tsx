@@ -292,12 +292,20 @@ export default function PartsInventory() {
         price_at_sale_currency: currency,
       })
 
-      // Update order total
-      await updatePartsOrderTotal(order.id)
+      // Update order total with current exchange rate
+      await updatePartsOrderTotal(order.id, usdRate)
 
-      // Mark part as sold
+      // Complete the order and fix the exchange rate at moment of sale
+      await supabase
+        .from('parts_orders')
+        .update({ status: 'completed', exchange_rate_at_sale: usdRate })
+        .eq('id', order.id)
+
+      // Mark part as sold and decrement quantity
+      const newQty = Math.max(0, (item.quantity ?? 1) - 1)
       return updatePartsInventoryItem(item.id, {
         status: 'sold',
+        quantity: newQty,
         sold_price: price,
         price_currency: currency,
         sold_to_customer_id: resolvedCustomerId || undefined,

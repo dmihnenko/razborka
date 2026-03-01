@@ -67,7 +67,7 @@ export default function PartsOrderDetails() {
         .eq('status', 'reserved')
     },
     onSuccess: async () => {
-      if (id) await updatePartsOrderTotal(id)
+      if (id) await updatePartsOrderTotal(id, exchangeRate)
       queryClient.invalidateQueries({ queryKey: ['parts-order', id] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
     },
@@ -96,6 +96,16 @@ export default function PartsOrderDetails() {
             .from('parts_inventory')
             .update({ status: 'sold' })
             .in('id', inventoryIds)
+          // Decrement quantity for each sold item
+          for (const item of order?.items ?? []) {
+            const invQty = (item.inventory_item as any)?.quantity ?? 0
+            const soldQty = item.quantity ?? 1
+            const newQty = Math.max(0, invQty - soldQty)
+            await supabase
+              .from('parts_inventory')
+              .update({ quantity: newQty })
+              .eq('id', item.inventory_item_id)
+          }
         } else if (status === 'cancelled' || status === 'new' || status === 'in_progress') {
           // Restore parts to available (reserved or sold via this order)
           await supabase
@@ -454,6 +464,7 @@ interface AddItemModalProps {
 
 function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
   const queryClient = useQueryClient()
+  const { rate: exchangeRate } = usePartsExchangeRate()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedItem, setSelectedItem] = useState<any>(null)
   const [quantity, setQuantity] = useState(1)
@@ -471,6 +482,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
           category:parts_categories(name)
         `)
         .eq('parts_company_id', partsCompanyId)
+        .eq('status', 'available')
         .gt('quantity', 0)
         .order('name')
 
@@ -503,7 +515,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
       if (error) throw error
     },
     onSuccess: async () => {
-      await updatePartsOrderTotal(orderId)
+      await updatePartsOrderTotal(orderId, exchangeRate)
       queryClient.invalidateQueries({ queryKey: ['parts-order', orderId] })
       onClose()
     },
@@ -575,7 +587,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
                       <div className="font-medium text-gray-900">{item.name}</div>
                       <div className="text-sm text-gray-600">
                         {item.part_number && <span>Артикул: {item.part_number} • </span>}
-                        {item.category?.[0]?.name && <span>{item.category[0].name} • </span>}
+                        {(item.category as any)?.name && <span>{(item.category as any).name} • </span>}
                         <span>В наличии: {item.quantity} шт. • </span>
                         <span className="font-medium">{formatPrice(item.selling_price || 0, (item.price_currency || 'USD') as 'UAH' | 'USD')}</span>
                       </div>
@@ -648,7 +660,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
 
                 <div className="pt-2 border-t border-gray-200">
                   <p className="text-lg font-semibold text-gray-900">
-                    Итого: {(quantity * price).toFixed(2)} ₴
+                    Итого: {formatPrice(quantity * price, currency)}
                   </p>
                 </div>
               </div>

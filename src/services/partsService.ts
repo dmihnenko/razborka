@@ -75,17 +75,29 @@ export async function deletePartsVehicle(id: string) {
 }
 
 export async function updateVehicleStatus(
-  id: string, 
-  status: PartsVehicle['status']
+  id: string,
+  status: PartsVehicle['status'],
+  currentVehicle?: Pick<PartsVehicle, 'dismantling_started_at' | 'dismantling_completed_at'>
 ) {
+  // If current vehicle not passed — fetch it to avoid overwriting existing timestamps
+  let existing = currentVehicle
+  if (!existing) {
+    const { data } = await supabase
+      .from('parts_vehicles')
+      .select('dismantling_started_at, dismantling_completed_at')
+      .eq('id', id)
+      .single()
+    existing = data ?? undefined
+  }
+
   const updates: any = { status }
-  
-  if (status === 'in_progress' && !updates.dismantling_started_at) {
+
+  if (status === 'in_progress' && !existing?.dismantling_started_at) {
     updates.dismantling_started_at = new Date().toISOString()
-  } else if (status === 'dismantled' && !updates.dismantling_completed_at) {
+  } else if (status === 'dismantled' && !existing?.dismantling_completed_at) {
     updates.dismantling_completed_at = new Date().toISOString()
   }
-  
+
   return updatePartsVehicle(id, updates)
 }
 
@@ -94,37 +106,38 @@ export async function updateVehicleStatus(
 // ============================================================================
 
 export async function getPartsCustomers(partsCompanyId: string) {
-  const { data, error } = await supabase
-    .from('parts_customers')
-    .select('*')
-    .eq('parts_company_id', partsCompanyId)
-    .order('created_at', { ascending: false })
-  
-  if (error) throw error
-  
-  // Добавляем подсчет заказов и суммы для каждого клиента
-  const customersWithStats = await Promise.all(
-    (data || []).map(async (customer) => {
-      const { count } = await supabase
-        .from('parts_orders')
-        .select('*', { count: 'exact', head: true })
-        .eq('customer_id', customer.id)
-      
-      const { data: orders } = await supabase
-        .from('parts_orders')
-        .select('total_amount')
-        .eq('customer_id', customer.id)
-      
-      const totalSpent = (orders || []).reduce((sum, order) => sum + (order.total_amount || 0), 0)
-      
-      return {
-        ...customer,
-        total_orders: count || 0,
-        total_spent: totalSpent
-      }
-    })
-  )
-  
+  // Fetch customers and all their orders in 2 queries (avoids N+1)
+  const [customersRes, ordersRes] = await Promise.all([
+    supabase
+      .from('parts_customers')
+      .select('*')
+      .eq('parts_company_id', partsCompanyId)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('parts_orders')
+      .select('customer_id, total_amount')
+      .eq('parts_company_id', partsCompanyId),
+  ])
+
+  if (customersRes.error) throw customersRes.error
+
+  const orders = ordersRes.data || []
+
+  // Build per-customer stats map
+  const statsMap: Record<string, { count: number; total: number }> = {}
+  for (const order of orders) {
+    if (!order.customer_id) continue
+    if (!statsMap[order.customer_id]) statsMap[order.customer_id] = { count: 0, total: 0 }
+    statsMap[order.customer_id].count += 1
+    statsMap[order.customer_id].total += order.total_amount || 0
+  }
+
+  const customersWithStats = (customersRes.data || []).map(customer => ({
+    ...customer,
+    total_orders: statsMap[customer.id]?.count ?? 0,
+    total_spent: statsMap[customer.id]?.total ?? 0,
+  }))
+
   return customersWithStats as PartsCustomer[]
 }
 
@@ -482,24 +495,14 @@ export async function createPartsOrderItem(
   return data
 }
 
-export async function updatePartsOrderTotal(orderId: string) {
+export async function updatePartsOrderTotal(orderId: string, exchangeRate: number = 41) {
   const { data: items } = await supabase
     .from('parts_order_items')
-    .select('price_at_sale, quantity, price_at_sale_currency, inventory_item:parts_inventory(price_currency)')
+    .select('price_at_sale, quantity, price_at_sale_currency')
     .eq('order_id', orderId)
 
-  // Read exchange rate from localStorage (same key as usePartsExchangeRate hook)
-  let exchangeRate = 41
-  try {
-    const raw = localStorage.getItem('parts_exchange_rate')
-    if (raw) {
-      const stored = JSON.parse(raw)
-      if (stored?.rate > 0) exchangeRate = stored.rate
-    }
-  } catch { /* use default */ }
-
   const total = (items || []).reduce((s: number, i: any) => {
-    const currency = i.price_at_sale_currency || i.inventory_item?.price_currency || 'UAH'
+    const currency = i.price_at_sale_currency || 'UAH'
     const amount = (i.price_at_sale || 0) * (i.quantity || 1)
     const amountUAH = currency === 'USD' ? amount * exchangeRate : amount
     return s + amountUAH

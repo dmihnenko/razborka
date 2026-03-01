@@ -31,7 +31,8 @@ export function usePartsExchangeRate() {
   const [fetchError, setFetchError] = useState<string | null>(null)
 
   const today = todayStr()
-  const isStale = stored ? stored.date !== today : false
+  // isStale is true when no rate is stored at all, or when it was saved on a previous day
+  const isStale = !stored || stored.date !== today
 
   // Если нечего нет — дефолт 41
   const rate = stored?.rate ?? 41
@@ -52,7 +53,7 @@ export function usePartsExchangeRate() {
       const usd = list.find(i => i.ccy === 'USD' && i.base_ccy === 'UAH')
       if (!usd) throw new Error('USD не найден в ответе')
       const parsed = parseFloat(usd.sale)
-      if (!parsed) throw new Error('Некорректный курс')
+      if (isNaN(parsed) || parsed <= 0) throw new Error('Некорректный курс')
       const data: StoredRate = { rate: parsed, date: today, source: 'privatbank' }
       saveStored(data)
       setStored(data)

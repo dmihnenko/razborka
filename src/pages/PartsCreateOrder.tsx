@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { CreatePartsOrderInput } from '@/types/parts'
+import { createPartsOrder } from '@/services/partsService'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, Users as UsersIcon } from 'lucide-react'
 
@@ -35,26 +36,11 @@ export default function PartsCreateOrder() {
 
   const createMutation = useMutation({
     mutationFn: async (input: CreatePartsOrderInput) => {
-      // Генерация номера заказа
-      let orderNumber = `P-${Date.now()}`
-      const { data: rpcOrderNumber, error: numberError } = await supabase
-        .rpc('generate_parts_order_number', { p_company_id: partsCompanyId })
-      if (!numberError && rpcOrderNumber) orderNumber = rpcOrderNumber as string
-
-      // Создание заказа
-      const { data, error } = await supabase
-        .from('parts_orders')
-        .insert({
-          parts_company_id: partsCompanyId,
-          customer_id: input.customer_id || null,
-          order_number: orderNumber,
-          notes: input.notes || null,
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-      return data
+      if (!partsCompanyId) throw new Error('No company')
+      return createPartsOrder(partsCompanyId, {
+        customer_id: input.customer_id || null,
+        notes: input.notes || undefined,
+      })
     },
     onSuccess: (order) => {
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })

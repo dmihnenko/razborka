@@ -199,7 +199,7 @@ export default function PartsCustomerProfile() {
         // Mark part as reserved (забронировано) while it's in the order
         await updatePartsInventoryItem(cartItem.id, { status: 'reserved' })
       }
-      await updatePartsOrderTotal(order.id)
+      await updatePartsOrderTotal(order.id, usdRate)
       return order
     },
     onSuccess: (order) => {
