@@ -174,8 +174,12 @@ export default function PartsInventory() {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       toast.success('Запчасть удалена')
     },
-    onError: () => {
-      toast.error('Ошибка при удалении')
+    onError: (error: any) => {
+      if (error?.status === 409 || error?.code === '23503') {
+        toast.error('Нельзя удалить: запчасть входит в заказ. Сначала удалите её из заказа.')
+      } else {
+        toast.error('Ошибка при удалении')
+      }
     }
   })
 
