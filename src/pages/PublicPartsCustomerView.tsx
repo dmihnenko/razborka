@@ -1,16 +1,88 @@
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { Package, Clock } from 'lucide-react'
+import { Package, Clock, ChevronDown, ChevronUp, Archive } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 import { formatCurrency } from '@/utils/currency'
+import { useState } from 'react'
+
+const ACTIVE_STATUSES = new Set(['new', 'in_progress'])
+
+function OrderCard({ order }: { order: any }) {
+  const [itemsOpen, setItemsOpen] = useState(false)
+
+  return (
+    <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
+      {/* Header row */}
+      <div className="flex items-center gap-3 px-3 sm:px-4 py-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+            <span className="font-semibold text-gray-900 text-sm">{order.order_number}</span>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getPartsOrderStatusColor(order.status)}`}>
+              {getPartsOrderStatusText(order.status)}
+            </span>
+          </div>
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            <Clock className="w-3 h-3 shrink-0" />
+            {new Date(order.order_date).toLocaleDateString('ru-RU', {
+              day: 'numeric', month: 'short', year: 'numeric',
+            })}
+            <span className="text-gray-400">·</span>
+            <span>{formatDistanceToNow(new Date(order.created_at), { addSuffix: true, locale: ru })}</span>
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          <div className="font-bold text-primary text-sm sm:text-base">
+            {formatCurrency(order.total_amount)}
+          </div>
+          {order.items?.length > 0 && (
+            <button
+              onClick={() => setItemsOpen(v => !v)}
+              className="flex items-center gap-0.5 text-xs text-gray-400 hover:text-gray-600 transition-colors ml-auto mt-0.5"
+            >
+              {order.items.length} поз.
+              {itemsOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Collapsible items */}
+      {itemsOpen && order.items?.length > 0 && (
+        <div className="border-t border-gray-100 px-3 sm:px-4 py-2 bg-gray-50 space-y-1.5">
+          {order.items.map((item: any) => (
+            <div key={item.id} className="flex justify-between gap-2 text-xs">
+              <div className="min-w-0">
+                <p className="font-medium text-gray-800 truncate">{item.inventory_item?.name || 'Запчасть'}</p>
+                {item.inventory_item?.part_number && (
+                  <p className="text-gray-400">Арт: {item.inventory_item.part_number}</p>
+                )}
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-gray-600">{item.quantity} шт × {formatCurrency(item.price_at_sale)}</p>
+                <p className="font-semibold text-primary">{formatCurrency(item.subtotal)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Notes */}
+      {order.notes && (
+        <div className="border-t border-blue-100 px-3 sm:px-4 py-2 bg-blue-50">
+          <p className="text-xs text-gray-600">{order.notes}</p>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function PublicPartsCustomerView() {
   const { id } = useParams<{ id: string }>()
+  const [archiveOpen, setArchiveOpen] = useState(false)
 
-  // Получаем заказы клиента разборки
   const { data: orders, isLoading } = useQuery({
     queryKey: ['public-parts-customer-orders', id],
     queryFn: async () => {
@@ -23,15 +95,11 @@ export default function PublicPartsCustomerView() {
             quantity,
             price_at_sale,
             subtotal,
-            inventory_item:parts_inventory(
-              name,
-              part_number
-            )
+            inventory_item:parts_inventory(name, part_number)
           )
         `)
         .eq('customer_id', id)
         .order('order_date', { ascending: false })
-      
       if (error) throw error
       return data
     },
@@ -40,131 +108,83 @@ export default function PublicPartsCustomerView() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
       </div>
     )
   }
 
+  const activeOrders = orders?.filter(o => ACTIVE_STATUSES.has(o.status)) ?? []
+  const doneOrders   = orders?.filter(o => !ACTIVE_STATUSES.has(o.status)) ?? []
+
   return (
     <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
-      <div className="max-w-5xl mx-auto px-3 sm:px-4">
-        {/* Заголовок с скрытым именем */}
-        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="max-w-2xl mx-auto px-3 sm:px-4">
+
+        {/* Header */}
+        <div className="bg-white rounded-xl shadow-sm px-4 sm:px-6 py-4 mb-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
-                Клиент: ******
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-500">
-                Публичная страница для просмотра заказов запчастей
-              </p>
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Мои заказы</h1>
+              <p className="text-xs text-gray-500 mt-0.5">Авторазборка · публичная страница</p>
             </div>
-            <div className="text-center sm:text-right">
-              <div className="text-xs sm:text-sm text-gray-500">Заказов</div>
-              <div className="text-xl sm:text-2xl font-bold text-primary">{orders?.length || 0}</div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-primary">{orders?.length ?? 0}</p>
+              <p className="text-xs text-gray-400">всего</p>
             </div>
           </div>
         </div>
 
-        {/* Заказы запчастей */}
-        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
-          <div className="flex items-center mb-3 sm:mb-4">
-            <Package className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-primary" />
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-              Мои заказы
+        {/* Active orders */}
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <Package className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+              Активные заявки
             </h2>
+            {activeOrders.length > 0 && (
+              <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
+                {activeOrders.length}
+              </span>
+            )}
           </div>
-
-          {orders && orders.length > 0 ? (
-            <div className="space-y-3 sm:space-y-4">
-              {orders.map((order) => (
-                <div
-                  key={order.id}
-                  className="border border-gray-200 rounded-lg p-3 sm:p-5 bg-gray-50"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 sm:mb-3 gap-2">
-                    <div className="flex-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-                        <h3 className="font-semibold text-gray-900 text-base sm:text-lg">
-                          Заказ {order.order_number}
-                        </h3>
-                        <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getPartsOrderStatusColor(order.status)} w-fit`}>
-                          {getPartsOrderStatusText(order.status)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="sm:text-right">
-                      <div className="text-base sm:text-lg font-bold text-primary">
-                        {formatCurrency(order.total_amount)}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Список позиций */}
-                  {order.items && order.items.length > 0 && (
-                    <div className="mb-2 sm:mb-3 p-2 sm:p-3 bg-white rounded border border-gray-100">
-                      <div className="space-y-2">
-                        {order.items.map((item: any) => (
-                          <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2 text-xs sm:text-sm pb-2 last:pb-0 border-b last:border-b-0 border-gray-100">
-                            <div className="flex-1">
-                              <div className="font-medium text-gray-900">
-                                {item.inventory_item?.name || 'Запчасть'}
-                              </div>
-                              {item.inventory_item?.part_number && (
-                                <div className="text-[10px] sm:text-xs text-gray-500">
-                                  Артикул: {item.inventory_item.part_number}
-                                </div>
-                              )}
-                            </div>
-                            <div className="sm:text-right">
-                              <div className="text-gray-900">
-                                {item.quantity} шт × {formatCurrency(item.price_at_sale)}
-                              </div>
-                              <div className="font-medium text-primary">
-                                {formatCurrency(item.subtotal)}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Примечания */}
-                  {order.notes && (
-                    <div className="mb-2 sm:mb-3 p-2 sm:p-3 bg-blue-50 rounded border border-blue-100">
-                      <p className="text-xs sm:text-sm text-gray-700">{order.notes}</p>
-                    </div>
-                  )}
-                  
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-2 sm:pt-3 border-t border-gray-200 gap-2">
-                    <div className="flex items-center text-xs sm:text-sm text-gray-600">
-                      <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                      {new Date(order.order_date).toLocaleDateString('ru-RU', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                      })}
-                    </div>
-                    <span className="text-[10px] sm:text-xs text-gray-500">
-                      {formatDistanceToNow(new Date(order.created_at), { 
-                        addSuffix: true,
-                        locale: ru 
-                      })}
-                    </span>
-                  </div>
-                </div>
-              ))}
+          {activeOrders.length > 0 ? (
+            <div className="space-y-2">
+              {activeOrders.map(order => <OrderCard key={order.id} order={order} />)}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-6 sm:py-8 text-sm">Заказы не найдены</p>
+            <div className="bg-white rounded-xl border border-dashed border-gray-200 py-8 text-center">
+              <Package className="w-6 h-6 text-gray-200 mx-auto mb-1" />
+              <p className="text-sm text-gray-400">Нет активных заявок</p>
+            </div>
           )}
         </div>
 
-        {/* Футер */}
-        <div className="mt-6 sm:mt-8 text-center text-xs sm:text-sm text-gray-500 px-2">
-          <p>Эта страница создана для вашего удобства</p>
-          <p className="mt-1">Здесь вы можете отслеживать состояние ваших заказов в любое время</p>
+        {/* Archive */}
+        {doneOrders.length > 0 && (
+          <div>
+            <button
+              onClick={() => setArchiveOpen(v => !v)}
+              className="w-full flex items-center gap-2 px-1 mb-2 group"
+            >
+              <Archive className="w-4 h-4 text-gray-400" />
+              <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide group-hover:text-gray-700 transition-colors">
+                Архив
+              </h2>
+              <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">
+                {doneOrders.length}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-gray-400 ml-auto transition-transform ${archiveOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {archiveOpen && (
+              <div className="space-y-2">
+                {doneOrders.map(order => <OrderCard key={order.id} order={order} />)}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="mt-8 text-center text-xs text-gray-400 pb-4">
+          <p>Страница для отслеживания состояния ваших заказов</p>
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useParams, Link, useLocation } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Car, FileText, Phone, Mail, MapPin, Link2, Package, Plus, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Car, FileText, Phone, Mail, MapPin, Link2, Package, Plus, Pencil, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { toast } from 'sonner'
@@ -13,8 +13,9 @@ import { getStatusColor, getStatusText, getOrderStatusColor, getOrderStatusText 
 export default function CustomerProfile() {
   const { id } = useParams<{ id: string }>()
   const location = useLocation()
+  const queryClient = useQueryClient()
   const [showVehicleModal, setShowVehicleModal] = useState(false)
-  const [vehiclesExpanded, setVehiclesExpanded] = useState(false)
+  const [editingVehicle, setEditingVehicle] = useState<any>(null)
 
   const handleCopyPublicLink = async () => {
     const publicUrl = `${window.location.origin}/public/customer/${id}`
@@ -120,6 +121,18 @@ export default function CustomerProfile() {
     )
   }
 
+  const deleteVehicleMutation = useMutation({
+    mutationFn: async (vehicleId: string) => {
+      const { error } = await supabase.from('vehicles').delete().eq('id', vehicleId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer-vehicles', id] })
+      toast.success('Автомобиль удалён')
+    },
+    onError: () => toast.error('Ошибка при удалении'),
+  })
+
   if (!customer) {
     return (
       <div className="text-center py-12">
@@ -186,51 +199,86 @@ export default function CustomerProfile() {
       </div>
 
       {/* Секция автомобилей */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-lg shadow-sm mb-6">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <Car className="w-5 h-5 text-primary" />
+            <h2 className="text-base sm:text-lg font-bold text-gray-900">Автомобили</h2>
+            {vehicles && vehicles.length > 0 && (
+              <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-medium">
+                {vehicles.length}
+              </span>
+            )}
+          </div>
           <button
-            onClick={() => setVehiclesExpanded(!vehiclesExpanded)}
-            className="flex items-center gap-2 flex-1 text-left"
-          >
-            <Car className="w-6 h-6 text-primary" />
-            <h2 className="text-xl font-bold text-gray-900">
-              Автомобили ({vehicles?.length || 0})
-            </h2>
-            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ml-1 ${vehiclesExpanded ? 'rotate-180' : ''}`} />
-          </button>
-          <button
-            onClick={() => setShowVehicleModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            onClick={() => { setEditingVehicle(null); setShowVehicleModal(true) }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 transition-colors font-medium"
           >
             <Plus className="w-4 h-4" />
-            Добавить авто
+            <span className="hidden sm:inline">Добавить авто</span>
+            <span className="sm:hidden">Добавить</span>
           </button>
         </div>
 
-        {vehiclesExpanded && (
-          vehiclesLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : vehicles && vehicles.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {vehicles.map((vehicle) => (
-                <div key={vehicle.id} className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">
-                    {vehicle.brand} {vehicle.model}
-                  </h3>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <p>Номер: <span className="font-medium">{vehicle.license_plate}</span></p>
-                    {vehicle.year && <p>Год: {vehicle.year}</p>}
-                    {vehicle.vin && <p>VIN: {vehicle.vin}</p>}
-                    {vehicle.color && <p>Цвет: {vehicle.color}</p>}
-                  </div>
+        {/* Vehicle list */}
+        {vehiclesLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+          </div>
+        ) : vehicles && vehicles.length > 0 ? (
+          <ul className="divide-y divide-gray-100">
+            {vehicles.map((vehicle) => (
+              <li key={vehicle.id} className="flex items-center gap-3 px-4 sm:px-6 py-3 hover:bg-gray-50 transition-colors group">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Car className="w-4 h-4 text-primary" />
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-center py-8">Автомобили не добавлены</p>
-          )
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {vehicle.brand} {vehicle.model}
+                    {vehicle.year && <span className="font-normal text-gray-400"> · {vehicle.year}</span>}
+                    {vehicle.color && <span className="font-normal text-gray-400"> · {vehicle.color}</span>}
+                  </p>
+                  <p className="text-xs text-gray-500 font-mono truncate">
+                    {vehicle.license_plate}
+                    {vehicle.vin && <span className="ml-2 text-gray-400">{vehicle.vin}</span>}
+                    {vehicle.mileage && <span className="ml-2 text-gray-400">{vehicle.mileage.toLocaleString('ru-RU')} км</span>}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => { setEditingVehicle(vehicle); setShowVehicleModal(true) }}
+                    className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
+                    title="Редактировать"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm(`Удалить ${vehicle.brand} ${vehicle.model} (${vehicle.license_plate})?`)) {
+                        deleteVehicleMutation.mutate(vehicle.id)
+                      }
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                    title="Удалить"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="py-8 text-center">
+            <Car className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+            <p className="text-sm text-gray-400">Автомобили не добавлены</p>
+            <button
+              onClick={() => { setEditingVehicle(null); setShowVehicleModal(true) }}
+              className="mt-2 text-sm text-primary hover:underline"
+            >
+              Добавить первый
+            </button>
+          </div>
         )}
       </div>
 
@@ -391,12 +439,13 @@ export default function CustomerProfile() {
         </div>
       )}
 
-      {/* Модалка добавления автомобиля */}
+      {/* Модалка добавления/редактирования автомобиля */}
       {showVehicleModal && (
         <VehicleModal
-          onClose={() => setShowVehicleModal(false)}
+          onClose={() => { setShowVehicleModal(false); setEditingVehicle(null) }}
           customerId={id}
           customerName={customer.name}
+          vehicle={editingVehicle}
         />
       )}
     </div>

@@ -2,177 +2,224 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
-import { X } from 'lucide-react'
+import { X, Car } from 'lucide-react'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
+
+interface VehicleData {
+  id?: string
+  brand: string
+  model: string
+  year: number
+  license_plate: string
+  vin?: string
+  color?: string
+  mileage?: number | null
+}
 
 interface VehicleModalProps {
   onClose: () => void
   customerId?: string
   customerName?: string
+  vehicle?: VehicleData | null
 }
 
-export default function VehicleModal({ onClose, customerId, customerName }: VehicleModalProps) {
-  const [formData, setFormData] = useState({
-    brand: '',
-    model: '',
-    year: new Date().getFullYear(),
-    license_plate: '',
-    vin: '',
-    color: '',
-    mileage: '',
+export default function VehicleModal({ onClose, customerId, customerName, vehicle }: VehicleModalProps) {
+  const isEdit = !!vehicle?.id
+  const [form, setForm] = useState({
+    brand: vehicle?.brand ?? '',
+    model: vehicle?.model ?? '',
+    year: vehicle?.year ?? new Date().getFullYear(),
+    license_plate: vehicle?.license_plate ?? '',
+    vin: vehicle?.vin ?? '',
+    color: vehicle?.color ?? '',
+    mileage: vehicle?.mileage != null ? String(vehicle.mileage) : '',
   })
 
   useBlockScroll(true)
   const queryClient = useQueryClient()
 
-  const mutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const vehicleData = {
-        ...data,
-        customer_id: customerId,
-        mileage: data.mileage ? Number(data.mileage) : null,
-      }
+  const set = (field: keyof typeof form, value: string) =>
+    setForm(prev => ({ ...prev, [field]: value }))
 
-      const { error } = await supabase.from('vehicles').insert([vehicleData])
-      if (error) throw error
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        brand: form.brand.trim(),
+        model: form.model.trim(),
+        year: Number(form.year),
+        license_plate: form.license_plate.trim().toUpperCase(),
+        vin: form.vin.trim().toUpperCase() || null,
+        color: form.color.trim() || null,
+        mileage: form.mileage ? Number(form.mileage) : null,
+        customer_id: customerId,
+      }
+      if (isEdit) {
+        const { error } = await supabase.from('vehicles').update(payload).eq('id', vehicle!.id!)
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from('vehicles').insert([payload])
+        if (error) throw error
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customer-vehicles', customerId] })
-      toast.success('Автомобиль добавлен')
+      toast.success(isEdit ? 'Автомобиль обновлён' : 'Автомобиль добавлен')
       onClose()
     },
-    onError: () => {
-      toast.error('Ошибка при добавлении')
-    },
+    onError: () => toast.error('Ошибка при сохранении'),
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    mutation.mutate(formData)
+    mutation.mutate()
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto relative">
-        <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-xl font-bold">Добавить автомобиль</h2>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+
+      {/* Sheet */}
+      <div className="relative bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-[95dvh] flex flex-col shadow-xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Car className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 leading-tight">
+                {isEdit ? 'Редактировать авто' : 'Добавить авто'}
+              </h2>
+              {customerName && (
+                <p className="text-xs text-gray-400 leading-tight">{customerName}</p>
+              )}
+            </div>
+          </div>
           <button
+            type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
-        
-        <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
-          {customerName && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-sm text-gray-700">
-                <span className="font-medium">Владелец:</span> {customerName}
-              </p>
-            </div>
-          )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Марка *</label>
-            <input
-              type="text"
-              required
-              value={formData.brand}
-              onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-              placeholder="Toyota"
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Модель *</label>
-            <input
-              type="text"
-              required
-              value={formData.model}
-              onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-              placeholder="Camry"
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
-
+        {/* Form */}
+        <form id="vehicle-form" onSubmit={handleSubmit} className="overflow-y-auto px-4 py-4 space-y-3 flex-1">
+          {/* Марка + Модель */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Год *</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Марка <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                required
+                value={form.brand}
+                onChange={e => set('brand', e.target.value)}
+                placeholder="Toyota"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Модель <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                required
+                value={form.model}
+                onChange={e => set('model', e.target.value)}
+                placeholder="Camry"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {/* Номер */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Гос. номер <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              required
+              value={form.license_plate}
+              onChange={e => set('license_plate', e.target.value.toUpperCase())}
+              placeholder="АА1234ВВ"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-mono tracking-widest uppercase"
+            />
+          </div>
+
+          {/* Год + Цвет */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Год <span className="text-red-500">*</span></label>
               <input
                 type="number"
                 required
-                value={formData.year}
-                onChange={(e) => setFormData({ ...formData, year: Number(e.target.value) })}
+                value={form.year}
+                onChange={e => set('year', e.target.value)}
                 min="1900"
                 max={new Date().getFullYear() + 1}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Цвет</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Цвет</label>
               <input
                 type="text"
-                value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                placeholder="Черный"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                value={form.color}
+                onChange={e => set('color', e.target.value)}
+                placeholder="Чёрный"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
           </div>
 
+          {/* VIN */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Гос. номер *</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">VIN</label>
             <input
               type="text"
-              required
-              value={formData.license_plate}
-              onChange={(e) => setFormData({ ...formData, license_plate: e.target.value })}
-              placeholder="АА1234ВВ"
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">VIN</label>
-            <input
-              type="text"
-              value={formData.vin}
-              onChange={(e) => setFormData({ ...formData, vin: e.target.value })}
+              value={form.vin}
+              onChange={e => set('vin', e.target.value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/gi, '').slice(0, 17))}
               placeholder="17 символов"
               maxLength={17}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-mono tracking-widest"
             />
+            {form.vin && (
+              <p className={`text-xs mt-0.5 ${form.vin.length === 17 ? 'text-green-600' : 'text-gray-400'}`}>
+                {form.vin.length}/17
+              </p>
+            )}
           </div>
-          
+
+          {/* Пробег */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Пробег (км)</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Пробег (км)</label>
             <input
               type="number"
-              value={formData.mileage}
-              onChange={(e) => setFormData({ ...formData, mileage: e.target.value })}
-              placeholder="150000"
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              value={form.mileage}
+              onChange={e => set('mileage', e.target.value)}
+              placeholder="150 000"
+              min="0"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
         </form>
 
-        <div className="sticky bottom-0 bg-white px-6 py-4 border-t border-gray-200 flex gap-3">
+        {/* Footer */}
+        <div className="px-4 py-3 border-t border-gray-100 flex gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+            className="flex-1 py-2.5 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium"
           >
             Отмена
           </button>
           <button
-            onClick={handleSubmit}
+            type="submit"
+            form="vehicle-form"
             disabled={mutation.isPending}
-            className="flex-1 px-4 py-3 text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
+            className="flex-1 py-2.5 text-sm text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 font-medium"
           >
-            {mutation.isPending ? 'Сохранение...' : 'Добавить'}
+            {mutation.isPending ? 'Сохранение...' : isEdit ? 'Сохранить' : 'Добавить'}
           </button>
         </div>
       </div>
