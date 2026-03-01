@@ -255,9 +255,13 @@ export default function CustomerProfile() {
               >
                 {/* Card top row: icon + actions */}
                 <div className="shrink-0 sm:w-full sm:flex sm:items-center sm:justify-between sm:mb-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Link
+                    to={`/vehicle/${vehicle.id}/history`}
+                    className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 hover:bg-primary/20 transition-colors"
+                    title="История заявок"
+                  >
                     <Car className="w-4 h-4 text-primary" />
-                  </div>
+                  </Link>
                   <div className="hidden sm:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => { setEditingVehicle(vehicle); setShowVehicleModal(true) }}
@@ -283,10 +287,10 @@ export default function CustomerProfile() {
                 {/* Main info */}
                 <div className="flex-1 min-w-0 sm:w-full">
                     <Link
-                      to={`/appointments?vehicleId=${vehicle.id}`}
+                      to={`/vehicle/${vehicle.id}/history`}
                       className="block hover:text-primary transition-colors"
                     >
-                      <p className="text-sm font-bold text-gray-900 truncate sm:text-base sm:mb-0.5">
+                      <p className="text-sm font-bold text-gray-900 truncate sm:text-base sm:mb-0.5 group-hover:text-primary transition-colors">
                         {vehicle.brand} {vehicle.model}
                       </p>
                     </Link>

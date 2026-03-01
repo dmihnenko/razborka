@@ -38,6 +38,7 @@ const MyVehiclesArchive = lazy(() => import('./pages/MyVehiclesArchive'))
 const PublicPersonalVehicleView = lazy(() => import('./pages/PublicPersonalVehicleView'))
 const PublicCustomerView = lazy(() => import('./pages/PublicCustomerView'))
 const CustomerProfile = lazy(() => import('./pages/CustomerProfile'))
+const VehicleHistory = lazy(() => import('./pages/VehicleHistory'))
 const VehicleAccessPage = lazy(() => import('./pages/VehicleAccessPage'))
 const Analytics = lazy(() => import('./pages/Analytics'))
 const MonthlyDetails = lazy(() => import('./pages/MonthlyDetails'))
@@ -127,6 +128,7 @@ function App() {
           <Route path="dashboard" element={<Navigate to="/" replace />} />
           <Route path="customers" element={<Customers />} />
           <Route path="customer/:id" element={<CustomerProfile />} />
+          <Route path="vehicle/:vehicleId/history" element={<VehicleHistory />} />
           <Route path="vehicles" element={<Vehicles />} />
           <Route path="appointments" element={<Appointments />} />
           <Route path="statistics" element={<MonthlyStatistics />} />
