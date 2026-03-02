@@ -1,19 +1,37 @@
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, PieChart, Pie, Cell } from 'recharts'
-import { TrendingUp, DollarSign, Calendar, Users, CheckCircle, Clock, XCircle } from 'lucide-react'
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  LineChart, Line, Legend, PieChart, Pie, Cell
+} from 'recharts'
+import { TrendingUp, Calendar, CheckCircle, Clock, XCircle, Wrench, CreditCard, AlertCircle } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
+
+const MONTH_NAMES = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
+
+function fmt(n: number) {
+  if (n >= 1_000_000) return `₴${(n / 1_000_000).toFixed(1)}М`
+  if (n >= 1_000) return `₴${(n / 1_000).toFixed(1)}к`
+  return `₴${n}`
+}
+
+const PERIOD_OPTIONS = [
+  { label: '3 мес', months: 3 },
+  { label: '6 мес', months: 6 },
+  { label: '12 мес', months: 12 },
+]
 
 export default function Analytics() {
   const { data: profile } = useUserProfile()
+  const [period, setPeriod] = useState(6)
 
-  // Статистика по месяцам для закрытых заявок
   const { data: monthlyStats } = useQuery({
     queryKey: ['analytics-monthly-stats', profile?.sto_company_id],
     queryFn: async () => {
       const { data } = await supabase
         .from('appointments')
-        .select('closed_date, parts_cost, total_work_cost, parts_paid, work_paid')
+        .select('closed_date, parts_cost, total_parts_cost, total_work_cost, parts_paid, work_paid')
         .eq('sto_company_id', profile?.sto_company_id)
         .eq('status', 'archived')
         .not('closed_date', 'is', null)
@@ -21,341 +39,286 @@ export default function Analytics() {
 
       if (!data || data.length === 0) return []
 
-      // Группируем по месяцам
-      const monthlyData: Record<string, { 
-        count: number
-        parts: number
-        work: number
-        total: number
-        partsPaid: number
-        workPaid: number
-        totalPaid: number
+      const monthlyData: Record<string, {
+        count: number; parts: number; work: number; total: number
+        partsPaid: number; workPaid: number; totalPaid: number
       }> = {}
 
-      data.forEach((appointment: any) => {
-        const date = new Date(appointment.closed_date)
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-        
-        if (!monthlyData[monthKey]) {
-          monthlyData[monthKey] = { 
-            count: 0, 
-            parts: 0, 
-            work: 0, 
-            total: 0,
-            partsPaid: 0,
-            workPaid: 0,
-            totalPaid: 0
-          }
-        }
-
-        monthlyData[monthKey].count++
-        const parts = appointment.parts_cost || 0
-        const work = appointment.total_work_cost || 0
-        monthlyData[monthKey].parts += parts
-        monthlyData[monthKey].work += work
-        monthlyData[monthKey].total += parts + work
-
-        if (appointment.parts_paid) {
-          monthlyData[monthKey].partsPaid += parts
-          monthlyData[monthKey].totalPaid += parts
-        }
-        if (appointment.work_paid) {
-          monthlyData[monthKey].workPaid += work
-          monthlyData[monthKey].totalPaid += work
-        }
+      data.forEach((a: any) => {
+        const date = new Date(a.closed_date)
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+        if (!monthlyData[key]) monthlyData[key] = { count: 0, parts: 0, work: 0, total: 0, partsPaid: 0, workPaid: 0, totalPaid: 0 }
+        const parts = (a.parts_cost || a.total_parts_cost) || 0
+        const work = a.total_work_cost || 0
+        monthlyData[key].count++
+        monthlyData[key].parts += parts
+        monthlyData[key].work += work
+        monthlyData[key].total += parts + work
+        if (a.parts_paid) { monthlyData[key].partsPaid += parts; monthlyData[key].totalPaid += parts }
+        if (a.work_paid) { monthlyData[key].workPaid += work; monthlyData[key].totalPaid += work }
       })
 
-      // Преобразуем в массив и форматируем
       return Object.entries(monthlyData)
         .sort(([a], [b]) => a.localeCompare(b))
-        .slice(-12) // Последние 12 месяцев
-        .map(([month, stats]) => {
-          const [year, monthNum] = month.split('-')
-          const monthNames = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
-          
+        .slice(-12)
+        .map(([month, s]) => {
+          const [year, mNum] = month.split('-')
           return {
-            month: `${monthNames[parseInt(monthNum) - 1]} ${year}`,
-            count: stats.count,
-            parts: Math.round(stats.parts),
-            work: Math.round(stats.work),
-            total: Math.round(stats.total),
-            partsPaid: Math.round(stats.partsPaid),
-            workPaid: Math.round(stats.workPaid),
-            totalPaid: Math.round(stats.totalPaid),
-            unpaid: Math.round(stats.total - stats.totalPaid),
+            month: `${MONTH_NAMES[parseInt(mNum) - 1]} ${year.slice(2)}`,
+            count: s.count,
+            parts: Math.round(s.parts),
+            work: Math.round(s.work),
+            total: Math.round(s.total),
+            totalPaid: Math.round(s.totalPaid),
+            unpaid: Math.round(s.total - s.totalPaid),
           }
         })
     },
     enabled: !!profile?.sto_company_id,
   })
 
-  // Общая статистика
   const { data: overallStats } = useQuery({
     queryKey: ['analytics-overall-stats', profile?.sto_company_id],
     queryFn: async () => {
-      const { data: allAppointments } = await supabase
+      const { data: all } = await supabase
         .from('appointments')
-        .select('status, parts_cost, total_work_cost, parts_paid, work_paid, closed_date, created_at')
+        .select('status, parts_cost, total_parts_cost, total_work_cost, parts_paid, work_paid, closed_date, created_at')
         .eq('sto_company_id', profile?.sto_company_id)
         .not('status', 'in', '(pending_deletion,deleted)')
 
-      if (!allAppointments) return null
+      if (!all) return null
 
-      const completed = allAppointments.filter(a => a.status === 'archived')
-      const inProgress = allAppointments.filter(a => a.status === 'in_progress')
-      const scheduled = allAppointments.filter(a => a.status === 'scheduled')
-      const cancelled = allAppointments.filter(a => a.status === 'cancelled')
+      const completed = all.filter(a => a.status === 'archived')
+      const inProgress = all.filter(a => a.status === 'in_progress')
+      const scheduled = all.filter(a => a.status === 'scheduled')
+      const cancelled = all.filter(a => a.status === 'cancelled')
 
-      const totalRevenue = completed.reduce((sum, a) => sum + (a.parts_cost || 0) + (a.total_work_cost || 0), 0)
-      const paidRevenue = completed.reduce((sum, a) => {
-        let paid = 0
-        if (a.parts_paid) paid += (a.parts_cost || 0)
-        if (a.work_paid) paid += (a.total_work_cost || 0)
-        return sum + paid
-      }, 0)
-
-      // Средний чек
+      const totalParts = completed.reduce((s, a) => s + ((a.parts_cost || a.total_parts_cost) || 0), 0)
+      const totalWork = completed.reduce((s, a) => s + (a.total_work_cost || 0), 0)
+      const totalRevenue = totalWork
+      const paidParts = completed.reduce((s, a) => s + (a.parts_paid ? ((a.parts_cost || a.total_parts_cost) || 0) : 0), 0)
+      const paidWork = completed.reduce((s, a) => s + (a.work_paid ? (a.total_work_cost || 0) : 0), 0)
+      const paidRevenue = paidWork
       const avgCheck = completed.length > 0 ? totalRevenue / completed.length : 0
-
-      // Среднее время выполнения
-      const completedWithDates = completed.filter(a => a.closed_date && a.created_at)
-      const avgDays = completedWithDates.length > 0
-        ? completedWithDates.reduce((sum, a) => {
-            const created = new Date(a.created_at).getTime()
-            const closed = new Date(a.closed_date!).getTime()
-            return sum + (closed - created) / (1000 * 60 * 60 * 24)
-          }, 0) / completedWithDates.length
+      const withDates = completed.filter(a => a.closed_date && a.created_at)
+      const avgDays = withDates.length > 0
+        ? withDates.reduce((s, a) => s + (new Date(a.closed_date!).getTime() - new Date(a.created_at).getTime()) / 86400000, 0) / withDates.length
         : 0
 
       return {
-        total: allAppointments.length,
-        completed: completed.length,
-        inProgress: inProgress.length,
-        scheduled: scheduled.length,
-        cancelled: cancelled.length,
-        totalRevenue: Math.round(totalRevenue),
-        paidRevenue: Math.round(paidRevenue),
+        total: all.length, completed: completed.length,
+        inProgress: inProgress.length, scheduled: scheduled.length, cancelled: cancelled.length,
+        totalRevenue: Math.round(totalRevenue), paidRevenue: Math.round(paidRevenue),
         unpaidRevenue: Math.round(totalRevenue - paidRevenue),
-        avgCheck: Math.round(avgCheck),
-        avgDays: Math.round(avgDays * 10) / 10,
+        totalParts: Math.round(totalParts), paidParts: Math.round(paidParts),
+        totalWork: Math.round(totalWork), paidWork: Math.round(paidWork),
+        avgCheck: Math.round(avgCheck), avgDays: Math.round(avgDays * 10) / 10,
       }
     },
     enabled: !!profile?.sto_company_id,
   })
 
-  // Данные для круговой диаграммы статусов
-  const statusData = overallStats ? [
+  const slicedMonthly = monthlyStats ? monthlyStats.slice(-period) : []
+
+  const statusPie = overallStats ? [
     { name: 'Завершено', value: overallStats.completed, color: '#10b981' },
     { name: 'В работе', value: overallStats.inProgress, color: '#3b82f6' },
     { name: 'Запланировано', value: overallStats.scheduled, color: '#f59e0b' },
     { name: 'Отменено', value: overallStats.cancelled, color: '#ef4444' },
-  ].filter(item => item.value > 0) : []
+  ].filter(i => i.value > 0) : []
 
-  // Данные для круговой диаграммы оплат
-  const paymentData = overallStats ? [
-    { name: 'Оплачено', value: overallStats.paidRevenue, color: '#10b981' },
-    { name: 'Не оплачено', value: overallStats.unpaidRevenue, color: '#ef4444' },
-  ].filter(item => item.value > 0) : []
-
-  const statCards = [
-    { name: 'Всего заявок', value: overallStats?.total || 0, icon: Calendar, color: 'bg-blue-500' },
-    { name: 'Завершено', value: overallStats?.completed || 0, icon: CheckCircle, color: 'bg-green-500' },
-    { name: 'В работе', value: overallStats?.inProgress || 0, icon: Clock, color: 'bg-orange-500' },
-    { name: 'Отменено', value: overallStats?.cancelled || 0, icon: XCircle, color: 'bg-red-500' },
+  const kpiCards = [
+    { label: 'Всего заявок', value: overallStats?.total ?? '—', icon: Calendar, accent: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Завершено', value: overallStats?.completed ?? '—', icon: CheckCircle, accent: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'В работе', value: overallStats?.inProgress ?? '—', icon: Wrench, accent: 'text-orange-500', bg: 'bg-orange-50' },
+    { label: 'Запланировано', value: overallStats?.scheduled ?? '—', icon: Clock, accent: 'text-sky-600', bg: 'bg-sky-50' },
+    { label: 'Отменено', value: overallStats?.cancelled ?? '—', icon: XCircle, accent: 'text-red-500', bg: 'bg-red-50' },
+    { label: 'Доход (работы)', value: overallStats ? fmt(overallStats.totalWork) : '—', icon: TrendingUp, accent: 'text-violet-600', bg: 'bg-violet-50' },
+    { label: 'Доход (запчасти)', value: overallStats ? fmt(overallStats.totalParts) : '—', icon: TrendingUp, accent: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: 'Оплачено', value: overallStats ? fmt(overallStats.paidRevenue) : '—', icon: CreditCard, accent: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'К оплате', value: overallStats ? fmt(overallStats.unpaidRevenue) : '—', icon: AlertCircle, accent: 'text-red-500', bg: 'bg-red-50' },
+    { label: 'Средний чек', value: overallStats ? fmt(overallStats.avgCheck) : '—', icon: TrendingUp, accent: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { label: 'Среднее время', value: overallStats ? `${overallStats.avgDays}д` : '—', icon: Clock, accent: 'text-slate-600', bg: 'bg-slate-50' },
   ]
 
-  const revenueCards = [
-    { name: 'Общий доход', value: `₴${overallStats?.totalRevenue || 0}`, icon: DollarSign, color: 'bg-blue-500' },
-    { name: 'Оплачено', value: `₴${overallStats?.paidRevenue || 0}`, icon: CheckCircle, color: 'bg-green-500' },
-    { name: 'К оплате', value: `₴${overallStats?.unpaidRevenue || 0}`, icon: Clock, color: 'bg-orange-500' },
-    { name: 'Средний чек', value: `₴${overallStats?.avgCheck || 0}`, icon: TrendingUp, color: 'bg-purple-500' },
-  ]
+  const CustomTooltipUAH = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null
+    return (
+      <div className="bg-white border border-gray-200 rounded shadow-md p-2 text-xs">
+        <p className="font-semibold text-gray-700 mb-1">{label}</p>
+        {payload.map((p: any) => (
+          <p key={p.name} style={{ color: p.color }}>{p.name}: {fmt(p.value)}</p>
+        ))}
+      </div>
+    )
+  }
+
+  const CustomTooltipCount = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null
+    return (
+      <div className="bg-white border border-gray-200 rounded shadow-md p-2 text-xs">
+        <p className="font-semibold text-gray-700 mb-1">{label}</p>
+        {payload.map((p: any) => (
+          <p key={p.name} style={{ color: p.color }}>{p.name}: {p.value}</p>
+        ))}
+      </div>
+    )
+  }
 
   return (
-    <div>
-      <h1 className="mb-8 text-3xl font-bold text-gray-900">Аналитика</h1>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-gray-900">Аналитика</h1>
+        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+          {PERIOD_OPTIONS.map(opt => (
+            <button
+              key={opt.months}
+              onClick={() => setPeriod(opt.months)}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                period === opt.months
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {/* Статистика заявок */}
-      <div className="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((stat) => {
-          const Icon = stat.icon
+      {/* KPI grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-6 gap-2">
+        {kpiCards.map(card => {
+          const Icon = card.icon
           return (
-            <div key={stat.name} className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className={`${stat.color} p-3 rounded-lg`}>
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                  <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
-                </div>
+            <div key={card.label} className="bg-white rounded-lg border border-gray-100 shadow-sm px-3 py-2.5 flex items-center gap-2.5">
+              <div className={`${card.bg} rounded-md p-1.5 flex-shrink-0`}>
+                <Icon className={`w-4 h-4 ${card.accent}`} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] text-gray-500 leading-none mb-0.5 truncate">{card.label}</p>
+                <p className={`text-sm font-bold ${card.accent} leading-tight`}>{card.value}</p>
               </div>
             </div>
           )
         })}
       </div>
 
-      {/* Финансовая статистика */}
-      <div className="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-4">
-        {revenueCards.map((stat) => {
-          const Icon = stat.icon
-          return (
-            <div key={stat.name} className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className={`${stat.color} p-3 rounded-lg`}>
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                  <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Дополнительные метрики */}
-      {overallStats && (
-        <div className="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center mb-2">
-              <Users className="w-5 h-5 mr-2 text-blue-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Среднее время выполнения</h3>
-            </div>
-            <p className="text-4xl font-bold text-blue-600">{overallStats.avgDays} дней</p>
-            <p className="text-sm text-gray-600 mt-2">от создания до закрытия заявки</p>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center mb-2">
-              <TrendingUp className="w-5 h-5 mr-2 text-green-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Процент оплаты</h3>
-            </div>
-            <p className="text-4xl font-bold text-green-600">
-              {overallStats.totalRevenue > 0 
-                ? Math.round((overallStats.paidRevenue / overallStats.totalRevenue) * 100)
-                : 0}%
-            </p>
-            <p className="text-sm text-gray-600 mt-2">от общего дохода оплачено</p>
-          </div>
-        </div>
-      )}
-
-      {/* Круговые диаграммы */}
-      {(statusData.length > 0 || paymentData.length > 0) && (
-        <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-2">
-          {/* Распределение по статусам */}
-          {statusData.length > 0 && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Распределение заявок по статусам</h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
+      {/* Charts row 1: revenue line + bar count */}
+      {slicedMonthly.length > 0 ? (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            {/* Revenue line chart — spans 2 cols */}
+            <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 lg:col-span-2">
+              <p className="text-xs font-semibold text-gray-700 mb-3">Доходы по месяцам</p>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={slicedMonthly} margin={{ top: 2, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}к` : v} tick={{ fontSize: 10 }} width={36} />
+                  <Tooltip content={<CustomTooltipUAH />} />
+                  <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+                  <Line type="monotone" dataKey="parts" stroke="#f59e0b" strokeWidth={2} dot={false} name="Запчасти" />
+                  <Line type="monotone" dataKey="work" stroke="#10b981" strokeWidth={2} dot={false} name="Работы" />
+                  <Line type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={2.5} dot={false} name="Итого" />
+                </LineChart>
               </ResponsiveContainer>
             </div>
-          )}
 
-          {/* Распределение по оплатам */}
-          {paymentData.length > 0 && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Статус оплаты</h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={paymentData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ₴${value}`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {paymentData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => `₴${value}`} />
-                </PieChart>
+            {/* Closed per month bar */}
+            <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-4">
+              <p className="text-xs font-semibold text-gray-700 mb-3">Закрытых заявок / мес</p>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={slicedMonthly} margin={{ top: 2, right: 4, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 10 }} width={24} />
+                  <Tooltip content={<CustomTooltipCount />} />
+                  <Bar dataKey="count" fill="#3b82f6" name="Заявок" radius={[3, 3, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Графики по месяцам */}
-      {monthlyStats && monthlyStats.length > 0 && (
-        <div className="grid grid-cols-1 gap-6 mb-8">
-          {/* График количества заявок */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Динамика закрытых заявок</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlyStats}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" style={{ fontSize: '12px' }} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="count" fill="#3b82f6" name="Заявок закрыто" />
-              </BarChart>
-            </ResponsiveContainer>
           </div>
 
-          {/* График доходов */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Динамика доходов по месяцам</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthlyStats}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" style={{ fontSize: '12px' }} />
-                <YAxis />
-                <Tooltip formatter={(value) => `₴${value}`} />
-                <Legend />
-                <Line type="monotone" dataKey="parts" stroke="#f59e0b" strokeWidth={2} name="Запчасти" />
-                <Line type="monotone" dataKey="work" stroke="#10b981" strokeWidth={2} name="Работы" />
-                <Line type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={3} name="Всего" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {/* Charts row 2: payment bar + status pie + payment progress */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            {/* Paid vs unpaid bar */}
+            <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 lg:col-span-2">
+              <p className="text-xs font-semibold text-gray-700 mb-3">Начислено / Оплачено / Долг</p>
+              <ResponsiveContainer width="100%" height={190}>
+                <BarChart data={slicedMonthly} margin={{ top: 2, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}к` : v} tick={{ fontSize: 10 }} width={36} />
+                  <Tooltip content={<CustomTooltipUAH />} />
+                  <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+                  <Bar dataKey="total" fill="#93c5fd" name="Начислено" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="totalPaid" fill="#10b981" name="Оплачено" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="unpaid" fill="#fca5a5" name="Долг" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
-          {/* График оплат */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Оплата vs Начислено</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlyStats}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" style={{ fontSize: '12px' }} />
-                <YAxis />
-                <Tooltip formatter={(value) => `₴${value}`} />
-                <Legend />
-                <Bar dataKey="total" fill="#3b82f6" name="Начислено" />
-                <Bar dataKey="totalPaid" fill="#10b981" name="Оплачено" />
-                <Bar dataKey="unpaid" fill="#ef4444" name="К оплате" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
+            {/* Status distribution + payment % */}
+            <div className="flex flex-col gap-3">
+              {/* Pie chart */}
+              {statusPie.length > 0 && (
+                <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 flex-1">
+                  <p className="text-xs font-semibold text-gray-700 mb-2">Статусы заявок</p>
+                  <div className="flex items-center gap-2">
+                    <ResponsiveContainer width="50%" height={110}>
+                      <PieChart>
+                        <Pie data={statusPie} cx="50%" cy="50%" innerRadius={28} outerRadius={48} dataKey="value" strokeWidth={0}>
+                          {statusPie.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                        </Pie>
+                        <Tooltip formatter={(v, n) => [v, n]} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="flex flex-col gap-1 text-[11px]">
+                      {statusPie.map(item => (
+                        <div key={item.name} className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: item.color }} />
+                          <span className="text-gray-600">{item.name}</span>
+                          <span className="font-semibold text-gray-800 ml-auto pl-2">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
-      {(!monthlyStats || monthlyStats.length === 0) && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-gray-500 text-center">Недостаточно данных для отображения графиков. Закройте несколько заявок для получения статистики.</p>
+              {/* Payment % progress */}
+              {overallStats && (overallStats.totalRevenue > 0 || overallStats.totalParts > 0) && (
+                <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-4">
+                  <p className="text-xs font-semibold text-gray-700 mb-3">Статус оплаты</p>
+                  <div className="flex flex-col gap-2.5">
+                    {[
+                      { label: 'Работы', paid: overallStats.paidWork, total: overallStats.totalWork, color: 'bg-emerald-500' },
+                      { label: 'Запчасти', paid: overallStats.paidParts, total: overallStats.totalParts, color: 'bg-amber-400' },
+                    ].filter(r => r.total > 0).map(row => {
+                      const pct = Math.round((row.paid / row.total) * 100)
+                      return (
+                        <div key={row.label}>
+                          <div className="flex justify-between text-[11px] text-gray-600 mb-0.5">
+                            <span className="font-medium">{row.label}</span>
+                            <span className="font-semibold">{pct}% · {fmt(row.paid)} / {fmt(row.total)}</span>
+                          </div>
+                          <div className="w-full bg-gray-100 rounded-full h-1.5">
+                            <div className={`${row.color} h-1.5 rounded-full transition-all`} style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-6 text-center">
+          <p className="text-sm text-gray-500">Недостаточно данных. Закройте несколько заявок для получения статистики.</p>
         </div>
       )}
     </div>
