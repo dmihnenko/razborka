@@ -284,21 +284,19 @@ export default function PartsAnalytics() {
                   return (
                     <div key={month}>
                       <div className="flex items-center justify-between text-sm mb-1">
-                        <span className="text-gray-600 font-medium">{month}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-600 font-medium">{month}</span>
+                          <span className="text-xs text-gray-400">{data.orders} {data.orders === 1 ? 'заказ' : 'заказов'}</span>
+                        </div>
                         <span className="text-gray-900 font-semibold">
                           {formatPrice(data.revenue, 'USD')}
                         </span>
                       </div>
-                      <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+                      <div className="relative h-4 bg-gray-100 rounded-lg overflow-hidden">
                         <div
                           className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg transition-all"
                           style={{ width: `${widthPercent}%` }}
                         ></div>
-                        <div className="absolute inset-0 flex items-center justify-end pr-3">
-                          <span className="text-xs text-gray-600 font-medium">
-                            {data.orders} {data.orders === 1 ? 'заказ' : 'заказов'}
-                          </span>
-                        </div>
                       </div>
                     </div>
                   )
