@@ -274,30 +274,27 @@ export default function PartsAnalytics() {
             </div>
 
             {overallStats?.monthlyRevenue && overallStats.monthlyRevenue.length > 0 ? (
-              <div className="space-y-4">
+              <div className="flex items-end justify-between gap-1 h-44">
                 {overallStats.monthlyRevenue.map(([month, data]) => {
                   const maxRevenue = Math.max(
                     ...overallStats.monthlyRevenue.map(([, d]) => d.revenue)
                   )
-                  const widthPercent = (data.revenue / maxRevenue) * 100
+                  const heightPercent = maxRevenue > 0 ? (data.revenue / maxRevenue) * 100 : 0
 
                   return (
-                    <div key={month}>
-                      <div className="flex items-center justify-between text-sm mb-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-600 font-medium">{month}</span>
-                          <span className="text-xs text-gray-400">{data.orders} {data.orders === 1 ? 'заказ' : 'заказов'}</span>
-                        </div>
-                        <span className="text-gray-900 font-semibold">
-                          {formatPrice(data.revenue, 'USD')}
-                        </span>
-                      </div>
-                      <div className="relative h-4 bg-gray-100 rounded-lg overflow-hidden">
+                    <div key={month} className="flex flex-col items-center gap-1 flex-1 min-w-0 group">
+                      <span className="text-[10px] font-semibold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        {formatPrice(data.revenue, 'USD')}
+                      </span>
+                      <div className="w-full flex items-end" style={{ height: '120px' }}>
                         <div
-                          className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg transition-all"
-                          style={{ width: `${widthPercent}%` }}
-                        ></div>
+                          className="w-full bg-blue-500 hover:bg-blue-400 rounded-t transition-colors cursor-default"
+                          style={{ height: `${Math.max(heightPercent, 4)}%` }}
+                          title={`${month}: ${formatPrice(data.revenue, 'USD')} · ${data.orders} зак.`}
+                        />
                       </div>
+                      <span className="text-[10px] text-gray-500 leading-none truncate w-full text-center">{month.replace(' г.', '')}</span>
+                      <span className="text-[9px] text-gray-400 leading-none">{data.orders}</span>
                     </div>
                   )
                 })}
