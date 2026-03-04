@@ -244,10 +244,15 @@ export default function AppointmentDetails() {
         { value: 'in_progress', label: 'В работе' },
         { value: 'completed', label: 'Готова' },
       ] : [])
+    : appointment?.status === 'pending_deletion'
+    ? (isStoOwner ? [
+        { value: 'in_progress', label: 'Отклонить удаление' },
+      ] : [])
     : [
         { value: 'scheduled', label: 'Запланирована' },
         { value: 'in_progress', label: 'В работе' },
         { value: 'completed', label: 'Готова' },
+        ...(!isStoOwner ? [{ value: 'pending_deletion', label: 'Запрос на удаление' }] : []),
         ...(isStoOwner ? [{ value: 'archived', label: 'В архив' }] : []),
       ]
 
@@ -256,7 +261,8 @@ export default function AppointmentDetails() {
     in_progress: 'bg-blue-100 text-blue-800',
     completed: 'bg-green-100 text-green-800',
     cancelled: 'bg-red-100 text-red-800',
-    archived: 'bg-gray-200 text-gray-600'
+    archived: 'bg-gray-200 text-gray-600',
+    pending_deletion: 'bg-red-200 text-red-900',
   }
 
   const statusLabels = {
@@ -264,7 +270,8 @@ export default function AppointmentDetails() {
     in_progress: 'В работе',
     completed: 'Готова',
     cancelled: 'Отменена',
-    archived: 'Архив'
+    archived: 'Архив',
+    pending_deletion: 'Запрос на удаление',
   }
 
   if (isLoading) {
@@ -315,8 +322,8 @@ export default function AppointmentDetails() {
             <div className="relative">
               <button
                 onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                disabled={appointment.status === 'archived' && !isStoOwner}
-                className={`px-4 py-2 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} ${(appointment.status !== 'archived' || isStoOwner) ? 'hover:opacity-80 transition-opacity cursor-pointer' : 'cursor-default'}`}
+                disabled={(appointment.status === 'archived' && !isStoOwner) || (appointment.status === 'pending_deletion' && !isStoOwner)}
+                className={`px-4 py-2 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} ${((appointment.status !== 'archived' && appointment.status !== 'pending_deletion') || isStoOwner) ? 'hover:opacity-80 transition-opacity cursor-pointer' : 'cursor-default'}`}
               >
                 {statusLabels[appointment.status as keyof typeof statusLabels]}
               </button>
@@ -751,6 +758,30 @@ export default function AppointmentDetails() {
           {appointment.ready_for_pickup && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <p className="text-mobile-base text-green-800 font-medium">✓ Готово к выдаче</p>
+            </div>
+          )}
+
+          {/* Блок подтверждения удаления (для владельца) */}
+          {isStoOwner && appointment.status === 'pending_deletion' && (
+            <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+              <p className="text-sm font-semibold text-red-900 mb-1">🗑️ Работник запросил удаление</p>
+              <p className="text-xs text-red-700 mb-3">Действие необратимо. Только вы можете подтвердить удаление.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => updateStatusMutation.mutate('deleted')}
+                  disabled={updateStatusMutation.isPending}
+                  className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded hover:bg-red-700 disabled:opacity-50"
+                >
+                  Подтвердить удаление
+                </button>
+                <button
+                  onClick={() => updateStatusMutation.mutate('in_progress')}
+                  disabled={updateStatusMutation.isPending}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded hover:bg-gray-300 disabled:opacity-50"
+                >
+                  Отклонить
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -30,6 +30,7 @@ export default function VehicleHistory() {
         .from('appointments')
         .select('*, appointment_services(id, cost), appointment_parts(id, store_cost, quantity)')
         .eq('vehicle_id', vehicleId!)
+        .not('status', 'in', '(deleted,pending_deletion)')
         .order('scheduled_date', { ascending: false })
       if (error) throw error
       return data ?? []
@@ -168,9 +169,11 @@ export default function VehicleHistory() {
                         </span>
                         <span className="text-xs text-gray-400 flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          {new Date(appt.scheduled_date).toLocaleDateString('ru-RU', {
-                            day: 'numeric', month: 'short', year: 'numeric',
-                          })}
+                          {appt.scheduled_date
+                            ? new Date(appt.scheduled_date).toLocaleDateString('ru-RU', {
+                                day: 'numeric', month: 'short', year: 'numeric',
+                              })
+                            : '—'}
                         </span>
                         <span className="text-xs text-gray-300">
                           {formatDistanceToNow(new Date(appt.created_at), { addSuffix: true, locale: ru })}
