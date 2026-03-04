@@ -86,7 +86,7 @@ export default function Customers() {
   }
 
   const handleDelete = (id: string) => {
-    if (confirm('Вы уверены, что хотите удалить этого клиента?')) {
+    if (confirm('Вы уверены? Будут удалены клиент, все его автомобили и заявки.')) {
       deleteMutation.mutate(id)
     }
   }
