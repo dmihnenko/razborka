@@ -125,9 +125,9 @@ export function getMenuForRoles(roleNames: string[]): MenuItem[] {
     });
   });
 
-  // Если ролей нет, показываем меню обычного пользователя
+  // Если ролей нет, возвращаем пустой массив (Layout покажет спиннер)
   if (menuItems.size === 0) {
-    return userMenu;
+    return [];
   }
 
   return Array.from(menuItems.values());
