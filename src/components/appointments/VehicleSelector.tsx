@@ -18,6 +18,7 @@ export default function VehicleSelector({ customerId, selectedId, onSelect }: Pr
     model: '',
     year: new Date().getFullYear(),
     vin: '',
+    license_plate: '',
   })
   const [existingVehicle, setExistingVehicle] = useState<any>(null)
   const { data: profile } = useUserProfile()
@@ -63,6 +64,7 @@ export default function VehicleSelector({ customerId, selectedId, onSelect }: Pr
         model: '',
         year: new Date().getFullYear(),
         vin: '',
+        license_plate: '',
       })
       setExistingVehicle(null)
     },
@@ -121,6 +123,7 @@ export default function VehicleSelector({ customerId, selectedId, onSelect }: Pr
         model: '',
         year: new Date().getFullYear(),
         vin: '',
+        license_plate: '',
       })
       setExistingVehicle(null)
       toast.success('Автомобиль выбран')
@@ -210,11 +213,10 @@ export default function VehicleSelector({ customerId, selectedId, onSelect }: Pr
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                VIN *
+                VIN
               </label>
               <input
                 type="text"
-                required
                 value={newVehicleData.vin}
                 onChange={(e) => handleVinChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
@@ -224,6 +226,18 @@ export default function VehicleSelector({ customerId, selectedId, onSelect }: Pr
               {checkVinMutation.isPending && (
                 <p className="text-sm text-gray-500 mt-1">Проверка VIN...</p>
               )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Гос. номер
+              </label>
+              <input
+                type="text"
+                value={newVehicleData.license_plate}
+                onChange={(e) => setNewVehicleData({ ...newVehicleData, license_plate: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="AA0000AA"
+              />
             </div>
           </div>
           
