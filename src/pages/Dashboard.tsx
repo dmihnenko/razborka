@@ -12,12 +12,13 @@ import {
   AlertCircle,
   TrendingUp,
   Users,
-  DollarSign
+  DollarSign,
+  Trash2
 } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 import MyVehicles from './MyVehicles'
 import WorkerDashboard from './WorkerDashboard'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -152,6 +153,22 @@ export default function Dashboard() {
     enabled: !!profile?.sto_company_id,
   })
 
+  // Получаем заявки с запросом на удаление
+  const { data: pendingDeletionAppointments = [] } = useQuery({
+    queryKey: ['dashboard-pending-deletion', profile?.sto_company_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('id, customers(name), vehicles(brand, model)')
+        .eq('sto_company_id', profile?.sto_company_id)
+        .eq('status', 'pending_deletion')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return data ?? []
+    },
+    enabled: !!profile?.sto_company_id,
+  })
+
   const activeCount = appointmentsStats?.total || 0
   const scheduledCount = appointmentsStats?.scheduled || 0
   const inProgressCount = appointmentsStats?.inProgress || 0
@@ -271,6 +288,37 @@ export default function Dashboard() {
 
           {/* Алерты и информация */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            {/* Заявки на удаление */}
+            {pendingDeletionAppointments.length > 0 && (
+              <div className="card-mobile bg-red-50 border-2 border-red-300 md:col-span-2">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-red-100 flex-shrink-0">
+                    <Trash2 className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-mobile-base font-semibold text-red-900 mb-2">
+                      🗑️ Запросы на удаление ({pendingDeletionAppointments.length})
+                    </p>
+                    <div className="space-y-1.5">
+                      {pendingDeletionAppointments.map((appt: any) => (
+                        <Link
+                          key={appt.id}
+                          to={`/sto/appointments/${appt.id}`}
+                          className="flex items-center justify-between p-2 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                        >
+                          <span className="text-sm text-gray-800">
+                            {appt.customers?.name || 'Клиент не указан'}
+                            {appt.vehicles ? ` — ${appt.vehicles.brand} ${appt.vehicles.model}` : ''}
+                          </span>
+                          <span className="text-xs text-red-600 font-medium ml-2 flex-shrink-0">Подтвердить →</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Неоплаченные заявки */}
             {unpaidCount > 0 && (
               <div className="card-mobile bg-red-50 border-red-200">
