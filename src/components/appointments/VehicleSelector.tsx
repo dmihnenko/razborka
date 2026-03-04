@@ -86,9 +86,9 @@ export default function VehicleSelector({ customerId, selectedId, onSelect }: Pr
         query = query.eq('sto_company_id', profile.sto_company_id)
       }
 
-      const { data, error } = await query.single()
+      const { data, error } = await query.maybeSingle()
 
-      if (error && error.code !== 'PGRST116') throw error // PGRST116 = not found
+      if (error) throw error
       return data
     },
     onSuccess: (data) => {
