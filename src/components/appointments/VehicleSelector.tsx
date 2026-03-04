@@ -78,7 +78,7 @@ export default function VehicleSelector({ customerId, selectedId, onSelect }: Pr
         .from('vehicles')
         .select(`
           *,
-          customer:customers(id, full_name, phone)
+          customer:customers(id, name, phone)
         `)
         .eq('vin', vin.toUpperCase())
 
@@ -240,7 +240,7 @@ export default function VehicleSelector({ customerId, selectedId, onSelect }: Pr
                   <div className="text-sm text-gray-700 space-y-1">
                     <p><strong>Марка/Модель:</strong> {existingVehicle.brand} {existingVehicle.model}</p>
                     <p><strong>Год:</strong> {existingVehicle.year}</p>
-                    <p><strong>Владелец:</strong> {existingVehicle.customer?.full_name || 'Не указан'}</p>
+                    <p><strong>Владелец:</strong> {existingVehicle.customer?.name || 'Не указан'}</p>
                     {existingVehicle.customer?.phone && (
                       <p><strong>Телефон:</strong> {existingVehicle.customer.phone}</p>
                     )}
