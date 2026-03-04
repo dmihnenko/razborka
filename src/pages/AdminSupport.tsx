@@ -13,6 +13,8 @@ import {
   MoreVertical,
   Users
 } from 'lucide-react'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface Chat {
   id: string
@@ -50,6 +52,7 @@ export default function AdminSupport() {
   const [showChatMenu, setShowChatMenu] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
 
   // Получаем текущего пользователя (админа)
   const { data: currentUser } = useQuery({
@@ -460,7 +463,7 @@ export default function AdminSupport() {
                         <>
                           <div className="fixed inset-0 z-10" onClick={() => setShowChatMenu(null)} />
                           <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                            <button onClick={() => { if (confirm('Удалить этот чат? Это действие нельзя отменить.')) deleteChatMutation.mutate(selectedChat) }}
+                            <button onClick={async () => { const ok = await showConfirm({ message: 'Удалить этот чат? Это действие нельзя отменить.', danger: true }); if (!ok) return; deleteChatMutation.mutate(selectedChat) }}
                               className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2">
                               <Trash2 className="w-4 h-4" />
                               Удалить чат
@@ -543,6 +546,7 @@ export default function AdminSupport() {
           </div>
         </div>
       </div>
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

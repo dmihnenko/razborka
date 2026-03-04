@@ -13,6 +13,8 @@ import { uploadToImgbb, deletePhotosFromImgbb } from '@/services/imgbbService'
 import { getImgbbKey } from '@/utils/imgbbKey'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 import { formatPrice } from '@/utils/currency'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 const statusColors = {
   awaiting: 'bg-yellow-100 text-yellow-800',
@@ -32,6 +34,7 @@ export default function PartsVehicleDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isAddPartOpen, setIsAddPartOpen] = useState(false)
   const [suggestionDismissed, setSuggestionDismissed] = useState(false)
@@ -417,10 +420,10 @@ export default function PartsVehicleDetails() {
                           </div>
                         </div>
                         <button
-                          onClick={() => {
-                            if (confirm(`Удалить "${part.name}"?`)) {
-                              deletePartMutation.mutate({ id: part.id, photos: part.photos })
-                            }
+                          onClick={async () => {
+                            const ok = await showConfirm({ message: `Удалить "${part.name}"?`, danger: true })
+                            if (!ok) return
+                            deletePartMutation.mutate({ id: part.id, photos: part.photos })
                           }}
                           disabled={deletePartMutation.isPending}
                           className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
@@ -634,6 +637,7 @@ export default function PartsVehicleDetails() {
           loading={addPartMutation.isPending}
         />
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

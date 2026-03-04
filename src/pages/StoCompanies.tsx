@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, Building2, Users, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/hooks/useConfirm';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 interface StoCompany {
   id: string;
@@ -40,6 +42,7 @@ export default function StoCompanies() {
     description: ''
   });
   const queryClient = useQueryClient();
+  const { confirm: showConfirm, dialogProps } = useConfirm();
 
   // Загрузка СТО
   const { data: companies = [], isLoading } = useQuery({
@@ -200,10 +203,10 @@ export default function StoCompanies() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (sto: StoCompany) => {
-    if (confirm(`Вы уверены, что хотите удалить СТО "${sto.name}"? Это действие нельзя отменить.`)) {
-      deleteMutation.mutate(sto.id);
-    }
+  const handleDelete = async (sto: StoCompany) => {
+    const ok = await showConfirm({ message: `Вы уверены, что хотите удалить СТО "${sto.name}"? Это действие нельзя отменить.`, danger: true })
+    if (!ok) return
+    deleteMutation.mutate(sto.id);
   };
 
   const handleSubmit = () => {
@@ -450,6 +453,7 @@ export default function StoCompanies() {
           </div>
         </div>
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 }

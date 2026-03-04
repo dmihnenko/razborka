@@ -12,6 +12,8 @@ import { getImgbbKey } from '@/utils/imgbbKey'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency, formatPrice } from '@/utils/currency'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 type ViewMode = 'grid' | 'list'
 
@@ -40,6 +42,7 @@ export default function PartsInventory() {
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const sourceFilter = searchParams.get('source') ?? 'vehicles' // 'vehicles' | 'shop'
+  const { confirm: showConfirm, dialogProps } = useConfirm()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [vehicleFilter, setVehicleFilter] = useState<string>('all') // vehicle_id or 'all'
@@ -343,11 +346,11 @@ export default function PartsInventory() {
     setNewCustomerPhone('')
   }
 
-  const handleDelete = (item: PartsInventoryItem, e: React.MouseEvent) => {
+  const handleDelete = async (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (confirm('Удалить запчасть? Это действие нельзя отменить.')) {
-      deleteMutation.mutate(item)
-    }
+    const ok = await showConfirm({ message: 'Удалить запчасть? Это действие нельзя отменить.', danger: true })
+    if (!ok) return
+    deleteMutation.mutate(item)
   }
 
   if (!partsCompanyId) {
@@ -971,6 +974,7 @@ export default function PartsInventory() {
           isSaving={saveMutation.isPending || saveBulkMutation.isPending}
         />
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

@@ -9,11 +9,14 @@ import { useState } from 'react'
 import VehicleModal from '@/components/VehicleModal'
 import { formatCurrency } from '@/utils/currency'
 import { getStatusColor, getStatusText, getOrderStatusColor, getOrderStatusText } from '@/utils/status'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 export default function CustomerProfile() {
   const { id } = useParams<{ id: string }>()
   const location = useLocation()
   const queryClient = useQueryClient()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
   const [showVehicleModal, setShowVehicleModal] = useState(false)
   const [editingVehicle, setEditingVehicle] = useState<any>(null)
   const [vehiclesMobileOpen, setVehiclesMobileOpen] = useState(false)
@@ -271,10 +274,10 @@ export default function CustomerProfile() {
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => {
-                        if (confirm(`Удалить ${vehicle.brand} ${vehicle.model} (${vehicle.license_plate})?`)) {
-                          deleteVehicleMutation.mutate(vehicle.id)
-                        }
+                      onClick={async () => {
+                        const ok = await showConfirm({ message: `Удалить ${vehicle.brand} ${vehicle.model} (${vehicle.license_plate})?`, danger: true })
+                        if (!ok) return
+                        deleteVehicleMutation.mutate(vehicle.id)
                       }}
                       className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
                       title="Удалить"
@@ -326,10 +329,10 @@ export default function CustomerProfile() {
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => {
-                      if (confirm(`Удалить ${vehicle.brand} ${vehicle.model} (${vehicle.license_plate})?`)) {
-                        deleteVehicleMutation.mutate(vehicle.id)
-                      }
+                    onClick={async () => {
+                      const ok = await showConfirm({ message: `Удалить ${vehicle.brand} ${vehicle.model} (${vehicle.license_plate})?`, danger: true })
+                      if (!ok) return
+                      deleteVehicleMutation.mutate(vehicle.id)
                     }}
                     className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
                     title="Удалить"
@@ -521,6 +524,7 @@ export default function CustomerProfile() {
           vehicle={editingVehicle}
         />
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

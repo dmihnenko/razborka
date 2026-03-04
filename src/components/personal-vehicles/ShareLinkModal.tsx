@@ -5,6 +5,8 @@ import { createVehicleShareLink, getVehicleShareLinks, deactivateVehicleShareLin
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useAlert } from '../CustomAlert'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface Props {
   isOpen: boolean
@@ -15,6 +17,7 @@ interface Props {
 
 export default function ShareLinkModal({ isOpen, onClose, vehicleId, userId }: Props) {
   const { showAlert } = useAlert()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
   const [selectedDuration, setSelectedDuration] = useState<'1hour' | '7days' | 'permanent'>('permanent')
   const [newCode, setNewCode] = useState<string | null>(null)
   const queryClient = useQueryClient()
@@ -213,10 +216,10 @@ export default function ShareLinkModal({ isOpen, onClose, vehicleId, userId }: P
                           <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
                         </button>
                         <button
-                          onClick={() => {
-                            if (confirm('Деактивировать этот код?')) {
-                              deactivateMutation.mutate(link.id)
-                            }
+                          onClick={async () => {
+                            const ok = await showConfirm({ message: 'Деактивировать этот код?', danger: true })
+                            if (!ok) return
+                            deactivateMutation.mutate(link.id)
                           }}
                           className="p-1 sm:p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
                           title="Деактивировать"
@@ -241,6 +244,7 @@ export default function ShareLinkModal({ isOpen, onClose, vehicleId, userId }: P
           </button>
         </div>
       </div>
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

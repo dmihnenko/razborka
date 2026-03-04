@@ -7,6 +7,8 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsCustomers, createPartsCustomer, updatePartsCustomer, deletePartsCustomer } from '@/services/partsService'
 import { formatCurrency } from '@/utils/currency'
 import PartsCustomerModal from '@/components/parts/PartsCustomerModal'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import type { PartsCustomer, CreatePartsCustomerInput } from '@/types/parts'
 
 type ViewMode = 'grid' | 'list'
@@ -19,6 +21,7 @@ export default function PartsCustomers() {
   const [selectedCustomer, setSelectedCustomer] = useState<PartsCustomer | null>(null)
   
   const queryClient = useQueryClient()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
 
@@ -85,11 +88,11 @@ export default function PartsCustomers() {
     setIsModalOpen(true)
   }
 
-  const handleDelete = (customerId: string, e: React.MouseEvent) => {
+  const handleDelete = async (customerId: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (confirm('Удалить клиента? Это действие нельзя отменить.')) {
-      deleteMutation.mutate(customerId)
-    }
+    const ok = await showConfirm({ message: 'Удалить клиента? Это действие нельзя отменить.', danger: true })
+    if (!ok) return
+    deleteMutation.mutate(customerId)
   }
 
   const handleCopyPublicLink = async (customerId: string, e: React.MouseEvent) => {
@@ -436,6 +439,7 @@ export default function PartsCustomers() {
           onSubmit={(data) => saveMutation.mutateAsync(data)}
         />
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

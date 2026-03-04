@@ -16,6 +16,8 @@ import {
   deleteStorageLocation,
 } from '@/services/partsService'
 import type { StorageLocation } from '@/types/parts'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface TreeNode extends StorageLocation {
   children: TreeNode[]
@@ -49,6 +51,7 @@ export default function PartsWarehouse() {
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
+  const { confirm: showConfirm, dialogProps } = useConfirm()
 
   // undefined = not adding; null = adding at root; string = adding as child of that id
   const [addingParentId, setAddingParentId] = useState<string | null | undefined>(undefined)
@@ -143,13 +146,15 @@ export default function PartsWarehouse() {
     setAddingName('')
   }
 
-  const handleDelete = (node: TreeNode) => {
+  const handleDelete = async (node: TreeNode) => {
     const usage = usageMap[node.id] || 0
     const hasChildren = node.children.length > 0
     let msg = `Удалить «${node.name}»?`
     if (hasChildren) msg = `«${node.name}» содержит вложенные места — они тоже будут удалены. Продолжить?`
     else if (usage > 0) msg = `В «${node.name}» хранится ${usage} запч. — они потеряют привязку. Продолжить?`
-    if (confirm(msg)) deleteMutation.mutate(node.id)
+    const ok = await showConfirm({ message: msg, danger: true })
+    if (!ok) return
+    deleteMutation.mutate(node.id)
   }
 
   if (!partsCompanyId) {
@@ -399,6 +404,7 @@ export default function PartsWarehouse() {
           </div>
         )}
       </div>
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

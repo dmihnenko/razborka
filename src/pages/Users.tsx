@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { IMaskInput } from 'react-imask';
 import { useUserProfile, useIsAdmin } from '@/hooks/useUserProfile';
 import { useSubscriptionLimits } from '@/hooks/useSubscription';
+import { useConfirm } from '@/hooks/useConfirm';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 interface Role {
   id: string;
@@ -70,6 +72,7 @@ export default function Users() {
   });
   const [selectedRoleNames, setSelectedRoleNames] = useState<string[]>([]);
   const queryClient = useQueryClient();
+  const { confirm: showConfirm, dialogProps } = useConfirm();
   
   // Получаем информацию о текущем пользователе
   const isAdmin = useIsAdmin();
@@ -483,16 +486,15 @@ export default function Users() {
     setSelectedRoleNames([]);
   };
 
-  const handleDeleteUser = (user: UserProfile) => {
+  const handleDeleteUser = async (user: UserProfile) => {
     const hasAdminRole = user.roles?.some(r => r.name === 'admin');
     if (hasAdminRole) {
       toast.error('Невозможно удалить администратора');
       return;
     }
-    
-    if (confirm(`Вы уверены, что хотите удалить пользователя ${user.full_name || user.email}? Это действие нельзя отменить.`)) {
-      deleteUserMutation.mutate(user.id);
-    }
+    const ok = await showConfirm({ message: `Вы уверены, что хотите удалить пользователя ${user.full_name || user.email}? Это действие нельзя отменить.`, danger: true });
+    if (!ok) return;
+    deleteUserMutation.mutate(user.id);
   };
 
   // Отслеживание изменения ролей
@@ -1239,6 +1241,7 @@ export default function Users() {
           </div>
         </div>
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 }

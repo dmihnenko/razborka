@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Search, X } from 'lucide-react'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 export default function Services() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -13,6 +15,7 @@ export default function Services() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const queryClient = useQueryClient()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
 
   const { data: services, isLoading } = useQuery({
     queryKey: ['services'],
@@ -298,10 +301,10 @@ export default function Services() {
                         <Pencil className="w-4 h-4 inline" />
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm('Удалить эту услугу?')) {
-                            deleteMutation.mutate(service.id)
-                          }
+                        onClick={async () => {
+                          const ok = await showConfirm({ message: 'Удалить эту услугу?', danger: true })
+                          if (!ok) return
+                          deleteMutation.mutate(service.id)
                         }}
                         className="text-red-600 hover:text-red-800"
                       >
@@ -322,6 +325,7 @@ export default function Services() {
           onClose={() => setIsModalOpen(false)}
         />
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

@@ -14,6 +14,8 @@ import {
   copyTemplateCategories,
 } from '@/services/partsService'
 import { supabase } from '@/lib/supabase'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import type { PartsCategory, CreatePartsCategoryInput } from '@/types/parts'
 
 type Tab = 'my' | 'templates'
@@ -25,6 +27,7 @@ export default function PartsCategories() {
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
+  const { confirm: showConfirm, dialogProps } = useConfirm()
 
   const [tab, setTab] = useState<Tab>((searchParams.get('tab') as Tab) || 'my')
   const [addMode, setAddMode] = useState<AddMode>('single')
@@ -152,12 +155,14 @@ export default function PartsCategories() {
     updateMutation.mutate({ id, name: editingName.trim() })
   }
 
-  const handleDelete = (cat: PartsCategory) => {
+  const handleDelete = async (cat: PartsCategory) => {
     const count = usageMap[cat.id] || 0
     const msg = count > 0
       ? `Категория используется в ${count} запчастях. Продолжить?`
       : `Удалить категорию "${cat.name}"?`
-    if (confirm(msg)) deleteMutation.mutate(cat.id)
+    const ok = await showConfirm({ message: msg, danger: true })
+    if (!ok) return
+    deleteMutation.mutate(cat.id)
   }
 
   const toggleTemplateSelect = (id: string) => {
@@ -422,6 +427,7 @@ export default function PartsCategories() {
           </>
         )}
       </div>
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

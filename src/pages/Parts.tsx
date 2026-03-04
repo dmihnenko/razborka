@@ -4,11 +4,14 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, AlertTriangle } from 'lucide-react'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 export default function Parts() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingPart, setEditingPart] = useState<any>(null)
   const queryClient = useQueryClient()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
 
   const { data: parts, isLoading } = useQuery({
     queryKey: ['parts'],
@@ -121,10 +124,10 @@ export default function Parts() {
                         <Pencil className="w-5 h-5" />
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm('Удалить эту запчасть?')) {
-                            deleteMutation.mutate(part.id)
-                          }
+                        onClick={async () => {
+                          const ok = await showConfirm({ message: 'Удалить эту запчасть?', danger: true })
+                          if (!ok) return
+                          deleteMutation.mutate(part.id)
                         }}
                         className="text-red-600 hover:text-red-800"
                       >
@@ -145,6 +148,7 @@ export default function Parts() {
           onClose={() => setIsModalOpen(false)}
         />
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

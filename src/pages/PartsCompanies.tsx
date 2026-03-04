@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { IMaskInput } from 'react-imask';
+import { useConfirm } from '@/hooks/useConfirm';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 interface PartsCompany {
   id: string;
@@ -41,6 +43,7 @@ export default function PartsCompanies() {
     description: ''
   });
   const queryClient = useQueryClient();
+  const { confirm: showConfirm, dialogProps } = useConfirm();
 
   // Загрузка разборок
   const { data: companies = [], isLoading } = useQuery({
@@ -162,10 +165,10 @@ export default function PartsCompanies() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (company: PartsCompany) => {
-    if (confirm(`Вы уверены, что хотите удалить разборку "${company.name}"? Это действие нельзя отменить.`)) {
-      deleteMutation.mutate(company.id);
-    }
+  const handleDelete = async (company: PartsCompany) => {
+    const ok = await showConfirm({ message: `Вы уверены, что хотите удалить разборку "${company.name}"? Это действие нельзя отменить.`, danger: true })
+    if (!ok) return
+    deleteMutation.mutate(company.id);
   };
 
   const handleSubmit = () => {
@@ -393,6 +396,7 @@ export default function PartsCompanies() {
           </div>
         </div>
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 }

@@ -6,6 +6,8 @@ import { Plus, Pencil, Trash2, Search } from 'lucide-react'
 import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface VehicleModalProps {
   vehicle: any
@@ -23,6 +25,7 @@ export default function Vehicles() {
   const [searchParams] = useSearchParams()
   const customerId = searchParams.get('customer_id')
   const queryClient = useQueryClient()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
   const [customerSearch, setCustomerSearch] = useState('')
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -185,10 +188,10 @@ export default function Vehicles() {
                     </button>
                     {isStoOwner && (
                       <button
-                        onClick={() => {
-                          if (confirm('Удалить этот автомобиль?')) {
-                            deleteMutation.mutate(vehicle.id)
-                          }
+                        onClick={async () => {
+                          const ok = await showConfirm({ message: 'Удалить этот автомобиль?', danger: true })
+                          if (!ok) return
+                          deleteMutation.mutate(vehicle.id)
                         }}
                         className="text-red-600 hover:text-red-800"
                       >
@@ -274,10 +277,10 @@ export default function Vehicles() {
                 </button>
                 {isStoOwner && (
                   <button
-                    onClick={() => {
-                      if (confirm('Удалить этот автомобиль?')) {
-                        deleteMutation.mutate(vehicle.id)
-                      }
+                    onClick={async () => {
+                      const ok = await showConfirm({ message: 'Удалить этот автомобиль?', danger: true })
+                      if (!ok) return
+                      deleteMutation.mutate(vehicle.id)
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded transition-colors font-medium"
                   >
@@ -302,6 +305,7 @@ export default function Vehicles() {
           setShowCustomerDropdown={setShowCustomerDropdown}
         />
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

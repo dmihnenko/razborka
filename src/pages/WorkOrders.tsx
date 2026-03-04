@@ -6,6 +6,8 @@ import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, UserCog } from 'lucide-react'
 import WorkOrderModal from '@/components/work-orders/WorkOrderModal'
 import ReassignWorkerModal from '@/components/work-orders/ReassignWorkerModal'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 export default function WorkOrders() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -18,6 +20,7 @@ export default function WorkOrders() {
     vehicleName: string
   } | null>(null)
   const queryClient = useQueryClient()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
   const { data: profile } = useUserProfile()
 
   // Проверяем роль пользователя
@@ -185,10 +188,10 @@ export default function WorkOrders() {
                       <Pencil className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => {
-                        if (confirm('Удалить этот заказ-наряд?')) {
-                          deleteMutation.mutate(order.id)
-                        }
+                      onClick={async () => {
+                        const ok = await showConfirm({ message: 'Удалить этот заказ-наряд?', danger: true })
+                        if (!ok) return
+                        deleteMutation.mutate(order.id)
                       }}
                       className="text-red-600 hover:text-red-800"
                     >
@@ -223,6 +226,7 @@ export default function WorkOrders() {
           }}
         />
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

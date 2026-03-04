@@ -8,6 +8,8 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import PersonalVehicleExpenses from '@/components/personal-vehicles/PersonalVehicleExpenses'
 import VehicleGallery from '@/components/personal-vehicles/VehicleGallery'
 import ShareLinkModal from '@/components/personal-vehicles/ShareLinkModal'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 const NO_IMAGE_URL = '/noimage_final.png'
 
@@ -16,6 +18,7 @@ export default function PublicPersonalVehicleView() {
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
   const queryClient = useQueryClient()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
 
   const [showShareModal, setShowShareModal] = useState(false)
   const [showSellModal, setShowSellModal] = useState(false)
@@ -128,11 +131,11 @@ export default function PublicPersonalVehicleView() {
     }
   }
 
-  const handleDeletePhoto = () => {
-    if (confirm('Удалить фото автомобиля?')) {
-      updatePhotoMutation.mutate('')
-      setShowPhotoMenu(false)
-    }
+  const handleDeletePhoto = async () => {
+    const ok = await showConfirm({ message: 'Удалить фото автомобиля?', danger: true })
+    if (!ok) return
+    updatePhotoMutation.mutate('')
+    setShowPhotoMenu(false)
   }
 
   const handleChangePhoto = () => {
@@ -568,6 +571,7 @@ export default function PublicPersonalVehicleView() {
           </div>
         </div>
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

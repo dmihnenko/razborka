@@ -9,6 +9,8 @@ import { formatCurrency, formatPrice } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 import { updatePartsOrderTotal } from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 export default function PartsOrderDetails() {
   const { id } = useParams<{ id: string }>()
@@ -20,6 +22,7 @@ export default function PartsOrderDetails() {
   const [showAddItemModal, setShowAddItemModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showCompleteModal, setShowCompleteModal] = useState(false)
+  const { confirm: showConfirm, dialogProps } = useConfirm()
 
   const { rate: exchangeRate } = usePartsExchangeRate()
 
@@ -225,10 +228,10 @@ export default function PartsOrderDetails() {
             </div>
             {isOwner && (
               <button
-                onClick={() => {
-                  if (confirm(`Удалить заказ ${order.order_number}? Забронированные запчасти вернутся в статус "В наличии".`)) {
-                    deleteOrderMutation.mutate()
-                  }
+                onClick={async () => {
+                  const ok = await showConfirm({ message: `Удалить заказ ${order.order_number}? Забронированные запчасти вернутся в статус "В наличии".`, danger: true })
+                  if (!ok) return
+                  deleteOrderMutation.mutate()
                 }}
                 disabled={deleteOrderMutation.isPending}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors flex-shrink-0 ml-2 text-sm font-medium"
@@ -392,13 +395,13 @@ export default function PartsOrderDetails() {
                       </div>
                       {canManage && (
                         <button
-                          onClick={() => {
-                            if (confirm('Удалить позицию из заказа?')) {
-                              deleteItemMutation.mutate({
-                                itemId: item.id,
-                                inventoryItemId: item.inventory_item_id,
-                              })
-                            }
+                          onClick={async () => {
+                            const ok = await showConfirm({ message: 'Удалить позицию из заказа?', danger: true })
+                            if (!ok) return
+                            deleteItemMutation.mutate({
+                              itemId: item.id,
+                              inventoryItemId: item.inventory_item_id,
+                            })
                           }}
                           className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                         >
@@ -451,6 +454,7 @@ export default function PartsOrderDetails() {
           isLoading={updateStatusMutation.isPending}
         />
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

@@ -7,6 +7,8 @@ import { IMaskInput } from 'react-imask'
 import { useNavigate, Link } from 'react-router-dom'
 import { useHasAnyRole } from '@/hooks/useUserProfile'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface CustomerModalProps {
   customer: any
@@ -20,6 +22,7 @@ export default function Customers() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const canDelete = useHasAnyRole(['admin', 'sto_owner'])
+  const { confirm: showConfirm, dialogProps } = useConfirm()
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ['customers'],
@@ -85,10 +88,10 @@ export default function Customers() {
     setIsModalOpen(true)
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm('Вы уверены? Будут удалены клиент, все его автомобили и заявки.')) {
-      deleteMutation.mutate(id)
-    }
+  const handleDelete = async (id: string) => {
+    const ok = await showConfirm({ message: 'Вы уверены? Будут удалены клиент, все его автомобили и заявки.', danger: true })
+    if (!ok) return
+    deleteMutation.mutate(id)
   }
   /* const handleCopyPublicLink = async (customerId: string) => {
     const publicUrl = `${window.location.origin}/public/customer/${customerId}`
@@ -309,6 +312,7 @@ export default function Customers() {
           onClose={() => setIsModalOpen(false)}
         />
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

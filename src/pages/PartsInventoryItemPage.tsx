@@ -10,6 +10,8 @@ import { getPartsInventoryItem, deletePartsInventoryItem } from '@/services/part
 import { formatPrice } from '@/utils/currency'
 import type { PartsInventoryStatus } from '@/types/parts'
 import PhotoGallery from '@/components/parts/PhotoGallery'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 const statusLabels: Record<PartsInventoryStatus, string> = {
   available: 'В наличии',
@@ -41,6 +43,7 @@ const conditionLabels: Record<string, string> = {
 export default function PartsInventoryItemPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
 
   const { data: item, isLoading, error } = useQuery({
     queryKey: ['parts-inventory-item', id],
@@ -57,10 +60,10 @@ export default function PartsInventoryItemPage() {
     onError: () => toast.error('Ошибка при удалении'),
   })
 
-  const handleDelete = () => {
-    if (confirm(`Удалить "${item?.name}"? Это действие нельзя отменить.`)) {
-      deleteMutation.mutate()
-    }
+  const handleDelete = async () => {
+    const ok = await showConfirm({ message: `Удалить "${item?.name}"? Это действие нельзя отменить.`, danger: true })
+    if (!ok) return
+    deleteMutation.mutate()
   }
 
   const photos = item?.photos || []
@@ -305,6 +308,7 @@ export default function PartsInventoryItemPage() {
         )}
 
       </div>
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

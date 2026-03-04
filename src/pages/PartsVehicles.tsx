@@ -7,6 +7,8 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle, getPartsCategoryTemplates } from '@/services/partsService'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { formatCurrency } from '@/utils/currency'
 import type { PartsVehicle, CreatePartsVehicleInput, PartsVehicleStatus } from '@/types/parts'
 
@@ -43,6 +45,7 @@ export default function PartsVehicles() {
   const [selectedVehicle, setSelectedVehicle] = useState<PartsVehicle | null>(null)
   
   const queryClient = useQueryClient()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
 
@@ -131,11 +134,11 @@ export default function PartsVehicles() {
     setIsModalOpen(true)
   }
 
-  const handleDelete = (vehicleId: string, e: React.MouseEvent) => {
+  const handleDelete = async (vehicleId: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (confirm('Удалить автомобиль? Это действие нельзя отменить.')) {
-      deleteMutation.mutate(vehicleId)
-    }
+    const ok = await showConfirm({ message: 'Удалить автомобиль? Это действие нельзя отменить.', danger: true })
+    if (!ok) return
+    deleteMutation.mutate(vehicleId)
   }
 
   if (!partsCompanyId) {
@@ -478,6 +481,7 @@ export default function PartsVehicles() {
           }}
         />
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

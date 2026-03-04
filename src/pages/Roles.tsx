@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { Plus, Edit2, Trash2, Shield } from 'lucide-react'
 import { toast } from 'sonner'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 type Role = {
   id: string
@@ -17,6 +19,7 @@ export default function Roles() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingRole, setEditingRole] = useState<Role | null>(null)
   const queryClient = useQueryClient()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
 
   const { data: roles, isLoading } = useQuery({
     queryKey: ['roles'],
@@ -54,10 +57,9 @@ export default function Roles() {
       toast.error('Системные роли нельзя удалить')
       return
     }
-
-    if (confirm('Удалить роль? Пользователи с этой ролью потеряют свои права.')) {
-      deleteRole.mutate(id)
-    }
+    const ok = await showConfirm({ message: 'Удалить роль? Пользователи с этой ролью потеряют свои права.', danger: true })
+    if (!ok) return
+    deleteRole.mutate(id)
   }
 
   if (isLoading) {
@@ -168,6 +170,7 @@ export default function Roles() {
           }}
         />
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

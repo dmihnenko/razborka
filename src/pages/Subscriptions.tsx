@@ -13,6 +13,8 @@ import {
   getPartsCompanies
 } from '@/services/subscriptionService'
 import type { CompanySubscription } from '@/types/subscription'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 export default function Subscriptions() {
   const [activeTab, setActiveTab] = useState<'plans' | 'active'>('plans')
@@ -24,6 +26,7 @@ export default function Subscriptions() {
     endDate: ''
   })
   const queryClient = useQueryClient()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
 
   // Fetch data
   const { data: plans = [], isLoading: plansLoading } = useQuery({
@@ -95,16 +98,16 @@ export default function Subscriptions() {
     }
   })
 
-  const handleDeactivate = (subscription: CompanySubscription) => {
-    if (confirm(`Деактивировать подписку для ${subscription.company?.name}?`)) {
-      deactivateMutation.mutate(subscription.id)
-    }
+  const handleDeactivate = async (subscription: CompanySubscription) => {
+    const ok = await showConfirm({ message: `Деактивировать подписку для ${subscription.company?.name}?`, danger: true })
+    if (!ok) return
+    deactivateMutation.mutate(subscription.id)
   }
 
-  const handleDelete = (subscription: CompanySubscription) => {
-    if (confirm(`Удалить подписку для ${subscription.company?.name}?`)) {
-      deleteMutation.mutate(subscription.id)
-    }
+  const handleDelete = async (subscription: CompanySubscription) => {
+    const ok = await showConfirm({ message: `Удалить подписку для ${subscription.company?.name}?`, danger: true })
+    if (!ok) return
+    deleteMutation.mutate(subscription.id)
   }
 
   const isExpired = (subscription: CompanySubscription) => {
@@ -484,6 +487,7 @@ export default function Subscriptions() {
           </div>
         </div>
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }
