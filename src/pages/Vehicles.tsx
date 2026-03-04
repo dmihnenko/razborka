@@ -475,10 +475,19 @@ function VehicleModal({
             />
           </div>
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">VIN *</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Гос. номер</label>
             <input
               type="text"
-              required
+              value={formData.license_plate}
+              onChange={(e) => setFormData({ ...formData, license_plate: e.target.value.toUpperCase() })}
+              placeholder="АА1234ВВ"
+              className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-mono tracking-widest uppercase"
+            />
+          </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">VIN</label>
+            <input
+              type="text"
               value={formData.vin}
               onChange={(e) => setFormData({ ...formData, vin: e.target.value })}
               className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
