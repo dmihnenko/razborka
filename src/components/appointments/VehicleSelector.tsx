@@ -74,21 +74,29 @@ export default function VehicleSelector({ customerId, selectedId, onSelect }: Pr
   // Проверка VIN в базе данных
   const checkVinMutation = useMutation({
     mutationFn: async (vin: string) => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('vehicles')
         .select(`
           *,
           customer:customers(id, full_name, phone)
         `)
         .eq('vin', vin.toUpperCase())
-        .eq('sto_company_id', profile?.sto_company_id)
-        .single()
-      
+
+      if (profile?.sto_company_id) {
+        query = query.eq('sto_company_id', profile.sto_company_id)
+      }
+
+      const { data, error } = await query.single()
+
       if (error && error.code !== 'PGRST116') throw error // PGRST116 = not found
       return data
     },
     onSuccess: (data) => {
       setExistingVehicle(data)
+    },
+    onError: () => {
+      // VIN check failure is non-critical; silently ignore
+      setExistingVehicle(null)
     },
   })
 

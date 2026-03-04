@@ -140,6 +140,7 @@ export interface Database {
           license_plate: string
           color: string | null
           mileage: number | null
+          sto_company_id: string | null
         }
         Insert: {
           id?: string
@@ -152,6 +153,7 @@ export interface Database {
           license_plate: string
           color?: string | null
           mileage?: number | null
+          sto_company_id?: string | null
         }
         Update: {
           id?: string
@@ -164,6 +166,7 @@ export interface Database {
           license_plate?: string
           color?: string | null
           mileage?: number | null
+          sto_company_id?: string | null
         }
       }
       services: {
