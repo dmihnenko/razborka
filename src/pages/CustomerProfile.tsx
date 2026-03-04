@@ -11,12 +11,15 @@ import { formatCurrency } from '@/utils/currency'
 import { getStatusColor, getStatusText, getOrderStatusColor, getOrderStatusText } from '@/utils/status'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import { useUserProfile } from '@/hooks/useUserProfile'
+import { moveToTrash } from '@/services/trashService'
 
 export default function CustomerProfile() {
   const { id } = useParams<{ id: string }>()
   const location = useLocation()
   const queryClient = useQueryClient()
   const { confirm: showConfirm, dialogProps } = useConfirm()
+  const { data: profile } = useUserProfile()
   const [showVehicleModal, setShowVehicleModal] = useState(false)
   const [editingVehicle, setEditingVehicle] = useState<any>(null)
   const [vehiclesMobileOpen, setVehiclesMobileOpen] = useState(false)
@@ -119,6 +122,17 @@ export default function CustomerProfile() {
 
   const deleteVehicleMutation = useMutation({
     mutationFn: async (vehicleId: string) => {
+      const { data: vehicle } = await supabase.from('vehicles').select('*').eq('id', vehicleId).single()
+      const { data: appts } = await supabase.from('appointments').select('*').eq('vehicle_id', vehicleId)
+      if (vehicle) {
+        await moveToTrash({
+          entityType: 'vehicle',
+          entityId: vehicleId,
+          entityLabel: `${vehicle.brand || ''} ${vehicle.model || ''}`.trim() || 'Автомобиль',
+          entityData: { vehicle, appointments: appts || [] },
+          stoCompanyId: profile?.sto_company_id,
+        })
+      }
       const { error } = await supabase.from('vehicles').delete().eq('id', vehicleId)
       if (error) throw error
     },

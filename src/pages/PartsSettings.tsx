@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
@@ -265,6 +265,23 @@ export default function PartsSettings() {
             Получить бесплатный ключ на imgbb.com
           </a>
         </div>
+
+        {/* Корзина */}
+        <button
+          onClick={() => navigate('/parts/trash')}
+          className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden w-full"
+        >
+          <div className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors">
+            <div className="p-2 bg-red-100 rounded-lg flex-shrink-0">
+              <Trash2 className="w-5 h-5 text-red-600" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-medium text-gray-900">Корзина</p>
+              <p className="text-xs text-gray-500">Удалённые объекты хранятся 7 дней</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          </div>
+        </button>
 
       </div>
     </div>

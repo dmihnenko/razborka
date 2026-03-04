@@ -7,6 +7,8 @@ import {
   Hash, FileText, AlertTriangle, CheckCircle, Clock, Wrench,
 } from 'lucide-react'
 import { getPartsInventoryItem, deletePartsInventoryItem } from '@/services/partsService'
+import { moveToTrash } from '@/services/trashService'
+import { useUserProfile } from '@/hooks/useUserProfile'
 import { formatPrice } from '@/utils/currency'
 import type { PartsInventoryStatus } from '@/types/parts'
 import PhotoGallery from '@/components/parts/PhotoGallery'
@@ -44,6 +46,7 @@ export default function PartsInventoryItemPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { confirm: showConfirm, dialogProps } = useConfirm()
+  const { data: profile } = useUserProfile()
 
   const { data: item, isLoading, error } = useQuery({
     queryKey: ['parts-inventory-item', id],
@@ -52,7 +55,18 @@ export default function PartsInventoryItemPage() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: () => deletePartsInventoryItem(id!),
+    mutationFn: async () => {
+      if (item) {
+        await moveToTrash({
+          entityType: 'parts_inventory',
+          entityId: id!,
+          entityLabel: item.name || 'Запчасть',
+          entityData: item,
+          partsCompanyId: profile?.parts_company_id,
+        })
+      }
+      await deletePartsInventoryItem(id!)
+    },
     onSuccess: () => {
       toast.success('Запчасть удалена')
       navigate('/parts/inventory')

@@ -2,7 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { toast } from 'sonner'
-import { Settings as SettingsIcon, Wrench } from 'lucide-react'
+import { Settings as SettingsIcon, Wrench, Trash2, ChevronRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 export default function StoSettings() {
   const { data: profile } = useUserProfile()
@@ -119,6 +120,23 @@ export default function StoSettings() {
             </div>
           </div>
         </div>
+
+        {/* Корзина */}
+        <Link
+          to="/sto/trash"
+          className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 flex items-center gap-4 hover:bg-gray-50 transition-colors"
+        >
+          <div className="p-2 bg-red-100 rounded-lg flex-shrink-0">
+            <Trash2 className="w-5 h-5 text-red-600" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-mobile-base font-semibold text-gray-900">Корзина</h2>
+            <p className="text-mobile-sm text-gray-500 mt-0.5">
+              Удалённые объекты хранятся 7 дней с возможностью восстановления
+            </p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+        </Link>
 
         {/* Информация */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

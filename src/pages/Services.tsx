@@ -6,6 +6,8 @@ import { Plus, Pencil, Trash2, Search, X } from 'lucide-react'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import { useUserProfile } from '@/hooks/useUserProfile'
+import { moveToTrash } from '@/services/trashService'
 
 export default function Services() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -16,6 +18,7 @@ export default function Services() {
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const queryClient = useQueryClient()
   const { confirm: showConfirm, dialogProps } = useConfirm()
+  const { data: profile } = useUserProfile()
 
   const { data: services, isLoading } = useQuery({
     queryKey: ['services'],
@@ -68,6 +71,16 @@ export default function Services() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      const { data: service } = await supabase.from('services').select('*').eq('id', id).single()
+      if (service) {
+        await moveToTrash({
+          entityType: 'service',
+          entityId: id,
+          entityLabel: service.name || 'Услуга',
+          entityData: service,
+          stoCompanyId: profile?.sto_company_id,
+        })
+      }
       const { error } = await supabase.from('services').delete().eq('id', id)
       if (error) throw error
     },

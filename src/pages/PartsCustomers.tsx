@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsCustomers, createPartsCustomer, updatePartsCustomer, deletePartsCustomer } from '@/services/partsService'
+import { moveToTrash } from '@/services/trashService'
+import { supabase } from '@/lib/supabase'
 import { formatCurrency } from '@/utils/currency'
 import PartsCustomerModal from '@/components/parts/PartsCustomerModal'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -51,7 +53,19 @@ export default function PartsCustomers() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: deletePartsCustomer,
+    mutationFn: async (customerId: string) => {
+      const { data: customer } = await supabase.from('parts_customers').select('*').eq('id', customerId).single()
+      if (customer) {
+        await moveToTrash({
+          entityType: 'parts_customer',
+          entityId: customerId,
+          entityLabel: customer.full_name || 'Клиент',
+          entityData: customer,
+          partsCompanyId,
+        })
+      }
+      await deletePartsCustomer(customerId)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
       toast.success('Клиент удалён')

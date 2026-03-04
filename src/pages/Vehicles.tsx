@@ -8,6 +8,7 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import { moveToTrash } from '@/services/trashService'
 
 interface VehicleModalProps {
   vehicle: any
@@ -77,6 +78,17 @@ export default function Vehicles() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      const { data: vehicle } = await supabase.from('vehicles').select('*').eq('id', id).single()
+      const { data: appts } = await supabase.from('appointments').select('*').eq('vehicle_id', id)
+      if (vehicle) {
+        await moveToTrash({
+          entityType: 'vehicle',
+          entityId: id,
+          entityLabel: `${vehicle.brand || ''} ${vehicle.model || ''}`.trim() || 'Автомобиль',
+          entityData: { vehicle, appointments: appts || [] },
+          stoCompanyId: profile?.sto_company_id,
+        })
+      }
       const { error } = await supabase.from('vehicles').delete().eq('id', id)
       if (error) throw error
     },

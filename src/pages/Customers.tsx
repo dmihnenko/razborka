@@ -5,10 +5,11 @@ import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Phone, Mail, Car, Search } from 'lucide-react'
 import { IMaskInput } from 'react-imask'
 import { useNavigate, Link } from 'react-router-dom'
-import { useHasAnyRole } from '@/hooks/useUserProfile'
+import { useHasAnyRole, useUserProfile } from '@/hooks/useUserProfile'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import { moveToTrash } from '@/services/trashService'
 
 interface CustomerModalProps {
   customer: any
@@ -23,6 +24,7 @@ export default function Customers() {
   const navigate = useNavigate()
   const canDelete = useHasAnyRole(['admin', 'sto_owner'])
   const { confirm: showConfirm, dialogProps } = useConfirm()
+  const { data: profile } = useUserProfile()
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ['customers'],
@@ -67,6 +69,19 @@ export default function Customers() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Fetch all data before cascade delete
+      const { data: customer } = await supabase.from('customers').select('*').eq('id', id).single()
+      const { data: vehicles } = await supabase.from('vehicles').select('*').eq('customer_id', id)
+      const { data: appointments } = await supabase.from('appointments').select('*').eq('customer_id', id)
+      if (customer) {
+        await moveToTrash({
+          entityType: 'customer',
+          entityId: id,
+          entityLabel: customer.name || 'Клиент',
+          entityData: { customer, vehicles: vehicles || [], appointments: appointments || [] },
+          stoCompanyId: profile?.sto_company_id,
+        })
+      }
       const { error } = await supabase.from('customers').delete().eq('id', id)
       if (error) {
         console.error('Delete error:', error)

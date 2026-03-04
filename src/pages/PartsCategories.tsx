@@ -13,6 +13,7 @@ import {
   getPartsCategoryTemplates,
   copyTemplateCategories,
 } from '@/services/partsService'
+import { moveToTrash } from '@/services/trashService'
 import { supabase } from '@/lib/supabase'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -114,7 +115,19 @@ export default function PartsCategories() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: deletePartsCategory,
+    mutationFn: async (id: string) => {
+      const { data: category } = await supabase.from('parts_categories').select('*').eq('id', id).single()
+      if (category) {
+        await moveToTrash({
+          entityType: 'parts_category',
+          entityId: id,
+          entityLabel: category.name || 'Категория',
+          entityData: category,
+          partsCompanyId,
+        })
+      }
+      await deletePartsCategory(id)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-categories'] })
       queryClient.invalidateQueries({ queryKey: ['parts-categories-manage'] })

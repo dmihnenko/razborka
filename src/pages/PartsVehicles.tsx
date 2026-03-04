@@ -6,6 +6,8 @@ import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle, getPartsCategoryTemplates } from '@/services/partsService'
+import { moveToTrash } from '@/services/trashService'
+import { supabase } from '@/lib/supabase'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -96,7 +98,20 @@ export default function PartsVehicles() {
 
   // Delete vehicle
   const deleteMutation = useMutation({
-    mutationFn: deletePartsVehicle,
+    mutationFn: async (vehicleId: string) => {
+      const { data: vehicle } = await supabase.from('parts_vehicles').select('*').eq('id', vehicleId).single()
+      const { data: parts } = await supabase.from('parts_inventory').select('*').eq('vehicle_id', vehicleId)
+      if (vehicle) {
+        await moveToTrash({
+          entityType: 'parts_vehicle',
+          entityId: vehicleId,
+          entityLabel: `${vehicle.make || ''} ${vehicle.model || ''}`.trim() || 'Авто',
+          entityData: { vehicle, parts: parts || [] },
+          partsCompanyId,
+        })
+      }
+      await deletePartsVehicle(vehicleId)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-vehicles'] })
       toast.success('Автомобиль удалён')
