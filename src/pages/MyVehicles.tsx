@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Archive, Car, Edit } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getPersonalVehicles } from '@/services/personalVehicles'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import PersonalVehicleModal from '@/components/personal-vehicles/PersonalVehicleModal'
@@ -11,6 +11,7 @@ const NO_IMAGE_URL = '/noimage_final.png'
 
 export default function MyVehicles() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [shareVehicleId, setShareVehicleId] = useState<string | null>(null)
@@ -18,7 +19,8 @@ export default function MyVehicles() {
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: ['personal-vehicles', profile?.id],
     queryFn: () => getPersonalVehicles(profile!.id, false),
-    enabled: !!profile?.id
+    enabled: !!profile?.id,
+    staleTime: 0
   })
 
   /* const deleteMutation = useMutation({
@@ -54,6 +56,7 @@ export default function MyVehicles() {
   }
 
   const handleCreateSuccess = (vehicleId: string) => {
+    queryClient.invalidateQueries({ queryKey: ['personal-vehicles'] })
     navigate(`/public/personal-vehicle/${vehicleId}`)
   }
 
