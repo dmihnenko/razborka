@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { ArrowLeft, Trash2, RotateCcw, User, Car, Wrench, Package, Tag, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatDistanceToNow, differenceInDays } from 'date-fns'
@@ -46,10 +46,11 @@ export default function Trash() {
   const { data: profile } = useUserProfile()
   const queryClient = useQueryClient()
   const { confirm: showConfirm, dialogProps } = useConfirm()
+  const location = useLocation()
 
-  const stoCompanyId = profile?.sto_company_id ?? null
-  const partsCompanyId = profile?.parts_company_id ?? null
-  const isPartsContext = !!partsCompanyId && !stoCompanyId
+  const isPartsContext = location.pathname.startsWith('/parts')
+  const stoCompanyId = !isPartsContext ? (profile?.sto_company_id ?? null) : null
+  const partsCompanyId = isPartsContext ? (profile?.parts_company_id ?? null) : null
   const backPath = isPartsContext ? '/parts/settings' : '/sto/settings'
 
   const { data: items = [], isLoading } = useQuery({

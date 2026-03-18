@@ -4,9 +4,10 @@ import { AppointmentFormValues } from '@/types/appointments'
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { useAlert } from '@/components/CustomAlert'
 import { toast } from 'sonner'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import ClientSelector from './ClientSelector'
 import VehicleSelector from './VehicleSelector'
 import WorkItemsManager from './WorkItemsManager'
@@ -31,7 +32,7 @@ const steps = [
 export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuccess }: Props) {
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
-  const { showConfirm } = useAlert()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<AppointmentFormValues>({
     customer_id: '',
@@ -273,19 +274,20 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
     }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!appointmentId) return
     
     const confirmMessage = isStoWorker && !isStoOwner
       ? 'Отправить заявку на удаление? Она будет отправлена владельцу на подтверждение.'
       : 'Вы уверены, что хотите удалить эту заявку?'
     
-    showConfirm(confirmMessage, () => {
-      deleteMutation.mutate()
-    }, {
+    const ok = await showConfirm({
+      message: confirmMessage,
       confirmText: isStoWorker && !isStoOwner ? 'Отправить' : 'Удалить',
-      cancelText: 'Отмена'
+      cancelText: 'Отмена',
+      danger: true,
     })
+    if (ok) deleteMutation.mutate()
   }
 
   return (
@@ -447,6 +449,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
           )}
         </div>
       </div>
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

@@ -18,14 +18,12 @@ const statusLabels: Record<PartsVehicleStatus, string> = {
   awaiting: 'Ожидает разборки',
   in_progress: 'В процессе',
   dismantled: 'Разобран',
-  disposed: 'Утилизирован'
 }
 
 const statusColors: Record<PartsVehicleStatus, string> = {
   awaiting: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
   dismantled: 'bg-green-100 text-green-800 border-green-200',
-  disposed: 'bg-gray-100 text-gray-800 border-gray-200'
 }
 
 type ViewMode = 'grid' | 'list'
@@ -140,7 +138,6 @@ export default function PartsVehicles() {
     awaiting: vehicles.filter(v => v.status === 'awaiting').length,
     in_progress: vehicles.filter(v => v.status === 'in_progress').length,
     dismantled: vehicles.filter(v => v.status === 'dismantled').length,
-    disposed: vehicles.filter(v => v.status === 'disposed').length,
   }
 
   const handleEdit = (vehicle: PartsVehicle, e: React.MouseEvent) => {
@@ -253,19 +250,6 @@ export default function PartsVehicles() {
               <div className="w-2 h-2 rounded-full bg-green-500"></div>
             </div>
             <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.dismantled}</p>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter('disposed')}
-            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all ${
-              statusFilter === 'disposed' ? 'ring-2 ring-gray-500' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">Утилизированы</p>
-              <div className="w-2 h-2 rounded-full bg-gray-500"></div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-600">{stats.disposed}</p>
           </button>
         </div>
 

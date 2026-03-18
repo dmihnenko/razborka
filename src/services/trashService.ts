@@ -53,7 +53,10 @@ export async function moveToTrash(params: MoveToTrashParams): Promise<void> {
     sto_company_id: params.stoCompanyId ?? null,
     parts_company_id: params.partsCompanyId ?? null,
   }])
-  if (error) throw error
+  if (error) {
+    console.error('moveToTrash error:', JSON.stringify(error))
+    throw error
+  }
 }
 
 export async function getTrashItems(params: {

@@ -1,25 +1,33 @@
 import { useState } from 'react'
-import { X, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { X, Plus, Trash2 } from 'lucide-react'
 import { IMaskInput } from 'react-imask'
 import type { PartsVehicle, CreatePartsVehicleInput } from '@/types/parts'
 import { formatCurrency } from '@/utils/currency'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 
-function parseExpression(expr: string, rate: number): { totalUSD: number; totalUAH: number } {
-  // Каждая строка — отдельная статья расхода. $500 или 500$ — доллары, просто 500 — гривна
-  const tokens = expr.match(/\$?\d+(\.\d+)?\$?/g)
-  if (!tokens) return { totalUSD: 0, totalUAH: 0 }
+interface PriceRow {
+  id: number
+  label: string
+  amount: string
+  currency: 'USD' | 'UAH'
+}
+
+let rowCounter = 1
+function newRow(partial?: Partial<PriceRow>): PriceRow {
+  return { id: rowCounter++, label: '', amount: '', currency: 'USD', ...partial }
+}
+
+function calcTotals(rows: PriceRow[], rate: number) {
   let totalUSD = 0
   let totalUAH = 0
-  for (const token of tokens) {
-    const isUSD = token.includes('$')
-    const num = parseFloat(token.replace(/\$/g, ''))
-    if (isUSD) {
-      totalUSD += num
-      totalUAH += num * rate
+  for (const row of rows) {
+    const amt = parseFloat(row.amount) || 0
+    if (row.currency === 'USD') {
+      totalUSD += amt
+      totalUAH += amt * rate
     } else {
-      totalUAH += num
-      totalUSD += num / rate
+      totalUAH += amt
+      totalUSD += amt / rate
     }
   }
   return { totalUSD, totalUAH }
@@ -43,15 +51,25 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
     mileage: vehicle?.mileage,
     notes: vehicle?.notes || ''
   })
-  const [priceExpr, setPriceExpr] = useState<string>(
-    vehicle?.purchase_price ? String(vehicle.purchase_price) : ''
-  )
+
+  // Initialize price rows from existing vehicle data
+  const [priceRows, setPriceRows] = useState<PriceRow[]>(() => {
+    if (vehicle?.purchase_price && vehicle.purchase_price > 0) {
+      const rate = vehicle.exchange_rate || globalRate || 41
+      // stored as UAH — show as one USD row if divisible nicely, else UAH
+      const asUSD = vehicle.purchase_price / rate
+      const rounded = Math.round(asUSD)
+      const isCleanUSD = Math.abs(rounded - asUSD) < 0.5
+      return [newRow({ amount: isCleanUSD ? String(rounded) : String(vehicle.purchase_price), currency: isCleanUSD ? 'USD' : 'UAH' })]
+    }
+    return [newRow()]
+  })
+
   const [exchangeRate, setExchangeRate] = useState<number>(vehicle?.exchange_rate || globalRate || 41)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showHint, setShowHint] = useState(false)
 
-  const { totalUSD, totalUAH } = parseExpression(priceExpr, exchangeRate)
+  const { totalUSD, totalUAH } = calcTotals(priceRows, exchangeRate)
 
   if (!isOpen) return null
 
@@ -220,22 +238,11 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
               />
             </div>
 
-            {/* Цена покупки — только при редактировании */}
+            {/* Цена покупки */}
             {vehicle && (
               <div className="sm:col-span-2">
-                <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700">
-                      Цена покупки (₴)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowHint(h => !h)}
-                      className="text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      {showHint ? <ChevronUp className="w-4 h-4" /> : <HelpCircle className="w-4 h-4" />}
-                    </button>
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-gray-700">Цена покупки</label>
                   <div className="flex items-center gap-1.5 text-sm text-gray-500">
                     <span>Курс:</span>
                     <input
@@ -249,29 +256,64 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                   </div>
                 </div>
 
-                {/* Подсказка */}
-                {showHint && (
-                  <div className="mb-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700 space-y-1">
-                    <p className="font-medium">Как заполнять:</p>
-                    <p>• Каждую статью расхода — с новой строки</p>
-                    <p>• Число со знаком <span className="font-mono font-semibold">$</span> — это доллары: <span className="font-mono">17000$</span></p>
-                    <p>• Просто число — это гривна: <span className="font-mono">1500</span> (конвертируется по курсу)</p>
-                    <p className="pt-1 text-blue-600">Пример:<br />
-                      <span className="font-mono">17000$<br />1500<br />500$</span><br />
-                      → Итого считается автоматически
-                    </p>
-                  </div>
-                )}
+                <div className="space-y-2">
+                  {priceRows.map((row, idx) => (
+                    <div key={row.id} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={row.label}
+                        onChange={e => setPriceRows(rows => rows.map(r => r.id === row.id ? { ...r, label: e.target.value } : r))}
+                        className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                        placeholder="Описание (необязательно)"
+                      />
+                      <input
+                        type="number"
+                        value={row.amount}
+                        onChange={e => setPriceRows(rows => rows.map(r => r.id === row.id ? { ...r, amount: e.target.value } : r))}
+                        min="0"
+                        className="w-32 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                        placeholder="0"
+                      />
+                      <div className="flex rounded-lg border border-gray-300 overflow-hidden shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setPriceRows(rows => rows.map(r => r.id === row.id ? { ...r, currency: 'USD' } : r))}
+                          className={`px-2.5 py-2 text-sm font-medium transition-colors ${row.currency === 'USD' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                        >
+                          $
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPriceRows(rows => rows.map(r => r.id === row.id ? { ...r, currency: 'UAH' } : r))}
+                          className={`px-2.5 py-2 text-sm font-medium transition-colors ${row.currency === 'UAH' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                        >
+                          ₴
+                        </button>
+                      </div>
+                      {priceRows.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setPriceRows(rows => rows.filter(r => r.id !== row.id))}
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
 
-                <textarea
-                  value={priceExpr}
-                  onChange={e => setPriceExpr(e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none font-mono"
-                  placeholder={`17000$\n1500\n500$`}
-                />
+                <button
+                  type="button"
+                  onClick={() => setPriceRows(rows => [...rows, newRow()])}
+                  className="mt-2 flex items-center gap-1.5 text-sm text-primary hover:underline"
+                >
+                  <Plus className="w-4 h-4" />
+                  Добавить строку
+                </button>
+
                 {totalUSD > 0 && (
-                  <p className="mt-1.5 text-sm text-gray-700">
+                  <p className="mt-2 text-sm text-gray-700">
                     Итого: <span className="font-semibold text-green-700">${totalUSD.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
                     {' = '}
                     <span className="font-semibold">{formatCurrency(totalUAH)}</span>

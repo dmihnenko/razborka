@@ -364,17 +364,19 @@ export async function updatePartsInventoryItem(id: string, updates: Partial<Part
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { purchase_price, category, vehicle, ...rest } = updates as any
   // Convert empty strings to null for UUID and optional fields to avoid 400 errors
+  // Only include UUID fields if explicitly provided — otherwise they'd be set to null,
+  // overwriting existing values (e.g. vehicle_id gets wiped when selling a part)
   const safeUpdates = {
     ...rest,
-    category_id: rest.category_id || null,
-    vehicle_id: rest.vehicle_id || null,
-    storage_location_id: rest.storage_location_id || null,
-    part_number: rest.part_number || null,
-    description: rest.description || null,
-    location: rest.location || null,
-    shelf: rest.shelf || null,
-    bin: rest.bin || null,
-    notes: rest.notes || null,
+    ...('category_id' in rest ? { category_id: rest.category_id || null } : {}),
+    ...('vehicle_id' in rest ? { vehicle_id: rest.vehicle_id || null } : {}),
+    ...('storage_location_id' in rest ? { storage_location_id: rest.storage_location_id || null } : {}),
+    part_number: rest.part_number !== undefined ? (rest.part_number || null) : undefined,
+    description: rest.description !== undefined ? (rest.description || null) : undefined,
+    location: rest.location !== undefined ? (rest.location || null) : undefined,
+    shelf: rest.shelf !== undefined ? (rest.shelf || null) : undefined,
+    bin: rest.bin !== undefined ? (rest.bin || null) : undefined,
+    notes: rest.notes !== undefined ? (rest.notes || null) : undefined,
   }
   const { data, error } = await supabase
     .from('parts_inventory')
@@ -451,11 +453,14 @@ export async function createPartsOrder(
   input: { customer_id?: string | null; notes?: string; order_date?: string }
 ) {
   // Generate order number via RPC or fallback
-  let orderNumber = `P-${Date.now()}`
+  // Fallback includes random suffix to guarantee uniqueness if RPC fails
+  let orderNumber = `P-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
   const { data: rpcData, error: rpcError } = await supabase.rpc('generate_parts_order_number', {
     p_company_id: partsCompanyId,
   })
+  if (rpcError) console.error('RPC generate_parts_order_number error:', rpcError)
   if (!rpcError && rpcData) orderNumber = rpcData as string
+  console.log('createPartsOrder: trying order_number =', orderNumber)
 
   const { data, error } = await supabase
     .from('parts_orders')
@@ -471,7 +476,10 @@ export async function createPartsOrder(
     .select('*')
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('createPartsOrder insert error:', error)
+    throw error
+  }
   return data as PartsOrder
 }
 
@@ -513,7 +521,10 @@ export async function updatePartsOrderTotal(orderId: string, exchangeRate: numbe
     .update({ total_amount: total })
     .eq('id', orderId)
 
-  if (error) throw error
+  if (error) {
+    console.error('updatePartsOrderTotal error:', JSON.stringify(error))
+    throw error
+  }
 }
 
 // ============================================================================

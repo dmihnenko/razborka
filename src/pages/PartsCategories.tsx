@@ -207,14 +207,14 @@ export default function PartsCategories() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-4">
               <button onClick={() => navigate('/parts/inventory')} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Категории запчастей</h1>
+                <h1 className="text-lg font-bold text-gray-900">Категории запчастей</h1>
                 <p className="text-sm text-gray-500 hidden sm:block">{categories.length} своих категорий</p>
               </div>
             </div>
@@ -244,7 +244,7 @@ export default function PartsCategories() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
 
         {tab === 'my' && (
           <>

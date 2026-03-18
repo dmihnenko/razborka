@@ -94,21 +94,8 @@ export default function PartsOrderDetails() {
       const inventoryIds = (order?.items ?? []).map((i: any) => i.inventory_item_id)
       if (inventoryIds.length > 0) {
         if (status === 'completed') {
-          // Mark all parts sold
-          await supabase
-            .from('parts_inventory')
-            .update({ status: 'sold' })
-            .in('id', inventoryIds)
-          // Decrement quantity for each sold item
-          for (const item of order?.items ?? []) {
-            const invQty = (item.inventory_item as any)?.quantity ?? 0
-            const soldQty = item.quantity ?? 1
-            const newQty = Math.max(0, invQty - soldQty)
-            await supabase
-              .from('parts_inventory')
-              .update({ quantity: newQty })
-              .eq('id', item.inventory_item_id)
-          }
+          // Trigger complete_parts_order() already handles: status='sold' + quantity decrement
+          // Nothing extra needed here
         } else if (status === 'cancelled' || status === 'new' || status === 'in_progress') {
           // Restore parts to available (reserved or sold via this order)
           await supabase
@@ -124,6 +111,10 @@ export default function PartsOrderDetails() {
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       setShowCompleteModal(false)
+    },
+    onError: (err: any) => {
+      console.error('updateStatusMutation error (full):', JSON.stringify(err))
+      console.error('updateStatusMutation error details:', err?.details, err?.hint, err?.message, err?.code)
     },
   })
 
@@ -363,12 +354,16 @@ export default function PartsOrderDetails() {
               {order.items.map((item) => (
                 <div
                   key={item.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                  className={`border rounded-lg p-4 transition-colors ${
+                    item.inventory_item_id == null
+                      ? 'border-gray-100 bg-gray-50 opacity-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-gray-900 mb-1">
-                        {item.inventory_item?.name}
+                        {item.inventory_item?.name ?? <span className="italic text-gray-400">Запчасть удалена</span>}
                       </h3>
                       <div className="text-sm text-gray-600 space-y-1">
                         {item.inventory_item?.part_number && (

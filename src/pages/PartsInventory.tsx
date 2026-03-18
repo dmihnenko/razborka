@@ -259,7 +259,23 @@ export default function PartsInventory() {
     totalUSD: inventoryBySource.reduce((sum: number, item: PartsInventoryItem) => {
       const price = item.status === 'sold' ? (item.sold_price ?? item.selling_price ?? 0) : (item.selling_price || 0)
       return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum
-    }, 0)
+    }, 0),
+    availableUSD: inventoryBySource.filter((i: PartsInventoryItem) => i.status === 'available').reduce((sum: number, item: PartsInventoryItem) => {
+      const price = item.selling_price || 0
+      return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum + price * item.quantity / (usdRate || 41)
+    }, 0),
+    reservedUSD: inventoryBySource.filter((i: PartsInventoryItem) => i.status === 'reserved').reduce((sum: number, item: PartsInventoryItem) => {
+      const price = item.selling_price || 0
+      return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum + price * item.quantity / (usdRate || 41)
+    }, 0),
+    stockUSD: inventoryBySource.filter((i: PartsInventoryItem) => i.status === 'available' || i.status === 'reserved').reduce((sum: number, item: PartsInventoryItem) => {
+      const price = item.selling_price || 0
+      return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum + price * item.quantity / (usdRate || 41)
+    }, 0),
+    soldUSD: inventoryBySource.filter((i: PartsInventoryItem) => i.status === 'sold').reduce((sum: number, item: PartsInventoryItem) => {
+      const price = item.sold_price ?? item.selling_price ?? 0
+      return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum + price * item.quantity / (usdRate || 41)
+    }, 0),
   }
 
   const sellMutation = useMutation({
@@ -298,17 +314,15 @@ export default function PartsInventory() {
       // Update order total with current exchange rate
       await updatePartsOrderTotal(order.id, usdRate)
 
-      // Complete the order and fix the exchange rate at moment of sale
-      await supabase
+      // Complete the order — trigger complete_parts_order() sets inventory status='sold' and decrements quantity
+      const { error: completeError } = await supabase
         .from('parts_orders')
         .update({ status: 'completed', exchange_rate_at_sale: usdRate })
         .eq('id', order.id)
+      if (completeError) throw completeError
 
-      // Mark part as sold and decrement quantity
-      const newQty = Math.max(0, (item.quantity ?? 1) - 1)
+      // Only update fields not handled by the trigger (sold_price currency, customer link)
       return updatePartsInventoryItem(item.id, {
-        status: 'sold',
-        quantity: newQty,
         sold_price: price,
         price_currency: currency,
         sold_to_customer_id: resolvedCustomerId || undefined,
@@ -326,7 +340,11 @@ export default function PartsInventory() {
       setNewCustomerName('')
       setNewCustomerPhone('')
     },
-    onError: () => toast.error('Ошибка при сохранении'),
+    onError: (err: any) => {
+      console.error('Sell error:', err)
+      const msg = err?.message || err?.error_description || JSON.stringify(err)
+      toast.error(`Ошибка при сохранении: ${msg}`)
+    },
   })
 
   const handleEdit = (item: PartsInventoryItem, e: React.MouseEvent) => {
@@ -348,7 +366,10 @@ export default function PartsInventory() {
 
   const handleDelete = async (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
-    const ok = await showConfirm({ message: 'Удалить запчасть? Это действие нельзя отменить.', danger: true })
+    const message = item.status === 'sold'
+      ? 'Удалить проданную запчасть? Она будет убрана из заказа, а сумма заказа пересчитается. Если это единственная позиция — заказ удалится.'
+      : 'Удалить запчасть? Это действие нельзя отменить.'
+    const ok = await showConfirm({ message, danger: true })
     if (!ok) return
     deleteMutation.mutate(item)
   }
@@ -436,8 +457,8 @@ export default function PartsInventory() {
               <p className="text-xs sm:text-sm text-gray-600">Всего</p>
               <Box className="w-4 h-4 text-gray-400" />
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalQuantity}</p>
-            <p className="text-xs text-gray-500 mt-1">{stats.total} наименований</p>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{sourceFilter === 'vehicles' ? stats.total : stats.totalQuantity}</p>
+            <p className="text-xs text-gray-500 mt-1">{sourceFilter === 'vehicles' ? 'наименований' : `${stats.total} наименований`}</p>
           </button>
 
           <button
@@ -466,24 +487,48 @@ export default function PartsInventory() {
             <p className="text-2xl sm:text-3xl font-bold text-yellow-600">{stats.reserved}</p>
           </button>
 
-          <div className="bg-white rounded-lg shadow-sm p-4">
+          <button
+            onClick={() => setStatusFilter(statusFilter === 'sold' ? 'all' : 'sold')}
+            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all text-left ${
+              statusFilter === 'sold' ? 'ring-2 ring-blue-500' : ''
+            }`}
+          >
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">Низкий остаток</p>
-              <AlertTriangle className="w-4 h-4 text-red-500" />
+              <p className="text-xs sm:text-sm text-gray-600">Продано</p>
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-red-600">{stats.lowStock}</p>
-          </div>
+            <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.sold}</p>
+          </button>
 
           <div className="bg-white rounded-lg shadow-sm p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs sm:text-sm text-gray-600">Стоимость</p>
               <TrendingDown className="w-4 h-4 text-blue-500" />
             </div>
-            <p className="text-lg sm:text-xl font-bold text-blue-600">
-              {stats.totalUAH === 0 && stats.totalUSD === 0
-                ? '—'
-                : `$${Math.round(stats.totalUSD + stats.totalUAH / (usdRate || 41)).toLocaleString('ru-RU')}`}
-            </p>
+            {statusFilter === 'all' ? (
+              <>
+                <p className="text-xs text-gray-500 mb-0.5">В наличии</p>
+                <p className="text-base sm:text-lg font-bold text-green-600">
+                  {stats.stockUSD === 0 ? '—' : `$${Math.round(stats.stockUSD).toLocaleString('ru-RU')}`}
+                </p>
+                <p className="text-xs text-gray-500 mt-1.5 mb-0.5">Продано</p>
+                <p className="text-base sm:text-lg font-bold text-blue-600">
+                  {stats.soldUSD === 0 ? '—' : `$${Math.round(stats.soldUSD).toLocaleString('ru-RU')}`}
+                </p>
+              </>
+            ) : statusFilter === 'available' || statusFilter === 'reserved' ? (
+              <p className="text-lg sm:text-xl font-bold text-green-600">
+                {stats.stockUSD === 0 ? '—' : `$${Math.round(stats.stockUSD).toLocaleString('ru-RU')}`}
+              </p>
+            ) : statusFilter === 'sold' ? (
+              <p className="text-lg sm:text-xl font-bold text-blue-600">
+                {stats.soldUSD === 0 ? '—' : `$${Math.round(stats.soldUSD).toLocaleString('ru-RU')}`}
+              </p>
+            ) : (
+              <p className="text-lg sm:text-xl font-bold text-blue-600">
+                {stats.totalUAH === 0 && stats.totalUSD === 0 ? '—' : `$${Math.round(stats.totalUSD + stats.totalUAH / (usdRate || 41)).toLocaleString('ru-RU')}`}
+              </p>
+            )}
           </div>
         </div>
 
@@ -720,7 +765,7 @@ export default function PartsInventory() {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                       Статус
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                    <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell${sourceFilter === 'vehicles' ? ' !hidden' : ''}`}>
                       Кол-во
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -774,7 +819,7 @@ export default function PartsInventory() {
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap hidden sm:table-cell">
+                      <td className={`px-4 py-3 whitespace-nowrap hidden sm:table-cell${sourceFilter === 'vehicles' ? ' !hidden' : ''}`}>
                         {item.vehicle_id ? (
                           <span className="text-sm text-gray-300">—</span>
                         ) : (

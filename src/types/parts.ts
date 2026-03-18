@@ -28,7 +28,7 @@ export interface PartsCustomer {
   created_by?: string
 }
 
-export type PartsVehicleStatus = 'awaiting' | 'in_progress' | 'dismantled' | 'disposed'
+export type PartsVehicleStatus = 'awaiting' | 'in_progress' | 'dismantled'
 
 export interface PartsVehicle {
   id: string
