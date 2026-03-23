@@ -53,14 +53,14 @@ export default function AdminPanel() {
     },
     {
       title: 'Статистика и отчеты',
-      description: 'Просмотр аналитики и генерация отчетов',
+      description: 'Статистика таблиц, лимиты компаний Supabase',
       icon: BarChart3,
       path: '/admin/analytics',
       color: 'green',
     },
     {
       title: 'База данных',
-      description: 'Статистика таблиц, лимиты компаний и очистка корзины',
+      description: 'SQL-редактор, просмотр таблиц, выполнение запросов',
       icon: Database,
       path: '/admin/database',
       color: 'orange',
