@@ -53,15 +53,6 @@ export default function Dashboard() {
       const inProgress = active.filter(a => a.status === 'in_progress')
       const ready = active.filter(a => a.status === 'ready' || a.status === 'completed')
       
-      console.log('Dashboard stats:', {
-        total: data?.length,
-        active: active.length,
-        scheduled: scheduled.length,
-        inProgress: inProgress.length,
-        ready: ready.length,
-        readyItems: ready
-      })
-      
       // Неоплаченные
       const unpaid = active.filter(a => {
         const hasParts = (a.parts_cost || 0) > 0
@@ -168,8 +159,6 @@ export default function Dashboard() {
   const inProgressCount = appointmentsStats?.inProgress || 0
   const readyCount = appointmentsStats?.ready || 0
   const unpaidCount = appointmentsStats?.unpaid || 0
-
-  console.log('Dashboard readyCount:', readyCount, 'appointmentsStats:', appointmentsStats)
 
   const partsCost = monthlyStats?.parts || 0
   const workCost = monthlyStats?.work || 0

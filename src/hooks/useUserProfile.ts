@@ -23,8 +23,6 @@ export function useUserProfile() {
 
       // Если профиль не найден, создаем его
       if (!profiles || profiles.length === 0) {
-        console.log('Profile not found, creating one for user:', user.id)
-        
         const { data: newProfile, error: createError } = await supabase
           .from('user_profiles')
           .insert({

@@ -67,7 +67,6 @@ export default function PublicCustomerView() {
         console.error('Appointments error:', error)
         throw error
       }
-      console.log('Appointments data:', data)
       return data
     },
   })

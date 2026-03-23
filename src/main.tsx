@@ -19,9 +19,8 @@ if (import.meta.env.PROD) {
         },
       })
     },
-    onOfflineReady() {
-      console.log('Приложение готово к работе оффлайн')
-    },
+    onOfflineReady() {},
+
   })
 }
 

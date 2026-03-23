@@ -460,7 +460,6 @@ export async function createPartsOrder(
   })
   if (rpcError) console.error('RPC generate_parts_order_number error:', rpcError)
   if (!rpcError && rpcData) orderNumber = rpcData as string
-  console.log('createPartsOrder: trying order_number =', orderNumber)
 
   const { data, error } = await supabase
     .from('parts_orders')
