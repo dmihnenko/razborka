@@ -258,7 +258,7 @@ export default function Users() {
       }
       
       // Генерируем email-заглушку если не указан email
-      const email = data.email || `${data.username}@example.com`;
+      const email = data.email || `${data.username.toLowerCase()}@internal.local`;
 
       // Используем стандартную регистрацию Supabase
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
@@ -268,8 +268,7 @@ export default function Users() {
           data: {
             full_name: data.full_name,
             phone: data.phone,
-            username: data.username,
-            plain_password: data.password,
+            username: data.username.toLowerCase(),
             primary_role_id: data.primary_role_id,
             sto_company_id: data.sto_company_id || null,
             parts_company_id: data.parts_company_id || null,
@@ -289,7 +288,8 @@ export default function Users() {
       // Добавляем роли пользователю
       const roleInserts = data.role_ids.map(roleId => ({
         user_id: authData.user!.id,
-        role_id: roleId
+        role_id: roleId,
+        is_primary: roleId === data.primary_role_id
       }));
 
       const { error: rolesError } = await supabase

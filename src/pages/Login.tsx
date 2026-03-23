@@ -56,8 +56,7 @@ export default function Login() {
       options: {
         data: {
           username: username.toLowerCase(),
-          real_email: realEmail,
-          plain_password: password
+          real_email: realEmail
         }
       }
     })
@@ -165,10 +164,8 @@ export default function Login() {
         }
       }
 
-      // КРИТИЧНО: Инвалидируем кэш профиля и дожидаемся его загрузки
+      // КРИТИЧНО: Инвалидируем кэш профиля
       await queryClient.invalidateQueries({ queryKey: ['userProfile'] })
-      // Даём время на загрузку профиля в кэш
-      await new Promise(resolve => setTimeout(resolve, 100))
 
       // Определяем куда направить пользователя на основе основной роли
       const defaultRoute = primaryRoleName 

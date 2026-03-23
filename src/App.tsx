@@ -63,6 +63,7 @@ const PartsWarehouse = lazy(() => import('./pages/PartsWarehouse'))
 const PartsNoPricePage = lazy(() => import('./pages/PartsNoPricePage'))
 const PartsInventoryItemPage = lazy(() => import('./pages/PartsInventoryItemPage'))
 const Trash = lazy(() => import('./pages/Trash'))
+const DatabasePage = lazy(() => import('./pages/Database'))
 
 import { useAuth } from './hooks/useAuth'
 import { useUserProfile } from './hooks/useUserProfile'
@@ -184,7 +185,7 @@ function App() {
           <Route path="support" element={<AdminSupport />} />
           <Route path="settings" element={<div className="p-8"><h1 className="text-2xl font-bold">Настройки</h1><p className="text-gray-600 mt-4">В разработке...</p></div>} />
           <Route path="analytics" element={<div className="p-8"><h1 className="text-2xl font-bold">Аналитика</h1><p className="text-gray-600 mt-4">В разработке...</p></div>} />
-          <Route path="database" element={<div className="p-8"><h1 className="text-2xl font-bold">База данных</h1><p className="text-gray-600 mt-4">В разработке...</p></div>} />
+          <Route path="database" element={<DatabasePage />} />
         </Route>
       </Routes>
     </Suspense>
