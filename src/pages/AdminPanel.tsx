@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Users, Shield, Settings, BarChart3, Database, Activity, AlertCircle } from 'lucide-react'
+import { Users, Shield, Settings, Database, Activity, AlertCircle } from 'lucide-react'
 import { useUserProfile } from '../hooks/useUserProfile'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -52,17 +52,10 @@ export default function AdminPanel() {
       color: 'gray',
     },
     {
-      title: 'Статистика и отчеты',
-      description: 'Просмотр аналитики и генерация отчетов',
-      icon: BarChart3,
-      path: '/admin/analytics',
-      color: 'green',
-    },
-    {
-      title: 'База данных',
-      description: 'Управление данными и резервное копирование',
+      title: 'Аналитика и база данных',
+      description: 'Статистика таблиц, лимиты компаний и очистка корзины',
       icon: Database,
-      path: '/admin/database',
+      path: '/admin/analytics',
       color: 'orange',
     },
   ]
