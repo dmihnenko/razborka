@@ -54,15 +54,33 @@ export default function StoCompanies() {
         .order('created_at', { ascending: false });
       if (error) throw error;
       
+      // Получаем id роли admin чтобы исключить администраторов из подсчёта
+      const { data: adminRole } = await supabase
+        .from('roles')
+        .select('id')
+        .eq('name', 'admin')
+        .single();
+
+      const { data: adminUserRoles } = adminRole
+        ? await supabase.from('user_roles').select('user_id').eq('role_id', adminRole.id)
+        : { data: [] };
+
+      const adminIds = (adminUserRoles ?? []).map((r: { user_id: string }) => r.user_id);
+
       // Получаем количество работников для каждой СТО
       const companiesWithWorkers = await Promise.all((data || []).map(async (company) => {
-        // Считаем всех активных пользователей, привязанных к этой СТО
-        const { count } = await supabase
+        // Считаем активных пользователей компании, исключая глобальных администраторов
+        let query = supabase
           .from('user_profiles')
           .select('id', { count: 'exact', head: true })
           .eq('sto_company_id', company.id)
           .eq('is_active', true);
-        
+
+        if (adminIds.length > 0) {
+          query = query.not('id', 'in', `(${adminIds.join(',')})`);
+        }
+
+        const { count } = await query;
         const workersCount = count || 0;
         
         // Получаем подписку компании
