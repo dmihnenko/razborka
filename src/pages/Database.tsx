@@ -172,8 +172,8 @@ export default function DatabasePage() {
         (companies ?? []).map(async (c) => {
           const [workers, vehicles, parts, sub] = await Promise.all([
             supabase.from('user_profiles').select('*', { count: 'exact', head: true }).eq('parts_company_id', c.id),
-            supabase.from('parts_vehicles').select('*', { count: 'exact', head: true }).eq('company_id', c.id),
-            supabase.from('parts_inventory').select('*', { count: 'exact', head: true }).eq('company_id', c.id),
+            supabase.from('parts_vehicles').select('*', { count: 'exact', head: true }).eq('parts_company_id', c.id),
+            supabase.from('parts_inventory').select('*', { count: 'exact', head: true }).eq('parts_company_id', c.id),
             supabase
               .from('company_subscriptions')
               .select('*, subscription:subscriptions(name)')

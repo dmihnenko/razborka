@@ -30,7 +30,7 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await anonClient.auth.getUser()
     if (userError || !user) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized', detail: userError?.message ?? 'no user' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
