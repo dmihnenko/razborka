@@ -4,6 +4,7 @@ import {
   LogOut,
   Shield
 } from 'lucide-react'
+import { LayoutSkeleton } from './LayoutSkeleton'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
@@ -112,11 +113,7 @@ export default function Layout() {
 
   // Показываем загрузчик только при первой загрузке профиля или если нет меню (роли ещё не пришли)
   if (isLoading || (!profile && filteredNavigation.length === 0) || (profile && !primaryRole && filteredNavigation.length === 0)) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    )
+    return <LayoutSkeleton />
   }
 
   return (
@@ -177,13 +174,13 @@ export default function Layout() {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:flex-col w-60 lg:w-64 bg-white border-r border-gray-200 flex-shrink-0">
+      <div className="hidden md:flex md:flex-col md:w-16 lg:w-64 bg-white border-r border-gray-200 flex-shrink-0">
         {/* Logo */}
-        <div className="flex items-center gap-2.5 px-5 h-14 border-b border-gray-100">
+        <div className="flex items-center justify-center lg:justify-start gap-2.5 px-2 lg:px-5 h-14 border-b border-gray-100">
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xs font-bold">CRM</span>
+            <span className="text-white text-xs font-bold">C</span>
           </div>
-          <span className="text-sm font-semibold text-gray-800 truncate">
+          <span className="hidden lg:block text-sm font-semibold text-gray-800 truncate">
             {profile?.full_name?.split(' ')[0] || 'CRM'}
           </span>
         </div>
@@ -198,14 +195,15 @@ export default function Layout() {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex items-center gap-3 px-3 py-2 mb-0.5 rounded-lg text-sm font-medium transition-colors ${
+                title={item.name}
+                className={`flex items-center justify-center lg:justify-start gap-3 px-0 lg:px-3 py-2 mb-0.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
                     ? 'bg-primary/10 text-primary'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
-                <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-primary' : 'text-gray-400'}`} />
-                {item.name}
+                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary' : 'text-gray-400'}`} />
+                <span className="hidden lg:block">{item.name}</span>
               </Link>
             )
           })}
@@ -215,19 +213,21 @@ export default function Layout() {
           {isAdmin && (
             <Link
               to="/admin"
+              title="Админ панель"
               onClick={() => localStorage.removeItem('activeRole')}
-              className="flex items-center gap-3 w-full px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
+              className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
             >
-              <Shield className="w-4 h-4 text-purple-500 flex-shrink-0" />
-              Админ панель
+              <Shield className="w-5 h-5 text-purple-500 flex-shrink-0" />
+              <span className="hidden lg:block">Админ панель</span>
             </Link>
           )}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-lg transition-colors"
+            title="Выход"
+            className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-lg transition-colors"
           >
-            <LogOut className="w-4 h-4 flex-shrink-0" />
-            Выход
+            <LogOut className="w-5 h-5 flex-shrink-0" />
+            <span className="hidden lg:block">Выход</span>
           </button>
         </div>
       </div>

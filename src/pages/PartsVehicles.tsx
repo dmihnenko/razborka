@@ -11,7 +11,6 @@ import { supabase } from '@/lib/supabase'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
-import { formatCurrency } from '@/utils/currency'
 import type { PartsVehicle, CreatePartsVehicleInput, PartsVehicleStatus } from '@/types/parts'
 
 const statusLabels: Record<PartsVehicleStatus, string> = {

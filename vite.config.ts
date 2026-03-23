@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import { VitePWA } from 'vite-plugin-pwa'
+/// <reference types="vitest" />
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -17,7 +18,7 @@ export default defineConfig({
         theme_color: '#2563eb',
         background_color: '#ffffff',
         display: 'standalone',
-        orientation: 'portrait',
+        orientation: 'any',
         scope: '/',
         start_url: '/',
         icons: [
@@ -102,5 +103,27 @@ export default defineConfig({
         assetFileNames: `assets/[name].[hash].[ext]`
       }
     }
-  }
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov', 'html'],
+      include: ['src/utils/**', 'src/services/**', 'src/hooks/**', 'src/components/**'],
+      exclude: [
+        'src/test/**',
+        'src/**/*.d.ts',
+        'src/utils/imageStorage.ts',
+        'src/utils/imgbbKey.ts',
+        'src/services/imgbbService.ts',
+        'src/services/personalVehicles.ts',
+      ],
+    },
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
 })

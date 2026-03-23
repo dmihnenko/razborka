@@ -11,8 +11,6 @@ import {
   MessageSquare,
   BarChart3,
   Settings,
-  Tag,
-  Warehouse,
   Store
 } from 'lucide-react';
 

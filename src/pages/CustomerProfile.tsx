@@ -221,7 +221,7 @@ export default function CustomerProfile() {
         {/* Header — on mobile acts as toggle */}
         <div
           className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100 sm:cursor-default cursor-pointer select-none"
-          onClick={(e) => {
+          onClick={() => {
             // only toggle on mobile (no sm: equivalent clicks here)
             if (window.innerWidth < 640) setVehiclesMobileOpen(v => !v)
           }}

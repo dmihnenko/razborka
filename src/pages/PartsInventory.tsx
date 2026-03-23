@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, Wrench, Store } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -10,7 +10,7 @@ import type { ImgbbPhoto } from '@/services/imgbbService'
 import { uploadToImgbb, deletePhotosFromImgbb } from '@/services/imgbbService'
 import { getImgbbKey } from '@/utils/imgbbKey'
 import { supabase } from '@/lib/supabase'
-import { formatCurrency, formatPrice } from '@/utils/currency'
+import { formatPrice } from '@/utils/currency'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -187,25 +187,6 @@ export default function PartsInventory() {
       }
     }
   })
-
-  const deleteAllMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('parts_inventory')
-        .delete()
-        .eq('parts_company_id', partsCompanyId!)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success('Все запчасти удалены')
-    },
-    onError: () => toast.error('Ошибка при удалении'),
-  })
-
-  // Categories filtered by selected vehicle (brand match or brandless)
-  const getCategoriesForVehicleLocal = (vehicleId: string) =>
-    getCategoriesForVehicle(vehicleId, vehicles as any[], categories as any[])
 
   // Filter by source first (for stats and list)
   const inventoryBySource = inventory.filter((item: PartsInventoryItem) =>

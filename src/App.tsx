@@ -69,13 +69,11 @@ import { useUserProfile } from './hooks/useUserProfile'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from './lib/supabase'
 
+import { LayoutSkeleton } from './components/LayoutSkeleton'
+
 // Компонент загрузки для Suspense
 function PageLoader() {
-  return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-    </div>
-  )
+  return <LayoutSkeleton />
 }
 
 function App() {
@@ -201,11 +199,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoading: profileLoading } = useUserProfile()
 
   if (loading || profileLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    )
+    return <LayoutSkeleton />
   }
 
   if (!user) {

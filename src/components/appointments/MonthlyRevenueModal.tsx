@@ -4,6 +4,17 @@ import { X, Package, Wrench, EyeOff, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 
+type AppointmentRow = {
+  id: string
+  parts_cost: number | null
+  total_parts_cost: number | null
+  total_work_cost: number | null
+  exclude_from_stats: boolean | null
+  closed_date: string
+  customers: { name: string } | null
+  vehicles: { brand: string; model: string; license_plate: string | null } | null
+}
+
 interface MonthlyRevenueModalProps {
   isOpen: boolean
   onClose: () => void
@@ -40,7 +51,7 @@ export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: Mo
         .order('closed_date', { ascending: false })
 
       if (error) throw error
-      return data
+      return data as unknown as AppointmentRow[]
     },
     enabled: isOpen && !!profile?.sto_company_id,
   })

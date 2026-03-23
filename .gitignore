@@ -28,6 +28,12 @@ dist-ssr
 .env.local
 .env.production
 
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
 # Private documentation
 README.md
 

@@ -76,6 +76,22 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
 
+  // ── thumbnail strip (хуки до раннего возврата)
+  const thumbRef = useRef<HTMLDivElement>(null)
+  const lbThumbRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll active thumb into view
+  useEffect(() => {
+    const el = thumbRef.current?.children[activeIndex] as HTMLElement | undefined
+    el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }, [activeIndex])
+
+  useEffect(() => {
+    if (lightboxIndex === null) return
+    const el = lbThumbRef.current?.children[lightboxIndex] as HTMLElement | undefined
+    el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }, [lightboxIndex])
+
   if (photos.length === 0) return null
 
   // ── gallery swipe handlers ────────────────────────────────────────────────
@@ -113,23 +129,6 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
     lbTouchStartX.current = null
     lbTouchStartY.current = null
   }
-
-  // ── thumbnail strip ───────────────────────────────────────────────────────
-
-  const thumbRef = useRef<HTMLDivElement>(null)
-  const lbThumbRef = useRef<HTMLDivElement>(null)
-
-  // Auto-scroll active thumb into view
-  useEffect(() => {
-    const el = thumbRef.current?.children[activeIndex] as HTMLElement | undefined
-    el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
-  }, [activeIndex])
-
-  useEffect(() => {
-    if (lightboxIndex === null) return
-    const el = lbThumbRef.current?.children[lightboxIndex] as HTMLElement | undefined
-    el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
-  }, [lightboxIndex])
 
   // ─────────────────────────────────────────────────────────────────────────
   return (

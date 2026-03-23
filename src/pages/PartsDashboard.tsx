@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { Car, ShoppingCart, DollarSign, AlertCircle, TrendingUp, ArrowRight, Warehouse, LayoutGrid, Users, BarChart2, Settings, Wrench, Store } from 'lucide-react'
-import { formatCurrency } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 

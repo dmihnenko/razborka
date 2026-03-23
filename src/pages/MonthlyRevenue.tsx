@@ -5,6 +5,17 @@ import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
+type AppointmentRow = {
+  id: string
+  parts_cost: number | null
+  total_parts_cost: number | null
+  total_work_cost: number | null
+  exclude_from_stats: boolean | null
+  closed_date: string
+  customers: { name: string } | null
+  vehicles: { brand: string; model: string; license_plate: string | null } | null
+}
+
 export default function MonthlyRevenue() {
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
@@ -48,7 +59,7 @@ export default function MonthlyRevenue() {
       const { data, error } = await query.order('closed_date', { ascending: false })
 
       if (error) throw error
-      return data
+      return data as unknown as AppointmentRow[]
     },
     enabled: !!profile?.sto_company_id,
   })

@@ -33,20 +33,10 @@ export default function Dashboard() {
     activeRole = localStorage.getItem('activeRole') || 'user'
   }
   
-  // Если активная роль user, показываем страницу "Мои автомобили"
-  if (activeRole === 'user') {
-    return <MyVehicles />
-  }
-
   // Проверяем, является ли пользователь владельцем СТО
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
 
-  // Если работник, показываем worker dashboard
-  if (!isStoOwner) {
-    return <WorkerDashboard />
-  }
-
-  // Получаем детальную статистику по заявкам
+  // Получаем детальную статистику по заявкам (хуки должны быть до ранних возвратов)
   const { data: appointmentsStats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-appointments-stats', profile?.sto_company_id],
     queryFn: async () => {
@@ -166,8 +156,12 @@ export default function Dashboard() {
       if (error) throw error
       return data ?? []
     },
-    enabled: !!profile?.sto_company_id,
+    enabled: !!profile?.sto_company_id && !!isStoOwner,
   })
+
+  // Ранние возвраты — после всех хуков
+  if (activeRole === 'user') return <MyVehicles />
+  if (!isStoOwner) return <WorkerDashboard />
 
   const activeCount = appointmentsStats?.total || 0
   const scheduledCount = appointmentsStats?.scheduled || 0

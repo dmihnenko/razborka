@@ -269,7 +269,6 @@ function AddEmployeeModal({ onClose, stoCompanyId }: { onClose: () => void; stoC
       const email = `${data.username}@sto-worker.local`
 
       // Создаем пользователя в auth с минимальными данными
-      let userId: string
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password: data.password
@@ -288,7 +287,7 @@ function AddEmployeeModal({ onClose, stoCompanyId }: { onClose: () => void; stoC
         throw new Error('Не удалось создать пользователя')
       }
 
-      userId = authData.user.id
+      const userId = authData.user.id
 
       // Даем время триггеру создать базовый профиль
       await new Promise(resolve => setTimeout(resolve, 500))

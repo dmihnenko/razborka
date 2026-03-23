@@ -15,6 +15,7 @@ import {
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
 import { supabase } from '../lib/supabase'
 import { toast } from 'sonner'
+import { LayoutSkeleton } from './LayoutSkeleton'
 import Breadcrumbs from './Breadcrumbs'
 
 // Группировка меню для удобства
@@ -46,9 +47,6 @@ const adminNavigationGroups = [
   }
 ]
 
-// Плоский список для desktop sidebar
-const adminNavigation = adminNavigationGroups.flatMap(group => group.items)
-
 export default function AdminLayout() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -64,11 +62,7 @@ export default function AdminLayout() {
 
   // Показываем загрузку пока профиль загружается
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-      </div>
-    )
+    return <LayoutSkeleton />
   }
 
   // Только после загрузки проверяем права

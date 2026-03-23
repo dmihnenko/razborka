@@ -257,7 +257,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                 </div>
 
                 <div className="space-y-2">
-                  {priceRows.map((row, idx) => (
+                  {priceRows.map((row, _idx) => (
                     <div key={row.id} className="flex items-center gap-2">
                       <input
                         type="text"
