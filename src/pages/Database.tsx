@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import {
-  Database,
   Users,
   Car,
   Calendar,
@@ -239,14 +238,7 @@ export default function DatabasePage() {
       <ConfirmDialog {...dialogProps} />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Database className="w-6 h-6 text-orange-600" />
-            База данных
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">Статистика таблиц и лимиты компаний</p>
-        </div>
+      <div className="flex justify-end">
         <button
           onClick={refreshAll}
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"

@@ -112,14 +112,14 @@ export async function getCompanySubscription(companyType: 'sto' | 'parts', compa
 }
 
 export async function assignSubscription(input: AssignSubscriptionInput) {
-  // Сначала деактивируем существующую подписку
+  // Remove all existing rows for this company (handles duplicates + avoids unique constraint issues)
   await supabase
     .from('company_subscriptions')
-    .update({ is_active: false })
+    .delete()
     .eq('company_type', input.company_type)
     .eq('company_id', input.company_id)
-  
-  // Создаем новую подписку
+
+  // Insert fresh subscription
   const { data, error } = await supabase
     .from('company_subscriptions')
     .insert({
@@ -135,7 +135,7 @@ export async function assignSubscription(input: AssignSubscriptionInput) {
       subscription:subscriptions(*)
     `)
     .single()
-  
+
   if (error) throw error
   return data as CompanySubscription
 }

@@ -4,7 +4,6 @@ import {
   Users, 
   Settings, 
   BarChart3, 
-  Database,
   LogOut,
   Building2,
   Store,
@@ -42,7 +41,6 @@ const adminNavigationGroups = [
       { name: 'Поддержка', href: '/admin/support', icon: MessageSquare },
       { name: 'Настройки', href: '/admin/settings', icon: Settings },
       { name: 'Аналитика', href: '/admin/analytics', icon: BarChart3 },
-      { name: 'База данных', href: '/admin/database', icon: Database },
     ]
   }
 ]

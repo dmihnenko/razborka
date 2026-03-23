@@ -56,21 +56,14 @@ export default function StoCompanies() {
       
       // Получаем количество работников для каждой СТО
       const companiesWithWorkers = await Promise.all((data || []).map(async (company) => {
-        // Считаем пользователей с ролью sto_worker через запрос к user_roles
-        const { data: workers } = await supabase
-          .from('user_roles')
-          .select('user_id, roles!inner(name)')
-          .eq('roles.name', 'sto_worker');
-        
-        // Фильтруем только тех, кто в этой компании И активен
-        const { data: companyUsers } = await supabase
+        // Считаем всех активных пользователей, привязанных к этой СТО
+        const { count } = await supabase
           .from('user_profiles')
-          .select('id')
+          .select('id', { count: 'exact', head: true })
           .eq('sto_company_id', company.id)
-          .eq('is_active', true)
-          .in('id', workers?.map(w => w.user_id) || []);
+          .eq('is_active', true);
         
-        const workersCount = companyUsers?.length || 0;
+        const workersCount = count || 0;
         
         // Получаем подписку компании
         const { data: subscription } = await supabase
