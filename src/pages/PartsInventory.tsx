@@ -1105,7 +1105,7 @@ interface PartsInventoryModalProps {
   onVehicleChange?: (id: string) => void
 }
 
-function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange }: PartsInventoryModalProps) {
+export function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange }: PartsInventoryModalProps) {
   const [bulkMode, setBulkMode] = useState(false)
   const [showPasteArea, setShowPasteArea] = useState(false)
   const [pasteText, setPasteText] = useState('')

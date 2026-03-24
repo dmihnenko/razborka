@@ -1,20 +1,20 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Edit, TrendingUp, TrendingDown, Plus, X, Package, Settings, Camera, Trash2, Tag, Sparkles } from 'lucide-react'
+import { ArrowLeft, Edit, TrendingUp, TrendingDown, Plus, Settings, Trash2, Tag, Sparkles } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { getPartsCategoryTemplates } from '@/services/partsService'
+import { getPartsCategoryTemplates, createPartsInventoryItem, getStorageLocations } from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { toast } from 'sonner'
-import type { PartsVehicle, PartsVehicleStatus } from '@/types/parts'
+import type { PartsVehicle, PartsVehicleStatus, CreatePartsInventoryInput, StorageLocation } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
-import { uploadToImgbb, deletePhotosFromImgbb } from '@/services/imgbbService'
-import { getImgbbKey } from '@/utils/imgbbKey'
+import { deletePhotosFromImgbb } from '@/services/imgbbService'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 import { formatPrice } from '@/utils/currency'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import { PartsInventoryModal } from '@/pages/PartsInventory'
 
 const statusColors = {
   awaiting: 'bg-yellow-100 text-yellow-800',
@@ -72,6 +72,12 @@ export default function PartsVehicleDetails() {
     enabled: !!partsCompanyId && isAddPartOpen
   })
 
+  const { data: storageLocations = [] } = useQuery({
+    queryKey: ['storage-locations', partsCompanyId],
+    queryFn: () => getStorageLocations(partsCompanyId!),
+    enabled: !!partsCompanyId && isAddPartOpen,
+  })
+
   // Fetch brand-level template categories for suggestion banner
   const { data: brandTemplates = [] } = useQuery({
     queryKey: ['parts-brand-templates', vehicle?.make],
@@ -102,35 +108,22 @@ export default function PartsVehicleDetails() {
 
   // Add part mutation
   const addPartMutation = useMutation({
-    mutationFn: async (data: {
-      name: string
-      part_number: string
-      condition: string
-      quantity: number
-      selling_price?: number
-      price_currency?: 'UAH' | 'USD'
-      category_id?: string
-      notes: string
-      photos?: ImgbbPhoto[]
-    }) => {
-      const { error } = await supabase
-        .from('parts_inventory')
-        .insert({
-          ...data,
-          vehicle_id: id,
-          parts_company_id: partsCompanyId,
-          status: 'available',
-          reserved_quantity: 0,
-          category_id: data.category_id || null,
-          selling_price: data.selling_price || 0,
-          price_currency: data.price_currency || 'USD',
-          photos: data.photos || [],
-        })
-      if (error) throw error
-    },
+    mutationFn: (data: CreatePartsInventoryInput) =>
+      createPartsInventoryItem({ ...data, vehicle_id: data.vehicle_id || id }, partsCompanyId!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-parts', id] })
       toast.success('Запчасть добавлена')
+      setIsAddPartOpen(false)
+    },
+    onError: () => toast.error('Ошибка при добавлении')
+  })
+
+  const addBulkMutation = useMutation({
+    mutationFn: (items: CreatePartsInventoryInput[]) =>
+      Promise.all(items.map(data => createPartsInventoryItem({ ...data, vehicle_id: data.vehicle_id || id }, partsCompanyId!))),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vehicle-parts', id] })
+      toast.success('Запчасти добавлены')
       setIsAddPartOpen(false)
     },
     onError: () => toast.error('Ошибка при добавлении')
@@ -627,264 +620,19 @@ export default function PartsVehicleDetails() {
 
       {/* Add Part Modal */}
       {isAddPartOpen && (
-        <AddPartModal
-          vehicleName={`${vehicle.make} ${vehicle.model}${vehicle.year ? ` (${vehicle.year})` : ''}`}
+        <PartsInventoryModal
+          item={null}
           categories={categories}
+          vehicles={[vehicle]}
+          storageLocations={storageLocations as StorageLocation[]}
           onClose={() => setIsAddPartOpen(false)}
           onSave={(data) => addPartMutation.mutate(data)}
-          loading={addPartMutation.isPending}
+          onSaveBulk={(items) => addBulkMutation.mutate(items)}
+          isSaving={addPartMutation.isPending || addBulkMutation.isPending}
+          initialVehicleId={id}
         />
       )}
       <ConfirmDialog {...dialogProps} />
-    </div>
-  )
-}
-
-interface AddPartModalProps {
-  vehicleName: string
-  categories: { id: string; name: string }[]
-  onClose: () => void
-  onSave: (data: {
-    name: string
-    part_number: string
-    condition: string
-    quantity: number
-    selling_price?: number
-    price_currency?: 'UAH' | 'USD'
-    category_id?: string
-    notes: string
-    photos?: ImgbbPhoto[]
-  }) => void
-  loading: boolean
-}
-
-function AddPartModal({ vehicleName, categories, onClose, onSave, loading }: AddPartModalProps) {
-  const [form, setForm] = useState({
-    name: '',
-    part_number: '',
-    condition: 'used',
-    quantity: 1,
-    selling_price: '' as string | number,
-    price_currency: 'USD' as 'UAH' | 'USD',
-    category_id: '',
-    notes: '',
-  })
-  const [photos, setPhotos] = useState<ImgbbPhoto[]>([])
-  const [uploading, setUploading] = useState(false)
-
-  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    if (!files.length) return
-    const apiKey = getImgbbKey()
-    if (!apiKey) {
-      toast.error('Укажите API ключ ImgBB в настройках')
-      return
-    }
-    setUploading(true)
-    try {
-      const uploaded: ImgbbPhoto[] = []
-      for (const file of files) {
-        const photo = await uploadToImgbb(file, apiKey)
-        uploaded.push(photo)
-      }
-      setPhotos(prev => [...prev, ...uploaded])
-      toast.success(`${uploaded.length} фото загружено`)
-    } catch {
-      toast.error('Ошибка загрузки фото')
-    } finally {
-      setUploading(false)
-      e.target.value = ''
-    }
-  }
-
-  const removePhoto = (index: number) => {
-    setPhotos(prev => prev.filter((_, i) => i !== index))
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSave({
-      name: form.name,
-      part_number: form.part_number,
-      condition: form.condition,
-      quantity: form.quantity,
-      selling_price: form.selling_price ? Number(form.selling_price) : undefined,
-      price_currency: form.price_currency,
-      category_id: form.category_id || undefined,
-      notes: form.notes,
-      photos,
-    })
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-[95vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <Package className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-semibold">Добавить запчасть</h2>
-            </div>
-            <p className="text-xs text-gray-500 mt-0.5">{vehicleName}</p>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          {/* Название */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Название *</label>
-            <input
-              type="text"
-              required
-              value={form.name}
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base"
-              placeholder="Например: Головка блока"
-            />
-          </div>
-
-          {/* Категория + Артикул */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Категория</label>
-              <select
-                value={form.category_id}
-                onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base"
-              >
-                <option value="">Без категории</option>
-                {categories.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Артикул</label>
-              <input
-                type="text"
-                value={form.part_number}
-                onChange={e => setForm(f => ({ ...f, part_number: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base"
-                placeholder="OEM…"
-              />
-            </div>
-          </div>
-
-          {/* Состояние + Количество */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Состояние *</label>
-              <select
-                value={form.condition}
-                onChange={e => setForm(f => ({ ...f, condition: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base"
-              >
-                <option value="new">Новая</option>
-                <option value="used">Б/У хорошее</option>
-                <option value="damaged">Повреждена</option>
-              </select>
-            </div>
-            {/* quantity hardcoded to 1 for vehicle parts — hidden */}
-          </div>
-
-          {/* Цена */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Цена</label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={form.selling_price}
-                onChange={e => setForm(f => ({ ...f, selling_price: e.target.value }))}
-                className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base"
-                placeholder="0"
-              />
-              <button
-                type="button"
-                onClick={() => setForm(f => ({ ...f, price_currency: f.price_currency === 'USD' ? 'UAH' : 'USD' }))}
-                className="px-3 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition-colors flex-shrink-0 w-10 text-center"
-                title="Сменить валюту"
-              >
-                {form.price_currency === 'USD' ? '$' : '₴'}
-              </button>
-            </div>
-            <p className="mt-1 text-xs text-gray-500">Прайс-цена. При продаже можно указать фактическую цену</p>
-          </div>
-
-          {/* Фотографии */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Фотографии</label>
-            <label className={`flex items-center justify-center gap-2 w-full h-11 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-              uploading ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300 hover:border-primary hover:bg-primary/5'
-            }`}>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                disabled={uploading}
-                onChange={handlePhotoSelect}
-                className="sr-only"
-              />
-              <Camera className={`w-4 h-4 ${uploading ? 'text-gray-300' : 'text-gray-500'}`} />
-              <span className={`text-sm ${uploading ? 'text-gray-400' : 'text-gray-600'}`}>
-                {uploading ? 'Загрузка...' : 'Добавить фото'}
-              </span>
-            </label>
-            {photos.length > 0 && (
-              <div className="mt-2 flex gap-2 flex-wrap">
-                {photos.map((photo, i) => (
-                  <div key={i} className="relative group">
-                    <img
-                      src={photo.thumb_url || photo.url}
-                      alt={`Фото ${i + 1}`}
-                      className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removePhoto(i)}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Примечания */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Примечания</label>
-            <textarea
-              value={form.notes}
-              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-              rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base resize-none"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              disabled={loading || uploading}
-              className="flex-1 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 font-medium"
-            >
-              {loading ? 'Добавление...' : 'Добавить'}
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   )
 }
