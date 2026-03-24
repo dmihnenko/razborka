@@ -121,6 +121,7 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate, 
   })
 
   return (
+    <>
     <div className="space-y-6">
       <h3 className="text-xl font-bold text-gray-900">Галерея фотографий</h3>
 
@@ -299,5 +300,6 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate, 
       )}
     </div>
     <ConfirmDialog {...dialogProps} />
+    </>
   )
 }
