@@ -218,7 +218,6 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate, 
             </div>
             )
           })}
-          ))}
         </div>
       )}
 
