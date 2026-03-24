@@ -6,6 +6,8 @@ import { ALBUM_LABELS } from '@/types/personalVehicles'
 import { uploadToImgBB, validateImageFile } from '@/utils/imageStorage'
 import { addVehiclePhoto, deleteVehiclePhoto } from '@/services/personalVehicles'
 import { useAlert } from '../CustomAlert'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface Props {
   vehicleId: string
@@ -16,6 +18,7 @@ interface Props {
 
 export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate }: Props) {
   const { showAlert } = useAlert()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
   const [activeAlbum, setActiveAlbum] = useState<PhotoAlbum>('usaPhotos')
   const [modalPhoto, setModalPhoto] = useState<{ url: string; index: number } | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -70,7 +73,8 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate }
   })
 
   const handleDeletePhoto = async (index: number) => {
-    if (!confirm('Удалить это фото?')) return
+    const ok = await showConfirm({ message: 'Удалить это фото?', danger: true })
+    if (!ok) return
 
     try {
       await deleteVehiclePhoto(vehicleId, activeAlbum, index)
@@ -265,5 +269,6 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate }
         </div>
       )}
     </div>
+    <ConfirmDialog {...dialogProps} />
   )
 }
