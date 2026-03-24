@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Share2, Trash2, DollarSign, Upload } from 'lucide-react'
+import { ArrowLeft, Share2, Trash2, DollarSign, Upload, Images } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPersonalVehicleById, deletePersonalVehicle, markVehicleAsSold, updatePersonalVehicle } from '@/services/personalVehicles'
 import { uploadToImgBB, validateImageFile } from '@/utils/imageStorage'
@@ -28,6 +28,7 @@ export default function PublicPersonalVehicleView() {
   const [rateInput, setRateInput] = useState('')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showPhotoMenu, setShowPhotoMenu] = useState(false)
+  const [showPhotoPicker, setShowPhotoPicker] = useState(false)
 
   const { data: vehicle, isLoading } = useQuery({
     queryKey: ['personal-vehicle', vehicleId],
@@ -191,8 +192,15 @@ export default function PublicPersonalVehicleView() {
               <img
                 src={vehicle.photoUrl || NO_IMAGE_URL}
                 alt={vehicle.makeModel}
-                className="w-full h-full object-cover"
+                className={`w-full h-full object-cover${isOwner && !vehicle.isSold ? ' cursor-pointer' : ''}`}
+                onClick={() => { if (isOwner && !vehicle.isSold) setShowPhotoPicker(true) }}
               />
+              {isOwner && !vehicle.isSold && (
+                <div className="absolute top-2 left-2 bg-black bg-opacity-50 rounded-md px-2 py-1 flex items-center gap-1 pointer-events-none">
+                  <Images className="w-3 h-3 text-white" />
+                  <span className="text-white text-xs">Выбрать из галереи</span>
+                </div>
+              )}
               {vehicle.isSold && (
                 <div className="absolute top-2 right-2 sm:top-4 sm:right-4">
                   <span className="px-2 py-1 sm:px-4 sm:py-2 bg-red-700 text-white font-bold rounded-lg shadow-lg text-sm sm:text-base md:text-lg">
@@ -449,6 +457,48 @@ export default function PublicPersonalVehicleView() {
       </div>
 
       {/* Модалки */}
+      {/* Пикер главного фото из галереи */}
+      {showPhotoPicker && (() => {
+        const allPhotos = [
+          ...(vehicle.usaPhotos || []),
+          ...(vehicle.portPhotos || []),
+          ...(vehicle.arrivalPhotos || []),
+        ]
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4" onClick={() => setShowPhotoPicker(false)}>
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Выбрать главное фото</h3>
+                <button onClick={() => setShowPhotoPicker(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+              </div>
+              {allPhotos.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">Нет фотографий в галерее. Сначала загрузите фото.</p>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
+                  {allPhotos.map((photo, i) => {
+                    const isMain = vehicle.photoUrl === photo.url
+                    return (
+                      <div
+                        key={i}
+                        onClick={() => { if (!isMain) { updatePhotoMutation.mutate(photo.url); setShowPhotoPicker(false) } }}
+                        className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${isMain ? 'border-yellow-400 cursor-default' : 'border-transparent cursor-pointer hover:border-blue-400'}`}
+                      >
+                        <img src={photo.url} alt="" className="w-full h-full object-cover" />
+                        {isMain && (
+                          <div className="absolute inset-0 bg-yellow-400 bg-opacity-30 flex items-center justify-center">
+                            <span className="bg-yellow-400 text-white text-xs font-bold px-2 py-1 rounded">Текущее</span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
+
       {showShareModal && (
         <ShareLinkModal
           isOpen={true}

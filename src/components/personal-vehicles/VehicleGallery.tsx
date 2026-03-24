@@ -201,19 +201,9 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate, 
                   <Star className="w-3 h-3 text-white fill-white" />
                 </div>
               )}
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity flex flex-col items-center justify-center gap-2">
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-1">
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                   <span className="text-white font-medium text-sm">Просмотр</span>
-                  {isOwner && onSetMainPhoto && !isMain && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onSetMainPhoto(photo.url) }}
-                      className="flex items-center gap-1 px-2 py-1 bg-yellow-400 text-white rounded text-xs font-medium hover:bg-yellow-500 transition-colors"
-                    >
-                      <Star className="w-3 h-3" />
-                      Главное фото
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
