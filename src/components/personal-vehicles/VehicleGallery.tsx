@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { Upload, X, ChevronLeft, ChevronRight, Download, Trash2 } from 'lucide-react'
+import { Upload, X, ChevronLeft, ChevronRight, Download, Trash2, Star } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 import type { PersonalVehicle, PhotoAlbum, VehiclePhoto } from '@/types/personalVehicles'
 import { ALBUM_LABELS } from '@/types/personalVehicles'
@@ -14,9 +14,10 @@ interface Props {
   vehicle: PersonalVehicle
   isOwner: boolean
   onUpdate: () => void
+  onSetMainPhoto?: (url: string) => void
 }
 
-export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate }: Props) {
+export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate, onSetMainPhoto }: Props) {
   const { showAlert } = useAlert()
   const { confirm: showConfirm, dialogProps } = useConfirm()
   const [activeAlbum, setActiveAlbum] = useState<PhotoAlbum>('usaPhotos')
@@ -181,7 +182,9 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate }
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {currentPhotos.map((photo, index) => (
+          {currentPhotos.map((photo, index) => {
+            const isMain = vehicle.photoUrl === photo.url
+            return (
             <div
               key={index}
               className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden group cursor-pointer"
@@ -192,12 +195,29 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate }
                 alt={photo.fileName || `Photo ${index + 1}`}
                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center">
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-white font-medium">Просмотр</span>
+              {isMain && (
+                <div className="absolute top-2 left-2 bg-yellow-400 rounded-full p-1" title="Главное фото">
+                  <Star className="w-3 h-3 text-white fill-white" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity flex flex-col items-center justify-center gap-2">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-1">
+                  <span className="text-white font-medium text-sm">Просмотр</span>
+                  {isOwner && onSetMainPhoto && !isMain && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onSetMainPhoto(photo.url) }}
+                      className="flex items-center gap-1 px-2 py-1 bg-yellow-400 text-white rounded text-xs font-medium hover:bg-yellow-500 transition-colors"
+                    >
+                      <Star className="w-3 h-3" />
+                      Главное фото
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
+            )
+          })}
           ))}
         </div>
       )}
@@ -243,6 +263,16 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate }
                 <Download className="w-4 h-4" />
                 Скачать
               </a>
+
+              {isOwner && onSetMainPhoto && vehicle.photoUrl !== modalPhoto.url && (
+                <button
+                  onClick={() => { onSetMainPhoto(modalPhoto.url); setModalPhoto(null) }}
+                  className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors"
+                >
+                  <Star className="w-4 h-4" />
+                  Главное фото
+                </button>
+              )}
 
               {isOwner && (
                 <button

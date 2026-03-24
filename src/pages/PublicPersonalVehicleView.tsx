@@ -443,6 +443,7 @@ export default function PublicPersonalVehicleView() {
             vehicle={vehicle}
             isOwner={isOwner}
             onUpdate={handleUpdate}
+            onSetMainPhoto={(url) => updatePhotoMutation.mutate(url)}
           />
         </div>
       </div>
