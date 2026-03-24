@@ -307,6 +307,15 @@ export async function deleteExpenseItem(
 }
 
 /**
+ * Маппинг PhotoAlbum → имя колонки в БД
+ */
+const ALBUM_COLUMN: Record<PhotoAlbum, string> = {
+  usaPhotos: 'usa_photos',
+  portPhotos: 'port_photos',
+  arrivalPhotos: 'arrival_photos',
+}
+
+/**
  * Добавить фото в альбом
  */
 export async function addVehiclePhoto(
@@ -314,22 +323,24 @@ export async function addVehiclePhoto(
   album: PhotoAlbum,
   photo: VehiclePhoto
 ): Promise<void> {
+  const col = ALBUM_COLUMN[album]
+
   // Получить текущие фото
   const { data: vehicle, error: fetchError } = await supabase
     .from('personal_vehicles')
-    .select(album)
+    .select(col)
     .eq('id', vehicleId)
     .single()
 
   if (fetchError) throw fetchError
 
-  const currentPhotos = (vehicle as any)[album] || []
+  const currentPhotos = (vehicle as any)[col] || []
   const updatedPhotos = [...currentPhotos, photo]
 
   // Обновить фото
   const { error } = await supabase
     .from('personal_vehicles')
-    .update({ [album]: updatedPhotos })
+    .update({ [col]: updatedPhotos })
     .eq('id', vehicleId)
 
   if (error) throw error
@@ -343,22 +354,24 @@ export async function deleteVehiclePhoto(
   album: PhotoAlbum,
   photoIndex: number
 ): Promise<void> {
+  const col = ALBUM_COLUMN[album]
+
   // Получить текущие фото
   const { data: vehicle, error: fetchError } = await supabase
     .from('personal_vehicles')
-    .select(album)
+    .select(col)
     .eq('id', vehicleId)
     .single()
 
   if (fetchError) throw fetchError
 
-  const currentPhotos = (vehicle as any)[album] || []
+  const currentPhotos = (vehicle as any)[col] || []
   const updatedPhotos = currentPhotos.filter((_: any, index: number) => index !== photoIndex)
 
   // Обновить фото
   const { error } = await supabase
     .from('personal_vehicles')
-    .update({ [album]: updatedPhotos })
+    .update({ [col]: updatedPhotos })
     .eq('id', vehicleId)
 
   if (error) throw error
