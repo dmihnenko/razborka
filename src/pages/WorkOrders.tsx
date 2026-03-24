@@ -99,110 +99,199 @@ export default function WorkOrders() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Дата создания
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Клиент
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Автомобиль
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Назначено
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Статус
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Сумма
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  Действия
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {workOrders?.map((order: any) => (
-                <tr key={order.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(order.created_at).toLocaleDateString('ru-RU')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{order.customers?.name}</div>
-                    <div className="text-sm text-gray-500">{order.customers?.phone}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {order.vehicles?.brand} {order.vehicles?.model}
-                    <div className="text-sm text-gray-500">{order.vehicles?.license_plate}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {order.assigned_to_profile ? (
-                      <div>
-                        <div className="text-gray-900 font-medium">
-                          {order.assigned_to_profile.full_name || order.assigned_to_profile.email}
-                        </div>
-                        <div className="text-xs text-gray-500">Работник</div>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 italic">Не назначено</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[order.status as keyof typeof statusColors]}`}>
-                      {statusLabels[order.status as keyof typeof statusLabels]}
+        <>
+          {/* Desktop таблица */}
+          <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Дата создания
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Клиент
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Автомобиль
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Назначено
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Статус
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Сумма
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      Действия
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {workOrders?.map((order: any) => (
+                    <tr key={order.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(order.created_at).toLocaleDateString('ru-RU')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{order.customers?.name}</div>
+                        <div className="text-sm text-gray-500">{order.customers?.phone}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {order.vehicles?.brand} {order.vehicles?.model}
+                        <div className="text-sm text-gray-500">{order.vehicles?.license_plate}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {order.assigned_to_profile ? (
+                          <div>
+                            <div className="text-gray-900 font-medium">
+                              {order.assigned_to_profile.full_name || order.assigned_to_profile.email}
+                            </div>
+                            <div className="text-xs text-gray-500">Работник</div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 italic">Не назначено</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[order.status as keyof typeof statusColors]}`}>
+                          {statusLabels[order.status as keyof typeof statusLabels]}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                        ₴{Number(order.total_cost || 0).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        {isStoOwner && (
+                          <button
+                            onClick={() =>
+                              setReassignModal({
+                                isOpen: true,
+                                workOrderId: order.id,
+                                currentWorkerId: order.assigned_to,
+                                customerName: order.customers?.name || 'Неизвестно',
+                                vehicleName: `${order.vehicles?.brand || ''} ${order.vehicles?.model || ''}`.trim(),
+                              })
+                            }
+                            className="text-blue-600 hover:text-blue-800 mr-3"
+                            title="Переназначить работника"
+                          >
+                            <UserCog className="w-5 h-5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setEditingWorkOrder(order)
+                            setIsModalOpen(true)
+                          }}
+                          className="text-primary hover:text-primary/80 mr-3"
+                        >
+                          <Pencil className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const ok = await showConfirm({ message: 'Удалить этот заказ-наряд?', danger: true })
+                            if (!ok) return
+                            deleteMutation.mutate(order.id)
+                          }}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Мобильные карточки */}
+          <div className="md:hidden space-y-3">
+            {workOrders?.map((order: any) => (
+              <div key={order.id} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                {/* Заголовок карточки */}
+                <div className="bg-gradient-to-r from-teal-50 to-white px-3 py-2 border-b border-gray-100 flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-base font-semibold text-gray-900">{order.customers?.name}</div>
+                    <div className="text-xs text-gray-500">{order.customers?.phone}</div>
+                  </div>
+                  <span className={`px-2 py-0.5 text-xs font-semibold rounded-full flex-shrink-0 ${statusColors[order.status as keyof typeof statusColors]}`}>
+                    {statusLabels[order.status as keyof typeof statusLabels]}
+                  </span>
+                </div>
+
+                {/* Основная информация */}
+                <div className="p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-gray-500">
+                      {order.vehicles?.brand} {order.vehicles?.model}
+                      {order.vehicles?.license_plate && (
+                        <span className="ml-1 text-gray-400">({order.vehicles.license_plate})</span>
+                      )}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                    ₴{Number(order.total_cost || 0).toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    {isStoOwner && (
-                      <button
-                        onClick={() =>
-                          setReassignModal({
-                            isOpen: true,
-                            workOrderId: order.id,
-                            currentWorkerId: order.assigned_to,
-                            customerName: order.customers?.name || 'Неизвестно',
-                            vehicleName: `${order.vehicles?.brand || ''} ${order.vehicles?.model || ''}`.trim(),
-                          })
-                        }
-                        className="text-blue-600 hover:text-blue-800 mr-3"
-                        title="Переназначить работника"
-                      >
-                        <UserCog className="w-5 h-5" />
-                      </button>
+                    <span className="text-sm font-bold text-gray-900">
+                      ₴{Number(order.total_cost || 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+                    <span>{new Date(order.created_at).toLocaleDateString('ru-RU')}</span>
+                    {order.assigned_to_profile && (
+                      <span className="truncate max-w-[140px]">
+                        {order.assigned_to_profile.full_name || order.assigned_to_profile.email}
+                      </span>
                     )}
+                  </div>
+                </div>
+
+                {/* Кнопки действий */}
+                <div className="px-3 py-2 bg-gray-50 flex items-center justify-end gap-2 border-t border-gray-100">
+                  {isStoOwner && (
                     <button
-                      onClick={() => {
-                        setEditingWorkOrder(order)
-                        setIsModalOpen(true)
-                      }}
-                      className="text-primary hover:text-primary/80 mr-3"
+                      onClick={() =>
+                        setReassignModal({
+                          isOpen: true,
+                          workOrderId: order.id,
+                          currentWorkerId: order.assigned_to,
+                          customerName: order.customers?.name || 'Неизвестно',
+                          vehicleName: `${order.vehicles?.brand || ''} ${order.vehicles?.model || ''}`.trim(),
+                        })
+                      }
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded transition-colors font-medium"
+                      title="Переназначить работника"
                     >
-                      <Pencil className="w-5 h-5" />
+                      <UserCog className="w-3.5 h-3.5" />
+                      <span>Назначить</span>
                     </button>
-                    <button
-                      onClick={async () => {
-                        const ok = await showConfirm({ message: 'Удалить этот заказ-наряд?', danger: true })
-                        if (!ok) return
-                        deleteMutation.mutate(order.id)
-                      }}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      setEditingWorkOrder(order)
+                      setIsModalOpen(true)
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-primary hover:bg-blue-50 rounded transition-colors font-medium"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    <span>Изменить</span>
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const ok = await showConfirm({ message: 'Удалить этот заказ-наряд?', danger: true })
+                      if (!ok) return
+                      deleteMutation.mutate(order.id)
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded transition-colors font-medium"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Удалить</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       <WorkOrderModal

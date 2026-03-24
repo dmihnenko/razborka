@@ -310,20 +310,20 @@ export default function AppointmentDetails() {
           Назад
         </button>
         
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="heading-mobile-1">Заявка</h1>
             <p className="text-mobile-sm text-gray-500 mt-1">
               Создана {new Date(appointment.created_at).toLocaleDateString('ru-RU')}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center flex-wrap gap-2">
             {/* Статус с выпадающим списком */}
             <div className="relative">
               <button
                 onClick={() => setShowStatusDropdown(!showStatusDropdown)}
                 disabled={(appointment.status === 'archived' && !isStoOwner) || (appointment.status === 'pending_deletion' && !isStoOwner)}
-                className={`px-4 py-2 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} ${((appointment.status !== 'archived' && appointment.status !== 'pending_deletion') || isStoOwner) ? 'hover:opacity-80 transition-opacity cursor-pointer' : 'cursor-default'}`}
+                className={`px-3 py-1.5 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} ${((appointment.status !== 'archived' && appointment.status !== 'pending_deletion') || isStoOwner) ? 'hover:opacity-80 transition-opacity cursor-pointer' : 'cursor-default'}`}
               >
                 {statusLabels[appointment.status as keyof typeof statusLabels]}
               </button>
@@ -352,15 +352,15 @@ export default function AppointmentDetails() {
                   customerName: appointment.customers?.name || 'Неизвестно',
                   vehicleName: `${appointment.vehicles?.brand || ''} ${appointment.vehicles?.model || ''}`.trim(),
                 })}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} hover:opacity-80 transition-opacity"
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} hover:opacity-80 transition-opacity`}
               >
-                <UserCog className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <UserCog className="w-4 h-4 flex-shrink-0" />
                 <span className="hidden sm:inline">Переназначить</span>
               </button>
             )}
             <button
               onClick={() => setIsEditModalOpen(true)}
-              className={`px-4 py-2 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} hover:opacity-80 transition-opacity`}
+              className={`px-3 py-1.5 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} hover:opacity-80 transition-opacity`}
             >
               Изменить
             </button>
