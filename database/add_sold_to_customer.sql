@@ -3,3 +3,7 @@ ALTER TABLE parts_inventory
   ADD COLUMN IF NOT EXISTS sold_to_customer_id UUID REFERENCES parts_customers(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS idx_parts_inventory_sold_to_customer ON parts_inventory(sold_to_customer_id);
+Автомобиль-источник
+
+Не привязано к автомобилю
+Укажите автомобиль, из которого снята эта запчасть

@@ -56,6 +56,9 @@ export default function PartsInventory() {
   const [showNewCustomer, setShowNewCustomer] = useState(false)
   const [newCustomerName, setNewCustomerName] = useState('')
   const [newCustomerPhone, setNewCustomerPhone] = useState('')
+  const [lastVehicleId, setLastVehicleId] = useState<string>(
+    () => sessionStorage.getItem('parts_last_vehicle_id') || ''
+  )
   
   const { data: profile } = useUserProfile()
   const { rate: usdRate } = usePartsExchangeRate()
@@ -998,6 +1001,15 @@ export default function PartsInventory() {
           onSave={(data) => saveMutation.mutate(data)}
           onSaveBulk={(items) => saveBulkMutation.mutate(items)}
           isSaving={saveMutation.isPending || saveBulkMutation.isPending}
+          initialVehicleId={editingItem ? undefined : lastVehicleId}
+          onVehicleChange={(id) => {
+            setLastVehicleId(id)
+            if (id) {
+              sessionStorage.setItem('parts_last_vehicle_id', id)
+            } else {
+              sessionStorage.removeItem('parts_last_vehicle_id')
+            }
+          }}
         />
       )}
       <ConfirmDialog {...dialogProps} />
@@ -1089,16 +1101,20 @@ interface PartsInventoryModalProps {
   onSave: (data: CreatePartsInventoryInput) => void
   onSaveBulk?: (items: CreatePartsInventoryInput[]) => void
   isSaving?: boolean
+  initialVehicleId?: string
+  onVehicleChange?: (id: string) => void
 }
 
-function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving }: PartsInventoryModalProps) {
+function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange }: PartsInventoryModalProps) {
   const [bulkMode, setBulkMode] = useState(false)
   const [showPasteArea, setShowPasteArea] = useState(false)
   const [pasteText, setPasteText] = useState('')
   const [bulkItems, setBulkItems] = useState<BulkRow[]>([{ name: '', selling_price: '', part_number: '', status: 'available' }])
+  const autoFilledVehicle = !item && !!initialVehicleId
+  const [autoHintDismissed, setAutoHintDismissed] = useState(false)
   const [bulkShared, setBulkShared] = useState({
     category_id: '',
-    vehicle_id: '',
+    vehicle_id: initialVehicleId || '',
     condition: 'used',
     storage_location_id: '',
     price_currency: 'USD' as 'UAH' | 'USD',
@@ -1106,7 +1122,7 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
 
   const [formData, setFormData] = useState<CreatePartsInventoryInput>({
     category_id: item?.category_id || '',
-    vehicle_id: item?.vehicle_id || '',
+    vehicle_id: item?.vehicle_id || initialVehicleId || '',
     name: item?.name || '',
     part_number: item?.part_number || '',
     description: item?.description || '',
@@ -1190,6 +1206,22 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                 {item ? 'Редактировать запчасть' : 'Добавить запчасть'}
               </h3>
 
+              {/* Auto-filled vehicle reminder */}
+              {autoFilledVehicle && !autoHintDismissed && (() => {
+                const v = (vehicles as any[]).find(x => x.id === (bulkMode ? bulkShared.vehicle_id : formData.vehicle_id))
+                if (!v) return null
+                return (
+                  <div className="flex items-center justify-between gap-2 mb-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                    <span>
+                      Авто-выбрано последнее: <strong>{v.make} {v.model} {v.year}</strong>
+                    </span>
+                    <button type="button" onClick={() => setAutoHintDismissed(true)} className="text-amber-500 hover:text-amber-700 text-xs underline shrink-0">
+                      Ок
+                    </button>
+                  </div>
+                )
+              })()}
+
               {!item && (
                 <div className="flex mb-5 bg-gray-100 rounded-xl p-1 gap-1">
                   <button
@@ -1224,7 +1256,10 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                       <label className="block text-sm font-medium text-gray-700 mb-1">Автомобиль-источник</label>
                       <select
                         value={bulkShared.vehicle_id}
-                        onChange={(e) => setBulkShared({ ...bulkShared, vehicle_id: e.target.value, category_id: '' })}
+                        onChange={(e) => {
+                        setBulkShared({ ...bulkShared, vehicle_id: e.target.value, category_id: '' })
+                        onVehicleChange?.(e.target.value)
+                      }}
                         className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       >
                         <option value="">Не привязано</option>
@@ -1459,6 +1494,8 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                       onChange={(e) => {
                         const newVehicleId = e.target.value || undefined
                         setFormData({ ...formData, vehicle_id: newVehicleId, category_id: '' })
+                        if (newVehicleId) onVehicleChange?.(newVehicleId)
+                        else onVehicleChange?.('')
                       }}
                       className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                     >
@@ -1584,6 +1621,21 @@ function PartsInventoryModal({ item, categories, vehicles, storageLocations, onC
                     </div>
                   </div>
                 </div>
+
+                {/* Sold toggle button — only when creating */}
+                {!item && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, status: formData.status === 'sold' ? 'available' : 'sold' })}
+                    className={`w-full py-2.5 rounded-lg text-sm font-semibold border-2 transition-colors ${
+                      formData.status === 'sold'
+                        ? 'bg-gray-800 border-gray-800 text-white'
+                        : 'bg-white border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700'
+                    }`}
+                  >
+                    {formData.status === 'sold' ? '✓ Продано' : 'Отметить как продано'}
+                  </button>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Место хранения</label>
