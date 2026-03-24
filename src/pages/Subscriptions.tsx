@@ -23,7 +23,7 @@ export default function Subscriptions() {
     companyType: 'sto' as 'sto' | 'parts',
     companyId: '',
     subscriptionId: '',
-    endDate: ''
+    months: 1
   })
   const queryClient = useQueryClient()
   const { confirm: showConfirm, dialogProps } = useConfirm()
@@ -65,7 +65,7 @@ export default function Subscriptions() {
       queryClient.invalidateQueries({ queryKey: ['subscription-stats'] })
       toast.success('Подписка назначена')
       setIsAssignModalOpen(false)
-      setAssignForm({ companyType: 'sto', companyId: '', subscriptionId: '', endDate: '' })
+      setAssignForm({ companyType: 'sto', companyId: '', subscriptionId: '', months: 1 })
     },
     onError: (error: any) => {
       toast.error(error.message || 'Ошибка при назначении подписки')
@@ -121,17 +121,28 @@ export default function Subscriptions() {
       return
     }
 
-    const selectedPlan = plans.find(p => p.id === assignForm.subscriptionId)
-    if (selectedPlan?.type === 'monthly' && !assignForm.endDate) {
-      toast.error('Укажите дату окончания для месячной подписки')
-      return
+    const plan = plans.find(p => p.id === assignForm.subscriptionId)
+    let endDate: string | undefined
+
+    if (plan?.type === 'monthly') {
+      const end = new Date()
+      if (assignForm.months === 12) {
+        end.setFullYear(end.getFullYear() + 1)
+      } else {
+        end.setMonth(end.getMonth() + assignForm.months)
+      }
+      endDate = end.toISOString()
+    } else if (plan?.type === 'yearly') {
+      const end = new Date()
+      end.setFullYear(end.getFullYear() + 1)
+      endDate = end.toISOString()
     }
 
     assignMutation.mutate({
       company_id: assignForm.companyId,
       company_type: assignForm.companyType,
       subscription_id: assignForm.subscriptionId,
-      end_date: assignForm.endDate || undefined
+      end_date: endDate
     })
   }
 
@@ -146,7 +157,7 @@ export default function Subscriptions() {
         <p className="text-sm text-gray-600 mt-1">Управление подписками СТО и разборок</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         {/* Активные подписки */}
         <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
           <div className="flex items-center justify-between mb-4">
@@ -169,6 +180,18 @@ export default function Subscriptions() {
           </div>
           <h3 className="font-semibold text-gray-900">Месячные</h3>
           <p className="text-sm text-gray-600 mt-1">Временные подписки</p>
+        </div>
+
+        {/* Годовые */}
+        <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-orange-500">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-orange-100 rounded-lg">
+              <Calendar className="h-6 w-6 text-orange-600" />
+            </div>
+            <span className="text-2xl font-bold text-gray-900">{stats?.total_yearly || 0}</span>
+          </div>
+          <h3 className="font-semibold text-gray-900">Годовые</h3>
+          <p className="text-sm text-gray-600 mt-1">Годовые подписки</p>
         </div>
 
         {/* Бессрочные */}
@@ -242,6 +265,7 @@ export default function Subscriptions() {
                     <div className="flex items-baseline gap-1">
                       <span className="text-3xl font-bold">₴{plan.price}</span>
                       {plan.type === 'monthly' && <span className="text-gray-600">/мес</span>}
+                      {plan.type === 'yearly' && <span className="text-gray-600">/год</span>}
                       {plan.type === 'lifetime' && <span className="text-sm text-green-600 font-medium">навсегда</span>}
                     </div>
                   </div>
@@ -252,9 +276,11 @@ export default function Subscriptions() {
                   
                   <div className="mt-auto">
                     <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                      plan.type === 'monthly' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                      plan.type === 'monthly' ? 'bg-blue-100 text-blue-800'
+                      : plan.type === 'yearly' ? 'bg-orange-100 text-orange-800'
+                      : 'bg-purple-100 text-purple-800'
                     }`}>
-                      {plan.type === 'monthly' ? 'Месячная' : 'Бессрочная'}
+                      {plan.type === 'monthly' ? 'Месячная' : plan.type === 'yearly' ? 'Годовая' : 'Бессрочная'}
                     </span>
                   </div>
                 </div>
@@ -442,26 +468,46 @@ export default function Subscriptions() {
                   <option value="">Выберите план</option>
                   {filteredPlans.map((plan) => (
                     <option key={plan.id} value={plan.id}>
-                      {plan.name} - ₴{plan.price} ({plan.type === 'monthly' ? 'месячная' : 'бессрочная'})
+                      {plan.name} - ₴{plan.price} ({plan.type === 'monthly' ? 'месячная' : plan.type === 'yearly' ? 'годовая' : 'бессрочная'})
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* Дата окончания (только для месячных) */}
+              {/* Количество месяцев (только для месячных) */}
               {selectedPlan?.type === 'monthly' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Дата окончания *
+                    Количество месяцев *
                   </label>
-                  <input
-                    type="date"
-                    value={assignForm.endDate}
-                    onChange={(e) => setAssignForm({ ...assignForm, endDate: e.target.value })}
-                    min={new Date().toISOString().split('T')[0]}
+                  <select
+                    value={assignForm.months}
+                    onChange={(e) => setAssignForm({ ...assignForm, months: Number(e.target.value) })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    required
-                  />
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
+                      <option key={m} value={m}>
+                        {m === 12 ? '12 месяцев (Годовая)' : `${m} ${m === 1 ? 'месяц' : m < 5 ? 'месяца' : 'месяцев'}`}
+                      </option>
+                    ))}
+                  </select>
+                  {assignForm.months === 12 ? (
+                    <div className="mt-2 rounded-md bg-orange-50 border border-orange-200 px-3 py-2 text-sm text-orange-800">
+                      Годовая подписка. Окончание: {(() => { const d = new Date(); d.setFullYear(d.getFullYear() + 1); return d.toLocaleDateString('ru-RU') })()}
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Окончание: {(() => { const d = new Date(); d.setMonth(d.getMonth() + assignForm.months); return d.toLocaleDateString('ru-RU') })()}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Годовая подписка — автоматическая дата */}
+              {selectedPlan?.type === 'yearly' && (
+                <div className="rounded-md bg-orange-50 border border-orange-200 px-4 py-3 text-sm text-orange-800">
+                  Подписка будет активна 1 год. Дата окончания рассчитается автоматически:
+                  {' '}{(() => { const d = new Date(); d.setFullYear(d.getFullYear() + 1); return d.toLocaleDateString('ru-RU') })()}
                 </div>
               )}
             </div>
@@ -470,7 +516,7 @@ export default function Subscriptions() {
               <button
                 onClick={() => {
                   setIsAssignModalOpen(false)
-                  setAssignForm({ companyType: 'sto', companyId: '', subscriptionId: '', endDate: '' })
+                  setAssignForm({ companyType: 'sto', companyId: '', subscriptionId: '', months: 1 })
                 }}
                 className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
               >

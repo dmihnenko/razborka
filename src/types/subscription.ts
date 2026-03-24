@@ -1,4 +1,4 @@
-export type SubscriptionType = 'monthly' | 'lifetime'
+export type SubscriptionType = 'monthly' | 'yearly' | 'lifetime'
 
 export interface Subscription {
   id: string
@@ -34,6 +34,7 @@ export interface CompanySubscription {
 export interface SubscriptionStats {
   total_active: number
   total_monthly: number
+  total_yearly: number
   total_lifetime: number
   revenue_this_month: number
   revenue_total: number

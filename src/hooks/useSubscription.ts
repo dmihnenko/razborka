@@ -5,7 +5,7 @@ import { useUserProfile } from './useUserProfile'
 export interface Subscription {
   id: string
   name: string
-  type: 'monthly' | 'lifetime'
+  type: 'monthly' | 'yearly' | 'lifetime'
   price: number
   description: string | null
   is_active: boolean

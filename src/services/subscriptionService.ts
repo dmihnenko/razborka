@@ -174,6 +174,10 @@ export async function getSubscriptionStats(): Promise<SubscriptionStats> {
   const total_monthly = activeSubscriptions?.filter(
     sub => sub.subscription?.type === 'monthly'
   ).length || 0
+
+  const total_yearly = activeSubscriptions?.filter(
+    sub => sub.subscription?.type === 'yearly'
+  ).length || 0
   
   const total_lifetime = activeSubscriptions?.filter(
     sub => sub.subscription?.type === 'lifetime'
@@ -205,6 +209,7 @@ export async function getSubscriptionStats(): Promise<SubscriptionStats> {
   return {
     total_active,
     total_monthly,
+    total_yearly,
     total_lifetime,
     revenue_this_month,
     revenue_total
