@@ -17,6 +17,13 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 type ViewMode = 'grid' | 'list'
 
+interface BulkRow {
+  item: PartsInventoryItem
+  quantity: number
+  price: string
+  currency: 'UAH' | 'USD'
+}
+
 const statusLabels: Record<PartsInventoryStatus, string> = {
   available: 'В наличии',
   reserved: 'Зарезервировано',
@@ -59,7 +66,14 @@ export default function PartsInventory() {
   const [lastVehicleId, setLastVehicleId] = useState<string>(
     () => sessionStorage.getItem('parts_last_vehicle_id') || ''
   )
-  
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isBulkSellOpen, setIsBulkSellOpen] = useState(false)
+  const [bulkRows, setBulkRows] = useState<BulkRow[]>([])
+  const [bulkCustomerId, setBulkCustomerId] = useState<string>('')
+  const [bulkShowNewCustomer, setBulkShowNewCustomer] = useState(false)
+  const [bulkNewCustomerName, setBulkNewCustomerName] = useState('')
+  const [bulkNewCustomerPhone, setBulkNewCustomerPhone] = useState('')
+
   const { data: profile } = useUserProfile()
   const { rate: usdRate } = usePartsExchangeRate()
   const queryClient = useQueryClient()
@@ -133,7 +147,7 @@ export default function PartsInventory() {
   const { data: customers = [] } = useQuery<PartsCustomer[]>({
     queryKey: ['parts-customers', partsCompanyId],
     queryFn: () => getPartsCustomers(partsCompanyId!),
-    enabled: !!partsCompanyId && !!sellingItem,
+    enabled: !!partsCompanyId && (!!sellingItem || isBulkSellOpen),
   })
 
   const saveMutation = useMutation({
@@ -330,6 +344,91 @@ export default function PartsInventory() {
       toast.error(`Ошибка при сохранении: ${msg}`)
     },
   })
+
+  const bulkSellMutation = useMutation({
+    mutationFn: async ({ rows, customerId, newCustomer }: {
+      rows: BulkRow[]
+      customerId?: string
+      newCustomer?: { name: string; phone: string }
+    }) => {
+      let resolvedCustomerId: string | null = customerId || null
+      if (newCustomer?.name?.trim()) {
+        const created = await createPartsCustomer(
+          { full_name: newCustomer.name.trim(), phone: newCustomer.phone.trim() || undefined },
+          partsCompanyId!
+        )
+        resolvedCustomerId = created.id
+      }
+      const order = await createPartsOrder(partsCompanyId!, {
+        customer_id: resolvedCustomerId,
+        order_date: new Date().toISOString(),
+      })
+      for (const row of rows) {
+        await createPartsOrderItem(order.id, {
+          inventory_item_id: row.item.id,
+          quantity: row.quantity,
+          price_at_sale: parseFloat(row.price) || 0,
+          price_at_sale_currency: row.currency,
+        })
+      }
+      await updatePartsOrderTotal(order.id, usdRate)
+      const { error: completeError } = await supabase
+        .from('parts_orders')
+        .update({ status: 'completed', exchange_rate_at_sale: usdRate })
+        .eq('id', order.id)
+      if (completeError) throw completeError
+      for (const row of rows) {
+        await updatePartsInventoryItem(row.item.id, {
+          sold_price: parseFloat(row.price) || undefined,
+          price_currency: row.currency,
+          sold_to_customer_id: resolvedCustomerId || undefined,
+        })
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
+      toast.success(`Продано ${bulkRows.length} запч., заказ создан`)
+      setIsBulkSellOpen(false)
+      setSelectedIds(new Set())
+      setBulkRows([])
+      setBulkCustomerId('')
+      setBulkShowNewCustomer(false)
+      setBulkNewCustomerName('')
+      setBulkNewCustomerPhone('')
+    },
+    onError: (err: any) => {
+      console.error('Bulk sell error:', err)
+      const msg = err?.message || err?.error_description || JSON.stringify(err)
+      toast.error(`Ошибка при продаже: ${msg}`)
+    },
+  })
+
+  const toggleSelect = (id: string, e: React.MouseEvent | React.ChangeEvent) => {
+    e.stopPropagation()
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const openBulkSell = () => {
+    const items = filteredInventory.filter((i: PartsInventoryItem) => selectedIds.has(i.id))
+    setBulkRows(items.map((item: PartsInventoryItem) => ({
+      item,
+      quantity: 1,
+      price: item.selling_price ? String(item.selling_price) : '',
+      currency: (item.price_currency as 'UAH' | 'USD') || 'USD',
+    })))
+    setBulkCustomerId('')
+    setBulkShowNewCustomer(false)
+    setBulkNewCustomerName('')
+    setBulkNewCustomerPhone('')
+    setIsBulkSellOpen(true)
+  }
 
   const handleEdit = (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -622,9 +721,20 @@ export default function PartsInventory() {
                 <div className="p-5 flex-1">
                   {/* Status & Low Stock Warning */}
                   <div className="flex items-center justify-between mb-3">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[item.status]}`}>
-                      {statusLabels[item.status]}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {item.status === 'reserved' && (
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(item.id)}
+                          onChange={(e) => { e.stopPropagation(); toggleSelect(item.id, e) }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 accent-yellow-500 cursor-pointer flex-shrink-0"
+                        />
+                      )}
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[item.status]}`}>
+                        {statusLabels[item.status]}
+                      </span>
+                    </div>
                     <div className="flex items-center gap-2">
                       {item.vehicle && (
                         <span className="text-xs text-gray-500 font-medium truncate max-w-[120px]">
@@ -737,6 +847,7 @@ export default function PartsInventory() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
+                    <th className="px-3 py-3 w-8"></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Запчасть
                     </th>
@@ -767,6 +878,20 @@ export default function PartsInventory() {
                       className="hover:bg-blue-50/40 transition-colors group/row cursor-pointer"
                       onClick={() => navigate(`/parts/inventory/${item.id}`)}
                     >
+                      <td
+                        className="px-3 py-3 w-8"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {item.status === 'reserved' && (
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(item.id)}
+                            onChange={(e) => { e.stopPropagation(); toggleSelect(item.id, e) }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-4 h-4 accent-yellow-500 cursor-pointer"
+                          />
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <div>
                           <div className="font-medium text-gray-900 group-hover/row:text-primary transition-colors leading-tight">
@@ -860,6 +985,30 @@ export default function PartsInventory() {
           </div>
         )}
       </div>
+
+      {/* Bulk Selection Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-gray-900 text-white rounded-xl px-5 py-3 shadow-2xl">
+          <span className="text-sm font-medium">
+            Выбрано: {selectedIds.size} запч.
+          </span>
+          <button
+            type="button"
+            onClick={() => setSelectedIds(new Set())}
+            className="text-gray-400 hover:text-white transition-colors text-xs underline"
+          >
+            Сбросить
+          </button>
+          <button
+            type="button"
+            onClick={openBulkSell}
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-semibold transition-colors"
+          >
+            <DollarSign className="w-4 h-4" />
+            Продать
+          </button>
+        </div>
+      )}
 
       {/* Sell Modal */}
       {sellingItem && (
@@ -980,6 +1129,166 @@ export default function PartsInventory() {
                   className="flex-1 px-4 py-2 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50"
                 >
                   {sellMutation.isPending ? 'Сохранение...' : 'Продать'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Sell Modal */}
+      {isBulkSellOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center px-4 py-8">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setIsBulkSellOpen(false)} />
+            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg p-6 z-10">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">Продать зарезервированные запчасти</h3>
+              <p className="text-sm text-gray-500 mb-4">Укажите количество и цену продажи для каждой позиции</p>
+
+              {/* Items list */}
+              <div className="space-y-3 mb-5 max-h-64 overflow-y-auto pr-1">
+                {bulkRows.map((row, idx) => (
+                  <div key={row.item.id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{row.item.name}</p>
+                      {row.item.part_number && (
+                        <p className="text-xs text-gray-400">{row.item.part_number}</p>
+                      )}
+                    </div>
+                    {/* Quantity */}
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-gray-500">кол:</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max={row.item.quantity}
+                        value={row.quantity}
+                        onChange={(e) => {
+                          const next = [...bulkRows]
+                          next[idx] = { ...next[idx], quantity: Math.max(1, Math.min(row.item.quantity, parseInt(e.target.value) || 1)) }
+                          setBulkRows(next)
+                        }}
+                        className="w-14 px-2 py-1 text-sm border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    {/* Price */}
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={row.price}
+                        onChange={(e) => {
+                          const next = [...bulkRows]
+                          next[idx] = { ...next[idx], price: e.target.value }
+                          setBulkRows(next)
+                        }}
+                        placeholder="Цена"
+                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = [...bulkRows]
+                          next[idx] = { ...next[idx], currency: row.currency === 'USD' ? 'UAH' : 'USD' }
+                          setBulkRows(next)
+                        }}
+                        className="px-2 py-1 text-xs font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 w-9 text-center"
+                      >
+                        {row.currency === 'USD' ? '$' : '₴'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Customer */}
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Клиент <span className="text-gray-400 font-normal">(необязательно)</span>
+              </label>
+              {!bulkShowNewCustomer ? (
+                <div className="flex gap-2 mb-5">
+                  <div className="relative flex-1">
+                    <select
+                      value={bulkCustomerId}
+                      onChange={(e) => setBulkCustomerId(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none pr-8"
+                    >
+                      <option value="">— Без клиента —</option>
+                      {customers.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.full_name}{c.phone ? ` (${c.phone})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setBulkShowNewCustomer(true)}
+                    className="flex items-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 flex-shrink-0"
+                    title="Новый клиент"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="mb-5 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-gray-700">Новый клиент</span>
+                    <button type="button" onClick={() => setBulkShowNewCustomer(false)} className="text-gray-400 hover:text-gray-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={bulkNewCustomerName}
+                    onChange={(e) => setBulkNewCustomerName(e.target.value)}
+                    placeholder="Имя *"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <input
+                    type="text"
+                    value={bulkNewCustomerPhone}
+                    onChange={(e) => setBulkNewCustomerPhone(e.target.value)}
+                    placeholder="Телефон"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsBulkSellOpen(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  disabled={bulkSellMutation.isPending}
+                  onClick={() => {
+                    for (const row of bulkRows) {
+                      const price = parseFloat(row.price)
+                      if (isNaN(price) || price < 0) {
+                        toast.error(`Укажите цену для: ${row.item.name}`)
+                        return
+                      }
+                    }
+                    if (bulkShowNewCustomer && !bulkNewCustomerName.trim()) {
+                      toast.error('Введите имя клиента')
+                      return
+                    }
+                    bulkSellMutation.mutate({
+                      rows: bulkRows,
+                      customerId: bulkCustomerId || undefined,
+                      newCustomer: bulkShowNewCustomer ? { name: bulkNewCustomerName, phone: bulkNewCustomerPhone } : undefined,
+                    })
+                  }}
+                  className="flex-1 px-4 py-2 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50"
+                >
+                  {bulkSellMutation.isPending ? 'Сохранение...' : `Продать (${bulkRows.length})`}
                 </button>
               </div>
             </div>
