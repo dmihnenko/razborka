@@ -76,6 +76,9 @@ export default function PartsInventory() {
   const [bulkNewCustomerName, setBulkNewCustomerName] = useState('')
   const [bulkNewCustomerPhone, setBulkNewCustomerPhone] = useState('')
   const [statusPickerItem, setStatusPickerItem] = useState<PartsInventoryItem | null>(null)
+  const [pendingStatus, setPendingStatus] = useState<PartsInventoryStatus | null>(null)
+  const [sortField, setSortField] = useState<'name' | 'status' | 'price'>('name')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
   const { data: profile } = useUserProfile()
   const { rate: usdRate } = usePartsExchangeRate()
@@ -250,6 +253,22 @@ export default function PartsInventory() {
     const matchesVehicle = effectiveVehicleFilter === 'all' || item.vehicle_id === effectiveVehicleFilter
     
     return matchesSearch && matchesStatus && matchesVehicle
+  })
+
+  // Sort
+  const statusOrder: Record<PartsInventoryStatus, number> = { available: 0, reserved: 1, damaged: 2, sold: 3 }
+  const filteredAndSorted = [...filteredInventory].sort((a: PartsInventoryItem, b: PartsInventoryItem) => {
+    let cmp = 0
+    if (sortField === 'name') {
+      cmp = a.name.localeCompare(b.name, 'ru')
+    } else if (sortField === 'status') {
+      cmp = statusOrder[a.status] - statusOrder[b.status]
+    } else if (sortField === 'price') {
+      const pa = a.selling_price || 0
+      const pb = b.selling_price || 0
+      cmp = pa - pb
+    }
+    return sortDir === 'asc' ? cmp : -cmp
   })
 
   // Statistics — scoped to current source section
@@ -655,7 +674,31 @@ export default function PartsInventory() {
               />
             </div>
 
-            <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
+            <div className="flex gap-2">
+              {/* Sort controls */}
+              <div className="flex bg-gray-100 rounded-lg p-1 gap-0.5">
+                {([['name', 'АЯ'], ['status', 'Ст'], ['price', 'Це']] as const).map(([field, label]) => (
+                  <button
+                    key={field}
+                    onClick={() => {
+                      if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+                      else { setSortField(field); setSortDir('asc') }
+                    }}
+                    title={field === 'name' ? 'По алфавиту' : field === 'status' ? 'По статусу' : 'По цене'}
+                    className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-0.5 ${
+                      sortField === field ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {label}
+                    {sortField === field && (
+                      <span className="text-primary">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* View mode */}
+              <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('list')}
                 className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
@@ -670,6 +713,7 @@ export default function PartsInventory() {
               >
                 <Grid className="w-5 h-5" />
               </button>
+            </div>
             </div>
           </div>
 
@@ -739,7 +783,7 @@ export default function PartsInventory() {
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredInventory.map((item) => (
+            {filteredAndSorted.map((item) => (
               <div
                 key={item.id}
                 className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all overflow-hidden group flex flex-col"
@@ -906,7 +950,7 @@ export default function PartsInventory() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filteredInventory.map((item) => (
+                  {filteredAndSorted.map((item) => (
                     <tr
                       key={item.id}
                       className="hover:bg-blue-50/40 transition-colors group/row cursor-pointer"
@@ -1033,46 +1077,80 @@ export default function PartsInventory() {
       {/* Status Picker Modal */}
       {statusPickerItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setStatusPickerItem(null)} />
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => { setStatusPickerItem(null); setPendingStatus(null) }} />
           <div className="relative bg-white rounded-xl shadow-xl w-full max-w-xs p-5 z-10">
-            <h3 className="text-base font-semibold text-gray-900 mb-1">Изменить статус</h3>
-            <p className="text-sm text-gray-500 mb-4 line-clamp-1">{statusPickerItem.name}</p>
-            <div className="space-y-2">
-              {(Object.keys(statusLabels) as PartsInventoryStatus[]).map(s => (
+            {pendingStatus ? (
+              // Confirmation step
+              <>
+                <h3 className="text-base font-semibold text-gray-900 mb-1">Подтвердите изменение</h3>
+                <p className="text-sm text-gray-500 mb-4 line-clamp-1">{statusPickerItem.name}</p>
+                <div className="flex items-center gap-3 mb-5 p-3 bg-gray-50 rounded-lg">
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[statusPickerItem.status]}`}>
+                    {statusLabels[statusPickerItem.status]}
+                  </span>
+                  <span className="text-gray-400 text-sm">→</span>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[pendingStatus]}`}>
+                    {statusLabels[pendingStatus]}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPendingStatus(null)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    Назад
+                  </button>
+                  <button
+                    disabled={statusChangeMutation.isPending}
+                    onClick={() => {
+                      statusChangeMutation.mutate(
+                        { id: statusPickerItem.id, status: pendingStatus },
+                        { onSuccess: () => { setStatusPickerItem(null); setPendingStatus(null) } }
+                      )
+                    }}
+                    className="flex-1 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+                  >
+                    {statusChangeMutation.isPending ? 'Сохранение...' : 'Подтвердить'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              // Status selection step
+              <>
+                <h3 className="text-base font-semibold text-gray-900 mb-1">Изменить статус</h3>
+                <p className="text-sm text-gray-500 mb-4 line-clamp-1">{statusPickerItem.name}</p>
+                <div className="space-y-2">
+                  {(Object.keys(statusLabels) as PartsInventoryStatus[]).map(s => (
+                    <button
+                      key={s}
+                      disabled={s === statusPickerItem.status}
+                      onClick={() => setPendingStatus(s)}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+                        s === statusPickerItem.status
+                          ? `${statusColors[s]} opacity-60 cursor-default`
+                          : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'
+                      }`}
+                    >
+                      <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                        s === 'available' ? 'bg-green-500' :
+                        s === 'reserved' ? 'bg-yellow-500' :
+                        s === 'sold' ? 'bg-gray-400' : 'bg-red-500'
+                      }`} />
+                      {statusLabels[s]}
+                      {s === statusPickerItem.status && (
+                        <span className="ml-auto text-xs text-gray-400">Текущий</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
                 <button
-                  key={s}
-                  disabled={s === statusPickerItem.status || statusChangeMutation.isPending}
-                  onClick={() => {
-                    if (s === statusPickerItem.status) return
-                    statusChangeMutation.mutate(
-                      { id: statusPickerItem.id, status: s },
-                      { onSuccess: () => setStatusPickerItem(null) }
-                    )
-                  }}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
-                    s === statusPickerItem.status
-                      ? `${statusColors[s]} opacity-60 cursor-default`
-                      : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'
-                  }`}
+                  onClick={() => setStatusPickerItem(null)}
+                  className="mt-4 w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
                 >
-                  <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                    s === 'available' ? 'bg-green-500' :
-                    s === 'reserved' ? 'bg-yellow-500' :
-                    s === 'sold' ? 'bg-gray-400' : 'bg-red-500'
-                  }`} />
-                  {statusLabels[s]}
-                  {s === statusPickerItem.status && (
-                    <span className="ml-auto text-xs text-gray-400">Текущий</span>
-                  )}
+                  Отмена
                 </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setStatusPickerItem(null)}
-              className="mt-4 w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
-            >
-              Отмена
-            </button>
+              </>
+            )}
           </div>
         </div>
       )}
