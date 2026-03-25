@@ -75,6 +75,7 @@ export default function PartsInventory() {
   const [bulkShowNewCustomer, setBulkShowNewCustomer] = useState(false)
   const [bulkNewCustomerName, setBulkNewCustomerName] = useState('')
   const [bulkNewCustomerPhone, setBulkNewCustomerPhone] = useState('')
+  const [statusPickerItem, setStatusPickerItem] = useState<PartsInventoryItem | null>(null)
 
   const { data: profile } = useUserProfile()
   const { rate: usdRate } = usePartsExchangeRate()
@@ -467,15 +468,9 @@ export default function PartsInventory() {
     onError: () => toast.error('Ошибка при изменении статуса'),
   })
 
-  const handleStatusClick = async (item: PartsInventoryItem, newStatus: PartsInventoryStatus, e: React.MouseEvent) => {
+  const handleStatusClick = (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (item.status === newStatus) return
-    const ok = await showConfirm({
-      message: `Изменить статус «${statusLabels[item.status]}» → «${statusLabels[newStatus]}»?`,
-      danger: false,
-    })
-    if (!ok) return
-    statusChangeMutation.mutate({ id: item.id, status: newStatus })
+    setStatusPickerItem(item)
   }
 
   const handleDelete = async (item: PartsInventoryItem, e: React.MouseEvent) => {
@@ -764,27 +759,11 @@ export default function PartsInventory() {
                       )}
                       <div className="relative group/status">
                         <button
-                          onClick={(e) => e.stopPropagation()}
-                          className={`px-3 py-1 rounded-full text-xs font-medium border hover:opacity-80 transition-opacity ${statusColors[item.status]}`}
+                          onClick={(e) => handleStatusClick(item, e)}
+                          className={`px-3 py-1 rounded-full text-xs font-medium border hover:opacity-80 transition-opacity cursor-pointer ${statusColors[item.status]}`}
                         >
                           {statusLabels[item.status]}
                         </button>
-                        <div className="absolute left-0 top-full mt-1 z-20 hidden group-hover/status:block bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px]">
-                          {(Object.keys(statusLabels) as PartsInventoryStatus[]).filter(s => s !== item.status).map(s => (
-                            <button
-                              key={s}
-                              onClick={(e) => handleStatusClick(item, s, e)}
-                              className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 flex items-center gap-2"
-                            >
-                              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                                s === 'available' ? 'bg-green-500' :
-                                s === 'reserved' ? 'bg-yellow-500' :
-                                s === 'sold' ? 'bg-gray-400' : 'bg-red-500'
-                              }`} />
-                              {statusLabels[s]}
-                            </button>
-                          ))}
-                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -981,30 +960,12 @@ export default function PartsInventory() {
                         )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell">
-                        <div className="relative group/status inline-block">
-                          <button
-                            onClick={(e) => e.stopPropagation()}
-                            className={`px-2.5 py-1 rounded-full text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity ${statusColors[item.status]}`}
-                          >
-                            {statusLabels[item.status]}
-                          </button>
-                          <div className="absolute left-0 top-full mt-1 z-20 hidden group-hover/status:block bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px]">
-                            {(Object.keys(statusLabels) as PartsInventoryStatus[]).filter(s => s !== item.status).map(s => (
-                              <button
-                                key={s}
-                                onClick={(e) => handleStatusClick(item, s, e)}
-                                className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 flex items-center gap-2"
-                              >
-                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                                  s === 'available' ? 'bg-green-500' :
-                                  s === 'reserved' ? 'bg-yellow-500' :
-                                  s === 'sold' ? 'bg-gray-400' : 'bg-red-500'
-                                }`} />
-                                {statusLabels[s]}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
+                        <button
+                          onClick={(e) => handleStatusClick(item, e)}
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity ${statusColors[item.status]}`}
+                        >
+                          {statusLabels[item.status]}
+                        </button>
                         {item.status === 'sold' && item.sold_to_customer && (
                           <div className="text-xs text-blue-600 mt-1 font-medium truncate max-w-[120px]">
                             {item.sold_to_customer.full_name}
@@ -1068,6 +1029,53 @@ export default function PartsInventory() {
           </div>
         )}
       </div>
+
+      {/* Status Picker Modal */}
+      {statusPickerItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setStatusPickerItem(null)} />
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-xs p-5 z-10">
+            <h3 className="text-base font-semibold text-gray-900 mb-1">Изменить статус</h3>
+            <p className="text-sm text-gray-500 mb-4 line-clamp-1">{statusPickerItem.name}</p>
+            <div className="space-y-2">
+              {(Object.keys(statusLabels) as PartsInventoryStatus[]).map(s => (
+                <button
+                  key={s}
+                  disabled={s === statusPickerItem.status || statusChangeMutation.isPending}
+                  onClick={() => {
+                    if (s === statusPickerItem.status) return
+                    statusChangeMutation.mutate(
+                      { id: statusPickerItem.id, status: s },
+                      { onSuccess: () => setStatusPickerItem(null) }
+                    )
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+                    s === statusPickerItem.status
+                      ? `${statusColors[s]} opacity-60 cursor-default`
+                      : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'
+                  }`}
+                >
+                  <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                    s === 'available' ? 'bg-green-500' :
+                    s === 'reserved' ? 'bg-yellow-500' :
+                    s === 'sold' ? 'bg-gray-400' : 'bg-red-500'
+                  }`} />
+                  {statusLabels[s]}
+                  {s === statusPickerItem.status && (
+                    <span className="ml-auto text-xs text-gray-400">Текущий</span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setStatusPickerItem(null)}
+              className="mt-4 w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Bulk Selection Bar */}
       {selectedIds.size > 0 && (
