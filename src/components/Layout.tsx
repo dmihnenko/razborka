@@ -3,8 +3,11 @@ import { useEffect, useMemo } from 'react'
 import { 
   LogOut,
   Shield,
-  Wrench
+  Wrench,
+  Sun,
+  Moon
 } from 'lucide-react'
+import { useTheme } from '@/hooks/useTheme'
 import { LayoutSkeleton } from './LayoutSkeleton'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -18,6 +21,7 @@ export default function Layout() {
   const isAdmin = useIsAdmin()
   const { data: profile, isLoading } = useUserProfile()
   const queryClient = useQueryClient()
+  const { theme, setTheme } = useTheme()
   
   // Получаем PRIMARY роль пользователя
   // Приоритет ролей: admin > sto_owner > parts_owner > store_owner > worker roles > user
@@ -263,6 +267,17 @@ export default function Layout() {
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
             <span className="hidden lg:block">Выход</span>
+          </button>
+          {/* Theme toggle */}
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+            className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-[#64748B] hover:bg-[#1A2744] hover:text-gray-300 rounded-lg transition-colors"
+          >
+            {theme === 'dark'
+              ? <Sun className="w-5 h-5 flex-shrink-0 text-yellow-400" />
+              : <Moon className="w-5 h-5 flex-shrink-0 text-blue-400" />}
+            <span className="hidden lg:block">{theme === 'dark' ? 'Светлая' : 'Тёмная'}</span>
           </button>
         </div>
       </div>
