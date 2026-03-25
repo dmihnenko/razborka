@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Car, FileText, Clock, Package, ChevronDown, ChevronUp, CheckCircle, Archive, Phone } from 'lucide-react'
+import { PublicBrandHeader } from '@/components/PublicBrandHeader'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { formatCurrency } from '@/utils/currency'
@@ -114,8 +115,11 @@ export default function PublicCustomerView() {
 
   if (vehiclesLoading || appointmentsLoading || partsOrdersLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-slate-50 flex flex-col">
+        <PublicBrandHeader subtitle="История обслуживания" />
+        <div className="flex-1 flex justify-center items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
       </div>
     )
   }
@@ -124,7 +128,9 @@ export default function PublicCustomerView() {
   const archivedAppointments = (appointments ?? []).filter(a => DONE_STATUSES.has(a.status))
 
   return (
-    <div className="min-h-screen bg-gray-50 py-3 sm:py-6">
+    <div className="min-h-screen bg-slate-50">
+      <PublicBrandHeader subtitle="История обслуживания" />
+      <div className="py-3 sm:py-6">
       <div className="max-w-2xl mx-auto px-3 sm:px-4">
 
         {/* Заголовок */}
@@ -303,6 +309,7 @@ export default function PublicCustomerView() {
         <p className="text-center text-[10px] sm:text-xs text-gray-400 py-4 px-2">
           Эта страница создана для вашего удобства · Здесь вы можете отслеживать состояние заявок в любое время
         </p>
+      </div>
       </div>
     </div>
   )

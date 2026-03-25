@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Share2, Trash2, DollarSign, Upload, Images } from 'lucide-react'
+import { PublicBrandHeader } from '@/components/PublicBrandHeader'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPersonalVehicleById, deletePersonalVehicle, markVehicleAsSold, updatePersonalVehicle } from '@/services/personalVehicles'
 import { uploadToImgBB, validateImageFile } from '@/utils/imageStorage'
@@ -173,7 +174,8 @@ export default function PublicPersonalVehicleView() {
   const isOwner = profile?.id === vehicle.userId
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
+      {!isOwner && <PublicBrandHeader subtitle="Личный автомобиль" />}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
         {/* Кнопка назад */}
         <button

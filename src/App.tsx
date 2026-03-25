@@ -10,6 +10,7 @@ import AdminLayout from './components/AdminLayout'
 
 // Критичные страницы - загружаем сразу
 import Login from './pages/Login'
+import LandingPage from './pages/LandingPage'
 
 // Lazy loading для остальных страниц
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -112,6 +113,7 @@ function App() {
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/landing" element={<LandingPage />} />
         
         {/* Публичный доступ к автомобилям по коду */}
         <Route path="/vehicle-access" element={<VehicleAccessPage />} />

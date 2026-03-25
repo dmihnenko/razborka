@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Package, Clock, ChevronDown, ChevronUp, Archive, Car, Phone } from 'lucide-react'
+import { PublicBrandHeader } from '@/components/PublicBrandHeader'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
@@ -156,8 +157,11 @@ export default function PublicPartsCustomerView() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+      <div className="min-h-screen bg-slate-50 flex flex-col">
+        <PublicBrandHeader subtitle="Авторазборка · заказы" />
+        <div className="flex-1 flex justify-center items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+        </div>
       </div>
     )
   }
@@ -168,7 +172,9 @@ export default function PublicPartsCustomerView() {
   const doneTotal    = doneOrders.reduce((s, o) => s + (o.total_amount ?? 0), 0)
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
+    <div className="min-h-screen bg-slate-50">
+      <PublicBrandHeader subtitle="Авторазборка · заказы" />
+      <div className="py-4 sm:py-8">
       <div className="max-w-2xl mx-auto px-3 sm:px-4">
 
         {/* Header */}
@@ -254,6 +260,7 @@ export default function PublicPartsCustomerView() {
         <div className="mt-8 text-center text-xs text-gray-400 pb-4">
           <p>Страница для отслеживания состояния ваших заказов</p>
         </div>
+      </div>
       </div>
     </div>
   )
