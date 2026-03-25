@@ -53,7 +53,9 @@ export default function PartsInventory() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [vehicleFilter, setVehicleFilter] = useState<string>('all') // vehicle_id or 'all'
-  const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [viewMode, setViewMode] = useState<ViewMode>(() =>
+    typeof window !== 'undefined' && window.innerWidth >= 768 ? 'list' : 'grid'
+  )
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<PartsInventoryItem | null>(null)
   const [sellingItem, setSellingItem] = useState<PartsInventoryItem | null>(null)
@@ -851,6 +853,9 @@ export default function PartsInventory() {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Запчасть
                     </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                      Категория
+                    </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
                       Артикул
                     </th>
@@ -898,12 +903,19 @@ export default function PartsInventory() {
                             {item.name}
                           </div>
                           {item.category && (
-                            <div className="text-xs text-gray-400 mt-0.5">{item.category.name}</div>
+                            <div className="text-xs text-gray-400 mt-0.5 md:hidden">{item.category.name}</div>
                           )}
                           {item.location && (
                             <div className="text-xs text-gray-400 mt-0.5">📍 {item.location}</div>
                           )}
                         </div>
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        {item.category ? (
+                          <span className="text-sm text-gray-600">{item.category.name}</span>
+                        ) : (
+                          <span className="text-gray-300 text-sm">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 font-mono hidden xl:table-cell">
                         {item.part_number || <span className="text-gray-300">—</span>}
@@ -1351,7 +1363,7 @@ function parseStatusKeyword(raw: string): PartsInventoryStatus {
   return 'available'
 }
 
-function parseBulkText(text: string): BulkRow[] {
+function parseBulkText(text: string): ModalBulkRow[] {
   return text
     .split('\n')
     .map(line => {
@@ -1394,7 +1406,7 @@ function getCategoriesForVehicle(vehicleId: string, vehicles: any[], categories:
 }
 
 // Modal Component
-interface BulkRow {
+interface ModalBulkRow {
   name: string
   selling_price: string
   part_number: string
@@ -1418,7 +1430,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   const [bulkMode, setBulkMode] = useState(false)
   const [showPasteArea, setShowPasteArea] = useState(false)
   const [pasteText, setPasteText] = useState('')
-  const [bulkItems, setBulkItems] = useState<BulkRow[]>([{ name: '', selling_price: '', part_number: '', status: 'available' }])
+  const [bulkItems, setBulkItems] = useState<ModalBulkRow[]>([{ name: '', selling_price: '', part_number: '', status: 'available' }])
   const autoFilledVehicle = !item && !!initialVehicleId
   const [autoHintDismissed, setAutoHintDismissed] = useState(false)
   const [bulkShared, setBulkShared] = useState({

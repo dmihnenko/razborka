@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Edit, TrendingUp, TrendingDown, Plus, Settings, Trash2, Tag, Sparkles } from 'lucide-react'
+import { ArrowLeft, Edit, TrendingUp, TrendingDown, Plus, Settings, Trash2, Tag, Sparkles, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsCategoryTemplates, createPartsInventoryItem, getStorageLocations } from '@/services/partsService'
