@@ -15,9 +15,14 @@
     <meta name="apple-mobile-web-app-title" content="CRM" />
     
     <title>CRM Автосервис</title>
-    <!-- Apply saved theme immediately to prevent FOUC -->
+    <!-- Apply saved theme and design immediately to prevent FOUC -->
     <script>
-      (function(){var t=localStorage.getItem('app-theme');if(t==='dark')document.documentElement.classList.add('dark');})();
+      (function(){
+        var t=localStorage.getItem('app-theme');
+        if(t==='dark')document.documentElement.classList.add('dark');
+        var d=localStorage.getItem('app-design');
+        if(d==='new'||d==='classic')document.documentElement.classList.add('design-'+d);
+      })();
     </script>
   </head>
   <body>

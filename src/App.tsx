@@ -5,7 +5,7 @@ import { AlertProvider } from './components/CustomAlert'
 import VersionChecker from './components/VersionChecker'
 import Version from './components/Version'
 import ErrorBoundary from './components/ErrorBoundary'
-import Layout from './components/Layout'
+import LayoutSwitcher from './components/LayoutSwitcher'
 import AdminLayout from './components/AdminLayout'
 
 // Критичные страницы - загружаем сразу
@@ -129,7 +129,7 @@ function App() {
         {/* Публичный профиль клиента разборки */}
         <Route path="/public/parts-customer/:id" element={<PublicPartsCustomerView />} />
         
-        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <Route path="/" element={<ProtectedRoute><LayoutSwitcher /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Navigate to="/" replace />} />
           <Route path="customers" element={<Customers />} />

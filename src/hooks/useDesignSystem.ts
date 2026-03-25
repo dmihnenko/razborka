@@ -5,11 +5,14 @@ export type AppDesign = 'classic' | 'new'
 
 const DESIGN_CLASSES = ['design-classic', 'design-new'] as const
 const DESIGN_FONT_LINK_ID = 'ds-v2-font'
+const LS_DESIGN_KEY = 'app-design'
 
 function applyDesign(design: AppDesign) {
   const html = document.documentElement
   DESIGN_CLASSES.forEach(c => html.classList.remove(c))
   html.classList.add(`design-${design}`)
+  // Cache for FOUC prevention on next load
+  try { localStorage.setItem(LS_DESIGN_KEY, design) } catch {}
 
   // Load Plus Jakarta Sans only when new design is active
   if (design === 'new') {
@@ -47,7 +50,14 @@ export async function setGlobalDesign(design: AppDesign): Promise<void> {
 }
 
 export function useDesignSystem() {
-  const [design, setDesignState] = useState<AppDesign>('classic')
+  const [design, setDesignState] = useState<AppDesign>(() => {
+    // Use localStorage cache for instant initial value (no FOUC)
+    try {
+      const cached = localStorage.getItem(LS_DESIGN_KEY) as AppDesign
+      if (cached === 'classic' || cached === 'new') return cached
+    } catch {}
+    return 'classic'
+  })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
