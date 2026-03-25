@@ -106,7 +106,15 @@ export default function PartsInventory() {
     setStatusFilter('all')
     setSearchQuery('')
     setVehicleFilter('all')
+    setSelectedIds(new Set())
   }, [sourceFilter])
+
+  // Clear selection when leaving reserved filter
+  useEffect(() => {
+    if (statusFilter !== 'reserved') {
+      setSelectedIds(new Set())
+    }
+  }, [statusFilter])
 
   // Get categories for dropdown
   const { data: categories = [] } = useQuery({
@@ -449,6 +457,27 @@ export default function PartsInventory() {
     setNewCustomerPhone('')
   }
 
+  const statusChangeMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: PartsInventoryStatus }) =>
+      updatePartsInventoryItem(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      toast.success('Статус обновлён')
+    },
+    onError: () => toast.error('Ошибка при изменении статуса'),
+  })
+
+  const handleStatusClick = async (item: PartsInventoryItem, newStatus: PartsInventoryStatus, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (item.status === newStatus) return
+    const ok = await showConfirm({
+      message: `Изменить статус «${statusLabels[item.status]}» → «${statusLabels[newStatus]}»?`,
+      danger: false,
+    })
+    if (!ok) return
+    statusChangeMutation.mutate({ id: item.id, status: newStatus })
+  }
+
   const handleDelete = async (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
     const message = item.status === 'sold'
@@ -724,7 +753,7 @@ export default function PartsInventory() {
                   {/* Status & Low Stock Warning */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      {item.status === 'reserved' && (
+                      {statusFilter === 'reserved' && (
                         <input
                           type="checkbox"
                           checked={selectedIds.has(item.id)}
@@ -733,9 +762,30 @@ export default function PartsInventory() {
                           className="w-4 h-4 accent-yellow-500 cursor-pointer flex-shrink-0"
                         />
                       )}
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[item.status]}`}>
-                        {statusLabels[item.status]}
-                      </span>
+                      <div className="relative group/status">
+                        <button
+                          onClick={(e) => e.stopPropagation()}
+                          className={`px-3 py-1 rounded-full text-xs font-medium border hover:opacity-80 transition-opacity ${statusColors[item.status]}`}
+                        >
+                          {statusLabels[item.status]}
+                        </button>
+                        <div className="absolute left-0 top-full mt-1 z-20 hidden group-hover/status:block bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px]">
+                          {(Object.keys(statusLabels) as PartsInventoryStatus[]).filter(s => s !== item.status).map(s => (
+                            <button
+                              key={s}
+                              onClick={(e) => handleStatusClick(item, s, e)}
+                              className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 flex items-center gap-2"
+                            >
+                              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                s === 'available' ? 'bg-green-500' :
+                                s === 'reserved' ? 'bg-yellow-500' :
+                                s === 'sold' ? 'bg-gray-400' : 'bg-red-500'
+                              }`} />
+                              {statusLabels[s]}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {item.vehicle && (
@@ -849,7 +899,7 @@ export default function PartsInventory() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-3 py-3 w-8"></th>
+                    <th className={`px-3 py-3 w-8${statusFilter !== 'reserved' ? ' hidden' : ''}`}></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Запчасть
                     </th>
@@ -884,10 +934,10 @@ export default function PartsInventory() {
                       onClick={() => navigate(`/parts/inventory/${item.id}`)}
                     >
                       <td
-                        className="px-3 py-3 w-8"
+                        className={`px-3 py-3 w-8${statusFilter !== 'reserved' ? ' hidden' : ''}`}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {item.status === 'reserved' && (
+                        {statusFilter === 'reserved' && (
                           <input
                             type="checkbox"
                             checked={selectedIds.has(item.id)}
@@ -931,9 +981,30 @@ export default function PartsInventory() {
                         )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[item.status]}`}>
-                          {statusLabels[item.status]}
-                        </span>
+                        <div className="relative group/status inline-block">
+                          <button
+                            onClick={(e) => e.stopPropagation()}
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity ${statusColors[item.status]}`}
+                          >
+                            {statusLabels[item.status]}
+                          </button>
+                          <div className="absolute left-0 top-full mt-1 z-20 hidden group-hover/status:block bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px]">
+                            {(Object.keys(statusLabels) as PartsInventoryStatus[]).filter(s => s !== item.status).map(s => (
+                              <button
+                                key={s}
+                                onClick={(e) => handleStatusClick(item, s, e)}
+                                className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 flex items-center gap-2"
+                              >
+                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                  s === 'available' ? 'bg-green-500' :
+                                  s === 'reserved' ? 'bg-yellow-500' :
+                                  s === 'sold' ? 'bg-gray-400' : 'bg-red-500'
+                                }`} />
+                                {statusLabels[s]}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                         {item.status === 'sold' && item.sold_to_customer && (
                           <div className="text-xs text-blue-600 mt-1 font-medium truncate max-w-[120px]">
                             {item.sold_to_customer.full_name}
