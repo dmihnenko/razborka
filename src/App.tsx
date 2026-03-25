@@ -65,6 +65,7 @@ const PartsNoPricePage = lazy(() => import('./pages/PartsNoPricePage'))
 const PartsInventoryItemPage = lazy(() => import('./pages/PartsInventoryItemPage'))
 const Trash = lazy(() => import('./pages/Trash'))
 const DatabasePage = lazy(() => import('./pages/Database'))
+const AdminSettings = lazy(() => import('./pages/AdminSettings'))
 
 import { useAuth } from './hooks/useAuth'
 import { useUserProfile } from './hooks/useUserProfile'
@@ -185,7 +186,7 @@ function App() {
           <Route path="parts-companies" element={<PartsCompanies />} />
           <Route path="subscriptions" element={<Subscriptions />} />
           <Route path="support" element={<AdminSupport />} />
-          <Route path="settings" element={<div className="p-8"><h1 className="text-2xl font-bold">Настройки</h1><p className="text-gray-600 mt-4">В разработке...</p></div>} />
+          <Route path="settings" element={<AdminSettings />} />
           <Route path="analytics" element={<DatabasePage />} />
         </Route>
       </Routes>
