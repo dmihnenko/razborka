@@ -196,7 +196,7 @@ export default function Login() {
           transition: border-color 0.2s, box-shadow 0.2s;
           width: 100%;
         }
-        .input-dark::placeholder { color: #374151; }
+        .input-dark::placeholder { color: #64748B; }
         .input-dark:focus {
           outline: none;
           border-color: #3B82F6;
@@ -250,7 +250,7 @@ export default function Login() {
               ПОД<br />
               КОНТРОЛЕМ
             </h1>
-            <p style={{ color:'#4B5563', fontSize:'15px', maxWidth:'300px', lineHeight:'1.7' }}>
+            <p style={{ color:'#94A3B8', fontSize:'15px', maxWidth:'300px', lineHeight:'1.7' }}>
               Система управления для СТО и авторазборок.
               Клиенты, автомобили, заявки — всё в одном месте.
             </p>
@@ -265,7 +265,7 @@ export default function Login() {
             ].map(({ label, sub }) => (
               <div key={label} style={{ background:'rgba(59,130,246,0.08)', border:'1px solid rgba(59,130,246,0.18)', borderRadius:'8px', padding:'8px 14px' }}>
                 <div style={{ color:'#60A5FA', fontWeight:'600', fontSize:'12px', letterSpacing:'0.5px' }}>{label}</div>
-                <div style={{ color:'#374151', fontSize:'11px', marginTop:'1px' }}>{sub}</div>
+                <div style={{ color:'#7AA3C8', fontSize:'11px', marginTop:'1px' }}>{sub}</div>
               </div>
             ))}
           </div>
@@ -287,7 +287,7 @@ export default function Login() {
               <h2 style={{ color:'#F1F5F9', fontSize:'22px', fontWeight:'600', marginBottom:'4px' }}>
                 {isRegisterMode ? 'Создать аккаунт' : 'Добро пожаловать'}
               </h2>
-              <p style={{ color:'#4B5563', fontSize:'13px', marginBottom:'28px' }}>
+              <p style={{ color:'#94A3B8', fontSize:'13px', marginBottom:'28px' }}>
                 {isRegisterMode ? 'Заполните данные для регистрации' : 'Войдите в свой аккаунт'}
               </p>
             </div>
@@ -310,11 +310,11 @@ export default function Login() {
                         placeholder="username (латиница, цифры, _)"
                         pattern="[a-zA-Z0-9_]{3,20}"
                       />
-                      <p style={{ color:'#374151', fontSize:'11px', marginTop:'4px' }}>3-20 символов: латиница, цифры, _</p>
+                      <p style={{ color:'#64748B', fontSize:'11px', marginTop:'4px' }}>3-20 символов: латиница, цифры, _</p>
                     </div>
                     <div>
                       <label style={{ color:'#9CA3AF', fontSize:'12px', fontWeight:'500', display:'block', marginBottom:'6px', letterSpacing:'0.3px' }}>
-                        EMAIL <span style={{ color:'#374151', fontWeight:'400' }}>(необязательно)</span>
+                        EMAIL <span style={{ color:'#64748B', fontWeight:'400' }}>(необязательно)</span>
                       </label>
                       <input
                         id="email"
