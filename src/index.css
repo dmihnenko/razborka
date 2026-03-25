@@ -255,3 +255,241 @@
 .dark .heading-mobile-3 {
   color: #F1F5F9 !important;
 }
+
+/* ╔═══════════════════════════════════════════════════════════════╗
+   ║  DESIGN SYSTEM v2 — "Precision Pro"                           ║
+   ║  Activates when <html class="design-new"> is set by admin     ║
+   ║  Applies globally to ALL users via Supabase realtime          ║
+   ╚═══════════════════════════════════════════════════════════════╝ */
+
+.design-new {
+  --ds-font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ds-bg: #EEF2F9;
+  --ds-surface: #FFFFFF;
+  --ds-surface-2: #F5F7FC;
+  --ds-border: #DDE3F0;
+  --ds-border-strong: #B8C4D9;
+  --ds-text-1: #09090B;
+  --ds-text-2: #64748B;
+  --ds-text-3: #94A3B8;
+  --ds-accent: #1D4ED8;
+  --ds-accent-hover: #1E40AF;
+  --ds-accent-light: #EFF6FF;
+  --ds-success: #059669;
+  --ds-warning: #D97706;
+  --ds-danger: #DC2626;
+  --ds-radius: 5px;
+}
+
+/* ── Font: applies everywhere ───────────────────────────────── */
+.design-new,
+.design-new * {
+  font-family: var(--ds-font) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Layout backgrounds ─────────────────────────────────────── */
+.design-new body                       { background-color: var(--ds-bg) !important; }
+.design-new .bg-gray-50                { background-color: var(--ds-bg) !important; }
+.design-new .bg-gray-100               { background-color: #E4EAF5 !important; }
+.design-new .bg-gray-200               { background-color: #D4DCED !important; }
+.design-new .flex-1.overflow-auto      { background-color: var(--ds-bg) !important; }
+.design-new .overflow-auto.bg-gray-50  { background-color: var(--ds-bg) !important; }
+.design-new .flex.flex-col.md\:flex-row,
+.design-new .md\:h-screen.bg-gray-100  { background-color: var(--ds-bg) !important; }
+
+/* ── Surface cards ──────────────────────────────────────────── */
+.design-new .bg-white { background-color: var(--ds-surface) !important; }
+
+/* ── Shadows → flat with border (precision look) ────────────── */
+.design-new .shadow-sm,
+.design-new .shadow {
+  box-shadow: none !important;
+  border: 1px solid var(--ds-border) !important;
+}
+.design-new .shadow-md,
+.design-new .shadow-lg {
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+  border: 1px solid var(--ds-border) !important;
+}
+
+/* ── Border radius: precision sharp corners ─────────────────── */
+.design-new .rounded-2xl { border-radius: var(--ds-radius) !important; }
+.design-new .rounded-xl  { border-radius: var(--ds-radius) !important; }
+.design-new .rounded-lg  { border-radius: var(--ds-radius) !important; }
+.design-new .rounded-md  { border-radius: 4px !important; }
+.design-new .rounded     { border-radius: 4px !important; }
+.design-new .rounded-full { border-radius: 4px !important; }
+
+/* ── Borders ────────────────────────────────────────────────── */
+.design-new .border-gray-200 { border-color: var(--ds-border) !important; }
+.design-new .border-gray-100 { border-color: var(--ds-border) !important; }
+.design-new .border-b        { border-color: var(--ds-border) !important; }
+.design-new .border-t        { border-color: var(--ds-border) !important; }
+.design-new .divide-gray-100 > * + * { border-color: var(--ds-border) !important; }
+.design-new .divide-gray-200 > * + * { border-color: var(--ds-border) !important; }
+
+/* ── Typography: text colours ───────────────────────────────── */
+.design-new .text-gray-900 { color: var(--ds-text-1) !important; }
+.design-new .text-gray-800 { color: #18181B !important; }
+.design-new .text-gray-700 { color: #3F3F46 !important; }
+.design-new .text-gray-600 { color: var(--ds-text-2) !important; }
+.design-new .text-gray-500 { color: #94A3B8 !important; }
+.design-new .text-gray-400 { color: #CBD5E1 !important; }
+
+/* ── Headings: editorial weight & tight tracking ────────────── */
+.design-new h1 {
+  font-size: 1.875rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  color: var(--ds-text-1) !important;
+  line-height: 1.15 !important;
+}
+.design-new h2 {
+  font-weight: 700 !important;
+  letter-spacing: -0.025em !important;
+  color: var(--ds-text-1) !important;
+}
+.design-new h3 {
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
+}
+.design-new .heading-mobile-xl,
+.design-new .heading-mobile-lg,
+.design-new .heading-mobile-md {
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  color: var(--ds-text-1) !important;
+}
+
+/* ── Accent / brand blue ────────────────────────────────────── */
+.design-new .bg-blue-600   { background-color: var(--ds-accent) !important; }
+.design-new .bg-blue-500   { background-color: var(--ds-accent) !important; }
+.design-new .bg-blue-700   { background-color: var(--ds-accent-hover) !important; }
+.design-new .bg-blue-100   { background-color: var(--ds-accent-light) !important; }
+.design-new .bg-blue-50    { background-color: #F0F5FF !important; }
+.design-new .text-blue-600 { color: var(--ds-accent) !important; }
+.design-new .text-blue-700 { color: var(--ds-accent) !important; }
+.design-new .text-blue-500 { color: var(--ds-accent) !important; }
+.design-new .border-blue-500 { border-color: var(--ds-accent) !important; }
+.design-new .border-blue-600 { border-color: var(--ds-accent) !important; }
+
+/* ── Semantic status backgrounds (subtle tints) ─────────────── */
+.design-new .bg-green-100  { background-color: rgba(5, 150, 105, 0.08) !important; }
+.design-new .bg-green-50   { background-color: rgba(5, 150, 105, 0.05) !important; }
+.design-new .bg-red-100    { background-color: rgba(220, 38, 38, 0.08) !important; }
+.design-new .bg-red-50     { background-color: rgba(220, 38, 38, 0.05) !important; }
+.design-new .bg-yellow-100 { background-color: rgba(217, 119, 6, 0.08) !important; }
+.design-new .bg-yellow-50  { background-color: rgba(217, 119, 6, 0.05) !important; }
+.design-new .bg-orange-100 { background-color: rgba(234, 88, 12, 0.08) !important; }
+.design-new .bg-orange-50  { background-color: rgba(234, 88, 12, 0.05) !important; }
+.design-new .bg-purple-100 { background-color: rgba(124, 58, 237, 0.08) !important; }
+.design-new .bg-purple-50  { background-color: rgba(124, 58, 237, 0.05) !important; }
+.design-new .bg-indigo-100 { background-color: rgba(79, 70, 229, 0.08) !important; }
+.design-new .bg-indigo-50  { background-color: rgba(79, 70, 229, 0.05) !important; }
+
+/* ── Hover states ───────────────────────────────────────────── */
+.design-new .hover\:bg-gray-50:hover  { background-color: var(--ds-surface-2) !important; }
+.design-new .hover\:bg-gray-100:hover { background-color: var(--ds-accent-light) !important; }
+.design-new .hover\:bg-gray-200:hover { background-color: #E4EAF5 !important; }
+
+/* ── Form inputs: precise, sharp ───────────────────────────── */
+.design-new input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+.design-new textarea,
+.design-new select {
+  border-color: var(--ds-border) !important;
+  border-radius: 4px !important;
+  background-color: var(--ds-surface) !important;
+  color: var(--ds-text-1) !important;
+  font-size: 0.875rem !important;
+}
+.design-new input:focus,
+.design-new input:focus-visible,
+.design-new textarea:focus,
+.design-new select:focus {
+  border-color: var(--ds-accent) !important;
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1) !important;
+  outline: none !important;
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.design-new button {
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* ── Tables: clean, technical ───────────────────────────────── */
+.design-new table { border-collapse: collapse !important; }
+.design-new th {
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  font-size: 0.65rem !important;
+  color: var(--ds-text-2) !important;
+  background-color: var(--ds-bg) !important;
+  border-bottom: 2px solid var(--ds-border-strong) !important;
+}
+.design-new td {
+  border-bottom: 1px solid var(--ds-border) !important;
+  font-size: 0.875rem !important;
+}
+.design-new .hover\:bg-gray-50:hover td  { background-color: #F5F7FC !important; }
+
+/* ── Stat/info cards: top accent line ───────────────────────── */
+.design-new .card-mobile {
+  border-radius: var(--ds-radius) !important;
+  box-shadow: none !important;
+  border: 1px solid var(--ds-border) !important;
+  border-top: 3px solid var(--ds-accent) !important;
+}
+
+/* ── Status badges → outlined style ────────────────────────── */
+.design-new span[class*="rounded-full"][class*="bg-green"] {
+  background-color: transparent !important;
+  border: 1.5px solid var(--ds-success) !important;
+  color: var(--ds-success) !important;
+  border-radius: 4px !important;
+}
+.design-new span[class*="rounded-full"][class*="bg-red"] {
+  background-color: transparent !important;
+  border: 1.5px solid var(--ds-danger) !important;
+  color: var(--ds-danger) !important;
+  border-radius: 4px !important;
+}
+.design-new span[class*="rounded-full"][class*="bg-yellow"] {
+  background-color: transparent !important;
+  border: 1.5px solid var(--ds-warning) !important;
+  color: var(--ds-warning) !important;
+  border-radius: 4px !important;
+}
+.design-new span[class*="rounded-full"][class*="bg-blue"] {
+  background-color: transparent !important;
+  border: 1.5px solid var(--ds-accent) !important;
+  color: var(--ds-accent) !important;
+  border-radius: 4px !important;
+}
+.design-new span[class*="rounded-full"][class*="bg-orange"] {
+  background-color: transparent !important;
+  border: 1.5px solid #EA580C !important;
+  color: #EA580C !important;
+  border-radius: 4px !important;
+}
+.design-new span[class*="rounded-full"][class*="bg-purple"] {
+  background-color: transparent !important;
+  border: 1.5px solid #7C3AED !important;
+  color: #7C3AED !important;
+  border-radius: 4px !important;
+}
+
+/* ── Scrollbar: minimal ─────────────────────────────────────── */
+.design-new ::-webkit-scrollbar { width: 5px; height: 5px; }
+.design-new ::-webkit-scrollbar-track { background: var(--ds-bg); }
+.design-new ::-webkit-scrollbar-thumb { background: var(--ds-border-strong); border-radius: 3px; }
+.design-new ::-webkit-scrollbar-thumb:hover { background: var(--ds-text-3); }
+
+/* ── Neutralise dark mode when new design is active ─────────── */
+html.design-new.dark body          { background-color: var(--ds-bg) !important; }
+html.design-new.dark .bg-white     { background-color: var(--ds-surface) !important; }
+html.design-new.dark .bg-gray-50   { background-color: var(--ds-bg) !important; }
+html.design-new.dark .text-gray-900 { color: var(--ds-text-1) !important; }

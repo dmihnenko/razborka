@@ -71,6 +71,7 @@ import { useAuth } from './hooks/useAuth'
 import { useUserProfile } from './hooks/useUserProfile'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from './lib/supabase'
+import { useDesignSystem } from './hooks/useDesignSystem'
 
 import { LayoutSkeleton } from './components/LayoutSkeleton'
 
@@ -81,6 +82,8 @@ function PageLoader() {
 
 function App() {
   const queryClient = useQueryClient()
+  // Apply global design system (admin-controlled, realtime for all users)
+  useDesignSystem()
 
   useEffect(() => {
     let mounted = true
