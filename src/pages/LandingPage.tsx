@@ -90,7 +90,7 @@ export default function LandingPage() {
         </nav>
 
         {/* ── HERO ────────────────────────────────────────────── */}
-        <section className="lp-grid-bg" style={{ position: 'relative', overflow: 'hidden', padding: '100px 20px 80px' }}>
+        <section className="lp-grid-bg" style={{ position: 'relative', overflow: 'hidden', padding: 'clamp(60px, 10vw, 100px) 20px clamp(48px, 8vw, 80px)' }}>
           {/* Glow */}
           <div style={{ position: 'absolute', top: '-200px', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 65%)', pointerEvents: 'none' }} />
 
@@ -111,11 +111,11 @@ export default function LandingPage() {
               Клиенты, автомобили, заявки, склад запчастей — всё в одном месте.
             </p>
 
-            <div className="lp-fu-3" style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div className="lp-fu-3" style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', width: '100%' }}>
               <button
                 onClick={() => navigate('/login')}
                 className="lp-btn-primary"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'white', fontWeight: '600', fontSize: '15px', padding: '14px 28px', borderRadius: '10px', border: 'none', cursor: 'pointer' }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'white', fontWeight: '600', fontSize: '15px', padding: '14px 28px', borderRadius: '10px', border: 'none', cursor: 'pointer', width: 'clamp(200px, 60vw, 280px)', justifyContent: 'center' }}
               >
                 Начать работу <ArrowRight size={16} />
               </button>
@@ -125,7 +125,7 @@ export default function LandingPage() {
 
         {/* ── TWO SYSTEMS ─────────────────────────────────────── */}
         <section style={{ padding: '80px 20px', maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
 
             {/* СТО */}
             <div style={{ background: 'linear-gradient(135deg, rgba(30,58,95,0.5) 0%, rgba(15,23,42,0.8) 100%)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '16px', padding: '32px' }}>
@@ -177,7 +177,7 @@ export default function LandingPage() {
           <h2 className="bf" style={{ color: '#F1F5F9', fontSize: '36px', letterSpacing: '1px', marginBottom: '32px', textAlign: 'center' }}>
             ПОЧЕМУ TSP CRM
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
             {HIGHLIGHTS.map(({ icon: Icon, title, desc }) => (
               <div key={title} className="lp-card" style={{ borderRadius: '12px', padding: '24px' }}>
                 <div style={{ width: '40px', height: '40px', background: 'rgba(37,99,235,0.15)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
@@ -192,7 +192,7 @@ export default function LandingPage() {
 
         {/* ── CTA ─────────────────────────────────────────────── */}
         <section style={{ padding: '60px 20px 80px' }}>
-          <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center', background: 'linear-gradient(135deg, rgba(30,58,95,0.4) 0%, rgba(15,23,42,0.6) 100%)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '20px', padding: '52px 32px' }}>
+          <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center', background: 'linear-gradient(135deg, rgba(30,58,95,0.4) 0%, rgba(15,23,42,0.6) 100%)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '20px', padding: 'clamp(32px, 5vw, 52px) clamp(20px, 4vw, 32px)' }}>
             <div style={{ width: '52px', height: '52px', background: '#1D4ED8', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
               <Car size={26} color="white" />
             </div>
@@ -203,7 +203,7 @@ export default function LandingPage() {
             <button
               onClick={() => navigate('/login')}
               className="lp-btn-primary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'white', fontWeight: '600', fontSize: '15px', padding: '14px 32px', borderRadius: '10px', border: 'none', cursor: 'pointer' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'white', fontWeight: '600', fontSize: '15px', padding: '14px 32px', borderRadius: '10px', border: 'none', cursor: 'pointer', width: 'clamp(200px, 60vw, 280px)', justifyContent: 'center' }}
             >
               Войти в TSP CRM <ArrowRight size={16} />
             </button>

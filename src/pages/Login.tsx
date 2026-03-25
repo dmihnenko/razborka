@@ -272,7 +272,7 @@ export default function Login() {
         </div>
 
         {/* ─── Right form panel ─────────────────────────────── */}
-        <div className="flex-1 flex items-center justify-center p-6" style={{ background:'#0D1117' }}>
+        <div className="flex-1 flex items-center justify-center" style={{ background:'#0D1117', padding:'clamp(16px, 4vw, 40px) 16px' }}>
           <div style={{ width:'100%', maxWidth:'360px' }}>
 
             {/* Mobile logo */}

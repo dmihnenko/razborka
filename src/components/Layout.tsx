@@ -2,7 +2,8 @@ import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useEffect, useMemo } from 'react'
 import { 
   LogOut,
-  Shield
+  Shield,
+  Wrench
 } from 'lucide-react'
 import { LayoutSkeleton } from './LayoutSkeleton'
 import { supabase } from '@/lib/supabase'
@@ -145,23 +146,28 @@ export default function Layout() {
   return (
     <div className="flex flex-col md:flex-row md:h-screen bg-gray-100">
       {/* Mobile Header */}
-      <div className="md:hidden bg-white border-b">
-        {/* User Name Display with Logout */}
-        <div className="px-4 py-2.5 border-b bg-gray-50 flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-gray-700 truncate flex-1">
-            {profile?.full_name || profile?.email || 'Пользователь'}
-          </p>
+      <div className="md:hidden bg-[#0F1729] border-b border-[#1E2A3B]">
+        {/* Top bar: logo + user + logout */}
+        <div className="px-4 py-2.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
+              <Wrench className="w-4 h-4 text-white" />
+            </div>
+            <p className="text-sm font-medium text-gray-200 truncate">
+              {profile?.full_name?.split(' ')[0] || profile?.email || 'CRM'}
+            </p>
+          </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 flex-shrink-0 min-h-[36px] hover:bg-red-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#94A3B8] bg-[#1E2A3B] rounded-md border border-[#2A3B50] flex-shrink-0 min-h-[36px] hover:text-white transition-colors"
           >
             <LogOut className="w-4 h-4" />
             <span>Выйти</span>
           </button>
         </div>
-        
-        {/* Mobile Navigation - Grid для лучшей адаптивности */}
-        <nav className="grid grid-cols-3 gap-2 p-2">
+
+        {/* Horizontal scrollable nav pills */}
+        <nav className="flex gap-1.5 px-3 pb-2.5 overflow-x-auto scrollbar-hide">
           {filteredNavigation.filter(item => !item.mobileHidden).map((item) => {
             const Icon = item.icon
             const isActive = item.href.includes('?')
@@ -171,28 +177,28 @@ export default function Layout() {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex flex-col items-center justify-center gap-1.5 px-2 py-3 text-xs font-medium transition-colors rounded-lg min-h-[64px] ${
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full flex-shrink-0 transition-colors ${
                   isActive
                     ? 'bg-primary text-white shadow-sm'
-                    : 'text-gray-700 bg-gray-50 hover:bg-gray-100'
+                    : 'text-[#94A3B8] bg-[#1A2744] hover:text-white'
                 }`}
               >
-                <Icon className="w-5 h-5 flex-shrink-0" />
-                <span className="text-center leading-tight line-clamp-2">{item.name}</span>
+                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{item.name}</span>
               </Link>
             )
           })}
         </nav>
-        
+
         {/* Admin Panel Button (if admin) */}
         {isAdmin && (
-          <div className="px-2 pb-2">
+          <div className="px-3 pb-2.5">
             <Link
               to="/admin"
               onClick={() => localStorage.removeItem('activeRole')}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-purple-700 bg-purple-50 rounded-lg border border-purple-200 min-h-[44px] hover:bg-purple-100 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-purple-400 bg-[#1A2744] rounded-full border border-purple-500/30 hover:text-purple-300 transition-colors"
             >
-              <Shield className="w-4 h-4 flex-shrink-0" />
+              <Shield className="w-3.5 h-3.5 flex-shrink-0" />
               <span>Админ панель</span>
             </Link>
           </div>
@@ -200,14 +206,14 @@ export default function Layout() {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:flex-col md:w-16 lg:w-64 bg-white border-r border-gray-200 flex-shrink-0">
+      <div className="hidden md:flex md:flex-col md:w-16 lg:w-64 bg-[#0F1729] flex-shrink-0">
         {/* Logo */}
-        <div className="flex items-center justify-center lg:justify-start gap-2.5 px-2 lg:px-5 h-14 border-b border-gray-100">
+        <div className="flex items-center justify-center lg:justify-start gap-2.5 px-2 lg:px-5 h-14 border-b border-[#1E2A3B]">
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xs font-bold">C</span>
+            <Wrench className="w-4 h-4 text-white" />
           </div>
-          <span className="hidden lg:block text-sm font-semibold text-gray-800 truncate">
-            {profile?.full_name?.split(' ')[0] || 'CRM'}
+          <span className="hidden lg:block text-sm font-semibold text-gray-100 truncate">
+            {profile?.full_name?.split(' ')[0] || 'TSP CRM'}
           </span>
         </div>
         {/* Nav */}
@@ -222,35 +228,38 @@ export default function Layout() {
                 key={item.href}
                 to={item.href}
                 title={item.name}
-                className={`flex items-center justify-center lg:justify-start gap-3 px-0 lg:px-3 py-2 mb-0.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`relative flex items-center justify-center lg:justify-start gap-3 px-0 lg:px-3 py-2 mb-0.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'bg-[#1A2744] text-white'
+                    : 'text-[#94A3B8] hover:bg-[#1A2744]/70 hover:text-gray-200'
                 }`}
               >
-                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary' : 'text-gray-400'}`} />
+                {isActive && (
+                  <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] bg-primary rounded-r hidden lg:block" />
+                )}
+                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary' : 'text-[#4A6080]'}`} />
                 <span className="hidden lg:block">{item.name}</span>
               </Link>
             )
           })}
         </nav>
         {/* Footer */}
-        <div className="px-2 py-3 border-t border-gray-100 space-y-0.5">
+        <div className="px-2 py-3 border-t border-[#1E2A3B] space-y-0.5">
           {isAdmin && (
             <Link
               to="/admin"
               title="Админ панель"
               onClick={() => localStorage.removeItem('activeRole')}
-              className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
+              className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-purple-400 hover:bg-[#1A2744] hover:text-purple-300 rounded-lg transition-colors"
             >
-              <Shield className="w-5 h-5 text-purple-500 flex-shrink-0" />
+              <Shield className="w-5 h-5 text-purple-400 flex-shrink-0" />
               <span className="hidden lg:block">Админ панель</span>
             </Link>
           )}
           <button
             onClick={handleLogout}
             title="Выход"
-            className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-lg transition-colors"
+            className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-[#64748B] hover:bg-[#1A2744] hover:text-gray-300 rounded-lg transition-colors"
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
             <span className="hidden lg:block">Выход</span>

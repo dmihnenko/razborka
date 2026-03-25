@@ -60,19 +60,19 @@ const variantStyles = {
   }
 }
 
+const variantBorder: Record<string, string> = {
+  blue:   'border-l-blue-500',
+  green:  'border-l-green-500',
+  yellow: 'border-l-yellow-400',
+  purple: 'border-l-purple-500',
+  red:    'border-l-red-500',
+  indigo: 'border-l-indigo-500',
+  pink:   'border-l-pink-500',
+  gray:   'border-l-gray-400',
+}
+
 /**
  * Универсальная карточка для отображения статистики
- * 
- * @example
- * ```tsx
- * <StatCard
- *   title="Всего пользователей"
- *   value={150}
- *   icon={Users}
- *   variant="blue"
- *   subtitle="+12 за последний месяц"
- * />
- * ```
  */
 export default function StatCard({
   title,
@@ -84,27 +84,27 @@ export default function StatCard({
   onClick
 }: StatCardProps) {
   const styles = variantStyles[variant]
-  
-  const cardClasses = `
-    bg-white rounded-lg shadow p-6 transition-all
-    ${onClick ? 'cursor-pointer hover:shadow-lg' : ''}
-  `.trim()
 
   return (
-    <div className={cardClasses} onClick={onClick}>
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <p className="text-sm text-gray-600 mb-1">{title}</p>
+    <div
+      className={`bg-white rounded-xl border border-gray-100 border-l-4 ${variantBorder[variant]} p-5 transition-all shadow-sm ${
+        onClick ? 'cursor-pointer hover:shadow-md hover:-translate-y-px' : ''
+      }`}
+      onClick={onClick}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-500">{title}</p>
           {description && (
-            <p className="text-xs text-gray-500 mb-2">{description}</p>
+            <p className="text-xs text-gray-400 mt-0.5">{description}</p>
           )}
-          <p className="text-2xl md:text-3xl font-bold text-gray-900">{value}</p>
+          <p className="text-3xl font-bold text-gray-900 leading-none mt-2">{value}</p>
           {subtitle && (
-            <p className="text-xs text-gray-500 mt-2">{subtitle}</p>
+            <p className="text-xs text-gray-400 mt-2">{subtitle}</p>
           )}
         </div>
-        <div className={`${styles.bg} p-3 rounded-full ${onClick ? styles.hover : ''} transition-colors`}>
-          <Icon className={`w-6 h-6 ${styles.text}`} />
+        <div className={`${styles.bg} p-2.5 rounded-lg flex-shrink-0`}>
+          <Icon className={`w-5 h-5 ${styles.text}`} />
         </div>
       </div>
     </div>

@@ -96,6 +96,17 @@
   .badge-mobile {
     @apply inline-flex items-center px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-xs sm:text-sm font-medium;
   }
+
+  /* Status badges with dot indicator */
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border;
+  }
+  .status-dot {
+    @apply w-1.5 h-1.5 rounded-full flex-shrink-0;
+  }
+  .status-dot-pulse {
+    @apply w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse;
+  }
 }
 
 @layer utilities {

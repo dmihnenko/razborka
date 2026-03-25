@@ -19,6 +19,7 @@ import AppointmentModal from '@/components/appointments/AppointmentModal'
 import MyVehicles from './MyVehicles'
 import WorkerDashboard from './WorkerDashboard'
 import { useNavigate, Link } from 'react-router-dom'
+import PageHeader from '@/components/PageHeader'
 
 export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -172,27 +173,27 @@ export default function Dashboard() {
 
   return (
     <div className="container-mobile">
-      {/* Header с кнопками */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
-        <h1 className="heading-mobile-1">Панель управления</h1>
-        
-        <div className="flex gap-2">
-          <button
-            onClick={() => navigate('/statistics')}
-            className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 flex items-center gap-1.5"
-          >
-            <TrendingUp className="w-4 h-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Статистика</span>
-          </button>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="btn-touch bg-primary text-white hover:bg-primary/90 flex items-center justify-center gap-2"
-          >
-            <Plus className="w-5 h-5 flex-shrink-0" />
-            <span>Новая запись</span>
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Панель управления"
+        actions={
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate('/statistics')}
+              className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 flex items-center gap-1.5"
+            >
+              <TrendingUp className="w-4 h-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Статистика</span>
+            </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="btn-touch bg-primary text-white hover:bg-primary/90 flex items-center justify-center gap-2"
+            >
+              <Plus className="w-5 h-5 flex-shrink-0" />
+              <span>Новая запись</span>
+            </button>
+          </div>
+        }
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-12">
@@ -212,7 +213,7 @@ export default function Dashboard() {
                   <div className="p-2 rounded-lg bg-blue-100">
                     <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                   </div>
-                  <p className="text-mobile-sm text-gray-600">Активные</p>
+                  <p className="text-sm font-medium text-gray-700">Активные</p>
                 </div>
                 <p className="text-2xl sm:text-3xl font-bold text-gray-900">{activeCount}</p>
               </div>
@@ -228,7 +229,7 @@ export default function Dashboard() {
                   <div className="p-2 rounded-lg bg-purple-100">
                     <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                   </div>
-                  <p className="text-mobile-sm text-gray-600">Ожидают</p>
+                  <p className="text-sm font-medium text-gray-700">Ожидают</p>
                 </div>
                 <p className="text-2xl sm:text-3xl font-bold text-gray-900">{scheduledCount}</p>
               </div>
@@ -244,7 +245,7 @@ export default function Dashboard() {
                   <div className="p-2 rounded-lg bg-orange-100">
                     <Wrench className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
                   </div>
-                  <p className="text-mobile-sm text-gray-600">В работе</p>
+                  <p className="text-sm font-medium text-gray-700">В работе</p>
                 </div>
                 <p className="text-2xl sm:text-3xl font-bold text-gray-900">{inProgressCount}</p>
               </div>
@@ -260,7 +261,7 @@ export default function Dashboard() {
                   <div className="p-2 rounded-lg bg-green-100">
                     <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                   </div>
-                  <p className="text-mobile-sm text-gray-600">Готовые</p>
+                  <p className="text-sm font-medium text-gray-700">Готовые</p>
                 </div>
                 <p className="text-2xl sm:text-3xl font-bold text-gray-900">
                   {readyCount}
@@ -313,7 +314,7 @@ export default function Dashboard() {
                     <p className="text-mobile-base font-semibold text-red-900 mb-1">
                       Требуют оплаты
                     </p>
-                    <p className="text-mobile-sm text-red-700">
+                    <p className="text-sm text-red-700">
                       {unpaidCount} {unpaidCount === 1 ? 'заявка' : unpaidCount < 5 ? 'заявки' : 'заявок'} с неоплаченными услугами
                     </p>
                   </div>
@@ -334,7 +335,7 @@ export default function Dashboard() {
                   <p className="text-mobile-base font-semibold text-gray-900 mb-1">
                     Работники СТО
                   </p>
-                  <p className="text-mobile-sm text-gray-600">
+                  <p className="text-sm text-gray-600">
                     Всего сотрудников: {workersCount}
                   </p>
                 </div>
@@ -363,7 +364,7 @@ export default function Dashboard() {
                   <div className="p-1.5 sm:p-2 rounded bg-green-100">
                     <Package className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                   </div>
-                  <p className="text-mobile-sm text-green-700 font-medium">Запчасти</p>
+                  <p className="text-sm font-semibold text-green-800">Запчасти</p>
                 </div>
                 <p className="text-xl sm:text-2xl font-bold text-green-900">
                   {partsCost.toLocaleString('ru-RU')} ₴
@@ -376,7 +377,7 @@ export default function Dashboard() {
                   <div className="p-1.5 sm:p-2 rounded bg-purple-100">
                     <Wrench className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                   </div>
-                  <p className="text-mobile-sm text-purple-700 font-medium">Работы</p>
+                  <p className="text-sm font-semibold text-purple-800">Работы</p>
                 </div>
                 <p className="text-xl sm:text-2xl font-bold text-purple-900">
                   {workCost.toLocaleString('ru-RU')} ₴
@@ -389,7 +390,7 @@ export default function Dashboard() {
                   <div className="p-1.5 sm:p-2 rounded bg-blue-100">
                     <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                   </div>
-                  <p className="text-mobile-sm text-blue-700 font-medium">Всего</p>
+                  <p className="text-sm font-semibold text-blue-800">Всего</p>
                 </div>
                 <p className="text-xl sm:text-2xl font-bold text-blue-900">
                   {totalCost.toLocaleString('ru-RU')} ₴
