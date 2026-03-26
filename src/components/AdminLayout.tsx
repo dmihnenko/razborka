@@ -230,21 +230,25 @@ export default function AdminLayout() {
                 </Link>
               )
             })}
-            {/* Quick access items */}
+          </nav>
+
+          {/* Quick access — always pinned at bottom, 3 equal columns */}
+          <div className="grid grid-cols-3 gap-1.5 px-2 pb-2 bg-white border-t border-gray-100">
             {quickAccessItems.map((q) => {
               const Icon = q.icon
               return (
                 <button
                   key={q.path}
                   onClick={() => { localStorage.setItem('activeRole', q.role); navigate(q.path) }}
-                  className="flex flex-col items-center justify-center gap-1.5 min-h-[64px] rounded-xl text-[11px] font-medium bg-gray-50 text-gray-500 hover:bg-gray-100 transition-all"
+                  className="flex flex-col items-center justify-center gap-1.5 min-h-[60px] rounded-xl text-[11px] font-medium transition-all"
+                  style={{ background: q.bg, color: q.color }}
                 >
-                  <Icon className="w-5 h-5 text-gray-400" />
+                  <Icon className="w-5 h-5 flex-shrink-0" style={{ color: q.color }} />
                   <span className="text-center leading-tight px-0.5">{q.name}</span>
                 </button>
               )
             })}
-          </nav>
+          </div>
         </div>
 
         {/* ── PAGE CONTENT ── */}
