@@ -138,7 +138,7 @@ export default function Breadcrumbs() {
       <Link
         to="/"
         title="Главная"
-        className="inline-flex items-center text-gray-400 hover:text-blue-500 transition-colors leading-none"
+        className="flex items-center flex-shrink-0 text-gray-400 hover:text-blue-500 transition-colors"
       >
         <Home className="w-3.5 h-3.5" />
       </Link>
@@ -146,19 +146,19 @@ export default function Breadcrumbs() {
       {breadcrumbs.map((crumb, index) => {
         const isLast = index === breadcrumbs.length - 1
         return (
-          <span key={crumb.path} className="inline-flex items-center gap-1 leading-none">
+          <span key={crumb.path} className="flex items-center gap-1">
             <ChevronRight className="w-3 h-3 text-gray-300 flex-shrink-0" />
             {isLast ? (
-              <span className="font-medium text-gray-700 whitespace-nowrap leading-none">
+              <span className="flex items-center gap-1 font-medium text-gray-700 whitespace-nowrap">
                 {crumb.label}
                 {crumb.count !== undefined && (
-                  <span className="ml-1 text-gray-400">({crumb.count})</span>
+                  <span className="text-gray-400">({crumb.count})</span>
                 )}
               </span>
             ) : (
               <Link
                 to={crumb.path}
-                className="whitespace-nowrap text-gray-400 hover:text-blue-500 transition-colors leading-none"
+                className="flex items-center whitespace-nowrap text-gray-400 hover:text-blue-500 transition-colors"
               >
                 {crumb.label}
               </Link>
