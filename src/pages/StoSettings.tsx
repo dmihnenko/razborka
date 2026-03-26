@@ -2,16 +2,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { toast } from 'sonner'
-import { Settings as SettingsIcon, Wrench, Trash2, ChevronRight, Layers } from 'lucide-react'
+import { Settings as SettingsIcon, Wrench, Trash2, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useDesignSystem } from '@/hooks/useDesignSystem'
 
 export default function StoSettings() {
   const { data: profile } = useUserProfile()
   const queryClient = useQueryClient()
 
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
-  const { design } = useDesignSystem()
   const { data: stoCompany, isLoading } = useQuery({
     queryKey: ['sto_company_settings', profile?.sto_company_id],
     queryFn: async () => {
@@ -80,23 +78,7 @@ export default function StoSettings() {
       </div>
 
       <div className="space-y-4">
-        {/* ─── Design System Notice ─────────────────────────────── */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-indigo-50 rounded-lg">
-              <Layers className="w-5 h-5 text-indigo-600" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">Дизайн-система</h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Активен: <span className="font-semibold text-indigo-600">{design === 'classic' ? 'Классика' : 'Precision Pro'}</span>
-              </p>
-            </div>
-          </div>
-          <p className="text-xs text-gray-500">
-            Дизайн платформы управляется глобально администратором и применяется для всех пользователей.
-          </p>
-        </div>
+
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">

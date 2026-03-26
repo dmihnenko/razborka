@@ -5,7 +5,7 @@ import { AlertProvider } from './components/CustomAlert'
 import VersionChecker from './components/VersionChecker'
 import Version from './components/Version'
 import ErrorBoundary from './components/ErrorBoundary'
-import LayoutSwitcher from './components/LayoutSwitcher'
+import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
 
 // Критичные страницы - загружаем сразу
@@ -71,7 +71,6 @@ import { useAuth } from './hooks/useAuth'
 import { useUserProfile } from './hooks/useUserProfile'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from './lib/supabase'
-import { useDesignSystem } from './hooks/useDesignSystem'
 
 import { LayoutSkeleton } from './components/LayoutSkeleton'
 
@@ -82,8 +81,6 @@ function PageLoader() {
 
 function App() {
   const queryClient = useQueryClient()
-  // Apply global design system (admin-controlled, realtime for all users)
-  useDesignSystem()
 
   useEffect(() => {
     let mounted = true
@@ -129,7 +126,7 @@ function App() {
         {/* Публичный профиль клиента разборки */}
         <Route path="/public/parts-customer/:id" element={<PublicPartsCustomerView />} />
         
-        <Route path="/" element={<ProtectedRoute><LayoutSwitcher /></ProtectedRoute>}>
+        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Navigate to="/" replace />} />
           <Route path="customers" element={<Customers />} />
