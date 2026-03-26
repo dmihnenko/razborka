@@ -460,3 +460,22 @@
 .dark .heading-mobile-2,
 .dark .heading-mobile-3,
 .dark .page-title { color: #F1F5F9 !important; }
+
+/* ── Dark: breadcrumbs ── */
+.dark nav[style*="color: #94A3B8"] { color: #4B5563 !important; }
+.dark nav span[style*="color: #374151"] { color: #CBD5E1 !important; }
+
+/* ── Spinner ── */
+.spinner {
+  display: inline-block;
+  width: 36px; height: 36px;
+  border: 3px solid rgba(37,99,235,0.15);
+  border-top-color: #2563EB;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+.spinner-sm {
+  width: 20px; height: 20px;
+  border-width: 2px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

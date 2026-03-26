@@ -125,37 +125,39 @@ export default function Breadcrumbs() {
   }
 
   return (
-    <nav className="flex items-center flex-wrap gap-1 text-sm text-gray-600 mb-4">
+    <nav className="flex items-center flex-wrap gap-0.5 mb-4" style={{ fontSize: '12px', color: '#94A3B8' }}>
       <Link
         to="/"
-        className="inline-flex items-center hover:text-blue-600 transition-colors"
+        className="inline-flex items-center transition-colors hover:text-blue-500"
         title="Главная"
+        style={{ color: 'inherit' }}
       >
-        <Home className="w-4 h-4" />
+        <Home className="w-3.5 h-3.5" />
       </Link>
-      
+
       {breadcrumbs.map((crumb, index) => {
         const isLast = index === breadcrumbs.length - 1
-        
+
         return (
           <div key={crumb.path} className="flex items-center">
-            <ChevronRight className="w-4 h-4 mx-1 text-gray-400 flex-shrink-0" />
+            <ChevronRight className="w-3.5 h-3.5 mx-0.5 flex-shrink-0" style={{ color: '#CBD5E1' }} />
             {isLast ? (
-              <span className="flex items-center text-gray-900 font-medium whitespace-nowrap leading-none">
+              <span
+                className="font-medium whitespace-nowrap"
+                style={{ color: '#374151' }}
+              >
                 {crumb.label}
                 {crumb.count !== undefined && (
-                  <span className="ml-1.5 text-sm text-gray-500">({crumb.count})</span>
+                  <span className="ml-1" style={{ color: '#94A3B8' }}>({crumb.count})</span>
                 )}
               </span>
             ) : (
               <Link
                 to={crumb.path}
-                className="flex items-center hover:text-blue-600 transition-colors whitespace-nowrap leading-none"
+                className="whitespace-nowrap transition-colors hover:text-blue-500"
+                style={{ color: 'inherit' }}
               >
                 {crumb.label}
-                {crumb.count !== undefined && (
-                  <span className="ml-1.5 text-sm text-gray-500">({crumb.count})</span>
-                )}
               </Link>
             )}
           </div>
