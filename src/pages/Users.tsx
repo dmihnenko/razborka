@@ -733,9 +733,9 @@ export default function Users() {
 
       {/* Модальное окно для создания пользователя */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Создать пользователя</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+          <div className="bg-white rounded-t-2xl sm:rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90dvh] overflow-y-auto">
+            <h2 className="text-lg sm:text-xl font-bold mb-4">Создать пользователя</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -943,9 +943,9 @@ export default function Users() {
 
       {/* Модальное окно для редактирования пользователя */}
       {isEditModalOpen && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Редактировать пользователя</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+          <div className="bg-white rounded-t-2xl sm:rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90dvh] overflow-y-auto">
+            <h2 className="text-lg sm:text-xl font-bold mb-4">Редактировать пользователя</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1107,9 +1107,9 @@ export default function Users() {
 
       {/* Модальное окно для изменения ролей */}
       {isRoleModalOpen && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Изменить роли пользователя</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+          <div className="bg-white rounded-t-2xl sm:rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90dvh] overflow-y-auto">
+            <h2 className="text-lg sm:text-xl font-bold mb-4">Изменить роли пользователя</h2>
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-4">
                 Пользователь: <span className="font-medium">{selectedUser.full_name || selectedUser.email}</span>

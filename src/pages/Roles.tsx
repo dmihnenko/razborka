@@ -221,8 +221,8 @@ function RoleModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-lg p-4 sm:p-6 w-full max-w-md max-h-[90dvh] overflow-y-auto">
         <h2 className="text-2xl font-bold mb-4">
           {role ? 'Редактировать роль' : 'Новая роль'}
         </h2>
@@ -280,7 +280,7 @@ function RoleModal({
                 onChange={(e) =>
                   setFormData({ ...formData, is_active: e.target.checked })
                 }
-                className="mr-2"
+                className="w-4 h-4 rounded accent-blue-600 cursor-pointer flex-shrink-0 mr-2"
               />
               <span className="text-sm font-medium text-gray-700">
                 Активная роль

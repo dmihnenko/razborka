@@ -116,7 +116,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="bg-white rounded-t-2xl sm:rounded-lg max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-t-2xl sm:rounded-lg max-w-3xl w-full max-h-[95dvh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
           <h2 className="text-lg sm:text-xl font-semibold pr-2">
             {vehicle ? 'Редактировать' : 'Добавить авто'}

@@ -101,11 +101,11 @@ export default function ReassignWorkerModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">Переназначить работника</h2>
+        <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="text-base sm:text-lg font-bold text-gray-900">Переназначить работника</h2>
           <button
             type="button"
             onClick={(e) => {
@@ -120,7 +120,7 @@ export default function ReassignWorkerModal({
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6">
           <div className="mb-4">
             <p className="text-sm text-gray-600 mb-2">Заявка:</p>
             <div className="bg-gray-50 p-3 rounded-lg">
@@ -143,7 +143,7 @@ export default function ReassignWorkerModal({
               <select
                 value={selectedWorkerId}
                 onChange={(e) => setSelectedWorkerId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 required
               >
                 <option value="">-- Выберите работника --</option>
@@ -162,7 +162,7 @@ export default function ReassignWorkerModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="px-4 py-2.5 min-h-[40px] text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
               Отмена
             </button>
@@ -173,7 +173,7 @@ export default function ReassignWorkerModal({
                 !selectedWorkerId ||
                 selectedWorkerId === currentWorkerId
               }
-              className="px-6 py-2 text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
+              className="px-4 py-2.5 min-h-[40px] text-sm text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
             >
               {reassignMutation.isPending ? 'Сохранение...' : 'Переназначить'}
             </button>

@@ -92,8 +92,8 @@ export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: Mo
   ]
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-lg shadow-xl max-w-4xl w-full max-h-[90dvh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white">
           <h2 className="text-xl font-semibold text-gray-900">
