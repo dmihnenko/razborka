@@ -259,21 +259,18 @@ export default function Layout() {
                 </Link>
               )
             })}
-          </nav>
-
-          {/* Admin Panel Button (if admin) */}
-          {isAdmin && (
-            <div className="px-2 pb-2">
+            {/* Admin panel card — same grid size as nav items */}
+            {isAdmin && (
               <Link
                 to="/admin"
                 onClick={() => localStorage.removeItem('activeRole')}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-purple-700 bg-purple-50 rounded-lg border border-purple-200 min-h-[44px] hover:bg-purple-100 transition-colors"
+                className="flex flex-col items-center justify-center gap-1.5 px-1 py-3 text-[11px] font-medium rounded-xl min-h-[64px] transition-colors bg-purple-50 text-purple-700 hover:bg-purple-100"
               >
-                <Shield className="w-4 h-4 flex-shrink-0" />
-                <span>Админ панель</span>
+                <Shield className="w-5 h-5 flex-shrink-0 text-purple-500" />
+                <span className="text-center leading-tight line-clamp-2">Админ</span>
               </Link>
-            </div>
-          )}
+            )}
+          </nav>
         </div>
 
         {/* ── MAIN CONTENT ── */}

@@ -171,9 +171,10 @@ export default function AdminLayout() {
                 key={q.path}
                 onClick={() => { localStorage.setItem('activeRole', q.role); navigate(q.path) }}
                 title={q.name}
-                className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-lg transition-colors"
+                className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium rounded-lg transition-colors hover:opacity-90"
+                style={{ color: q.color }}
               >
-                <Icon className="w-4 h-4 flex-shrink-0 text-gray-400" />
+                <Icon className="w-4 h-4 flex-shrink-0" style={{ color: q.color }} />
                 <span className="hidden lg:block">{q.name}</span>
               </button>
             )
