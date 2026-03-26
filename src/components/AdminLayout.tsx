@@ -80,39 +80,43 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row md:h-screen bg-gray-100">
-      {/* Mobile Header */}
-      <div className="md:hidden bg-white border-b">{/* User Info with Logout */}
-        {/* User Info with Logout */}
-        <div className="px-3 sm:px-4 py-2 border-b bg-purple-50 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-purple-700 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs sm:text-sm font-semibold text-purple-900 truncate">
-                Админ панель
-              </p>
-              <p className="text-[10px] sm:text-xs text-purple-700 truncate">
+    <div className="flex flex-col md:flex-row md:h-screen" style={{ backgroundColor: '#F8FAFC' }}>
+
+      {/* ════════════════════════════════════════════
+          MOBILE HEADER
+          ════════════════════════════════════════════ */}
+      <div className="md:hidden sticky top-0 z-40" style={{ backgroundColor: '#0C1220' }}>
+        {/* Top bar */}
+        <div className="px-4 py-3 flex items-center justify-between gap-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center flex-shrink-0">
+              <Shield className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white leading-tight">Админ панель</p>
+              <p className="text-[11px] truncate" style={{ color: '#64748B' }}>
                 {profile?.full_name || profile?.email}
               </p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 flex-shrink-0 hover:bg-red-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg min-h-[36px] transition-colors"
+            style={{ backgroundColor: 'rgba(255,255,255,0.07)', color: '#94A3B8' }}
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-3.5 h-3.5" />
             <span>Выйти</span>
           </button>
         </div>
-        
-        {/* Mobile Navigation - Grouped */}
-        <div className="p-2 sm:p-3 space-y-2 sm:space-y-3 max-h-[calc(100vh-80px)] overflow-y-auto">
+
+        {/* Mobile nav pills */}
+        <div className="px-3 py-2 overflow-y-auto max-h-[50vh] space-y-2">
           {adminNavigationGroups.map((group) => (
             <div key={group.title}>
-              <h3 className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 mb-1.5 sm:mb-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider px-1 mb-1" style={{ color: '#334155' }}>
                 {group.title}
-              </h3>
-              <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+              </p>
+              <div className="flex gap-1 flex-wrap">
                 {group.items.map((item) => {
                   const Icon = item.icon
                   const isActive = location.pathname === item.href
@@ -120,72 +124,72 @@ export default function AdminLayout() {
                     <Link
                       key={item.href}
                       to={item.href}
-                      className={`flex flex-col items-center justify-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-2 sm:py-3 text-[10px] sm:text-xs font-medium transition-colors rounded-lg min-h-[60px] sm:min-h-[70px] ${
-                        isActive
-                          ? 'bg-purple-700 text-white shadow-sm'
-                          : 'text-gray-700 bg-gray-50 hover:bg-gray-100'
-                      }`}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all"
+                      style={isActive
+                        ? { backgroundColor: '#7C3AED', color: '#FFFFFF' }
+                        : { backgroundColor: 'rgba(255,255,255,0.06)', color: '#94A3B8' }
+                      }
                     >
-                      <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                      <span className="text-center leading-tight line-clamp-2">{item.name}</span>
+                      <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>{item.name}</span>
                     </Link>
                   )
                 })}
               </div>
             </div>
           ))}
-          
-          {/* Quick Access */}
+          {/* Quick access */}
           <div>
-            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 mb-1.5 sm:mb-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider px-1 mb-1" style={{ color: '#334155' }}>
               Быстрый доступ
-            </h3>
-            <div className="space-y-1.5 sm:space-y-2">
-              <button
-                onClick={() => {
-                  localStorage.setItem('activeRole', 'user')
-                  navigate('/my-vehicles')
-                }}
-                className="w-full flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"
-              >
-                <Car className="w-4 h-4 flex-shrink-0" />
-                <span>Мои авто</span>
+            </p>
+            <div className="flex gap-1 flex-wrap">
+              <button onClick={() => { localStorage.setItem('activeRole', 'user'); navigate('/my-vehicles') }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all"
+                style={{ backgroundColor: 'rgba(37,99,235,0.15)', color: '#60A5FA' }}>
+                <Car className="w-3.5 h-3.5" /><span>Мои авто</span>
               </button>
-              <button
-                onClick={() => {
-                  localStorage.setItem('activeRole', 'sto_owner')
-                  navigate('/')
-                }}
-                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-green-700 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors"
-              >
-                <Building2 className="w-4 h-4 flex-shrink-0" />
-                <span>Мое СТО</span>
+              <button onClick={() => { localStorage.setItem('activeRole', 'sto_owner'); navigate('/') }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all"
+                style={{ backgroundColor: 'rgba(16,185,129,0.12)', color: '#34D399' }}>
+                <Building2 className="w-3.5 h-3.5" /><span>СТО</span>
               </button>
-              <button
-                onClick={() => {
-                  localStorage.setItem('activeRole', 'parts_owner')
-                  navigate('/parts/dashboard')
-                }}
-                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-orange-700 bg-orange-50 rounded-lg border border-orange-200 hover:bg-orange-100 transition-colors"
-              >
-                <Store className="w-4 h-4 flex-shrink-0" />
-                <span>Моя разборка</span>
+              <button onClick={() => { localStorage.setItem('activeRole', 'parts_owner'); navigate('/parts/dashboard') }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all"
+                style={{ backgroundColor: 'rgba(249,115,22,0.12)', color: '#FB923C' }}>
+                <Store className="w-3.5 h-3.5" /><span>Разборка</span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:flex-col w-56 bg-slate-800 text-white flex-shrink-0">
-        <div className="flex items-center gap-2.5 px-4 h-14 border-b border-slate-700">
-          <Shield size={18} className="text-purple-300 flex-shrink-0" />
-          <span className="text-sm font-semibold text-white">Админ панель</span>
+      {/* ════════════════════════════════════════════
+          DESKTOP SIDEBAR
+          ════════════════════════════════════════════ */}
+      <aside
+        className="hidden md:flex md:flex-col w-[200px] xl:w-[220px] flex-shrink-0"
+        style={{ backgroundColor: '#0C1220', borderRight: '1px solid rgba(255,255,255,0.06)' }}
+      >
+        {/* Logo */}
+        <div
+          className="flex items-center gap-3 h-14 px-4 flex-shrink-0"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+        >
+          <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center flex-shrink-0">
+            <Shield className="w-4 h-4 text-white" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-white leading-tight">Админ панель</p>
+            <p className="text-[11px]" style={{ color: '#475569' }}>TSP CRM</p>
+          </div>
         </div>
+
+        {/* Nav groups */}
         <nav className="flex-1 overflow-y-auto py-3 px-2">
           {adminNavigationGroups.map((group) => (
             <div key={group.title} className="mb-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 px-3 mb-1">
+              <p className="text-[10px] font-semibold uppercase tracking-wider px-3 mb-1.5" style={{ color: '#334155', letterSpacing: '0.08em' }}>
                 {group.title}
               </p>
               {group.items.map((item) => {
@@ -195,14 +199,22 @@ export default function AdminLayout() {
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`flex items-center gap-2.5 px-3 py-2 mb-0.5 rounded-lg text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-purple-600 text-white'
-                        : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                    }`}
+                    className="relative flex items-center gap-3 px-3 py-2.5 mb-0.5 rounded-lg text-sm font-medium transition-all duration-150"
+                    style={isActive
+                      ? { backgroundColor: '#3B1F6E', color: '#FFFFFF' }
+                      : { color: '#64748B' }
+                    }
+                    onMouseEnter={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#E2E8F0' }}}
+                    onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B' }}}
                   >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
-                    {item.name}
+                    {isActive && (
+                      <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-purple-400 rounded-r" />
+                    )}
+                    <Icon
+                      className="w-[17px] h-[17px] flex-shrink-0"
+                      style={{ color: isActive ? '#C084FC' : 'inherit' }}
+                    />
+                    <span className="leading-none">{item.name}</span>
                   </Link>
                 )
               })}
@@ -210,40 +222,42 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        <div className="px-2 py-3 border-t border-slate-700 space-y-0.5">
-          <button
-            onClick={() => { localStorage.setItem('activeRole', 'user'); navigate('/my-vehicles') }}
-            className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
-          >
-            <Car className="w-4 h-4 flex-shrink-0" />
-            Мои авто
+        {/* Footer */}
+        <div className="flex-shrink-0 px-2 py-3 space-y-0.5" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          <button onClick={() => { localStorage.setItem('activeRole', 'user'); navigate('/my-vehicles') }}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150"
+            style={{ color: '#64748B' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#94A3B8' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B' }}>
+            <Car className="w-[17px] h-[17px] flex-shrink-0" />Мои авто
           </button>
-          <button
-            onClick={() => { localStorage.setItem('activeRole', 'sto_owner'); navigate('/') }}
-            className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
-          >
-            <Building2 className="w-4 h-4 flex-shrink-0" />
-            Мое СТО
+          <button onClick={() => { localStorage.setItem('activeRole', 'sto_owner'); navigate('/') }}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150"
+            style={{ color: '#64748B' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#94A3B8' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B' }}>
+            <Building2 className="w-[17px] h-[17px] flex-shrink-0" />Мое СТО
           </button>
-          <button
-            onClick={() => { localStorage.setItem('activeRole', 'parts_owner'); navigate('/parts/dashboard') }}
-            className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
-          >
-            <Store className="w-4 h-4 flex-shrink-0" />
-            Разборка
+          <button onClick={() => { localStorage.setItem('activeRole', 'parts_owner'); navigate('/parts/dashboard') }}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150"
+            style={{ color: '#64748B' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#94A3B8' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B' }}>
+            <Store className="w-[17px] h-[17px] flex-shrink-0" />Разборка
           </button>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
-          >
-            <LogOut className="w-4 h-4 flex-shrink-0" />
-            Выход
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150"
+            style={{ color: '#475569' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#94A3B8' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#475569' }}>
+            <LogOut className="w-[17px] h-[17px] flex-shrink-0" />Выход
           </button>
         </div>
-      </div>
+      </aside>
 
       {/* Main content */}
-      <div className="flex-1 overflow-auto bg-gray-50">
+      <div className="flex-1 overflow-auto" style={{ backgroundColor: '#F8FAFC' }}>
         <div className="mx-auto max-w-[1440px] w-full px-4 py-4 sm:px-6 sm:py-5 md:px-8 md:py-6">
           <Breadcrumbs />
           <Outlet />
@@ -252,3 +266,4 @@ export default function AdminLayout() {
     </div>
   )
 }
+

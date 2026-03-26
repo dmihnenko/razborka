@@ -143,31 +143,40 @@ export default function Layout() {
     )
   }
 
+  // User initials avatar
+  const initials = profile?.full_name
+    ? profile.full_name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
+    : (profile?.email?.[0] || 'U').toUpperCase()
+
   return (
-    <div className="flex flex-col md:flex-row md:h-screen bg-gray-100">
-      {/* Mobile Header */}
-      <div className="md:hidden bg-[#0F1729] border-b border-[#1E2A3B]">
-        {/* Top bar: logo + user + logout */}
-        <div className="px-4 py-2.5 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
+    <div className="flex flex-col md:flex-row md:h-screen" style={{ backgroundColor: '#F8FAFC' }}>
+
+      {/* ════════════════════════════════════════════
+          MOBILE HEADER (hidden on md+)
+          ════════════════════════════════════════════ */}
+      <div className="md:hidden sticky top-0 z-40" style={{ backgroundColor: '#0C1220' }}>
+        {/* Top bar */}
+        <div className="px-4 py-3 flex items-center justify-between gap-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
               <Wrench className="w-4 h-4 text-white" />
             </div>
-            <p className="text-sm font-medium text-gray-200 truncate">
-              {profile?.full_name?.split(' ')[0] || profile?.email || 'CRM'}
-            </p>
+            <span className="text-sm font-semibold text-white truncate">
+              {profile?.full_name?.split(' ')[0] || 'CRM'}
+            </span>
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#94A3B8] bg-[#1E2A3B] rounded-md border border-[#2A3B50] flex-shrink-0 min-h-[36px] hover:text-white transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg min-h-[36px] transition-colors"
+            style={{ backgroundColor: 'rgba(255,255,255,0.07)', color: '#94A3B8' }}
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-3.5 h-3.5" />
             <span>Выйти</span>
           </button>
         </div>
 
-        {/* Horizontal scrollable nav pills */}
-        <nav className="flex gap-1.5 px-3 pb-2.5 overflow-x-auto scrollbar-hide">
+        {/* Navigation pills */}
+        <nav className="flex items-center gap-1 px-3 py-2 overflow-x-auto scrollbar-hide">
           {filteredNavigation.filter(item => !item.mobileHidden).map((item) => {
             const Icon = item.icon
             const isActive = item.href.includes('?')
@@ -177,47 +186,54 @@ export default function Layout() {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full flex-shrink-0 transition-colors ${
-                  isActive
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'text-[#94A3B8] bg-[#1A2744] hover:text-white'
-                }`}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg flex-shrink-0 transition-all"
+                style={isActive
+                  ? { backgroundColor: '#2563EB', color: '#FFFFFF' }
+                  : { backgroundColor: 'rgba(255,255,255,0.06)', color: '#94A3B8' }
+                }
               >
                 <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>{item.name}</span>
               </Link>
             )
           })}
-        </nav>
-
-        {/* Admin Panel Button (if admin) */}
-        {isAdmin && (
-          <div className="px-3 pb-2.5">
+          {isAdmin && (
             <Link
               to="/admin"
               onClick={() => localStorage.removeItem('activeRole')}
-              className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-purple-400 bg-[#1A2744] rounded-full border border-purple-500/30 hover:text-purple-300 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg flex-shrink-0 transition-all"
+              style={{ backgroundColor: 'rgba(139,92,246,0.15)', color: '#A78BFA' }}
             >
               <Shield className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>Админ панель</span>
+              <span>Админ</span>
             </Link>
-          </div>
-        )}
+          )}
+        </nav>
       </div>
 
-      {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:flex-col md:w-16 lg:w-64 bg-[#0F1729] flex-shrink-0">
+      {/* ════════════════════════════════════════════
+          DESKTOP SIDEBAR (hidden on mobile)
+          ════════════════════════════════════════════ */}
+      <aside
+        className="hidden md:flex md:flex-col md:w-[60px] lg:w-[220px] xl:w-[240px] flex-shrink-0"
+        style={{ backgroundColor: '#0C1220', borderRight: '1px solid rgba(255,255,255,0.06)' }}
+      >
         {/* Logo */}
-        <div className="flex items-center justify-center lg:justify-start gap-2.5 px-2 lg:px-5 h-14 border-b border-[#1E2A3B]">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
+        <div
+          className="flex items-center justify-center lg:justify-start gap-3 h-14 px-2 lg:px-4 flex-shrink-0"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+        >
+          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
             <Wrench className="w-4 h-4 text-white" />
           </div>
-          <span className="hidden lg:block text-sm font-semibold text-gray-100 truncate">
-            {profile?.full_name?.split(' ')[0] || 'TSP CRM'}
-          </span>
+          <div className="hidden lg:block min-w-0">
+            <p className="text-sm font-bold text-white truncate leading-tight">TSP CRM</p>
+            <p className="text-[11px] truncate" style={{ color: '#475569' }}>Автосервис</p>
+          </div>
         </div>
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2">
+
+        {/* Nav items */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
           {filteredNavigation.map((item) => {
             const Icon = item.icon
             const isActive = item.href.includes('?')
@@ -228,47 +244,78 @@ export default function Layout() {
                 key={item.href}
                 to={item.href}
                 title={item.name}
-                className={`relative flex items-center justify-center lg:justify-start gap-3 px-0 lg:px-3 py-2 mb-0.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-[#1A2744] text-white'
-                    : 'text-[#94A3B8] hover:bg-[#1A2744]/70 hover:text-gray-200'
-                }`}
+                className="relative flex items-center justify-center lg:justify-start gap-3 py-2.5 px-2 lg:px-3 rounded-lg transition-all duration-150 group"
+                style={isActive
+                  ? { backgroundColor: '#1E3A6E', color: '#FFFFFF' }
+                  : { color: '#64748B' }
+                }
+                onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#E2E8F0' }}
+                onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B' } }}
               >
+                {/* Active indicator bar */}
                 {isActive && (
-                  <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] bg-primary rounded-r hidden lg:block" />
+                  <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-blue-400 rounded-r hidden lg:block" />
                 )}
-                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary' : 'text-[#4A6080]'}`} />
-                <span className="hidden lg:block">{item.name}</span>
+                <Icon
+                  className="w-[18px] h-[18px] flex-shrink-0"
+                  style={{ color: isActive ? '#60A5FA' : 'inherit' }}
+                />
+                <span className="hidden lg:block text-sm font-medium leading-none">{item.name}</span>
               </Link>
             )
           })}
         </nav>
-        {/* Footer */}
-        <div className="px-2 py-3 border-t border-[#1E2A3B] space-y-0.5">
+
+        {/* Footer: admin link + user block + logout */}
+        <div className="flex-shrink-0 px-2 py-3 space-y-0.5" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
           {isAdmin && (
             <Link
               to="/admin"
               title="Админ панель"
               onClick={() => localStorage.removeItem('activeRole')}
-              className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-purple-400 hover:bg-[#1A2744] hover:text-purple-300 rounded-lg transition-colors"
+              className="flex items-center justify-center lg:justify-start gap-3 py-2 px-2 lg:px-3 rounded-lg transition-all duration-150"
+              style={{ color: '#A78BFA' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(139,92,246,0.1)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent' }}
             >
-              <Shield className="w-5 h-5 text-purple-400 flex-shrink-0" />
-              <span className="hidden lg:block">Админ панель</span>
+              <Shield className="w-[18px] h-[18px] flex-shrink-0" />
+              <span className="hidden lg:block text-sm font-medium">Админ</span>
             </Link>
           )}
+
+          {/* User info */}
+          <div className="flex items-center justify-center lg:justify-start gap-2.5 py-2 px-2 lg:px-3">
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
+              style={{ backgroundColor: '#1E3A6E', color: '#93C5FD' }}
+            >
+              {initials}
+            </div>
+            <div className="hidden lg:block min-w-0">
+              <p className="text-xs font-semibold truncate" style={{ color: '#CBD5E1' }}>
+                {profile?.full_name || profile?.email || 'Пользователь'}
+              </p>
+            </div>
+          </div>
+
           <button
             onClick={handleLogout}
             title="Выход"
-            className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-[#64748B] hover:bg-[#1A2744] hover:text-gray-300 rounded-lg transition-colors"
+            className="flex items-center justify-center lg:justify-start gap-3 w-full py-2 px-2 lg:px-3 rounded-lg transition-all duration-150 text-sm font-medium"
+            style={{ color: '#475569' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#94A3B8' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#475569' }}
           >
-            <LogOut className="w-5 h-5 flex-shrink-0" />
+            <LogOut className="w-[18px] h-[18px] flex-shrink-0" />
             <span className="hidden lg:block">Выход</span>
           </button>
         </div>
-      </div>
+      </aside>
 
-      {/* Main content */}
-      <div className="flex-1 overflow-auto bg-gray-50">
+      {/* ════════════════════════════════════════════
+          MAIN CONTENT
+          ════════════════════════════════════════════ */}
+      <div className="flex-1 overflow-auto" style={{ backgroundColor: '#F8FAFC' }}>
         <div className="mx-auto max-w-[1440px] w-full px-4 py-4 sm:px-6 sm:py-5 md:px-8 md:py-6">
           <Breadcrumbs />
           <Outlet />
