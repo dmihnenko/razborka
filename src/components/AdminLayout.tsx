@@ -211,7 +211,7 @@ export default function AdminLayout() {
           </div>
 
           {/* Mobile nav — grid cards like main Layout */}
-          <nav className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 p-2 bg-white">
+          <nav className="grid grid-cols-4 sm:grid-cols-5 gap-2 p-2 bg-white">
             {adminNavFlat.slice(0, 8).map((item) => {
               const Icon = item.icon
               const isActive = location.pathname === item.href
@@ -219,32 +219,32 @@ export default function AdminLayout() {
                 <Link
                   key={item.href}
                   to={item.href}
-                  className={`flex flex-col items-center justify-center gap-1.5 min-h-[64px] rounded-xl text-[11px] font-medium transition-all ${
+                  className={`flex flex-col items-center justify-center gap-1.5 px-1 py-3 min-h-[64px] rounded-xl text-[11px] font-medium transition-all ${
                     isActive
                       ? 'bg-purple-50 text-purple-700'
                       : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
                   }`}
                 >
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-purple-600' : 'text-gray-400'}`} />
-                  <span className="text-center leading-tight px-0.5">{item.name}</span>
+                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-purple-600' : 'text-gray-400'}`} />
+                  <span className="text-center leading-tight line-clamp-2">{item.name}</span>
                 </Link>
               )
             })}
           </nav>
 
           {/* Quick access — always pinned at bottom, 3 equal columns */}
-          <div className="grid grid-cols-3 gap-1.5 px-2 pb-2 bg-white border-t border-gray-100">
+          <div className="grid grid-cols-3 gap-2 p-2 bg-white border-t border-gray-100">
             {quickAccessItems.map((q) => {
               const Icon = q.icon
               return (
                 <button
                   key={q.path}
                   onClick={() => { localStorage.setItem('activeRole', q.role); navigate(q.path) }}
-                  className="flex flex-col items-center justify-center gap-1.5 min-h-[60px] rounded-xl text-[11px] font-medium transition-all"
+                  className="flex flex-col items-center justify-center gap-1.5 px-1 py-3 min-h-[64px] rounded-xl text-[11px] font-medium transition-all"
                   style={{ background: q.bg, color: q.color }}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" style={{ color: q.color }} />
-                  <span className="text-center leading-tight px-0.5">{q.name}</span>
+                  <span className="text-center leading-tight line-clamp-2">{q.name}</span>
                 </button>
               )
             })}
