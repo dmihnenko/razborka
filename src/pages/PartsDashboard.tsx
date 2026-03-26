@@ -2,8 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { Car, ShoppingCart, DollarSign, AlertCircle, TrendingUp, ArrowRight, Warehouse, LayoutGrid, Users, BarChart2, Settings, Wrench, Store } from 'lucide-react'
-import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
+import { Car, ShoppingCart, DollarSign, AlertCircle, ArrowRight, Warehouse, LayoutGrid, Users, BarChart2, Settings, Wrench, Store } from 'lucide-react'
+import { getPartsOrderStatusText } from '@/utils/status'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 
 export default function PartsDashboard() {
@@ -169,290 +169,352 @@ export default function PartsDashboard() {
 
   if (!partsCompanyId) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="flex items-center justify-center py-20">
         <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">У вас нет доступа к разборке</p>
+          <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-7 h-7 text-orange-500" />
+          </div>
+          <p className="text-sm font-medium text-gray-700">Нет доступа к разборке</p>
+          <p className="text-xs text-gray-400 mt-1">Обратитесь к администратору</p>
         </div>
       </div>
     )
   }
 
+  const totalInventoryValueUSD = Math.round(
+    (inventoryStats?.valueUSD || 0) + (inventoryStats?.valueUAH || 0) / (usdRate || 41)
+  )
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Дашборд разборки</h1>
-          <p className="text-sm text-gray-600 mt-1">Управление авторазборкой</p>
+    <div className="space-y-4 sm:space-y-5">
+
+      {/* ── Page header ───────────────────────────── */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ letterSpacing: '-0.025em', lineHeight: 1.2 }}>
+            Авторазборка
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color: '#64748B' }}>Управление разборкой и складом</p>
+        </div>
+        <div className="flex gap-2 flex-shrink-0">
+          <button
+            onClick={() => navigate('/parts/vehicles')}
+            className="btn-secondary btn-sm hidden sm:flex items-center gap-1.5"
+          >
+            <Car className="w-4 h-4" />
+            <span>Авто</span>
+          </button>
+          <button
+            onClick={() => navigate('/parts/orders/create')}
+            className="btn-primary btn-sm flex items-center gap-1.5"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            <span>Новый заказ</span>
+          </button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Quick Stats - Main Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
-          {/* Vehicles Card */}
-          <button
-            onClick={() => navigate('/parts/vehicles')}
-            className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all p-3 sm:p-5 text-left group"
-          >
-            <div className="flex items-start justify-between mb-2 sm:mb-3">
-              <div className="bg-blue-100 p-2 sm:p-3 rounded-lg group-hover:bg-blue-200 transition-colors">
-                <Car className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-              </div>
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-primary transition-colors" />
-            </div>
-            <p className="text-xs sm:text-sm text-gray-600 mb-1">Автомобилей</p>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{vehiclesStats?.total || 0}</p>
-            <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500">В работе:</span>
-                <span className="font-medium text-yellow-600">{vehiclesStats?.in_progress || 0}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs mt-1">
-                <span className="text-gray-500">Разобрано:</span>
-                <span className="font-medium text-green-600">{vehiclesStats?.dismantled || 0}</span>
-              </div>
-            </div>
-          </button>
-
-          {/* Inventory - Разборка Card */}
-          <button
-            onClick={() => navigate('/parts/inventory?source=vehicles')}
-            className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all p-3 sm:p-5 text-left group"
-          >
-            <div className="flex items-start justify-between mb-2 sm:mb-3">
-              <div className="bg-orange-100 p-2 sm:p-3 rounded-lg group-hover:bg-orange-200 transition-colors">
-                <Wrench className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
-              </div>
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-primary transition-colors" />
-            </div>
-            <p className="text-xs sm:text-sm text-gray-600 mb-1">З/ч с разборки</p>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{inventoryStats?.fromVehicles || 0}</p>
-            <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500">Всего:</span>
-                <span className="font-medium text-orange-600">{inventoryStats?.fromVehicles || 0} шт</span>
-              </div>
-            </div>
-          </button>
-
-          {/* Inventory - Магазин Card */}
-          <button
-            onClick={() => navigate('/parts/inventory?source=shop')}
-            className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all p-3 sm:p-5 text-left group"
-          >
-            <div className="flex items-start justify-between mb-2 sm:mb-3">
-              <div className="bg-green-100 p-2 sm:p-3 rounded-lg group-hover:bg-green-200 transition-colors">
-                <Store className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-              </div>
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-primary transition-colors" />
-            </div>
-            <p className="text-xs sm:text-sm text-gray-600 mb-1">Магазин</p>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{inventoryStats?.fromShop || 0}</p>
-            <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500">Всего:</span>
-                <span className="font-medium text-green-600">{inventoryStats?.fromShop || 0} шт</span>
-              </div>
-            </div>
-          </button>
-
-          {/* Orders Card */}
-          <button
-            onClick={() => navigate('/parts/orders')}
-            className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all p-3 sm:p-5 text-left group"
-          >
-            <div className="flex items-start justify-between mb-2 sm:mb-3">
-              <div className="bg-yellow-100 p-2 sm:p-3 rounded-lg group-hover:bg-yellow-200 transition-colors">
-                <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
-              </div>
-              <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-primary transition-colors" />
-            </div>
-            <p className="text-sm text-gray-600 mb-1">Заказов</p>
-            <p className="text-3xl font-bold text-gray-900">{ordersStats?.total || 0}</p>
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500">Новые:</span>
-                <span className="font-medium text-blue-600">{ordersStats?.new || 0}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs mt-1">
-                <span className="text-gray-500">В работе:</span>
-                <span className="font-medium text-yellow-600">{ordersStats?.in_progress || 0}</span>
-              </div>
-            </div>
-          </button>
-
-          {/* Revenue Card */}
-          <button
-            onClick={() => navigate('/parts/customers')}
-            className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all p-3 sm:p-5 text-left group"
-          >
-            <div className="flex items-start justify-between mb-2 sm:mb-3">
-              <div className="bg-purple-100 p-2 sm:p-3 rounded-lg group-hover:bg-purple-200 transition-colors">
-                <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-              </div>
-              <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-primary transition-colors" />
-            </div>
-            <p className="text-sm text-gray-600 mb-1">Выручка</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {revenueUSD > 0 ? `$${Math.round(revenueUSD).toLocaleString('ru-RU')}` : '—'}
-            </p>
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500">Клиентов:</span>
-                <span className="font-medium text-purple-600">{customersStats?.total || 0}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs mt-1">
-                <span className="text-gray-500">С заказами:</span>
-                <span className="font-medium text-green-600">{customersStats?.withOrders || 0}</span>
-              </div>
-            </div>
-          </button>
-        </div>
-
-        {/* Secondary Stats Row */}
-        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
-          {/* Inventory Value */}
-          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-600">Стоимость склада</p>
-              <TrendingUp className="w-5 h-5 text-gray-400" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900">
-              {`$${Math.round((inventoryStats?.valueUSD || 0) + (inventoryStats?.valueUAH || 0) / (usdRate || 41)).toLocaleString('ru-RU')}`}
+      {/* ── Alert: new orders ─────────────────────── */}
+      {(ordersStats?.new || 0) > 0 && (
+        <button
+          onClick={() => navigate('/parts/orders')}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all"
+          style={{ backgroundColor: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}
+        >
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(234,179,8,0.15)' }}>
+            <AlertCircle className="w-4 h-4" style={{ color: '#CA8A04' }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold" style={{ color: '#854D0E' }}>
+              {ordersStats.new} новых {ordersStats.new === 1 ? 'заказ' : ordersStats.new < 5 ? 'заказа' : 'заказов'} ожидает обработки
             </p>
           </div>
+          <ArrowRight className="w-4 h-4 flex-shrink-0" style={{ color: '#CA8A04' }} />
+        </button>
+      )}
 
-          {/* Completed Orders */}
-          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-600">Завершено заказов</p>
-              <ShoppingCart className="w-5 h-5 text-gray-400" />
+      {/* ── Main KPI row ──────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+
+        {/* Vehicles */}
+        <button
+          onClick={() => navigate('/parts/vehicles')}
+          className="card text-left group hover:shadow-card-hover transition-all"
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
+              <Car className="w-5 h-5" style={{ color: '#2563EB' }} />
             </div>
-            <p className="text-2xl font-bold text-gray-900">{ordersStats?.completed || 0}</p>
+            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#2563EB' }} />
           </div>
-
-          {/* Active Vehicles */}
-          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-600">Авто в ожидании</p>
-              <Car className="w-5 h-5 text-gray-400" />
+          <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Автомобили</p>
+          <p className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+            {vehiclesStats?.total || 0}
+          </p>
+          <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid #F1F5F9' }}>
+            <div className="flex justify-between text-xs">
+              <span style={{ color: '#94A3B8' }}>В работе</span>
+              <span className="font-semibold" style={{ color: '#D97706' }}>{vehiclesStats?.in_progress || 0}</span>
             </div>
-            <p className="text-2xl font-bold text-gray-900">{vehiclesStats?.awaiting || 0}</p>
+            <div className="flex justify-between text-xs">
+              <span style={{ color: '#94A3B8' }}>Разобрано</span>
+              <span className="font-semibold" style={{ color: '#16A34A' }}>{vehiclesStats?.dismantled || 0}</span>
+            </div>
           </div>
-        </div>
+        </button>
 
-        {/* Management Tools */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <p className="text-sm font-semibold text-gray-700">Управление</p>
+        {/* Inventory */}
+        <button
+          onClick={() => navigate('/parts/inventory')}
+          className="card text-left group hover:shadow-card-hover transition-all"
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(234,88,12,0.1)' }}>
+              <Wrench className="w-5 h-5" style={{ color: '#EA580C' }} />
+            </div>
+            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#EA580C' }} />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 divide-x divide-y sm:divide-y-0 divide-gray-100">
-            <button
-              onClick={() => navigate('/parts/warehouse')}
-              className="flex flex-col items-center gap-2 p-4 hover:bg-amber-50 transition-colors group"
-            >
-              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center group-hover:bg-amber-200 transition-colors">
-                <Warehouse className="w-5 h-5 text-amber-600" />
-              </div>
-              <span className="text-xs font-medium text-gray-700">Склад</span>
-            </button>
-            <button
-              onClick={() => navigate('/parts/categories')}
-              className="flex flex-col items-center gap-2 p-4 hover:bg-blue-50 transition-colors group"
-            >
-              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                <LayoutGrid className="w-5 h-5 text-blue-600" />
-              </div>
-              <span className="text-xs font-medium text-gray-700">Категории</span>
-            </button>
-            <button
-              onClick={() => navigate('/parts/employees')}
-              className="flex flex-col items-center gap-2 p-4 hover:bg-green-50 transition-colors group"
-            >
-              <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                <Users className="w-5 h-5 text-green-600" />
-              </div>
-              <span className="text-xs font-medium text-gray-700">Сотрудники</span>
-            </button>
-            <button
-              onClick={() => navigate('/parts/analytics')}
-              className="flex flex-col items-center gap-2 p-4 hover:bg-purple-50 transition-colors group"
-            >
-              <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                <BarChart2 className="w-5 h-5 text-purple-600" />
-              </div>
-              <span className="text-xs font-medium text-gray-700">Аналитика</span>
-            </button>
-            <button
-              onClick={() => navigate('/parts/settings')}
-              className="flex flex-col items-center gap-2 p-4 hover:bg-gray-50 transition-colors group col-span-2 sm:col-span-1"
-            >
-              <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center group-hover:bg-gray-200 transition-colors">
-                <Settings className="w-5 h-5 text-gray-600" />
-              </div>
-              <span className="text-xs font-medium text-gray-700">Настройки</span>
-            </button>
+          <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Запчасти</p>
+          <p className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+            {inventoryStats?.total || 0}
+          </p>
+          <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid #F1F5F9' }}>
+            <div className="flex justify-between text-xs">
+              <span style={{ color: '#94A3B8' }}>Доступно</span>
+              <span className="font-semibold" style={{ color: '#16A34A' }}>{inventoryStats?.available || 0}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span style={{ color: '#94A3B8' }}>Мало на складе</span>
+              <span className="font-semibold" style={{ color: inventoryStats?.lowStock ? '#DC2626' : '#94A3B8' }}>
+                {inventoryStats?.lowStock || 0}
+              </span>
+            </div>
           </div>
-        </div>
+        </button>
 
-        {/* Recent Activity */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Последние заказы</h2>
+        {/* Orders */}
+        <button
+          onClick={() => navigate('/parts/orders')}
+          className="card text-left group hover:shadow-card-hover transition-all"
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(234,179,8,0.1)' }}>
+              <ShoppingCart className="w-5 h-5" style={{ color: '#CA8A04' }} />
+            </div>
+            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#CA8A04' }} />
+          </div>
+          <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Заказы</p>
+          <p className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+            {ordersStats?.total || 0}
+          </p>
+          <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid #F1F5F9' }}>
+            <div className="flex justify-between text-xs">
+              <span style={{ color: '#94A3B8' }}>Новые</span>
+              <span className="font-semibold" style={{ color: '#2563EB' }}>{ordersStats?.new || 0}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span style={{ color: '#94A3B8' }}>Завершены</span>
+              <span className="font-semibold" style={{ color: '#16A34A' }}>{ordersStats?.completed || 0}</span>
+            </div>
+          </div>
+        </button>
+
+        {/* Revenue */}
+        <button
+          onClick={() => navigate('/parts/customers')}
+          className="card text-left group hover:shadow-card-hover transition-all"
+          style={{ background: 'linear-gradient(135deg, #1E3A6E 0%, #1E40AF 100%)', border: 'none' }}
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+              <DollarSign className="w-5 h-5 text-white" />
+            </div>
+            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-60 transition-opacity text-white" />
+          </div>
+          <p className="text-xs font-medium mb-0.5" style={{ color: 'rgba(255,255,255,0.65)' }}>Выручка</p>
+          <p className="text-3xl font-bold text-white" style={{ letterSpacing: '-0.03em' }}>
+            {revenueUSD > 0 ? `$${Math.round(revenueUSD).toLocaleString('ru-RU')}` : '—'}
+          </p>
+          <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+            <div className="flex justify-between text-xs">
+              <span style={{ color: 'rgba(255,255,255,0.55)' }}>Клиентов</span>
+              <span className="font-semibold text-white">{customersStats?.total || 0}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span style={{ color: 'rgba(255,255,255,0.55)' }}>Склад USD</span>
+              <span className="font-semibold text-white">${totalInventoryValueUSD.toLocaleString('ru-RU')}</span>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      {/* ── Bottom layout: left column + right column ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        {/* Left col (2/3): inventory breakdown + nav tools */}
+        <div className="lg:col-span-2 space-y-4">
+
+          {/* Inventory breakdown */}
+          <div className="card p-0 overflow-hidden">
+            <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #F1F5F9' }}>
+              <p className="text-sm font-semibold text-gray-800">Склад</p>
               <button
-                onClick={() => navigate('/parts/orders')}
-                className="text-sm text-primary hover:underline"
+                onClick={() => navigate('/parts/inventory')}
+                className="text-xs font-medium flex items-center gap-1 transition-colors"
+                style={{ color: '#2563EB' }}
               >
-                Все заказы
+                Открыть <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-3 divide-x" style={{ divideColor: '#F1F5F9' }}>
+              <button
+                onClick={() => navigate('/parts/inventory?source=vehicles')}
+                className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgba(234,88,12,0.1)' }}>
+                    <Wrench className="w-3.5 h-3.5" style={{ color: '#EA580C' }} />
+                  </div>
+                  <span className="text-xs font-medium" style={{ color: '#64748B' }}>С разборки</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+                  {inventoryStats?.fromVehicles || 0}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>позиций</p>
+              </button>
+              <button
+                onClick={() => navigate('/parts/inventory?source=shop')}
+                className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
+                    <Store className="w-3.5 h-3.5" style={{ color: '#16A34A' }} />
+                  </div>
+                  <span className="text-xs font-medium" style={{ color: '#64748B' }}>Магазин</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+                  {inventoryStats?.fromShop || 0}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>позиций</p>
+              </button>
+              <button
+                onClick={() => navigate('/parts/inventory/no-price')}
+                className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgba(220,38,38,0.08)' }}>
+                    <AlertCircle className="w-3.5 h-3.5" style={{ color: '#DC2626' }} />
+                  </div>
+                  <span className="text-xs font-medium" style={{ color: '#64748B' }}>Без цены</span>
+                </div>
+                <p className="text-2xl font-bold" style={{ letterSpacing: '-0.03em', color: inventoryStats?.lowStock ? '#DC2626' : '#111827' }}>
+                  {inventoryStats?.lowStock || 0}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>нужна цена</p>
               </button>
             </div>
           </div>
 
-          {recentActivity && recentActivity.length > 0 ? (
-            <div className="divide-y divide-gray-200">
-              {recentActivity.map((order: any) => (
+          {/* Navigation tools */}
+          <div className="card p-0 overflow-hidden">
+            <div className="px-4 py-3" style={{ borderBottom: '1px solid #F1F5F9' }}>
+              <p className="text-sm font-semibold text-gray-800">Управление</p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-5">
+              {[
+                { label: 'Склад', icon: Warehouse, path: '/parts/warehouse', color: '#D97706', bg: 'rgba(217,119,6,0.09)' },
+                { label: 'Категории', icon: LayoutGrid, path: '/parts/categories', color: '#2563EB', bg: 'rgba(37,99,235,0.09)' },
+                { label: 'Сотрудники', icon: Users, path: '/parts/employees', color: '#16A34A', bg: 'rgba(22,163,74,0.09)' },
+                { label: 'Аналитика', icon: BarChart2, path: '/parts/analytics', color: '#7C3AED', bg: 'rgba(124,58,237,0.09)' },
+                { label: 'Настройки', icon: Settings, path: '/parts/settings', color: '#475569', bg: 'rgba(71,85,105,0.09)' },
+              ].map(({ label, icon: Icon, path, color, bg }) => (
                 <button
-                  key={order.id}
-                  onClick={() => navigate(`/parts/orders/${order.id}`)}
-                  className="w-full px-4 sm:px-5 py-3 sm:py-4 hover:bg-gray-50 transition-colors text-left"
+                  key={path}
+                  onClick={() => navigate(path)}
+                  className="flex flex-col items-center gap-2 py-5 px-3 hover:bg-gray-50 transition-colors group relative"
+                  style={{ borderRight: '1px solid #F1F5F9' }}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-gray-900">{order.order_number}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getPartsOrderStatusColor(order.status)} border-current`}>
-                        {getPartsOrderStatusText(order.status)}
-                      </span>
-                    </div>
-                    <span className="font-bold text-primary">
-                      {(() => {
-                        const usd = computeOrderUSD(order)
-                        return usd != null ? `$${Math.round(usd).toLocaleString('ru-RU')}` : '—'
-                      })()}
-                    </span>
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105" style={{ backgroundColor: bg }}>
+                    <Icon className="w-5 h-5" style={{ color }} />
                   </div>
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <span>{order.customer?.full_name || 'Без клиента'}</span>
-                    <span>{formatDate(order.order_date)}</span>
-                  </div>
+                  <span className="text-xs font-medium text-gray-600">{label}</span>
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* Right col (1/3): recent orders */}
+        <div className="card p-0 overflow-hidden flex flex-col">
+          <div className="px-4 py-3 flex items-center justify-between flex-shrink-0" style={{ borderBottom: '1px solid #F1F5F9' }}>
+            <p className="text-sm font-semibold text-gray-800">Последние заказы</p>
+            <button
+              onClick={() => navigate('/parts/orders')}
+              className="text-xs font-medium flex items-center gap-1 transition-colors"
+              style={{ color: '#2563EB' }}
+            >
+              Все <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {recentActivity && recentActivity.length > 0 ? (
+            <div className="flex-1 overflow-auto divide-y" style={{ divideColor: '#F1F5F9' }}>
+              {recentActivity.map((order: any) => {
+                const usd = computeOrderUSD(order)
+                return (
+                  <button
+                    key={order.id}
+                    onClick={() => navigate(`/parts/orders/${order.id}`)}
+                    className="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left group"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <span className="text-sm font-semibold text-gray-900 truncate">{order.order_number}</span>
+                      <span className="text-sm font-bold flex-shrink-0" style={{ color: '#2563EB' }}>
+                        {usd != null ? `$${Math.round(usd).toLocaleString('ru-RU')}` : '—'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                        style={{ backgroundColor: 'rgba(37,99,235,0.08)', color: '#1D4ED8' }}
+                      >
+                        {getPartsOrderStatusText(order.status)}
+                      </span>
+                      <span className="text-xs" style={{ color: '#94A3B8' }}>{formatDate(order.order_date)}</span>
+                    </div>
+                    {order.customer?.full_name && (
+                      <p className="text-xs mt-1 truncate" style={{ color: '#64748B' }}>{order.customer.full_name}</p>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
           ) : (
-            <div className="px-5 py-12 text-center">
-              <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">Нет заказов</p>
+            <div className="flex-1 flex flex-col items-center justify-center py-10 px-4 text-center">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ backgroundColor: '#F1F5F9' }}>
+                <ShoppingCart className="w-6 h-6" style={{ color: '#94A3B8' }} />
+              </div>
+              <p className="text-sm font-medium text-gray-600">Нет заказов</p>
               <button
                 onClick={() => navigate('/parts/orders/create')}
-                className="mt-4 text-primary hover:underline"
+                className="mt-3 text-xs font-medium transition-colors"
+                style={{ color: '#2563EB' }}
               >
                 Создать первый заказ
               </button>
             </div>
           )}
+
+          {/* Quick action */}
+          <div className="flex-shrink-0 p-3" style={{ borderTop: '1px solid #F1F5F9' }}>
+            <button
+              onClick={() => navigate('/parts/orders/create')}
+              className="btn-primary w-full flex items-center justify-center gap-2 btn-sm"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              Новый заказ
+            </button>
+          </div>
         </div>
       </div>
     </div>
