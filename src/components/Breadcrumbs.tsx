@@ -125,26 +125,26 @@ export default function Breadcrumbs() {
   }
 
   return (
-    <nav className="flex items-center flex-wrap gap-0.5 mb-4" style={{ fontSize: '12px', color: '#94A3B8' }}>
+    <nav className="flex items-center flex-wrap mb-4" style={{ fontSize: '12px', color: '#94A3B8', gap: '2px', lineHeight: 1 }}>
       <Link
         to="/"
-        className="inline-flex items-center transition-colors hover:text-blue-500"
+        className="flex items-center transition-colors hover:text-blue-500"
         title="Главная"
-        style={{ color: 'inherit' }}
+        style={{ color: 'inherit', lineHeight: 1 }}
       >
-        <Home className="w-3.5 h-3.5" />
+        <Home className="w-3.5 h-3.5" style={{ display: 'block' }} />
       </Link>
 
       {breadcrumbs.map((crumb, index) => {
         const isLast = index === breadcrumbs.length - 1
 
         return (
-          <div key={crumb.path} className="flex items-center">
-            <ChevronRight className="w-3.5 h-3.5 mx-0.5 flex-shrink-0" style={{ color: '#CBD5E1' }} />
+          <div key={crumb.path} className="flex items-center" style={{ gap: '2px' }}>
+            <ChevronRight className="w-3 h-3 flex-shrink-0" style={{ color: '#CBD5E1', display: 'block' }} />
             {isLast ? (
               <span
                 className="font-medium whitespace-nowrap"
-                style={{ color: '#374151' }}
+                style={{ color: '#374151', lineHeight: 1 }}
               >
                 {crumb.label}
                 {crumb.count !== undefined && (
@@ -155,7 +155,7 @@ export default function Breadcrumbs() {
               <Link
                 to={crumb.path}
                 className="whitespace-nowrap transition-colors hover:text-blue-500"
-                style={{ color: 'inherit' }}
+                style={{ color: 'inherit', lineHeight: 1 }}
               >
                 {crumb.label}
               </Link>
