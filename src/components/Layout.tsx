@@ -154,28 +154,23 @@ export default function Layout() {
       {/* ════════════════════════════════════════════
           MOBILE HEADER (hidden on md+)
           ════════════════════════════════════════════ */}
-      <div className="md:hidden bg-[#0F1729] border-b border-[#1E2A3B]">
-        {/* Top bar: logo + user + logout */}
-        <div className="px-4 py-2.5 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-              <Wrench className="w-4 h-4 text-white" />
-            </div>
-            <p className="text-sm font-medium text-gray-200 truncate">
-              {profile?.full_name?.split(' ')[0] || profile?.email || 'CRM'}
-            </p>
-          </div>
+      <div className="md:hidden bg-white border-b">
+        {/* Top bar: user name + logout */}
+        <div className="px-4 py-2.5 border-b bg-gray-50 flex items-center justify-between gap-3">
+          <p className="text-sm font-medium text-gray-700 truncate flex-1">
+            {profile?.full_name || profile?.email || 'Пользователь'}
+          </p>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#94A3B8] bg-[#1E2A3B] rounded-md border border-[#2A3B50] flex-shrink-0 min-h-[36px] hover:text-white transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 flex-shrink-0 min-h-[36px] hover:bg-red-100 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             <span>Выйти</span>
           </button>
         </div>
 
-        {/* Horizontal scrollable nav pills */}
-        <nav className="flex gap-1.5 px-3 pb-2.5 overflow-x-auto scrollbar-hide">
+        {/* Mobile Navigation — grid cards */}
+        <nav className="grid grid-cols-3 gap-2 p-2">
           {filteredNavigation.filter(item => !item.mobileHidden).map((item) => {
             const Icon = item.icon
             const isActive = item.href.includes('?')
@@ -185,14 +180,14 @@ export default function Layout() {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full flex-shrink-0 transition-colors ${
+                className={`flex flex-col items-center justify-center gap-1.5 px-2 py-3 text-xs font-medium transition-colors rounded-lg min-h-[64px] ${
                   isActive
                     ? 'bg-primary text-white shadow-sm'
-                    : 'text-[#94A3B8] bg-[#1A2744] hover:text-white'
+                    : 'text-gray-700 bg-gray-50 hover:bg-gray-100'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                <span>{item.name}</span>
+                <Icon className="w-5 h-5 flex-shrink-0" />
+                <span className="text-center leading-tight line-clamp-2">{item.name}</span>
               </Link>
             )
           })}
@@ -200,13 +195,13 @@ export default function Layout() {
 
         {/* Admin Panel Button (if admin) */}
         {isAdmin && (
-          <div className="px-3 pb-2.5">
+          <div className="px-2 pb-2">
             <Link
               to="/admin"
               onClick={() => localStorage.removeItem('activeRole')}
-              className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-purple-400 bg-[#1A2744] rounded-full border border-purple-500/30 hover:text-purple-300 transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-purple-700 bg-purple-50 rounded-lg border border-purple-200 min-h-[44px] hover:bg-purple-100 transition-colors"
             >
-              <Shield className="w-3.5 h-3.5 flex-shrink-0" />
+              <Shield className="w-4 h-4 flex-shrink-0" />
               <span>Админ панель</span>
             </Link>
           </div>
