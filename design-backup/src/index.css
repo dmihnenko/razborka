@@ -1,0 +1,257 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 48% 46%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --destructive: 0 58% 50%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 48% 46%;
+    --radius: 0.5rem;
+  }
+
+  *,
+  ::before,
+  ::after {
+    @apply border-border;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  @media (min-width: 768px) {
+    html { font-size: 15px; }
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+
+  /* Touch targets — только на тач-устройствах */
+  @media (pointer: coarse) {
+    button, a, input[type="checkbox"], input[type="radio"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+
+  /* Скроллбар — только на десктопе */
+  @media (pointer: fine) {
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+  }
+}
+
+@layer components {
+  /* Кнопки */
+  .btn-touch {
+    @apply min-h-[44px] px-4 py-2.5 rounded-lg font-medium transition-colors active:scale-95;
+  }
+  .btn-touch-sm {
+    @apply min-h-[36px] px-3 py-1.5 text-sm rounded-md;
+  }
+
+  /* Карточки */
+  .card-mobile {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 transition-shadow;
+  }
+
+  /* Заголовки */
+  .heading-mobile-1 { @apply text-xl sm:text-2xl md:text-3xl font-bold text-gray-900; }
+  .heading-mobile-2 { @apply text-lg sm:text-xl md:text-2xl font-bold text-gray-900; }
+  .heading-mobile-3 { @apply text-base sm:text-lg md:text-xl font-semibold text-gray-900; }
+
+  /* Типографика */
+  .text-mobile-sm   { @apply text-xs sm:text-sm; }
+  .text-mobile-base { @apply text-sm sm:text-base; }
+  .text-mobile-lg   { @apply text-base sm:text-lg; }
+
+  /* Контейнер */
+  .container-mobile { @apply px-4 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8; }
+
+  /* Badge */
+  .badge-mobile {
+    @apply inline-flex items-center px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-xs sm:text-sm font-medium;
+  }
+
+  /* Status badges with dot indicator */
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border;
+  }
+  .status-dot {
+    @apply w-1.5 h-1.5 rounded-full flex-shrink-0;
+  }
+  .status-dot-pulse {
+    @apply w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  @keyframes slide-up {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   DARK THEME — CSS variable overrides + class bridge
+   Applied when <html class="dark"> is set via useTheme()
+   ═══════════════════════════════════════════════════════ */
+
+.dark {
+  --background: 222 22% 7%;
+  --foreground: 210 30% 92%;
+  --card: 220 22% 13%;
+  --card-foreground: 210 30% 92%;
+  --border: 220 20% 20%;
+  --input: 220 20% 16%;
+  --muted: 220 22% 16%;
+  --muted-foreground: 215 20% 55%;
+  color-scheme: dark;
+}
+
+/* ── Backgrounds ── */
+.dark .bg-white         { background-color: #161B27 !important; }
+.dark .bg-gray-50       { background-color: #0D1117 !important; }
+.dark .bg-gray-100      { background-color: #111827 !important; }
+.dark .bg-gray-200      { background-color: #1E2A3B !important; }
+
+/* Semantic status backgrounds */
+.dark .bg-blue-50    { background-color: rgba(37,99,235,0.1)  !important; }
+.dark .bg-blue-100   { background-color: rgba(37,99,235,0.15) !important; }
+.dark .bg-green-50   { background-color: rgba(22,163,74,0.08) !important; }
+.dark .bg-green-100  { background-color: rgba(22,163,74,0.15) !important; }
+.dark .bg-red-50     { background-color: rgba(220,38,38,0.08) !important; }
+.dark .bg-red-100    { background-color: rgba(220,38,38,0.15) !important; }
+.dark .bg-yellow-50  { background-color: rgba(234,179,8,0.08) !important; }
+.dark .bg-yellow-100 { background-color: rgba(234,179,8,0.15) !important; }
+.dark .bg-purple-50  { background-color: rgba(124,58,237,0.08) !important; }
+.dark .bg-purple-100 { background-color: rgba(124,58,237,0.15) !important; }
+.dark .bg-indigo-100 { background-color: rgba(99,102,241,0.15) !important; }
+.dark .bg-orange-100 { background-color: rgba(234,88,12,0.15) !important; }
+.dark .bg-violet-100 { background-color: rgba(139,92,246,0.15) !important; }
+
+/* ── Text ── */
+.dark .text-gray-900 { color: #F1F5F9 !important; }
+.dark .text-gray-800 { color: #E2E8F0 !important; }
+.dark .text-gray-700 { color: #CBD5E1 !important; }
+.dark .text-gray-600 { color: #94A3B8 !important; }
+.dark .text-gray-500 { color: #64748B !important; }
+.dark .text-gray-400 { color: #475569 !important; }
+
+/* Semantic status text */
+.dark .text-blue-900   { color: #93C5FD !important; }
+.dark .text-blue-800   { color: #60A5FA !important; }
+.dark .text-blue-700   { color: #60A5FA !important; }
+.dark .text-green-900  { color: #86EFAC !important; }
+.dark .text-green-700  { color: #4ADE80 !important; }
+.dark .text-green-800  { color: #4ADE80 !important; }
+.dark .text-red-900    { color: #FCA5A5 !important; }
+.dark .text-red-700    { color: #F87171 !important; }
+.dark .text-red-800    { color: #F87171 !important; }
+.dark .text-purple-900 { color: #D8B4FE !important; }
+.dark .text-purple-700 { color: #C084FC !important; }
+.dark .text-yellow-800 { color: #FDE68A !important; }
+.dark .text-yellow-700 { color: #FCD34D !important; }
+.dark .text-orange-700 { color: #FB923C !important; }
+
+/* ── Borders ── */
+.dark .border-gray-200 { border-color: rgba(255,255,255,0.08) !important; }
+.dark .border-gray-100 { border-color: rgba(255,255,255,0.05) !important; }
+.dark .border-gray-300 { border-color: rgba(255,255,255,0.12) !important; }
+
+.dark .border-blue-100   { border-color: rgba(37,99,235,0.25)  !important; }
+.dark .border-blue-200   { border-color: rgba(37,99,235,0.3)   !important; }
+.dark .border-green-100  { border-color: rgba(22,163,74,0.25)  !important; }
+.dark .border-green-200  { border-color: rgba(22,163,74,0.3)   !important; }
+.dark .border-red-200    { border-color: rgba(220,38,38,0.3)   !important; }
+.dark .border-red-300    { border-color: rgba(220,38,38,0.4)   !important; }
+.dark .border-purple-100 { border-color: rgba(124,58,237,0.25) !important; }
+.dark .border-purple-200 { border-color: rgba(124,58,237,0.3)  !important; }
+.dark .border-yellow-200 { border-color: rgba(234,179,8,0.3)   !important; }
+
+/* ── Shadows ── */
+.dark .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.5)  !important; }
+.dark .shadow    { box-shadow: 0 1px 3px rgba(0,0,0,0.6)  !important; }
+.dark .shadow-md { box-shadow: 0 4px 8px rgba(0,0,0,0.5)  !important; }
+.dark .shadow-lg { box-shadow: 0 8px 16px rgba(0,0,0,0.6) !important; }
+
+/* ── Hover states ── */
+.dark .hover\:bg-gray-50:hover  { background-color: rgba(255,255,255,0.03) !important; }
+.dark .hover\:bg-gray-100:hover { background-color: rgba(255,255,255,0.06) !important; }
+.dark .hover\:shadow-md:hover   { box-shadow: 0 4px 8px rgba(0,0,0,0.5) !important; }
+
+/* ── Form inputs ── */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(.input-dark),
+.dark textarea:not(.input-dark),
+.dark select {
+  background-color: #0D1117 !important;
+  color: #F1F5F9 !important;
+  border-color: rgba(255,255,255,0.1) !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #4B5563 !important;
+}
+
+/* ── Focus ring ── */
+.dark *:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #2563EB, 0 0 0 4px rgba(37,99,235,0.3) !important;
+}
+
+/* ── Scrollbar in dark ── */
+.dark ::-webkit-scrollbar-thumb { background: #2A3B50; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #3A4F6B; }
+
+/* ── Main layout bg ── */
+.dark body { background-color: #080C14 !important; }
+.dark .overflow-auto.bg-gray-50,
+.dark .flex-1.overflow-auto { background-color: #0D1117 !important; }
+.dark .flex.flex-col.md\:flex-row,
+.dark .md\:h-screen.bg-gray-100 { background-color: #080C14 !important; }
+
+/* ── Utility classes override ── */
+.dark .card-mobile {
+  background-color: #161B27 !important;
+  border-color: rgba(255,255,255,0.07) !important;
+}
+.dark .heading-mobile-1,
+.dark .heading-mobile-2,
+.dark .heading-mobile-3 {
+  color: #F1F5F9 !important;
+}
