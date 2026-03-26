@@ -4,10 +4,27 @@ import path from 'path'
 import { VitePWA } from 'vite-plugin-pwa'
 /// <reference types="vitest" />
 
+// Build hash: prefer git SHA from Netlify CI, fallback to timestamp
+const buildHash = (process.env.COMMIT_REF ?? '').slice(0, 8) || Date.now().toString(36)
+
+// Plugin: write /version.json into the output bundle
+const versionJsonPlugin = {
+  name: 'version-json',
+  generateBundle() {
+    // @ts-ignore
+    this.emitFile({
+      type: 'asset',
+      fileName: 'version.json',
+      source: JSON.stringify({ hash: buildHash }),
+    })
+  },
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    versionJsonPlugin,
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],

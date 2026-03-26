@@ -4,23 +4,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App.tsx'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
-import { toast } from 'sonner'
 
 // Регистрация Service Worker только для production
 if (import.meta.env.PROD) {
   const updateSW = registerSW({
     onNeedRefresh() {
-      toast('Доступно новое обновление', {
-        description: 'Нажмите «Обновить» для установки последней версии',
-        duration: Infinity,
-        action: {
-          label: 'Обновить',
-          onClick: () => updateSW(true),
-        },
-      })
+      updateSW(true) // авто-применение нового SW без ручного подтверждения
     },
     onOfflineReady() {},
-
   })
 }
 
