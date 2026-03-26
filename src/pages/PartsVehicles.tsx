@@ -271,13 +271,13 @@ export default function PartsVehicles() {
             <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 <Grid className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+                className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 <List className="w-5 h-5" />
               </button>
@@ -373,13 +373,13 @@ export default function PartsVehicles() {
                 <div className="bg-gray-50 px-4 py-3 flex gap-2">
                   <button
                     onClick={(e) => handleEdit(vehicle, e)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors font-medium text-gray-700"
                   >
                     Редактировать
                   </button>
                   <button
                     onClick={(e) => handleDelete(vehicle.id, e)}
-                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="px-3 py-2 text-sm font-medium text-red-600 bg-white border border-red-100 hover:bg-red-50 hover:border-red-200 rounded-lg transition-colors"
                   >
                     Удалить
                   </button>
@@ -444,13 +444,13 @@ export default function PartsVehicles() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={(e) => handleEdit(vehicle, e)}
-                            className="text-primary hover:text-primary/80"
+                            className="px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
                           >
                             Изменить
                           </button>
                           <button
                             onClick={(e) => handleDelete(vehicle.id, e)}
-                            className="text-red-600 hover:text-red-800"
+                            className="px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           >
                             Удалить
                           </button>

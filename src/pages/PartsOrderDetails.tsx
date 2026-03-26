@@ -247,20 +247,28 @@ export default function PartsOrderDetails() {
               <button
                 onClick={() => updateStatusMutation.mutate('new')}
                 disabled={order.status === 'new'}
-                className="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed ${
+                  order.status === 'new'
+                    ? 'bg-blue-600 text-white opacity-60'
+                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                }`}
               >
                 Новый
               </button>
               <button
                 onClick={() => updateStatusMutation.mutate('in_progress')}
                 disabled={order.status === 'in_progress'}
-                className="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed ${
+                  order.status === 'in_progress'
+                    ? 'bg-yellow-500 text-white opacity-60'
+                    : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+                }`}
               >
                 В работе
               </button>
               <button
                 onClick={() => updateStatusMutation.mutate('cancelled')}
-                className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 Отменить
               </button>
@@ -670,14 +678,14 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 sm:flex-none px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+              className="btn-secondary flex-1 sm:flex-none"
             >
               Отмена
             </button>
             <button
               onClick={handleAdd}
               disabled={!selectedItem || addItemMutation.isPending || quantity <= 0 || price <= 0}
-              className="flex-1 sm:flex-none px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="btn-primary flex-1 sm:flex-none disabled:opacity-50"
             >
               {addItemMutation.isPending ? 'Добавление...' : 'Добавить'}
             </button>
@@ -780,14 +788,14 @@ function EditOrderModal({ order, partsCompanyId, onClose }: EditOrderModalProps)
           <div className="bg-gray-50 px-4 py-3 sm:px-6 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
             <button
               onClick={onClose}
-              className="flex-1 sm:flex-none px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+              className="btn-secondary flex-1 sm:flex-none"
             >
               Отмена
             </button>
             <button
               onClick={() => updateMutation.mutate()}
               disabled={updateMutation.isPending}
-              className="flex-1 sm:flex-none px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="btn-primary flex-1 sm:flex-none disabled:opacity-50"
             >
               {updateMutation.isPending ? 'Сохранение...' : 'Сохранить'}
             </button>
@@ -835,13 +843,13 @@ function ConfirmCompleteModal({ onConfirm, onClose, isLoading }: ConfirmComplete
             <button
               onClick={onConfirm}
               disabled={isLoading}
-              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-700 text-base font-medium text-white hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+              className="btn-success sm:ml-3 w-full sm:w-auto disabled:opacity-50"
             >
               {isLoading ? 'Завершение...' : 'Да, завершить'}
             </button>
             <button
               onClick={onClose}
-              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:mt-0 sm:w-auto sm:text-sm"
+              className="mt-3 sm:mt-0 btn-secondary w-full sm:w-auto"
             >
               Отмена
             </button>

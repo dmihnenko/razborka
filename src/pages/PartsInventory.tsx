@@ -701,14 +701,14 @@ export default function PartsInventory() {
               <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
                 title="Список (таблица)"
               >
                 <List className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
                 title="Карточки"
               >
                 <Grid className="w-5 h-5" />
@@ -892,14 +892,14 @@ export default function PartsInventory() {
                 <div className="bg-gray-50 px-4 py-3 flex gap-2">
                   <button
                     onClick={(e) => handleEdit(item, e)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
                   >
                     Редактировать
                   </button>
                   {item.status !== 'sold' && (
                     <button
                       onClick={(e) => handleSell(item, e)}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors"
                     >
                       <DollarSign className="w-4 h-4" />
                       Продать
@@ -907,7 +907,7 @@ export default function PartsInventory() {
                   )}
                   <button
                     onClick={(e) => handleDelete(item, e)}
-                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-2 text-red-500 border border-red-100 bg-white hover:bg-red-50 hover:border-red-200 rounded-lg transition-colors"
                     title="Удалить"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -2198,14 +2198,14 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 sm:flex-none px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                className="btn-secondary flex-1 sm:flex-none"
               >
                 Отмена
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
-                className="flex-1 sm:flex-none px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="btn-primary flex-1 sm:flex-none disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isSaving
                   ? 'Сохранение...'

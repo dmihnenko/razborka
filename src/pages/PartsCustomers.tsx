@@ -222,13 +222,13 @@ export default function PartsCustomers() {
             <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 <Grid className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+                className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 <List className="w-5 h-5" />
               </button>
@@ -413,20 +413,20 @@ export default function PartsCustomers() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={(e) => handleCopyPublicLink(customer.id, e)}
-                            className="text-blue-600 hover:text-blue-800"
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                             title="Публичная ссылка"
                           >
                             <Link2 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={(e) => handleEdit(customer, e)}
-                            className="text-primary hover:text-primary/80"
+                            className="px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
                           >
                             Изменить
                           </button>
                           <button
                             onClick={(e) => handleDelete(customer.id, e)}
-                            className="text-red-600 hover:text-red-800"
+                            className="px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           >
                             Удалить
                           </button>
