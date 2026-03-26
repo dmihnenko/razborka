@@ -154,29 +154,28 @@ export default function Layout() {
       {/* ════════════════════════════════════════════
           MOBILE HEADER (hidden on md+)
           ════════════════════════════════════════════ */}
-      <div className="md:hidden sticky top-0 z-40" style={{ backgroundColor: '#0C1220' }}>
-        {/* Top bar */}
-        <div className="px-4 py-3 flex items-center justify-between gap-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+      <div className="md:hidden bg-[#0F1729] border-b border-[#1E2A3B]">
+        {/* Top bar: logo + user + logout */}
+        <div className="px-4 py-2.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
               <Wrench className="w-4 h-4 text-white" />
             </div>
-            <span className="text-sm font-semibold text-white truncate">
-              {profile?.full_name?.split(' ')[0] || 'CRM'}
-            </span>
+            <p className="text-sm font-medium text-gray-200 truncate">
+              {profile?.full_name?.split(' ')[0] || profile?.email || 'CRM'}
+            </p>
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg min-h-[36px] transition-colors"
-            style={{ backgroundColor: 'rgba(255,255,255,0.07)', color: '#94A3B8' }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#94A3B8] bg-[#1E2A3B] rounded-md border border-[#2A3B50] flex-shrink-0 min-h-[36px] hover:text-white transition-colors"
           >
-            <LogOut className="w-3.5 h-3.5" />
+            <LogOut className="w-4 h-4" />
             <span>Выйти</span>
           </button>
         </div>
 
-        {/* Navigation pills */}
-        <nav className="flex items-center gap-1 px-3 py-2 overflow-x-auto scrollbar-hide">
+        {/* Horizontal scrollable nav pills */}
+        <nav className="flex gap-1.5 px-3 pb-2.5 overflow-x-auto scrollbar-hide">
           {filteredNavigation.filter(item => !item.mobileHidden).map((item) => {
             const Icon = item.icon
             const isActive = item.href.includes('?')
@@ -186,29 +185,32 @@ export default function Layout() {
               <Link
                 key={item.href}
                 to={item.href}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg flex-shrink-0 transition-all"
-                style={isActive
-                  ? { backgroundColor: '#2563EB', color: '#FFFFFF' }
-                  : { backgroundColor: 'rgba(255,255,255,0.06)', color: '#94A3B8' }
-                }
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap rounded-full flex-shrink-0 transition-colors ${
+                  isActive
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-[#94A3B8] bg-[#1A2744] hover:text-white'
+                }`}
               >
                 <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>{item.name}</span>
               </Link>
             )
           })}
-          {isAdmin && (
+        </nav>
+
+        {/* Admin Panel Button (if admin) */}
+        {isAdmin && (
+          <div className="px-3 pb-2.5">
             <Link
               to="/admin"
               onClick={() => localStorage.removeItem('activeRole')}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg flex-shrink-0 transition-all"
-              style={{ backgroundColor: 'rgba(139,92,246,0.15)', color: '#A78BFA' }}
+              className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-purple-400 bg-[#1A2744] rounded-full border border-purple-500/30 hover:text-purple-300 transition-colors"
             >
               <Shield className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>Админ</span>
+              <span>Админ панель</span>
             </Link>
-          )}
-        </nav>
+          </div>
+        )}
       </div>
 
       {/* ════════════════════════════════════════════
