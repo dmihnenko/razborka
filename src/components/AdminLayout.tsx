@@ -120,7 +120,7 @@ export default function AdminLayout() {
         </div>
 
         {/* Mobile nav — grid cards like main Layout */}
-        <nav className="grid grid-cols-4 gap-1.5 p-2 bg-white">
+        <nav className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 p-2 bg-white">
           {adminNavFlat.slice(0, 8).map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
@@ -128,13 +128,13 @@ export default function AdminLayout() {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex flex-col items-center justify-center gap-1 min-h-[64px] rounded-xl text-[10px] font-semibold transition-all ${
+                className={`flex flex-col items-center justify-center gap-1.5 min-h-[64px] rounded-xl text-[11px] font-medium transition-all ${
                   isActive
                     ? 'bg-purple-50 text-purple-700'
                     : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-purple-600' : 'text-gray-400'}`} />
+                <Icon className={`w-5 h-5 ${isActive ? 'text-purple-600' : 'text-gray-400'}`} />
                 <span className="text-center leading-tight px-0.5">{item.name}</span>
               </Link>
             )
@@ -146,9 +146,9 @@ export default function AdminLayout() {
               <button
                 key={q.path}
                 onClick={() => { localStorage.setItem('activeRole', q.role); navigate(q.path) }}
-                className="flex flex-col items-center justify-center gap-1 min-h-[64px] rounded-xl text-[10px] font-semibold bg-gray-50 text-gray-500 hover:bg-gray-100 transition-all"
+                className="flex flex-col items-center justify-center gap-1.5 min-h-[64px] rounded-xl text-[11px] font-medium bg-gray-50 text-gray-500 hover:bg-gray-100 transition-all"
               >
-                <Icon className="w-4 h-4 text-gray-400" />
+                <Icon className="w-5 h-5 text-gray-400" />
                 <span className="text-center leading-tight px-0.5">{q.name}</span>
               </button>
             )
@@ -248,7 +248,7 @@ export default function AdminLayout() {
 
       {/* Main content */}
       <div className="flex-1 overflow-auto bg-gray-50">
-        <div className="mx-auto max-w-[1440px] w-full px-4 py-4 sm:px-6 sm:py-5 md:px-8 md:py-6">
+        <div className="mx-auto max-w-[1440px] w-full px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
           <Breadcrumbs />
           <Outlet />
         </div>

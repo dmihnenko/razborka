@@ -38,7 +38,7 @@ export function LayoutSkeleton() {
 
       {/* Content skeleton */}
       <div className="flex-1 overflow-auto bg-gray-50">
-        <div className="mx-auto max-w-[1440px] w-full px-4 py-4 sm:px-6 sm:py-5 md:px-8 md:py-6">
+        <div className="mx-auto max-w-[1440px] w-full px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
           {/* Breadcrumb */}
           <div className="h-3.5 w-36 bg-gray-200 rounded animate-pulse mb-5" />
           {/* Page title */}

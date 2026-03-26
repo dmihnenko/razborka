@@ -170,7 +170,7 @@ export default function Layout() {
         </div>
 
         {/* Mobile Navigation — grid cards */}
-        <nav className="grid grid-cols-3 gap-2 p-2">
+        <nav className="grid grid-cols-3 sm:grid-cols-4 gap-2 p-2">
           {filteredNavigation.filter(item => !item.mobileHidden).map((item) => {
             const Icon = item.icon
             const isActive = item.href.includes('?')
@@ -180,7 +180,7 @@ export default function Layout() {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex flex-col items-center justify-center gap-1.5 px-2 py-3 text-xs font-medium transition-colors rounded-lg min-h-[64px] ${
+                className={`flex flex-col items-center justify-center gap-1.5 px-1 py-3 text-[11px] font-medium transition-colors rounded-xl min-h-[64px] ${
                   isActive
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-gray-700 bg-gray-50 hover:bg-gray-100'
@@ -215,7 +215,7 @@ export default function Layout() {
         className="hidden md:flex md:flex-col md:w-16 lg:w-64 bg-white border-r border-gray-200 flex-shrink-0"
       >
         {/* Logo */}
-        <div className="flex items-center gap-2.5 px-2 lg:px-5 h-14 border-b border-gray-100">
+        <div className="flex items-center justify-center lg:justify-start gap-2.5 px-2 lg:px-5 h-14 border-b border-gray-100">
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
             <Wrench className="w-4 h-4 text-white" />
           </div>
@@ -236,7 +236,7 @@ export default function Layout() {
                 key={item.href}
                 to={item.href}
                 title={item.name}
-                className={`flex items-center justify-center lg:justify-start gap-3 px-0 lg:px-3 py-2 mb-0.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center justify-center lg:justify-start gap-3 px-1 lg:px-3 py-2.5 mb-0.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
                     ? 'bg-primary/10 text-primary'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
@@ -255,7 +255,7 @@ export default function Layout() {
             <Link
               to="/admin"
               onClick={() => localStorage.removeItem('activeRole')}
-              className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
+              className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm font-medium text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
             >
               <Shield className="w-4 h-4 text-purple-500 flex-shrink-0" />
               <span className="hidden lg:block">Админ панель</span>
@@ -263,7 +263,7 @@ export default function Layout() {
           )}
           <button
             onClick={handleLogout}
-            className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-lg transition-colors"
+            className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-lg transition-colors"
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />
             <span className="hidden lg:block">Выход</span>
@@ -275,7 +275,7 @@ export default function Layout() {
           MAIN CONTENT
           ════════════════════════════════════════════ */}
       <div className="flex-1 overflow-auto bg-gray-50">
-        <div className="mx-auto max-w-[1440px] w-full px-4 py-4 sm:px-6 sm:py-5 md:px-8 md:py-6">
+        <div className="mx-auto max-w-[1440px] w-full px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
           <Breadcrumbs />
           <Outlet />
         </div>
