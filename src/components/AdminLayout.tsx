@@ -96,62 +96,60 @@ export default function AdminLayout() {
     : (profile?.email?.[0] || 'A').toUpperCase()
 
   return (
-    <div className="flex flex-col md:flex-row md:h-screen font-sans" style={{ backgroundColor: '#F8FAFC' }}>
+    <div className="flex flex-col md:flex-row md:h-screen bg-gray-100 font-sans">
 
       {/* ════════════════════════════════════════════
           MOBILE HEADER
           ════════════════════════════════════════════ */}
-      <div className="md:hidden sticky top-0 z-40" style={{ backgroundColor: '#0C1220' }}>
+      <div className="md:hidden sticky top-0 z-40 bg-white border-b border-gray-200">
         {/* Top bar */}
-        <div className="px-4 py-3 flex items-center justify-between gap-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+        <div className="px-4 py-3 flex items-center justify-between gap-3 border-b border-gray-100">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center flex-shrink-0">
               <Shield className="w-4 h-4 text-white" />
             </div>
-            <span className="text-sm font-semibold text-white truncate">Админ панель</span>
+            <span className="text-sm font-semibold text-gray-800 truncate">Админ панель</span>
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg min-h-[36px] transition-colors"
-            style={{ backgroundColor: 'rgba(255,255,255,0.07)', color: '#94A3B8' }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg min-h-[36px] transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Выйти</span>
           </button>
         </div>
 
-        {/* Mobile nav pills — flat scrollable row like Layout.tsx */}
-        <nav className="flex items-center gap-1 px-3 py-2 overflow-x-auto scrollbar-hide">
-          {adminNavFlat.map((item) => {
+        {/* Mobile nav — grid cards like main Layout */}
+        <nav className="grid grid-cols-4 gap-1.5 p-2 bg-white">
+          {adminNavFlat.slice(0, 8).map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
             return (
               <Link
                 key={item.href}
                 to={item.href}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg flex-shrink-0 transition-all"
-                style={isActive
-                  ? { backgroundColor: '#7C3AED', color: '#FFFFFF' }
-                  : { backgroundColor: 'rgba(255,255,255,0.06)', color: '#94A3B8' }
-                }
+                className={`flex flex-col items-center justify-center gap-1 min-h-[56px] rounded-xl text-[10px] font-semibold transition-all ${
+                  isActive
+                    ? 'bg-purple-50 text-purple-700'
+                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                }`}
               >
-                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                <span>{item.name}</span>
+                <Icon className={`w-4 h-4 ${isActive ? 'text-purple-600' : 'text-gray-400'}`} />
+                <span className="text-center leading-tight px-0.5">{item.name}</span>
               </Link>
             )
           })}
-          {/* Quick access pills */}
+          {/* Quick access items */}
           {quickAccessItems.map((q) => {
             const Icon = q.icon
             return (
               <button
                 key={q.path}
                 onClick={() => { localStorage.setItem('activeRole', q.role); navigate(q.path) }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg flex-shrink-0 transition-all"
-                style={{ backgroundColor: q.bg, color: q.color }}
+                className="flex flex-col items-center justify-center gap-1 min-h-[56px] rounded-xl text-[10px] font-semibold bg-gray-50 text-gray-500 hover:bg-gray-100 transition-all"
               >
-                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                <span>{q.name}</span>
+                <Icon className="w-4 h-4 text-gray-400" />
+                <span className="text-center leading-tight px-0.5">{q.name}</span>
               </button>
             )
           })}
@@ -161,27 +159,18 @@ export default function AdminLayout() {
       {/* ════════════════════════════════════════════
           DESKTOP SIDEBAR — same structure as Layout.tsx
           ════════════════════════════════════════════ */}
-      <aside
-        className="hidden md:flex md:flex-col md:w-[60px] lg:w-[220px] xl:w-[240px] flex-shrink-0"
-        style={{ backgroundColor: '#0C1220', borderRight: '1px solid rgba(255,255,255,0.06)' }}
-      >
+      <aside className="hidden md:flex md:flex-col md:w-16 lg:w-64 bg-white border-r border-gray-200 flex-shrink-0">
         {/* Logo */}
-        <div
-          className="flex items-center justify-center lg:justify-start gap-3 h-14 px-2 lg:px-4 flex-shrink-0"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
-        >
-          <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center flex-shrink-0">
+        <div className="flex items-center gap-2.5 px-2 lg:px-5 h-14 border-b border-gray-100">
+          <div className="w-7 h-7 rounded-lg bg-purple-600 flex items-center justify-center flex-shrink-0">
             <Shield className="w-4 h-4 text-white" />
           </div>
-          <div className="hidden lg:block min-w-0">
-            <p className="text-sm font-bold text-white leading-tight">Админ панель</p>
-            <p className="text-[11px]" style={{ color: '#475569' }}>TSP CRM</p>
-          </div>
+          <span className="hidden lg:block text-sm font-semibold text-gray-800 truncate">Админ панель</span>
         </div>
 
-        {/* Nav — groups shown at lg+, flat icons at md */}
+        {/* Nav — groups at lg+, icons-only at md */}
         <nav className="flex-1 overflow-y-auto py-3 px-2">
-          {/* Icon-only mode (md): flat list without group labels */}
+          {/* Icon-only (md) */}
           <div className="lg:hidden space-y-0.5">
             {adminNavFlat.map((item) => {
               const Icon = item.icon
@@ -191,28 +180,21 @@ export default function AdminLayout() {
                   key={item.href}
                   to={item.href}
                   title={item.name}
-                  className="relative flex items-center justify-center py-2.5 px-2 rounded-lg transition-all duration-150"
-                  style={isActive
-                    ? { backgroundColor: '#3B1F6E', color: '#FFFFFF' }
-                    : { color: '#64748B' }
-                  }
-                  onMouseEnter={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#E2E8F0' }}}
-                  onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B' }}}
+                  className={`flex items-center justify-center py-2.5 px-2 rounded-lg transition-colors ${
+                    isActive ? 'bg-purple-50 text-purple-700' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'
+                  }`}
                 >
-                  {isActive && (
-                    <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-purple-400 rounded-r" />
-                  )}
-                  <Icon className="w-[18px] h-[18px] flex-shrink-0" style={{ color: isActive ? '#C084FC' : 'inherit' }} />
+                  <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-purple-600' : ''}`} />
                 </Link>
               )
             })}
           </div>
 
-          {/* Full mode (lg+): grouped nav with section labels */}
+          {/* Grouped (lg+) */}
           <div className="hidden lg:block">
             {adminNavigationGroups.map((group) => (
               <div key={group.title} className="mb-4">
-                <p className="text-[10px] font-semibold uppercase tracking-wider px-3 mb-1.5" style={{ color: '#334155', letterSpacing: '0.08em' }}>
+                <p className="text-[10px] font-semibold uppercase tracking-wider px-3 mb-1 text-gray-400">
                   {group.title}
                 </p>
                 {group.items.map((item) => {
@@ -220,24 +202,16 @@ export default function AdminLayout() {
                   const isActive = location.pathname === item.href
                   return (
                     <Link
-                      key={item.name}
+                      key={item.href}
                       to={item.href}
-                      className="relative flex items-center gap-3 px-3 py-2.5 mb-0.5 rounded-lg text-sm font-medium transition-all duration-150"
-                      style={isActive
-                        ? { backgroundColor: '#3B1F6E', color: '#FFFFFF' }
-                        : { color: '#64748B' }
-                      }
-                      onMouseEnter={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#E2E8F0' }}}
-                      onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B' }}}
+                      className={`flex items-center gap-3 px-3 py-2 mb-0.5 rounded-lg text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'bg-purple-50 text-purple-700'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
                     >
-                      {isActive && (
-                        <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-purple-400 rounded-r" />
-                      )}
-                      <Icon
-                        className="w-[17px] h-[17px] flex-shrink-0"
-                        style={{ color: isActive ? '#C084FC' : 'inherit' }}
-                      />
-                      <span className="leading-none">{item.name}</span>
+                      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-purple-600' : 'text-gray-400'}`} />
+                      {item.name}
                     </Link>
                   )
                 })}
@@ -246,9 +220,8 @@ export default function AdminLayout() {
           </div>
         </nav>
 
-        {/* Footer — same as Layout.tsx: user avatar + quick access + logout */}
-        <div className="flex-shrink-0 px-2 py-3 space-y-0.5" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-          {/* Quick access to СТО / Разборка / Мои авто */}
+        {/* Footer */}
+        <div className="px-2 py-3 border-t border-gray-100 space-y-0.5">
           {quickAccessItems.map((q) => {
             const Icon = q.icon
             return (
@@ -256,48 +229,25 @@ export default function AdminLayout() {
                 key={q.path}
                 onClick={() => { localStorage.setItem('activeRole', q.role); navigate(q.path) }}
                 title={q.name}
-                className="flex items-center justify-center lg:justify-start gap-3 w-full py-2 px-2 lg:px-3 rounded-lg text-sm font-medium transition-all duration-150"
-                style={{ color: '#64748B' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#94A3B8' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B' }}
+                className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-lg transition-colors"
               >
-                <Icon className="w-[17px] h-[17px] flex-shrink-0" />
+                <Icon className="w-4 h-4 flex-shrink-0 text-gray-400" />
                 <span className="hidden lg:block">{q.name}</span>
               </button>
             )
           })}
-
-          {/* User info */}
-          <div className="flex items-center justify-center lg:justify-start gap-2.5 py-2 px-2 lg:px-3">
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
-              style={{ backgroundColor: '#3B1F6E', color: '#C084FC' }}
-            >
-              {initials}
-            </div>
-            <div className="hidden lg:block min-w-0">
-              <p className="text-xs font-semibold truncate" style={{ color: '#CBD5E1' }}>
-                {profile?.full_name || profile?.email || 'Admin'}
-              </p>
-            </div>
-          </div>
-
           <button
             onClick={handleLogout}
-            title="Выход"
-            className="flex items-center justify-center lg:justify-start gap-3 w-full py-2 px-2 lg:px-3 rounded-lg transition-all duration-150 text-sm font-medium"
-            style={{ color: '#475569' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#94A3B8' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#475569' }}
+            className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-lg transition-colors"
           >
-            <LogOut className="w-[17px] h-[17px] flex-shrink-0" />
+            <LogOut className="w-4 h-4 flex-shrink-0" />
             <span className="hidden lg:block">Выход</span>
           </button>
         </div>
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 overflow-auto" style={{ backgroundColor: '#F8FAFC' }}>
+      <div className="flex-1 overflow-auto bg-gray-50">
         <div className="mx-auto max-w-[1440px] w-full px-4 py-4 sm:px-6 sm:py-5 md:px-8 md:py-6">
           <Breadcrumbs />
           <Outlet />
