@@ -149,7 +149,7 @@ export default function Layout() {
     : (profile?.email?.[0] || 'U').toUpperCase()
 
   return (
-    <div className="flex flex-col md:flex-row md:h-screen font-sans" style={{ backgroundColor: '#F8FAFC' }}>
+    <div className="flex flex-col md:flex-row md:h-screen bg-gray-100 font-sans">
 
       {/* ════════════════════════════════════════════
           MOBILE HEADER (hidden on md+)
@@ -212,25 +212,20 @@ export default function Layout() {
           DESKTOP SIDEBAR (hidden on mobile)
           ════════════════════════════════════════════ */}
       <aside
-        className="hidden md:flex md:flex-col md:w-[60px] lg:w-[220px] xl:w-[240px] flex-shrink-0"
-        style={{ backgroundColor: '#0C1220', borderRight: '1px solid rgba(255,255,255,0.06)' }}
+        className="hidden md:flex md:flex-col md:w-16 lg:w-64 bg-white border-r border-gray-200 flex-shrink-0"
       >
         {/* Logo */}
-        <div
-          className="flex items-center justify-center lg:justify-start gap-3 h-14 px-2 lg:px-4 flex-shrink-0"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
-        >
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+        <div className="flex items-center gap-2.5 px-2 lg:px-5 h-14 border-b border-gray-100">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
             <Wrench className="w-4 h-4 text-white" />
           </div>
-          <div className="hidden lg:block min-w-0">
-            <p className="text-sm font-bold text-white truncate leading-tight">TSP CRM</p>
-            <p className="text-[11px] truncate" style={{ color: '#475569' }}>Автосервис</p>
-          </div>
+          <span className="hidden lg:block text-sm font-semibold text-gray-800 truncate">
+            {profile?.full_name?.split(' ')[0] || 'CRM'}
+          </span>
         </div>
 
-        {/* Nav items */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2">
           {filteredNavigation.map((item) => {
             const Icon = item.icon
             const isActive = item.href.includes('?')
@@ -241,69 +236,36 @@ export default function Layout() {
                 key={item.href}
                 to={item.href}
                 title={item.name}
-                className="relative flex items-center justify-center lg:justify-start gap-3 py-2.5 px-2 lg:px-3 rounded-lg transition-all duration-150 group"
-                style={isActive
-                  ? { backgroundColor: '#1E3A6E', color: '#FFFFFF' }
-                  : { color: '#64748B' }
-                }
-                onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#E2E8F0' }}
-                onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B' } }}
+                className={`flex items-center justify-center lg:justify-start gap-3 px-0 lg:px-3 py-2 mb-0.5 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
               >
-                {/* Active indicator bar */}
-                {isActive && (
-                  <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-blue-400 rounded-r hidden lg:block" />
-                )}
-                <Icon
-                  className="w-[18px] h-[18px] flex-shrink-0"
-                  style={{ color: isActive ? '#60A5FA' : 'inherit' }}
-                />
-                <span className="hidden lg:block text-sm font-medium leading-none">{item.name}</span>
+                <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-primary' : 'text-gray-400'}`} />
+                <span className="hidden lg:block">{item.name}</span>
               </Link>
             )
           })}
         </nav>
 
-        {/* Footer: admin link + user block + logout */}
-        <div className="flex-shrink-0 px-2 py-3 space-y-0.5" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        {/* Footer */}
+        <div className="px-2 py-3 border-t border-gray-100 space-y-0.5">
           {isAdmin && (
             <Link
               to="/admin"
-              title="Админ панель"
               onClick={() => localStorage.removeItem('activeRole')}
-              className="flex items-center justify-center lg:justify-start gap-3 py-2 px-2 lg:px-3 rounded-lg transition-all duration-150"
-              style={{ color: '#A78BFA' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(139,92,246,0.1)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent' }}
+              className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
             >
-              <Shield className="w-[18px] h-[18px] flex-shrink-0" />
-              <span className="hidden lg:block text-sm font-medium">Админ</span>
+              <Shield className="w-4 h-4 text-purple-500 flex-shrink-0" />
+              <span className="hidden lg:block">Админ панель</span>
             </Link>
           )}
-
-          {/* User info */}
-          <div className="flex items-center justify-center lg:justify-start gap-2.5 py-2 px-2 lg:px-3">
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
-              style={{ backgroundColor: '#1E3A6E', color: '#93C5FD' }}
-            >
-              {initials}
-            </div>
-            <div className="hidden lg:block min-w-0">
-              <p className="text-xs font-semibold truncate" style={{ color: '#CBD5E1' }}>
-                {profile?.full_name || profile?.email || 'Пользователь'}
-              </p>
-            </div>
-          </div>
-
           <button
             onClick={handleLogout}
-            title="Выход"
-            className="flex items-center justify-center lg:justify-start gap-3 w-full py-2 px-2 lg:px-3 rounded-lg transition-all duration-150 text-sm font-medium"
-            style={{ color: '#475569' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#94A3B8' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#475569' }}
+            className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-lg transition-colors"
           >
-            <LogOut className="w-[18px] h-[18px] flex-shrink-0" />
+            <LogOut className="w-4 h-4 flex-shrink-0" />
             <span className="hidden lg:block">Выход</span>
           </button>
         </div>
@@ -312,7 +274,7 @@ export default function Layout() {
       {/* ════════════════════════════════════════════
           MAIN CONTENT
           ════════════════════════════════════════════ */}
-      <div className="flex-1 overflow-auto" style={{ backgroundColor: '#F8FAFC' }}>
+      <div className="flex-1 overflow-auto bg-gray-50">
         <div className="mx-auto max-w-[1440px] w-full px-4 py-4 sm:px-6 sm:py-5 md:px-8 md:py-6">
           <Breadcrumbs />
           <Outlet />
