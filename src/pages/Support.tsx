@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
-import { MessageSquare, Send, X, ArrowLeft, CheckCheck, AlertCircle } from 'lucide-react'
+import { MessageSquare, Send, X, ArrowLeft, CheckCheck, AlertCircle, Trash2 } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface Chat {
   id: string
@@ -41,6 +43,7 @@ export default function Support() {
   useBlockScroll(isNewChatOpen)
   
   const queryClient = useQueryClient()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
 
   // Загрузка чатов текущего пользователя
   const { data: chats = [], isLoading: chatsLoading } = useQuery({
@@ -188,6 +191,22 @@ export default function Support() {
     }
   })
 
+  // Удаление чата
+  const deleteChatMutation = useMutation({
+    mutationFn: async (chatId: string) => {
+      const { error } = await supabase.from('support_chats').delete().eq('id', chatId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['support_chats'] })
+      toast.success('Обращение удалено')
+      setSelectedChat(null)
+    },
+    onError: (error: any) => {
+      toast.error('Ошибка: ' + error.message)
+    }
+  })
+
   // Закрытие чата
   const closeChatMutation = useMutation({
     mutationFn: async (chatId: string) => {
@@ -321,10 +340,28 @@ export default function Support() {
                             <h3 className="font-medium text-sm sm:text-base text-gray-900 truncate pr-2 flex-1">
                               {chat.subject || 'Обращение'}
                             </h3>
-                            <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 flex-shrink-0">
-                              <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                              Активен
-                            </span>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                Активен
+                              </span>
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation()
+                                  const ok = await showConfirm({
+                                    title: 'Удалить обращение?',
+                                    description: `«${chat.subject || 'Обращение'}» и все сообщения будут удалены безвозвратно.`,
+                                    confirmText: 'Удалить',
+                                    variant: 'danger',
+                                  })
+                                  if (ok) deleteChatMutation.mutate(chat.id)
+                                }}
+                                className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                                title="Удалить обращение"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
                           <p className="text-xs text-gray-500">
                             {formatMessageTime(chat.updated_at)}
@@ -357,9 +394,27 @@ export default function Support() {
                             <h3 className="font-medium text-sm sm:text-base text-gray-900 truncate pr-2 flex-1">
                               {chat.subject || 'Обращение'}
                             </h3>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 flex-shrink-0">
-                              Закрыт
-                            </span>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                                Закрыт
+                              </span>
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation()
+                                  const ok = await showConfirm({
+                                    title: 'Удалить обращение?',
+                                    description: `«${chat.subject || 'Обращение'}» и все сообщения будут удалены безвозвратно.`,
+                                    confirmText: 'Удалить',
+                                    variant: 'danger',
+                                  })
+                                  if (ok) deleteChatMutation.mutate(chat.id)
+                                }}
+                                className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                                title="Удалить обращение"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
                           <p className="text-xs text-gray-500">
                             {formatMessageTime(chat.updated_at)}
@@ -532,6 +587,8 @@ export default function Support() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog {...dialogProps} />
 
       {/* Модальное окно создания чата */}
       {isNewChatOpen && (
