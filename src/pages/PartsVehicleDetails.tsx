@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Edit, TrendingUp, TrendingDown, Plus, Settings, Trash2, Tag, Sparkles, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { getPartsCategoryTemplates, createPartsInventoryItem, getStorageLocations } from '@/services/partsService'
+import { getPartsCategoryTemplates, createPartsInventoryItem, getStorageLocations, updateVehicleStatus } from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { toast } from 'sonner'
 import type { PartsVehicle, PartsVehicleStatus, CreatePartsInventoryInput, StorageLocation } from '@/types/parts'
@@ -15,6 +15,7 @@ import { formatPrice } from '@/utils/currency'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { PartsInventoryModal } from '@/pages/PartsInventory'
+import { moveToTrash } from '@/services/trashService'
 
 const statusColors = {
   awaiting: 'bg-yellow-100 text-yellow-800',
@@ -131,10 +132,17 @@ export default function PartsVehicleDetails() {
 
   // Delete part mutation
   const deletePartMutation = useMutation({
-    mutationFn: async (part: { id: string; photos?: ImgbbPhoto[] }) => {
+    mutationFn: async (part: { id: string; photos?: ImgbbPhoto[]; name?: string }) => {
       if (part.photos?.length) {
         await deletePhotosFromImgbb(part.photos)
       }
+      await moveToTrash({
+        entityType: 'parts_inventory',
+        entityId: part.id,
+        entityLabel: part.name ? `Запчасть: ${part.name}` : 'Запчасть',
+        entityData: part,
+        partsCompanyId: partsCompanyId,
+      })
       const { error } = await supabase
         .from('parts_inventory')
         .delete()
@@ -143,7 +151,8 @@ export default function PartsVehicleDetails() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-parts', id] })
-      toast.success('Запчасть удалена')
+      queryClient.invalidateQueries({ queryKey: ['trash'] })
+      toast.success('Запчасть перемещена в корзину')
     },
     onError: (error: any) => {
       if (error?.status === 409 || error?.code === '23503') {
@@ -170,20 +179,17 @@ export default function PartsVehicleDetails() {
     enabled: !!id
   })
 
-  // Update status
+  // Update status — uses updateVehicleStatus to correctly write dismantling timestamps
   const statusMutation = useMutation({
     mutationFn: async (status: PartsVehicleStatus) => {
-      const { error } = await supabase
-        .from('parts_vehicles')
-        .update({ status })
-        .eq('id', id)
-      
-      if (error) throw error
+      await updateVehicleStatus(id!, status, vehicle)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-vehicle', id] })
       queryClient.invalidateQueries({ queryKey: ['parts-vehicles'] })
-    }
+      toast.success('Статус обновлён')
+    },
+    onError: () => toast.error('Ошибка смены статуса'),
   })
 
   // Update vehicle
@@ -193,14 +199,16 @@ export default function PartsVehicleDetails() {
         .from('parts_vehicles')
         .update(updates)
         .eq('id', id)
-      
+
       if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-vehicle', id] })
       queryClient.invalidateQueries({ queryKey: ['parts-vehicles'] })
       setIsEditModalOpen(false)
-    }
+      toast.success('Данные сохранены')
+    },
+    onError: () => toast.error('Ошибка сохранения'),
   })
 
   // Calculate profitability

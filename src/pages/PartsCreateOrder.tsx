@@ -193,6 +193,9 @@ export default function PartsCreateOrder() {
               <p className="text-sm text-red-800">
                 Ошибка при создании заказа. Попробуйте еще раз.
               </p>
+              {(createMutation.error as any)?.message && (
+                <p className="text-xs text-red-600 mt-1">{(createMutation.error as any).message}</p>
+              )}
             </div>
           )}
         </form>

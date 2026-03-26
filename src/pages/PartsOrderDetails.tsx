@@ -75,7 +75,9 @@ export default function PartsOrderDetails() {
       if (id) await updatePartsOrderTotal(id, exchangeRate)
       queryClient.invalidateQueries({ queryKey: ['parts-order', id] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      toast.success('Позиция удалена')
     },
+    onError: () => toast.error('Ошибка при удалении позиции'),
   })
 
   // Изменить статус заказа
@@ -113,10 +115,10 @@ export default function PartsOrderDetails() {
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       setShowCompleteModal(false)
+      toast.success('Статус обновлён')
     },
     onError: (err: any) => {
-      console.error('updateStatusMutation error (full):', JSON.stringify(err))
-      console.error('updateStatusMutation error details:', err?.details, err?.hint, err?.message, err?.code)
+      toast.error(err?.message || 'Ошибка обновления статуса')
     },
   })
 

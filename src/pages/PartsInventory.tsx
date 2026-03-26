@@ -14,6 +14,7 @@ import { formatPrice } from '@/utils/currency'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import { moveToTrash } from '@/services/trashService'
 
 type ViewMode = 'grid' | 'list'
 
@@ -204,11 +205,19 @@ export default function PartsInventory() {
       if (item.photos?.length) {
         await deletePhotosFromImgbb(item.photos as ImgbbPhoto[])
       }
+      await moveToTrash({
+        entityType: 'parts_inventory',
+        entityId: item.id,
+        entityLabel: `Запчасть: ${item.name}`,
+        entityData: item,
+        partsCompanyId: partsCompanyId,
+      })
       await deletePartsInventoryItem(item.id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success('Запчасть удалена')
+      queryClient.invalidateQueries({ queryKey: ['trash'] })
+      toast.success('Запчасть перемещена в корзину')
     },
     onError: (error: any) => {
       if (error?.status === 409 || error?.code === '23503') {

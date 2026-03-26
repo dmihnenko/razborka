@@ -43,10 +43,11 @@ export default function CustomerProfile() {
         .select('*')
         .eq('id', id)
         .single()
-      
+
       if (error) throw error
       return data
     },
+    enabled: !!id,
   })
 
   // Получаем автомобили клиента
@@ -58,10 +59,11 @@ export default function CustomerProfile() {
         .select('*')
         .eq('customer_id', id)
         .order('created_at', { ascending: false })
-      
+
       if (error) throw error
       return data
     },
+    enabled: !!id,
   })
 
   // Получаем заявки клиента
@@ -73,10 +75,11 @@ export default function CustomerProfile() {
         .select('*, vehicles(brand, model, license_plate)')
         .eq('customer_id', id)
         .order('scheduled_date', { ascending: false })
-      
+
       if (error) throw error
       return data
     },
+    enabled: !!id,
   })
 
   // Получаем заказы запчастей клиента (через связь по телефону)
@@ -334,11 +337,11 @@ export default function CustomerProfile() {
                 </div>
 
                 {/* Mobile-only actions */}
-                <div className="flex items-center gap-1 shrink-0 sm:hidden opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => { setEditingVehicle(vehicle); setShowVehicleModal(true) }}
-                    className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
-                    title="Редактировать"
+                  <div className="flex items-center gap-1 shrink-0 sm:hidden">
+                    <button
+                      onClick={() => { setEditingVehicle(vehicle); setShowVehicleModal(true) }}
+                      className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors"
+                      aria-label="Редактировать"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>

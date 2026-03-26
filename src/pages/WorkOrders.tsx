@@ -27,8 +27,8 @@ export default function WorkOrders() {
   // Проверяем роль пользователя
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
 
-  const { data: workOrders, isLoading } = useQuery({
-    queryKey: ['work_orders', profile?.id],
+  const { data: workOrders, isLoading, isError } = useQuery({
+    queryKey: ['work_orders', profile?.sto_company_id],
     queryFn: async () => {
       let query = supabase
         .from('work_orders')
@@ -39,6 +39,7 @@ export default function WorkOrders() {
           created_by_profile:user_profiles!created_by(full_name, email),
           assigned_to_profile:user_profiles!assigned_to(full_name, email)
         `)
+        .eq('sto_company_id', profile!.sto_company_id)
 
       // Работники видят только свои заказы
       if (!isStoOwner && profile?.id) {
@@ -46,11 +47,11 @@ export default function WorkOrders() {
       }
 
       const { data, error } = await query.order('created_at', { ascending: false })
-      
+
       if (error) throw error
       return data
     },
-    enabled: !!profile?.id,
+    enabled: !!profile?.sto_company_id,
   })
 
   const deleteMutation = useMutation({
@@ -110,6 +111,14 @@ export default function WorkOrders() {
       {isLoading ? (
         <div className="flex justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      ) : isError ? (
+        <div className="text-center py-12 bg-white rounded-lg border">
+          <p className="text-red-500 font-medium">Ошибка загрузки данных</p>
+        </div>
+      ) : !workOrders?.length ? (
+        <div className="text-center py-12 bg-white rounded-lg border">
+          <p className="text-gray-500">Заказ-нарядов нет</p>
         </div>
       ) : (
         <>
@@ -304,7 +313,7 @@ export default function WorkOrders() {
               </div>
             ))}
           </div>
-        </>
+        </div>
       )}
 
       <WorkOrderModal

@@ -96,65 +96,7 @@ export default function AdminLayout() {
     : (profile?.email?.[0] || 'A').toUpperCase()
 
   return (
-    <div className="flex flex-col md:flex-row md:h-screen bg-gray-100 font-sans">
-
-      {/* ════════════════════════════════════════════
-          MOBILE HEADER
-          ════════════════════════════════════════════ */}
-      <div className="md:hidden bg-white border-b border-gray-200">
-        {/* Top bar */}
-        <div className="px-4 py-3 flex items-center justify-between gap-3 border-b border-gray-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center flex-shrink-0">
-              <Shield className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-sm font-semibold text-gray-800 truncate">Админ панель</span>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg min-h-[36px] transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Выйти</span>
-          </button>
-        </div>
-
-        {/* Mobile nav — grid cards like main Layout */}
-        <nav className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 p-2 bg-white">
-          {adminNavFlat.slice(0, 8).map((item) => {
-            const Icon = item.icon
-            const isActive = location.pathname === item.href
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={`flex flex-col items-center justify-center gap-1.5 min-h-[64px] rounded-xl text-[11px] font-medium transition-all ${
-                  isActive
-                    ? 'bg-purple-50 text-purple-700'
-                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-                }`}
-              >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-purple-600' : 'text-gray-400'}`} />
-                <span className="text-center leading-tight px-0.5">{item.name}</span>
-              </Link>
-            )
-          })}
-          {/* Quick access items */}
-          {quickAccessItems.map((q) => {
-            const Icon = q.icon
-            return (
-              <button
-                key={q.path}
-                onClick={() => { localStorage.setItem('activeRole', q.role); navigate(q.path) }}
-                className="flex flex-col items-center justify-center gap-1.5 min-h-[64px] rounded-xl text-[11px] font-medium bg-gray-50 text-gray-500 hover:bg-gray-100 transition-all"
-              >
-                <Icon className="w-5 h-5 text-gray-400" />
-                <span className="text-center leading-tight px-0.5">{q.name}</span>
-              </button>
-            )
-          })}
-        </nav>
-      </div>
+    <div className="flex flex-col md:flex-row h-screen bg-gray-100 font-sans">
 
       {/* ════════════════════════════════════════════
           DESKTOP SIDEBAR — same structure as Layout.tsx
@@ -247,11 +189,72 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 md:overflow-auto bg-gray-50">
-        <div className="mx-auto max-w-[1440px] w-full px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
-          <Breadcrumbs />
-          <Outlet />
+      <div className="flex-1 overflow-auto flex flex-col min-w-0">
+
+        {/* ── MOBILE HEADER (hidden on md+) ── */}
+        <div className="md:hidden bg-white border-b border-gray-200">
+          {/* Top bar */}
+          <div className="px-4 py-3 flex items-center justify-between gap-3 border-b border-gray-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center flex-shrink-0">
+                <Shield className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm font-semibold text-gray-800 truncate">Админ панель</span>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg min-h-[36px] transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Выйти</span>
+            </button>
+          </div>
+
+          {/* Mobile nav — grid cards like main Layout */}
+          <nav className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 p-2 bg-white">
+            {adminNavFlat.slice(0, 8).map((item) => {
+              const Icon = item.icon
+              const isActive = location.pathname === item.href
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={`flex flex-col items-center justify-center gap-1.5 min-h-[64px] rounded-xl text-[11px] font-medium transition-all ${
+                    isActive
+                      ? 'bg-purple-50 text-purple-700'
+                      : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                  }`}
+                >
+                  <Icon className={`w-5 h-5 ${isActive ? 'text-purple-600' : 'text-gray-400'}`} />
+                  <span className="text-center leading-tight px-0.5">{item.name}</span>
+                </Link>
+              )
+            })}
+            {/* Quick access items */}
+            {quickAccessItems.map((q) => {
+              const Icon = q.icon
+              return (
+                <button
+                  key={q.path}
+                  onClick={() => { localStorage.setItem('activeRole', q.role); navigate(q.path) }}
+                  className="flex flex-col items-center justify-center gap-1.5 min-h-[64px] rounded-xl text-[11px] font-medium bg-gray-50 text-gray-500 hover:bg-gray-100 transition-all"
+                >
+                  <Icon className="w-5 h-5 text-gray-400" />
+                  <span className="text-center leading-tight px-0.5">{q.name}</span>
+                </button>
+              )
+            })}
+          </nav>
         </div>
+
+        {/* ── PAGE CONTENT ── */}
+        <div className="flex-1 bg-gray-50">
+          <div className="mx-auto max-w-[1440px] w-full px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
+            <Breadcrumbs />
+            <Outlet />
+          </div>
+        </div>
+
       </div>
     </div>
   )

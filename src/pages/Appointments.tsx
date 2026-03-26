@@ -150,7 +150,7 @@ export default function Appointments() {
             onClick={() => setSearchParams({})}
             className="btn-touch-sm text-gray-700 bg-blue-50 border border-blue-300 hover:bg-blue-100 flex items-center gap-1.5"
           >
-            <span>Показать все ({statusLabels[statusFilter as keyof typeof statusLabels]})</span>
+            <span>Показать все ({statusLabels[statusFilter as keyof typeof statusLabels] ?? statusFilter})</span>
           </button>
         )}
         <button

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 
 const STORAGE_KEY = 'parts_exchange_rate'
 
@@ -29,6 +29,13 @@ export function usePartsExchangeRate() {
   const [stored, setStored] = useState<StoredRate | null>(() => loadStored())
   const [fetching, setFetching] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
+
+  // Sync rate across browser tabs
+  useEffect(() => {
+    const handler = () => setStored(loadStored())
+    window.addEventListener('storage', handler)
+    return () => window.removeEventListener('storage', handler)
+  }, [])
 
   const today = todayStr()
   // isStale is true when no rate is stored at all, or when it was saved on a previous day

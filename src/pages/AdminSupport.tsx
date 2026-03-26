@@ -112,7 +112,6 @@ export default function AdminSupport() {
       return data as Message[]
     },
     enabled: !!selectedChat,
-    refetchInterval: 10000
   })
 
   // Автопрокрутка к последнему сообщению

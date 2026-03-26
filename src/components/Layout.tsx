@@ -149,64 +149,7 @@ export default function Layout() {
     : (profile?.email?.[0] || 'U').toUpperCase()
 
   return (
-    <div className="flex flex-col md:flex-row md:h-screen bg-gray-100 font-sans">
-
-      {/* ════════════════════════════════════════════
-          MOBILE HEADER (hidden on md+)
-          ════════════════════════════════════════════ */}
-      <div className="md:hidden bg-white border-b border-gray-200">
-        {/* Top bar: user name + logout */}
-        <div className="px-4 py-3 border-b border-gray-100 bg-white flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-gray-700 truncate flex-1">
-            {profile?.full_name || profile?.email || 'Пользователь'}
-          </p>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 flex-shrink-0 min-h-[36px] hover:bg-red-100 transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Выйти</span>
-          </button>
-        </div>
-
-        {/* Mobile Navigation — grid cards */}
-        <nav className="grid grid-cols-3 sm:grid-cols-4 gap-2 p-2">
-          {filteredNavigation.filter(item => !item.mobileHidden).map((item) => {
-            const Icon = item.icon
-            const isActive = item.href.includes('?')
-              ? location.pathname + location.search === item.href
-              : location.pathname === item.href
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={`flex flex-col items-center justify-center gap-1.5 px-1 py-3 text-[11px] font-medium transition-colors rounded-xl min-h-[64px] ${
-                  isActive
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'text-gray-700 bg-gray-50 hover:bg-gray-100'
-                }`}
-              >
-                <Icon className="w-5 h-5 flex-shrink-0" />
-                <span className="text-center leading-tight line-clamp-2">{item.name}</span>
-              </Link>
-            )
-          })}
-        </nav>
-
-        {/* Admin Panel Button (if admin) */}
-        {isAdmin && (
-          <div className="px-2 pb-2">
-            <Link
-              to="/admin"
-              onClick={() => localStorage.removeItem('activeRole')}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-purple-700 bg-purple-50 rounded-lg border border-purple-200 min-h-[44px] hover:bg-purple-100 transition-colors"
-            >
-              <Shield className="w-4 h-4 flex-shrink-0" />
-              <span>Админ панель</span>
-            </Link>
-          </div>
-        )}
-      </div>
+    <div className="flex flex-col md:flex-row h-screen bg-gray-100 font-sans">
 
       {/* ════════════════════════════════════════════
           DESKTOP SIDEBAR (hidden on mobile)
@@ -272,13 +215,75 @@ export default function Layout() {
       </aside>
 
       {/* ════════════════════════════════════════════
-          MAIN CONTENT
+          SCROLLABLE COLUMN
+          Mobile nav is INSIDE here so it scrolls away naturally
+          on all platforms including iOS PWA (standalone mode)
           ════════════════════════════════════════════ */}
-      <div className="flex-1 md:overflow-auto bg-gray-50">
-        <div className="mx-auto max-w-[1440px] w-full px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
-          <Breadcrumbs />
-          <Outlet />
+      <div className="flex-1 overflow-auto flex flex-col min-w-0">
+
+        {/* ── MOBILE HEADER (hidden on md+) ── */}
+        <div className="md:hidden bg-white border-b border-gray-200">
+          {/* Top bar: user name + logout */}
+          <div className="px-4 py-3 border-b border-gray-100 bg-white flex items-center justify-between gap-3">
+            <p className="text-sm font-medium text-gray-700 truncate flex-1">
+              {profile?.full_name || profile?.email || 'Пользователь'}
+            </p>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 flex-shrink-0 min-h-[36px] hover:bg-red-100 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Выйти</span>
+            </button>
+          </div>
+
+          {/* Mobile Navigation — grid cards */}
+          <nav className="grid grid-cols-3 sm:grid-cols-4 gap-2 p-2">
+            {filteredNavigation.filter(item => !item.mobileHidden).map((item) => {
+              const Icon = item.icon
+              const isActive = item.href.includes('?')
+                ? location.pathname + location.search === item.href
+                : location.pathname === item.href
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={`flex flex-col items-center justify-center gap-1.5 px-1 py-3 text-[11px] font-medium transition-colors rounded-xl min-h-[64px] ${
+                    isActive
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-gray-700 bg-gray-50 hover:bg-gray-100'
+                  }`}
+                >
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-center leading-tight line-clamp-2">{item.name}</span>
+                </Link>
+              )
+            })}
+          </nav>
+
+          {/* Admin Panel Button (if admin) */}
+          {isAdmin && (
+            <div className="px-2 pb-2">
+              <Link
+                to="/admin"
+                onClick={() => localStorage.removeItem('activeRole')}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-purple-700 bg-purple-50 rounded-lg border border-purple-200 min-h-[44px] hover:bg-purple-100 transition-colors"
+              >
+                <Shield className="w-4 h-4 flex-shrink-0" />
+                <span>Админ панель</span>
+              </Link>
+            </div>
+          )}
         </div>
+
+        {/* ── MAIN CONTENT ── */}
+        <div className="flex-1 bg-gray-50">
+          <div className="mx-auto max-w-[1440px] w-full px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
+            <Breadcrumbs />
+            <Outlet />
+          </div>
+        </div>
+
       </div>
     </div>
   )

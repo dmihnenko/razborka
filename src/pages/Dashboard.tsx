@@ -108,28 +108,31 @@ export default function Dashboard() {
   const { data: workersCount = 0, isLoading: workersLoading } = useQuery({
     queryKey: ['dashboard-workers-count', profile?.sto_company_id],
     queryFn: async () => {
-      const { data: workerRole } = await supabase
+      const { data: workerRole, error: roleError } = await supabase
         .from('roles')
         .select('id')
         .eq('name', 'sto_worker')
         .single()
 
+      if (roleError) throw roleError
       if (!workerRole) return 0
 
-      const { data: userRoles } = await supabase
+      const { data: userRoles, error: userRolesError } = await supabase
         .from('user_roles')
         .select('user_id')
         .eq('role_id', workerRole.id)
 
+      if (userRolesError) throw userRolesError
       if (!userRoles) return 0
 
-      const { count } = await supabase
+      const { count, error: countError } = await supabase
         .from('user_profiles')
         .select('id', { count: 'exact', head: true })
         .eq('sto_company_id', profile?.sto_company_id)
         .eq('is_active', true)
         .in('id', userRoles.map(ur => ur.user_id))
 
+      if (countError) throw countError
       return count || 0
     },
     enabled: !!profile?.sto_company_id,
