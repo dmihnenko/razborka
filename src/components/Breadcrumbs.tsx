@@ -125,37 +125,32 @@ export default function Breadcrumbs() {
   }
 
   return (
-    <nav className="flex items-center flex-wrap mb-4" style={{ fontSize: '12px', color: '#94A3B8', gap: '2px', lineHeight: 1 }}>
+    <nav className="flex items-center flex-wrap gap-x-0.5 gap-y-1 mb-4 text-xs text-gray-400">
       <Link
         to="/"
-        className="flex items-center transition-colors hover:text-blue-500"
+        className="flex items-center text-gray-400 hover:text-blue-500 transition-colors"
         title="Главная"
-        style={{ color: 'inherit', lineHeight: 1 }}
       >
-        <Home className="w-3.5 h-3.5" style={{ display: 'block' }} />
+        <Home className="w-3.5 h-3.5 flex-shrink-0" />
       </Link>
 
       {breadcrumbs.map((crumb, index) => {
         const isLast = index === breadcrumbs.length - 1
 
         return (
-          <div key={crumb.path} className="flex items-center" style={{ gap: '2px' }}>
-            <ChevronRight className="w-3 h-3 flex-shrink-0" style={{ color: '#CBD5E1', display: 'block' }} />
+          <div key={crumb.path} className="flex items-center gap-x-0.5">
+            <ChevronRight className="w-3 h-3 flex-shrink-0 text-gray-300" />
             {isLast ? (
-              <span
-                className="font-medium whitespace-nowrap"
-                style={{ color: '#374151', lineHeight: 1 }}
-              >
+              <span className="font-medium text-gray-700 whitespace-nowrap">
                 {crumb.label}
                 {crumb.count !== undefined && (
-                  <span className="ml-1" style={{ color: '#94A3B8' }}>({crumb.count})</span>
+                  <span className="ml-1 text-gray-400">({crumb.count})</span>
                 )}
               </span>
             ) : (
               <Link
                 to={crumb.path}
-                className="whitespace-nowrap transition-colors hover:text-blue-500"
-                style={{ color: 'inherit', lineHeight: 1 }}
+                className="whitespace-nowrap text-gray-400 hover:text-blue-500 transition-colors"
               >
                 {crumb.label}
               </Link>
