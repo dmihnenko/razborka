@@ -96,7 +96,7 @@ export default function AdminLayout() {
     : (profile?.email?.[0] || 'A').toUpperCase()
 
   return (
-    <div className="flex flex-col md:flex-row md:h-screen" style={{ backgroundColor: '#F8FAFC' }}>
+    <div className="flex flex-col md:flex-row md:h-screen font-sans" style={{ backgroundColor: '#F8FAFC' }}>
 
       {/* ════════════════════════════════════════════
           MOBILE HEADER

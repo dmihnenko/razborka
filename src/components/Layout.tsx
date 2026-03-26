@@ -149,7 +149,7 @@ export default function Layout() {
     : (profile?.email?.[0] || 'U').toUpperCase()
 
   return (
-    <div className="flex flex-col md:flex-row md:h-screen" style={{ backgroundColor: '#F8FAFC' }}>
+    <div className="flex flex-col md:flex-row md:h-screen font-sans" style={{ backgroundColor: '#F8FAFC' }}>
 
       {/* ════════════════════════════════════════════
           MOBILE HEADER (hidden on md+)
