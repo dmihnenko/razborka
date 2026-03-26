@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ArrowLeft, Plus, Pencil, Trash2, Tag, X, Check, List, Download, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, Tag, X, Check, List, Download, Search } from 'lucide-react'
+import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import {
   getPartsCategories,
@@ -23,7 +24,6 @@ type Tab = 'my' | 'templates'
 type AddMode = 'single' | 'list'
 
 export default function PartsCategories() {
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
@@ -206,28 +206,23 @@ export default function PartsCategories() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-4">
-              <button onClick={() => navigate('/parts/inventory')} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">Категории запчастей</h1>
-                <p className="text-sm text-gray-500 hidden sm:block">{categories.length} своих категорий</p>
-              </div>
-            </div>
-            {tab === 'my' && (
-              <button
-                onClick={() => { setIsAddOpen(v => !v); setAddMode('single') }}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Добавить</span>
-              </button>
-            )}
-          </div>
+      <PartsPageHeader
+        title="Категории запчастей"
+        subtitle={`${categories.length} своих категорий`}
+        backPath="/parts/inventory"
+        height="sm"
+        actions={
+          tab === 'my' ? (
+            <button
+              onClick={() => { setIsAddOpen(v => !v); setAddMode('single') }}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Добавить</span>
+            </button>
+          ) : undefined
+        }
+        footer={
           <div className="flex border-t">
             {(['my', 'templates'] as Tab[]).map(t => (
               <button
@@ -241,8 +236,8 @@ export default function PartsCategories() {
               </button>
             ))}
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
 

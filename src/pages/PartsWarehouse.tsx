@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
-  ArrowLeft, Plus, ChevronRight, ChevronDown,
+  Plus, ChevronRight, ChevronDown,
   Pencil, Trash2, Warehouse, Check, X,
   FolderOpen, Folder, MapPin,
 } from 'lucide-react'
+import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { supabase } from '@/lib/supabase'
 import {
@@ -47,7 +47,6 @@ function flattenTree(nodes: TreeNode[], expanded: Set<string>): TreeNode[] {
 }
 
 export default function PartsWarehouse() {
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
@@ -170,33 +169,21 @@ export default function PartsWarehouse() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <button onClick={() => navigate('/parts/dashboard')} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Места хранения</h1>
-                {totalLocations > 0 && (
-                  <p className="text-sm text-gray-500 hidden sm:block">
-                    {totalLocations} мест · {usedCount} задействовано
-                  </p>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={() => { setAddingParentId(null); setAddingName('') }}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Добавить</span>
-            </button>
-          </div>
-        </div>
-      </div>
+      <PartsPageHeader
+        title="Места хранения"
+        subtitle={totalLocations > 0 ? `${totalLocations} мест · ${usedCount} задействовано` : undefined}
+        backPath="/parts/dashboard"
+        maxWidth="3xl"
+        actions={
+          <button
+            onClick={() => { setAddingParentId(null); setAddingName('') }}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Добавить</span>
+          </button>
+        }
+      />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
         {/* Add root form */}

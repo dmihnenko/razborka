@@ -8,6 +8,7 @@ import WorkOrderModal from '@/components/work-orders/WorkOrderModal'
 import ReassignWorkerModal from '@/components/work-orders/ReassignWorkerModal'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import { moveToTrash } from '@/services/trashService'
 
 export default function WorkOrders() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -54,12 +55,24 @@ export default function WorkOrders() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      const workOrder = workOrders?.find((o: any) => o.id === id)
+      const label = workOrder
+        ? `Заказ-наряд: ${workOrder.customers?.name || ''} — ${workOrder.vehicles?.brand || ''} ${workOrder.vehicles?.model || ''}`.trim()
+        : 'Заказ-наряд'
+      await moveToTrash({
+        entityType: 'work_order',
+        entityId: id,
+        entityLabel: label,
+        entityData: workOrder || { id },
+        stoCompanyId: profile?.sto_company_id,
+      })
       const { error } = await supabase.from('work_orders').delete().eq('id', id)
       if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['work_orders'] })
-      toast.success('Заказ-наряд удален')
+      queryClient.invalidateQueries({ queryKey: ['trash'] })
+      toast.success('Заказ-наряд перемещён в корзину')
     },
   })
 

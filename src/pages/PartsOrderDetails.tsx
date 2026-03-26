@@ -4,13 +4,15 @@ import { supabase } from '@/lib/supabase'
 import { useUserProfile, useHasRole, useIsAdmin } from '@/hooks/useUserProfile'
 import { PartsOrder, CreatePartsOrderItemInput } from '@/types/parts'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Plus, Trash2, Edit2, Search, CheckCircle } from 'lucide-react'
+import { Plus, Trash2, Edit2, Search, CheckCircle } from 'lucide-react'
+import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { formatCurrency, formatPrice } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 import { updatePartsOrderTotal } from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import { moveToTrash } from '@/services/trashService'
 
 export default function PartsOrderDetails() {
   const { id } = useParams<{ id: string }>()
@@ -131,6 +133,14 @@ export default function PartsOrderDetails() {
           .in('id', inventoryIds)
           .in('status', ['reserved', 'sold'])
       }
+      // Move to trash before deleting
+      await moveToTrash({
+        entityType: 'parts_order',
+        entityId: id,
+        entityLabel: `Заказ разборки: ${order?.customer?.name || id}`,
+        entityData: { order, items: order?.items ?? [] },
+        partsCompanyId: partsCompanyId,
+      })
       // Delete all order items first, then the order
       await supabase.from('parts_order_items').delete().eq('order_id', id)
       const { error } = await supabase.from('parts_orders').delete().eq('id', id)
@@ -139,6 +149,7 @@ export default function PartsOrderDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['trash'] })
       navigate('/parts/orders')
     },
   })
@@ -199,24 +210,14 @@ export default function PartsOrderDetails() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4 flex-1 min-w-0">
-              <button
-                onClick={() => navigate('/parts/orders')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
-                {order.order_number}
-              </h1>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPartsOrderStatusColor(order.status)}`}>
-                {getPartsOrderStatusText(order.status)}
-              </span>
-            </div>
+      <PartsPageHeader
+        title={order.order_number}
+        backPath="/parts/orders"
+        actions={
+          <>
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPartsOrderStatusColor(order.status)}`}>
+              {getPartsOrderStatusText(order.status)}
+            </span>
             {isOwner && (
               <button
                 onClick={async () => {
@@ -225,15 +226,15 @@ export default function PartsOrderDetails() {
                   deleteOrderMutation.mutate()
                 }}
                 disabled={deleteOrderMutation.isPending}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors flex-shrink-0 ml-2 text-sm font-medium"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-sm font-medium"
               >
                 <Trash2 className="w-4 h-4" />
                 <span className="hidden sm:inline">Удалить</span>
               </button>
             )}
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6">

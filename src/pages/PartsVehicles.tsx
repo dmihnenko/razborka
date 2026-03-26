@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Car, Filter, Grid, List, ArrowLeft } from 'lucide-react'
+import { Plus, Search, Car, Filter, Grid, List } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -8,6 +8,7 @@ import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle, getPartsCategoryTemplates } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
 import { supabase } from '@/lib/supabase'
+import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -166,34 +167,23 @@ export default function PartsVehicles() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4 flex-1">
-              <button
-                onClick={() => navigate('/parts')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Автомобили</h1>
-                <p className="text-sm text-gray-500 hidden sm:block">Всего: {stats.total}</p>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                setSelectedVehicle(null)
-                setIsModalOpen(true)
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              <span className="hidden sm:inline">Добавить</span>
-            </button>
-          </div>
-        </div>
-      </div>
+      <PartsPageHeader
+        title="Автомобили"
+        subtitle={`Всего: ${stats.total}`}
+        backPath="/parts/dashboard"
+        actions={
+          <button
+            onClick={() => {
+              setSelectedVehicle(null)
+              setIsModalOpen(true)
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="hidden sm:inline">Добавить</span>
+          </button>
+        }
+      />
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">

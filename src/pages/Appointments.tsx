@@ -94,7 +94,7 @@ export default function Appointments() {
       if (error) throw error
       return data
     },
-    enabled: !!profile?.id,
+    enabled: !!profile?.sto_company_id,
   })
 
   // Группируем заявки по клиентам
@@ -118,18 +118,6 @@ export default function Appointments() {
         return a.appointments.length - b.appointments.length
       })
     : []
-
-  // Delete mutation for appointments
-  useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('appointments').delete().eq('id', id)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['appointments'] })
-      toast.success('Запись удалена')
-    },
-  })
 
   const statusColors = {
     scheduled: 'bg-purple-100 text-purple-800',

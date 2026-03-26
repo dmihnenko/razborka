@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Save, Tag, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Save, Tag, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsInventory, updatePartsInventoryItem, getStorageLocations } from '@/services/partsService'
@@ -139,25 +140,12 @@ export default function PartsNoPricePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4 h-16">
-            <button
-              onClick={() => navigate('/parts/inventory')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Запчасти без цены</h1>
-              {!isLoading && (
-                <p className="text-sm text-gray-500">{noPriceItems.length} позиций требуют заполнения</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <PartsPageHeader
+        title="Запчасти без цены"
+        subtitle={!isLoading ? `${noPriceItems.length} позиций требуют заполнения` : undefined}
+        backPath="/parts/inventory"
+        maxWidth="4xl"
+      />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {isLoading ? (

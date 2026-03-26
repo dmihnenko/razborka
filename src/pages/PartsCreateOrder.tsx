@@ -5,7 +5,8 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { CreatePartsOrderInput } from '@/types/parts'
 import { createPartsOrder } from '@/services/partsService'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Users as UsersIcon } from 'lucide-react'
+import { Plus, Users as UsersIcon } from 'lucide-react'
+import PartsPageHeader from '@/components/parts/PartsPageHeader'
 
 export default function PartsCreateOrder() {
   const navigate = useNavigate()
@@ -66,20 +67,7 @@ export default function PartsCreateOrder() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4 h-16">
-            <button
-              onClick={() => navigate('/parts/orders')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Создание заказа</h1>
-          </div>
-        </div>
-      </div>
+      <PartsPageHeader title="Создание заказа" backPath="/parts/orders" maxWidth="3xl" />
 
       {/* Content */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">

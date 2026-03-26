@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import { moveToTrash } from '@/services/trashService'
 import ClientSelector from './ClientSelector'
 import VehicleSelector from './VehicleSelector'
 import WorkItemsManager from './WorkItemsManager'
@@ -210,7 +211,14 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
           throw error
         }
       } else {
-        // Владелец может удалить окончательно
+        // Владелец перемещает заявку в корзину
+        await moveToTrash({
+          entityType: 'appointment',
+          entityId: appointmentId,
+          entityLabel: `Заявка: ${existingAppointment?.customers?.name || existingAppointment?.customer_id || ''}`,
+          entityData: existingAppointment,
+          stoCompanyId: profile?.sto_company_id,
+        })
         const { error } = await supabase
           .from('appointments')
           .delete()
@@ -226,12 +234,13 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
       // Инвалидируем все queries связанные с appointments
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
       queryClient.invalidateQueries({ queryKey: ['worker_appointments'] })
+      queryClient.invalidateQueries({ queryKey: ['trash'] })
       // Принудительно рефетчим данные
       queryClient.refetchQueries({ queryKey: ['appointments'] })
       toast.success(
         isStoWorker && !isStoOwner 
           ? 'Заявка отправлена на удаление' 
-          : 'Заявка удалена'
+          : 'Заявка перемещена в корзину'
       )
       onClose()
     },

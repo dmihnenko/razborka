@@ -5,6 +5,8 @@ export type TrashEntityType =
   | 'vehicle'
   | 'service'
   | 'work_order'
+  | 'appointment'
+  | 'parts_order'
   | 'parts_vehicle'
   | 'parts_inventory'
   | 'parts_category'
@@ -15,6 +17,8 @@ export const ENTITY_LABELS: Record<TrashEntityType, string> = {
   vehicle: 'Автомобиль',
   service: 'Услуга',
   work_order: 'Заказ-наряд',
+  appointment: 'Заявка',
+  parts_order: 'Заказ разборки',
   parts_vehicle: 'Авто на разборку',
   parts_inventory: 'Запчасть',
   parts_category: 'Категория',
@@ -154,6 +158,23 @@ export async function restoreFromTrash(item: TrashItem): Promise<void> {
     case 'parts_customer': {
       const { error } = await supabase.from('parts_customers').upsert([entity_data])
       if (error) throw error
+      break
+    }
+
+    case 'appointment': {
+      const { error } = await supabase.from('appointments').upsert([entity_data])
+      if (error) throw error
+      break
+    }
+
+    case 'parts_order': {
+      const { order, items } = entity_data as { order: any; items: any[] }
+      const { error: oe } = await supabase.from('parts_orders').upsert([order])
+      if (oe) throw oe
+      if (items?.length) {
+        const { error: ie } = await supabase.from('parts_order_items').upsert(items)
+        if (ie) throw ie
+      }
       break
     }
 

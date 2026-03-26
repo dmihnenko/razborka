@@ -4,9 +4,10 @@ import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsOrder } from '@/types/parts'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Search, Grid, List, ShoppingCart, DollarSign } from 'lucide-react'
+import { Plus, Search, Grid, List, ShoppingCart, DollarSign } from 'lucide-react'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
+import PartsPageHeader from '@/components/parts/PartsPageHeader'
 
 type ViewMode = 'grid' | 'list'
 
@@ -114,31 +115,20 @@ export default function PartsOrders() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4 flex-1">
-              <button
-                onClick={() => navigate('/parts')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Заказы</h1>
-                <p className="text-sm text-gray-500 hidden sm:block">Всего: {stats.total}</p>
-              </div>
-            </div>
-            <button
-              onClick={() => navigate('/parts/orders/create')}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              <span className="hidden sm:inline">Создать заказ</span>
-            </button>
-          </div>
-        </div>
-      </div>
+      <PartsPageHeader
+        title="Заказы"
+        subtitle={`Всего: ${stats.total}`}
+        backPath="/parts/dashboard"
+        actions={
+          <button
+            onClick={() => navigate('/parts/orders/create')}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="hidden sm:inline">Создать заказ</span>
+          </button>
+        }
+      />
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">

@@ -8,6 +8,9 @@ import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 export default function Parts() {
+  // DEPRECATED: эта страница работает с устаревшей таблицей `parts` (legacy-склад).
+  // Новый склад запчастей — src/pages/PartsInventory.tsx (таблица parts_inventory).
+  // Прямое удаление здесь намеренно — таблица `parts` не поддерживает корзину.
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingPart, setEditingPart] = useState<any>(null)
   const queryClient = useQueryClient()

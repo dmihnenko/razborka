@@ -87,7 +87,16 @@ export default function Breadcrumbs() {
     'history': 'История',
     'worker-dashboard': 'Рабочий стол',
     'profile': 'Профиль',
-    'settings': 'Настройки'
+    'settings': 'Настройки',
+    'monthly-revenue': 'Доходы',
+    'worker': 'Сотрудник',
+    'inventory': 'Склад запчастей',
+    'no-price': 'Без цены',
+    'orders': 'Заказы',
+    'create': 'Создание',
+    'categories': 'Категории',
+    'warehouse': 'Склад',
+    'trash': 'Корзина',
   }
 
   // Генерация хлебных крошек из текущего пути

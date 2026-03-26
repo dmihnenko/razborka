@@ -4,17 +4,17 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { useNavigate } from 'react-router-dom'
 import { formatPrice } from '@/utils/currency'
-import { 
-  ArrowLeft, 
-  BarChart3, 
-  TrendingUp, 
-  DollarSign, 
-  Package, 
+import {
+  BarChart3,
+  TrendingUp,
+  DollarSign,
+  Package,
   ShoppingCart,
   Car,
   Calendar,
   AlertCircle
 } from 'lucide-react'
+import PartsPageHeader from '@/components/parts/PartsPageHeader'
 
 export default function PartsAnalytics() {
   const navigate = useNavigate()
@@ -25,6 +25,7 @@ export default function PartsAnalytics() {
   // Общая статистика
   const { data: overallStats } = useQuery({
     queryKey: ['parts-analytics-overall', partsCompanyId, globalRate],
+    staleTime: 1000 * 60 * 30,
     queryFn: async () => {
       if (!partsCompanyId) return null
 
@@ -120,6 +121,7 @@ export default function PartsAnalytics() {
   // Топ запчастей
   const { data: topParts } = useQuery({
     queryKey: ['parts-analytics-top-parts', partsCompanyId, globalRate],
+    staleTime: 1000 * 60 * 30,
     queryFn: async () => {
       if (!partsCompanyId) return []
 
@@ -182,22 +184,11 @@ export default function PartsAnalytics() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4 h-16">
-            <button
-              onClick={() => navigate('/parts')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Аналитика</h1>
-              <p className="text-sm text-gray-500 hidden sm:block">Статистика разборки</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PartsPageHeader
+        title="Аналитика"
+        subtitle="Статистика разборки"
+        backPath="/parts/dashboard"
+      />
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
