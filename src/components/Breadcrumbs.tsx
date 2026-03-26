@@ -134,7 +134,7 @@ export default function Breadcrumbs() {
   }
 
   return (
-    <nav aria-label="breadcrumb" className="mb-4 flex items-center gap-1 text-xs text-gray-400 flex-wrap">
+    <nav aria-label="breadcrumb" className="mb-4 flex items-center gap-1 text-xs leading-none text-gray-400 flex-wrap">
       <Link
         to="/"
         title="Главная"
