@@ -154,7 +154,7 @@ export default function Layout() {
       {/* ════════════════════════════════════════════
           MOBILE HEADER (hidden on md+)
           ════════════════════════════════════════════ */}
-      <div className="md:hidden sticky top-0 z-40 bg-white border-b border-gray-200">
+      <div className="md:hidden bg-white border-b border-gray-200">
         {/* Top bar: user name + logout */}
         <div className="px-4 py-3 border-b border-gray-100 bg-white flex items-center justify-between gap-3">
           <p className="text-sm font-medium text-gray-700 truncate flex-1">
@@ -274,7 +274,7 @@ export default function Layout() {
       {/* ════════════════════════════════════════════
           MAIN CONTENT
           ════════════════════════════════════════════ */}
-      <div className="flex-1 overflow-auto bg-gray-50">
+      <div className="flex-1 md:overflow-auto bg-gray-50">
         <div className="mx-auto max-w-[1440px] w-full px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
           <Breadcrumbs />
           <Outlet />

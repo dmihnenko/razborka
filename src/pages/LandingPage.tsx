@@ -71,7 +71,7 @@ export default function LandingPage() {
       <div className="lp" style={{ background: '#080C14', minHeight: '100vh' }}>
 
         {/* ── NAV ─────────────────────────────────────────────── */}
-        <nav style={{ borderBottom: '1px solid rgba(59,130,246,0.1)', background: 'rgba(8,12,20,0.9)', backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 50 }}>
+        <nav style={{ borderBottom: '1px solid rgba(59,130,246,0.1)', background: 'rgba(8,12,20,0.9)', backdropFilter: 'blur(12px)' }}>
           <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '56px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ width: '32px', height: '32px', background: '#2563EB', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
