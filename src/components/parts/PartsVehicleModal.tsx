@@ -4,6 +4,7 @@ import { IMaskInput } from 'react-imask'
 import type { PartsVehicle, CreatePartsVehicleInput } from '@/types/parts'
 import { formatCurrency } from '@/utils/currency'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
+import { useBlockScroll } from '@/hooks/useBlockScroll'
 
 interface PriceRow {
   id: number
@@ -42,6 +43,7 @@ interface PartsVehicleModalProps {
 
 export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }: PartsVehicleModalProps) {
   const { rate: globalRate } = usePartsExchangeRate()
+  useBlockScroll(isOpen)
   const [formData, setFormData] = useState<CreatePartsVehicleInput>({
     make: vehicle?.make || '',
     model: vehicle?.model || '',

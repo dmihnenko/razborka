@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { useBlockScroll } from '@/hooks/useBlockScroll'
 import { toast } from 'sonner'
 
 interface Props {
@@ -26,6 +27,7 @@ export default function ReassignWorkerModal({
   const [selectedWorkerId, setSelectedWorkerId] = useState(currentWorkerId || '')
   const { data: profile } = useUserProfile()
   const queryClient = useQueryClient()
+  useBlockScroll(isOpen)
 
   // Загружаем список работников СТО
   const { data: workers = [], isLoading } = useQuery({

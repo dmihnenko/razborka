@@ -4,6 +4,7 @@ import type { PersonalCostItem, CostCategory, CostCurrency, PartCondition } from
 import { CONDITION_LABELS } from '@/types/personalVehicles'
 import { deleteExpenseItem } from '@/services/personalVehicles'
 import { useAlert } from '../CustomAlert'
+import { useBlockScroll } from '@/hooks/useBlockScroll'
 
 interface Props {
   isOpen: boolean
@@ -25,6 +26,7 @@ interface ParsedItem {
 
 export default function ExpenseModal({ isOpen, onClose, category, editItem, onSave, onSaveBulk, vehicleId, onUpdate }: Props) {
   const { showAlert } = useAlert()
+  useBlockScroll(isOpen)
   const [isBulkMode, setIsBulkMode] = useState(false)
   const [bulkText, setBulkText] = useState('')
   const [parsedItems, setParsedItems] = useState<ParsedItem[]>([])

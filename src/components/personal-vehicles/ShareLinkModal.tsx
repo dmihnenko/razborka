@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { useAlert } from '../CustomAlert'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import { useBlockScroll } from '@/hooks/useBlockScroll'
 
 interface Props {
   isOpen: boolean
@@ -18,6 +19,7 @@ interface Props {
 export default function ShareLinkModal({ isOpen, onClose, vehicleId, userId }: Props) {
   const { showAlert } = useAlert()
   const { confirm: showConfirm, dialogProps } = useConfirm()
+  useBlockScroll(isOpen)
   const [selectedDuration, setSelectedDuration] = useState<'1hour' | '7days' | 'permanent'>('permanent')
   const [newCode, setNewCode] = useState<string | null>(null)
   const queryClient = useQueryClient()

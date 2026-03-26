@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { useBlockScroll } from '@/hooks/useBlockScroll'
 import { toast } from 'sonner'
 import ClientSelector from '@/components/appointments/ClientSelector'
 import VehicleSelector from '@/components/appointments/VehicleSelector'
@@ -29,7 +30,8 @@ const DRAFT_KEY = 'workOrderDraft'
 export default function WorkOrderModal({ isOpen, onClose, workOrderId }: Props) {
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
-  
+  useBlockScroll(isOpen)
+
   const [formData, setFormData] = useState<FormData>({
     customer_id: '',
     vehicle_id: '',

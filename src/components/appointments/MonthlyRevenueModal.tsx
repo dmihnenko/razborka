@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { X, Package, Wrench, EyeOff, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { useBlockScroll } from '@/hooks/useBlockScroll'
 
 type AppointmentRow = {
   id: string
@@ -25,6 +26,7 @@ interface MonthlyRevenueModalProps {
 export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: MonthlyRevenueModalProps) {
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
+  useBlockScroll(isOpen)
 
   const { data: appointments, isLoading } = useQuery({
     queryKey: ['monthly-appointments', profile?.sto_company_id, year, month],
