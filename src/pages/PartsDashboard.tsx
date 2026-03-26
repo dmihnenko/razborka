@@ -48,6 +48,7 @@ export default function PartsDashboard() {
       const total = available_items.reduce((sum, item) => sum + item.quantity, 0)
       const available = available_items.reduce((sum, item) => sum + (item.quantity - item.reserved_quantity), 0)
       const lowStock = available_items.filter(item => item.quantity <= item.min_stock_level).length
+      const noPrice = available_items.filter(item => !item.selling_price).length
       // value будет в USD
       const valueUSD = available_items.reduce((sum, item: any) => {
         const price = item.selling_price || 0
@@ -65,7 +66,7 @@ export default function PartsDashboard() {
       const fromVehicles = available_items.reduce((sum, item) => sum + (item.vehicle_id ? item.quantity : 0), 0)
       const fromShop = available_items.reduce((sum, item) => sum + (!item.vehicle_id ? item.quantity : 0), 0)
 
-      return { total, available, lowStock, valueUSD, valueUAH, fromVehicles, fromShop }
+      return { total, available, lowStock, noPrice, valueUSD, valueUAH, fromVehicles, fromShop }
     },
     enabled: !!partsCompanyId,
   })
@@ -407,8 +408,8 @@ export default function PartsDashboard() {
                   </div>
                   <span className="text-xs font-medium" style={{ color: '#64748B' }}>Без цены</span>
                 </div>
-                <p className="text-2xl font-bold" style={{ letterSpacing: '-0.03em', color: inventoryStats?.lowStock ? '#DC2626' : '#111827' }}>
-                  {inventoryStats?.lowStock || 0}
+                <p className="text-2xl font-bold" style={{ letterSpacing: '-0.03em', color: (inventoryStats?.noPrice ?? 0) > 0 ? '#DC2626' : '#111827' }}>
+                  {inventoryStats?.noPrice ?? 0}
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>нужна цена</p>
               </button>
