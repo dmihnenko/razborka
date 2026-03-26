@@ -154,9 +154,9 @@ export default function Layout() {
       {/* ════════════════════════════════════════════
           MOBILE HEADER (hidden on md+)
           ════════════════════════════════════════════ */}
-      <div className="md:hidden bg-white border-b">
+      <div className="md:hidden sticky top-0 z-40 bg-white border-b border-gray-200">
         {/* Top bar: user name + logout */}
-        <div className="px-4 py-2.5 border-b bg-gray-50 flex items-center justify-between gap-3">
+        <div className="px-4 py-3 border-b border-gray-100 bg-white flex items-center justify-between gap-3">
           <p className="text-sm font-medium text-gray-700 truncate flex-1">
             {profile?.full_name || profile?.email || 'Пользователь'}
           </p>

@@ -128,7 +128,7 @@ export default function AdminLayout() {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex flex-col items-center justify-center gap-1 min-h-[56px] rounded-xl text-[10px] font-semibold transition-all ${
+                className={`flex flex-col items-center justify-center gap-1 min-h-[64px] rounded-xl text-[10px] font-semibold transition-all ${
                   isActive
                     ? 'bg-purple-50 text-purple-700'
                     : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
@@ -146,7 +146,7 @@ export default function AdminLayout() {
               <button
                 key={q.path}
                 onClick={() => { localStorage.setItem('activeRole', q.role); navigate(q.path) }}
-                className="flex flex-col items-center justify-center gap-1 min-h-[56px] rounded-xl text-[10px] font-semibold bg-gray-50 text-gray-500 hover:bg-gray-100 transition-all"
+                className="flex flex-col items-center justify-center gap-1 min-h-[64px] rounded-xl text-[10px] font-semibold bg-gray-50 text-gray-500 hover:bg-gray-100 transition-all"
               >
                 <Icon className="w-4 h-4 text-gray-400" />
                 <span className="text-center leading-tight px-0.5">{q.name}</span>
