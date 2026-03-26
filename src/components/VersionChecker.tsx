@@ -1,56 +1,60 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { toast } from 'sonner'
 
 const POLL_INTERVAL = 30_000 // 30 seconds
 
-async function fetchHash(): Promise<string | null> {
+// Module-level state: survives React remounts, prevents race conditions
+let initialHash: string | null = null
+let isChecking = false
+let isReloading = false
+
+async function checkVersion(): Promise<void> {
+  if (isChecking || isReloading) return
+  isChecking = true
+
   try {
     const res = await fetch(`/version.json?t=${Date.now()}`, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache' },
     })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.hash ?? null
+    if (!res.ok) return
+    const data: unknown = await res.json()
+    if (!data || typeof data !== 'object' || !('hash' in data)) return
+    const hash = (data as { hash: unknown }).hash
+    if (typeof hash !== 'string' || !hash) return
+
+    if (initialHash === null) {
+      // First fetch — record baseline hash for this session
+      initialHash = hash
+      return
+    }
+
+    if (hash !== initialHash) {
+      isReloading = true
+      toast.info('Доступна новая версия — обновление...', {
+        duration: 2500,
+        icon: '🔄',
+      })
+      setTimeout(() => window.location.reload(), 2500)
+    }
   } catch {
-    return null
+    // Ignore network errors silently
+  } finally {
+    isChecking = false
   }
 }
 
 export default function VersionChecker() {
-  const initialHash = useRef<string | null>(null)
-  const reloading = useRef(false)
-
   useEffect(() => {
     if (!import.meta.env.PROD) return
 
-    const check = async () => {
-      if (reloading.current) return
-      const hash = await fetchHash()
-      if (!hash) return
-
-      if (initialHash.current === null) {
-        initialHash.current = hash
-        return
-      }
-
-      if (hash !== initialHash.current) {
-        reloading.current = true
-        toast.info('Доступна новая версия — обновление...', {
-          duration: 2500,
-          icon: '🔄',
-        })
-        setTimeout(() => window.location.reload(), 2500)
-      }
-    }
-
-    check()
-    const interval = setInterval(check, POLL_INTERVAL)
-    window.addEventListener('focus', check)
+    checkVersion()
+    const interval = setInterval(checkVersion, POLL_INTERVAL)
+    window.addEventListener('focus', checkVersion)
 
     return () => {
       clearInterval(interval)
-      window.removeEventListener('focus', check)
+      window.removeEventListener('focus', checkVersion)
     }
   }, [])
 
