@@ -17,7 +17,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['DM Sans', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       colors: {
         // HSL token bridge (used by shadcn-style components)
