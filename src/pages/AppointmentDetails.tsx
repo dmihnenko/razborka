@@ -1,4 +1,5 @@
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { Spinner } from '@/components/ui/Spinner'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -277,7 +278,7 @@ export default function AppointmentDetails() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <Spinner size="lg" />
       </div>
     )
   }

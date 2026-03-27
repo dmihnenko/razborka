@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Spinner } from '@/components/ui/Spinner'
 import { Save, Tag, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -150,7 +151,7 @@ export default function PartsNoPricePage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {isLoading ? (
           <div className="text-center py-16">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <Spinner size="md" className="inline-block" />
           </div>
         ) : noPriceItems.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-12 text-center">

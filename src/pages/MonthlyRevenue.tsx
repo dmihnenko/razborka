@@ -1,9 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
+import { Spinner } from '@/components/ui/Spinner'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Package, Wrench, EyeOff, Eye } from 'lucide-react'
-import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { MONTH_NAMES_RU } from '@/utils/status'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useToggleAppointmentExclude } from '@/hooks/useToggleAppointmentExclude'
 
 type AppointmentRow = {
   id: string
@@ -17,7 +19,6 @@ type AppointmentRow = {
 }
 
 export default function MonthlyRevenue() {
-  const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -64,24 +65,7 @@ export default function MonthlyRevenue() {
     enabled: !!profile?.sto_company_id,
   })
 
-  const toggleExcludeMutation = useMutation({
-    mutationFn: async ({ id, exclude }: { id: string, exclude: boolean }) => {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ exclude_from_stats: exclude })
-        .eq('id', id)
-
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['monthly-appointments'] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard-monthly-revenue'] })
-      toast.success('Статус учета обновлен')
-    },
-    onError: () => {
-      toast.error('Ошибка обновления')
-    }
-  })
+  const toggleExcludeMutation = useToggleAppointmentExclude()
 
   const included = appointments?.filter(a => !a.exclude_from_stats) || []
   const excluded = isStoOwner ? (appointments?.filter(a => a.exclude_from_stats) || []) : []
@@ -89,11 +73,6 @@ export default function MonthlyRevenue() {
   const includedTotal = included.reduce((sum, a) => 
     sum + ((a.parts_cost || a.total_parts_cost) || 0) + (a.total_work_cost || 0), 0
   )
-
-  const monthNames = [
-    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-  ]
 
   return (
     <div className="container-mobile">
@@ -106,13 +85,13 @@ export default function MonthlyRevenue() {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-          Закрытые заявки - {monthNames[month - 1]} {year}
+          Закрытые заявки - {MONTH_NAMES_RU[month - 1]} {year}
         </h1>
       </div>
 
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <Spinner size="lg" />
         </div>
       ) : (
         <div className="space-y-4 sm:space-y-6">

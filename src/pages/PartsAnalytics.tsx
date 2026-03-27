@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
-import { useNavigate } from 'react-router-dom'
 import { formatPrice } from '@/utils/currency'
 import {
   BarChart3,
@@ -11,13 +10,12 @@ import {
   Package,
   ShoppingCart,
   Car,
-  Calendar,
-  AlertCircle
+  Calendar
 } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 
 export default function PartsAnalytics() {
-  const navigate = useNavigate()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
   const { rate: globalRate } = usePartsExchangeRate()
@@ -171,14 +169,7 @@ export default function PartsAnalytics() {
 
 
   if (!partsCompanyId) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">У вас нет доступа к разборке</p>
-        </div>
-      </div>
-    )
+    return <PartsAccessDenied />
   }
 
   return (

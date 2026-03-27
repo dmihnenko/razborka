@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -269,7 +270,7 @@ export default function Support() {
   if (chatsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner size="md" />
       </div>
     )
   }
@@ -350,9 +351,9 @@ export default function Support() {
                                   e.stopPropagation()
                                   const ok = await showConfirm({
                                     title: 'Удалить обращение?',
-                                    description: `«${chat.subject || 'Обращение'}» и все сообщения будут удалены безвозвратно.`,
+                                    message: `«${chat.subject || 'Обращение'}» и все сообщения будут удалены безвозвратно.`,
                                     confirmText: 'Удалить',
-                                    variant: 'danger',
+                                    danger: true,
                                   })
                                   if (ok) deleteChatMutation.mutate(chat.id)
                                 }}
@@ -403,9 +404,9 @@ export default function Support() {
                                   e.stopPropagation()
                                   const ok = await showConfirm({
                                     title: 'Удалить обращение?',
-                                    description: `«${chat.subject || 'Обращение'}» и все сообщения будут удалены безвозвратно.`,
+                                    message: `«${chat.subject || 'Обращение'}» и все сообщения будут удалены безвозвратно.`,
                                     confirmText: 'Удалить',
-                                    variant: 'danger',
+                                    danger: true,
                                   })
                                   if (ok) deleteChatMutation.mutate(chat.id)
                                 }}

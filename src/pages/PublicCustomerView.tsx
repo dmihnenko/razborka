@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Spinner } from '@/components/ui/Spinner'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -118,7 +119,7 @@ export default function PublicCustomerView() {
       <div className="min-h-screen bg-slate-50 flex flex-col">
         <PublicBrandHeader subtitle="История обслуживания" />
         <div className="flex-1 flex justify-center items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <Spinner size="lg" />
         </div>
       </div>
     )

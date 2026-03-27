@@ -1,9 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
+import { Spinner } from '@/components/ui/Spinner'
 import { supabase } from '@/lib/supabase'
 import { X, Package, Wrench, EyeOff, Eye } from 'lucide-react'
-import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { MONTH_NAMES_RU } from '@/utils/status'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
+import { useToggleAppointmentExclude } from '@/hooks/useToggleAppointmentExclude'
 
 type AppointmentRow = {
   id: string
@@ -24,7 +26,6 @@ interface MonthlyRevenueModalProps {
 }
 
 export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: MonthlyRevenueModalProps) {
-  const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
   useBlockScroll(isOpen)
 
@@ -58,24 +59,7 @@ export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: Mo
     enabled: isOpen && !!profile?.sto_company_id,
   })
 
-  const toggleExcludeMutation = useMutation({
-    mutationFn: async ({ id, exclude }: { id: string, exclude: boolean }) => {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ exclude_from_stats: exclude })
-        .eq('id', id)
-
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['monthly-appointments'] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard-monthly-revenue'] })
-      toast.success('Статус учета обновлен')
-    },
-    onError: () => {
-      toast.error('Ошибка обновления')
-    }
-  })
+  const toggleExcludeMutation = useToggleAppointmentExclude()
 
   if (!isOpen) return null
 
@@ -86,18 +70,13 @@ export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: Mo
     sum + ((a.parts_cost || a.total_parts_cost) || 0) + (a.total_work_cost || 0), 0
   )
 
-  const monthNames = [
-    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-  ]
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
       <div className="bg-white rounded-t-2xl sm:rounded-lg shadow-xl max-w-4xl w-full max-h-[90dvh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white">
           <h2 className="text-xl font-semibold text-gray-900">
-            Закрытые заявки - {monthNames[month - 1]} {year}
+            Закрытые заявки - {MONTH_NAMES_RU[month - 1]} {year}
           </h2>
           <button
             onClick={onClose}
@@ -111,7 +90,7 @@ export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: Mo
         <div className="flex-1 overflow-y-auto p-4">
           {isLoading ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <Spinner size="md" />
             </div>
           ) : (
             <div className="space-y-6">

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Spinner } from '@/components/ui/Spinner'
 import { CreditCard, TrendingUp, Plus, Trash2, Calendar, Building2, CheckCircle, XCircle } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -254,7 +255,7 @@ export default function Subscriptions() {
           
           {plansLoading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <Spinner size="lg" className="mx-auto" />
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -307,7 +308,7 @@ export default function Subscriptions() {
           <div className="p-6">
             {subsLoading ? (
               <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                <Spinner size="lg" className="mx-auto" />
               </div>
             ) : companySubscriptions.length === 0 ? (
               <div className="text-center text-gray-500 py-12">

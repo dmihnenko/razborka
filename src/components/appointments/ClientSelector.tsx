@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -157,7 +158,7 @@ export default function ClientSelector({ selectedId, onSelect }: Props) {
 
       {isLoading ? (
         <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <Spinner size="md" />
         </div>
       ) : (
         <>

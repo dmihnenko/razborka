@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
+import { formatDate } from '@/utils/date'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getImgbbKey, setImgbbKey } from '@/utils/imgbbKey'
 import { toast } from 'sonner'
@@ -51,18 +53,8 @@ export default function PartsSettings() {
     toast.success(`Курс установлен: ${val} ₴/$`)
   }
 
-  const formatDate = (d: string | null) => {
-    if (!d) return null
-    const [y, m, day] = d.split('-')
-    return `${day}.${m}.${y}`
-  }
-
   if (!partsCompanyId) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <p className="text-gray-600">У вас нет доступа к разборке</p>
-      </div>
-    )
+    return <PartsAccessDenied />
   }
 
   return (

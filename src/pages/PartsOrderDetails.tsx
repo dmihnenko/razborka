@@ -1,9 +1,13 @@
 import { useState } from 'react'
+import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile, useHasRole, useIsAdmin } from '@/hooks/useUserProfile'
+import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
+import { formatDate } from '@/utils/date'
 import { PartsOrder, CreatePartsOrderItemInput } from '@/types/parts'
 import { useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import { Plus, Trash2, Edit2, Search, CheckCircle } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { formatCurrency, formatPrice } from '@/utils/currency'
@@ -139,7 +143,7 @@ export default function PartsOrderDetails() {
       await moveToTrash({
         entityType: 'parts_order',
         entityId: id,
-        entityLabel: `Заказ разборки: ${order?.customer?.name || id}`,
+        entityLabel: `Заказ разборки: ${order?.customer?.full_name || id}`,
         entityData: { order, items: order?.items ?? [] },
         partsCompanyId: partsCompanyId,
       })
@@ -155,14 +159,6 @@ export default function PartsOrderDetails() {
       navigate('/parts/orders')
     },
   })
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    })
-  }
 
   const canEdit = order && (order.status === 'new' || order.status === 'in_progress')
   const isAdmin = useIsAdmin()
@@ -183,19 +179,13 @@ export default function PartsOrderDetails() {
   const hasUAH = (order?.items ?? []).some((i: any) => getItemCurrency(i) === 'UAH')
 
   if (!partsCompanyId) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-gray-600">У вас нет доступа к разборке</p>
-        </div>
-      </div>
-    )
+    return <PartsAccessDenied />
   }
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Spinner size="md" className="inline-block" />
       </div>
     )
   }

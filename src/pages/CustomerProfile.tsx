@@ -1,4 +1,5 @@
 import { useParams, Link, useLocation } from 'react-router-dom'
+import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Car, FileText, Phone, Mail, MapPin, Link2, Package, Plus, Pencil, Trash2, ChevronDown } from 'lucide-react'
@@ -149,7 +150,7 @@ export default function CustomerProfile() {
   if (customerLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <Spinner size="lg" />
       </div>
     )
   }
@@ -256,7 +257,7 @@ export default function CustomerProfile() {
         <div className={`${vehiclesMobileOpen ? 'block' : 'hidden'} sm:block`}>
         {vehiclesLoading ? (
           <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+            <Spinner size="sm" />
           </div>
         ) : vehicles && vehicles.length > 0 ? (
           /* Mobile: compact list rows | Desktop: grid cards */
@@ -386,7 +387,7 @@ export default function CustomerProfile() {
 
         {appointmentsLoading ? (
           <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <Spinner size="md" />
           </div>
         ) : appointments && appointments.length > 0 ? (
           (() => {

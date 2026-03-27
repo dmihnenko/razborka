@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
+import { Spinner } from '@/components/ui/Spinner'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, FileText, CheckCircle, Clock, Calendar } from 'lucide-react'
@@ -71,7 +72,7 @@ export default function EmployeeProfile() {
   if (employeeLoading || appointmentsLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <Spinner size="lg" />
       </div>
     )
   }

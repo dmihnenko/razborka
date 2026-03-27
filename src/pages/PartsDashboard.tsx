@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { Car, ShoppingCart, DollarSign, AlertCircle, ArrowRight, Warehouse, LayoutGrid, Users, BarChart2, Settings, Wrench, Store } from 'lucide-react'
 import { getPartsOrderStatusText } from '@/utils/status'
+import { formatDate } from '@/utils/date'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 
 export default function PartsDashboard() {
@@ -160,14 +161,6 @@ export default function PartsDashboard() {
     return sum + (computeOrderUSD(order) ?? 0)
   }, 0)
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    })
-  }
-
   if (!partsCompanyId) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -227,7 +220,7 @@ export default function PartsDashboard() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold" style={{ color: '#854D0E' }}>
-              {ordersStats.new} новых {ordersStats.new === 1 ? 'заказ' : ordersStats.new < 5 ? 'заказа' : 'заказов'} ожидает обработки
+              {ordersStats?.new} новых {ordersStats?.new === 1 ? 'заказ' : (ordersStats?.new ?? 0) < 5 ? 'заказа' : 'заказов'} ожидает обработки
             </p>
           </div>
           <ArrowRight className="w-4 h-4 flex-shrink-0" style={{ color: '#CA8A04' }} />
@@ -367,7 +360,7 @@ export default function PartsDashboard() {
                 Открыть <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
-            <div className="grid grid-cols-3 divide-x" style={{ divideColor: '#F1F5F9' }}>
+            <div className="grid grid-cols-3 divide-x">
               <button
                 onClick={() => navigate('/parts/inventory?source=vehicles')}
                 className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group"
@@ -459,7 +452,7 @@ export default function PartsDashboard() {
           </div>
 
           {recentActivity && recentActivity.length > 0 ? (
-            <div className="flex-1 overflow-auto divide-y" style={{ divideColor: '#F1F5F9' }}>
+            <div className="flex-1 overflow-auto divide-y">
               {recentActivity.map((order: any) => {
                 const usd = computeOrderUSD(order)
                 return (

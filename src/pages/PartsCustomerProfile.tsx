@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Spinner } from '@/components/ui/Spinner'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -220,7 +221,7 @@ export default function PartsCustomerProfile() {
   if (customerLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <Spinner size="lg" />
       </div>
     )
   }
@@ -331,7 +332,7 @@ export default function PartsCustomerProfile() {
 
         {ordersLoading ? (
           <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <Spinner size="md" />
           </div>
         ) : orders && orders.length > 0 ? (
           <div className="space-y-4">

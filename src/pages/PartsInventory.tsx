@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { Spinner } from '@/components/ui/Spinner'
 import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, TrendingDown, Box, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
@@ -15,6 +17,7 @@ import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { moveToTrash } from '@/services/trashService'
+import { PARTS_CONDITION_LABELS } from '@/utils/status'
 
 type ViewMode = 'grid' | 'list'
 
@@ -37,12 +40,6 @@ const statusColors: Record<PartsInventoryStatus, string> = {
   reserved: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   sold: 'bg-gray-100 text-gray-800 border-gray-200',
   damaged: 'bg-red-100 text-red-800 border-red-200'
-}
-
-const conditionLabels = {
-  new: 'Новая',
-  used: 'Б/У хорошее',
-  damaged: 'Повреждена'
 }
 
 export default function PartsInventory() {
@@ -512,14 +509,7 @@ export default function PartsInventory() {
   }
 
   if (!partsCompanyId) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">У вас нет доступа к разборке</p>
-        </div>
-      </div>
-    )
+    return <PartsAccessDenied />
   }
 
   return (
@@ -773,7 +763,7 @@ export default function PartsInventory() {
         {/* Inventory List/Grid */}
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <Spinner size="md" className="inline-block" />
           </div>
         ) : filteredInventory.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
@@ -854,7 +844,7 @@ export default function PartsInventory() {
                   <div className="space-y-2 text-sm mb-4">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Состояние:</span>
-                      <span className="font-medium">{conditionLabels[item.condition as keyof typeof conditionLabels]}</span>
+                      <span className="font-medium">{PARTS_CONDITION_LABELS[item.condition]}</span>
                     </div>
                     {!item.vehicle_id && (
                       <div className="flex items-center justify-between">

@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Tag, X, Check, List, Download, Search } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import {
   getPartsCategories,
   createPartsCategory,
@@ -197,11 +199,7 @@ export default function PartsCategories() {
   const bulkDuplicate = bulkPreview.filter(n => existingNames.has(n.toLowerCase()))
 
   if (!partsCompanyId) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <p className="text-gray-600">У вас нет доступа к разборке</p>
-      </div>
-    )
+    return <PartsAccessDenied />
   }
 
   return (
@@ -297,7 +295,7 @@ export default function PartsCategories() {
 
             {isLoading ? (
               <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
+                <Spinner size="xl" />
               </div>
             ) : categories.length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
@@ -387,7 +385,7 @@ export default function PartsCategories() {
 
             {loadingTemplates ? (
               <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
+                <Spinner size="xl" />
               </div>
             ) : templates.length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">

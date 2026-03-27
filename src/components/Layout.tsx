@@ -143,11 +143,6 @@ export default function Layout() {
     )
   }
 
-  // User initials avatar
-  const initials = profile?.full_name
-    ? profile.full_name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
-    : (profile?.email?.[0] || 'U').toUpperCase()
-
   return (
     <div className="flex flex-col md:flex-row h-screen bg-gray-100 font-sans">
 

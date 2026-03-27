@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
+import { Spinner } from '@/components/ui/Spinner'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { MONTH_NAMES_RU } from '@/utils/status'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Calendar, DollarSign, Check } from 'lucide-react'
 
@@ -47,9 +49,8 @@ export default function MonthlyDetails() {
     workPaidCount: appointments.filter(a => a.work_paid).length,
   } : null
 
-  const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
   const [year, monthNum] = (month || '').split('-')
-  const monthName = monthNum ? `${monthNames[parseInt(monthNum) - 1]} ${year}` : ''
+  const monthName = monthNum ? `${MONTH_NAMES_RU[parseInt(monthNum) - 1]} ${year}` : ''
 
   /* const statusColors = {
     scheduled: 'bg-purple-100 text-purple-800',
@@ -143,7 +144,7 @@ export default function MonthlyDetails() {
       {/* Таблица заявок */}
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <Spinner size="lg" />
         </div>
       ) : (
         <>

@@ -1,4 +1,5 @@
 import { useParams } from 'react-router-dom'
+import { Spinner } from '@/components/ui/Spinner'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Package, Clock, ChevronDown, ChevronUp, Archive, Car, Phone } from 'lucide-react'
@@ -160,7 +161,7 @@ export default function PublicPartsCustomerView() {
       <div className="min-h-screen bg-slate-50 flex flex-col">
         <PublicBrandHeader subtitle="Авторазборка · заказы" />
         <div className="flex-1 flex justify-center items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+          <Spinner size="lg" />
         </div>
       </div>
     )

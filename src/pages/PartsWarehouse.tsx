@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -213,7 +214,7 @@ export default function PartsWarehouse() {
 
         {isLoading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
+            <Spinner size="xl" />
           </div>
         ) : locations.length === 0 && addingParentId === undefined ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">

@@ -68,3 +68,16 @@ export function getOrderStatusColor(status: string): string {
 export function getOrderStatusText(status: string): string {
   return getPartsOrderStatusText(status as PartsOrderStatus)
 }
+
+// Состояние запчастей в инвентаре (parts inventory)
+export const PARTS_CONDITION_LABELS: Record<string, string> = {
+  new: 'Новая',
+  used: 'Б/У хорошее',
+  damaged: 'Повреждена',
+}
+
+// Названия месяцев на русском языке
+export const MONTH_NAMES_RU = [
+  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+]

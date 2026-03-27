@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { Spinner } from '@/components/ui/Spinner'
 import { Plus, Search, Users, Grid, List, Phone, Mail, TrendingUp, DollarSign, Link2 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { getPartsCustomers, createPartsCustomer, updatePartsCustomer, deletePartsCustomer } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
 import { supabase } from '@/lib/supabase'
@@ -127,14 +129,7 @@ export default function PartsCustomers() {
   }
 
   if (!partsCompanyId) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">У вас нет доступа к разборке</p>
-        </div>
-      </div>
-    )
+    return <PartsAccessDenied />
   }
 
   return (
@@ -229,7 +224,7 @@ export default function PartsCustomers() {
         {/* Customers List/Grid */}
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <Spinner size="md" className="inline-block" />
           </div>
         ) : filteredCustomers.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">

@@ -60,7 +60,7 @@ export default function AdminLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const isAdmin = useIsAdmin()
-  const { data: profile, isLoading } = useUserProfile()
+  const { isLoading } = useUserProfile()
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut()
@@ -89,11 +89,6 @@ export default function AdminLayout() {
       </div>
     )
   }
-
-  // User initials avatar
-  const initials = profile?.full_name
-    ? profile.full_name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
-    : (profile?.email?.[0] || 'A').toUpperCase()
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-gray-100 font-sans">

@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -10,6 +11,7 @@ import { getPartsInventoryItem, deletePartsInventoryItem } from '@/services/part
 import { moveToTrash } from '@/services/trashService'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { formatPrice } from '@/utils/currency'
+import { PARTS_CONDITION_LABELS } from '@/utils/status'
 import type { PartsInventoryStatus } from '@/types/parts'
 import PhotoGallery from '@/components/parts/PhotoGallery'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -34,12 +36,6 @@ const statusIcons: Record<PartsInventoryStatus, React.ReactNode> = {
   reserved: <Clock className="w-4 h-4" />,
   sold: <DollarSign className="w-4 h-4" />,
   damaged: <AlertTriangle className="w-4 h-4" />,
-}
-
-const conditionLabels: Record<string, string> = {
-  new: 'Новая',
-  used: 'Б/У хорошее',
-  damaged: 'Повреждена',
 }
 
 export default function PartsInventoryItemPage() {
@@ -85,7 +81,7 @@ export default function PartsInventoryItemPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
+        <Spinner size="xl" />
       </div>
     )
   }
@@ -224,7 +220,7 @@ export default function PartsInventoryItemPage() {
             <div>
               <dt className="text-xs text-gray-500 mb-0.5">Состояние</dt>
               <dd className="text-sm font-medium text-gray-900">
-                {conditionLabels[item.condition] || item.condition}
+                {PARTS_CONDITION_LABELS[item.condition] || item.condition}
               </dd>
             </div>
             {!item.vehicle_id && (

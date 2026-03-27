@@ -1,9 +1,9 @@
 import { useState } from 'react'
+import { Spinner } from '@/components/ui/Spinner'
 import React from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { toast } from 'sonner'
 import { Plus, List, TrendingUp, Check } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 import ReassignWorkerModal from '@/components/appointments/ReassignWorkerModal'
@@ -24,7 +24,6 @@ export default function Appointments() {
     customerName: string
     vehicleName: string
   } | null>(null)
-  const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
   const navigate = useNavigate()
 
@@ -191,7 +190,7 @@ export default function Appointments() {
 
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <Spinner size="lg" />
         </div>
       ) : (
         <>

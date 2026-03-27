@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
+import { Spinner } from '@/components/ui/Spinner'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Car, Calendar, Wrench, Package, Clock } from 'lucide-react'
@@ -42,7 +43,7 @@ export default function VehicleHistory() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+        <Spinner size="lg" />
       </div>
     )
   }

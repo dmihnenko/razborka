@@ -1,7 +1,10 @@
 import { useState } from 'react'
+import { Spinner } from '@/components/ui/Spinner'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
+import { formatDate } from '@/utils/date'
 import { PartsOrder } from '@/types/parts'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Search, Grid, List, ShoppingCart, DollarSign } from 'lucide-react'
@@ -93,23 +96,8 @@ export default function PartsOrders() {
     })(),
   }
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    })
-  }
-
   if (!partsCompanyId) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">У вас нет доступа к разборке</p>
-        </div>
-      </div>
-    )
+    return <PartsAccessDenied />
   }
 
   return (
@@ -243,7 +231,7 @@ export default function PartsOrders() {
         {/* Orders List/Grid */}
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <Spinner size="md" className="inline-block" />
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">

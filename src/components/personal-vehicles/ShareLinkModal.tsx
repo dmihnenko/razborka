@@ -8,6 +8,7 @@ import { useAlert } from '../CustomAlert'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
+import { formatDateTime } from '@/utils/date'
 
 interface Props {
   isOpen: boolean
@@ -67,16 +68,6 @@ export default function ShareLinkModal({ isOpen, onClose, vehicleId, userId }: P
     const link = `${window.location.origin}/vehicle-access?code=${code}`
     navigator.clipboard.writeText(link)
     toast.success('Ссылка скопирована в буфер обмена', { duration: 500 })
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
   }
 
   const isExpired = (link: VehicleShareLink) => {
@@ -204,8 +195,8 @@ export default function ShareLinkModal({ isOpen, onClose, vehicleId, userId }: P
                           </span>
                         )}
                         <span className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap hidden sm:inline">
-                          {formatDate(link.createdAt)}
-                          {link.expiresAt && ` • ${formatDate(link.expiresAt)}`}
+                          {formatDateTime(link.createdAt)}
+                          {link.expiresAt && ` • ${formatDateTime(link.expiresAt)}`}
                         </span>
                       </div>
 

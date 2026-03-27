@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Spinner } from '@/components/ui/Spinner'
 import { Link, useLocation } from 'react-router-dom'
 import { ArrowLeft, Trash2, RotateCcw, User, Car, Wrench, Package, Tag, Users, Calendar, ShoppingCart } from 'lucide-react'
 import { toast } from 'sonner'
@@ -114,7 +115,7 @@ export default function Trash() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+        <Spinner size="lg" />
       </div>
     )
   }

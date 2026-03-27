@@ -3,6 +3,7 @@ import { ArrowLeft, Car, TrendingUp, TrendingDown } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getPersonalVehicles } from '@/services/personalVehicles'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { formatDate } from '@/utils/date'
 
 const NO_IMAGE_URL = '/noimage_final.png'
 
@@ -16,15 +17,6 @@ export default function MyVehiclesArchive() {
     enabled: !!profile?.id,
     select: (data) => data.filter(v => v.isSold)
   })
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '-'
-    return new Date(dateString).toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    })
-  }
 
   const calculateProfit = (salePrice?: number, totalCost?: number) => {
     if (!salePrice || !totalCost) return 0

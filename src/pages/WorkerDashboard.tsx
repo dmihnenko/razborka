@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { Spinner } from '@/components/ui/Spinner'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useNavigate } from 'react-router-dom'
@@ -105,7 +106,7 @@ export default function WorkerDashboard() {
     <div className="container-mobile">
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <Spinner size="lg" />
         </div>
       ) : (
         <div className="space-y-4 sm:space-y-6">
