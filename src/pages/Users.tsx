@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, UserCog } from 'lucide-react';
@@ -72,6 +73,7 @@ export default function Users() {
   });
   const [selectedRoleNames, setSelectedRoleNames] = useState<string[]>([]);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { confirm: showConfirm, dialogProps } = useConfirm();
   
   // Получаем информацию о текущем пользователе
@@ -406,21 +408,7 @@ export default function Users() {
   };
 
   const handleEditUser = (user: UserProfile) => {
-    setSelectedUser(user);
-    const userRoleIds = user.roles?.map(r => r.id) || [];
-    const primaryRole = user.roles?.find(r => r.is_primary);
-    setFormData({
-      email: user.email,
-      username: '',
-      password: '',
-      full_name: user.full_name || '',
-      phone: user.phone || '',
-      role_ids: userRoleIds,
-      primary_role_id: primaryRole?.id || (userRoleIds[0] || ''), // Берем первую роль как основную, если не указано
-      sto_company_id: user.sto_company_id || '',
-      parts_company_id: user.parts_company_id || ''
-    });
-    setIsEditModalOpen(true);
+    navigate(`/users/${user.id}/edit`);
   };
 
   const handleCreateUser = () => {
@@ -444,7 +432,7 @@ export default function Users() {
       }));
     }
     
-    setIsCreateModalOpen(true);
+    navigate('/users/new');
   };
 
   const resetForm = () => {

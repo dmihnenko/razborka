@@ -23,6 +23,8 @@ const Services = lazy(() => import('./pages/Services'))
 const Parts = lazy(() => import('./pages/Parts'))
 const Invoices = lazy(() => import('./pages/Invoices'))
 const Users = lazy(() => import('./pages/Users'))
+const UserCreate = lazy(() => import('./pages/UserCreate'))
+const UserEdit = lazy(() => import('./pages/UserEdit'))
 const AdminPanel = lazy(() => import('./pages/AdminPanel'))
 const Roles = lazy(() => import('./pages/Roles'))
 const StoCompanies = lazy(() => import('./pages/StoCompanies'))
@@ -142,6 +144,8 @@ function App() {
           <Route path="parts" element={<Parts />} />
           <Route path="invoices" element={<Invoices />} />
           <Route path="users" element={<Users />} />
+          <Route path="users/new" element={<UserCreate />} />
+          <Route path="users/:id/edit" element={<UserEdit />} />
           <Route path="sto" element={<Navigate to="/" replace />} />
           <Route path="sto/employees" element={<StoEmployees />} />
           <Route path="sto/employees/:employeeId" element={<EmployeeProfile />} />
@@ -181,6 +185,8 @@ function App() {
         <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
           <Route index element={<AdminPanel />} />
           <Route path="users" element={<Users />} />
+          <Route path="users/new" element={<UserCreate />} />
+          <Route path="users/:id/edit" element={<UserEdit />} />
           <Route path="roles" element={<Roles />} />
           <Route path="sto" element={<StoCompanies />} />
           <Route path="parts-companies" element={<PartsCompanies />} />
