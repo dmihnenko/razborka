@@ -126,9 +126,12 @@ serve(async (req) => {
       )
     }
 
+    // Генерируем email-заглушку если не указан
+    const finalEmail = email || `${(username || String(Date.now())).toLowerCase()}@internal.local`;
+
     // Create new user in auth.users
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
+      email: finalEmail,
       password,
       email_confirm: true,
       user_metadata: {
