@@ -151,7 +151,7 @@ serve(async (req) => {
     // Вставляем запись в таблицу users (требуется для FK user_roles)
     const { error: usersInsertError } = await supabaseAdmin
       .from('users')
-      .insert({ id: newUser.user.id })
+      .insert({ id: newUser.user.id, email: finalEmail })
 
     if (usersInsertError && usersInsertError.code !== '23505') {
       // Игнорируем duplicate key — запись уже есть (триггер мог создать)
