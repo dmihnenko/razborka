@@ -181,7 +181,7 @@ serve(async (req) => {
 
       if (rolesInsertError) {
         console.error('Roles insert error:', rolesInsertError)
-        // Don't throw - user is created, roles just need manual assignment
+        throw new Error('Ошибка при назначении ролей: ' + rolesInsertError.message)
       }
     }
 
