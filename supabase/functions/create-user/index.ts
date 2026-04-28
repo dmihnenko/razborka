@@ -148,6 +148,16 @@ serve(async (req) => {
       throw new Error('Failed to create user')
     }
 
+    // Вставляем запись в таблицу users (требуется для FK user_roles)
+    const { error: usersInsertError } = await supabaseAdmin
+      .from('users')
+      .insert({ id: newUser.user.id })
+
+    if (usersInsertError && usersInsertError.code !== '23505') {
+      // Игнорируем duplicate key — запись уже есть (триггер мог создать)
+      console.error('Users insert error:', usersInsertError)
+    }
+
     // Update user profile with additional data
     const { error: profileError } = await supabaseAdmin
       .from('user_profiles')
