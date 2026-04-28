@@ -931,7 +931,7 @@ export default function Users() {
               </button>
               <button
                 onClick={() => createUserMutation.mutate(formData)}
-                disabled={!formData.email || !formData.password || formData.password.length < 6}
+                disabled={!formData.username || !formData.password || formData.password.length < 6}
                 className="px-4 py-2 text-sm font-medium text-white bg-purple-700 rounded-md hover:bg-purple-800 disabled:bg-gray-400"
               >
                 Создать

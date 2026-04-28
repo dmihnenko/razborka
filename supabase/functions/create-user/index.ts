@@ -53,9 +53,9 @@ serve(async (req) => {
     // Get user data from request body
     const { email, password, full_name, phone, role_ids, primary_role_id, sto_company_id, parts_company_id, username, plain_password } = await req.json()
     
-    if (!email || !password) {
+    if (!password) {
       return new Response(
-        JSON.stringify({ error: 'Email and password are required' }),
+        JSON.stringify({ error: 'Password is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
