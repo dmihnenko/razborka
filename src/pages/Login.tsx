@@ -329,7 +329,7 @@ export default function Login() {
                   </div>
                 ) : (
                   <div>
-                    <label style={{ color:'#9CA3AF', fontSize:'12px', fontWeight:'500', display:'block', marginBottom:'6px', letterSpacing:'0.3px' }}>EMAIL ИЛИ USERNAME</label>
+                    <label htmlFor="emailOrUsername" style={{ color:'#9CA3AF', fontSize:'12px', fontWeight:'500', display:'block', marginBottom:'6px', letterSpacing:'0.3px' }}>EMAIL ИЛИ USERNAME</label>
                     <input
                       id="emailOrUsername"
                       type="text"
@@ -346,7 +346,7 @@ export default function Login() {
 
               <div className="fu fu-3" style={{ display:'flex', flexDirection:'column', gap:'14px', marginBottom:'24px' }}>
                 <div>
-                  <label style={{ color:'#9CA3AF', fontSize:'12px', fontWeight:'500', display:'block', marginBottom:'6px', letterSpacing:'0.3px' }}>ПАРОЛЬ</label>
+                  <label htmlFor="password" style={{ color:'#9CA3AF', fontSize:'12px', fontWeight:'500', display:'block', marginBottom:'6px', letterSpacing:'0.3px' }}>ПАРОЛЬ</label>
                   <input
                     id="password"
                     type="password"
