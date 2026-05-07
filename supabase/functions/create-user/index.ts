@@ -104,8 +104,12 @@ serve(async (req) => {
       )
     }
 
-    const isAdmin = rolesData?.some((role: any) => role.name === 'admin')
-    console.log('Is admin:', isAdmin)
+    const userRoleNames = rolesData?.map((role: any) => role.name) || []
+    const isAdmin = userRoleNames.includes('admin')
+    const isStoOwner = userRoleNames.includes('sto_owner')
+    const isPartsOwner = userRoleNames.includes('parts_owner')
+    const canCreateUsers = isAdmin || isStoOwner || isPartsOwner
+    console.log('User roles:', userRoleNames, 'canCreateUsers:', canCreateUsers)
     
     // Create Supabase admin client with service_role key for user creation
     const supabaseAdmin = createClient(
@@ -119,9 +123,9 @@ serve(async (req) => {
       }
     )
     
-    if (!isAdmin) {
+    if (!canCreateUsers) {
       return new Response(
-        JSON.stringify({ error: 'Only administrators can create users' }),
+        JSON.stringify({ error: 'Only administrators and company owners can create users' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

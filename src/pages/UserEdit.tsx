@@ -69,13 +69,19 @@ export default function UserEdit() {
     queryKey: ['user_profile', id],
     enabled: !!id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: profile, error } = await supabase
         .from('user_profiles')
-        .select('*, user_roles(role_id, is_primary, roles(*))')
+        .select('*')
         .eq('id', id!)
         .single()
       if (error) throw error
-      return data
+
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('role_id, is_primary')
+        .eq('user_id', id!)
+
+      return { ...profile, user_roles: userRoles || [] }
     }
   })
 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, User, Lock, Building2, Shield, ChevronRight } from 'lucide-react'
@@ -65,9 +65,20 @@ export default function UserCreate() {
     phone: '',
     role_ids: [],
     primary_role_id: '',
-    sto_company_id: isStoOwner ? (currentUserProfile?.sto_company_id || '') : '',
-    parts_company_id: isPartsOwner ? (currentUserProfile?.parts_company_id || '') : '',
+    sto_company_id: '',
+    parts_company_id: '',
   })
+
+  // Автозаполнение компании после загрузки профиля
+  useEffect(() => {
+    if (currentUserProfile) {
+      setFormData(prev => ({
+        ...prev,
+        sto_company_id: isStoOwner && !isAdmin ? (currentUserProfile.sto_company_id || '') : prev.sto_company_id,
+        parts_company_id: isPartsOwner && !isAdmin ? (currentUserProfile.parts_company_id || '') : prev.parts_company_id,
+      }))
+    }
+  }, [currentUserProfile, isStoOwner, isPartsOwner, isAdmin])
   const [showPassword, setShowPassword] = useState(false)
 
   const { data: roles = [] } = useQuery({
