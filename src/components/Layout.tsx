@@ -223,13 +223,25 @@ export default function Layout() {
             <p className="text-sm font-medium text-gray-700 truncate flex-1">
               {profile?.full_name || profile?.email || 'Пользователь'}
             </p>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 flex-shrink-0 min-h-[36px] hover:bg-red-100 transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Выйти</span>
-            </button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  onClick={() => localStorage.removeItem('activeRole')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-md border border-purple-200 min-h-[36px] hover:bg-purple-100 transition-colors"
+                >
+                  <Shield className="w-4 h-4" />
+                  <span>Админ</span>
+                </Link>
+              )}
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 min-h-[36px] hover:bg-red-100 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Выйти</span>
+              </button>
+            </div>
           </div>
 
           {/* Mobile Navigation — grid cards */}

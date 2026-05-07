@@ -24,7 +24,6 @@ export interface MenuItem {
 
 // Меню для администратора
 export const adminMenu: MenuItem[] = [
-  { name: 'Админ', href: '/admin', icon: LayoutDashboard },
   { name: 'Мои авто', href: '/my-vehicles', icon: Car },
   { name: 'Поддержка', href: '/admin/support', icon: MessageSquare },
 ];
