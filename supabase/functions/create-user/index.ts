@@ -162,23 +162,26 @@ serve(async (req) => {
       console.error('Users insert error:', usersInsertError)
     }
 
-    // Update user profile with additional data
+    // Upsert user profile (UPDATE если профиль уже создан триггером, иначе INSERT)
+    const profilePayload = {
+      id: newUser.user.id,
+      full_name: full_name || null,
+      phone: phone || null,
+      email: finalEmail,
+      username: username || null,
+      plain_password: plain_password || password,
+      sto_company_id: sto_company_id || null,
+      parts_company_id: parts_company_id || null,
+      is_active: true
+    }
+
     const { error: profileError } = await supabaseAdmin
       .from('user_profiles')
-      .update({
-        full_name,
-        phone,
-        username: username || null,
-        plain_password: plain_password || password,
-        sto_company_id: sto_company_id || null,
-        parts_company_id: parts_company_id || null,
-        is_active: true
-      })
-      .eq('id', newUser.user.id)
+      .upsert(profilePayload, { onConflict: 'id' })
 
     if (profileError) {
-      console.error('Profile update error:', profileError)
-      // Don't throw - user is created, profile just needs manual update
+      console.error('Profile upsert error:', profileError)
+      throw new Error('Ошибка при создании профиля: ' + profileError.message)
     }
 
     // Add user roles

@@ -181,7 +181,7 @@ export default function UserEdit() {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       queryClient.invalidateQueries({ queryKey: ['user_profile', id] })
       toast.success('Данные пользователя обновлены')
-      navigate('/users')
+      navigate(-1)
     },
     onError: (error: any) => {
       toast.error(error.message || 'Ошибка при обновлении')
@@ -225,7 +225,7 @@ export default function UserEdit() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 mb-4">Пользователь не найден</p>
-          <button onClick={() => navigate('/users')} className="text-purple-700 font-medium hover:underline">← Назад</button>
+          <button onClick={() => navigate(-1)} className="text-purple-700 font-medium hover:underline">← Назад</button>
         </div>
       </div>
     )
@@ -239,7 +239,7 @@ export default function UserEdit() {
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <button
-                onClick={() => navigate('/users')}
+                onClick={() => navigate(-1)}
                 className="flex-shrink-0 p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-500"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -254,7 +254,7 @@ export default function UserEdit() {
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
-                onClick={() => navigate('/users')}
+                onClick={() => navigate(-1)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors hidden sm:block"
               >
                 Отмена
@@ -449,7 +449,7 @@ export default function UserEdit() {
         {/* Мобильные кнопки */}
         <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] flex gap-3">
           <button
-            onClick={() => navigate('/users')}
+            onClick={() => navigate(-1)}
             className="flex-1 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl"
           >
             Отмена
