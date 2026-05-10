@@ -114,7 +114,7 @@ export default function UserCreate() {
       if (isAdmin) return true
       if (isStoOwner) return role.name === 'sto_worker'
       if (isPartsOwner) return role.name === 'parts_worker'
-      return true
+      return false
     })
   }, [roles, isAdmin, isStoOwner, isPartsOwner])
 
@@ -170,10 +170,14 @@ export default function UserCreate() {
     }
   }
 
+  const needsStoCompany = selectedRoleNames.some(n => ['sto_owner', 'sto_worker'].includes(n))
+  const needsPartsCompany = selectedRoleNames.some(n => ['parts_owner', 'parts_worker'].includes(n))
   const isValid = formData.username.trim().length >= 2
     && formData.password.length >= 6
     && formData.role_ids.length > 0
-    && formData.primary_role_id
+    && !!formData.primary_role_id
+    && (!needsStoCompany || !!formData.sto_company_id)
+    && (!needsPartsCompany || !!formData.parts_company_id)
 
   return (
     <div className="min-h-screen bg-gray-50">

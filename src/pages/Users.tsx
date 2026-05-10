@@ -347,7 +347,7 @@ export default function Users() {
   const toggleActiveMutation = useMutation({
     mutationFn: async (user: UserProfile) => {
       const { error } = await supabase
-        .from('users')
+        .from('user_profiles')
         .update({ is_active: !user.is_active })
         .eq('id', user.id);
       
@@ -412,26 +412,6 @@ export default function Users() {
   };
 
   const handleCreateUser = () => {
-    resetForm();
-    
-    // Для владельца СТО автоматически заполняем данные
-    if (isStoOwner && !isAdmin) {
-      setFormData(prev => ({
-        ...prev,
-        sto_company_id: currentUserProfile?.sto_company_id || '',
-        role_ids: [], // Можно будет выбрать только sto_worker
-      }));
-    }
-    
-    // Для владельца разборки автоматически заполняем данные
-    if (isPartsOwner && !isAdmin) {
-      setFormData(prev => ({
-        ...prev,
-        parts_company_id: currentUserProfile?.parts_company_id || '',
-        role_ids: [], // Можно будет выбрать только parts_worker
-      }));
-    }
-    
     navigate('/users/new');
   };
 

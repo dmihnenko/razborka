@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { 
   Shield, 
@@ -59,6 +60,7 @@ const quickAccessItems = [
 export default function AdminLayout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const isAdmin = useIsAdmin()
   const { isLoading } = useUserProfile()
 
@@ -164,7 +166,7 @@ export default function AdminLayout() {
             return (
               <button
                 key={q.path}
-                onClick={() => { localStorage.setItem('activeRole', q.role); navigate(q.path) }}
+                onClick={() => { localStorage.setItem('activeRole', q.role); queryClient.invalidateQueries(); navigate(q.path) }}
                 title={q.name}
                 className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium rounded-lg transition-colors hover:opacity-90"
                 style={{ color: q.color }}
@@ -208,7 +210,7 @@ export default function AdminLayout() {
 
           {/* Mobile nav — grid cards like main Layout */}
           <nav className="grid grid-cols-4 sm:grid-cols-5 gap-2 p-2 bg-white">
-            {adminNavFlat.slice(0, 8).map((item) => {
+            {adminNavFlat.map((item) => {
               const Icon = item.icon
               const isActive = location.pathname === item.href
               return (
@@ -235,7 +237,7 @@ export default function AdminLayout() {
               return (
                 <button
                   key={q.path}
-                  onClick={() => { localStorage.setItem('activeRole', q.role); navigate(q.path) }}
+                  onClick={() => { localStorage.setItem('activeRole', q.role); queryClient.invalidateQueries(); navigate(q.path) }}
                   className="flex flex-col items-center justify-center gap-1.5 px-1 py-3 min-h-[64px] rounded-xl text-[11px] font-medium transition-all"
                   style={{ background: q.bg, color: q.color }}
                 >

@@ -156,22 +156,24 @@ export default function UserEdit() {
         .eq('id', id!)
       if (profileError) throw profileError
 
-      // Удаляем старые роли
+      // Удаляем старые роли и вставляем новые атомарно
       const { error: deleteError } = await supabase
         .from('user_roles')
         .delete()
         .eq('user_id', id!)
       if (deleteError) throw deleteError
 
-      // Добавляем новые роли
       if (data.role_ids.length > 0) {
         const { error: insertError } = await supabase
           .from('user_roles')
-          .insert(data.role_ids.map(roleId => ({
-            user_id: id!,
-            role_id: roleId,
-            is_primary: roleId === data.primary_role_id
-          })))
+          .upsert(
+            data.role_ids.map(roleId => ({
+              user_id: id!,
+              role_id: roleId,
+              is_primary: roleId === data.primary_role_id
+            })),
+            { onConflict: 'user_id,role_id' }
+          )
         if (insertError) throw insertError
       }
     },
@@ -186,21 +188,21 @@ export default function UserEdit() {
     }
   })
 
-  const toggleRole = (roleId: string) => {
-    const isSelected = formData.role_ids.includes(roleId)
+  const toggleRole = (toggledId: string) => {
+    const isSelected = formData.role_ids.includes(toggledId)
     if (isSelected) {
-      const newIds = formData.role_ids.filter(id => id !== roleId)
+      const newIds = formData.role_ids.filter(rid => rid !== toggledId)
       setFormData({
         ...formData,
         role_ids: newIds,
-        primary_role_id: formData.primary_role_id === roleId ? (newIds[0] || '') : formData.primary_role_id
+        primary_role_id: formData.primary_role_id === toggledId ? (newIds[0] || '') : formData.primary_role_id
       })
     } else {
-      const newIds = [...formData.role_ids, roleId]
+      const newIds = [...formData.role_ids, toggledId]
       setFormData({
         ...formData,
         role_ids: newIds,
-        primary_role_id: formData.primary_role_id || roleId
+        primary_role_id: formData.primary_role_id || toggledId
       })
     }
   }
