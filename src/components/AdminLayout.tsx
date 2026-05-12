@@ -68,6 +68,8 @@ export default function AdminLayout() {
     const { error } = await supabase.auth.signOut()
     if (error) {
       toast.error('Ошибка при выходе')
+    } else {
+      navigate('/login')
     }
   }
 

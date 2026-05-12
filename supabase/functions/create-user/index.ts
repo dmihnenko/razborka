@@ -131,7 +131,11 @@ serve(async (req) => {
     }
 
     // Генерируем email-заглушку если не указан
-    const finalEmail = email || `${(username || String(Date.now())).toLowerCase()}@internal.local`;
+    // Санитизируем username для email — убираем спецсимволы
+    const safeUsername = (username || String(Date.now()))
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]/g, '_')
+    const finalEmail = email || `${safeUsername}@internal.local`;
 
     // Create new user in auth.users
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -213,10 +217,10 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating user:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

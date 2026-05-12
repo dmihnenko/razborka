@@ -5,8 +5,7 @@ import { ArrowLeft, User, Building2, Shield, ChevronRight } from 'lucide-react'
 import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
-import { useIsAdmin } from '@/hooks/useUserProfile'
-import { useUserProfile } from '@/hooks/useUserProfile'
+import { useIsAdmin, useUserProfile } from '@/hooks/useUserProfile'
 
 interface Role {
   id: string
@@ -134,7 +133,7 @@ export default function UserEdit() {
       if (isAdmin) return true
       if (isStoOwner) return role.name === 'sto_worker'
       if (isPartsOwner) return role.name === 'parts_worker'
-      return true
+      return false
     })
   }, [roles, isAdmin, isStoOwner, isPartsOwner])
 
@@ -179,6 +178,7 @@ export default function UserEdit() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
+      queryClient.invalidateQueries({ queryKey: ['user_profile'] })
       queryClient.invalidateQueries({ queryKey: ['user_profile', id] })
       toast.success('Данные пользователя обновлены')
       navigate(-1)
@@ -274,7 +274,7 @@ export default function UserEdit() {
       </div>
 
       {/* Контент */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
 
         {/* Карточка пользователя */}
         <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-6 flex items-center gap-4">
@@ -391,9 +391,12 @@ export default function UserEdit() {
                   const isSelected = formData.role_ids.includes(role.id)
                   const isPrimary = formData.primary_role_id === role.id
                   return (
-                    <div
+                    <button
                       key={role.id}
-                      className={`rounded-xl border p-3 transition-all cursor-pointer ${
+                      type="button"
+                      role="checkbox"
+                      aria-checked={isSelected}
+                      className={`w-full text-left rounded-xl border p-3 transition-all cursor-pointer ${
                         isSelected ? 'border-purple-300 bg-purple-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                       onClick={() => toggleRole(role.id)}
@@ -425,7 +428,7 @@ export default function UserEdit() {
                           )}
                         </div>
                       </div>
-                    </div>
+                    </button>
                   )
                 })}
               </div>

@@ -1,12 +1,11 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, User, Lock, Building2, Shield, ChevronRight } from 'lucide-react'
+import { ArrowLeft, User, Lock, Building2, Shield, ChevronRight, Eye, EyeOff } from 'lucide-react'
 import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
-import { useIsAdmin } from '@/hooks/useUserProfile'
-import { useUserProfile } from '@/hooks/useUserProfile'
+import { useIsAdmin, useUserProfile } from '@/hooks/useUserProfile'
 
 interface Role {
   id: string
@@ -220,7 +219,7 @@ export default function UserCreate() {
       </div>
 
       {/* Контент */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* Левая колонка — основная форма */}
@@ -270,8 +269,9 @@ export default function UserCreate() {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
                       >
-                        {showPassword ? '🙈' : '👁️'}
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                     {formData.password.length > 0 && formData.password.length < 6 && (
@@ -396,9 +396,12 @@ export default function UserCreate() {
                   const isSelected = formData.role_ids.includes(role.id)
                   const isPrimary = formData.primary_role_id === role.id
                   return (
-                    <div
+                    <button
                       key={role.id}
-                      className={`rounded-xl border p-3 transition-all cursor-pointer ${
+                      type="button"
+                      role="checkbox"
+                      aria-checked={isSelected}
+                      className={`w-full text-left rounded-xl border p-3 transition-all cursor-pointer ${
                         isSelected ? 'border-purple-300 bg-purple-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                       onClick={() => toggleRole(role.id)}
@@ -430,7 +433,7 @@ export default function UserCreate() {
                           )}
                         </div>
                       </div>
-                    </div>
+                    </button>
                   )
                 })}
                 {formData.role_ids.length === 0 && (

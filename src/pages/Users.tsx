@@ -87,7 +87,7 @@ export default function Users() {
 
   // Загрузка пользователей
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ['users'],
+    queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner],
     queryFn: async () => {
       let query = supabase
         .from('user_profiles')
@@ -279,7 +279,7 @@ export default function Users() {
       if (fnData?.error) throw new Error(fnData.error);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner] });
       toast.success('Пользователь создан');
       setIsCreateModalOpen(false);
       resetForm();
@@ -332,7 +332,8 @@ export default function Users() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner] });
+      queryClient.invalidateQueries({ queryKey: ['user_profile'] });
       toast.success('Данные пользователя обновлены');
       setIsEditModalOpen(false);
       setSelectedUser(null);
@@ -354,7 +355,7 @@ export default function Users() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner] });
       toast.success('Статус пользователя изменен');
     },
     onError: (error) => {
@@ -363,34 +364,31 @@ export default function Users() {
     }
   });
 
-  // Удаление пользователя
+  // Удаление пользователя — мягкое (деактивация) + удаление из auth через Edge Function
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      // Удаляем роли пользователя
-      const { error: rolesError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
-
-      if (rolesError) throw rolesError;
-
-      // Удаляем профиль пользователя
+      // Деактивируем профиль (мягкое удаление)
       const { error: profileError } = await supabase
         .from('user_profiles')
-        .delete()
+        .update({ is_active: false })
         .eq('id', userId);
 
       if (profileError) throw profileError;
 
-      // Примечание: удаление из auth.users нужно делать через Supabase Dashboard
-      return { success: true };
+      // Удаляем из auth.users через Edge Function с service_role
+      const { data, error: fnError } = await supabase.functions.invoke('delete-user', {
+        body: { userId }
+      });
+
+      if (fnError) throw new Error(fnError.message);
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('Пользователь удален из базы данных. Удалите его из Authentication через Dashboard.');
+      queryClient.invalidateQueries({ queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner] });
+      toast.success('Пользователь удалён');
     },
     onError: (error: any) => {
-      toast.error(`Ошибка при удалении пользователя: ${error.message || 'Неизвестная ошибка'}`);
+      toast.error(`Ошибка при удалении: ${error.message || 'Неизвестная ошибка'}`);
       console.error(error);
     }
   });
@@ -658,7 +656,7 @@ export default function Users() {
                         )}
                       </>
                     )}
-                    {(isAdmin || (!user.roles?.some((r: Role) => r.name === 'admin'))) && (
+                    {isAdmin && (
                       <button
                         onClick={() => handleDeleteUser(user)}
                         className="text-red-600 hover:text-red-900"
