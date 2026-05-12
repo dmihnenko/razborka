@@ -142,6 +142,7 @@ export default function UserCreate() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] })
       toast.success('Пользователь создан')
       navigate(-1) // возвращаемся туда откуда пришли (users или admin/users)
     },

@@ -190,7 +190,7 @@ serve(async (req) => {
 
     // Add user roles
     if (role_ids && Array.isArray(role_ids) && role_ids.length > 0) {
-      const userRolesData = role_ids.map((roleId: string) => ({
+      const newUserRoles = role_ids.map((roleId: string) => ({
         user_id: newUser.user!.id,
         role_id: roleId,
         is_primary: roleId === primary_role_id
@@ -198,7 +198,7 @@ serve(async (req) => {
 
       const { error: rolesInsertError } = await supabaseAdmin
         .from('user_roles')
-        .insert(userRolesData)
+        .insert(newUserRoles)
 
       if (rolesInsertError) {
         console.error('Roles insert error:', rolesInsertError)
