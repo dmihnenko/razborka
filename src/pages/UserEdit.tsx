@@ -452,7 +452,21 @@ export default function UserEdit() {
                     <p className="text-xs text-gray-400">Организация пользователя</p>
                   </div>
                   {(stoMissing || partsMissing) && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Требует настройки</span>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 mr-2">Требует настройки</span>
+                  )}
+                  {showCreateStoBtn && inlineForm?.type !== 'sto' && (
+                    <button type="button"
+                      onClick={() => setInlineForm({ type: 'sto', name: '', phone: '', address: '' })}
+                      className="flex items-center gap-1 px-2.5 py-1 border border-dashed border-indigo-300 text-indigo-600 rounded-lg text-xs font-medium hover:bg-indigo-50 transition-colors whitespace-nowrap">
+                      <Plus className="w-3.5 h-3.5" />СТО
+                    </button>
+                  )}
+                  {showCreatePartsBtn && inlineForm?.type !== 'parts' && (
+                    <button type="button"
+                      onClick={() => setInlineForm({ type: 'parts', name: '', phone: '', address: '' })}
+                      className="flex items-center gap-1 px-2.5 py-1 border border-dashed border-orange-300 text-orange-600 rounded-lg text-xs font-medium hover:bg-orange-50 transition-colors whitespace-nowrap">
+                      <Plus className="w-3.5 h-3.5" />Разборку
+                    </button>
                   )}
                 </div>
                 <div className="p-5 space-y-5">
@@ -472,13 +486,6 @@ export default function UserEdit() {
                           <option value="">Выберите СТО</option>
                           {stoCompanies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
-                        {showCreateStoBtn && inlineForm?.type !== 'sto' && (
-                          <button type="button"
-                            onClick={() => setInlineForm({ type: 'sto', name: '', phone: '', address: '' })}
-                            className="flex items-center gap-1.5 px-3 py-2.5 border border-dashed border-indigo-300 text-indigo-600 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-colors whitespace-nowrap">
-                            <Plus className="w-4 h-4" />Создать
-                          </button>
-                        )}
                       </div>
                       {stoMissing && !inlineForm && (
                         <p className="flex items-center gap-1 text-xs text-amber-600 mt-1.5">
@@ -533,13 +540,6 @@ export default function UserEdit() {
                           <option value="">Выберите авторазборку</option>
                           {partsCompanies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
-                        {showCreatePartsBtn && inlineForm?.type !== 'parts' && (
-                          <button type="button"
-                            onClick={() => setInlineForm({ type: 'parts', name: '', phone: '', address: '' })}
-                            className="flex items-center gap-1.5 px-3 py-2.5 border border-dashed border-orange-300 text-orange-600 rounded-xl text-sm font-medium hover:bg-orange-50 transition-colors whitespace-nowrap">
-                            <Plus className="w-4 h-4" />Создать
-                          </button>
-                        )}
                       </div>
                       {partsMissing && !inlineForm && (
                         <p className="flex items-center gap-1 text-xs text-amber-600 mt-1.5">
