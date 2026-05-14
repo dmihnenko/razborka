@@ -17,6 +17,8 @@ export default function Layout() {
   const location = useLocation()
   const isAdmin = useIsAdmin()
   const { data: profile, isLoading } = useUserProfile()
+  // Показываем скелетон только при первой загрузке когда нет данных
+  const showSkeleton = isLoading && !profile
   const queryClient = useQueryClient()
   
   // Получаем PRIMARY роль пользователя
@@ -113,7 +115,7 @@ export default function Layout() {
   }
 
   // Показываем загрузчик при первой загрузке профиля
-  if (isLoading || !profile) {
+  if (showSkeleton) {
     return <LayoutSkeleton />
   }
 

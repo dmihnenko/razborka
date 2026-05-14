@@ -95,8 +95,8 @@ function App() {
         queryClient.clear()
       }
       if (event === 'SIGNED_IN') {
-        // Инвалидируем только профиль пользователя, чтобы перезагрузить его данные
-        queryClient.invalidateQueries({ queryKey: ['userProfile'] })
+        // Немедленно перезапрашиваем профиль после логина
+        queryClient.refetchQueries({ queryKey: ['userProfile'] })
       }
     })
 

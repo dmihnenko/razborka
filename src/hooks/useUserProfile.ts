@@ -5,6 +5,9 @@ export function useUserProfile() {
   return useQuery({
     queryKey: ['userProfile'],
     refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000, // кэш живёт 10 минут — данные не исчезают при revalidation
+    retry: 1,
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser()
       
@@ -80,7 +83,6 @@ export function useUserProfile() {
 
       return { ...profile, roles: rolesWithPrimary }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }
 
