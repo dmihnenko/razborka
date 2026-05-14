@@ -66,6 +66,7 @@ const PartsWarehouse = lazy(() => import('./pages/PartsWarehouse'))
 const PartsNoPricePage = lazy(() => import('./pages/PartsNoPricePage'))
 const PartsInventoryItemPage = lazy(() => import('./pages/PartsInventoryItemPage'))
 const Trash = lazy(() => import('./pages/Trash'))
+const ProfileSettings = lazy(() => import('./pages/ProfileSettings'))
 const DatabasePage = lazy(() => import('./pages/Database'))
 const AdminSettings = lazy(() => import('./pages/AdminSettings'))
 
@@ -95,7 +96,9 @@ function App() {
         queryClient.clear()
       }
       if (event === 'SIGNED_IN') {
-        // Немедленно перезапрашиваем профиль после логина
+        // Очищаем весь кэш чтобы новый пользователь не видел данные предыдущего
+        queryClient.clear()
+        // Затем перезапрашиваем профиль
         queryClient.refetchQueries({ queryKey: ['userProfile'] })
       }
     })
@@ -155,6 +158,7 @@ function App() {
           <Route path="monthly-revenue" element={<MonthlyRevenue />} />
           <Route path="history" element={<ActivityHistory />} />
           <Route path="support" element={<Support />} />
+          <Route path="profile" element={<ProfileSettings />} />
           
           {/* Личные автомобили */}
           <Route path="my-vehicles" element={<MyVehicles />} />

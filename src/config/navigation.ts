@@ -11,7 +11,8 @@ import {
   MessageSquare,
   BarChart3,
   Settings,
-  Store
+  Store,
+  UserCircle
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -41,6 +42,7 @@ export const stoOwnerMenu: MenuItem[] = [
   { name: 'Аналитика', href: '/analytics', icon: TrendingUp },
   { name: 'Настройки', href: '/sto/settings', icon: Settings },
   { name: 'Поддержка', href: '/support', icon: MessageSquare },
+  { name: 'Профиль', href: '/profile', icon: UserCircle },
 ];
 
 // Меню для работника СТО
@@ -51,6 +53,7 @@ export const stoWorkerMenu: MenuItem[] = [
   { name: 'Записи', href: '/appointments', icon: Calendar },
   { name: 'Статистика', href: '/statistics', icon: BarChart3 },
   { name: 'Услуги', href: '/services', icon: Wrench },
+  { name: 'Профиль', href: '/profile', icon: UserCircle },
 ];
 
 // Меню для владельца разборки
@@ -65,6 +68,7 @@ export const partsOwnerMenu: MenuItem[] = [
   { name: 'Аналитика', href: '/parts/analytics', icon: TrendingUp },
   { name: 'Настройки', href: '/parts/settings', icon: Settings },
   { name: 'Поддержка', href: '/support', icon: MessageSquare },
+  { name: 'Профиль', href: '/profile', icon: UserCircle },
 ];
 
 // Меню для работника разборки
@@ -75,6 +79,7 @@ export const partsWorkerMenu: MenuItem[] = [
   { name: 'Магазин', href: '/parts/inventory?source=shop', icon: Store },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart },
   { name: 'Клиенты', href: '/parts/customers', icon: Users },
+  { name: 'Профиль', href: '/profile', icon: UserCircle },
 ];
 
 // Меню для владельца магазина
