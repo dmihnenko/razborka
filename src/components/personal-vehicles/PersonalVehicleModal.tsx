@@ -223,19 +223,19 @@ export default function PersonalVehicleModal({ isOpen, onClose, onSuccess, userI
 
           <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200">
             <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+            >
+              Отмена
+            </button><button
               type="submit"
               disabled={creating || uploading}
               className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base bg-blue-700 text-white rounded-md hover:bg-blue-800 disabled:opacity-50 transition-colors"
             >
               {creating ? 'Создание...' : 'Создать'}
             </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
-            >
-              Отмена
-            </button>
+            
           </div>
         </form>
       </div>

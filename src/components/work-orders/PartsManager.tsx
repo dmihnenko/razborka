@@ -207,18 +207,18 @@ export default function PartsManager({ items, onChange }: Props) {
 
           <div className="flex items-center gap-2">
             <button
-              type="submit"
-              className="px-4 py-2 text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              {editingId ? 'Сохранить изменения' : 'Добавить'}
-            </button>
-            <button
               type="button"
               onClick={handleCancel}
               className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
             >
               Отмена
+            </button><button
+              type="submit"
+              className="px-4 py-2 text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              {editingId ? 'Сохранить изменения' : 'Добавить'}
             </button>
+            
           </div>
         </form>
       )}

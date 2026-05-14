@@ -388,18 +388,18 @@ export default function ExpenseModal({ isOpen, onClose, category, editItem, onSa
               <div className="space-y-2 sm:space-y-3 pt-3 sm:pt-4">
                 <div className="flex gap-2 sm:gap-3">
                   <button
-                    type="submit"
-                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 transition-colors font-medium text-xs sm:text-sm"
-                  >
-                    {editItem ? 'Сохранить' : 'Добавить'}
-                  </button>
-                  <button
                     type="button"
                     onClick={onClose}
                     className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors font-medium text-xs sm:text-sm"
                   >
                     Отмена
+                  </button><button
+                    type="submit"
+                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 transition-colors font-medium text-xs sm:text-sm"
+                  >
+                    {editItem ? 'Сохранить' : 'Добавить'}
                   </button>
+                  
                 </div>
                 {editItem && (
                   <button

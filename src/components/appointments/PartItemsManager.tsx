@@ -125,18 +125,18 @@ export default function PartItemsManager({ items, onChange }: Props) {
           <div className="flex gap-2 mt-4">
             <button
               type="button"
+              onClick={handleCancel}
+              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Отмена
+            </button><button
+              type="button"
               onClick={handleSave}
               className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
             >
               Добавить
             </button>
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              Отмена
-            </button>
+            
           </div>
         </div>
       )}
