@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { Plus, Edit2, Trash2, UserCog } from 'lucide-react';
+import { Plus, Edit2, Trash2, UserCog, Search, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { IMaskInput } from 'react-imask';
 import { useUserProfile, useIsAdmin } from '@/hooks/useUserProfile';
@@ -59,6 +59,7 @@ export default function Users() {
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [formData, setFormData] = useState<UserFormData>({
     email: '',
@@ -480,201 +481,161 @@ export default function Users() {
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64">Загрузка...</div>;
+    return (
+      <div className="min-h-[400px] flex items-center justify-center">
+        <div className="flex items-center gap-3 text-gray-400">
+          <span className="w-5 h-5 border-2 border-gray-200 border-t-indigo-500 rounded-full animate-spin" />
+          <span className="text-sm">Загрузка...</span>
+        </div>
+      </div>
+    );
   }
 
+  const filteredUsers = users.filter(user => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      user.full_name?.toLowerCase().includes(q) ||
+      user.email?.toLowerCase().includes(q) ||
+      user.username?.toLowerCase().includes(q) ||
+      user.phone?.includes(q)
+    );
+  });
+
   return (
-    <div className="space-y-6">
-      {/* Информация о подписке для владельцев */}
+    <div className="space-y-5">
+      {/* Подписка */}
       {(isStoOwner || isPartsOwner) && !isAdmin && (
-        <div className={`p-4 rounded-lg ${hasSubscription ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="font-semibold text-gray-900">
-                {hasSubscription ? '✓ Активная подписка' : '⚠ Без подписки'}
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                {hasSubscription 
-                  ? 'У вас есть активная подписка. Доступны все функции без ограничений.' 
-                  : `Ограничения: ${isStoOwner 
-                      ? `${limits.sto?.workers} работник, ${limits.sto?.appointments} заявок, ${limits.sto?.customers} клиента, ${limits.sto?.vehicles} машины` 
-                      : `${limits.parts?.workers} работник, ${limits.parts?.vehicles} машина, ${limits.parts?.parts} запчастей`}`
-                }
-              </p>
-              {!hasSubscription && (
-                <p className="text-sm text-purple-600 mt-2">
-                  Свяжитесь с администратором для активации подписки
-                </p>
-              )}
-            </div>
-            <div className="text-right">
-              <span className="text-sm text-gray-500">
-                Сотрудников: {users.length} / {hasSubscription ? '∞' : (isStoOwner ? limits.sto?.workers : limits.parts?.workers)}
-              </span>
-            </div>
+        <div className={`flex items-center justify-between gap-4 px-4 py-3 rounded-xl text-sm ${hasSubscription ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-amber-50 border border-amber-200 text-amber-700'}`}>
+          <div className="flex items-center gap-2">
+            {hasSubscription
+              ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+              : <span className="flex-shrink-0">⚠️</span>
+            }
+            <span className="font-medium">{hasSubscription ? 'Активная подписка' : 'Без подписки'}</span>
+            {!hasSubscription && <span className="text-xs opacity-80">· Свяжитесь с администратором</span>}
           </div>
+          <span className="text-xs opacity-70 flex-shrink-0">
+            Сотрудников: {users.length} / {hasSubscription ? '∞' : (isStoOwner ? limits.sto?.workers : limits.parts?.workers)}
+          </span>
         </div>
       )}
-      
-      <div className="flex justify-between items-center">
+
+      {/* Хедер */}
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-xl font-bold text-gray-900">
             {isAdmin ? 'Пользователи' : isStoOwner ? 'Сотрудники СТО' : isPartsOwner ? 'Сотрудники разборки' : 'Пользователи'}
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
-            {isAdmin ? 'Управление пользователями и их ролями' : 'Управление сотрудниками'}
-          </p>
+          <p className="text-xs text-gray-400 mt-0.5">{users.length} {users.length === 1 ? 'запись' : users.length < 5 ? 'записи' : 'записей'}</p>
         </div>
-        <button
-          onClick={handleCreateUser}
-          className="flex items-center space-x-2 px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800"
-        >
-          <Plus className="h-5 w-5" />
-          <span>{isAdmin ? 'Добавить пользователя' : 'Добавить сотрудника'}</span>
+        <button onClick={handleCreateUser}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm">
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">{isAdmin ? 'Добавить пользователя' : 'Добавить сотрудника'}</span>
+          <span className="sm:hidden">Добавить</span>
         </button>
       </div>
 
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Пользователь
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Email
-              </th>
-              {(isStoOwner || isPartsOwner) && !isAdmin && (
-                <>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Логин
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Пароль
-                  </th>
-                </>
-              )}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Телефон
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Роль
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Компания
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Статус
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Действия
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {users.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-                      {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {user.full_name || 'Не указано'}
-                      </div>
-                    </div>
+      {/* Поиск */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Поиск по имени, email, логину..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 shadow-sm transition-all"
+        />
+      </div>
+
+      {/* Список пользователей */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        {filteredUsers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+            <UserCog className="w-10 h-10 mb-3 opacity-30" />
+            <p className="text-sm font-medium">{searchQuery ? 'Ничего не найдено' : 'Нет пользователей'}</p>
+            {searchQuery && <p className="text-xs mt-1 opacity-70">Попробуйте изменить запрос</p>}
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {filteredUsers.map((user) => (
+              <div key={user.id} className="flex items-center gap-3 sm:gap-4 px-4 py-3.5 hover:bg-gray-50/80 transition-colors group">
+                {/* Аватар */}
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-sm">
+                  {(user.full_name?.charAt(0) || user.email?.charAt(0) || '?').toUpperCase()}
+                </div>
+
+                {/* Основная инфо */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-semibold text-gray-900 truncate">
+                      {user.full_name || <span className="text-gray-400 font-normal">Имя не указано</span>}
+                    </span>
+                    <span className={`flex-shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full ${user.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {user.is_active ? 'Активен' : 'Неактивен'}
+                    </span>
                   </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{user.email}</div>
-                </td>
-                {(isStoOwner || isPartsOwner) && !isAdmin && (
-                  <>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 font-mono">{user.username || '—'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 font-mono bg-gray-50 px-2 py-1 rounded">{user.plain_password || '—'}</div>
-                    </td>
-                  </>
-                )}
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{user.phone || '—'}</div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-wrap gap-1">
-                    {user.roles && user.roles.length > 0 ? (
-                      user.roles.map((role: Role) => (
-                        <span key={role.id} className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(role.name)}`}>
-                          {role.display_name}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                        Не назначены
+                  <p className="text-xs text-gray-400 mt-0.5 truncate">{user.email}</p>
+                  {(isStoOwner || isPartsOwner) && !isAdmin && user.username && (
+                    <p className="text-xs text-gray-400 font-mono mt-0.5">@{user.username} · {user.plain_password || '—'}</p>
+                  )}
+                </div>
+
+                {/* Роли */}
+                <div className="hidden sm:flex flex-wrap gap-1 max-w-[220px]">
+                  {user.roles && user.roles.length > 0 ? (
+                    user.roles.slice(0, 2).map((role: Role) => (
+                      <span key={role.id} className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold ${getRoleBadgeColor(role.name)}`}>
+                        {role.display_name}
                       </span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {user.sto_companies?.name || user.parts_companies?.name || '—'}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    user.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {user.is_active ? 'Активен' : 'Неактивен'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex justify-end space-x-2">
-                    <button
-                      onClick={() => handleEditUser(user)}
-                      className="text-blue-600 hover:text-blue-900"
-                      title="Редактировать"
-                    >
-                      <Edit2 className="h-5 w-5" />
+                    ))
+                  ) : (
+                    <span className="text-[11px] text-gray-400 italic">Без роли</span>
+                  )}
+                  {user.roles && user.roles.length > 2 && (
+                    <span className="text-[11px] text-gray-400 px-1.5 py-0.5 bg-gray-100 rounded-lg">+{user.roles.length - 2}</span>
+                  )}
+                </div>
+
+                {/* Компания */}
+                <div className="hidden md:block text-xs text-gray-500 min-w-[80px] text-right">
+                  {user.sto_companies?.name || user.parts_companies?.name || <span className="text-gray-300">—</span>}
+                </div>
+
+                {/* Действия */}
+                <div className="flex items-center gap-1 flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => handleEditUser(user)}
+                    title="Редактировать"
+                    className="p-2 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  {isAdmin && (
+                    <button onClick={() => handleEditRole(user)}
+                      title="Роли"
+                      className="p-2 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors">
+                      <UserCog className="w-4 h-4" />
                     </button>
-                    {isAdmin && (
-                      <>
-                        <button
-                          onClick={() => handleEditRole(user)}
-                          className="text-purple-600 hover:text-purple-900"
-                          title="Изменить роли"
-                        >
-                          <UserCog className="h-5 w-5" />
-                        </button>
-                        {!user.is_active && (
-                          <button
-                            onClick={() => handleToggleActive(user)}
-                            className="text-green-600 hover:text-green-900"
-                            title="Активировать"
-                          >
-                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </button>
-                        )}
-                      </>
-                    )}
-                    {isAdmin && (
-                      <button
-                        onClick={() => handleDeleteUser(user)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Удалить"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
+                  )}
+                  {isAdmin && !user.is_active && (
+                    <button onClick={() => handleToggleActive(user)}
+                      title="Активировать"
+                      className="p-2 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button onClick={() => handleDeleteUser(user)}
+                      title="Удалить"
+                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        )}
       </div>
 
       {/* Модальное окно для создания пользователя */}
