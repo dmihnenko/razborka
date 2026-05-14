@@ -376,8 +376,12 @@ export default function Users() {
       if (profileError) throw profileError;
 
       // Удаляем из auth.users через Edge Function с service_role
+      const { data: { session } } = await supabase.auth.getSession()
       const { data, error: fnError } = await supabase.functions.invoke('delete-user', {
-        body: { userId }
+        body: { userId },
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : undefined
       });
 
       if (fnError) throw new Error(fnError.message);
