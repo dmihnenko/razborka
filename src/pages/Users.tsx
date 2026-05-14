@@ -582,19 +582,26 @@ export default function Users() {
                   )}
                 </div>
 
-                {/* Роли */}
-                <div className="hidden sm:flex flex-wrap gap-1 max-w-[220px]">
-                  {user.roles && user.roles.length > 0 ? (
-                    user.roles.slice(0, 2).map((role: Role) => (
-                      <span key={role.id} className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold ${getRoleBadgeColor(role.name)}`}>
-                        {role.display_name}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-[11px] text-gray-400 italic">Без роли</span>
-                  )}
-                  {user.roles && user.roles.length > 2 && (
-                    <span className="text-[11px] text-gray-400 px-1.5 py-0.5 bg-gray-100 rounded-lg">+{user.roles.length - 2}</span>
+                {/* Роли — только основная + счётчик остальных */}
+                <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
+                  {user.roles && user.roles.length > 0 ? (() => {
+                    const primary = user.roles.find((r: Role) => r.is_primary) || user.roles[0]
+                    const rest = user.roles.length - 1
+                    return (
+                      <>
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap ${getRoleBadgeColor(primary.name)}`}>
+                          {primary.display_name}
+                        </span>
+                        {rest > 0 && (
+                          <span title={user.roles.slice(1).map((r: Role) => r.display_name).join(', ')}
+                            className="text-[11px] text-gray-400 px-1.5 py-0.5 bg-gray-100 rounded-lg cursor-default whitespace-nowrap">
+                            +{rest}
+                          </span>
+                        )}
+                      </>
+                    )
+                  })() : (
+                    <span className="text-[11px] text-gray-400 italic whitespace-nowrap">Без роли</span>
                   )}
                 </div>
 
