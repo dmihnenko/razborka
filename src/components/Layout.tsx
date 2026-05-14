@@ -9,6 +9,7 @@ import { LayoutSkeleton } from './LayoutSkeleton'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
+import { useAuth } from '../hooks/useAuth'
 import { getMenuForRoles } from '../config/navigation'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
 import Breadcrumbs from './Breadcrumbs'
@@ -16,9 +17,10 @@ import Breadcrumbs from './Breadcrumbs'
 export default function Layout() {
   const location = useLocation()
   const isAdmin = useIsAdmin()
+  const { loading: authLoading } = useAuth()
   const { data: profile, isLoading } = useUserProfile()
-  // Показываем скелетон только при первой загрузке когда нет данных
-  const showSkeleton = isLoading && !profile
+  // Показываем скелетон только при первой загрузке — когда auth загружается или профиль ещё не получен
+  const showSkeleton = authLoading || (isLoading && !profile)
   const queryClient = useQueryClient()
   
   // Получаем PRIMARY роль пользователя

@@ -1,16 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
+import { useAuth } from './useAuth'
 
 export function useUserProfile() {
+  const { user, loading: authLoading } = useAuth()
   return useQuery({
     queryKey: ['userProfile'],
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000, // кэш живёт 10 минут — данные не исчезают при revalidation
+    gcTime: 10 * 60 * 1000,
     retry: 1,
+    enabled: !authLoading && !!user, // запускаем только когда auth точно загружен
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      
       if (!user) return null
 
       // Получаем профиль - НЕ используем .single() чтобы избежать ошибки если профиля нет
