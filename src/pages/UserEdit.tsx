@@ -253,7 +253,7 @@ export default function UserEdit() {
     <div className="min-h-screen bg-[#F4F6FA]">
       {/* Хедер */}
       <div className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-gray-200/80 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        <div className="px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 min-w-0">
             <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-700 flex-shrink-0">
               <ArrowLeft className="w-4 h-4" />
@@ -285,7 +285,7 @@ export default function UserEdit() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+      <div className="px-4 sm:px-6 py-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
 
         {/* Карточка пользователя */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-5 overflow-hidden">
