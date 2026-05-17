@@ -71,26 +71,38 @@ export default function Layout() {
     }
   }, [primaryRole])
   
-  // Получаем меню на основе PRIMARY роли пользователя
-  // Для админа проверяем activeRole из localStorage
+  // Получаем меню на основе активной роли
+  // Поддерживаем переключение для ВСЕХ пользователей с несколькими ролями
   let roleNames: string[] = []
+  const allUserRoles = profile?.roles?.map((r: any) => r.name).filter((n: string) => n !== 'user') || []
+  const storedRole = localStorage.getItem('activeRole')
   
-  // Если пользователь админ, проверяем активную роль из localStorage
   if (primaryRole?.name === 'admin') {
-    const activeRole = localStorage.getItem('activeRole')
+    const activeRole = storedRole
     if (activeRole && activeRole !== 'admin') {
       roleNames = [activeRole]
     } else {
-      // По умолчанию для админа - user меню
       roleNames = ['user']
     }
+  } else if (allUserRoles.length > 1 && storedRole && allUserRoles.includes(storedRole)) {
+    // Пользователь с несколькими ролями — используем выбранную
+    roleNames = [storedRole]
   } else if (primaryRole) {
-    // Для не-админов всегда используем их основную роль
     roleNames = [primaryRole.name]
+    // Если несколько ролей и нет сохранённой — сохраняем primary
+    if (allUserRoles.length > 1 && !storedRole) {
+      localStorage.setItem('activeRole', primaryRole.name)
+    }
   } else if (profile?.roles?.length) {
-    // Если primaryRole не найдена, берем первую роль
     roleNames = [profile.roles[0].name]
   }
+  
+  // Роли доступные для переключения (исключаем worker роли и user)
+  const switchableRoles = allUserRoles.filter((n: string) => 
+    ['sto_owner', 'parts_owner', 'admin', 'sto_worker', 'parts_worker'].includes(n)
+  )
+  const hasMultipleRoles = switchableRoles.length > 1
+  const activeRoleName = roleNames[0] || primaryRole?.name || ''
   
   const navigation = getMenuForRoles(roleNames)
   
@@ -193,6 +205,33 @@ export default function Layout() {
 
         {/* Footer */}
         <div className="px-2 py-3 border-t border-gray-100 space-y-0.5">
+          {/* Переключатель ролей для десктопа */}
+          {hasMultipleRoles && (
+            <div className="hidden lg:block mb-2 px-1">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 px-2">Активная роль</p>
+              <div className="space-y-0.5">
+                {switchableRoles.map((roleName: string) => {
+                  const labels: Record<string,string> = {
+                    sto_owner: 'СТО', sto_worker: 'Работник СТО',
+                    parts_owner: 'Авторазборка', parts_worker: 'Работник разборки',
+                    admin: 'Администратор'
+                  }
+                  const isActive = activeRoleName === roleName
+                  return (
+                    <button key={roleName} type="button"
+                      onClick={() => { localStorage.setItem('activeRole', roleName); queryClient.invalidateQueries(); window.location.reload() }}
+                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        isActive ? 'bg-primary/10 text-primary' : 'text-gray-500 hover:bg-gray-100'
+                      }`}>
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isActive ? 'bg-primary' : 'bg-gray-300'}`} />
+                      {labels[roleName] || roleName}
+                      {isActive && <span className="ml-auto text-[10px] opacity-60">активна</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
           {isAdmin && (
             <Link
               to="/admin"
@@ -224,9 +263,41 @@ export default function Layout() {
         <div className="md:hidden bg-white border-b border-gray-200">
           {/* Top bar: user name + logout */}
           <div className="px-4 py-3 border-b border-gray-100 bg-white flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-gray-700 truncate flex-1">
-              {profile?.full_name || profile?.email || 'Пользователь'}
-            </p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-700 truncate">
+                {profile?.full_name || profile?.email || 'Пользователь'}
+              </p>
+              {hasMultipleRoles && (
+                <div className="flex items-center gap-1 mt-1 flex-wrap">
+                  {switchableRoles.map((roleName: string) => {
+                    const labels: Record<string,string> = {
+                      sto_owner: 'СТО', sto_worker: 'Работник СТО',
+                      parts_owner: 'Разборка', parts_worker: 'Работник разборки',
+                      admin: 'Админ'
+                    }
+                    const colors: Record<string,string> = {
+                      sto_owner: 'bg-blue-100 text-blue-700 border-blue-200',
+                      parts_owner: 'bg-orange-100 text-orange-700 border-orange-200',
+                      sto_worker: 'bg-cyan-100 text-cyan-700 border-cyan-200',
+                      parts_worker: 'bg-amber-100 text-amber-700 border-amber-200',
+                      admin: 'bg-purple-100 text-purple-700 border-purple-200',
+                    }
+                    const isActive = activeRoleName === roleName
+                    return (
+                      <button key={roleName} type="button"
+                        onClick={() => { localStorage.setItem('activeRole', roleName); queryClient.invalidateQueries(); window.location.reload() }}
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all ${
+                          isActive
+                            ? (colors[roleName] || 'bg-gray-200 text-gray-700 border-gray-300') + ' ring-1 ring-offset-1 ring-current'
+                            : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300'
+                        }`}>
+                        {labels[roleName] || roleName}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               {isAdmin && (
                 <Link
