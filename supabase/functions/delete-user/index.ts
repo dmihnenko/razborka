@@ -20,21 +20,41 @@ serve(async (req) => {
       )
     }
 
-    // Проверяем сессию через anon client + JWT
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+    // Используем service_role для всех операций включая проверку токена
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    })
+
+    // Верифицируем JWT через getUser с переданным токеном
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
+
     if (userError || !user) {
+      console.error('Auth error:', userError?.message)
       return new Response(
         JSON.stringify({ error: 'Invalid authentication token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    // Проверяем что вызывающий — admin
+    const { data: callerRoles } = await supabaseAdmin
+      .from('user_roles')
+      .select('roles(name)')
+      .eq('user_id', user.id)
+
+    const isAdmin = (callerRoles as any[])?.some((ur: any) => ur.roles?.name === 'admin')
+    if (!isAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Only administrators can delete users' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Получаем userId для удаления
     const { userId: userIdToDelete } = await req.json()
     if (!userIdToDelete) {
       return new Response(
@@ -43,7 +63,6 @@ serve(async (req) => {
       )
     }
 
-    // Нельзя удалить самого себя
     if (userIdToDelete === user.id) {
       return new Response(
         JSON.stringify({ error: 'Cannot delete your own account' }),
@@ -51,35 +70,14 @@ serve(async (req) => {
       )
     }
 
-    // Admin client для проверки ролей и удаления
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-
-    // Проверяем что текущий пользователь — admin
-    const { data: callerRoles } = await supabaseAdmin
-      .from('user_roles')
-      .select('roles(name)')
-      .eq('user_id', user.id)
-
-    const isAdmin = callerRoles?.some((ur: any) => ur.roles?.name === 'admin')
-    if (!isAdmin) {
-      return new Response(
-        JSON.stringify({ error: 'Only administrators can delete users' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Удаляем связанные данные пользователя
+    // Удаляем данные пользователя
     await supabaseAdmin.from('user_roles').delete().eq('user_id', userIdToDelete)
     await supabaseAdmin.from('user_profiles').delete().eq('id', userIdToDelete)
 
-    // Удаляем из auth.users (это основное удаление)
+    // Удаляем из auth.users
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userIdToDelete)
     if (deleteError) {
-      console.error('Delete auth user error:', deleteError)
+      console.error('Delete error:', deleteError)
       return new Response(
         JSON.stringify({ error: 'Failed to delete user', details: deleteError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -91,7 +89,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error: any) {
-    console.error('Unexpected error:', error)
+    console.error('Error:', error)
     return new Response(
       JSON.stringify({ error: error.message || 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
