@@ -60,16 +60,28 @@ export default function Layout() {
   
   // Управляем activeRole в localStorage
   useEffect(() => {
-    // Если админ зашел первый раз и activeRole не установлена, устанавливаем 'user'
+    const allRoles = profile?.roles?.map((r: any) => r.name).filter((n: string) => n !== 'user') || []
+
+    // Если админ зашел первый раз — устанавливаем 'user'
     if (primaryRole?.name === 'admin' && !localStorage.getItem('activeRole')) {
       localStorage.setItem('activeRole', 'user')
+      return
     }
-    
-    // Для не-админов очищаем activeRole из localStorage
-    if (primaryRole && primaryRole.name !== 'admin') {
+
+    // Если пользователь с несколькими ролями — НЕ сбрасываем activeRole
+    if (allRoles.length > 1) {
+      // Только устанавливаем начальное значение если ещё не установлено
+      if (!localStorage.getItem('activeRole') && primaryRole) {
+        localStorage.setItem('activeRole', primaryRole.name)
+      }
+      return
+    }
+
+    // Для пользователей с одной ролью — очищаем (не нужно)
+    if (primaryRole && primaryRole.name !== 'admin' && allRoles.length <= 1) {
       localStorage.removeItem('activeRole')
     }
-  }, [primaryRole])
+  }, [primaryRole, profile?.roles])
   
   // Получаем меню на основе активной роли
   // Поддерживаем переключение для ВСЕХ пользователей с несколькими ролями
