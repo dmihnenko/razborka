@@ -285,11 +285,11 @@ export default function UserEdit() {
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 py-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+      <div className="px-4 sm:px-6 py-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-6">
 
         {/* Карточка пользователя */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-5 overflow-hidden">
-          <div className="h-16 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+          <div className="h-12 sm:h-16 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
           <div className="px-6 pb-5">
             <div className="flex items-end justify-between -mt-8 mb-3">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold ring-4 ring-white shadow-lg">
@@ -321,7 +321,7 @@ export default function UserEdit() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Левая колонка */}
           <div className="lg:col-span-2 space-y-4">
 
@@ -367,7 +367,7 @@ export default function UserEdit() {
               </div>
               <div className="p-5">
                 {/* Выбранные роли — теги */}
-                <div className="flex flex-wrap gap-2 mb-3 min-h-[28px]">
+                <div className="flex flex-wrap gap-1.5 mb-3 min-h-[28px]">
                   {selectedRoles.length === 0
                     ? <span className="text-xs text-gray-400">Роли не выбраны</span>
                     : selectedRoles.map(role => (
@@ -389,12 +389,12 @@ export default function UserEdit() {
                 <div className="relative" ref={dropdownRef}>
                   <button type="button" onClick={() => setRolesOpen(!rolesOpen)}
                     className="w-full flex items-center justify-between px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-white hover:border-indigo-300 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all">
-                    <span>{selectedRoles.length === 0 ? 'Выберите роль...' : `Добавить ещё роль`}</span>
+                    <span className="truncate">{selectedRoles.length === 0 ? 'Выберите роль...' : 'Добавить ещё роль'}</span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${rolesOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   {rolesOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-30 overflow-hidden">
+                    <div className="absolute bottom-full left-0 right-0 mb-1 sm:bottom-auto sm:top-full sm:mb-0 sm:mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden max-h-56 overflow-y-auto">
                       {allowedRoles.map(role => {
                         const isSelected = formData.role_ids.includes(role.id)
                         return (
@@ -439,6 +439,19 @@ export default function UserEdit() {
                 )}
               </div>
             </div>
+
+            {/* Мобильная мини-сводка ролей — только мобиле */}
+            {selectedRoles.length > 0 && (
+              <div className="lg:hidden flex flex-wrap items-center gap-2 px-4 py-2.5 bg-indigo-50 rounded-xl border border-indigo-100">
+                <span className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mr-1">Роли:</span>
+                {selectedRoles.map(role => (
+                  <span key={role.id} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold ${ROLE_COLORS[role.name]?.bg || 'bg-gray-100'} ${ROLE_COLORS[role.name]?.text || 'text-gray-600'}`}>
+                    {role.display_name}
+                    {formData.primary_role_id === role.id && <span className="opacity-60 text-[10px]">·осн</span>}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* Привязка к компании */}
             {(shouldShowStoCompany(selectedRoleNames) || shouldShowPartsCompany(selectedRoleNames) || isAdmin) && (
@@ -583,8 +596,8 @@ export default function UserEdit() {
             )}
           </div>
 
-          {/* Правая колонка — сводка */}
-          <div className="space-y-4">
+          {/* Правая колонка — сводка (только десктоп) */}
+          <div className="hidden lg:block space-y-4">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden lg:sticky lg:top-20">
               <div className="px-5 py-3.5 border-b border-gray-100">
                 <p className="text-sm font-semibold text-gray-800">Сводка</p>
@@ -655,7 +668,7 @@ export default function UserEdit() {
         </div>
 
         {/* Мобильные кнопки */}
-        <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-200 p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] flex gap-3">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-200 p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] flex gap-3 z-40">
           <button onClick={() => navigate(-1)} className="flex-1 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl">Отмена</button>
           <button onClick={() => updateMutation.mutate(formData)} disabled={!isValid || updateMutation.isPending}
             className="flex-1 py-3 text-sm font-semibold text-white bg-indigo-600 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2">
