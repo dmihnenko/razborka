@@ -12,7 +12,8 @@ import {
   BarChart3,
   Settings,
   Store,
-  UserCircle
+  UserCircle,
+  ShoppingBag
 } from 'lucide-react';
 
 export interface MenuItem {
