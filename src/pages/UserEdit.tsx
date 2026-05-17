@@ -355,7 +355,7 @@ export default function UserEdit() {
             </div>
 
             {/* Роли — ВЫПАДАЮЩЕЕ МЕНЮ */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-visible relative z-10">
               <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center">
                   <Shield className="w-3.5 h-3.5 text-purple-600" />
@@ -365,7 +365,7 @@ export default function UserEdit() {
                   <p className="text-xs text-gray-400">Права доступа пользователя</p>
                 </div>
               </div>
-              <div className="p-5">
+              <div className="p-5 overflow-visible">
                 {/* Выбранные роли — теги */}
                 <div className="flex flex-wrap gap-1.5 mb-3 min-h-[28px]">
                   {selectedRoles.length === 0
@@ -394,7 +394,7 @@ export default function UserEdit() {
                   </button>
 
                   {rolesOpen && (
-                    <div className="absolute bottom-full left-0 right-0 mb-1 sm:bottom-auto sm:top-full sm:mb-0 sm:mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden max-h-56 overflow-y-auto">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden max-h-52 overflow-y-auto" style={{ zIndex: 9999 }}>
                       {allowedRoles.map(role => {
                         const isSelected = formData.role_ids.includes(role.id)
                         return (
@@ -454,7 +454,7 @@ export default function UserEdit() {
             )}
 
             {/* Привязка к компании */}
-            {(shouldShowStoCompany(selectedRoleNames) || shouldShowPartsCompany(selectedRoleNames) || isAdmin) && (
+            {(shouldShowStoCompany(selectedRoleNames) || shouldShowPartsCompany(selectedRoleNames)) && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2.5">
                   <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
@@ -467,14 +467,14 @@ export default function UserEdit() {
                   {(stoMissing || partsMissing) && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 mr-2">Требует настройки</span>
                   )}
-                  {isAdmin && inlineForm?.type !== 'sto' && (
+                  {isAdmin && selectedRoleNames.includes('sto_owner') && inlineForm?.type !== 'sto' && (
                     <button type="button"
                       onClick={() => setInlineForm({ type: 'sto', name: '', phone: '', address: '' })}
                       className="flex items-center gap-1 px-2.5 py-1 border border-dashed border-indigo-300 text-indigo-600 rounded-lg text-xs font-medium hover:bg-indigo-50 transition-colors whitespace-nowrap">
                       <Plus className="w-3.5 h-3.5" />+ СТО
                     </button>
                   )}
-                  {isAdmin && inlineForm?.type !== 'parts' && (
+                  {isAdmin && selectedRoleNames.includes('parts_owner') && inlineForm?.type !== 'parts' && (
                     <button type="button"
                       onClick={() => setInlineForm({ type: 'parts', name: '', phone: '', address: '' })}
                       className="flex items-center gap-1 px-2.5 py-1 border border-dashed border-orange-300 text-orange-600 rounded-lg text-xs font-medium hover:bg-orange-50 transition-colors whitespace-nowrap">
@@ -623,7 +623,7 @@ export default function UserEdit() {
                 </div>
 
                 {/* Компании */}
-                {(shouldShowStoCompany(selectedRoleNames) || shouldShowPartsCompany(selectedRoleNames) || isAdmin) && (
+                {(shouldShowStoCompany(selectedRoleNames) || shouldShowPartsCompany(selectedRoleNames)) && (
                   <div className="border-t border-gray-100 pt-4">
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Компании</p>
                     <div className="space-y-1.5">
