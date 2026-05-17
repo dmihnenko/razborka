@@ -343,16 +343,16 @@ export default function Layout() {
                   key={item.href}
                   to={item.href}
                   onClick={item.href === '/admin' ? () => localStorage.removeItem('activeRole') : undefined}
-                  className={`flex flex-col items-center justify-center gap-1.5 px-1 py-3 text-[11px] font-medium transition-colors rounded-xl min-h-[64px] ${
+                  className={`flex flex-col items-center justify-center gap-1.5 px-1 py-3 transition-colors rounded-xl min-h-[64px] ${
                     isActive
                       ? 'bg-primary text-white shadow-sm'
                       : item.href === '/admin'
                       ? 'bg-purple-50 text-purple-700 hover:bg-purple-100'
-                      : 'text-gray-700 bg-gray-50 hover:bg-gray-100'
+                      : 'text-gray-600 bg-gray-50 hover:bg-gray-100'
                   }`}
                 >
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${item.href === '/admin' && !isActive ? 'text-purple-500' : ''}`} />
-                  <span className="text-center leading-tight line-clamp-2">{item.name}</span>
+                  <Icon className="w-5 h-5 flex-shrink-0 stroke-[1.5]" />
+                  <span className="text-center text-[11px] font-medium leading-tight line-clamp-2 mt-0.5">{item.name}</span>
                 </Link>
               )
             })}
