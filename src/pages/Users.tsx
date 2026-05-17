@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { Plus, Edit2, Trash2, UserCog, Search, CheckCircle2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, UserCog, Search, CheckCircle2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { IMaskInput } from 'react-imask';
 import { useUserProfile, useIsAdmin } from '@/hooks/useUserProfile';
@@ -60,6 +60,8 @@ export default function Users() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [passwordModal, setPasswordModal] = useState<{ userId: string; userName: string } | null>(null);
+  const [newPassword, setNewPassword] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [formData, setFormData] = useState<UserFormData>({
     email: '',
@@ -405,6 +407,37 @@ export default function Users() {
     }
   });
 
+  // Смена пароля пользователя (admin/owner)
+  const changePasswordMutation = useMutation({
+    mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('Сессия истекла')
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-password`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ userId, newPassword: password }),
+        }
+      )
+      const data = await response.json()
+      if (!response.ok || data?.error) throw new Error(data?.error || 'Ошибка смены пароля')
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner] });
+      toast.success('Пароль изменён')
+      setPasswordModal(null)
+      setNewPassword('')
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Ошибка при смене пароля')
+    }
+  });
+
   const handleToggleActive = (user: UserProfile) => {
     toggleActiveMutation.mutate(user);
   };
@@ -624,6 +657,13 @@ export default function Users() {
                     className="p-2 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors">
                     <Edit2 className="w-4 h-4" />
                   </button>
+                  {(isAdmin || isStoOwner || isPartsOwner) && (
+                    <button onClick={() => { setPasswordModal({ userId: user.id, userName: user.full_name || user.username || user.email }); setNewPassword(''); }}
+                      title="Сменить пароль"
+                      className="p-2 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors">
+                      <KeyRound className="w-4 h-4" />
+                    </button>
+                  )}
                   {isAdmin && (
                     <button onClick={() => handleEditRole(user)}
                       title="Роли"
@@ -1163,6 +1203,57 @@ export default function Users() {
         </div>
       )}
       <ConfirmDialog {...dialogProps} />
+
+      {/* Модалка смены пароля */}
+      {passwordModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                <KeyRound className="w-4 h-4 text-amber-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900">Смена пароля</p>
+                <p className="text-xs text-gray-400 truncate">{passwordModal.userName}</p>
+              </div>
+              <button onClick={() => setPasswordModal(null)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Новый пароль</label>
+                <input
+                  type="text"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  autoFocus
+                  placeholder="Минимум 6 символов"
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all"
+                />
+                {newPassword.length > 0 && newPassword.length < 6 && (
+                  <p className="text-xs text-red-500 mt-1">Минимум 6 символов</p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setPasswordModal(null)}
+                  className="flex-1 py-2.5 text-sm text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
+                  Отмена
+                </button>
+                <button
+                  onClick={() => changePasswordMutation.mutate({ userId: passwordModal.userId, password: newPassword })}
+                  disabled={newPassword.length < 6 || changePasswordMutation.isPending}
+                  className="flex-1 py-2.5 text-sm font-semibold text-white bg-amber-500 rounded-xl hover:bg-amber-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                  {changePasswordMutation.isPending
+                    ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    : <KeyRound className="w-4 h-4" />}
+                  {changePasswordMutation.isPending ? 'Сохранение...' : 'Сменить'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
