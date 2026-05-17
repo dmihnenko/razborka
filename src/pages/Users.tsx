@@ -376,17 +376,24 @@ export default function Users() {
 
       if (profileError) throw profileError;
 
-      // Удаляем из auth.users через Edge Function с service_role
+      // Удаляем из auth.users через Edge Function
       const { data: { session } } = await supabase.auth.getSession()
-      const { data, error: fnError } = await supabase.functions.invoke('delete-user', {
-        body: { userId },
-        headers: session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : undefined
-      });
+      if (!session?.access_token) throw new Error('Сессия истекла. Войдите заново.')
 
-      if (fnError) throw new Error(fnError.message);
-      if (data?.error) throw new Error(data.error);
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ userId }),
+        }
+      )
+      const data = await response.json()
+      if (!response.ok || data?.error) throw new Error(data?.error || 'Ошибка удаления')
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner] });
