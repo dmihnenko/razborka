@@ -36,14 +36,22 @@ export default function Vehicles() {
   // Проверка роли владельца
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
 
+  const stoCompanyId = profile?.sto_company_id
+
   const { data: vehicles, isLoading } = useQuery({
-    queryKey: ['vehicles', customerId],
+    queryKey: ['vehicles', customerId, stoCompanyId],
+    enabled: !isStoOwner || !!stoCompanyId, // не загружаем пока не знаем компанию
     queryFn: async () => {
       let query = supabase
         .from('vehicles')
         .select('*, customers(name, id)')
         .order('created_at', { ascending: false })
       
+      // Фильтруем по компании для владельца СТО
+      if (isStoOwner && stoCompanyId) {
+        query = query.eq('sto_company_id', stoCompanyId)
+      }
+
       // Если передан customer_id - фильтруем
       if (customerId) {
         query = query.eq('customer_id', customerId)

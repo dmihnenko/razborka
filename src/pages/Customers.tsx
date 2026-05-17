@@ -27,13 +27,24 @@ export default function Customers() {
   const { confirm: showConfirm, dialogProps } = useConfirm()
   const { data: profile } = useUserProfile()
 
+  const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
+  const stoCompanyId = profile?.sto_company_id
+
   const { data: customers, isLoading } = useQuery({
-    queryKey: ['customers'],
+    queryKey: ['customers', stoCompanyId],
+    enabled: !isStoOwner || !!stoCompanyId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('customers')
         .select('*')
         .order('name', { ascending: true })
+
+      // Фильтруем по компании для владельца/работника СТО
+      if (isStoOwner && stoCompanyId) {
+        query = query.eq('sto_company_id', stoCompanyId)
+      }
+
+      const { data, error } = await query
       
       if (error) throw error
 
