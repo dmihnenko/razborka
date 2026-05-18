@@ -36,10 +36,12 @@ export function useUserProfile() {
         .select('is_primary, roles(id, name, display_name, description, is_active)')
         .eq('user_id', user.id)
 
-      const roles = (userRolesData || []).map((ur: any) => ({
-        ...ur.roles,
-        is_primary: ur.is_primary
-      }))
+      const roles = (userRolesData || [])
+        .filter((ur: any) => ur.roles != null)
+        .map((ur: any) => ({
+          ...ur.roles,
+          is_primary: ur.is_primary
+        }))
 
       return { ...profiles[0], roles }
     },

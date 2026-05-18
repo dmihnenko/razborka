@@ -15,32 +15,20 @@ export default function AdminPanel() {
     queryKey: ['admin-stats'],
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
-      const [
-        { count: users },
-        { count: activeUsers },
-        { count: roles },
-        { count: stoCompanies },
-        { count: partsCompanies },
-        { count: subscriptions },
-        { count: openTickets },
-      ] = await Promise.all([
-        supabase.from('user_profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('user_profiles').select('*', { count: 'exact', head: true }).eq('is_active', true),
-        supabase.from('roles').select('*', { count: 'exact', head: true }).eq('is_active', true),
-        supabase.from('sto_companies').select('*', { count: 'exact', head: true }).eq('is_active', true),
-        supabase.from('parts_companies').select('*', { count: 'exact', head: true }).eq('is_active', true),
-        supabase.from('company_subscriptions').select('*', { count: 'exact', head: true }).eq('is_active', true),
-        supabase.from('support_tickets').select('*', { count: 'exact', head: true }).eq('status', 'open'),
-      ])
-      return {
-        users: users || 0,
-        activeUsers: activeUsers || 0,
-        roles: roles || 0,
-        stoCompanies: stoCompanies || 0,
-        partsCompanies: partsCompanies || 0,
-        subscriptions: subscriptions || 0,
-        openTickets: openTickets || 0,
+        const safeCount = async (query: any) => {
+        try { const { count } = await query; return count || 0 } catch { return 0 }
       }
+
+      const [users, activeUsers, roles, stoCompanies, partsCompanies, subscriptions, openTickets] = await Promise.all([
+        safeCount(supabase.from('user_profiles').select('*', { count: 'exact', head: true })),
+        safeCount(supabase.from('user_profiles').select('*', { count: 'exact', head: true }).eq('is_active', true)),
+        safeCount(supabase.from('roles').select('*', { count: 'exact', head: true }).eq('is_active', true)),
+        safeCount(supabase.from('sto_companies').select('*', { count: 'exact', head: true }).eq('is_active', true)),
+        safeCount(supabase.from('parts_companies').select('*', { count: 'exact', head: true }).eq('is_active', true)),
+        safeCount(supabase.from('company_subscriptions').select('*', { count: 'exact', head: true }).eq('is_active', true)),
+        safeCount(supabase.from('support_tickets').select('*', { count: 'exact', head: true }).eq('status', 'open')),
+      ])
+      return { users, activeUsers, roles, stoCompanies, partsCompanies, subscriptions, openTickets }
     }
   })
 
