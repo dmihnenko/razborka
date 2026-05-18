@@ -502,3 +502,8 @@
   border-width: 2px;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Унификация иконок Lucide — единый strokeWidth для всего проекта ── */
+svg.lucide {
+  stroke-width: 1.5;
+}
