@@ -171,12 +171,6 @@ export default function Users() {
     }
   });
 
-  // Загрузка разборок
-  const selectedRoleNames = useMemo(
-    () => roles.filter(r => formData.role_ids.includes(r.id)).map(r => r.name),
-    [formData.role_ids, roles]
-  );
-
   const { data: partsCompanies = [] } = useQuery({
     queryKey: ['parts_companies'],
     staleTime: 15 * 60 * 1000,
@@ -253,6 +247,26 @@ export default function Users() {
   });
 
   // Создание пользователя
+  // Производные значения — ПОСЛЕ всех хуков
+  const selectedRoleNames = useMemo(
+    () => roles.filter(r => formData.role_ids.includes(r.id)).map(r => r.name),
+    [formData.role_ids, roles]
+  );
+
+  const filteredUsers = useMemo(
+    () => {
+      if (!searchQuery.trim()) return users;
+      const q = searchQuery.toLowerCase();
+      return users.filter(user =>
+        user.full_name?.toLowerCase().includes(q) ||
+        user.email?.toLowerCase().includes(q) ||
+        user.username?.toLowerCase().includes(q) ||
+        user.phone?.includes(q)
+      );
+    },
+    [users, searchQuery]
+  );
+
   const resetForm = () => {
     setFormData({
       email: '',
@@ -529,19 +543,7 @@ export default function Users() {
     );
   }
 
-  const filteredUsers = useMemo(
-    () => users.filter(user => {
-      if (!searchQuery.trim()) return true;
-      const q = searchQuery.toLowerCase();
-      return (
-        user.full_name?.toLowerCase().includes(q) ||
-        user.email?.toLowerCase().includes(q) ||
-        user.username?.toLowerCase().includes(q) ||
-        user.phone?.includes(q)
-      );
-    }),
-    [users, searchQuery]
-  );
+
 
   return (
     <div className="space-y-5">
