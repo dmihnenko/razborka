@@ -233,7 +233,7 @@ export default function PartsDashboard() {
         {/* Vehicles */}
         <button
           onClick={() => navigate('/parts/vehicles')}
-          className="card text-left group hover:shadow-card-hover transition-all"
+          className="stat-card cursor-pointer text-left"
         >
           <div className="flex items-start justify-between mb-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
@@ -260,7 +260,7 @@ export default function PartsDashboard() {
         {/* Inventory */}
         <button
           onClick={() => navigate('/parts/inventory')}
-          className="card text-left group hover:shadow-card-hover transition-all"
+          className="stat-card cursor-pointer text-left"
         >
           <div className="flex items-start justify-between mb-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(234,88,12,0.1)' }}>
@@ -289,7 +289,7 @@ export default function PartsDashboard() {
         {/* Orders */}
         <button
           onClick={() => navigate('/parts/orders')}
-          className="card text-left group hover:shadow-card-hover transition-all"
+          className="stat-card cursor-pointer text-left"
         >
           <div className="flex items-start justify-between mb-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(234,179,8,0.1)' }}>
@@ -316,7 +316,7 @@ export default function PartsDashboard() {
         {/* Revenue */}
         <button
           onClick={() => navigate('/parts/customers')}
-          className="card text-left group hover:shadow-card-hover transition-all"
+          className="stat-card cursor-pointer text-left"
           style={{ background: 'linear-gradient(135deg, #1E3A6E 0%, #1E40AF 100%)', border: 'none' }}
         >
           <div className="flex items-start justify-between mb-3">

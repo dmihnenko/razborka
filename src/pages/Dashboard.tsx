@@ -208,70 +208,23 @@ export default function Dashboard() {
           {/* Быстрая статистика по заявкам */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Активные заявки */}
-            <div 
-              onClick={() => navigate('/appointments')}
-              className="card-mobile cursor-pointer hover:shadow-md transition-shadow"
-            >
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="p-2 rounded-lg bg-blue-100">
-                    <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+            {[
+              { label: 'Активные',   value: activeCount,    icon: FileText,    color: 'text-blue-500',   bg: 'bg-blue-50',   href: '/appointments' },
+              { label: 'Ожидают',    value: scheduledCount, icon: Clock,       color: 'text-purple-500', bg: 'bg-purple-50', href: '/appointments' },
+              { label: 'В работе',   value: inProgressCount,icon: Wrench,      color: 'text-orange-500', bg: 'bg-orange-50', href: '/appointments' },
+              { label: 'Готовые',    value: readyCount,     icon: CheckCircle, color: 'text-green-500',  bg: 'bg-green-50',  href: '/appointments?status=ready' },
+            ].map(({ label, value, icon: Icon, color, bg, href }) => (
+              <div key={label} onClick={() => navigate(href)}
+                className="stat-card cursor-pointer">
+                <div className="flex items-start justify-between">
+                  <p className="text-sm font-medium text-gray-500">{label}</p>
+                  <div className={}>
+                    <Icon className={} strokeWidth={1.5} />
                   </div>
-                  <p className="text-sm font-medium text-gray-700">Активные</p>
                 </div>
-                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{activeCount}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">{value}</p>
               </div>
-            </div>
-
-            {/* Запланированные */}
-            <div 
-              onClick={() => navigate('/appointments')}
-              className="card-mobile cursor-pointer hover:shadow-md transition-shadow"
-            >
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="p-2 rounded-lg bg-purple-100">
-                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
-                  </div>
-                  <p className="text-sm font-medium text-gray-700">Ожидают</p>
-                </div>
-                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{scheduledCount}</p>
-              </div>
-            </div>
-
-            {/* В работе */}
-            <div 
-              onClick={() => navigate('/appointments')}
-              className="card-mobile cursor-pointer hover:shadow-md transition-shadow"
-            >
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="p-2 rounded-lg bg-orange-100">
-                    <Wrench className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
-                  </div>
-                  <p className="text-sm font-medium text-gray-700">В работе</p>
-                </div>
-                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{inProgressCount}</p>
-              </div>
-            </div>
-
-            {/* Готовые */}
-            <div 
-              onClick={() => navigate('/appointments?status=ready')}
-              className="card-mobile cursor-pointer hover:shadow-md transition-shadow"
-            >
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="p-2 rounded-lg bg-green-100">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-                  </div>
-                  <p className="text-sm font-medium text-gray-700">Готовые</p>
-                </div>
-                <p className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  {readyCount}
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* Алерты и информация */}
@@ -329,7 +282,7 @@ export default function Dashboard() {
             {/* Информация о работниках */}
             <div 
               onClick={() => navigate('/sto/employees')}
-              className="card-mobile cursor-pointer hover:shadow-md transition-shadow"
+              className="stat-card cursor-pointer"
             >
               <div className="flex items-start gap-3">
                 <div className="p-2 rounded-lg bg-indigo-100">

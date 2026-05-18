@@ -156,13 +156,16 @@
   /* Legacy alias — used heavily throughout pages */
   .card-mobile { @apply card; }
 
-  /* ── Stat card (dashboard tiles) ───────────────────────── */
+  /* ── Stat card (dashboard tiles) — иконка справа, число снизу ─── */
   .stat-card {
-    @apply bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-1;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    transition: box-shadow 0.15s ease;
+    @apply bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 flex flex-col justify-between min-h-[100px];
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
   }
-  .stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .stat-card:hover {
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+  }
 
   /* ── Page layout ────────────────────────────────────────── */
   .page-container {
