@@ -275,20 +275,37 @@ export default function UserEdit() {
 
         {/* Карточка пользователя */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-5 overflow-hidden">
-          <div className="h-12 sm:h-16 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-          <div className="px-6 pb-5">
-            <div className="flex items-end justify-between -mt-8 mb-3">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold ring-4 ring-white shadow-lg">
-                {avatarLetter}
+          {/* Градиентная шапка */}
+          <div className="relative h-20 sm:h-24 bg-gradient-to-br from-violet-600 via-indigo-500 to-blue-400 overflow-hidden">
+            <div className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-white/10" />
+            <div className="absolute -bottom-6 -left-2 w-20 h-20 rounded-full bg-white/10" />
+            <div className="absolute top-2 right-16 w-10 h-10 rounded-full bg-white/10" />
+          </div>
+          <div className="px-5 pb-5">
+            <div className="flex items-end justify-between -mt-9 mb-4">
+              <div className="relative">
+                <div className="w-[72px] h-[72px] rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-extrabold ring-[3px] ring-white shadow-xl">
+                  {avatarLetter}
+                </div>
+                <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${userProfile?.is_active ? 'bg-emerald-400' : 'bg-gray-300'}`} />
               </div>
-              <span className={`mb-1 text-xs font-semibold px-2.5 py-1 rounded-full ${userProfile?.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+              <span className={`text-[11px] font-bold px-3 py-1 rounded-full tracking-wide ${userProfile?.is_active ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : 'bg-gray-100 text-gray-500'}`}>
                 {userProfile?.is_active ? '● Активен' : '○ Неактивен'}
               </span>
             </div>
-            <div>
-              <p className="text-lg font-bold text-gray-900 leading-tight">{userProfile?.full_name || 'Имя не указано'}</p>
-              <p className="text-sm text-gray-500 mt-0.5">{userProfile?.email}</p>
-              {userProfile?.username && <p className="text-xs text-gray-400 font-mono mt-0.5">@{userProfile?.username}</p>}
+            <div className="space-y-0.5">
+              <p className="text-lg font-bold text-gray-900 leading-snug">
+                {userProfile?.full_name || <span className="text-gray-400 font-normal">Имя не указано</span>}
+              </p>
+              {userProfile?.email && (
+                <p className="text-sm text-gray-500 flex items-center gap-1.5">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
+                  {userProfile.email}
+                </p>
+              )}
+              {userProfile?.username && (
+                <p className="text-xs text-indigo-400 font-mono font-semibold tracking-tight">@{userProfile.username}</p>
+              )}
             </div>
           </div>
         </div>
