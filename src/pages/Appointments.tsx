@@ -58,7 +58,7 @@ export default function Appointments() {
 
       // Фильтруем по СТО пользователя
       if (profile?.sto_company_id) {
-        query = query.eq('sto_company_id', profile.sto_company_id)
+        query = query.eq('sto_company_id', profile?.sto_company_id)
       }
 
       // Фильтруем по архиву

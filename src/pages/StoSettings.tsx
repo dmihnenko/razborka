@@ -18,7 +18,7 @@ export default function StoSettings() {
       const { data, error } = await supabase
         .from('sto_companies')
         .select('id, name, services_menu_enabled')
-        .eq('id', profile.sto_company_id)
+        .eq('id', profile?.sto_company_id)
         .single()
       
       if (error) throw error

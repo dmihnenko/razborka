@@ -34,7 +34,7 @@ export default function Layout() {
     return roles.find((r: any) => r.is_primary) || roles[0]
   }
   
-  const primaryRole = profile?.roles?.length ? getRoleByPriority(profile.roles) : null
+  const primaryRole = profile?.roles?.length ? getRoleByPriority(profile?.roles) : null
   
   // Проверяем, является ли пользователь работником СТО
   const isStoWorker = profile?.roles?.some((r: any) => r.name === 'sto_worker')
@@ -48,7 +48,7 @@ export default function Layout() {
       const { data, error } = await supabase
         .from('sto_companies')
         .select('services_menu_enabled')
-        .eq('id', profile.sto_company_id)
+        .eq('id', profile?.sto_company_id)
         .single()
       
       if (error) throw error
@@ -106,7 +106,7 @@ export default function Layout() {
       localStorage.setItem('activeRole', primaryRole.name)
     }
   } else if (profile?.roles?.length) {
-    roleNames = [profile.roles[0].name]
+    roleNames = [profile.roles?.[0]?.name]
   }
   
   // Роли доступные для переключения (исключаем worker роли и user)

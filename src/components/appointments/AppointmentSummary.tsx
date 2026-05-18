@@ -59,7 +59,7 @@ export default function AppointmentSummary({ formData, onUpdate, isEditing }: Pr
         .from('user_profiles')
         .select('id, full_name, email')
         .in('id', userIds)
-        .eq('sto_company_id', profile.sto_company_id)
+        .eq('sto_company_id', profile?.sto_company_id)
       
       return profiles || []
     },

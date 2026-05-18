@@ -86,7 +86,7 @@ export default function VehicleSelector({ customerId, selectedId, onSelect }: Pr
         .eq('vin', vin.toUpperCase())
 
       if (profile?.sto_company_id) {
-        query = query.eq('sto_company_id', profile.sto_company_id)
+        query = query.eq('sto_company_id', profile?.sto_company_id)
       }
 
       const { data, error } = await query.maybeSingle()

@@ -49,10 +49,10 @@ export function useCompanySubscription() {
       
       if (profile?.sto_company_id) {
         companyType = 'sto'
-        companyId = profile.sto_company_id
+        companyId = profile?.sto_company_id
       } else if (profile?.parts_company_id) {
         companyType = 'parts'
-        companyId = profile.parts_company_id
+        companyId = profile?.parts_company_id
       }
       
       if (!companyType || !companyId) {

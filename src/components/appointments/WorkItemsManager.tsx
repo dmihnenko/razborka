@@ -27,7 +27,7 @@ export default function WorkItemsManager({ items, onChange }: Props) {
       const { data, error } = await supabase
         .from('sto_companies')
         .select('services_menu_enabled')
-        .eq('id', profile.sto_company_id)
+        .eq('id', profile?.sto_company_id)
         .single()
       
       if (error) {
