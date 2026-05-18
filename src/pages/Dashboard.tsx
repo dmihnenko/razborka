@@ -218,8 +218,8 @@ export default function Dashboard() {
                 className="stat-card cursor-pointer">
                 <div className="flex items-start justify-between">
                   <p className="text-sm font-medium text-gray-500">{label}</p>
-                  <div className={}>
-                    <Icon className={} strokeWidth={1.5} />
+                  <div className={`p-1.5 rounded-xl ${bg}`}>
+                    <Icon className={`w-4 h-4 ${color}`} strokeWidth={1.5} />
                   </div>
                 </div>
                 <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">{value}</p>
