@@ -253,6 +253,20 @@ export default function Users() {
   });
 
   // Создание пользователя
+  const resetForm = () => {
+    setFormData({
+      email: '',
+      username: '',
+      password: '',
+      full_name: '',
+      phone: '',
+      role_ids: [],
+      primary_role_id: '',
+      sto_company_id: '',
+      parts_company_id: ''
+    });
+  };
+
   const createUserMutation = useMutation({
     mutationFn: async (data: UserFormData) => {
       // Проверка лимитов для владельцев
@@ -459,20 +473,6 @@ export default function Users() {
 
   const handleCreateUser = () => {
     navigate('/users/new');
-  };
-
-  const resetForm = () => {
-    setFormData({
-      email: '',
-      username: '',
-      password: '',
-      full_name: '',
-      phone: '',
-      role_ids: [],
-      primary_role_id: '',
-      sto_company_id: '',
-      parts_company_id: ''
-    });
   };
 
   const handleDeleteUser = async (user: UserProfile) => {
