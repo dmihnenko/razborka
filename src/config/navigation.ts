@@ -1,18 +1,18 @@
 import {
-  LayoutDashboard,
+  LayoutGrid,
   Users,
   Car,
-  Calendar,
+  CalendarDays,
   Wrench,
   Package,
-  Receipt,
+  FileText,
   ShoppingCart,
-  TrendingUp,
-  MessageSquare,
-  BarChart3,
-  Settings,
+  LineChart,
+  MessageCircle,
+  BarChart2,
+  SlidersHorizontal,
   Store,
-  UserCircle,
+  CircleUser,
   ShoppingBag
 } from 'lucide-react';
 
@@ -27,75 +27,75 @@ export interface MenuItem {
 // Меню для администратора
 export const adminMenu: MenuItem[] = [
   { name: 'Мои авто', href: '/my-vehicles', icon: Car },
-  { name: 'Поддержка', href: '/admin/support', icon: MessageSquare },
+  { name: 'Поддержка', href: '/admin/support', icon: MessageCircle },
 ];
 
 // Меню для владельца СТО
 export const stoOwnerMenu: MenuItem[] = [
-  { name: 'Дашборд', href: '/', icon: LayoutDashboard },
+  { name: 'Дашборд', href: '/', icon: LayoutGrid },
   { name: 'Клиенты', href: '/customers', icon: Users },
   { name: 'Автомобили', href: '/vehicles', icon: Car },
-  { name: 'Записи', href: '/appointments', icon: Calendar },
-  { name: 'Статистика', href: '/statistics', icon: BarChart3 },
+  { name: 'Записи', href: '/appointments', icon: CalendarDays },
+  { name: 'Статистика', href: '/statistics', icon: BarChart2 },
   { name: 'Услуги', href: '/services', icon: Wrench },
-  { name: 'Счета', href: '/invoices', icon: Receipt },
+  { name: 'Счета', href: '/invoices', icon: FileText },
   { name: 'Сотрудники', href: '/sto/employees', icon: Users },
-  { name: 'Аналитика', href: '/analytics', icon: TrendingUp },
-  { name: 'Настройки', href: '/sto/settings', icon: Settings },
-  { name: 'Поддержка', href: '/support', icon: MessageSquare },
-  { name: 'Профиль', href: '/profile', icon: UserCircle },
+  { name: 'Аналитика', href: '/analytics', icon: LineChart },
+  { name: 'Настройки', href: '/sto/settings', icon: SlidersHorizontal },
+  { name: 'Поддержка', href: '/support', icon: MessageCircle },
+  { name: 'Профиль', href: '/profile', icon: CircleUser },
 ];
 
 // Меню для работника СТО
 export const stoWorkerMenu: MenuItem[] = [
-  { name: 'Дашборд', href: '/', icon: LayoutDashboard },
+  { name: 'Дашборд', href: '/', icon: LayoutGrid },
   { name: 'Клиенты', href: '/customers', icon: Users },
   { name: 'Автомобили', href: '/vehicles', icon: Car },
-  { name: 'Записи', href: '/appointments', icon: Calendar },
-  { name: 'Статистика', href: '/statistics', icon: BarChart3 },
+  { name: 'Записи', href: '/appointments', icon: CalendarDays },
+  { name: 'Статистика', href: '/statistics', icon: BarChart2 },
   { name: 'Услуги', href: '/services', icon: Wrench },
-  { name: 'Профиль', href: '/profile', icon: UserCircle },
+  { name: 'Профиль', href: '/profile', icon: CircleUser },
 ];
 
 // Меню для владельца разборки
 export const partsOwnerMenu: MenuItem[] = [
-  { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutDashboard },
+  { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutGrid },
   { name: 'Автомобили', href: '/parts/vehicles', icon: Car },
   { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package },
   { name: 'Магазин', href: '/parts/inventory?source=shop', icon: ShoppingBag },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart },
   { name: 'Клиенты', href: '/parts/customers', icon: Users },
   { name: 'Сотрудники', href: '/parts/employees', icon: Users },
-  { name: 'Аналитика', href: '/parts/analytics', icon: TrendingUp },
-  { name: 'Настройки', href: '/parts/settings', icon: Settings },
-  { name: 'Поддержка', href: '/support', icon: MessageSquare },
-  { name: 'Профиль', href: '/profile', icon: UserCircle },
+  { name: 'Аналитика', href: '/parts/analytics', icon: LineChart },
+  { name: 'Настройки', href: '/parts/settings', icon: SlidersHorizontal },
+  { name: 'Поддержка', href: '/support', icon: MessageCircle },
+  { name: 'Профиль', href: '/profile', icon: CircleUser },
 ];
 
 // Меню для работника разборки
 export const partsWorkerMenu: MenuItem[] = [
-  { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutDashboard },
+  { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutGrid },
   { name: 'Автомобили', href: '/parts/vehicles', icon: Car },
   { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package },
   { name: 'Магазин', href: '/parts/inventory?source=shop', icon: ShoppingBag },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart },
   { name: 'Клиенты', href: '/parts/customers', icon: Users },
-  { name: 'Профиль', href: '/profile', icon: UserCircle },
+  { name: 'Профиль', href: '/profile', icon: CircleUser },
 ];
 
 // Меню для владельца магазина
 export const storeOwnerMenu: MenuItem[] = [
-  { name: 'Дашборд', href: '/store-dashboard', icon: LayoutDashboard },
+  { name: 'Дашборд', href: '/store-dashboard', icon: LayoutGrid },
   { name: 'Товары', href: '/store/products', icon: Package },
   { name: 'Заказы', href: '/store/orders', icon: ShoppingCart },
   { name: 'Клиенты', href: '/customers', icon: Users },
   { name: 'Сотрудники', href: '/store/employees', icon: Users },
-  { name: 'Поддержка', href: '/support', icon: MessageSquare },
+  { name: 'Поддержка', href: '/support', icon: MessageCircle },
 ];
 
 // Меню для работника магазина
 export const storeWorkerMenu: MenuItem[] = [
-  { name: 'Дашборд', href: '/store-dashboard', icon: LayoutDashboard },
+  { name: 'Дашборд', href: '/store-dashboard', icon: LayoutGrid },
   { name: 'Товары', href: '/store/products', icon: Package },
   { name: 'Заказы', href: '/store/orders', icon: ShoppingCart },
   { name: 'Клиенты', href: '/customers', icon: Users },

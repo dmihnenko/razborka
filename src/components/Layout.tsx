@@ -208,7 +208,7 @@ export default function Layout() {
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
-                <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-primary' : 'text-gray-400'}`} />
+                <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-primary' : 'text-gray-400'}`} strokeWidth={1.5} />
                 <span className="hidden lg:block">{item.name}</span>
               </Link>
             )
@@ -250,7 +250,7 @@ export default function Layout() {
               onClick={() => localStorage.removeItem('activeRole')}
               className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm font-medium text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
             >
-              <Shield className="w-4 h-4 text-purple-500 flex-shrink-0" />
+              <Shield className="w-4 h-4 text-purple-500 flex-shrink-0" strokeWidth={1.5} />
               <span className="hidden lg:block">Админ панель</span>
             </Link>
           )}
@@ -258,7 +258,7 @@ export default function Layout() {
             onClick={handleLogout}
             className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-lg transition-colors"
           >
-            <LogOut className="w-4 h-4 flex-shrink-0" />
+            <LogOut className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
             <span className="hidden lg:block">Выход</span>
           </button>
         </div>
@@ -351,7 +351,7 @@ export default function Layout() {
                       : 'text-gray-600 bg-gray-50 hover:bg-gray-100'
                   }`}
                 >
-                  <Icon className="w-5 h-5 flex-shrink-0 stroke-[1.5]" />
+                  <Icon className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
                   <span className="text-center text-[11px] font-medium leading-tight line-clamp-2 mt-0.5">{item.name}</span>
                 </Link>
               )

@@ -125,7 +125,7 @@ export default function AdminLayout() {
                     isActive ? 'bg-purple-50 text-purple-700' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-purple-600' : ''}`} />
+                  <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-purple-600' : ''}`} strokeWidth={1.5} />
                 </Link>
               )
             })}
@@ -151,7 +151,7 @@ export default function AdminLayout() {
                           : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                       }`}
                     >
-                      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-purple-600' : 'text-gray-400'}`} />
+                      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-purple-600' : 'text-gray-400'}`} strokeWidth={1.5} />
                       {item.name}
                     </Link>
                   )
@@ -182,7 +182,7 @@ export default function AdminLayout() {
             onClick={handleLogout}
             className="flex items-center justify-center lg:justify-start gap-3 w-full px-0 lg:px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-lg transition-colors"
           >
-            <LogOut className="w-4 h-4 flex-shrink-0" />
+            <LogOut className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
             <span className="hidden lg:block">Выход</span>
           </button>
         </div>
@@ -225,7 +225,7 @@ export default function AdminLayout() {
                       : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
                   }`}
                 >
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-purple-600' : 'text-gray-400'}`} />
+                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-purple-600' : 'text-gray-400'}`} strokeWidth={1.5} />
                   <span className="text-center leading-tight line-clamp-2">{item.name}</span>
                 </Link>
               )
