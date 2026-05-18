@@ -92,7 +92,7 @@ export default function UserEdit() {
       const primaryRole = userRoles.find((r: any) => r.is_primary)
       const roleIds = userRoles.map((r: any) => r.role_id)
       setFormData({
-        full_name: userProfile.full_name || '',
+        full_name: userProfile?.full_name || '',
         phone: userProfile.phone || '',
         role_ids: roleIds,
         primary_role_id: primaryRole?.role_id || roleIds[0] || '',
@@ -233,7 +233,7 @@ export default function UserEdit() {
     )
   }
 
-  const avatarLetter = (userProfile.full_name || userProfile.username || userProfile.email || '?').charAt(0).toUpperCase()
+  const avatarLetter = (userProfile?.full_name || userProfile?.username || userProfile?.email || '?').charAt(0).toUpperCase()
 
   return (
     <div className="min-h-dvh bg-[#F4F6FA]">
@@ -247,7 +247,7 @@ export default function UserEdit() {
             <div className="flex items-center gap-1.5 text-sm min-w-0">
               <span className="text-gray-400 hidden sm:block">Пользователи</span>
               <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0 hidden sm:block" />
-              <span className="font-semibold text-gray-800 truncate">{userProfile.full_name || userProfile.username || userProfile.email}</span>
+              <span className="font-semibold text-gray-800 truncate">{userProfile?.full_name || userProfile?.username || userProfile?.email}</span>
               <span className="hidden sm:inline text-gray-300">·</span>
               <span className="hidden sm:inline text-xs text-gray-400">edit</span>
             </div>
@@ -281,14 +281,14 @@ export default function UserEdit() {
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold ring-4 ring-white shadow-lg">
                 {avatarLetter}
               </div>
-              <span className={`mb-1 text-xs font-semibold px-2.5 py-1 rounded-full ${userProfile.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                {userProfile.is_active ? '● Активен' : '○ Неактивен'}
+              <span className={`mb-1 text-xs font-semibold px-2.5 py-1 rounded-full ${userProfile?.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                {userProfile?.is_active ? '● Активен' : '○ Неактивен'}
               </span>
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-900 leading-tight">{userProfile.full_name || 'Имя не указано'}</p>
-              <p className="text-sm text-gray-500 mt-0.5">{userProfile.email}</p>
-              {userProfile.username && <p className="text-xs text-gray-400 font-mono mt-0.5">@{userProfile.username}</p>}
+              <p className="text-lg font-bold text-gray-900 leading-tight">{userProfile?.full_name || 'Имя не указано'}</p>
+              <p className="text-sm text-gray-500 mt-0.5">{userProfile?.email}</p>
+              {userProfile?.username && <p className="text-xs text-gray-400 font-mono mt-0.5">@{userProfile?.username}</p>}
             </div>
           </div>
         </div>

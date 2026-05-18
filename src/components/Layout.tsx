@@ -158,7 +158,7 @@ export default function Layout() {
             Ваш аккаунт создан. Обратитесь к администратору, чтобы он назначил вам роль.
           </p>
           <p className="text-sm text-gray-400">
-            {profile.email || profile.username}
+            {profile?.email || profile?.username}
           </p>
           <button
             onClick={handleLogout}
