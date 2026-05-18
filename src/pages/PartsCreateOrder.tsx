@@ -68,7 +68,7 @@ export default function PartsCreateOrder() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Customer Selection */}
-          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-blue-100 p-2 rounded-lg">
                 <UsersIcon className="w-5 h-5 text-blue-600" />
@@ -118,7 +118,7 @@ export default function PartsCreateOrder() {
           </div>
 
           {/* Order Details */}
-          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Дополнительная информация</h2>
 
             <div>

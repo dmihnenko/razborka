@@ -165,7 +165,7 @@ export default function PartsCustomers() {
             <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.total}</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-4">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs sm:text-sm text-gray-600">С заказами</p>
               <TrendingUp className="w-4 h-4 text-green-500" />
@@ -173,7 +173,7 @@ export default function PartsCustomers() {
             <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.withOrders}</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-4">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs sm:text-sm text-gray-600">Общая выручка</p>
               <DollarSign className="w-4 h-4 text-blue-500" />
@@ -181,7 +181,7 @@ export default function PartsCustomers() {
             <p className="text-lg sm:text-xl font-bold text-blue-600">{formatCurrency(stats.totalSpent)}</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-4">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs sm:text-sm text-gray-600">Средний чек</p>
               <DollarSign className="w-4 h-4 text-purple-500" />
@@ -191,7 +191,7 @@ export default function PartsCustomers() {
         </div>
 
         {/* Search & View Controls */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />

@@ -140,7 +140,7 @@ export default function PartsEmployees() {
             <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.total}</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-4">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs sm:text-sm text-gray-600">С email</p>
               <UserCheck className="w-4 h-4 text-green-500" />
@@ -148,7 +148,7 @@ export default function PartsEmployees() {
             <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.active}</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-4">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs sm:text-sm text-gray-600">С телефоном</p>
               <Phone className="w-4 h-4 text-blue-500" />
@@ -158,7 +158,7 @@ export default function PartsEmployees() {
         </div>
 
         {/* Search & View Controls */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />

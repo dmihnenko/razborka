@@ -184,61 +184,34 @@ export default function PartsVehicles() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <button
-            onClick={() => setStatusFilter('all')}
-            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all ${
-              statusFilter === 'all' ? 'ring-2 ring-primary' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">Всего</p>
-              <Car className="w-4 h-4 text-gray-400" />
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.total}</p>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter('awaiting')}
-            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all ${
-              statusFilter === 'awaiting' ? 'ring-2 ring-yellow-500' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">Ожидают</p>
-              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-yellow-600">{stats.awaiting}</p>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter('in_progress')}
-            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all ${
-              statusFilter === 'in_progress' ? 'ring-2 ring-blue-500' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">В работе</p>
-              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.in_progress}</p>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter('dismantled')}
-            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all ${
-              statusFilter === 'dismantled' ? 'ring-2 ring-green-500' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">Разобраны</p>
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.dismantled}</p>
-          </button>
+          {[
+            { key: 'all', label: 'Всего', value: stats.total, color: 'gray', ring: 'ring-primary', dot: 'bg-gray-400' },
+            { key: 'awaiting', label: 'Ожидают', value: stats.awaiting, color: 'yellow', ring: 'ring-yellow-500', dot: 'bg-yellow-500' },
+            { key: 'in_progress', label: 'В работе', value: stats.in_progress, color: 'blue', ring: 'ring-blue-500', dot: 'bg-blue-500' },
+            { key: 'dismantled', label: 'Разобраны', value: stats.dismantled, color: 'green', ring: 'ring-green-500', dot: 'bg-green-500' },
+          ].map(({ key, label, value, ring, dot, color }) => (
+            <button
+              key={key}
+              onClick={() => setStatusFilter(key as any)}
+              className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all flex flex-col justify-between h-full ${
+                statusFilter === key ? `ring-2 ${ring}` : ''
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs sm:text-sm font-medium text-gray-500">{label}</p>
+                <span className={`w-2.5 h-2.5 rounded-full ${dot} flex-shrink-0`} />
+              </div>
+              <p className={`text-2xl sm:text-3xl font-bold ${
+                color === 'gray' ? 'text-gray-900' :
+                color === 'yellow' ? 'text-yellow-600' :
+                color === 'blue' ? 'text-blue-600' : 'text-green-600'
+              }`}>{value}</p>
+            </button>
+          ))}
         </div>
 
         {/* Filters & View Controls */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Search */}
             <div className="flex-1 relative">

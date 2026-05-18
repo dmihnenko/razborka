@@ -249,7 +249,7 @@ export default function PartsAnalytics() {
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Monthly Revenue Chart */}
-          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h2 className="text-base sm:text-lg font-semibold text-gray-900">Выручка по месяцам</h2>
               <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
@@ -290,7 +290,7 @@ export default function PartsAnalytics() {
           </div>
 
           {/* Top Parts */}
-          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h2 className="text-base sm:text-lg font-semibold text-gray-900">Топ запчастей</h2>
               <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />

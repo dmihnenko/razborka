@@ -507,3 +507,12 @@
 svg.lucide {
   stroke-width: 1.5;
 }
+
+/* ── Стандартизация карточек статистики ── */
+.stats-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+.stats-grid > * {
+  height: 100%;
+}

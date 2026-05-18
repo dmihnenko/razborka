@@ -124,7 +124,7 @@ export default function PartsOrders() {
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <button
             onClick={() => setStatusFilter('all')}
-            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all text-left ${
+            className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all text-left ${
               statusFilter === 'all' ? 'ring-2 ring-primary' : ''
             }`}
           >
@@ -137,7 +137,7 @@ export default function PartsOrders() {
 
           <button
             onClick={() => setStatusFilter('new')}
-            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all text-left ${
+            className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all text-left ${
               statusFilter === 'new' ? 'ring-2 ring-blue-500' : ''
             }`}
           >
@@ -150,7 +150,7 @@ export default function PartsOrders() {
 
           <button
             onClick={() => setStatusFilter('in_progress')}
-            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all text-left ${
+            className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all text-left ${
               statusFilter === 'in_progress' ? 'ring-2 ring-yellow-500' : ''
             }`}
           >
@@ -163,7 +163,7 @@ export default function PartsOrders() {
 
           <button
             onClick={() => setStatusFilter('completed')}
-            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all text-left ${
+            className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all text-left ${
               statusFilter === 'completed' ? 'ring-2 ring-green-500' : ''
             }`}
           >
@@ -174,7 +174,7 @@ export default function PartsOrders() {
             <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.completed}</p>
           </button>
 
-          <div className="bg-white rounded-lg shadow-sm p-4">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs sm:text-sm text-gray-600">Выручка</p>
               <DollarSign className="w-4 h-4 text-purple-500" />
@@ -184,7 +184,7 @@ export default function PartsOrders() {
         </div>
 
         {/* Search & View Controls */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
