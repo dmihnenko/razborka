@@ -148,7 +148,7 @@ export default function Layout() {
   // Пользователь авторизован но без роли — ожидает назначения
   if (!primaryRole && filteredNavigation.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="flex items-center justify-center min-h-dvh bg-gray-100">
         <div className="max-w-md w-full mx-4 p-8 bg-white rounded-lg shadow-md text-center space-y-4">
           <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto">
             <span className="text-3xl">⏳</span>
@@ -172,7 +172,7 @@ export default function Layout() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-gray-100 font-sans">
+    <div className="flex flex-col md:flex-row h-dvh bg-gray-100 font-sans overscroll-none">
 
       {/* ════════════════════════════════════════════
           DESKTOP SIDEBAR (hidden on mobile)
@@ -315,7 +315,7 @@ export default function Layout() {
                 <Link
                   to="/admin"
                   onClick={() => localStorage.removeItem('activeRole')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-md border border-purple-200 min-h-[36px] hover:bg-purple-100 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-md border border-purple-200 min-h-[44px] hover:bg-purple-100 transition-colors"
                 >
                   <Shield className="w-4 h-4" />
                   <span>Админ</span>
@@ -323,7 +323,7 @@ export default function Layout() {
               )}
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 min-h-[36px] hover:bg-red-100 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 min-h-[44px] hover:bg-red-100 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Выйти</span>

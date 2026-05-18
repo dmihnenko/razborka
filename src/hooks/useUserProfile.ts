@@ -5,7 +5,7 @@ import { useAuth } from './useAuth'
 export function useUserProfile() {
   const { user, loading: authLoading } = useAuth()
   return useQuery({
-    queryKey: ['userProfile'],
+    queryKey: ['userProfile', user?.id],
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -25,64 +25,23 @@ export function useUserProfile() {
         throw profileError
       }
 
-      // Если профиль не найден, создаем его
+      // Если профиль не найден — возвращаем null (профиль создаётся триггером при регистрации)
       if (!profiles || profiles.length === 0) {
-        const { data: newProfile, error: createError } = await supabase
-          .from('user_profiles')
-          .insert({
-            id: user.id,
-            email: user.email,
-            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-            is_active: true
-          })
-          .select()
-          .single()
-
-        if (createError) {
-          console.error('Error creating profile:', createError)
-          throw createError
-        }
-
-        return { ...newProfile, roles: [] }
+        return null
       }
 
-      const profile = profiles[0]
-      
-      // Получаем все роли пользователя через таблицу user_roles
-      const { data: userRolesData, error: userRolesError } = await supabase
+      // Загружаем роли одним запросом
+      const { data: userRolesData } = await supabase
         .from('user_roles')
-        .select('role_id, is_primary')
+        .select('is_primary, roles(id, name, display_name, description, is_active)')
         .eq('user_id', user.id)
-      
-      if (userRolesError) {
-        console.error('User roles error:', userRolesError)
-        throw userRolesError
-      }
-      
-      // Если нет ролей, возвращаем профиль с пустым массивом
-      if (!userRolesData || userRolesData.length === 0) {
-        return { ...profile, roles: [] }
-      }
 
-      // Получаем данные ролей
-      const roleIds = userRolesData.map(ur => ur.role_id)
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('roles')
-        .select('*')
-        .in('id', roleIds)
-      
-      if (rolesError) {
-        console.error('Roles error:', rolesError)
-        throw rolesError
-      }
+      const roles = (userRolesData || []).map((ur: any) => ({
+        ...ur.roles,
+        is_primary: ur.is_primary
+      }))
 
-      // Добавляем информацию об is_primary к каждой роли
-      const rolesWithPrimary = rolesData?.map(role => ({
-        ...role,
-        is_primary: userRolesData.find(ur => ur.role_id === role.id)?.is_primary || false
-      })) || []
-
-      return { ...profile, roles: rolesWithPrimary }
+      return { ...profiles[0], roles }
     },
   })
 }

@@ -57,11 +57,6 @@ export default function ProfileSettings() {
       })
       if (error) throw error
 
-      // Обновляем plain_password в профиле
-      await supabase
-        .from('user_profiles')
-        .update({ plain_password: passwordForm.newPassword })
-        .eq('id', profile!.id)
     },
     onSuccess: () => {
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })

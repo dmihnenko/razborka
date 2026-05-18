@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -35,7 +35,6 @@ interface UserProfile {
   phone: string | null;
   email: string;
   username: string | null;
-  plain_password: string | null;
   role_id: string | null;
   sto_company_id: string | null;
   parts_company_id: string | null;
@@ -57,8 +56,6 @@ interface UserFormData {
 
 export default function Users() {
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [passwordModal, setPasswordModal] = useState<{ userId: string; userName: string } | null>(null);
   const [newPassword, setNewPassword] = useState('');
@@ -74,7 +71,7 @@ export default function Users() {
     sto_company_id: '',
     parts_company_id: ''
   });
-  const [selectedRoleNames, setSelectedRoleNames] = useState<string[]>([]);
+
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { confirm: showConfirm, dialogProps } = useConfirm();
@@ -146,6 +143,8 @@ export default function Users() {
   // Загрузка ролей
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('roles')
@@ -160,6 +159,7 @@ export default function Users() {
   // Загрузка СТО
   const { data: stoCompanies = [] } = useQuery({
     queryKey: ['sto_companies'],
+    staleTime: 15 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sto_companies')
@@ -172,8 +172,14 @@ export default function Users() {
   });
 
   // Загрузка разборок
+  const selectedRoleNames = useMemo(
+    () => roles.filter(r => formData.role_ids.includes(r.id)).map(r => r.name),
+    [formData.role_ids, roles]
+  );
+
   const { data: partsCompanies = [] } = useQuery({
     queryKey: ['parts_companies'],
+    staleTime: 15 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('parts_companies')
@@ -274,7 +280,6 @@ export default function Users() {
           primary_role_id: data.primary_role_id,
           sto_company_id: data.sto_company_id || null,
           parts_company_id: data.parts_company_id || null,
-          plain_password: data.password,
         }
       });
 
@@ -284,7 +289,6 @@ export default function Users() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner] });
       toast.success('Пользователь создан');
-      setIsCreateModalOpen(false);
       resetForm();
     },
     onError: (error: any) => {
@@ -338,7 +342,6 @@ export default function Users() {
       queryClient.invalidateQueries({ queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner] });
       queryClient.invalidateQueries({ queryKey: ['user_profile'] });
       toast.success('Данные пользователя обновлены');
-      setIsEditModalOpen(false);
       setSelectedUser(null);
     },
     onError: (error) => {
@@ -470,7 +473,6 @@ export default function Users() {
       sto_company_id: '',
       parts_company_id: ''
     });
-    setSelectedRoleNames([]);
   };
 
   const handleDeleteUser = async (user: UserProfile) => {
@@ -485,11 +487,7 @@ export default function Users() {
   };
 
   // Отслеживание изменения ролей
-  useEffect(() => {
-    if (roles.length === 0) return
-    const selectedRoles = roles.filter(r => formData.role_ids.includes(r.id));
-    setSelectedRoleNames(selectedRoles.map(r => r.name));
-  }, [formData.role_ids, roles]);
+
 
   const getRoleBadgeColor = (roleName?: string) => {
     switch (roleName) {
@@ -531,16 +529,19 @@ export default function Users() {
     );
   }
 
-  const filteredUsers = users.filter(user => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      user.full_name?.toLowerCase().includes(q) ||
-      user.email?.toLowerCase().includes(q) ||
-      user.username?.toLowerCase().includes(q) ||
-      user.phone?.includes(q)
-    );
-  });
+  const filteredUsers = useMemo(
+    () => users.filter(user => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        user.full_name?.toLowerCase().includes(q) ||
+        user.email?.toLowerCase().includes(q) ||
+        user.username?.toLowerCase().includes(q) ||
+        user.phone?.includes(q)
+      );
+    }),
+    [users, searchQuery]
+  );
 
   return (
     <div className="space-y-5">
@@ -618,7 +619,7 @@ export default function Users() {
                   </div>
                   <p className="text-xs text-gray-400 mt-0.5 truncate">{user.email}</p>
                   {(isStoOwner || isPartsOwner) && !isAdmin && user.username && (
-                    <p className="text-xs text-gray-400 font-mono mt-0.5">@{user.username} · {user.plain_password || '—'}</p>
+                    <p className="text-xs text-gray-400 font-mono mt-0.5">@{user.username}</p>
                   )}
                 </div>
 
@@ -693,382 +694,8 @@ export default function Users() {
       </div>
 
       {/* Модальное окно для создания пользователя */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
-          <div className="bg-white rounded-t-2xl sm:rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90dvh] overflow-y-auto">
-            <h2 className="text-lg sm:text-xl font-bold mb-4">Создать пользователя</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="user@example.com (опционально)"
-                />
-                <p className="text-xs text-gray-500 mt-1">Если не указан, будет использована заглушка</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Логин (username) *
-                </label>
-                <input
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="username"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">Пользователь войдет по этому логину</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Пароль *
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Минимум 6 символов"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ФИО
-                </label>
-                <input
-                  type="text"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Иванов Иван Иванович"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Телефон
-                </label>
-                <IMaskInput
-                  mask="+380 00 000-00-00"
-                  value={formData.phone}
-                  onAccept={(value) => setFormData({ ...formData, phone: value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="+380 XX XXX-XX-XX"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Роли (можно выбрать несколько)
-                </label>
-                <div className="border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto">
-                  {roles
-                    .filter(role => {
-                      // Админ видит все роли КРОМЕ sto_worker и parts_worker (их создают владельцы)
-                      if (isAdmin) return role.name !== 'sto_worker' && role.name !== 'parts_worker';
-                      // Владелец СТО видит только sto_worker
-                      if (isStoOwner) return role.name === 'sto_worker';
-                      // Владелец разборки видит только parts_worker
-                      if (isPartsOwner) return role.name === 'parts_worker';
-                      return true;
-                    })
-                    .map((role) => (
-                    <label key={role.id} className="flex items-center py-2 hover:bg-gray-50 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.role_ids.includes(role.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            const newRoleIds = [...formData.role_ids, role.id];
-                            setFormData({ 
-                              ...formData, 
-                              role_ids: newRoleIds,
-                              // Если это первая роль, делаем её основной
-                              primary_role_id: formData.primary_role_id || role.id
-                            });
-                          } else {
-                            const newRoleIds = formData.role_ids.filter(id => id !== role.id);
-                            setFormData({ 
-                              ...formData, 
-                              role_ids: newRoleIds,
-                              // Если убрали основную роль, берём первую из оставшихся
-                              primary_role_id: formData.primary_role_id === role.id 
-                                ? (newRoleIds[0] || '') 
-                                : formData.primary_role_id
-                            });
-                          }
-                        }}
-                        className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                      />
-                      <span className={`text-sm px-2 py-1 rounded-full ${getRoleBadgeColor(role.name)}`}>
-                        {role.display_name}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              {formData.role_ids.length > 1 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Основная роль (для входа в систему)
-                  </label>
-                  <select
-                    value={formData.primary_role_id}
-                    onChange={(e) => setFormData({ ...formData, primary_role_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    {formData.role_ids.map(roleId => {
-                      const role = roles.find(r => r.id === roleId);
-                      return role ? (
-                        <option key={role.id} value={role.id}>
-                          {role.display_name}
-                        </option>
-                      ) : null;
-                    })}
-                  </select>
-                </div>
-              )}
-              {shouldShowStoCompany(selectedRoleNames) && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    СТО {selectedRoleNames.some(name => name === 'sto_owner' || name === 'sto_worker') ? '*' : ''}
-                  </label>
-                  <select
-                    value={formData.sto_company_id}
-                    onChange={(e) => setFormData({ ...formData, sto_company_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    disabled={isStoOwner && !isAdmin}
-                  >
-                    <option value="">Выберите СТО</option>
-                    {stoCompanies.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
-                    ))}
-                  </select>
-                  {isStoOwner && !isAdmin && (
-                    <p className="text-xs text-gray-500 mt-1">Автоматически привязан к вашей СТО</p>
-                  )}
-                </div>
-              )}
-              {shouldShowPartsCompany(selectedRoleNames) && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Разборка {selectedRoleNames.some(name => name === 'parts_owner' || name === 'parts_worker') ? '*' : ''}
-                  </label>
-                  <select
-                    value={formData.parts_company_id}
-                    onChange={(e) => setFormData({ ...formData, parts_company_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    disabled={isPartsOwner && !isAdmin}
-                  >
-                    <option value="">Выберите разборку</option>
-                    {partsCompanies.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
-                    ))}
-                  </select>
-                  {isPartsOwner && !isAdmin && (
-                    <p className="text-xs text-gray-500 mt-1">Автоматически привязан к вашей разборке</p>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => {
-                  setIsCreateModalOpen(false);
-                  resetForm();
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-              >
-                Отмена
-              </button>
-              <button
-                onClick={() => createUserMutation.mutate(formData)}
-                disabled={!formData.username || !formData.password || formData.password.length < 6}
-                className="px-4 py-2 text-sm font-medium text-white bg-purple-700 rounded-md hover:bg-purple-800 disabled:bg-gray-400"
-              >
-                Создать
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Модальное окно для редактирования пользователя */}
-      {isEditModalOpen && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
-          <div className="bg-white rounded-t-2xl sm:rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90dvh] overflow-y-auto">
-            <h2 className="text-lg sm:text-xl font-bold mb-4">Редактировать пользователя</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">Email нельзя изменить</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ФИО
-                </label>
-                <input
-                  type="text"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Иванов Иван Иванович"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Телефон
-                </label>
-                <IMaskInput
-                  mask="+380 00 000-00-00"
-                  value={formData.phone}
-                  onAccept={(value) => setFormData({ ...formData, phone: value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="+380 XX XXX-XX-XX"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Роли (можно выбрать несколько)
-                </label>
-                <div className="border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto">
-                  {roles.map((role) => (
-                    <label key={role.id} className="flex items-center py-2 hover:bg-gray-50 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.role_ids.includes(role.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            const newRoleIds = [...formData.role_ids, role.id];
-                            setFormData({ 
-                              ...formData, 
-                              role_ids: newRoleIds,
-                              primary_role_id: formData.primary_role_id || role.id
-                            });
-                          } else {
-                            const newRoleIds = formData.role_ids.filter(id => id !== role.id);
-                            setFormData({ 
-                              ...formData, 
-                              role_ids: newRoleIds,
-                              primary_role_id: formData.primary_role_id === role.id 
-                                ? (newRoleIds[0] || '') 
-                                : formData.primary_role_id
-                            });
-                          }
-                        }}
-                        className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <span className={`text-sm px-2 py-1 rounded-full ${getRoleBadgeColor(role.name)}`}>
-                        {role.display_name}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              {formData.role_ids.length > 1 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Основная роль (для входа в систему)
-                  </label>
-                  <select
-                    value={formData.primary_role_id}
-                    onChange={(e) => setFormData({ ...formData, primary_role_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {formData.role_ids.map(roleId => {
-                      const role = roles.find(r => r.id === roleId);
-                      return role ? (
-                        <option key={role.id} value={role.id}>
-                          {role.display_name}
-                        </option>
-                      ) : null;
-                    })}
-                  </select>
-                </div>
-              )}
-              {shouldShowStoCompany(selectedRoleNames) && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    СТО
-                  </label>
-                  <select
-                    value={formData.sto_company_id}
-                    onChange={(e) => setFormData({ ...formData, sto_company_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Выберите СТО</option>
-                    {stoCompanies.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              {shouldShowPartsCompany(selectedRoleNames) && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Разборка
-                  </label>
-                  <select
-                    value={formData.parts_company_id}
-                    onChange={(e) => setFormData({ ...formData, parts_company_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Выберите разборку</option>
-                    {partsCompanies.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => {
-                  setIsEditModalOpen(false);
-                  setSelectedUser(null);
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-              >
-                Отмена
-              </button>
-              <button
-                onClick={() => updateUserDataMutation.mutate({
-                  userId: selectedUser.id,
-                  data: formData
-                })}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-700 rounded-md hover:bg-blue-800"
-              >
-                Сохранить
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Модальное окно для изменения ролей */}
       {isRoleModalOpen && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
           <div className="bg-white rounded-t-2xl sm:rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90dvh] overflow-y-auto">
             <h2 className="text-lg sm:text-xl font-bold mb-4">Изменить роли пользователя</h2>
             <div className="mb-4">

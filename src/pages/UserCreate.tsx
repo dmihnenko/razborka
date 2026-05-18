@@ -134,7 +134,6 @@ export default function UserCreate() {
           primary_role_id: data.primary_role_id,
           sto_company_id: data.sto_company_id || null,
           parts_company_id: data.parts_company_id || null,
-          plain_password: data.password,
         }
       })
       if (fnError) throw new Error(fnError.message)

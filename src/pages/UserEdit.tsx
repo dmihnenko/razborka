@@ -9,6 +9,7 @@ import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useIsAdmin, useUserProfile } from '@/hooks/useUserProfile'
+import { ROLE_COLORS, getRoleBadgeColor, shouldShowStoCompany, shouldShowPartsCompany } from '@/utils/roles'
 
 interface Role {
   id: string
@@ -34,15 +35,6 @@ interface InlineForm {
   address: string
 }
 
-const ROLE_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  admin:        { bg: 'bg-red-100',    text: 'text-red-700',    dot: 'bg-red-500' },
-  sto_owner:    { bg: 'bg-blue-100',   text: 'text-blue-700',   dot: 'bg-blue-500' },
-  sto_worker:   { bg: 'bg-cyan-100',   text: 'text-cyan-700',   dot: 'bg-cyan-500' },
-  parts_owner:  { bg: 'bg-orange-100', text: 'text-orange-700', dot: 'bg-orange-500' },
-  parts_worker: { bg: 'bg-amber-100',  text: 'text-amber-700',  dot: 'bg-amber-500' },
-  user:         { bg: 'bg-gray-100',   text: 'text-gray-600',   dot: 'bg-gray-400' },
-}
-
 function RoleBadge({ name, display_name }: { name: string; display_name: string }) {
   const c = ROLE_COLORS[name] || ROLE_COLORS.user
   return (
@@ -53,12 +45,6 @@ function RoleBadge({ name, display_name }: { name: string; display_name: string 
   )
 }
 
-function shouldShowStoCompany(roleNames: string[]) {
-  return roleNames.some(n => ['admin', 'sto_owner', 'sto_worker'].includes(n))
-}
-function shouldShowPartsCompany(roleNames: string[]) {
-  return roleNames.some(n => ['admin', 'parts_owner', 'parts_worker'].includes(n))
-}
 
 export default function UserEdit() {
   const { id } = useParams<{ id: string }>()
@@ -227,7 +213,7 @@ export default function UserEdit() {
 
   if (profileLoading) {
     return (
-      <div className="min-h-screen bg-[#F4F6FA] flex items-center justify-center">
+      <div className="min-h-dvh bg-[#F4F6FA] flex items-center justify-center">
         <div className="flex items-center gap-3 text-gray-400">
           <span className="w-5 h-5 border-2 border-gray-200 border-t-indigo-500 rounded-full animate-spin" />
           <span className="text-sm">Загрузка...</span>
@@ -238,7 +224,7 @@ export default function UserEdit() {
 
   if (!userProfile) {
     return (
-      <div className="min-h-screen bg-[#F4F6FA] flex items-center justify-center">
+      <div className="min-h-dvh bg-[#F4F6FA] flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 mb-4">Пользователь не найден</p>
           <button onClick={() => navigate(-1)} className="text-indigo-600 font-medium hover:underline text-sm">← Назад</button>
@@ -250,7 +236,7 @@ export default function UserEdit() {
   const avatarLetter = (userProfile.full_name || userProfile.username || userProfile.email || '?').charAt(0).toUpperCase()
 
   return (
-    <div className="min-h-screen bg-[#F4F6FA]">
+    <div className="min-h-dvh bg-[#F4F6FA]">
       {/* Хедер */}
       <div className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-gray-200/80 shadow-sm">
         <div className="px-4 sm:px-6 h-14 flex items-center justify-between gap-4">

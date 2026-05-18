@@ -12,7 +12,6 @@ interface Employee {
   id: string
   full_name: string | null
   username: string | null
-  plain_password: string | null
   email: string
   phone: string | null
   created_at: string
@@ -170,7 +169,6 @@ export default function StoEmployees() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Пароль:</span>
                   <span className="font-mono bg-gray-100 px-2 py-1 rounded text-gray-900">
-                    {employee.plain_password || '—'}
                   </span>
                 </div>
                 {employee.phone && (
@@ -299,7 +297,6 @@ function AddEmployeeModal({ onClose, stoCompanyId }: { onClose: () => void; stoC
         .upsert({
           id: userId,
           username: data.username,
-          plain_password: data.password,
           full_name: data.full_name || null,
           phone: data.phone || null,
           sto_company_id: stoCompanyId || null,

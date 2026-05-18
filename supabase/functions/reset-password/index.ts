@@ -80,12 +80,6 @@ serve(async (req) => {
       )
     }
 
-    // Обновляем plain_password в профиле
-    await supabaseAdmin
-      .from('user_profiles')
-      .update({ plain_password: newPassword })
-      .eq('id', targetUserId)
-
     return new Response(
       JSON.stringify({ success: true }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

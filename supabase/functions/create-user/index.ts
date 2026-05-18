@@ -51,7 +51,7 @@ serve(async (req) => {
     console.log('Authenticated user:', user.id, user.email);
 
     // Get user data from request body
-    const { email, password, full_name, phone, role_ids, primary_role_id, sto_company_id, parts_company_id, username, plain_password } = await req.json()
+    const { email, password, full_name, phone, role_ids, primary_role_id, sto_company_id, parts_company_id, username } = await req.json()
     
     if (!password) {
       return new Response(
@@ -173,7 +173,6 @@ serve(async (req) => {
       phone: phone || null,
       email: finalEmail,
       username: username || null,
-      plain_password: plain_password || password,
       sto_company_id: sto_company_id || null,
       parts_company_id: parts_company_id || null,
       is_active: true
