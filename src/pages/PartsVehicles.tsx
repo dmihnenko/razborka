@@ -193,7 +193,7 @@ export default function PartsVehicles() {
             <button
               key={key}
               onClick={() => setStatusFilter(key as any)}
-              className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all flex flex-col justify-between h-full ${
+              className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all flex flex-col ${
                 statusFilter === key ? `ring-2 ${ring}` : ''
               }`}
             >

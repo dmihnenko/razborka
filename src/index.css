@@ -516,3 +516,10 @@ svg.lucide {
 .stats-grid > * {
   height: 100%;
 }
+
+/* ── Карточки статистики — одинаковая высота в grid ── */
+.grid > button.bg-white,
+.grid > div.bg-white {
+  display: flex;
+  flex-direction: column;
+}

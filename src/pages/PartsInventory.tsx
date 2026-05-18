@@ -582,10 +582,9 @@ export default function PartsInventory() {
           >
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs sm:text-sm text-gray-600">Всего</p>
-              <Box className="w-4 h-4 text-gray-400" />
+              <span className="w-2.5 h-2.5 rounded-full bg-gray-400 flex-shrink-0" />
             </div>
             <p className="text-2xl sm:text-3xl font-bold text-gray-900">{sourceFilter === 'vehicles' ? stats.total : stats.totalQuantity}</p>
-            <p className="text-xs text-gray-500 mt-1">{sourceFilter === 'vehicles' ? 'наименований' : `${stats.total} наименований`}</p>
           </button>
 
           <button
@@ -630,7 +629,7 @@ export default function PartsInventory() {
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs sm:text-sm text-gray-600">Стоимость</p>
-              <TrendingDown className="w-4 h-4 text-blue-500" />
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-400 flex-shrink-0" />
             </div>
             {statusFilter === 'all' ? (
               <>
