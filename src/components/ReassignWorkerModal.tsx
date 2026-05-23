@@ -112,7 +112,7 @@ export default function ReassignWorkerModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+    <div className="modal-overlay">
       <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto">
         {/* Header */}
         <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 flex items-center justify-between">

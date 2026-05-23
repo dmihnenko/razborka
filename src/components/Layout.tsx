@@ -290,7 +290,7 @@ export default function Layout() {
             {/* Кнопки переключения ролей — занимают всё свободное место */}
             <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto scrollbar-none">
               {switchableRoles
-                .filter(r => r !== 'admin') // Убираем "Админ" — он есть отдельной кнопкой справа
+                .filter((r: string) => r !== 'admin') // Убираем "Админ" — он есть отдельной кнопкой справа
                 .map((roleName: string) => {
                   const labels: Record<string,string> = {
                     sto_owner: 'СТО', sto_worker: 'Работник СТО',

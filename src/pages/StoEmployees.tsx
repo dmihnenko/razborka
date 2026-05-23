@@ -352,7 +352,7 @@ function AddEmployeeModal({ onClose, stoCompanyId }: { onClose: () => void; stoC
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         <h2 className="text-xl font-bold mb-4">Добавить работника</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -466,7 +466,7 @@ function BulkAssignModal({ isOpen, onClose, employees }: { isOpen: boolean; onCl
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
           Массовое назначение заявок
@@ -562,7 +562,7 @@ function EditEmployeeModal({ employee, onClose }: { employee: Employee; onClose:
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
           Редактировать работника
@@ -628,7 +628,7 @@ function DeleteEmployeeConfirmModal({
   onConfirm: () => void 
 }) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <h2 className="text-2xl font-bold text-red-600 mb-4">
           Удаление работника

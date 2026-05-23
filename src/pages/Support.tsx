@@ -593,7 +593,7 @@ export default function Support() {
 
       {/* Модальное окно создания чата */}
       {isNewChatOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+        <div className="modal-overlay">
           <div className="bg-white rounded-t-2xl sm:rounded-lg w-full sm:max-w-md sm:w-full animate-slide-up sm:animate-none shadow-xl">
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
               <h2 className="text-lg sm:text-xl font-bold text-gray-900">Новое обращение</h2>
