@@ -127,3 +127,185 @@ export async function changePassword(newPassword: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({ password: newPassword })
   if (error) throw error
 }
+
+// ============================================================================
+// Users page queries
+// ============================================================================
+
+export interface UserProfileWithRoles {
+  id: string
+  full_name: string | null
+  phone: string | null
+  email: string
+  username: string | null
+  role_id: string | null
+  sto_company_id: string | null
+  parts_company_id: string | null
+  is_active: boolean
+  sto_companies?: { id: string; name: string } | null
+  parts_companies?: { id: string; name: string } | null
+  roles?: Array<{
+    id: string
+    name: string
+    display_name: string
+    description: string | null
+    is_active: boolean
+    is_primary?: boolean
+  }>
+}
+
+export interface FetchUsersParams {
+  isStoOwner: boolean
+  isPartsOwner: boolean
+  isAdmin: boolean
+  stoCompanyId?: string | null
+  partsCompanyId?: string | null
+}
+
+export async function fetchUsers(params: FetchUsersParams): Promise<UserProfileWithRoles[]> {
+  let query = supabase.from('user_profiles').select(`
+    *,
+    sto_companies:sto_company_id(id, name),
+    parts_companies:parts_company_id(id, name)
+  `)
+
+  if (params.isStoOwner && !params.isAdmin) {
+    query = query.eq('sto_company_id', params.stoCompanyId)
+  }
+  if (params.isPartsOwner && !params.isAdmin && !params.isStoOwner) {
+    query = query.eq('parts_company_id', params.partsCompanyId)
+  }
+
+  const { data: profiles, error: profilesError } = await query
+  if (profilesError) throw profilesError
+
+  const { data: allRoles, error: rolesError } = await supabase.from('roles').select('*')
+  if (rolesError) throw rolesError
+
+  const { data: userRolesData, error: userRolesError } = await supabase.from('user_roles').select('*')
+  if (userRolesError) throw userRolesError
+
+  return (profiles || []).map(profile => {
+    const userRoleIds = userRolesData?.filter(ur => ur.user_id === profile.id).map(ur => ur.role_id) || []
+    const userRoles = allRoles?.filter(r => userRoleIds.includes(r.id)) || []
+    return { ...profile, roles: userRoles, email: profile.email || 'N/A' }
+  })
+}
+
+export async function fetchActiveRoles() {
+  const { data, error } = await supabase
+    .from('roles')
+    .select('*')
+    .eq('is_active', true)
+    .order('display_name')
+  if (error) throw error
+  return data
+}
+
+export async function fetchStoCompanies() {
+  const { data, error } = await supabase
+    .from('sto_companies')
+    .select('id, name')
+    .eq('is_active', true)
+    .order('name')
+  if (error) throw error
+  return data as Array<{ id: string; name: string }>
+}
+
+export async function fetchPartsCompanies() {
+  const { data, error } = await supabase
+    .from('parts_companies')
+    .select('id, name')
+    .eq('is_active', true)
+    .order('name')
+  if (error) throw error
+  return data as Array<{ id: string; name: string }>
+}
+
+export async function updateUserRolesFull(params: {
+  userId: string
+  roleIds: string[]
+  primaryRoleId?: string
+  sto_company_id?: string | null
+  parts_company_id?: string | null
+}): Promise<void> {
+  const { error: deleteError } = await supabase.from('user_roles').delete().eq('user_id', params.userId)
+  if (deleteError) throw deleteError
+
+  if (params.roleIds.length > 0) {
+    const { error: insertError } = await supabase.from('user_roles').insert(
+      params.roleIds.map(roleId => ({
+        user_id: params.userId,
+        role_id: roleId,
+        is_primary: roleId === params.primaryRoleId,
+      }))
+    )
+    if (insertError) throw insertError
+  }
+
+  const { error: updateError } = await supabase
+    .from('user_profiles')
+    .update({
+      sto_company_id: params.sto_company_id || null,
+      parts_company_id: params.parts_company_id || null,
+    })
+    .eq('id', params.userId)
+  if (updateError) throw updateError
+}
+
+export async function toggleUserActive(userId: string, currentActive: boolean): Promise<void> {
+  const { error } = await supabase.from('user_profiles').update({ is_active: !currentActive }).eq('id', userId)
+  if (error) throw error
+}
+
+export async function softDeleteUser(userId: string): Promise<void> {
+  const { error } = await supabase.from('user_profiles').update({ is_active: false }).eq('id', userId)
+  if (error) throw error
+}
+
+export async function getAuthSession() {
+  const { data: { session } } = await supabase.auth.getSession()
+  return session
+}
+
+export async function checkUsernameExists(username: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('user_profiles')
+    .select('username')
+    .eq('username', username.toLowerCase())
+    .maybeSingle()
+  return !!data
+}
+
+export async function getUserByUsername(username: string): Promise<{ id: string } | null> {
+  const { data } = await supabase
+    .from('user_profiles')
+    .select('id')
+    .eq('username', username.toLowerCase())
+    .maybeSingle()
+  return data
+}
+
+export async function getUserRolesWithNames(userId: string): Promise<{
+  roleNames: string[]
+  primaryRoleName: string | null
+}> {
+  const { data: userRolesData } = await supabase
+    .from('user_roles')
+    .select('role_id, is_primary')
+    .eq('user_id', userId)
+
+  if (!userRolesData || userRolesData.length === 0) {
+    return { roleNames: [], primaryRoleName: null }
+  }
+
+  const roleIds = userRolesData.map(ur => ur.role_id)
+  const { data: rolesData } = await supabase.from('roles').select('id, name').in('id', roleIds)
+  const roleNames = rolesData?.map(r => r.name) || []
+  const primaryRoleId = userRolesData.find(ur => ur.is_primary)?.role_id
+  const primaryRoleName = primaryRoleId
+    ? (rolesData?.find(r => r.id === primaryRoleId)?.name || null)
+    : null
+
+  return { roleNames, primaryRoleName }
+}

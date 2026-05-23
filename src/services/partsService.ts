@@ -707,3 +707,65 @@ export async function updatePartsOrder(
   const { error } = await supabase.from('parts_orders').update(updates).eq('id', orderId)
   if (error) throw error
 }
+
+// ============================================================================
+// LEGACY PARTS (устаревший склад, таблица `parts` — deprecated)
+// ============================================================================
+
+export interface LegacyPart {
+  id: string
+  name: string
+  part_number: string | null
+  description: string | null
+  quantity_in_stock: number
+  min_quantity: number
+  price: number
+  supplier: string | null
+}
+
+export interface LegacyPartFormData {
+  name: string
+  part_number: string
+  description: string
+  quantity_in_stock: number | string
+  min_quantity: number | string
+  price: number | string
+  supplier: string
+}
+
+export async function getLegacyParts(): Promise<LegacyPart[]> {
+  const { data, error } = await supabase.from('parts').select('*').order('name')
+  if (error) throw error
+  return data as LegacyPart[]
+}
+
+export async function deleteLegacyPart(id: string): Promise<void> {
+  const { error } = await supabase.from('parts').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function saveLegacyPart(data: LegacyPartFormData, partId?: string): Promise<void> {
+  const partData = {
+    ...data,
+    quantity_in_stock: Number(data.quantity_in_stock),
+    min_quantity: Number(data.min_quantity),
+    price: Number(data.price),
+  }
+  if (partId) {
+    const { error } = await supabase.from('parts').update(partData).eq('id', partId)
+    if (error) throw error
+  } else {
+    const { error } = await supabase.from('parts').insert([partData])
+    if (error) throw error
+  }
+}
+
+/** Fetch all inventory items for a parts vehicle */
+export async function getPartsInventoryByVehicle(vehicleId: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('parts_inventory')
+    .select('*')
+    .eq('vehicle_id', vehicleId)
+  if (error) throw error
+  return data || []
+}

@@ -1,7 +1,6 @@
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Car, FileText, Phone, Mail, MapPin, Link2, Package, Plus, Pencil, Trash2, ChevronDown } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
@@ -14,7 +13,7 @@ import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { moveToTrash } from '@/services/trashService'
-import { fetchCustomerById } from '@/services/customersService'
+import { fetchCustomerById, fetchCustomerAppointments, fetchCustomerPartsOrders, fetchVehicleAppointments } from '@/services/customersService'
 import { fetchCustomerVehicles, fetchVehicleById, deleteVehicle } from '@/services/vehiclesService'
 
 export default function CustomerProfile() {
@@ -54,70 +53,27 @@ export default function CustomerProfile() {
   // Получаем заявки клиента
   const { data: appointments, isLoading: appointmentsLoading } = useQuery({
     queryKey: ['customer-appointments', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('*, vehicles(brand, model, license_plate)')
-        .eq('customer_id', id)
-        .order('scheduled_date', { ascending: false })
-
-      if (error) throw error
-      return data
-    },
+    queryFn: () => fetchCustomerAppointments(id!),
     enabled: !!id,
   })
 
   // Получаем заказы запчастей клиента (через связь по телефону)
   const { data: partsOrders } = useQuery({
     queryKey: ['customer-parts-orders', customer?.phone],
-    queryFn: async () => {
-      if (!customer?.phone) return []
-      
-      // Находим parts_customer по телефону
-      const { data: partsCustomers, error: customerError } = await supabase
-        .from('parts_customers')
-        .select('id')
-        .eq('phone', customer.phone)
-      
-      if (customerError) throw customerError
-      if (!partsCustomers || partsCustomers.length === 0) return []
-      
-      // Получаем все заказы для найденных parts_customers
-      const customerIds = partsCustomers.map(c => c.id)
-      const { data, error } = await supabase
-        .from('parts_orders')
-        .select(`
-          *,
-          items:parts_order_items(
-            id,
-            quantity,
-            price_at_sale,
-            subtotal,
-            inventory_item:parts_inventory(
-              name,
-              part_number
-            )
-          )
-        `)
-        .in('customer_id', customerIds)
-        .order('order_date', { ascending: false })
-      
-      if (error) throw error
-      return data
-    },
+    queryFn: () => fetchCustomerPartsOrders(customer!.phone),
     enabled: !!customer?.phone
   })
 
   const deleteVehicleMutation = useMutation({
     mutationFn: async (vehicleId: string) => {
       const vehicle = await fetchVehicleById(vehicleId)
-      const { data: appts } = await supabase.from('appointments').select('*').eq('vehicle_id', vehicleId)
+      const appts = await fetchVehicleAppointments(vehicleId)
       if (vehicle) {
         await moveToTrash({
           entityType: 'vehicle',
           entityId: vehicleId,
           entityLabel: `${vehicle.brand || ''} ${vehicle.model || ''}`.trim() || 'Автомобиль',
-          entityData: { vehicle, appointments: appts || [] },
+          entityData: { vehicle, appointments: appts },
           stoCompanyId: profile?.sto_company_id,
         })
       }

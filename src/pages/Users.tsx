@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { fetchUsers, fetchActiveRoles, fetchStoCompanies, fetchPartsCompanies, updateUserRolesFull, toggleUserActive, softDeleteUser, getAuthSession } from '@/services/userService';
 import { Plus, Edit2, Trash2, UserCog, Search, CheckCircle2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUserProfile, useIsAdmin } from '@/hooks/useUserProfile';
@@ -18,15 +18,6 @@ interface Role {
   is_primary?: boolean;
 }
 
-interface StoCompany {
-  id: string;
-  name: string;
-}
-
-interface PartsCompany {
-  id: string;
-  name: string;
-}
 
 interface UserProfile {
   id: string;
@@ -65,56 +56,13 @@ export default function Users() {
   // Загрузка пользователей
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner],
-    queryFn: async () => {
-      let query = supabase
-        .from('user_profiles')
-        .select(`
-          *,
-          sto_companies:sto_company_id(id, name),
-          parts_companies:parts_company_id(id, name)
-        `);
-      
-      // Если владелец СТО - показываем только работников его СТО
-      if (isStoOwner && !isAdmin) {
-        query = query.eq('sto_company_id', currentUserProfile?.sto_company_id);
-      }
-      
-      // Если владелец разборки - показываем только работников его разборки
-      if (isPartsOwner && !isAdmin && !isStoOwner) {
-        query = query.eq('parts_company_id', currentUserProfile?.parts_company_id);
-      }
-      
-      const { data: profiles, error: profilesError } = await query;
-
-      if (profilesError) throw profilesError;
-
-      // Получаем все роли
-      const { data: allRoles, error: rolesError } = await supabase
-        .from('roles')
-        .select('*');
-
-      if (rolesError) throw rolesError;
-
-      // Получаем все связи пользователь-роль
-      const { data: userRolesData, error: userRolesError } = await supabase
-        .from('user_roles')
-        .select('*');
-
-      if (userRolesError) throw userRolesError;
-
-      // Объединяем данные - для каждого пользователя получаем его роли
-      const profilesWithRoles = profiles?.map(profile => {
-        const userRoleIds = userRolesData?.filter(ur => ur.user_id === profile.id).map(ur => ur.role_id) || [];
-        const userRoles = allRoles?.filter(r => userRoleIds.includes(r.id)) || [];
-        return {
-          ...profile,
-          roles: userRoles,
-          email: profile.email || 'N/A'
-        };
-      }) || [];
-
-      return profilesWithRoles;
-    }
+    queryFn: () => fetchUsers({
+      isStoOwner: !!isStoOwner,
+      isPartsOwner: !!isPartsOwner,
+      isAdmin: !!isAdmin,
+      stoCompanyId: currentUserProfile?.sto_company_id,
+      partsCompanyId: currentUserProfile?.parts_company_id,
+    })
   });
 
   // Загрузка ролей
@@ -122,95 +70,31 @@ export default function Users() {
     queryKey: ['roles'],
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('roles')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_name');
-      if (error) throw error;
-      return data as Role[];
-    }
+    queryFn: () => fetchActiveRoles()
   });
 
   // Загрузка СТО
   const { data: stoCompanies = [] } = useQuery({
     queryKey: ['sto_companies'],
     staleTime: 15 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sto_companies')
-        .select('id, name')
-        .eq('is_active', true)
-        .order('name');
-      if (error) throw error;
-      return data as StoCompany[];
-    }
+    queryFn: () => fetchStoCompanies()
   });
 
   const { data: partsCompanies = [] } = useQuery({
     queryKey: ['parts_companies'],
     staleTime: 15 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('parts_companies')
-        .select('id, name')
-        .eq('is_active', true)
-        .order('name');
-      if (error) throw error;
-      return data as PartsCompany[];
-    }
+    queryFn: () => fetchPartsCompanies()
   });
 
   // Обновление ролей пользователя
   const updateUserRolesMutation = useMutation({
-    mutationFn: async ({ 
-      userId, 
-      roleIds, 
-      primaryRoleId,
-      sto_company_id,
-      parts_company_id
-    }: { 
+    mutationFn: (params: { 
       userId: string; 
       roleIds: string[]; 
       primaryRoleId?: string;
       sto_company_id?: string | null;
       parts_company_id?: string | null;
-    }) => {
-      // Удаляем все старые роли
-      const { error: deleteError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
-      
-      if (deleteError) throw deleteError;
-
-      // Добавляем новые роли
-      if (roleIds.length > 0) {
-        const userRoles = roleIds.map(roleId => ({
-          user_id: userId,
-          role_id: roleId,
-          is_primary: roleId === primaryRoleId // Помечаем основную роль
-        }));
-
-        const { error: insertError } = await supabase
-          .from('user_roles')
-          .insert(userRoles);
-        
-        if (insertError) throw insertError;
-      }
-
-      // Обновляем привязки к организациям
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({
-          sto_company_id: sto_company_id || null,
-          parts_company_id: parts_company_id || null
-        })
-        .eq('id', userId);
-
-      if (updateError) throw updateError;
-    },
+    }) => updateUserRolesFull(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('Роли пользователя обновлены');
@@ -244,14 +128,7 @@ export default function Users() {
 
   // Переключение активности пользователя
   const toggleActiveMutation = useMutation({
-    mutationFn: async (user: UserProfile) => {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ is_active: !user.is_active })
-        .eq('id', user.id);
-      
-      if (error) throw error;
-    },
+    mutationFn: (user: UserProfile) => toggleUserActive(user.id, user.is_active),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner] });
       toast.success('Статус пользователя изменен');
@@ -265,16 +142,9 @@ export default function Users() {
   // Удаление пользователя — мягкое (деактивация) + удаление из auth через Edge Function
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      // Деактивируем профиль (мягкое удаление)
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update({ is_active: false })
-        .eq('id', userId);
+      await softDeleteUser(userId);
 
-      if (profileError) throw profileError;
-
-      // Удаляем из auth.users через Edge Function
-      const { data: { session } } = await supabase.auth.getSession()
+      const session = await getAuthSession()
       if (!session?.access_token) throw new Error('Сессия истекла. Войдите заново.')
 
       const response = await fetch(
@@ -305,7 +175,7 @@ export default function Users() {
   // Смена пароля пользователя (admin/owner)
   const changePasswordMutation = useMutation({
     mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const session = await getAuthSession()
       if (!session?.access_token) throw new Error('Сессия истекла')
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-password`,

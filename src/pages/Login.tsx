@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { checkUsernameExists, getUserByUsername, getUserRolesWithNames } from '@/services/userService'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { getDefaultRouteForRoles } from '../config/navigation'
@@ -35,13 +36,9 @@ export default function Login() {
     setLoading(true)
 
     // Проверяем уникальность username
-    const { data: existingUser } = await supabase
-      .from('user_profiles')
-      .select('username')
-      .eq('username', username.toLowerCase())
-      .maybeSingle()
+    const usernameExists = await checkUsernameExists(username)
 
-    if (existingUser) {
+    if (usernameExists) {
       toast.error('Этот username уже занят')
       setLoading(false)
       return
@@ -89,11 +86,7 @@ export default function Login() {
     // Проверяем, это email или username
     if (!emailOrUsername.includes('@')) {
       // Это username, ищем пользователя в базе
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('username', emailOrUsername.toLowerCase())
-        .maybeSingle()
+      const profile = await getUserByUsername(emailOrUsername)
 
       if (profile) {
         // Пробуем новый формат email
@@ -140,30 +133,7 @@ export default function Login() {
     const { data: { user } } = await supabase.auth.getUser()
     
     if (user) {
-      // Получаем все роли пользователя с информацией об основной роли
-      const { data: userRolesData } = await supabase
-        .from('user_roles')
-        .select('role_id, is_primary')
-        .eq('user_id', user.id)
-
-      let primaryRoleName: string | null = null
-      let roleNames: string[] = []
-
-      if (userRolesData && userRolesData.length > 0) {
-        const roleIds = userRolesData.map(ur => ur.role_id)
-        const { data: rolesData } = await supabase
-          .from('roles')
-          .select('id, name')
-          .in('id', roleIds)
-
-        roleNames = rolesData?.map(r => r.name) || []
-        
-        // Находим основную роль
-        const primaryRoleId = userRolesData.find(ur => ur.is_primary)?.role_id
-        if (primaryRoleId) {
-          primaryRoleName = rolesData?.find(r => r.id === primaryRoleId)?.name || null
-        }
-      }
+      const { roleNames, primaryRoleName } = await getUserRolesWithNames(user.id)
 
       // КРИТИЧНО: Инвалидируем кэш профиля
       await queryClient.invalidateQueries({ queryKey: ['userProfile'] })

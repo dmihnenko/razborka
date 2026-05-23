@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
+import { getLegacyParts, deleteLegacyPart, saveLegacyPart } from '@/services/partsService'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, AlertTriangle } from 'lucide-react'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
@@ -19,22 +19,11 @@ export default function Parts() {
 
   const { data: parts, isLoading } = useQuery({
     queryKey: ['parts'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('parts')
-        .select('*')
-        .order('name')
-      
-      if (error) throw error
-      return data
-    },
+    queryFn: () => getLegacyParts(),
   })
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('parts').delete().eq('id', id)
-      if (error) throw error
-    },
+    mutationFn: (id: string) => deleteLegacyPart(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts'] })
       toast.success('Запчасть удалена')
@@ -173,25 +162,7 @@ function PartModal({ part, onClose }: { part: any; onClose: () => void }) {
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const partData = {
-        ...data,
-        quantity_in_stock: Number(data.quantity_in_stock),
-        min_quantity: Number(data.min_quantity),
-        price: Number(data.price),
-      }
-
-      if (part) {
-        const { error } = await supabase
-          .from('parts')
-          .update(partData)
-          .eq('id', part.id)
-        if (error) throw error
-      } else {
-        const { error } = await supabase.from('parts').insert([partData])
-        if (error) throw error
-      }
-    },
+    mutationFn: (data: typeof formData) => saveLegacyPart(data, part?.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts'] })
       toast.success(part ? 'Запчасть обновлена' : 'Запчасть добавлена')

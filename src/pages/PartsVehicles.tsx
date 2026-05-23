@@ -7,9 +7,8 @@ import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
-import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle, getPartsCategoryTemplates } from '@/services/partsService'
+import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle, getPartsCategoryTemplates, getPartsInventoryByVehicle } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
-import { supabase } from '@/lib/supabase'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -99,8 +98,8 @@ export default function PartsVehicles() {
   // Delete vehicle
   const deleteMutation = useMutation({
     mutationFn: async (vehicleId: string) => {
-      const { data: vehicle } = await supabase.from('parts_vehicles').select('*').eq('id', vehicleId).single()
-      const { data: parts } = await supabase.from('parts_inventory').select('*').eq('vehicle_id', vehicleId)
+      const vehicle = await import('@/services/partsService').then(m => m.getPartsVehicle(vehicleId).catch(() => null))
+      const parts = await getPartsInventoryByVehicle(vehicleId)
       if (vehicle) {
         await moveToTrash({
           entityType: 'parts_vehicle',

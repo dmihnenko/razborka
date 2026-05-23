@@ -98,3 +98,86 @@ export async function fetchCustomerForTrash(id: string): Promise<{
     appointments: appointments || [],
   }
 }
+
+// ============================================================================
+// CustomerProfile page queries
+// ============================================================================
+
+export interface Appointment {
+  id: string
+  customer_id: string
+  vehicle_id: string | null
+  scheduled_date?: string
+  appointment_date?: string
+  status: string
+  description?: string | null
+  request_number?: string | null
+  created_at: string
+  vehicles?: { brand: string; model: string; license_plate: string } | null
+}
+
+export interface PartsOrder {
+  id: string
+  customer_id: string
+  order_number: string
+  status: string
+  total_amount: number
+  order_date: string
+  notes: string | null
+  created_at: string
+  items?: Array<{
+    id: string
+    quantity: number
+    price_at_sale: number
+    subtotal: number
+    inventory_item?: { name: string; part_number: string | null } | null
+  }>
+}
+
+/** Fetch appointments for a customer */
+export async function fetchCustomerAppointments(customerId: string): Promise<Appointment[]> {
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('*, vehicles(brand, model, license_plate)')
+    .eq('customer_id', customerId)
+    .order('scheduled_date', { ascending: false })
+  if (error) throw error
+  return (data || []) as Appointment[]
+}
+
+/** Fetch parts orders linked to a customer by phone */
+export async function fetchCustomerPartsOrders(phone: string): Promise<PartsOrder[]> {
+  const { data: partsCustomers, error: customerError } = await supabase
+    .from('parts_customers')
+    .select('id')
+    .eq('phone', phone)
+  if (customerError) throw customerError
+  if (!partsCustomers || partsCustomers.length === 0) return []
+
+  const customerIds = partsCustomers.map(c => c.id)
+  const { data, error } = await supabase
+    .from('parts_orders')
+    .select(`
+      *,
+      items:parts_order_items(
+        id,
+        quantity,
+        price_at_sale,
+        subtotal,
+        inventory_item:parts_inventory(
+          name,
+          part_number
+        )
+      )
+    `)
+    .in('customer_id', customerIds)
+    .order('order_date', { ascending: false })
+  if (error) throw error
+  return (data || []) as PartsOrder[]
+}
+
+/** Fetch appointments for a vehicle (used in delete snapshot) */
+export async function fetchVehicleAppointments(vehicleId: string): Promise<any[]> {
+  const { data } = await supabase.from('appointments').select('*').eq('vehicle_id', vehicleId)
+  return data || []
+}
