@@ -68,18 +68,36 @@ export default function UserCreate() {
     parts_company_id: '',
   })
 
-  // Автозаполнение компании после загрузки профиля
+  // Автозаполнение компании И роли после загрузки профиля и ролей
   useEffect(() => {
-    if (currentUserProfile) {
-      setFormData(prev => ({
-        ...prev,
-        sto_company_id: isStoOwner && !isAdmin ? (currentUserProfile.sto_company_id || '') : prev.sto_company_id,
-        parts_company_id: isPartsOwner && !isAdmin ? (currentUserProfile.parts_company_id || '') : prev.parts_company_id,
-      }))
-    }
-  }, [currentUserProfile, isStoOwner, isPartsOwner, isAdmin])
-  const [showPassword, setShowPassword] = useState(false)
+    if (!currentUserProfile || roles.length === 0) return
 
+    setFormData(prev => {
+      const updates: Partial<UserFormData> = {}
+
+      // Автоподставляем компанию
+      if (isStoOwner && !isAdmin && currentUserProfile.sto_company_id) {
+        updates.sto_company_id = currentUserProfile.sto_company_id
+      }
+      if (isPartsOwner && !isAdmin && currentUserProfile.parts_company_id) {
+        updates.parts_company_id = currentUserProfile.parts_company_id
+      }
+
+      // Автоподставляем роль работника если она ещё не выбрана
+      if (prev.role_ids.length === 0) {
+        const workerRole = roles.find(r =>
+          (isStoOwner && r.name === 'sto_worker') ||
+          (isPartsOwner && r.name === 'parts_worker')
+        )
+        if (workerRole) {
+          updates.role_ids = [workerRole.id]
+          updates.primary_role_id = workerRole.id
+        }
+      }
+
+      return { ...prev, ...updates }
+    })
+  }, [currentUserProfile, roles, isStoOwner, isPartsOwner, isAdmin])
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
     queryFn: async () => {
@@ -88,6 +106,8 @@ export default function UserCreate() {
       return data as Role[]
     }
   })
+
+  const [showPassword, setShowPassword] = useState(false)
 
   const { data: stoCompanies = [] } = useQuery({
     queryKey: ['sto_companies'],
