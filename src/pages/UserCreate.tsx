@@ -68,6 +68,15 @@ export default function UserCreate() {
     parts_company_id: '',
   })
 
+  const { data: roles = [] } = useQuery({
+    queryKey: ['roles'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('roles').select('*').eq('is_active', true)
+      if (error) throw error
+      return data as Role[]
+    }
+  })
+
   // Автозаполнение компании И роли после загрузки профиля и ролей
   useEffect(() => {
     if (!currentUserProfile || roles.length === 0) return
@@ -98,15 +107,6 @@ export default function UserCreate() {
       return { ...prev, ...updates }
     })
   }, [currentUserProfile, roles, isStoOwner, isPartsOwner, isAdmin])
-  const { data: roles = [] } = useQuery({
-    queryKey: ['roles'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('roles').select('*').eq('is_active', true)
-      if (error) throw error
-      return data as Role[]
-    }
-  })
-
   const [showPassword, setShowPassword] = useState(false)
 
   const { data: stoCompanies = [] } = useQuery({
