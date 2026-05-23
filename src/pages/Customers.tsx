@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Phone, Mail, Car, Search } from 'lucide-react'
 import { IMaskInput } from 'react-imask'
@@ -11,6 +10,14 @@ import { useBlockScroll } from '@/hooks/useBlockScroll'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { moveToTrash } from '@/services/trashService'
+import {
+  fetchCustomers,
+  createCustomer,
+  updateCustomer,
+  deleteCustomer,
+  fetchCustomerForTrash,
+  type CustomerFormData,
+} from '@/services/customersService'
 
 interface CustomerModalProps {
   customer: any
@@ -33,35 +40,8 @@ export default function Customers() {
   const { data: customers, isLoading } = useQuery({
     queryKey: ['customers', stoCompanyId],
     enabled: !isStoOwner || !!stoCompanyId,
-    queryFn: async () => {
-      let query = supabase
-        .from('customers')
-        .select('*')
-        .order('name', { ascending: true })
-
-      // Фильтруем по компании для владельца/работника СТО
-      if (isStoOwner && stoCompanyId) {
-        query = query.eq('sto_company_id', stoCompanyId)
-      }
-
-      const { data, error } = await query
-      
-      if (error) throw error
-
-      // Получаем количество автомобилей для каждого клиента
-      const customersWithVehicles = await Promise.all(
-        data.map(async (customer) => {
-          const { count } = await supabase
-            .from('vehicles')
-            .select('*', { count: 'exact', head: true })
-            .eq('customer_id', customer.id)
-          
-          return { ...customer, vehicles_count: count || 0 }
-        })
-      )
-      
-      return customersWithVehicles
-    },
+    queryFn: () =>
+      fetchCustomers({ stoCompanyId: isStoOwner ? stoCompanyId : null }),
   })
 
   // Фильтрация клиентов по поисковому запросу
@@ -81,24 +61,17 @@ export default function Customers() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Fetch all data before cascade delete
-      const { data: customer } = await supabase.from('customers').select('*').eq('id', id).single()
-      const { data: vehicles } = await supabase.from('vehicles').select('*').eq('customer_id', id)
-      const { data: appointments } = await supabase.from('appointments').select('*').eq('customer_id', id)
+      const { customer, vehicles, appointments } = await fetchCustomerForTrash(id)
       if (customer) {
         await moveToTrash({
           entityType: 'customer',
           entityId: id,
           entityLabel: customer.name || 'Клиент',
-          entityData: { customer, vehicles: vehicles || [], appointments: appointments || [] },
+          entityData: { customer, vehicles, appointments },
           stoCompanyId: profile?.sto_company_id,
         })
       }
-      const { error } = await supabase.from('customers').delete().eq('id', id)
-      if (error) {
-        console.error('Delete error:', error)
-        throw error
-      }
+      await deleteCustomer(id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] })
@@ -360,14 +333,9 @@ function CustomerModal({ customer, onClose }: CustomerModalProps) {
   const mutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       if (customer) {
-        const { error } = await supabase
-          .from('customers')
-          .update(data)
-          .eq('id', customer.id)
-        if (error) throw error
+        await updateCustomer(customer.id, data)
       } else {
-        const { error } = await supabase.from('customers').insert([data])
-        if (error) throw error
+        await createCustomer(data)
       }
     },
     onSuccess: () => {

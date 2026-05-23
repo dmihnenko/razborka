@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { User, Lock, Eye, EyeOff, Save, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
-import { supabase } from '@/lib/supabase'
+import { updateProfile, changePassword } from '../services/userService'
 import { useUserProfile } from '@/hooks/useUserProfile'
 
 export default function ProfileSettings() {
@@ -26,14 +26,11 @@ export default function ProfileSettings() {
   // Обновление профиля
   const updateProfileMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
-          full_name: profileForm.full_name,
-          phone: profileForm.phone,
-        })
-        .eq('id', profile!.id)
-      if (error) throw error
+      await updateProfile({
+        userId: profile!.id,
+        full_name: profileForm.full_name,
+        phone: profileForm.phone,
+      })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userProfile'] })
@@ -48,15 +45,7 @@ export default function ProfileSettings() {
       if (passwordForm.newPassword !== passwordForm.confirmPassword) {
         throw new Error('Пароли не совпадают')
       }
-      if (passwordForm.newPassword.length < 6) {
-        throw new Error('Пароль должен быть не менее 6 символов')
-      }
-
-      const { error } = await supabase.auth.updateUser({
-        password: passwordForm.newPassword,
-      })
-      if (error) throw error
-
+      await changePassword(passwordForm.newPassword)
     },
     onSuccess: () => {
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })

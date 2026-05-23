@@ -5,15 +5,9 @@ import { ArrowLeft, User, Lock, Building2, Shield, ChevronRight, Eye, EyeOff } f
 import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
+import { getRoles, type Role } from '../services/userService'
+import { getStoCompanies, getPartsCompanies } from '../services/companyService'
 import { useIsAdmin, useUserProfile } from '@/hooks/useUserProfile'
-
-interface Role {
-  id: string
-  name: string
-  display_name: string
-  description: string | null
-  is_active: boolean
-}
 
 interface UserFormData {
   email: string
@@ -70,11 +64,7 @@ export default function UserCreate() {
 
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('roles').select('*').eq('is_active', true)
-      if (error) throw error
-      return data as Role[]
-    }
+    queryFn: () => getRoles()
   })
 
   // Автозаполнение компании И роли после загрузки профиля и ролей
@@ -111,20 +101,12 @@ export default function UserCreate() {
 
   const { data: stoCompanies = [] } = useQuery({
     queryKey: ['sto_companies'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('sto_companies').select('id, name').eq('is_active', true)
-      if (error) throw error
-      return data
-    }
+    queryFn: () => getStoCompanies()
   })
 
   const { data: partsCompanies = [] } = useQuery({
     queryKey: ['parts_companies'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('parts_companies').select('id, name').eq('is_active', true)
-      if (error) throw error
-      return data
-    }
+    queryFn: () => getPartsCompanies()
   })
 
   const allowedRoles = useMemo(() => {

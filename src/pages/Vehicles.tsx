@@ -10,6 +10,15 @@ import { useBlockScroll } from '@/hooks/useBlockScroll'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { moveToTrash } from '@/services/trashService'
+import {
+  fetchVehicles,
+  fetchVehicleById,
+  deleteVehicle,
+  createVehicle,
+  updateVehicle,
+  fetchCustomerOptions,
+  type VehicleFormData,
+} from '@/services/vehiclesService'
 
 interface VehicleModalProps {
   vehicle: any
@@ -40,28 +49,12 @@ export default function Vehicles() {
 
   const { data: vehicles, isLoading } = useQuery({
     queryKey: ['vehicles', customerId, stoCompanyId],
-    enabled: !isStoOwner || !!stoCompanyId, // не загружаем пока не знаем компанию
-    queryFn: async () => {
-      let query = supabase
-        .from('vehicles')
-        .select('*, customers(name, id)')
-        .order('created_at', { ascending: false })
-      
-      // Фильтруем по компании для владельца СТО
-      if (isStoOwner && stoCompanyId) {
-        query = query.eq('sto_company_id', stoCompanyId)
-      }
-
-      // Если передан customer_id - фильтруем
-      if (customerId) {
-        query = query.eq('customer_id', customerId)
-      }
-      
-      const { data, error } = await query
-      
-      if (error) throw error
-      return data
-    },
+    enabled: !isStoOwner || !!stoCompanyId,
+    queryFn: () =>
+      fetchVehicles({
+        stoCompanyId: isStoOwner ? stoCompanyId : null,
+        customerId,
+      }),
   })
 
   // Фильтрация автомобилей по поисковому запросу
@@ -87,7 +80,7 @@ export default function Vehicles() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { data: vehicle } = await supabase.from('vehicles').select('*').eq('id', id).single()
+      const vehicle = await fetchVehicleById(id)
       const { data: appts } = await supabase.from('appointments').select('*').eq('vehicle_id', id)
       if (vehicle) {
         await moveToTrash({
@@ -98,8 +91,7 @@ export default function Vehicles() {
           stoCompanyId: profile?.sto_company_id,
         })
       }
-      const { error } = await supabase.from('vehicles').delete().eq('id', id)
-      if (error) throw error
+      await deleteVehicle(id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicles'] })
@@ -356,10 +348,7 @@ function VehicleModal({
 
   const { data: customers } = useQuery({
     queryKey: ['customers-list'],
-    queryFn: async () => {
-      const { data } = await supabase.from('customers').select('id, name').order('name')
-      return data || []
-    },
+    queryFn: fetchCustomerOptions,
   })
 
   const mutation = useMutation({
@@ -370,14 +359,9 @@ function VehicleModal({
       }
 
       if (vehicle) {
-        const { error } = await supabase
-          .from('vehicles')
-          .update(vehicleData)
-          .eq('id', vehicle.id)
-        if (error) throw error
+        await updateVehicle(vehicle.id, vehicleData)
       } else {
-        const { error } = await supabase.from('vehicles').insert([vehicleData])
-        if (error) throw error
+        await createVehicle(vehicleData)
       }
     },
     onSuccess: () => {

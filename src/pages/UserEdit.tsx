@@ -7,17 +7,10 @@ import {
 } from 'lucide-react'
 import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
-import { supabase } from '@/lib/supabase'
+import { getUserProfileWithRoles, getRoles, updateUserProfile, updateUserRoles, type Role } from '../services/userService'
+import { getStoCompanies, getPartsCompanies, createCompanyAndAssign } from '../services/companyService'
 import { useIsAdmin, useUserProfile } from '@/hooks/useUserProfile'
 import { ROLE_COLORS, shouldShowStoCompany, shouldShowPartsCompany } from '@/utils/roles'
-
-interface Role {
-  id: string
-  name: string
-  display_name: string
-  description: string | null
-  is_active: boolean
-}
 
 interface UserFormData {
   full_name: string
@@ -78,12 +71,7 @@ export default function UserEdit() {
   const { data: userProfile, isLoading: profileLoading } = useQuery({
     queryKey: ['user_profile', id],
     enabled: !!id,
-    queryFn: async () => {
-      const { data: profile, error } = await supabase.from('user_profiles').select('*').eq('id', id!).single()
-      if (error) throw error
-      const { data: userRoles } = await supabase.from('user_roles').select('role_id, is_primary').eq('user_id', id!)
-      return { ...profile, user_roles: userRoles || [] }
-    }
+    queryFn: () => getUserProfileWithRoles(id!)
   })
 
   useEffect(() => {
@@ -104,27 +92,15 @@ export default function UserEdit() {
 
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('roles').select('*').eq('is_active', true)
-      if (error) throw error
-      return data as Role[]
-    }
+    queryFn: () => getRoles()
   })
   const { data: stoCompanies = [] } = useQuery({
     queryKey: ['sto_companies'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('sto_companies').select('id, name').eq('is_active', true)
-      if (error) throw error
-      return data
-    }
+    queryFn: () => getStoCompanies()
   })
   const { data: partsCompanies = [] } = useQuery({
     queryKey: ['parts_companies'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('parts_companies').select('id, name').eq('is_active', true)
-      if (error) throw error
-      return data
-    }
+    queryFn: () => getPartsCompanies()
   })
 
   const allowedRoles = useMemo(() => roles.filter(role => {
@@ -155,17 +131,13 @@ export default function UserEdit() {
   }
 
   const createCompanyMutation = useMutation({
-    mutationFn: async (form: InlineForm) => {
-      const table = form.type === 'sto' ? 'sto_companies' : 'parts_companies'
-      const profileField = form.type === 'sto' ? 'sto_company_id' : 'parts_company_id'
-      const { data: company, error: createError } = await supabase.from(table)
-        .insert({ name: form.name.trim(), phone: form.phone || null, address: form.address || null, is_active: true })
-        .select('id, name').single()
-      if (createError) throw createError
-      const { error: assignError } = await supabase.from('user_profiles').update({ [profileField]: company.id }).eq('id', id!)
-      if (assignError) throw assignError
-      return { ...company, type: form.type }
-    },
+    mutationFn: (form: InlineForm) => createCompanyAndAssign({
+      type: form.type,
+      name: form.name,
+      phone: form.phone,
+      address: form.address,
+      userId: id!,
+    }),
     onSuccess: ({ id: companyId, type }) => {
       if (type === 'sto') {
         setFormData(prev => ({ ...prev, sto_company_id: companyId }))
@@ -183,19 +155,18 @@ export default function UserEdit() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: UserFormData) => {
-      const { error: profileError } = await supabase.from('user_profiles')
-        .update({ full_name: data.full_name, phone: data.phone, sto_company_id: data.sto_company_id || null, parts_company_id: data.parts_company_id || null })
-        .eq('id', id!)
-      if (profileError) throw profileError
-      const { error: deleteError } = await supabase.from('user_roles').delete().eq('user_id', id!)
-      if (deleteError) throw deleteError
-      if (data.role_ids.length > 0) {
-        const { error: insertError } = await supabase.from('user_roles').upsert(
-          data.role_ids.map(roleId => ({ user_id: id!, role_id: roleId, is_primary: roleId === data.primary_role_id })),
-          { onConflict: 'user_id,role_id' }
-        )
-        if (insertError) throw insertError
-      }
+      await updateUserProfile({
+        userId: id!,
+        full_name: data.full_name,
+        phone: data.phone,
+        sto_company_id: data.sto_company_id || null,
+        parts_company_id: data.parts_company_id || null,
+      })
+      await updateUserRoles({
+        userId: id!,
+        role_ids: data.role_ids,
+        primary_role_id: data.primary_role_id,
+      })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })

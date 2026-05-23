@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { useUserProfile } from '../hooks/useUserProfile'
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
+import { getAdminStats } from '../services/adminService'
 
 export default function AdminPanel() {
   const { data: profile } = useUserProfile()
@@ -14,22 +14,7 @@ export default function AdminPanel() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['admin-stats'],
     staleTime: 2 * 60 * 1000,
-    queryFn: async () => {
-        const safeCount = async (query: any) => {
-        try { const { count } = await query; return count || 0 } catch { return 0 }
-      }
-
-      const [users, activeUsers, roles, stoCompanies, partsCompanies, subscriptions, openTickets] = await Promise.all([
-        safeCount(supabase.from('user_profiles').select('*', { count: 'exact', head: true })),
-        safeCount(supabase.from('user_profiles').select('*', { count: 'exact', head: true }).eq('is_active', true)),
-        safeCount(supabase.from('roles').select('*', { count: 'exact', head: true }).eq('is_active', true)),
-        safeCount(supabase.from('sto_companies').select('*', { count: 'exact', head: true }).eq('is_active', true)),
-        safeCount(supabase.from('parts_companies').select('*', { count: 'exact', head: true }).eq('is_active', true)),
-        safeCount(supabase.from('company_subscriptions').select('*', { count: 'exact', head: true }).eq('is_active', true)),
-        safeCount(supabase.from('support_tickets').select('*', { count: 'exact', head: true }).eq('status', 'open')),
-      ])
-      return { users, activeUsers, roles, stoCompanies, partsCompanies, subscriptions, openTickets }
-    }
+    queryFn: () => getAdminStats()
   })
 
   const statCards = [

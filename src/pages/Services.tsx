@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Search, X } from 'lucide-react'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
@@ -9,6 +8,14 @@ import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { moveToTrash } from '@/services/trashService'
+import {
+  fetchServices,
+  fetchServiceCategories,
+  fetchServiceRaw,
+  deleteService,
+  createService,
+  updateService,
+} from '@/services/servicesService'
 
 export default function Services() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -23,26 +30,12 @@ export default function Services() {
 
   const { data: services, isLoading } = useQuery({
     queryKey: ['services'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('services')
-        .select('*, service_categories(name, color)')
-        .order('name')
-      
-      if (error) throw error
-      return data
-    },
+    queryFn: fetchServices,
   })
 
   const { data: categories } = useQuery({
     queryKey: ['service-categories'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('service_categories')
-        .select('*')
-        .order('sort_order')
-      return data || []
-    },
+    queryFn: fetchServiceCategories,
   })
 
   // Фильтрация услуг
@@ -72,7 +65,7 @@ export default function Services() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { data: service } = await supabase.from('services').select('*').eq('id', id).single()
+      const service = await fetchServiceRaw(id)
       if (service) {
         await moveToTrash({
           entityType: 'service',
@@ -82,8 +75,7 @@ export default function Services() {
           stoCompanyId: profile?.sto_company_id,
         })
       }
-      const { error } = await supabase.from('services').delete().eq('id', id)
-      if (error) throw error
+      await deleteService(id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] })
@@ -361,13 +353,7 @@ function ServiceModal({ service, onClose }: { service: any; onClose: () => void 
 
   const { data: categories } = useQuery({
     queryKey: ['service-categories'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('service_categories')
-        .select('*')
-        .order('sort_order')
-      return data || []
-    },
+    queryFn: fetchServiceCategories,
   })
 
   const filteredCategories = useMemo(() => {
@@ -392,14 +378,9 @@ function ServiceModal({ service, onClose }: { service: any; onClose: () => void 
       }
 
       if (service) {
-        const { error } = await supabase
-          .from('services')
-          .update(serviceData)
-          .eq('id', service.id)
-        if (error) throw error
+        await updateService(service.id, serviceData)
       } else {
-        const { error } = await supabase.from('services').insert([serviceData])
-        if (error) throw error
+        await createService(serviceData)
       }
     },
     onSuccess: () => {

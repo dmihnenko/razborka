@@ -14,6 +14,8 @@ import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { moveToTrash } from '@/services/trashService'
+import { fetchCustomerById } from '@/services/customersService'
+import { fetchCustomerVehicles, fetchVehicleById, deleteVehicle } from '@/services/vehiclesService'
 
 export default function CustomerProfile() {
   const { id } = useParams<{ id: string }>()
@@ -38,32 +40,14 @@ export default function CustomerProfile() {
   // Получаем данные клиента
   const { data: customer, isLoading: customerLoading } = useQuery({
     queryKey: ['customer', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      if (error) throw error
-      return data
-    },
+    queryFn: () => fetchCustomerById(id!),
     enabled: !!id,
   })
 
   // Получаем автомобили клиента
   const { data: vehicles, isLoading: vehiclesLoading } = useQuery({
     queryKey: ['customer-vehicles', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('vehicles')
-        .select('*')
-        .eq('customer_id', id)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      return data
-    },
+    queryFn: () => fetchCustomerVehicles(id!),
     enabled: !!id,
   })
 
