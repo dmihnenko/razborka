@@ -1,96 +1,48 @@
 import { useState } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Plus, Eye, UserCog, Trash2, Edit } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useNavigate } from 'react-router-dom'
 import { IMaskInput } from 'react-imask'
-
-interface Employee {
-  id: string
-  full_name: string | null
-  username: string | null
-  email: string
-  phone: string | null
-  created_at: string
-}
+import {
+  fetchStoEmployees,
+  createStoEmployee,
+  deactivateStoEmployee,
+  updateStoEmployeeName,
+  bulkAssignAppointments,
+  type StoEmployee,
+} from '@/services/stoService'
 
 export default function StoEmployees() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isBulkAssignModalOpen, setIsBulkAssignModalOpen] = useState(false)
-  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
-  const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null)
+  const [editingEmployee, setEditingEmployee] = useState<StoEmployee | null>(null)
+  const [deletingEmployee, setDeletingEmployee] = useState<StoEmployee | null>(null)
   const navigate = useNavigate()
   const { data: currentUserProfile } = useUserProfile()
 
-  // Загрузка работников СТО
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ['sto_employees', currentUserProfile?.sto_company_id],
-    queryFn: async () => {
-      if (!currentUserProfile?.sto_company_id) return []
-
-      // Получаем роль sto_worker
-      const { data: roleData, error: roleError } = await supabase
-        .from('roles')
-        .select('id')
-        .eq('name', 'sto_worker')
-        .single()
-
-      if (roleError) throw roleError
-      if (!roleData) return []
-
-      // Сначала получаем все user_roles для роли sto_worker
-      const { data: userRolesData, error: userRolesError } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role_id', roleData.id)
-
-      if (userRolesError) throw userRolesError
-      
-      const userIds = userRolesData?.map(ur => ur.user_id) || []
-      
-      if (userIds.length === 0) return []
-
-      // Теперь получаем профили этих пользователей, отфильтрованные по СТО
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('sto_company_id', currentUserProfile.sto_company_id)
-        .eq('is_active', true)
-        .in('id', userIds)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      return data as Employee[]
-    },
-    enabled: !!currentUserProfile?.sto_company_id
+    queryFn: () => fetchStoEmployees(currentUserProfile!.sto_company_id),
+    enabled: !!currentUserProfile?.sto_company_id,
   })
 
   const queryClient = useQueryClient()
 
-  // Мутация для удаления работника
   const deleteEmployeeMutation = useMutation({
-    mutationFn: async (employeeId: string) => {
-      // Деактивируем пользователя вместо удаления
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ is_active: false })
-        .eq('id', employeeId)
-      
-      if (error) throw error
-    },
+    mutationFn: (employeeId: string) => deactivateStoEmployee(employeeId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sto_employees'] })
       toast.success('Работник удален. Его заявки переназначены автоматически.')
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Ошибка при удалении работника')
     }
   })
 
-  const handleDeleteEmployee = (employee: Employee) => {
+  const handleDeleteEmployee = (employee: StoEmployee) => {
     setDeletingEmployee(employee)
   }
 
@@ -252,89 +204,13 @@ function AddEmployeeModal({ onClose, stoCompanyId }: { onClose: () => void; stoC
   const queryClient = useQueryClient()
 
   const createEmployeeMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      // Проверяем, не существует ли уже пользователь с таким username
-      const { data: existingUser } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('username', data.username)
-        .maybeSingle()
-
-      if (existingUser) {
-        throw new Error(`Пользователь с логином "${data.username}" уже существует`)
-      }
-
-      // Генерируем email-заглушку с валидным доменом
-      const email = `${data.username}@internal.tsp.local`
-
-      // Создаем пользователя в auth с минимальными данными
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password: data.password
-      })
-
-      if (authError) {
-        console.error('Auth signup error:', authError)
-        // Более понятное сообщение об ошибке
-        if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
-          throw new Error('Email уже зарегистрирован. Попробуйте другой логин.')
-        }
-        throw new Error(authError.message || 'Ошибка создания пользователя')
-      }
-
-      if (!authData.user) {
-        throw new Error('Не удалось создать пользователя')
-      }
-
-      const userId = authData.user.id
-
-      // Обновляем или создаем профиль
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .upsert({
-          id: userId,
-          username: data.username,
-          full_name: data.full_name || null,
-          phone: data.phone || null,
-          sto_company_id: stoCompanyId || null,
-          parts_company_id: null,
-          email: email,
-          is_active: true
-        })
-
-      if (profileError) {
-        console.error('Profile error:', profileError)
-        throw profileError
-      }
-
-      // Получаем role_id для sto_worker
-      const { data: roleData } = await supabase
-        .from('roles')
-        .select('id')
-        .eq('name', 'sto_worker')
-        .single()
-
-      if (!roleData) throw new Error('Role not found')
-
-      // Добавляем роль (если уже есть - игнорируем)
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .upsert({
-          user_id: userId,
-          role_id: roleData.id,
-          is_primary: true
-        }, {
-          onConflict: 'user_id,role_id'
-        })
-
-      if (roleError) throw roleError
-    },
+    mutationFn: (data: typeof formData) => createStoEmployee(data, stoCompanyId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sto_employees', stoCompanyId] })
       toast.success('Работник добавлен')
       onClose()
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error('Ошибка при добавлении: ' + error.message)
     }
   })
@@ -430,24 +306,14 @@ function AddEmployeeModal({ onClose, stoCompanyId }: { onClose: () => void; stoC
   )
 }
 
-// Модальное окно для массового назначения заявок
-function BulkAssignModal({ isOpen, onClose, employees }: { isOpen: boolean; onClose: () => void; employees: Employee[] }) {
+function BulkAssignModal({ isOpen, onClose, employees }: { isOpen: boolean; onClose: () => void; employees: StoEmployee[] }) {
   const [selectedWorkerId, setSelectedWorkerId] = useState('')
   const queryClient = useQueryClient()
 
   const bulkAssignMutation = useMutation({
-    mutationFn: async (workerId: string) => {
+    mutationFn: (workerId: string) => {
       const worker = employees.find(e => e.id === workerId)
-      
-      const { error } = await supabase
-        .from('appointments')
-        .update({
-          assigned_to: workerId,
-          assigned_to_name: worker?.full_name || worker?.username || null
-        })
-        .is('assigned_to', null)
-      
-      if (error) throw error
+      return bulkAssignAppointments(workerId, worker?.full_name || worker?.username || null)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
@@ -455,7 +321,7 @@ function BulkAssignModal({ isOpen, onClose, employees }: { isOpen: boolean; onCl
       onClose()
       setSelectedWorkerId('')
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Ошибка при назначении заявок')
     }
   })
@@ -512,39 +378,19 @@ function BulkAssignModal({ isOpen, onClose, employees }: { isOpen: boolean; onCl
   )
 }
 
-// Модальное окно для редактирования сотрудника
-function EditEmployeeModal({ employee, onClose }: { employee: Employee; onClose: () => void }) {
+function EditEmployeeModal({ employee, onClose }: { employee: StoEmployee; onClose: () => void }) {
   const [fullName, setFullName] = useState(employee.full_name || '')
   const queryClient = useQueryClient()
 
   const updateEmployeeMutation = useMutation({
-    mutationFn: async (newFullName: string) => {
-      // Обновляем имя в user_profiles
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update({ full_name: newFullName })
-        .eq('id', employee.id)
-      
-      if (profileError) throw profileError
-
-      // Обновляем assigned_to_name во всех активных заявках
-      const { error: appointmentsError } = await supabase
-        .from('appointments')
-        .update({ assigned_to_name: newFullName })
-        .eq('assigned_to', employee.id)
-        .neq('status', 'archived')
-        .neq('status', 'completed')
-        .neq('status', 'cancelled')
-      
-      if (appointmentsError) throw appointmentsError
-    },
+    mutationFn: (newFullName: string) => updateStoEmployeeName(employee.id, newFullName),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sto_employees'] })
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
       toast.success('Данные работника обновлены')
       onClose()
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Ошибка при обновлении данных')
     }
   })
@@ -614,13 +460,12 @@ function EditEmployeeModal({ employee, onClose }: { employee: Employee; onClose:
   )
 }
 
-// Модальное окно подтверждения удаления работника
 function DeleteEmployeeConfirmModal({ 
   employee, 
   onClose, 
   onConfirm 
 }: { 
-  employee: Employee; 
+  employee: StoEmployee; 
   onClose: () => void; 
   onConfirm: () => void 
 }) {

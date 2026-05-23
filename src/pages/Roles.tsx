@@ -1,19 +1,17 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
 import { Plus, Edit2, Trash2, Shield } from 'lucide-react'
 import { toast } from 'sonner'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
-
-type Role = {
-  id: string
-  name: string
-  display_name: string
-  is_active: boolean
-  description: string | null
-  created_at: string
-}
+import {
+  fetchRoles,
+  createRole,
+  updateRole,
+  deleteRole,
+  type Role,
+  type RoleFormData,
+} from '@/services/rolesService'
 
 export default function Roles() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -23,31 +21,16 @@ export default function Roles() {
 
   const { data: roles, isLoading } = useQuery({
     queryKey: ['roles'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('roles')
-        .select('*')
-        .order('name')
-
-      if (error) throw error
-      return data as Role[]
-    },
+    queryFn: fetchRoles,
   })
 
-  const deleteRole = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('roles')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-    },
+  const deleteRoleMutation = useMutation({
+    mutationFn: (id: string) => deleteRole(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['roles'] })
       toast.success('Роль удалена')
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Ошибка при удалении роли: ' + error.message)
     },
   })
@@ -59,7 +42,7 @@ export default function Roles() {
     }
     const ok = await showConfirm({ message: 'Удалить роль? Пользователи с этой ролью потеряют свои права.', danger: true })
     if (!ok) return
-    deleteRole.mutate(id)
+    deleteRoleMutation.mutate(id)
   }
 
   if (isLoading) {
@@ -182,7 +165,7 @@ function RoleModal({
   role: Role | null
   onClose: () => void
 }) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<RoleFormData>({
     name: role?.name || '',
     display_name: role?.display_name || '',
     description: role?.description || '',
@@ -191,18 +174,11 @@ function RoleModal({
   const queryClient = useQueryClient()
 
   const saveRole = useMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (data: RoleFormData) => {
       if (role) {
-        const { error } = await supabase
-          .from('roles')
-          .update(data)
-          .eq('id', role.id)
-
-        if (error) throw error
+        await updateRole(role.id, data)
       } else {
-        const { error } = await supabase.from('roles').insert([data])
-
-        if (error) throw error
+        await createRole(data)
       }
     },
     onSuccess: () => {
@@ -210,7 +186,7 @@ function RoleModal({
       toast.success(role ? 'Роль обновлена' : 'Роль создана')
       onClose()
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Ошибка: ' + error.message)
     },
   })

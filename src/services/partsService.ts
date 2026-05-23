@@ -579,3 +579,131 @@ export async function deleteStorageLocation(id: string) {
     .eq('id', id)
   if (error) throw error
 }
+
+// ============================================================================
+// EXTRA HELPERS (used in pages)
+// ============================================================================
+
+/** Get single customer (e.g. for trash snapshot) */
+export async function getPartsCustomer(id: string) {
+  const { data, error } = await supabase
+    .from('parts_customers')
+    .select('*')
+    .eq('id', id)
+    .single()
+  if (error) throw error
+  return data as PartsCustomer
+}
+
+/** Get single category (e.g. for trash snapshot) */
+export async function getPartsCategoryById(id: string) {
+  const { data, error } = await supabase
+    .from('parts_categories')
+    .select('*')
+    .eq('id', id)
+    .single()
+  if (error) throw error
+  return data as PartsCategory
+}
+
+/** Get category usage count (how many inventory items use each category) */
+export async function getPartsCategoriesUsage(partsCompanyId: string): Promise<Record<string, number>> {
+  const { data } = await supabase
+    .from('parts_inventory')
+    .select('category_id')
+    .eq('parts_company_id', partsCompanyId)
+  const map: Record<string, number> = {}
+  ;(data || []).forEach(row => {
+    if (row.category_id) map[row.category_id] = (map[row.category_id] || 0) + 1
+  })
+  return map
+}
+
+/** Delete a single order item and restore inventory status to available */
+export async function deletePartsOrderItem(
+  itemId: string,
+  inventoryItemId: string
+): Promise<void> {
+  const { error } = await supabase.from('parts_order_items').delete().eq('id', itemId)
+  if (error) throw error
+  await supabase
+    .from('parts_inventory')
+    .update({ status: 'available' })
+    .eq('id', inventoryItemId)
+    .eq('status', 'reserved')
+}
+
+/** Update parts order status and optionally sync inventory item statuses */
+export async function updatePartsOrderStatus(
+  orderId: string,
+  status: string,
+  inventoryIds: string[],
+  exchangeRate?: number | null
+): Promise<void> {
+  const updateData: Record<string, unknown> = { status }
+  if (status === 'completed' && exchangeRate) {
+    updateData.exchange_rate_at_sale = exchangeRate
+  }
+  const { error } = await supabase.from('parts_orders').update(updateData).eq('id', orderId)
+  if (error) throw error
+
+  if (inventoryIds.length > 0) {
+    if (status === 'cancelled' || status === 'new' || status === 'in_progress') {
+      await supabase
+        .from('parts_inventory')
+        .update({ status: 'available' })
+        .in('id', inventoryIds)
+        .in('status', ['reserved', 'sold'])
+    }
+  }
+}
+
+/** Delete a parts order (also restores inventory, then hard-deletes) */
+export async function deletePartsOrder(
+  orderId: string,
+  inventoryIds: string[]
+): Promise<void> {
+  if (inventoryIds.length > 0) {
+    await supabase
+      .from('parts_inventory')
+      .update({ status: 'available' })
+      .in('id', inventoryIds)
+      .in('status', ['reserved', 'sold'])
+  }
+  await supabase.from('parts_order_items').delete().eq('order_id', orderId)
+  const { error } = await supabase.from('parts_orders').delete().eq('id', orderId)
+  if (error) throw error
+}
+
+/** Get available inventory items for an order (status=available, qty>0) */
+export async function getAvailablePartsInventory(partsCompanyId: string) {
+  const { data, error } = await supabase
+    .from('parts_inventory')
+    .select('id, name, part_number, quantity, selling_price, price_currency, category:parts_categories(name)')
+    .eq('parts_company_id', partsCompanyId)
+    .eq('status', 'available')
+    .gt('quantity', 0)
+    .order('name')
+  if (error) throw error
+  return data
+}
+
+/** Get customers for dropdown (id, full_name, phone) */
+export async function getPartsCustomersDropdown(partsCompanyId: string) {
+  const { data, error } = await supabase
+    .from('parts_customers')
+    .select('id, full_name, phone')
+    .eq('parts_company_id', partsCompanyId)
+    .order('full_name')
+  if (error) throw error
+  return data
+}
+
+/** Update order customer / notes */
+export async function updatePartsOrder(
+  orderId: string,
+  updates: { customer_id?: string | null; notes?: string | null }
+): Promise<void> {
+  const { error } = await supabase.from('parts_orders').update(updates).eq('id', orderId)
+  if (error) throw error
+}

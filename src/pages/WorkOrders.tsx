@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, UserCog } from 'lucide-react'
@@ -9,7 +8,7 @@ import WorkOrderModal from '@/components/work-orders/WorkOrderModal'
 import ReassignWorkerModal from '@/components/work-orders/ReassignWorkerModal'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
-import { moveToTrash } from '@/services/trashService'
+import { fetchWorkOrders, deleteWorkOrder } from '@/services/workOrdersService'
 
 export default function WorkOrders() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -30,46 +29,18 @@ export default function WorkOrders() {
 
   const { data: workOrders, isLoading, isError } = useQuery({
     queryKey: ['work_orders', profile?.sto_company_id],
-    queryFn: async () => {
-      let query = supabase
-        .from('work_orders')
-        .select(`
-          *,
-          customers(name, phone),
-          vehicles(brand, model, license_plate),
-          created_by_profile:user_profiles!created_by(full_name, email),
-          assigned_to_profile:user_profiles!assigned_to(full_name, email)
-        `)
-        .eq('sto_company_id', profile!.sto_company_id)
-
-      // Работники видят только свои заказы
-      if (!isStoOwner && profile?.id) {
-        query = query.eq('assigned_to', profile.id)
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false })
-
-      if (error) throw error
-      return data
-    },
+    queryFn: () =>
+      fetchWorkOrders(
+        profile!.sto_company_id,
+        !isStoOwner && profile?.id ? profile.id : undefined
+      ),
     enabled: !!profile?.sto_company_id,
   })
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const workOrder = workOrders?.find((o: any) => o.id === id)
-      const label = workOrder
-        ? `Заказ-наряд: ${workOrder.customers?.name || ''} — ${workOrder.vehicles?.brand || ''} ${workOrder.vehicles?.model || ''}`.trim()
-        : 'Заказ-наряд'
-      await moveToTrash({
-        entityType: 'work_order',
-        entityId: id,
-        entityLabel: label,
-        entityData: workOrder || { id },
-        stoCompanyId: profile?.sto_company_id,
-      })
-      const { error } = await supabase.from('work_orders').delete().eq('id', id)
-      if (error) throw error
+      await deleteWorkOrder(id, workOrder, profile?.sto_company_id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['work_orders'] })

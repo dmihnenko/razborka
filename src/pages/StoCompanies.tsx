@@ -1,35 +1,18 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, Building2, Users, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
-
-interface StoCompany {
-  id: string;
-  name: string;
-  address: string | null;
-  phone: string | null;
-  email: string | null;
-  description: string | null;
-  is_active: boolean;
-  created_at: string;
-  workers_count?: number;
-  subscription?: {
-    id: string;
-    type: string;
-    end_date: string | null;
-  };
-}
-
-interface StoFormData {
-  name: string;
-  address: string;
-  phone: string;
-  email: string;
-  description: string;
-}
+import {
+  fetchStoCompanies,
+  createStoCompany,
+  updateStoCompany,
+  deleteStoCompany,
+  toggleStoCompanyActive,
+  type StoCompany,
+  type StoFormData,
+} from '@/services/stoService';
 
 export default function StoCompanies() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,110 +27,26 @@ export default function StoCompanies() {
   const queryClient = useQueryClient();
   const { confirm: showConfirm, dialogProps } = useConfirm();
 
-  // Загрузка СТО
   const { data: companies = [], isLoading } = useQuery({
     queryKey: ['sto_companies'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sto_companies')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      
-      // Получаем id роли admin чтобы исключить администраторов из подсчёта
-      const { data: adminRole } = await supabase
-        .from('roles')
-        .select('id')
-        .eq('name', 'admin')
-        .single();
-
-      const { data: adminUserRoles } = adminRole
-        ? await supabase.from('user_roles').select('user_id').eq('role_id', adminRole.id)
-        : { data: [] };
-
-      const adminIds = (adminUserRoles ?? []).map((r: { user_id: string }) => r.user_id);
-
-      // Получаем количество работников для каждой СТО
-      const companiesWithWorkers = await Promise.all((data || []).map(async (company) => {
-        // Считаем активных пользователей компании, исключая глобальных администраторов
-        let query = supabase
-          .from('user_profiles')
-          .select('id', { count: 'exact', head: true })
-          .eq('sto_company_id', company.id)
-          .eq('is_active', true);
-
-        if (adminIds.length > 0) {
-          query = query.not('id', 'in', `(${adminIds.join(',')})`);
-        }
-
-        const { count } = await query;
-        const workersCount = count || 0;
-        
-        // Получаем подписку компании
-        const { data: subscription } = await supabase
-          .from('company_subscriptions')
-          .select('id, subscription_id, end_date, subscription:subscriptions(type)')
-          .eq('company_type', 'sto')
-          .eq('company_id', company.id)
-          .eq('is_active', true)
-          .maybeSingle();
-        
-        return {
-          ...company,
-          workers_count: workersCount,
-          subscription: subscription ? {
-            id: subscription.id,
-            type: (subscription.subscription as any)?.type || '',
-            end_date: subscription.end_date
-          } : undefined
-        };
-      }));
-      
-      return companiesWithWorkers as StoCompany[];
-    }
+    queryFn: fetchStoCompanies,
   });
 
-  // Создание СТО
   const createMutation = useMutation({
-    mutationFn: async (data: StoFormData) => {
-      const { error } = await supabase
-        .from('sto_companies')
-        .insert({
-          name: data.name,
-          address: data.address || null,
-          phone: data.phone || null,
-          email: data.email || null,
-          description: data.description || null,
-          is_active: true
-        });
-      if (error) throw error;
-    },
+    mutationFn: (data: StoFormData) => createStoCompany(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sto_companies'] });
       toast.success('СТО создано');
       setIsModalOpen(false);
       resetForm();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Ошибка при создании СТО');
     }
   });
 
-  // Обновление СТО
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: StoFormData }) => {
-      const { error } = await supabase
-        .from('sto_companies')
-        .update({
-          name: data.name,
-          address: data.address || null,
-          phone: data.phone || null,
-          email: data.email || null,
-          description: data.description || null
-        })
-        .eq('id', id);
-      if (error) throw error;
-    },
+    mutationFn: ({ id, data }: { id: string; data: StoFormData }) => updateStoCompany(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sto_companies'] });
       toast.success('СТО обновлено');
@@ -155,43 +54,30 @@ export default function StoCompanies() {
       setSelectedSto(null);
       resetForm();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Ошибка при обновлении СТО');
     }
   });
 
-  // Удаление СТО
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('sto_companies')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-    },
+    mutationFn: (id: string) => deleteStoCompany(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sto_companies'] });
       toast.success('СТО удалено');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Ошибка при удалении СТО');
     }
   });
 
-  // Переключение активности
   const toggleActiveMutation = useMutation({
-    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      const { error } = await supabase
-        .from('sto_companies')
-        .update({ is_active: !isActive })
-        .eq('id', id);
-      if (error) throw error;
-    },
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      toggleStoCompanyActive(id, isActive),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sto_companies'] });
       toast.success('Статус СТО изменен');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Ошибка при изменении статуса');
     }
   });
@@ -288,7 +174,6 @@ export default function StoCompanies() {
             </div>
 
             <div className="space-y-2 mb-4 text-sm text-gray-600">
-              {/* Подписка и количество работников */}
               <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                 <div className="flex items-center space-x-2">
                   <Users className="h-4 w-4 text-gray-500" />
@@ -372,7 +257,6 @@ export default function StoCompanies() {
         )}
       </div>
 
-      {/* Модальное окно */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">

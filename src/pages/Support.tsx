@@ -1,35 +1,22 @@
 import { useState, useEffect, useRef } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { MessageSquare, Send, X, ArrowLeft, CheckCheck, AlertCircle, Trash2 } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
-
-interface Chat {
-  id: string
-  owner_id: string
-  status: 'active' | 'closed'
-  subject: string | null
-  created_at: string
-  updated_at: string
-  unread_count?: number
-}
-
-interface Message {
-  id: string
-  chat_id: string
-  sender_id: string
-  message: string
-  created_at: string
-  is_read: boolean
-  sender?: {
-    full_name: string | null
-  }
-}
+import {
+  getSupportChats,
+  getSupportMessages,
+  createSupportChat,
+  sendSupportMessage,
+  deleteSupportChat,
+  updateSupportChatStatus,
+} from '@/services/supportService'
+import type { SupportChat, SupportMessage } from '@/services/supportService'
+import { supabase } from '@/lib/supabase'
 
 export default function Support() {
   const [selectedChat, setSelectedChat] = useState<string | null>(null)
@@ -49,41 +36,16 @@ export default function Support() {
   // Загрузка чатов текущего пользователя
   const { data: chats = [], isLoading: chatsLoading } = useQuery({
     queryKey: ['support_chats', currentUserProfile?.id],
-    queryFn: async () => {
-      if (!currentUserProfile?.id) return []
-      
-      const { data, error } = await supabase
-        .from('support_chats')
-        .select('*')
-        .eq('owner_id', currentUserProfile.id)
-        .order('updated_at', { ascending: false })
-
-      if (error) throw error
-      return data as Chat[]
-    },
+    queryFn: () => getSupportChats(currentUserProfile!.id),
     enabled: !!currentUserProfile?.id
   })
 
   // Загрузка сообщений выбранного чата
   const { data: messages = [] } = useQuery({
     queryKey: ['support_messages', selectedChat],
-    queryFn: async () => {
-      if (!selectedChat) return []
-
-      const { data, error } = await supabase
-        .from('support_messages')
-        .select(`
-          *,
-          sender:user_profiles!sender_id(full_name)
-        `)
-        .eq('chat_id', selectedChat)
-        .order('created_at', { ascending: true })
-
-      if (error) throw error
-      return data as Message[]
-    },
+    queryFn: () => getSupportMessages(selectedChat!),
     enabled: !!selectedChat,
-    refetchInterval: 30000 // Автообновление каждые 30 секунд
+    refetchInterval: 30000
   })
 
   // Автопрокрутка к последнему сообщению
@@ -126,34 +88,9 @@ export default function Support() {
 
   // Создание нового чата
   const createChatMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: () => {
       if (!currentUserProfile?.id) throw new Error('User not found')
-
-      // Создаем чат
-      const { data: chatData, error: chatError } = await supabase
-        .from('support_chats')
-        .insert({
-          owner_id: currentUserProfile.id,
-          subject: newChatSubject,
-          status: 'active'
-        })
-        .select()
-        .single()
-
-      if (chatError) throw chatError
-
-      // Создаем первое сообщение
-      const { error: messageError } = await supabase
-        .from('support_messages')
-        .insert({
-          chat_id: chatData.id,
-          sender_id: currentUserProfile.id,
-          message: newChatMessage
-        })
-
-      if (messageError) throw messageError
-
-      return chatData
+      return createSupportChat(currentUserProfile.id, newChatSubject, newChatMessage)
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['support_chats'] })
@@ -170,18 +107,9 @@ export default function Support() {
 
   // Отправка сообщения
   const sendMessageMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: () => {
       if (!selectedChat || !currentUserProfile?.id) throw new Error('Invalid state')
-
-      const { error } = await supabase
-        .from('support_messages')
-        .insert({
-          chat_id: selectedChat,
-          sender_id: currentUserProfile.id,
-          message: newMessage
-        })
-
-      if (error) throw error
+      return sendSupportMessage(selectedChat, currentUserProfile.id, newMessage)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['support_messages', selectedChat] })
@@ -194,10 +122,7 @@ export default function Support() {
 
   // Удаление чата
   const deleteChatMutation = useMutation({
-    mutationFn: async (chatId: string) => {
-      const { error } = await supabase.from('support_chats').delete().eq('id', chatId)
-      if (error) throw error
-    },
+    mutationFn: (chatId: string) => deleteSupportChat(chatId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['support_chats'] })
       toast.success('Обращение удалено')
@@ -210,14 +135,7 @@ export default function Support() {
 
   // Закрытие чата
   const closeChatMutation = useMutation({
-    mutationFn: async (chatId: string) => {
-      const { error } = await supabase
-        .from('support_chats')
-        .update({ status: 'closed' })
-        .eq('id', chatId)
-
-      if (error) throw error
-    },
+    mutationFn: (chatId: string) => updateSupportChatStatus(chatId, 'closed'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['support_chats'] })
       toast.success('Чат закрыт')
@@ -264,8 +182,8 @@ export default function Support() {
     }
   }
 
-  const activeChats = chats.filter(c => c.status === 'active')
-  const closedChats = chats.filter(c => c.status === 'closed')
+  const activeChats = chats.filter((c: SupportChat) => c.status === 'active')
+  const closedChats = chats.filter((c: SupportChat) => c.status === 'closed')
 
   if (chatsLoading) {
     return (
@@ -324,7 +242,7 @@ export default function Support() {
                       <div className="px-3 sm:px-4 py-2 bg-gray-50 border-b border-gray-100">
                         <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Активные ({activeChats.length})</p>
                       </div>
-                      {activeChats.map((chat) => (
+                      {activeChats.map((chat: SupportChat) => (
                         <div
                           key={chat.id}
                           onClick={() => {
@@ -378,7 +296,7 @@ export default function Support() {
                       <div className="px-3 sm:px-4 py-2 bg-gray-50 border-b border-gray-100">
                         <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Закрытые ({closedChats.length})</p>
                       </div>
-                      {closedChats.map((chat) => (
+                      {closedChats.map((chat: SupportChat) => (
                         <div
                           key={chat.id}
                           onClick={() => {
@@ -447,10 +365,10 @@ export default function Support() {
                     </button>
                     <div className="min-w-0 flex-1">
                       <h2 className="font-semibold text-sm sm:text-base text-gray-900 truncate">
-                        {chats.find((c) => c.id === selectedChat)?.subject || 'Чат'}
+                        {chats.find((c: SupportChat) => c.id === selectedChat)?.subject || 'Чат'}
                       </h2>
                       <p className="text-xs text-gray-500 flex items-center gap-1">
-                        {chats.find((c) => c.id === selectedChat)?.status === 'active' ? (
+                        {chats.find((c: SupportChat) => c.id === selectedChat)?.status === 'active' ? (
                           <>
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
                             Активный чат
@@ -464,7 +382,7 @@ export default function Support() {
                       </p>
                     </div>
                   </div>
-                  {chats.find((c) => c.id === selectedChat)?.status === 'active' && (
+                  {chats.find((c: SupportChat) => c.id === selectedChat)?.status === 'active' && (
                     <button
                       onClick={() => closeChatMutation.mutate(selectedChat)}
                       className="text-red-600 hover:text-red-700 text-xs sm:text-sm font-medium px-2 sm:px-3 py-1.5 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
@@ -482,7 +400,7 @@ export default function Support() {
                     </div>
                   ) : (
                     <>
-                      {messages.map((msg, index) => {
+                      {messages.map((msg: SupportMessage, index: number) => {
                         const isOwn = msg.sender_id === currentUserProfile?.id
                         const showDate = index === 0 || 
                           new Date(messages[index - 1].created_at).toDateString() !== new Date(msg.created_at).toDateString()
@@ -540,7 +458,7 @@ export default function Support() {
                 </div>
 
                 {/* Форма отправки */}
-                {chats.find((c) => c.id === selectedChat)?.status === 'active' ? (
+                {chats.find((c: SupportChat) => c.id === selectedChat)?.status === 'active' ? (
                   <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-white border-t border-gray-200 flex-shrink-0">
                     <div className="flex gap-2">
                       <input
