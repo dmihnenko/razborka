@@ -233,7 +233,16 @@ export default function Layout() {
                   const isActive = activeRoleName === roleName
                   return (
                     <button key={roleName} type="button"
-                      onClick={() => { localStorage.setItem('activeRole', roleName); queryClient.invalidateQueries(); window.location.reload() }}
+                      onClick={() => { localStorage.setItem('activeRole', roleName)
+                        localStorage.removeItem('tsp_profile_cache')
+                        queryClient.clear()
+                        // Переходим на дашборд активной роли
+                        const roleHome: Record<string,string> = {
+                          sto_owner: '/', sto_worker: '/',
+                          parts_owner: '/parts/dashboard', parts_worker: '/parts/dashboard',
+                          user: '/my-vehicles', admin: '/admin'
+                        }
+                        window.location.href = roleHome[roleName] || '/' }}
                       className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                         isActive ? 'bg-primary/10 text-primary' : 'text-gray-500 hover:bg-gray-100'
                       }`}>
@@ -294,7 +303,16 @@ export default function Layout() {
                   const isActive = activeRoleName === roleName
                   return (
                     <button key={roleName} type="button"
-                      onClick={() => { localStorage.setItem('activeRole', roleName); queryClient.invalidateQueries(); window.location.reload() }}
+                      onClick={() => { localStorage.setItem('activeRole', roleName)
+                        localStorage.removeItem('tsp_profile_cache')
+                        queryClient.clear()
+                        // Переходим на дашборд активной роли
+                        const roleHome: Record<string,string> = {
+                          sto_owner: '/', sto_worker: '/',
+                          parts_owner: '/parts/dashboard', parts_worker: '/parts/dashboard',
+                          user: '/my-vehicles', admin: '/admin'
+                        }
+                        window.location.href = roleHome[roleName] || '/' }}
                       className={`flex-shrink-0 text-xs font-semibold px-3 h-8 rounded-lg transition-all whitespace-nowrap ${
                         isActive
                           ? 'bg-primary text-white shadow-sm'
