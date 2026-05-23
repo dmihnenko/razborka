@@ -7,7 +7,28 @@ const VERSION_STORAGE_KEY = 'tsp_app_version'
 let isChecking = false
 let isReloading = false
 
-async function checkVersion(force = false): Promise<void> {
+async function clearSWCacheAndReload(): Promise<void> {
+  try {
+    // Отписываем все Service Workers
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations()
+      await Promise.all(registrations.map(r => r.unregister()))
+    }
+    // Очищаем все Cache Storage
+    if ('caches' in window) {
+      const keys = await caches.keys()
+      await Promise.all(keys.map(k => caches.delete(k)))
+    }
+  } catch {
+    // Игнорируем ошибки очистки
+  }
+  // Очищаем кэш профиля
+  localStorage.removeItem('tsp_profile_cache')
+  // Hard reload — принудительно загружает с сервера
+  window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now()
+}
+
+async function checkVersion(): Promise<void> {
   if (isChecking || isReloading) return
   isChecking = true
 
@@ -25,29 +46,20 @@ async function checkVersion(force = false): Promise<void> {
     const storedVersion = localStorage.getItem(VERSION_STORAGE_KEY)
 
     if (!storedVersion) {
-      // Первый запуск — запоминаем версию
       localStorage.setItem(VERSION_STORAGE_KEY, newVersion)
       return
     }
 
-    if (newVersion !== storedVersion || force) {
-      if (newVersion === storedVersion && force) return // force check но версия та же
-
+    if (newVersion !== storedVersion) {
       isReloading = true
       localStorage.setItem(VERSION_STORAGE_KEY, newVersion)
 
-      // Краткое уведомление и автообновление через 0.5с
-      toast.success('Обновление...', {
+      toast.success('Обновление... 🔄', {
         duration: 500,
-        icon: '🔄',
         position: 'top-center',
       })
 
-      setTimeout(() => {
-        // Очищаем кэш профиля чтобы загрузить свежие данные
-        localStorage.removeItem('tsp_profile_cache')
-        window.location.reload()
-      }, 500)
+      setTimeout(() => clearSWCacheAndReload(), 500)
     }
   } catch {
     // Игнорируем сетевые ошибки
@@ -60,13 +72,10 @@ export default function VersionChecker() {
   useEffect(() => {
     if (!import.meta.env.PROD) return
 
-    // Проверяем сразу при запуске
     checkVersion()
 
-    // Проверяем раз в 4 часа
     const interval = setInterval(() => checkVersion(), CHECK_INTERVAL)
 
-    // Проверяем при возврате на вкладку (но не чаще чем раз в 30 мин)
     let lastFocusCheck = 0
     const onFocus = () => {
       const now = Date.now()
