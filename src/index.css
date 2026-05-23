@@ -526,3 +526,48 @@ svg.lucide {
   display: flex;
   flex-direction: column;
 }
+
+/* ── Глобальная оптимизация модальных окон для мобильных ── */
+/* Bottom-sheet паттерн: снизу на мобиле, по центру на десктопе */
+.modal-overlay {
+  @apply fixed inset-0 bg-black/50 backdrop-blur-[2px] flex items-end sm:items-center justify-center z-50 p-0 sm:p-4;
+}
+
+.modal-sheet {
+  @apply bg-white rounded-t-3xl sm:rounded-2xl w-full max-h-[92dvh] sm:max-w-lg overflow-hidden flex flex-col;
+  box-shadow: 0 -4px 32px rgba(0,0,0,0.12);
+}
+
+/* Handle — полоска сверху на мобиле */
+.modal-handle {
+  @apply w-10 h-1 bg-gray-300 rounded-full mx-auto mt-3 mb-1 sm:hidden flex-shrink-0;
+}
+
+.modal-header {
+  @apply sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between flex-shrink-0;
+}
+
+.modal-body {
+  @apply flex-1 overflow-y-auto overscroll-contain px-5 py-4;
+}
+
+.modal-footer {
+  @apply flex-shrink-0 bg-white border-t border-gray-100 px-5 py-4;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Поля форм в модалках — одинаковый стиль */
+.modal-input {
+  @apply w-full px-3.5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 
+         placeholder-gray-400 focus:outline-none focus:bg-white focus:border-primary focus:ring-2 
+         focus:ring-primary/10 transition-all;
+}
+
+/* Кнопки в модалках */
+.modal-btn-cancel {
+  @apply flex-1 py-3 text-sm font-semibold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors;
+}
+
+.modal-btn-primary {
+  @apply flex-1 py-3 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors;
+}

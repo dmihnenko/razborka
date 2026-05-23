@@ -221,7 +221,7 @@ function RoleModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+    <div className="modal-overlay">
       <div className="bg-white rounded-t-2xl sm:rounded-lg p-4 sm:p-6 w-full max-w-md max-h-[90dvh] overflow-y-auto">
         <h2 className="text-2xl font-bold mb-4">
           {role ? 'Редактировать роль' : 'Новая роль'}
