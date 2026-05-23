@@ -1,36 +1,76 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
 
+const PROFILE_CACHE_KEY = 'tsp_profile_cache'
+const PROFILE_CACHE_TTL = 4 * 60 * 60 * 1000 // 4 часа
+
+interface CachedProfile {
+  data: any
+  userId: string
+  cachedAt: number
+}
+
+function loadProfileFromCache(userId: string): any | null {
+  try {
+    const raw = localStorage.getItem(PROFILE_CACHE_KEY)
+    if (!raw) return null
+    const cached: CachedProfile = JSON.parse(raw)
+    if (cached.userId !== userId) return null
+    if (Date.now() - cached.cachedAt > PROFILE_CACHE_TTL) return null
+    return cached.data
+  } catch {
+    return null
+  }
+}
+
+function saveProfileToCache(userId: string, data: any) {
+  try {
+    const cached: CachedProfile = { data, userId, cachedAt: Date.now() }
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(cached))
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function clearProfileCache() {
+  try {
+    localStorage.removeItem(PROFILE_CACHE_KEY)
+  } catch {}
+}
+
 export function useUserProfile() {
   const { user, loading: authLoading } = useAuth()
+
   return useQuery({
     queryKey: ['userProfile', user?.id],
     refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 4 * 60 * 60 * 1000, // 4 часа — совпадает с TTL кэша
+    gcTime: 6 * 60 * 60 * 1000,
     retry: 1,
-    enabled: !authLoading && !!user, // запускаем только когда auth точно загружен
+    enabled: !authLoading && !!user,
+    // Используем localStorage как initialData чтобы убрать мигание скелетона
+    initialData: () => user ? loadProfileFromCache(user.id) : undefined,
+    initialDataUpdatedAt: () => {
+      if (!user) return 0
+      try {
+        const raw = localStorage.getItem(PROFILE_CACHE_KEY)
+        if (!raw) return 0
+        const cached: CachedProfile = JSON.parse(raw)
+        return cached.userId === user.id ? cached.cachedAt : 0
+      } catch { return 0 }
+    },
     queryFn: async () => {
       if (!user) return null
 
-      // Получаем профиль - НЕ используем .single() чтобы избежать ошибки если профиля нет
       const { data: profiles, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', user.id)
 
-      if (profileError) {
-        console.error('Profile error:', profileError)
-        throw profileError
-      }
+      if (profileError) throw profileError
+      if (!profiles || profiles.length === 0) return null
 
-      // Если профиль не найден — возвращаем null (профиль создаётся триггером при регистрации)
-      if (!profiles || profiles.length === 0) {
-        return null
-      }
-
-      // Загружаем роли одним запросом
       const { data: userRolesData } = await supabase
         .from('user_roles')
         .select('is_primary, roles(id, name, display_name, description, is_active)')
@@ -38,14 +78,25 @@ export function useUserProfile() {
 
       const roles = (userRolesData || [])
         .filter((ur: any) => ur.roles != null)
-        .map((ur: any) => ({
-          ...ur.roles,
-          is_primary: ur.is_primary
-        }))
+        .map((ur: any) => ({ ...ur.roles, is_primary: ur.is_primary }))
 
-      return { ...profiles[0], roles }
+      const result = { ...profiles[0], roles }
+
+      // Сохраняем в localStorage для следующего запуска
+      saveProfileToCache(user.id, result)
+
+      return result
     },
   })
+}
+
+// Хук для очистки кэша (вызывать при logout)
+export function useClearProfileCache() {
+  const queryClient = useQueryClient()
+  return () => {
+    clearProfileCache()
+    queryClient.removeQueries({ queryKey: ['userProfile'] })
+  }
 }
 
 export function useIsAdmin() {

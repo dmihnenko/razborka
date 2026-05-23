@@ -133,6 +133,8 @@ export default function Layout() {
   const handleLogout = async () => {
     // Очищаем весь кэш React Query перед выходом
     queryClient.clear()
+    localStorage.removeItem("tsp_profile_cache")
+    localStorage.removeItem("activeRole")
     
     const { error } = await supabase.auth.signOut()
     if (error) {
