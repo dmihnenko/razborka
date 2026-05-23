@@ -284,13 +284,13 @@ export default function Layout() {
 
         {/* ── MOBILE HEADER (hidden on md+) ── */}
         <div className="md:hidden bg-white border-b border-gray-200">
-          {/* Top bar: кнопки роли + выйти — без имени */}
+          {/* Top bar: кнопки роли + выйти */}
           <div className="px-3 border-b border-gray-100 bg-white flex items-center gap-2 h-[52px]">
 
-            {/* Кнопки переключения ролей — занимают всё свободное место */}
+            {/* Кнопки переключения ролей */}
             <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto scrollbar-none">
               {switchableRoles
-                .filter((r: string) => r !== 'admin') // Убираем "Админ" — он есть отдельной кнопкой справа
+                .filter((r: string) => !['admin', 'user'].includes(r))
                 .map((roleName: string) => {
                   const labels: Record<string,string> = {
                     sto_owner: 'СТО', sto_worker: 'Работник СТО',
