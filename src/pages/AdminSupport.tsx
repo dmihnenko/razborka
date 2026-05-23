@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { 
   Send, 
@@ -16,33 +15,16 @@ import {
 } from 'lucide-react'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
-
-interface Chat {
-  id: string
-  owner_id: string
-  status: 'active' | 'closed'
-  subject: string | null
-  created_at: string
-  updated_at: string
-  owner?: {
-    full_name: string | null
-    username: string | null
-    email?: string | null
-  }
-}
-
-interface Message {
-  id: string
-  chat_id: string
-  sender_id: string
-  message: string
-  created_at: string
-  is_read: boolean
-  sender?: {
-    full_name: string | null
-    username: string | null
-  }
-}
+import {
+  getAdminSupportChats,
+  getAdminSupportMessages,
+  getSupportChatWithOwner,
+  sendSupportMessage,
+  deleteSupportChat,
+  updateSupportChatStatus,
+} from '@/services/supportService'
+import type { AdminSupportChat, AdminSupportMessage } from '@/services/supportService'
+import { supabase } from '@/lib/supabase'
 
 export default function AdminSupport() {
   const [selectedChat, setSelectedChat] = useState<string | null>(null)
@@ -74,44 +56,13 @@ export default function AdminSupport() {
   // Загрузка всех чатов
   const { data: chats = [], isLoading: chatsLoading } = useQuery({
     queryKey: ['admin_support_chats', filterStatus],
-    queryFn: async () => {
-      let query = supabase
-        .from('support_chats')
-        .select(`
-          *,
-          owner:user_profiles!owner_id(full_name, username, email)
-        `)
-        .order('updated_at', { ascending: false })
-
-      if (filterStatus !== 'all') {
-        query = query.eq('status', filterStatus)
-      }
-
-      const { data, error } = await query
-
-      if (error) throw error
-      return data as Chat[]
-    }
+    queryFn: () => getAdminSupportChats(filterStatus === 'all' ? undefined : filterStatus)
   })
 
   // Загрузка сообщений выбранного чата
   const { data: messages = [] } = useQuery({
     queryKey: ['admin_support_messages', selectedChat],
-    queryFn: async () => {
-      if (!selectedChat) return []
-
-      const { data, error } = await supabase
-        .from('support_messages')
-        .select(`
-          *,
-          sender:user_profiles!sender_id(full_name, username)
-        `)
-        .eq('chat_id', selectedChat)
-        .order('created_at', { ascending: true })
-
-      if (error) throw error
-      return data as Message[]
-    },
+    queryFn: () => getAdminSupportMessages(selectedChat!),
     enabled: !!selectedChat,
   })
 
@@ -133,24 +84,19 @@ export default function AdminSupport() {
       .channel('admin_all_messages')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, 
         async (payload) => {
-          const newMessage = payload.new as Message
+          const incomingMessage = payload.new as AdminSupportMessage
 
-          if (newMessage.sender_id !== currentUser?.id) {
+          if (incomingMessage.sender_id !== currentUser?.id) {
             queryClient.invalidateQueries({ queryKey: ['admin_support_chats'] })
             
-            if (selectedChat === newMessage.chat_id) {
+            if (selectedChat === incomingMessage.chat_id) {
               queryClient.invalidateQueries({ queryKey: ['admin_support_messages', selectedChat] })
             }
 
-            const { data: chatData } = await supabase
-              .from('support_chats')
-              .select('*, owner:user_profiles!owner_id(full_name, username)')
-              .eq('id', newMessage.chat_id)
-              .single()
-
+            const chatData = await getSupportChatWithOwner(incomingMessage.chat_id)
             if (!chatData) return
 
-            const senderName = (chatData.owner as any)?.full_name || (chatData.owner as any)?.username || 'Пользователь'
+            const senderName = chatData.owner?.full_name || chatData.owner?.username || 'Пользователь'
             const subject = chatData.subject || 'Обращение'
 
             toast.info(`Новое сообщение в "${subject}"`, {
@@ -158,7 +104,7 @@ export default function AdminSupport() {
               action: {
                 label: 'Открыть',
                 onClick: () => {
-                  setSelectedChat(newMessage.chat_id)
+                  setSelectedChat(incomingMessage.chat_id)
                   if (window.innerWidth < 1024) setIsChatListOpen(false)
                 }
               }
@@ -166,13 +112,13 @@ export default function AdminSupport() {
 
             if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
               const notification = new Notification(`Новое сообщение: ${subject}`, {
-                body: `От: ${senderName}\n${newMessage.message.substring(0, 100)}`,
+                body: `От: ${senderName}\n${incomingMessage.message.substring(0, 100)}`,
                 icon: '/favicon.ico',
-                tag: newMessage.chat_id
+                tag: incomingMessage.chat_id
               })
               notification.onclick = () => {
                 window.focus()
-                setSelectedChat(newMessage.chat_id)
+                setSelectedChat(incomingMessage.chat_id)
                 notification.close()
               }
             }
@@ -194,14 +140,9 @@ export default function AdminSupport() {
   }, [])
 
   const sendMessageMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: () => {
       if (!selectedChat || !currentUser?.id) throw new Error('Invalid state')
-      const { error } = await supabase.from('support_messages').insert({
-        chat_id: selectedChat,
-        sender_id: currentUser.id,
-        message: newMessage
-      })
-      if (error) throw error
+      return sendSupportMessage(selectedChat, currentUser.id, newMessage)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin_support_messages', selectedChat] })
@@ -212,10 +153,7 @@ export default function AdminSupport() {
   })
 
   const deleteChatMutation = useMutation({
-    mutationFn: async (chatId: string) => {
-      const { error } = await supabase.from('support_chats').delete().eq('id', chatId)
-      if (error) throw error
-    },
+    mutationFn: (chatId: string) => deleteSupportChat(chatId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin_support_chats'] })
       toast.success('Чат удален')
@@ -226,10 +164,8 @@ export default function AdminSupport() {
   })
 
   const updateChatStatusMutation = useMutation({
-    mutationFn: async ({ chatId, status }: { chatId: string; status: 'active' | 'closed' }) => {
-      const { error } = await supabase.from('support_chats').update({ status }).eq('id', chatId)
-      if (error) throw error
-    },
+    mutationFn: ({ chatId, status }: { chatId: string; status: 'active' | 'closed' }) =>
+      updateSupportChatStatus(chatId, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin_support_chats'] })
       toast.success('Статус обновлен')
@@ -265,7 +201,7 @@ export default function AdminSupport() {
     }
   }
 
-  const filteredChats = chats.filter(chat => {
+  const filteredChats = chats.filter((chat: AdminSupportChat) => {
     if (!searchQuery) return true
     const query = searchQuery.toLowerCase()
     return (
@@ -276,13 +212,13 @@ export default function AdminSupport() {
     )
   })
 
-  const activeChats = filteredChats.filter(c => c.status === 'active')
-  const closedChats = filteredChats.filter(c => c.status === 'closed')
+  const activeChats = filteredChats.filter((c: AdminSupportChat) => c.status === 'active')
+  const closedChats = filteredChats.filter((c: AdminSupportChat) => c.status === 'closed')
 
   const stats = {
     total: chats.length,
-    active: chats.filter(c => c.status === 'active').length,
-    closed: chats.filter(c => c.status === 'closed').length
+    active: chats.filter((c: AdminSupportChat) => c.status === 'active').length,
+    closed: chats.filter((c: AdminSupportChat) => c.status === 'closed').length
   }
 
   if (chatsLoading) {
@@ -378,7 +314,7 @@ export default function AdminSupport() {
                           </p>
                         </div>
                       )}
-                      {activeChats.map((chat) => (
+                      {activeChats.map((chat: AdminSupportChat) => (
                         <div key={chat.id} onClick={() => { setSelectedChat(chat.id); if (window.innerWidth < 1024) setIsChatListOpen(false) }}
                           className={`p-3 sm:p-4 cursor-pointer border-b border-gray-100 hover:bg-gray-50 transition-colors relative ${selectedChat === chat.id ? 'bg-primary/5 border-l-4 border-l-primary' : ''}`}>
                           <div className="flex items-start justify-between mb-2">
@@ -407,7 +343,7 @@ export default function AdminSupport() {
                           </p>
                         </div>
                       )}
-                      {closedChats.map((chat) => (
+                      {closedChats.map((chat: AdminSupportChat) => (
                         <div key={chat.id} onClick={() => { setSelectedChat(chat.id); if (window.innerWidth < 1024) setIsChatListOpen(false) }}
                           className={`p-3 sm:p-4 cursor-pointer border-b border-gray-100 hover:bg-gray-50 transition-colors opacity-60 ${selectedChat === chat.id ? 'bg-primary/5 border-l-4 border-l-primary opacity-100' : ''}`}>
                           <div className="flex items-start justify-between mb-2">
@@ -436,13 +372,13 @@ export default function AdminSupport() {
                       <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div className="min-w-0 flex-1">
-                      <h2 className="font-semibold text-sm sm:text-base text-gray-900 truncate">{chats.find((c) => c.id === selectedChat)?.subject || 'Чат'}</h2>
-                      <p className="text-xs text-gray-500 truncate">{chats.find((c) => c.id === selectedChat)?.owner?.full_name || chats.find((c) => c.id === selectedChat)?.owner?.username || 'Пользователь'}</p>
+                      <h2 className="font-semibold text-sm sm:text-base text-gray-900 truncate">{chats.find((c: AdminSupportChat) => c.id === selectedChat)?.subject || 'Чат'}</h2>
+                      <p className="text-xs text-gray-500 truncate">{chats.find((c: AdminSupportChat) => c.id === selectedChat)?.owner?.full_name || chats.find((c: AdminSupportChat) => c.id === selectedChat)?.owner?.username || 'Пользователь'}</p>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    {chats.find((c) => c.id === selectedChat)?.status === 'active' ? (
+                    {chats.find((c: AdminSupportChat) => c.id === selectedChat)?.status === 'active' ? (
                       <button onClick={() => updateChatStatusMutation.mutate({ chatId: selectedChat, status: 'closed' })}
                         className="text-xs sm:text-sm font-medium px-2 sm:px-3 py-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
                         <Archive className="w-4 h-4 sm:hidden" />
@@ -482,7 +418,7 @@ export default function AdminSupport() {
                     </div>
                   ) : (
                     <>
-                      {messages.map((msg, index) => {
+                      {messages.map((msg: AdminSupportMessage, index: number) => {
                         const isAdmin = msg.sender_id === currentUser?.id
                         const showDate = index === 0 || new Date(messages[index - 1].created_at).toDateString() !== new Date(msg.created_at).toDateString()
                         
@@ -515,7 +451,7 @@ export default function AdminSupport() {
                   )}
                 </div>
 
-                {chats.find((c) => c.id === selectedChat)?.status === 'active' ? (
+                {chats.find((c: AdminSupportChat) => c.id === selectedChat)?.status === 'active' ? (
                   <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-white border-t border-gray-200 flex-shrink-0">
                     <div className="flex gap-2">
                       <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Введите сообщение..."

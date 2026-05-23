@@ -15,9 +15,11 @@ import {
   deletePartsCategory,
   getPartsCategoryTemplates,
   copyTemplateCategories,
+  getPartsCategoriesUsage,
+  getPartsCategoryById,
 } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
-import { supabase } from '@/lib/supabase'
+
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import type { PartsCategory, CreatePartsCategoryInput } from '@/types/parts'
@@ -55,17 +57,7 @@ export default function PartsCategories() {
 
   const { data: usageMap = {} } = useQuery<Record<string, number>>({
     queryKey: ['parts-categories-usage', partsCompanyId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('parts_inventory')
-        .select('category_id')
-        .eq('parts_company_id', partsCompanyId!)
-      const map: Record<string, number> = {}
-      ;(data || []).forEach(row => {
-        if (row.category_id) map[row.category_id] = (map[row.category_id] || 0) + 1
-      })
-      return map
-    },
+    queryFn: () => getPartsCategoriesUsage(partsCompanyId!),
     enabled: !!partsCompanyId,
   })
 
@@ -118,7 +110,7 @@ export default function PartsCategories() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { data: category } = await supabase.from('parts_categories').select('*').eq('id', id).single()
+      const category = await getPartsCategoryById(id).catch(() => null)
       if (category) {
         await moveToTrash({
           entityType: 'parts_category',

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
 import { useUserProfile, useHasRole, useIsAdmin } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { formatDate } from '@/utils/date'
@@ -12,7 +11,7 @@ import { Plus, Trash2, Edit2, Search, CheckCircle } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { formatCurrency, formatPrice } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
-import { updatePartsOrderTotal } from '@/services/partsService'
+import { updatePartsOrderTotal, getAvailablePartsInventory, getPartsCustomersDropdown, updatePartsOrder, updatePartsOrderStatus, deletePartsOrder, deletePartsOrderItem, createPartsOrderItem } from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -36,45 +35,16 @@ export default function PartsOrderDetails() {
   const { data: order, isLoading } = useQuery({
     queryKey: ['parts-order', id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('parts_orders')
-        .select(`
-          *,
-          customer:parts_customers(*),
-          items:parts_order_items(
-            *,
-            inventory_item:parts_inventory(
-              id, name, part_number, category_id, quantity, price_currency,
-              category:parts_categories(name)
-            )
-          )
-        `)
-        .eq('id', id)
-        .single()
-
-      if (error) throw error
-      return data as PartsOrder
+      const { getPartsOrder } = await import('@/services/partsService')
+      return getPartsOrder(id!)
     },
     enabled: !!id,
   })
 
   // Удалить позицию из заказа
   const deleteItemMutation = useMutation({
-    mutationFn: async ({ itemId, inventoryItemId }: { itemId: string; inventoryItemId: string }) => {
-      const { error } = await supabase
-        .from('parts_order_items')
-        .delete()
-        .eq('id', itemId)
-
-      if (error) throw error
-
-      // Restore inventory item to available
-      await supabase
-        .from('parts_inventory')
-        .update({ status: 'available' })
-        .eq('id', inventoryItemId)
-        .eq('status', 'reserved')
-    },
+    mutationFn: ({ itemId, inventoryItemId }: { itemId: string; inventoryItemId: string }) =>
+      deletePartsOrderItem(itemId, inventoryItemId),
     onSuccess: async () => {
       if (id) await updatePartsOrderTotal(id, exchangeRate)
       queryClient.invalidateQueries({ queryKey: ['parts-order', id] })
@@ -87,32 +57,8 @@ export default function PartsOrderDetails() {
   // Изменить статус заказа
   const updateStatusMutation = useMutation({
     mutationFn: async (status: string) => {
-      const updateData: any = { status }
-      // Фиксируем курс на момент завершения — он никогда не изменится
-      if (status === 'completed' && exchangeRate) {
-        updateData.exchange_rate_at_sale = exchangeRate
-      }
-      const { error } = await supabase
-        .from('parts_orders')
-        .update(updateData)
-        .eq('id', id)
-      if (error) throw error
-
-      // Sync inventory item statuses based on order status
-      const inventoryIds = (order?.items ?? []).map((i: any) => i.inventory_item_id)
-      if (inventoryIds.length > 0) {
-        if (status === 'completed') {
-          // Trigger complete_parts_order() already handles: status='sold' + quantity decrement
-          // Nothing extra needed here
-        } else if (status === 'cancelled' || status === 'new' || status === 'in_progress') {
-          // Restore parts to available (reserved or sold via this order)
-          await supabase
-            .from('parts_inventory')
-            .update({ status: 'available' })
-            .in('id', inventoryIds)
-            .in('status', ['reserved', 'sold'])
-        }
-      }
+      const inventoryIds = (order?.items ?? []).map((i: any) => i.inventory_item_id).filter(Boolean)
+      await updatePartsOrderStatus(id!, status, inventoryIds, exchangeRate)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-order', id] })
@@ -130,16 +76,7 @@ export default function PartsOrderDetails() {
   const deleteOrderMutation = useMutation({
     mutationFn: async () => {
       if (!id) return
-      // Restore all reserved/sold inventory items back to available
       const inventoryIds = (order?.items ?? []).map((i: any) => i.inventory_item_id).filter(Boolean)
-      if (inventoryIds.length > 0) {
-        await supabase
-          .from('parts_inventory')
-          .update({ status: 'available' })
-          .in('id', inventoryIds)
-          .in('status', ['reserved', 'sold'])
-      }
-      // Move to trash before deleting
       await moveToTrash({
         entityType: 'parts_order',
         entityId: id,
@@ -147,10 +84,7 @@ export default function PartsOrderDetails() {
         entityData: { order, items: order?.items ?? [] },
         partsCompanyId: partsCompanyId,
       })
-      // Delete all order items first, then the order
-      await supabase.from('parts_order_items').delete().eq('order_id', id)
-      const { error } = await supabase.from('parts_orders').delete().eq('id', id)
-      if (error) throw error
+      await deletePartsOrder(id, inventoryIds)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
@@ -474,21 +408,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
   // Получить доступный инвентарь
   const { data: inventory = [] } = useQuery({
     queryKey: ['parts-inventory-for-order', partsCompanyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('parts_inventory')
-        .select(`
-          id, name, part_number, quantity, selling_price, price_currency,
-          category:parts_categories(name)
-        `)
-        .eq('parts_company_id', partsCompanyId)
-        .eq('status', 'available')
-        .gt('quantity', 0)
-        .order('name')
-
-      if (error) throw error
-      return data
-    },
+    queryFn: () => getAvailablePartsInventory(partsCompanyId),
   })
 
   const filteredInventory = inventory.filter(item => {
@@ -501,19 +421,13 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
   })
 
   const addItemMutation = useMutation({
-    mutationFn: async (input: CreatePartsOrderItemInput) => {
-      const { error } = await supabase
-        .from('parts_order_items')
-        .insert({
-          order_id: orderId,
-          inventory_item_id: input.inventory_item_id,
-          quantity: input.quantity,
-          price_at_sale: input.price_at_sale,
-          price_at_sale_currency: input.price_at_sale_currency || 'USD',
-        })
-
-      if (error) throw error
-    },
+    mutationFn: (input: CreatePartsOrderItemInput) =>
+      createPartsOrderItem(orderId, {
+        inventory_item_id: input.inventory_item_id,
+        quantity: input.quantity,
+        price_at_sale: input.price_at_sale,
+        price_at_sale_currency: input.price_at_sale_currency || 'USD',
+      }),
     onSuccess: async () => {
       await updatePartsOrderTotal(orderId, exchangeRate)
       queryClient.invalidateQueries({ queryKey: ['parts-order', orderId] })
@@ -703,30 +617,12 @@ function EditOrderModal({ order, partsCompanyId, onClose }: EditOrderModalProps)
 
   const { data: customers = [] } = useQuery({
     queryKey: ['parts-customers-dropdown', partsCompanyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('parts_customers')
-        .select('id, full_name, phone')
-        .eq('parts_company_id', partsCompanyId)
-        .order('full_name')
-
-      if (error) throw error
-      return data
-    },
+    queryFn: () => getPartsCustomersDropdown(partsCompanyId),
   })
 
   const updateMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('parts_orders')
-        .update({
-          customer_id: customerId || null,
-          notes: notes || null,
-        })
-        .eq('id', order.id)
-
-      if (error) throw error
-    },
+    mutationFn: () =>
+      updatePartsOrder(order.id, { customer_id: customerId || null, notes: notes || null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-order', order.id] })
       onClose()

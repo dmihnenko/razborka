@@ -6,9 +6,9 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
-import { getPartsCustomers, createPartsCustomer, updatePartsCustomer, deletePartsCustomer } from '@/services/partsService'
+import { getPartsCustomers, createPartsCustomer, updatePartsCustomer, deletePartsCustomer, getPartsCustomer } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
-import { supabase } from '@/lib/supabase'
+
 import { formatCurrency } from '@/utils/currency'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import PartsCustomerModal from '@/components/parts/PartsCustomerModal'
@@ -57,7 +57,7 @@ export default function PartsCustomers() {
 
   const deleteMutation = useMutation({
     mutationFn: async (customerId: string) => {
-      const { data: customer } = await supabase.from('parts_customers').select('*').eq('id', customerId).single()
+      const customer = await getPartsCustomer(customerId).catch(() => null)
       if (customer) {
         await moveToTrash({
           entityType: 'parts_customer',
