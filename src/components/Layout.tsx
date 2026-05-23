@@ -284,56 +284,48 @@ export default function Layout() {
 
         {/* ── MOBILE HEADER (hidden on md+) ── */}
         <div className="md:hidden bg-white border-b border-gray-200">
-          {/* Top bar: имя + кнопки роли + выйти — всё в одну строку */}
+          {/* Top bar: кнопки роли + выйти — без имени */}
           <div className="px-3 border-b border-gray-100 bg-white flex items-center gap-2 h-[52px]">
-            {/* Имя пользователя */}
-            <span className="text-sm font-semibold text-gray-800 truncate flex-shrink-0 max-w-[100px]">
-              {profile?.full_name?.split(' ')[0] || profile?.email?.split('@')[0] || 'Профиль'}
-            </span>
 
-            {/* Кнопки переключения ролей */}
-            {hasMultipleRoles && (
-              <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto scrollbar-none">
-                {switchableRoles.map((roleName: string) => {
+            {/* Кнопки переключения ролей — занимают всё свободное место */}
+            <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto scrollbar-none">
+              {switchableRoles
+                .filter(r => r !== 'admin') // Убираем "Админ" — он есть отдельной кнопкой справа
+                .map((roleName: string) => {
                   const labels: Record<string,string> = {
                     sto_owner: 'СТО', sto_worker: 'Работник СТО',
                     parts_owner: 'Разборка', parts_worker: 'Работник разборки',
-                    admin: 'Админ'
                   }
+                  if (!labels[roleName]) return null
                   const isActive = activeRoleName === roleName
                   return (
                     <button key={roleName} type="button"
-                      onClick={() => { localStorage.setItem('activeRole', roleName)
+                      onClick={() => {
+                        localStorage.setItem('activeRole', roleName)
                         localStorage.removeItem('tsp_profile_cache')
                         queryClient.clear()
-                        // Переходим на дашборд активной роли
                         const roleHome: Record<string,string> = {
                           sto_owner: '/', sto_worker: '/',
                           parts_owner: '/parts/dashboard', parts_worker: '/parts/dashboard',
-                          user: '/my-vehicles', admin: '/admin'
                         }
-                        window.location.href = roleHome[roleName] || '/' }}
-                      className={`text-xs font-semibold h-8 rounded-lg transition-all whitespace-nowrap min-w-[72px] ${
+                        window.location.href = roleHome[roleName] || '/'
+                      }}
+                      className={`flex-shrink-0 text-xs font-semibold h-9 px-4 rounded-xl transition-all ${
                         isActive
                           ? 'bg-primary text-white shadow-sm'
                           : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                       }`}>
-                      {labels[roleName] || roleName}
+                      {labels[roleName]}
                     </button>
                   )
                 })}
-              </div>
-            )}
+            </div>
 
-            {/* Спейсер если нет кнопок ролей */}
-            {!hasMultipleRoles && <div className="flex-1" />}
-
-            {/* Кнопка Админ */}
+            {/* Кнопка Админ — только если есть роль admin */}
             {isAdmin && (
-              <Link
-                to="/admin"
-                onClick={() => localStorage.removeItem('activeRole')}
-                className="flex-shrink-0 flex items-center gap-1.5 px-3 h-8 text-xs font-semibold text-purple-700 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+              <Link to="/admin"
+                onClick={() => { localStorage.removeItem('activeRole'); localStorage.removeItem('tsp_profile_cache'); queryClient.clear() }}
+                className="flex-shrink-0 flex items-center gap-1.5 h-9 px-3 text-xs font-semibold text-purple-700 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors"
               >
                 <Shield className="w-3.5 h-3.5" strokeWidth={1.5} />
                 <span>Админ</span>
@@ -341,9 +333,8 @@ export default function Layout() {
             )}
 
             {/* Кнопка Выйти */}
-            <button
-              onClick={handleLogout}
-              className="flex-shrink-0 flex items-center gap-1.5 px-3 h-8 text-xs font-semibold text-gray-600 bg-gray-100 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+            <button onClick={handleLogout}
+              className="flex-shrink-0 flex items-center gap-1.5 h-9 px-3 text-xs font-semibold text-gray-500 bg-gray-100 rounded-xl hover:bg-red-50 hover:text-red-600 transition-colors"
             >
               <LogOut className="w-3.5 h-3.5" strokeWidth={1.5} />
               <span>Выйти</span>
