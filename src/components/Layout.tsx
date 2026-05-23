@@ -275,55 +275,61 @@ export default function Layout() {
 
         {/* ── MOBILE HEADER (hidden on md+) ── */}
         <div className="md:hidden bg-white border-b border-gray-200">
-          {/* Top bar: user name + logout */}
-          <div className="px-4 py-3 border-b border-gray-100 bg-white flex items-center justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-700 truncate">
-                {profile?.full_name || profile?.email || 'Пользователь'}
-              </p>
-              {hasMultipleRoles && (
-                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                  {switchableRoles.map((roleName: string) => {
-                    const labels: Record<string,string> = {
-                      sto_owner: 'СТО', sto_worker: 'Работник СТО',
-                      parts_owner: 'Разборка', parts_worker: 'Работник разборки',
-                      admin: 'Админ'
-                    }
-                    const isActive = activeRoleName === roleName
-                    return (
-                      <button key={roleName} type="button"
-                        onClick={() => { localStorage.setItem('activeRole', roleName); queryClient.invalidateQueries(); window.location.reload() }}
-                        className={`text-[11px] font-semibold px-3 py-1 rounded-lg transition-all min-h-[28px] ${
-                          isActive
-                            ? 'bg-primary text-white shadow-sm'
-                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
-                        }`}>
-                        {labels[roleName] || roleName}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  onClick={() => localStorage.removeItem('activeRole')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-md border border-purple-200 min-h-[44px] hover:bg-purple-100 transition-colors"
-                >
-                  <Shield className="w-4 h-4" />
-                  <span>Админ</span>
-                </Link>
-              )}
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md border border-red-200 min-h-[44px] hover:bg-red-100 transition-colors"
+          {/* Top bar: имя + кнопки роли + выйти — всё в одну строку */}
+          <div className="px-3 border-b border-gray-100 bg-white flex items-center gap-2 h-[52px]">
+            {/* Имя пользователя */}
+            <span className="text-sm font-semibold text-gray-800 truncate flex-shrink-0 max-w-[100px]">
+              {profile?.full_name?.split(' ')[0] || profile?.email?.split('@')[0] || 'Профиль'}
+            </span>
+
+            {/* Кнопки переключения ролей */}
+            {hasMultipleRoles && (
+              <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto scrollbar-none">
+                {switchableRoles.map((roleName: string) => {
+                  const labels: Record<string,string> = {
+                    sto_owner: 'СТО', sto_worker: 'Работник СТО',
+                    parts_owner: 'Разборка', parts_worker: 'Работник разборки',
+                    admin: 'Админ'
+                  }
+                  const isActive = activeRoleName === roleName
+                  return (
+                    <button key={roleName} type="button"
+                      onClick={() => { localStorage.setItem('activeRole', roleName); queryClient.invalidateQueries(); window.location.reload() }}
+                      className={`flex-shrink-0 text-xs font-semibold px-3 h-8 rounded-lg transition-all whitespace-nowrap ${
+                        isActive
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      }`}>
+                      {labels[roleName] || roleName}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Спейсер если нет кнопок ролей */}
+            {!hasMultipleRoles && <div className="flex-1" />}
+
+            {/* Кнопка Админ */}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                onClick={() => localStorage.removeItem('activeRole')}
+                className="flex-shrink-0 flex items-center gap-1.5 px-3 h-8 text-xs font-semibold text-purple-700 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
               >
-                <LogOut className="w-4 h-4" />
-                <span>Выйти</span>
-              </button>
-            </div>
+                <Shield className="w-3.5 h-3.5" strokeWidth={1.5} />
+                <span>Админ</span>
+              </Link>
+            )}
+
+            {/* Кнопка Выйти */}
+            <button
+              onClick={handleLogout}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 h-8 text-xs font-semibold text-gray-600 bg-gray-100 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" strokeWidth={1.5} />
+              <span>Выйти</span>
+            </button>
           </div>
 
           {/* Mobile Navigation — grid cards */}
