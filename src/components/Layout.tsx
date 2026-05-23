@@ -313,7 +313,7 @@ export default function Layout() {
                           user: '/my-vehicles', admin: '/admin'
                         }
                         window.location.href = roleHome[roleName] || '/' }}
-                      className={`flex-shrink-0 text-xs font-semibold px-3 h-8 rounded-lg transition-all whitespace-nowrap ${
+                      className={`text-xs font-semibold h-8 rounded-lg transition-all whitespace-nowrap min-w-[72px] ${
                         isActive
                           ? 'bg-primary text-white shadow-sm'
                           : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
