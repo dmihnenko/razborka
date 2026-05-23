@@ -110,7 +110,7 @@ export default function CustomerProfile() {
 
   const deleteVehicleMutation = useMutation({
     mutationFn: async (vehicleId: string) => {
-      const { data: vehicle } = await supabase.from('vehicles').select('*').eq('id', vehicleId).single()
+      const vehicle = await fetchVehicleById(vehicleId)
       const { data: appts } = await supabase.from('appointments').select('*').eq('vehicle_id', vehicleId)
       if (vehicle) {
         await moveToTrash({
@@ -121,8 +121,7 @@ export default function CustomerProfile() {
           stoCompanyId: profile?.sto_company_id,
         })
       }
-      const { error } = await supabase.from('vehicles').delete().eq('id', vehicleId)
-      if (error) throw error
+      await deleteVehicle(vehicleId)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customer-vehicles', id] })

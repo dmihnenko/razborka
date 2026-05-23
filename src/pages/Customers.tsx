@@ -185,13 +185,13 @@ export default function Customers() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {customer.vehicles_count > 0 ? (
+                        {(customer.vehicles_count ?? 0) > 0 ? (
                           <button
                             onClick={() => navigate(`/vehicles?customer_id=${customer.id}`)}
                             className="flex items-center text-primary hover:text-primary/80"
                           >
                             <Car className="w-4 h-4 mr-2" />
-                            <span className="font-semibold">{customer.vehicles_count}</span>
+                            <span className="font-semibold">{customer?.vehicles_count ?? 0}</span>
                           </button>
                         ) : (
                           <span className="text-sm text-gray-400">—</span>
@@ -252,7 +252,7 @@ export default function Customers() {
 
                   {/* Автомобили и дата */}
                   <div className="flex items-center justify-between pt-1">
-                    {customer.vehicles_count > 0 ? (
+                    {(customer.vehicles_count ?? 0) > 0 ? (
                       <button
                         onClick={() => navigate(`/vehicles?customer_id=${customer.id}`)}
                         className="flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 transition-colors group"
@@ -260,7 +260,7 @@ export default function Customers() {
                         <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
                           <Car className="w-4 h-4 text-blue-700" />
                         </div>
-                        <span className="font-medium">Авто: {customer.vehicles_count}</span>
+                        <span className="font-medium">Авто: {customer?.vehicles_count ?? 0}</span>
                       </button>
                     ) : (
                       <div className="flex items-center gap-2 text-sm text-gray-400">

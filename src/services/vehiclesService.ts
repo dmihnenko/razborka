@@ -15,7 +15,7 @@ export interface Vehicle {
   customers?: { id: string; name: string } | null
 }
 
-export interface VehicleFormData {
+export interface VehicleSaveData {
   customer_id: string
   brand: string
   model: string
@@ -23,7 +23,7 @@ export interface VehicleFormData {
   license_plate: string
   vin: string
   color: string
-  mileage: string | number
+  mileage: number | null
 }
 
 export interface CustomerOption {
@@ -78,13 +78,13 @@ export async function fetchVehicleById(id: string): Promise<Vehicle | null> {
 }
 
 /** Create a new vehicle */
-export async function createVehicle(vehicleData: Omit<VehicleFormData, 'mileage'> & { mileage: number | null }): Promise<void> {
+export async function createVehicle(vehicleData: VehicleSaveData): Promise<void> {
   const { error } = await supabase.from('vehicles').insert([vehicleData])
   if (error) throw error
 }
 
 /** Update an existing vehicle */
-export async function updateVehicle(id: string, vehicleData: Partial<VehicleFormData> & { mileage?: number | null }): Promise<void> {
+export async function updateVehicle(id: string, vehicleData: Partial<VehicleSaveData>): Promise<void> {
   const { error } = await supabase.from('vehicles').update(vehicleData).eq('id', id)
   if (error) throw error
 }

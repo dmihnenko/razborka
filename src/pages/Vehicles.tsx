@@ -17,7 +17,6 @@ import {
   createVehicle,
   updateVehicle,
   fetchCustomerOptions,
-  type VehicleFormData,
 } from '@/services/vehiclesService'
 
 interface VehicleModalProps {
