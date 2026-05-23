@@ -23,6 +23,20 @@
     <script>
       (function(){var t=localStorage.getItem('app-theme');if(t==='dark')document.documentElement.classList.add('dark');})();
     </script>
+    <!-- Force SW update on load -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(function(reg) {
+          if (reg) {
+            reg.update();
+            if (reg.waiting) {
+              reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+              window.location.reload();
+            }
+          }
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
