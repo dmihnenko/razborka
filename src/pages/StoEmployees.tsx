@@ -265,7 +265,7 @@ function AddEmployeeModal({ onClose, stoCompanyId }: { onClose: () => void; stoC
       }
 
       // Генерируем email-заглушку с валидным доменом
-      const email = `${data.username}@sto-worker.local`
+      const email = `${data.username}@internal.tsp.local`
 
       // Создаем пользователя в auth с минимальными данными
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -287,9 +287,6 @@ function AddEmployeeModal({ onClose, stoCompanyId }: { onClose: () => void; stoC
       }
 
       const userId = authData.user.id
-
-      // Даем время триггеру создать базовый профиль
-      await new Promise(resolve => setTimeout(resolve, 500))
 
       // Обновляем или создаем профиль
       const { error: profileError } = await supabase

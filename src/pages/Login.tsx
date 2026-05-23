@@ -48,7 +48,7 @@ export default function Login() {
     }
 
     // Генерируем email для Supabase (если не введен реальный)
-    const authEmail = email.trim() || `${username.toLowerCase()}@internal.local`
+    const authEmail = email.trim() || `${username.toLowerCase()}@internal.tsp.local`
     const realEmail = email.trim() || null
 
     const { data, error } = await supabase.auth.signUp({
@@ -97,7 +97,7 @@ export default function Login() {
 
       if (profile) {
         // Пробуем новый формат email
-        loginEmail = `${emailOrUsername.toLowerCase()}@internal.local`
+        loginEmail = `${emailOrUsername.toLowerCase()}@internal.tsp.local`
         
         // Если не получится, попробуем старый формат
         const { error: newFormatError } = await supabase.auth.signInWithPassword({

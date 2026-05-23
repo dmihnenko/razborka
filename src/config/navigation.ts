@@ -11,7 +11,6 @@ import {
   MessageCircle,
   BarChart2,
   SlidersHorizontal,
-  Store,
   CircleUser,
   ShoppingBag
 } from 'lucide-react';

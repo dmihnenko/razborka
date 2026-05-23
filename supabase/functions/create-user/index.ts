@@ -135,7 +135,7 @@ serve(async (req) => {
     const safeUsername = (username || String(Date.now()))
       .toLowerCase()
       .replace(/[^a-z0-9._-]/g, '_')
-    const finalEmail = email || `${safeUsername}@internal.local`;
+    const finalEmail = email || `${safeUsername}@internal.tsp.local`;
 
     // Create new user in auth.users
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({

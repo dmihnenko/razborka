@@ -1,10 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, UserCog, Search, CheckCircle2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
-import { IMaskInput } from 'react-imask';
 import { useUserProfile, useIsAdmin } from '@/hooks/useUserProfile';
 import { useSubscriptionLimits } from '@/hooks/useSubscription';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -42,17 +41,6 @@ interface UserProfile {
   roles?: Role[]; // Массив ролей
 }
 
-interface UserFormData {
-  email: string;
-  username: string;
-  password: string;
-  full_name: string;
-  phone: string;
-  role_ids: string[]; // Изменено на массив
-  primary_role_id: string; // Основная роль
-  sto_company_id: string;
-  parts_company_id: string;
-}
 
 export default function Users() {
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
@@ -60,17 +48,6 @@ export default function Users() {
   const [passwordModal, setPasswordModal] = useState<{ userId: string; userName: string } | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
-  const [formData, setFormData] = useState<UserFormData>({
-    email: '',
-    username: '',
-    password: '',
-    full_name: '',
-    phone: '',
-    role_ids: [], // Изменено на массив
-    primary_role_id: '', // Основная роль
-    sto_company_id: '',
-    parts_company_id: ''
-  });
 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -79,7 +56,7 @@ export default function Users() {
   // Получаем информацию о текущем пользователе
   const isAdmin = useIsAdmin();
   const { data: currentUserProfile } = useUserProfile();
-  const { hasSubscription, canCreate, limits } = useSubscriptionLimits();
+  const { hasSubscription, limits } = useSubscriptionLimits();
   
   // Определяем роль текущего пользователя
   const isStoOwner = currentUserProfile?.roles?.some((r: Role) => r.name === 'sto_owner');
@@ -248,10 +225,6 @@ export default function Users() {
 
   // Создание пользователя
   // Производные значения — ПОСЛЕ всех хуков
-  const selectedRoleNames = useMemo(
-    () => roles.filter(r => formData.role_ids.includes(r.id)).map(r => r.name),
-    [formData.role_ids, roles]
-  );
 
   const filteredUsers = useMemo(
     () => {
@@ -267,116 +240,7 @@ export default function Users() {
     [users, searchQuery]
   );
 
-  const resetForm = () => {
-    setFormData({
-      email: '',
-      username: '',
-      password: '',
-      full_name: '',
-      phone: '',
-      role_ids: [],
-      primary_role_id: '',
-      sto_company_id: '',
-      parts_company_id: ''
-    });
-  };
 
-  const createUserMutation = useMutation({
-    mutationFn: async (data: UserFormData) => {
-      // Проверка лимитов для владельцев
-      if ((isStoOwner || isPartsOwner) && !isAdmin) {
-        const currentWorkers = users.filter(u => 
-          u.sto_company_id === currentUserProfile?.sto_company_id ||
-          u.parts_company_id === currentUserProfile?.parts_company_id
-        ).length;
-        
-        if (!canCreate.worker(currentWorkers)) {
-          const limit = isStoOwner ? limits.sto?.workers : limits.parts?.workers;
-          throw new Error(`Достигнут лимит работников (${limit}). Оформите подписку для добавления дополнительных сотрудников.`);
-        }
-      }
-      
-      // Создаём пользователя через Edge Function — не затрагивает текущую сессию
-      const { data: fnData, error: fnError } = await supabase.functions.invoke('create-user', {
-        body: {
-          email: data.email || null,
-          password: data.password,
-          full_name: data.full_name,
-          phone: data.phone,
-          username: data.username.toLowerCase(),
-          role_ids: data.role_ids,
-          primary_role_id: data.primary_role_id,
-          sto_company_id: data.sto_company_id || null,
-          parts_company_id: data.parts_company_id || null,
-        }
-      });
-
-      if (fnError) throw new Error(fnError.message);
-      if (fnData?.error) throw new Error(fnData.error);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner] });
-      toast.success('Пользователь создан');
-      resetForm();
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Ошибка при создании пользователя');
-      console.error(error);
-    }
-  });
-
-  // Обновление данных пользователя
-  const updateUserDataMutation = useMutation({
-    mutationFn: async ({ userId, data }: { userId: string; data: Partial<UserFormData> }) => {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
-          full_name: data.full_name,
-          phone: data.phone,
-          sto_company_id: data.sto_company_id || null,
-          parts_company_id: data.parts_company_id || null
-        })
-        .eq('id', userId);
-      
-      if (error) throw error;
-
-      // Обновляем роли через таблицу user_roles
-      if (data.role_ids) {
-        // Удаляем старые роли
-        const { error: deleteError } = await supabase
-          .from('user_roles')
-          .delete()
-          .eq('user_id', userId);
-        
-        if (deleteError) throw deleteError;
-
-        // Добавляем новые роли
-        if (data.role_ids.length > 0) {
-          const userRoles = data.role_ids.map(roleId => ({
-            user_id: userId,
-            role_id: roleId,
-            is_primary: roleId === data.primary_role_id // Помечаем основную роль
-          }));
-
-          const { error: insertError } = await supabase
-            .from('user_roles')
-            .insert(userRoles);
-          
-          if (insertError) throw insertError;
-        }
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner] });
-      queryClient.invalidateQueries({ queryKey: ['user_profile'] });
-      toast.success('Данные пользователя обновлены');
-      setSelectedUser(null);
-    },
-    onError: (error) => {
-      toast.error('Ошибка при обновлении данных');
-      console.error(error);
-    }
-  });
 
   // Переключение активности пользователя
   const toggleActiveMutation = useMutation({

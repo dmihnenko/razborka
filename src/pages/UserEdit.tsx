@@ -9,7 +9,7 @@ import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useIsAdmin, useUserProfile } from '@/hooks/useUserProfile'
-import { ROLE_COLORS, getRoleBadgeColor, shouldShowStoCompany, shouldShowPartsCompany } from '@/utils/roles'
+import { ROLE_COLORS, shouldShowStoCompany, shouldShowPartsCompany } from '@/utils/roles'
 
 interface Role {
   id: string
@@ -142,8 +142,6 @@ export default function UserEdit() {
   const partsRequired = selectedRoleNames.includes('parts_owner')
   const stoMissing = stoRequired && !formData.sto_company_id
   const partsMissing = partsRequired && !formData.parts_company_id
-  const showCreateStoBtn = isAdmin && shouldShowStoCompany(selectedRoleNames) && stoRequired
-  const showCreatePartsBtn = isAdmin && shouldShowPartsCompany(selectedRoleNames) && partsRequired
 
   const toggleRole = (roleId: string) => {
     const isSelected = formData.role_ids.includes(roleId)
