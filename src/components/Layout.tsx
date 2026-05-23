@@ -280,28 +280,21 @@ export default function Layout() {
                 {profile?.full_name || profile?.email || 'Пользователь'}
               </p>
               {hasMultipleRoles && (
-                <div className="flex items-center gap-1 mt-1 flex-wrap">
+                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                   {switchableRoles.map((roleName: string) => {
                     const labels: Record<string,string> = {
                       sto_owner: 'СТО', sto_worker: 'Работник СТО',
                       parts_owner: 'Разборка', parts_worker: 'Работник разборки',
                       admin: 'Админ'
                     }
-                    const colors: Record<string,string> = {
-                      sto_owner: 'bg-blue-100 text-blue-700 border-blue-200',
-                      parts_owner: 'bg-orange-100 text-orange-700 border-orange-200',
-                      sto_worker: 'bg-cyan-100 text-cyan-700 border-cyan-200',
-                      parts_worker: 'bg-amber-100 text-amber-700 border-amber-200',
-                      admin: 'bg-purple-100 text-purple-700 border-purple-200',
-                    }
                     const isActive = activeRoleName === roleName
                     return (
                       <button key={roleName} type="button"
                         onClick={() => { localStorage.setItem('activeRole', roleName); queryClient.invalidateQueries(); window.location.reload() }}
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all ${
+                        className={`text-[11px] font-semibold px-3 py-1 rounded-lg transition-all min-h-[28px] ${
                           isActive
-                            ? (colors[roleName] || 'bg-gray-200 text-gray-700 border-gray-300') + ' ring-1 ring-offset-1 ring-current'
-                            : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300'
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
                         }`}>
                         {labels[roleName] || roleName}
                       </button>
