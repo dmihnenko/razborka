@@ -85,31 +85,31 @@ export default function Login() {
 
     // Проверяем, это email или username
     if (!emailOrUsername.includes('@')) {
-      // Это username, ищем пользователя в базе
-      const profile = await getUserByUsername(emailOrUsername)
+      // Это username — пробуем все возможные форматы email последовательно
+      const formats = [
+        `${emailOrUsername.toLowerCase()}@internal.tsp.local`,
+        `${emailOrUsername.toLowerCase()}@internal.local`,
+        `${emailOrUsername.toLowerCase()}@sto-worker.local`,
+        `${emailOrUsername}@example.com`,
+      ]
 
-      if (profile) {
-        // Пробуем новый формат email
-        loginEmail = `${emailOrUsername.toLowerCase()}@internal.tsp.local`
-        
-        // Если не получится, попробуем старый формат
-        const { error: newFormatError } = await supabase.auth.signInWithPassword({
-          email: loginEmail,
+      let success = false
+      for (const fmt of formats) {
+        const { error: fmtError } = await supabase.auth.signInWithPassword({
+          email: fmt,
           password,
         })
-        
-        if (newFormatError) {
-          // Пробуем старый формат
-          loginEmail = `${emailOrUsername}@example.com`
-        } else {
-          // Успешный вход с новым форматом
+        if (!fmtError) {
           await handleSuccessfulLogin()
           setLoading(false)
           return
         }
-      } else {
-        // Если не нашли в новом формате, пробуем старый
-        loginEmail = `${emailOrUsername}@example.com`
+      }
+
+      if (!success) {
+        toast.error('Неверный логин или пароль')
+        setLoading(false)
+        return
       }
     }
 
@@ -119,7 +119,7 @@ export default function Login() {
     })
 
     if (error) {
-      toast.error('Ошибка входа: ' + error.message)
+      toast.error('Неверный логин или пароль')
       setLoading(false)
       return
     }
