@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -15,6 +16,7 @@ import { ROLE_COLORS, shouldShowStoCompany, shouldShowPartsCompany } from '@/uti
 interface UserFormData {
   full_name: string
   phone: string
+  username: string
   role_ids: string[]
   primary_role_id: string
   sto_company_id: string
@@ -52,7 +54,7 @@ export default function UserEdit() {
   const isPartsOwner = currentUserProfile?.roles?.some((r: any) => r.name === 'parts_owner') || false
 
   const [formData, setFormData] = useState<UserFormData>({
-    full_name: '', phone: '', role_ids: [],
+    full_name: '', phone: '', username: '', role_ids: [],
     primary_role_id: '', sto_company_id: '', parts_company_id: '',
   })
   const [inlineForm, setInlineForm] = useState<InlineForm | null>(null)
@@ -82,6 +84,7 @@ export default function UserEdit() {
       setFormData({
         full_name: userProfile?.full_name || '',
         phone: userProfile.phone || '',
+        username: userProfile.username || '',
         role_ids: roleIds,
         primary_role_id: primaryRole?.role_id || roleIds[0] || '',
         sto_company_id: userProfile.sto_company_id || '',
@@ -155,6 +158,27 @@ export default function UserEdit() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: UserFormData) => {
+      // Смена username через Edge Function (только admin)
+      if (isAdmin && data.username && data.username !== userProfile?.username) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.access_token) {
+          const res = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-username`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              },
+              body: JSON.stringify({ targetUserId: id, newUsername: data.username }),
+            }
+          )
+          const result = await res.json()
+          if (!res.ok || result.error) throw new Error(result.error || 'Ошибка смены логина')
+        }
+      }
+
       await updateUserProfile({
         userId: id!,
         full_name: data.full_name,
@@ -317,7 +341,18 @@ export default function UserEdit() {
                     placeholder="Иванов Иван Иванович" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Телефон</label>
+                {isAdmin && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Логин (username)</label>
+                    <input type="text" value={formData.username}
+                      onChange={e => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                      className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+                      placeholder="username"
+                      autoComplete="off" />
+                    <p className="text-xs text-gray-400 mt-1">Только латиница, цифры, _ (3-30 символов)</p>
+                  </div>
+                )}
+                                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Телефон</label>
                   <IMaskInput mask="+380 00 000-00-00" value={formData.phone}
                     onAccept={v => setFormData({ ...formData, phone: String(v) })}
                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
