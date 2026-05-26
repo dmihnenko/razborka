@@ -31,6 +31,20 @@ const roleLabels: Record<string, string> = {
 }
 
 export default function WaitingAccessPage({ profile, onLogout }: Props) {
+  const [authUsername, setAuthUsername] = useState<string>('')
+  
+  useEffect(() => {
+    // Берём username из auth metadata если нет в профиле
+    if (!profile?.username) {
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        const uname = user?.user_metadata?.username || user?.email?.split('@')[0] || ''
+        setAuthUsername(uname)
+      })
+    }
+  }, [profile?.username])
+
+  const displayUsername = profile?.username || authUsername
+
   const [step, setStep] = useState<Step>('select')
   const [selectedType, setSelectedType] = useState<RequestType | null>(null)
   const [existingRequest, setExistingRequest] = useState<AccessRequest | null>(null)
@@ -203,7 +217,7 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
               Добро пожаловать{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}!
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              @{profile?.username || profile?.email}
+              {displayUsername ? '@' + displayUsername : profile?.email || ''}
             </p>
           </div>
 
