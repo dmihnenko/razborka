@@ -89,23 +89,36 @@ function App() {
     let mounted = true
 
     // Управляем кешем при изменении состояния аутентификации
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
       
-      if (event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
         queryClient.clear()
+        localStorage.removeItem('tsp_profile_cache')
+        localStorage.removeItem('activeRole')
       }
       if (event === 'SIGNED_IN') {
-        // Очищаем весь кэш чтобы новый пользователь не видел данные предыдущего
         queryClient.clear()
-        // Затем перезапрашиваем профиль
         queryClient.refetchQueries({ queryKey: ['userProfile'] })
       }
     })
 
+    // Перехватываем ошибки рефреша токена — разлогиниваем пользователя
+    const handleAuthError = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        queryClient.clear()
+        localStorage.removeItem('tsp_profile_cache')
+        localStorage.removeItem('activeRole')
+        await supabase.auth.signOut()
+      }
+    }
+    window.addEventListener('focus', handleAuthError)
+
     return () => {
       mounted = false
       subscription.unsubscribe()
+      window.removeEventListener('focus', handleAuthError)
     }
   }, [queryClient])
 

@@ -9,26 +9,34 @@ export function useAuth() {
   useEffect(() => {
     let mounted = true
 
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted) {
-        setUser(session?.user ?? null)
-        setLoading(false)
+    // Проверяем текущую сессию
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!mounted) return
+      if (error || !session) {
+        // Сессия невалидна — очищаем localStorage
+        localStorage.removeItem('tsp_profile_cache')
+        localStorage.removeItem('activeRole')
+        setUser(null)
+      } else {
+        setUser(session.user ?? null)
       }
+      setLoading(false)
     }).catch(() => {
-      if (mounted) {
-        setLoading(false)
-      }
+      if (mounted) setLoading(false)
     })
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) {
+    // Слушаем изменения auth состояния
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return
+      
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        localStorage.removeItem('tsp_profile_cache')
+        localStorage.removeItem('activeRole')
+        setUser(null)
+      } else {
         setUser(session?.user ?? null)
-        setLoading(false)
       }
+      setLoading(false)
     })
 
     return () => {
