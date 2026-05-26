@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Shield, Users, Settings, BarChart2, LogOut,
+  Shield, Users, Settings, BarChart2, LogOut, ClipboardList,
   Building2, Store, CreditCard, MessageCircle,
   Car, Wrench, Menu, X, ChevronRight, LayoutGrid
 } from 'lucide-react'
@@ -33,6 +33,7 @@ const navGroups = [
     items: [
       { name: 'Подписки',  href: '/admin/subscriptions', icon: CreditCard },
       { name: 'Поддержка', href: '/admin/support',        icon: MessageCircle },
+      { name: 'Заявки',     href: '/admin/access-requests', icon: ClipboardList },
       { name: 'Аналитика', href: '/admin/analytics',      icon: BarChart2 },
       { name: 'Настройки', href: '/admin/settings',       icon: Settings },
     ]

@@ -69,6 +69,7 @@ const Trash = lazy(() => import('./pages/Trash'))
 const ProfileSettings = lazy(() => import('./pages/ProfileSettings'))
 const DatabasePage = lazy(() => import('./pages/Database'))
 const AdminSettings = lazy(() => import('./pages/AdminSettings'))
+const AdminAccessRequests = lazy(() => import('./pages/AdminAccessRequests'))
 
 import { useAuth } from './hooks/useAuth'
 import { useUserProfile } from './hooks/useUserProfile'
@@ -210,6 +211,7 @@ function App() {
           <Route path="subscriptions" element={<Subscriptions />} />
           <Route path="support" element={<AdminSupport />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="access-requests" element={<AdminAccessRequests />} />
           <Route path="analytics" element={<DatabasePage />} />
         </Route>
       </Routes>
