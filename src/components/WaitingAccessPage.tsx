@@ -1,219 +1,406 @@
-import { useState } from 'react'
-import { Car, Wrench, Package, CheckCircle2, Send, LogOut, Sparkles, Users } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Car, Wrench, Package, CheckCircle2, LogOut, Sparkles, Clock, XCircle, RefreshCw, ChevronRight, ArrowLeft, Building2, Phone, MapPin, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { IMaskInput } from 'react-imask'
 
 interface Props {
   profile: any
   onLogout: () => void
 }
 
-const roleOptions = [
-  {
-    id: 'sto_owner',
-    icon: Wrench,
-    color: 'bg-blue-100 text-blue-600',
-    activeColor: 'border-blue-500 bg-blue-50',
-    title: 'Владелец СТО',
-    desc: 'Управляю автосервисом — клиенты, заявки, сотрудники',
-  },
-  {
-    id: 'sto_worker',
-    icon: Wrench,
-    color: 'bg-cyan-100 text-cyan-600',
-    activeColor: 'border-cyan-500 bg-cyan-50',
-    title: 'Работник СТО',
-    desc: 'Работаю в автосервисе — принимаю и обрабатываю заявки',
-  },
-  {
-    id: 'parts_owner',
-    icon: Package,
-    color: 'bg-orange-100 text-orange-600',
-    activeColor: 'border-orange-500 bg-orange-50',
-    title: 'Владелец авторазборки',
-    desc: 'Управляю разборкой — запчасти, заказы, склад',
-  },
-  {
-    id: 'parts_worker',
-    icon: Package,
-    color: 'bg-amber-100 text-amber-600',
-    activeColor: 'border-amber-500 bg-amber-50',
-    title: 'Работник разборки',
-    desc: 'Работаю на разборке — обрабатываю заказы и склад',
-  },
-  {
-    id: 'user',
-    icon: Car,
-    color: 'bg-purple-100 text-purple-600',
-    activeColor: 'border-purple-500 bg-purple-50',
-    title: 'Мои автомобили',
-    desc: 'Веду учёт личных авто, расходы, историю обслуживания',
-  },
-]
+type Step = 'select' | 'form' | 'status'
+type RequestType = 'sto_owner' | 'sto_worker' | 'parts_owner' | 'parts_worker' | 'user'
+
+interface AccessRequest {
+  id: string
+  request_type: RequestType
+  status: 'pending' | 'approved' | 'rejected'
+  company_name?: string
+  owner_phone?: string
+  rejection_reason?: string
+  created_at: string
+}
+
+const roleLabels: Record<string, string> = {
+  sto_owner: 'Владелец СТО',
+  sto_worker: 'Работник СТО',
+  parts_owner: 'Владелец авторазборки',
+  parts_worker: 'Работник разборки',
+  user: 'Личные автомобили',
+}
 
 export default function WaitingAccessPage({ profile, onLogout }: Props) {
-  const [selectedRole, setSelectedRole] = useState<string | null>(null)
-  const [message, setMessage] = useState('')
-  const [sending, setSending] = useState(false)
-  const [sent, setSent] = useState(false)
+  const [step, setStep] = useState<Step>('select')
+  const [selectedType, setSelectedType] = useState<RequestType | null>(null)
+  const [existingRequest, setExistingRequest] = useState<AccessRequest | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
 
-  const selectedOption = roleOptions.find(r => r.id === selectedRole)
+  // Форма для владельцев
+  const [companyName, setCompanyName] = useState('')
+  const [companyAddress, setCompanyAddress] = useState('')
+  const [companyPhone, setCompanyPhone] = useState('')
 
-  const handleSend = async () => {
-    if (!selectedRole) return
-    setSending(true)
+  // Форма для работников
+  const [ownerPhone, setOwnerPhone] = useState('')
 
+  useEffect(() => {
+    loadExistingRequest()
+  }, [])
+
+  const loadExistingRequest = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return setLoading(false)
+
+    const { data } = await supabase
+      .from('access_requests')
+      .select('*')
+      .eq('user_id', user.id)
+      .in('status', ['pending', 'rejected'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (data) {
+      setExistingRequest(data)
+      setStep('status')
+    }
+    setLoading(false)
+  }
+
+  const handleSelectType = (type: RequestType) => {
+    setSelectedType(type)
+    if (type === 'user') {
+      handleSubmitUser()
+      return
+    }
+    setStep('form')
+  }
+
+  const handleSubmitUser = async () => {
+    setSubmitting(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Не авторизован')
-
-      const fullMessage = `Запрошенная роль: ${selectedOption?.title}\n\n${message.trim() || '(без дополнительного сообщения)'}`
-
-      // Пробуем support_tickets, потом support_chats
-      const { error } = await supabase.from('support_tickets').insert({
+      if (!user) throw new Error()
+      const { error } = await supabase.from('access_requests').insert({
         user_id: user.id,
-        subject: `Запрос доступа: ${selectedOption?.title}`,
-        message: fullMessage,
-        status: 'open',
-        priority: 'normal',
+        request_type: 'user',
+        status: 'pending',
       })
-
-      if (error) {
-        await supabase.from('support_chats').insert({
-          user_id: user.id,
-          title: `Запрос доступа: ${selectedOption?.title}`,
-          message: fullMessage,
-          status: 'open',
-        })
-      }
-
-      setSent(true)
-      toast.success('Заявка отправлена администратору')
+      if (error) throw error
+      await loadExistingRequest()
     } catch {
-      toast.error('Не удалось отправить. Обратитесь к администратору напрямую.')
+      toast.error('Ошибка при отправке')
     } finally {
-      setSending(false)
+      setSubmitting(false)
     }
   }
+
+  const handleSubmitForm = async () => {
+    const isOwner = selectedType === 'sto_owner' || selectedType === 'parts_owner'
+    const isWorker = selectedType === 'sto_worker' || selectedType === 'parts_worker'
+
+    if (isOwner && !companyName.trim()) return toast.error('Укажите название компании')
+    if (isWorker && ownerPhone.replace(/\D/g, '').length < 10) return toast.error('Введите корректный номер телефона')
+
+    setSubmitting(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error()
+
+      const payload: any = {
+        user_id: user.id,
+        request_type: selectedType,
+        status: 'pending',
+      }
+
+      if (isOwner) {
+        payload.company_name = companyName.trim()
+        payload.company_address = companyAddress.trim() || null
+        payload.company_phone = companyPhone || null
+      }
+
+      if (isWorker) {
+        // Нормализуем телефон
+        const digits = ownerPhone.replace(/\D/g, '')
+        payload.owner_phone = digits.length === 10 ? `+38${digits}` : `+${digits}`
+      }
+
+      const { error } = await supabase.from('access_requests').insert(payload)
+      if (error) throw error
+      toast.success('Заявка отправлена!')
+      await loadExistingRequest()
+    } catch (e: any) {
+      toast.error(e.message || 'Ошибка при отправке')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleCancelRequest = async () => {
+    if (!existingRequest) return
+    setSubmitting(true)
+    try {
+      await supabase.from('access_requests').delete().eq('id', existingRequest.id)
+      setExistingRequest(null)
+      setSelectedType(null)
+      setCompanyName('')
+      setCompanyAddress('')
+      setCompanyPhone('')
+      setOwnerPhone('')
+      setStep('select')
+      toast.success('Заявка отменена')
+    } catch {
+      toast.error('Ошибка')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const isOwnerType = selectedType === 'sto_owner' || selectedType === 'parts_owner'
+  const isWorkerType = selectedType === 'sto_worker' || selectedType === 'parts_worker'
+  const isStoType = selectedType === 'sto_owner' || selectedType === 'sto_worker'
+
+  if (loading) return (
+    <div className="min-h-dvh bg-[#F4F6FA] flex items-center justify-center">
+      <span className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
+    </div>
+  )
 
   return (
     <div className="min-h-dvh bg-[#F4F6FA] flex flex-col">
       {/* Хедер */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
-            <Wrench className="w-4 h-4 text-white" strokeWidth={1.5} />
+      <header className="bg-white border-b border-gray-200/80 shadow-sm">
+        <div className="flex items-center justify-between px-4 h-14">
+          <div className="flex items-center gap-2.5">
+            {step === 'form' && (
+              <button onClick={() => setStep('select')} className="p-1.5 rounded-xl hover:bg-gray-100 text-gray-400 mr-1">
+                <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+            )}
+            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
+              <Wrench className="w-4 h-4 text-white" strokeWidth={1.5} />
+            </div>
+            <span className="text-sm font-bold text-gray-900">TSP CRM</span>
           </div>
-          <span className="text-sm font-bold text-gray-900">TSP CRM</span>
+          <button onClick={onLogout} className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-red-600 transition-colors min-h-[44px]">
+            <LogOut className="w-4 h-4" strokeWidth={1.5} />
+            <span>Выйти</span>
+          </button>
         </div>
-        <button onClick={onLogout}
-          className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-red-600 transition-colors">
-          <LogOut className="w-4 h-4" strokeWidth={1.5} />
-          Выйти
-        </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-8 max-w-xl mx-auto w-full pb-[calc(2rem+env(safe-area-inset-bottom,0px))]">
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-lg mx-auto px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom,0px))]">
 
-        {/* Приветствие */}
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Sparkles className="w-8 h-8 text-white" strokeWidth={1.5} />
+          {/* Приветствие */}
+          <div className="text-center mb-6">
+            <div className="w-14 h-14 bg-gradient-to-br from-primary to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+              <Sparkles className="w-7 h-7 text-white" strokeWidth={1.5} />
+            </div>
+            <h1 className="text-xl font-bold text-gray-900">
+              Добро пожаловать{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}!
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              @{profile?.username || profile?.email}
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Добро пожаловать{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}! 👋
-          </h1>
-          <p className="text-gray-500 text-sm">
-            Аккаунт <span className="font-semibold text-gray-700">@{profile?.username || profile?.email}</span> создан.<br/>
-            Выберите кто вы — администратор назначит нужный доступ.
-          </p>
-        </div>
 
-        {!sent ? (
-          <>
-            {/* Выбор роли */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Users className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
-                <h2 className="text-sm font-bold text-gray-700">Кто вы?</h2>
-                <span className="text-red-400 text-xs">*</span>
+          {/* ─── ШАГ 1: Выбор роли ─── */}
+          {step === 'select' && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100">
+                <h2 className="text-sm font-bold text-gray-800">Кто вы в системе?</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Выберите — администратор назначит доступ</p>
               </div>
-              <div className="space-y-2.5">
-                {roleOptions.map(opt => {
+              <div className="divide-y divide-gray-100">
+                {[
+                  { type: 'sto_owner' as RequestType, icon: Building2, color: 'text-blue-600 bg-blue-50', label: 'Владелец СТО', desc: 'Открываю/веду автосервис' },
+                  { type: 'sto_worker' as RequestType, icon: Wrench, color: 'text-cyan-600 bg-cyan-50', label: 'Работник СТО', desc: 'Работаю в автосервисе' },
+                  { type: 'parts_owner' as RequestType, icon: Package, color: 'text-orange-600 bg-orange-50', label: 'Владелец авторазборки', desc: 'Открываю/веду разборку' },
+                  { type: 'parts_worker' as RequestType, icon: Package, color: 'text-amber-600 bg-amber-50', label: 'Работник разборки', desc: 'Работаю на авторазборке' },
+                  { type: 'user' as RequestType, icon: Car, color: 'text-purple-600 bg-purple-50', label: 'Личные автомобили', desc: 'Веду учёт своих авто' },
+                ].map(opt => {
                   const Icon = opt.icon
-                  const isActive = selectedRole === opt.id
                   return (
-                    <button key={opt.id} type="button"
-                      onClick={() => setSelectedRole(opt.id)}
-                      className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 text-left transition-all ${
-                        isActive ? opt.activeColor : 'border-gray-100 hover:border-gray-200 bg-white'
-                      }`}>
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${opt.color}`}>
-                        <Icon className="w-4 h-4" strokeWidth={1.5} />
+                    <button key={opt.type} type="button" onClick={() => handleSelectType(opt.type)}
+                      className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors text-left">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${opt.color}`}>
+                        <Icon className="w-5 h-5" strokeWidth={1.5} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-semibold ${isActive ? 'text-gray-900' : 'text-gray-700'}`}>
-                          {opt.title}
-                        </p>
+                        <p className="text-sm font-semibold text-gray-800">{opt.label}</p>
                         <p className="text-xs text-gray-400 mt-0.5">{opt.desc}</p>
                       </div>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                        isActive ? 'border-current bg-current' : 'border-gray-300'
-                      }`}>
-                        {isActive && <div className="w-2 h-2 rounded-full bg-white" />}
-                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
                     </button>
                   )
                 })}
               </div>
             </div>
+          )}
 
-            {/* Доп. сообщение */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-              <h2 className="text-sm font-bold text-gray-700 mb-1">Дополнительно</h2>
-              <p className="text-xs text-gray-400 mb-3">Опционально — расскажите подробнее</p>
-              <textarea
-                value={message}
-                onChange={e => setMessage(e.target.value)}
-                rows={3}
-                placeholder="Например: СТО «Автомастер» на ул. Центральная, 5 сотрудников..."
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all resize-none"
-              />
+          {/* ─── ШАГ 2: Форма ─── */}
+          {step === 'form' && selectedType && (
+            <div className="space-y-4">
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <h2 className="text-sm font-bold text-gray-800">{roleLabels[selectedType]}</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {isOwnerType ? 'Данные вашей компании' : 'Данные для привязки к компании'}
+                  </p>
+                </div>
+                <div className="p-5 space-y-4">
+                  {/* ВЛАДЕЛЕЦ — данные компании */}
+                  {isOwnerType && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                          Название {isStoType ? 'СТО' : 'авторазборки'} <span className="text-red-400 normal-case font-normal">*</span>
+                        </label>
+                        <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)}
+                          placeholder={isStoType ? 'Автосервис "Мастер"' : 'Авторазборка "Запчасти"'}
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Адрес</label>
+                        <div className="relative">
+                          <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" strokeWidth={1.5} />
+                          <input type="text" value={companyAddress} onChange={e => setCompanyAddress(e.target.value)}
+                            placeholder="ул. Центральная, 15"
+                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Телефон компании</label>
+                        <div className="relative">
+                          <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" strokeWidth={1.5} />
+                          <IMaskInput
+                            mask="+38 000 000 00 00"
+                            value={companyPhone}
+                            onAccept={v => setCompanyPhone(String(v))}
+                            placeholder="+38 099 999 99 99"
+                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* РАБОТНИК — телефон владельца */}
+                  {isWorkerType && (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                        Телефон {isStoType ? 'владельца СТО' : 'владельца разборки'} <span className="text-red-400 normal-case font-normal">*</span>
+                      </label>
+                      <p className="text-xs text-gray-400 mb-2">
+                        Введите номер — система найдёт компанию и отправит запрос владельцу
+                      </p>
+                      <div className="relative">
+                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" strokeWidth={1.5} />
+                        <IMaskInput
+                          mask="+38 000 000 00 00"
+                          value={ownerPhone}
+                          onAccept={v => setOwnerPhone(String(v))}
+                          placeholder="+38 099 999 99 99"
+                          className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={() => setStep('select')}
+                  className="flex-1 py-3 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                  Назад
+                </button>
+                <button onClick={handleSubmitForm} disabled={submitting}
+                  className="flex-1 py-3 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                  {submitting
+                    ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    : null}
+                  {submitting ? 'Отправка...' : 'Отправить заявку'}
+                </button>
+              </div>
             </div>
+          )}
 
-            <button
-              onClick={handleSend}
-              disabled={!selectedRole || sending}
-              className="w-full flex items-center justify-center gap-2 py-3.5 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
-            >
-              {sending
-                ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : <Send className="w-4 h-4" strokeWidth={1.5} />
-              }
-              {sending ? 'Отправка...' : 'Отправить заявку'}
-            </button>
-          </>
-        ) : (
-          /* Успех */
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
-            <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="w-7 h-7 text-emerald-600" strokeWidth={1.5} />
+          {/* ─── ШАГ 3: Статус заявки ─── */}
+          {step === 'status' && existingRequest && (
+            <div className="space-y-4">
+              {/* Статус */}
+              <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${
+                existingRequest.status === 'rejected' ? 'border-red-200' : 'border-gray-100'
+              }`}>
+                <div className={`px-5 py-4 border-b flex items-center gap-3 ${
+                  existingRequest.status === 'rejected' ? 'border-red-100 bg-red-50' : 'border-gray-100'
+                }`}>
+                  {existingRequest.status === 'pending' && (
+                    <><Clock className="w-5 h-5 text-amber-500 flex-shrink-0" strokeWidth={1.5} />
+                    <div><p className="text-sm font-bold text-gray-800">Заявка на рассмотрении</p>
+                    <p className="text-xs text-gray-400">Ожидайте ответа</p></div></>
+                  )}
+                  {existingRequest.status === 'rejected' && (
+                    <><XCircle className="w-5 h-5 text-red-500 flex-shrink-0" strokeWidth={1.5} />
+                    <div><p className="text-sm font-bold text-red-700">Заявка отклонена</p>
+                    <p className="text-xs text-red-400">Вы можете подать новую</p></div></>
+                  )}
+                </div>
+
+                <div className="px-5 py-4 space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">Тип доступа</span>
+                    <span className="font-semibold text-gray-800">{roleLabels[existingRequest.request_type]}</span>
+                  </div>
+                  {existingRequest.company_name && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Компания</span>
+                      <span className="font-semibold text-gray-800">{existingRequest.company_name}</span>
+                    </div>
+                  )}
+                  {existingRequest.owner_phone && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Телефон владельца</span>
+                      <span className="font-semibold text-gray-800 font-mono">{existingRequest.owner_phone}</span>
+                    </div>
+                  )}
+                  {existingRequest.rejection_reason && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                      <p className="text-xs text-red-600">{existingRequest.rejection_reason}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Действия */}
+              <div className="space-y-2.5">
+                {existingRequest.status === 'pending' && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" strokeWidth={1.5} />
+                    <div className="flex-1 text-sm text-gray-600">
+                      Заявка отправлена. После одобрения обновите страницу.
+                    </div>
+                    <button onClick={() => window.location.reload()}
+                      className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors">
+                      Обновить
+                    </button>
+                  </div>
+                )}
+
+                <button onClick={handleCancelRequest} disabled={submitting}
+                  className="w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                  <RefreshCw className="w-4 h-4" strokeWidth={1.5} />
+                  Отменить и подать новую заявку
+                </button>
+              </div>
             </div>
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Заявка отправлена!</h2>
-            <p className="text-sm text-gray-500 mb-1">
-              Вы выбрали: <span className="font-semibold text-gray-700">{selectedOption?.title}</span>
-            </p>
-            <p className="text-xs text-gray-400">
-              Администратор рассмотрит заявку и назначит вам доступ.<br/>
-              После этого обновите страницу.
-            </p>
-            <button onClick={() => window.location.reload()}
-              className="mt-5 px-5 py-2.5 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90 transition-colors">
-              Обновить страницу
-            </button>
-          </div>
-        )}
+          )}
 
+        </div>
       </div>
     </div>
   )
