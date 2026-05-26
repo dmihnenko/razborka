@@ -66,11 +66,17 @@ export default function Login() {
       return
     }
 
-    if (data.user) {
-      toast.success('Регистрация успешна! Войдите в систему')
+    if (data.user && data.session) {
+      // Email confirmation отключён — пользователь сразу авторизован
+      toast.success('Регистрация успешна!')
+      await handleSuccessfulLogin()
+    } else if (data.user) {
+      // Email confirmation включён — просим войти вручную
+      toast.success('Регистрация успешна! Подтвердите email и войдите в систему')
       setIsRegisterMode(false)
       setUsername('')
       setEmail('')
+      setPassword('')
       setConfirmPassword('')
     }
 
