@@ -6,6 +6,7 @@ import {
   Wrench
 } from 'lucide-react'
 import { LayoutSkeleton } from './LayoutSkeleton'
+import WaitingAccessPage from './WaitingAccessPage'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
@@ -147,29 +148,13 @@ export default function Layout() {
     return <LayoutSkeleton />
   }
 
-  // Пользователь авторизован но без роли — ожидает назначения
+  // Пользователь авторизован но без роли — страница приветствия
   if (!primaryRole && filteredNavigation.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-dvh bg-gray-100">
-        <div className="max-w-md w-full mx-4 p-8 bg-white rounded-lg shadow-md text-center space-y-4">
-          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto">
-            <span className="text-3xl">⏳</span>
-          </div>
-          <h2 className="text-xl font-bold text-gray-900">Ожидание доступа</h2>
-          <p className="text-gray-600">
-            Ваш аккаунт создан. Обратитесь к администратору, чтобы он назначил вам роль.
-          </p>
-          <p className="text-sm text-gray-400">
-            {profile?.email || profile?.username}
-          </p>
-          <button
-            onClick={handleLogout}
-            className="mt-2 px-4 py-2 text-sm text-red-600 border border-red-200 rounded-md hover:bg-red-50"
-          >
-            Выйти
-          </button>
-        </div>
-      </div>
+      <WaitingAccessPage
+        profile={profile}
+        onLogout={handleLogout}
+      />
     )
   }
 
