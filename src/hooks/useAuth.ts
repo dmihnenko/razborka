@@ -29,7 +29,7 @@ export function useAuth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
       
-      if (event === 'SIGNED_OUT' || event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_OUT') {
         localStorage.removeItem('tsp_profile_cache')
         localStorage.removeItem('activeRole')
         setUser(null)
