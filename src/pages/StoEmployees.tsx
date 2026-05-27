@@ -16,7 +16,6 @@ import {
 } from '@/services/stoService'
 
 export default function StoEmployees() {
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [isBulkAssignModalOpen, setIsBulkAssignModalOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<StoEmployee | null>(null)
   const [deletingEmployee, setDeletingEmployee] = useState<StoEmployee | null>(null)
@@ -64,14 +63,6 @@ export default function StoEmployees() {
               <span className="sm:hidden">Назначить</span>
             </button>
           )}
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="btn-touch-sm bg-primary text-white hover:bg-primary/90 flex items-center gap-1.5 whitespace-nowrap"
-          >
-            <Plus className="w-4 h-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Добавить работника</span>
-            <span className="sm:hidden">Добавить</span>
-          </button>
         </div>
       </div>
 
@@ -84,13 +75,6 @@ export default function StoEmployees() {
           <UserCog className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
           <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Нет работников</h3>
           <p className="text-sm sm:text-base text-gray-600 mb-4">Добавьте первого работника для вашего СТО</p>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="btn-touch-sm bg-primary text-white hover:bg-primary/90 inline-flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Добавить работника
-          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
@@ -158,13 +142,6 @@ export default function StoEmployees() {
             </div>
           ))}
         </div>
-      )}
-
-      {isModalOpen && currentUserProfile?.sto_company_id && (
-        <AddEmployeeModal
-          onClose={() => setIsModalOpen(false)}
-          stoCompanyId={currentUserProfile.sto_company_id}
-        />
       )}
 
       <BulkAssignModal
