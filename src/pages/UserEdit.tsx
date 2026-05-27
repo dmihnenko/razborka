@@ -1,24 +1,20 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, User, Building2, Shield, ChevronRight, Check, Plus, AlertTriangle, CheckCircle2, X } from 'lucide-react'
+import { ArrowLeft, User, Shield, ChevronRight, Check, X } from 'lucide-react'
 import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useIsAdmin, useUserProfile } from '@/hooks/useUserProfile'
-import { ROLE_COLORS, shouldShowStoCompany, shouldShowPartsCompany } from '@/utils/roles'
+import { ROLE_COLORS } from '@/utils/roles'
 import { updateUserProfile, updateUserRoles } from '@/services/userService'
-import { getStoCompanies, getPartsCompanies } from '@/services/companyService'
 
 interface Role { id: string; name: string; display_name: string; description: string | null; is_active: boolean }
-interface InlineForm { type: 'sto' | 'parts'; name: string; phone: string; address: string }
-
 type Step = 1 | 2 | 3
 
 const STEPS = [
   { num: 1, label: 'Профиль' },
   { num: 2, label: 'Роль' },
-  { num: 3, label: 'Компания' },
 ]
 
 export default function UserEdit() {
@@ -34,7 +30,6 @@ export default function UserEdit() {
 
   const [step, setStep] = useState<Step>(1)
   const [rolesOpen, setRolesOpen] = useState(false)
-  const [inlineForm, setInlineForm] = useState<InlineForm | null>(null)
 
   const [formData, setFormData] = useState({
     full_name: '', phone: '', username: '',
@@ -86,8 +81,6 @@ export default function UserEdit() {
       return data as Role[]
     }
   })
-  const { data: stoCompanies = [] } = useQuery({ queryKey: ['sto_companies'], queryFn: getStoCompanies })
-  const { data: partsCompanies = [] } = useQuery({ queryKey: ['parts_companies'], queryFn: getPartsCompanies })
 
   const allowedRoles = useMemo(() => roles.filter(role => {
     if (role.name === 'user') return false
@@ -100,38 +93,8 @@ export default function UserEdit() {
   const selectedRoles = useMemo(() => allowedRoles.filter(r => formData.role_ids.includes(r.id)), [allowedRoles, formData.role_ids])
   const selectedRoleNames = useMemo(() => selectedRoles.map(r => r.name), [selectedRoles])
 
-  const needsSto = selectedRoleNames.includes('sto_owner')
-  const needsParts = selectedRoleNames.includes('parts_owner')
-  const stoMissing = needsSto && !formData.sto_company_id
-  const partsMissing = needsParts && !formData.parts_company_id
-  const hasCompanyStep = shouldShowStoCompany(selectedRoleNames) || shouldShowPartsCompany(selectedRoleNames)
 
-  const totalSteps: Step = hasCompanyStep ? 3 : 2
-
-  const createCompanyMutation = useMutation({
-    mutationFn: async (form: InlineForm) => {
-      if (!form.phone || form.phone.replace(/\D/g, '').length < 10) {
-        throw new Error('Укажите телефон компании — по нему работники найдут вас')
-      }
-      const table = form.type === 'sto' ? 'sto_companies' : 'parts_companies'
-      const field = form.type === 'sto' ? 'sto_company_id' : 'parts_company_id'
-      const { data: company, error } = await supabase.from(table)
-        .insert({ name: form.name.trim(), phone: form.phone || null, address: form.address || null, is_active: true })
-        .select('id').single()
-      if (error) throw error
-      await supabase.from('user_profiles').update({ [field]: company.id }).eq('id', id!)
-      return { id: company.id, type: form.type }
-    },
-    onSuccess: ({ id: cid, type }) => {
-      if (type === 'sto') { setFormData(p => ({ ...p, sto_company_id: cid })); queryClient.invalidateQueries({ queryKey: ['sto_companies'] }) }
-      else { setFormData(p => ({ ...p, parts_company_id: cid })); queryClient.invalidateQueries({ queryKey: ['parts_companies'] }) }
-      queryClient.invalidateQueries({ queryKey: ['user_profile', id] })
-      toast.success('Компания создана и привязана')
-      setInlineForm(null)
-    },
-    onError: (e: any) => toast.error(e.message),
-  })
-
+  const totalSteps: Step = 2
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (isAdmin && formData.username && formData.username !== userProfile?.username) {
@@ -171,7 +134,7 @@ export default function UserEdit() {
   }
 
   const canGoNext = step === 1 ? true : step === 2 ? formData.role_ids.length > 0 : true
-  const canSave = formData.role_ids.length > 0 && !stoMissing && !partsMissing
+  const canSave = formData.role_ids.length > 0
 
   const handleNext = () => {
     if (step < totalSteps) setStep((step + 1) as Step)
@@ -227,7 +190,7 @@ export default function UserEdit() {
 
         {/* Прогресс */}
         <div className="px-4 pb-3 flex items-center gap-2">
-          {STEPS.slice(0, totalSteps).map((s, i) => (
+          {STEPS.slice(0, 2).map((s, i) => (
             <div key={s.num} className="flex items-center gap-2 flex-1">
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all ${
                 step > s.num ? 'bg-indigo-600 text-white' : step === s.num ? 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-600' : 'bg-gray-100 text-gray-400'
@@ -379,107 +342,6 @@ export default function UserEdit() {
           </div>
         )}
 
-        {/* ─── ШАГ 3: Компания ─── */}
-        {step === 3 && (
-          <div className="space-y-4">
-            {(stoMissing || partsMissing) && (
-              <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-                <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                <p className="text-xs text-amber-700">Для роли владельца необходимо привязать компанию</p>
-              </div>
-            )}
-
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                    <Building2 className="w-4 h-4 text-emerald-600" strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-800">Компания</p>
-                    <p className="text-xs text-gray-400">Привязка к организации</p>
-                  </div>
-                </div>
-                <div className="flex gap-1.5">
-                  {isAdmin && shouldShowStoCompany(selectedRoleNames) && needsSto && !inlineForm && (
-                    <button type="button" onClick={() => setInlineForm({ type: 'sto', name: '', phone: '', address: '' })}
-                      className="flex items-center gap-1 px-2.5 py-1.5 border border-dashed border-indigo-300 text-indigo-600 rounded-lg text-xs font-medium hover:bg-indigo-50 transition-colors">
-                      <Plus className="w-3.5 h-3.5" />СТО
-                    </button>
-                  )}
-                  {isAdmin && shouldShowPartsCompany(selectedRoleNames) && needsParts && !inlineForm && (
-                    <button type="button" onClick={() => setInlineForm({ type: 'parts', name: '', phone: '', address: '' })}
-                      className="flex items-center gap-1 px-2.5 py-1.5 border border-dashed border-orange-300 text-orange-600 rounded-lg text-xs font-medium hover:bg-orange-50 transition-colors">
-                      <Plus className="w-3.5 h-3.5" />Разборку
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="p-5 space-y-4">
-                {shouldShowStoCompany(selectedRoleNames) && (
-                  <div>
-                    <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                      СТО {needsSto && <span className="text-red-400">*</span>}
-                      {formData.sto_company_id && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
-                    </label>
-                    <select value={formData.sto_company_id} onChange={e => setFormData(p => ({ ...p, sto_company_id: e.target.value }))}
-                      disabled={isStoOwner && !isAdmin}
-                      className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:bg-white focus:ring-2 transition-all disabled:opacity-60 ${stoMissing ? 'border-amber-400 focus:border-amber-400 focus:ring-amber-100' : 'border-gray-200 focus:border-indigo-400 focus:ring-indigo-100'}`}>
-                      <option value="">Выберите СТО</option>
-                      {stoCompanies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  </div>
-                )}
-
-                {shouldShowPartsCompany(selectedRoleNames) && (
-                  <div>
-                    <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                      Авторазборка {needsParts && <span className="text-red-400">*</span>}
-                      {formData.parts_company_id && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
-                    </label>
-                    <select value={formData.parts_company_id} onChange={e => setFormData(p => ({ ...p, parts_company_id: e.target.value }))}
-                      disabled={isPartsOwner && !isAdmin}
-                      className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:bg-white focus:ring-2 transition-all disabled:opacity-60 ${partsMissing ? 'border-amber-400 focus:border-amber-400 focus:ring-amber-100' : 'border-gray-200 focus:border-indigo-400 focus:ring-indigo-100'}`}>
-                      <option value="">Выберите авторазборку</option>
-                      {partsCompanies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  </div>
-                )}
-
-                {/* Inline форма создания */}
-                {inlineForm && (
-                  <div className={`p-4 rounded-xl border space-y-3 ${inlineForm.type === 'sto' ? 'bg-indigo-50/60 border-indigo-200' : 'bg-orange-50/60 border-orange-200'}`}>
-                    <p className={`text-xs font-bold uppercase tracking-wide ${inlineForm.type === 'sto' ? 'text-indigo-700' : 'text-orange-700'}`}>
-                      Новое {inlineForm.type === 'sto' ? 'СТО' : 'авторазборка'}
-                    </p>
-                    <input autoFocus type="text" placeholder="Название *" value={inlineForm.name}
-                      onChange={e => setInlineForm(p => p ? { ...p, name: e.target.value } : null)}
-                      className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-                    <div className="grid grid-cols-2 gap-2">
-                      <input type="text" placeholder="Телефон *" value={inlineForm.phone}
-                        onChange={e => setInlineForm(p => p ? { ...p, phone: e.target.value } : null)}
-                        className="px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-                      <input type="text" placeholder="Адрес" value={inlineForm.address}
-                        onChange={e => setInlineForm(p => p ? { ...p, address: e.target.value } : null)}
-                        className="px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-                    </div>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => setInlineForm(null)}
-                        className="flex-1 py-2.5 text-sm text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50">Отмена</button>
-                      <button type="button" disabled={!inlineForm.name.trim() || createCompanyMutation.isPending}
-                        onClick={() => createCompanyMutation.mutate(inlineForm)}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-semibold text-white rounded-xl disabled:opacity-50 transition-colors ${inlineForm.type === 'sto' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-orange-600 hover:bg-orange-700'}`}>
-                        {createCompanyMutation.isPending ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check className="w-4 h-4" />}
-                        Создать
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
       </div>
 
