@@ -144,6 +144,19 @@ export default function Dashboard() {
     enabled: !!profile?.sto_company_id,
   })
 
+  // Статистика клиентов и автомобилей
+  const { data: clientsStats } = useQuery({
+    queryKey: ['dashboard-clients-stats', profile?.sto_company_id],
+    queryFn: async () => {
+      const [{ count: customers }, { count: vehicles }] = await Promise.all([
+        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('sto_company_id', profile?.sto_company_id),
+        supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('sto_company_id', profile?.sto_company_id),
+      ])
+      return { customers: customers || 0, vehicles: vehicles || 0 }
+    },
+    enabled: !!profile?.sto_company_id,
+  })
+
   // Последние заявки для дашборда
   const { data: recentAppointments = [] } = useQuery({
     queryKey: ['dashboard-recent-appointments', profile?.sto_company_id],
@@ -221,6 +234,23 @@ export default function Dashboard() {
         }
       />
 
+      {/* Алерт о неоплаченных */}
+      {!isLoading && unpaidCount > 0 && (
+        <button onClick={() => navigate('/appointments')}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all"
+          style={{ backgroundColor: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.25)' }}>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(220,38,38,0.12)' }}>
+            <AlertCircle className="w-4 h-4" style={{ color: '#DC2626' }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold" style={{ color: '#991B1B' }}>
+              {unpaidCount} {unpaidCount === 1 ? 'заявка требует' : unpaidCount < 5 ? 'заявки требуют' : 'заявок требуют'} оплаты
+            </p>
+          </div>
+          <ArrowRight className="w-4 h-4 flex-shrink-0" style={{ color: '#DC2626' }} />
+        </button>
+      )}
+
       {isLoading ? (
         <div className="flex justify-center py-12">
           <Spinner size="lg" />
@@ -272,8 +302,8 @@ export default function Dashboard() {
               </div>
             </button>
 
-            {/* Работники */}
-            <button onClick={() => navigate('/sto/employees')}
+            {/* Клиенты */}
+            <button onClick={() => navigate('/customers')}
               className="stat-card cursor-pointer text-left group">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(99,102,241,0.1)' }}>
@@ -281,8 +311,18 @@ export default function Dashboard() {
                 </div>
                 <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#6366F1' }} />
               </div>
-              <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Сотрудники</p>
-              <p className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>{workersCount}</p>
+              <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Клиенты</p>
+              <p className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>{clientsStats?.customers || 0}</p>
+              <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid #F1F5F9' }}>
+                <div className="flex justify-between text-xs">
+                  <span style={{ color: '#94A3B8' }}>Автомобилей</span>
+                  <span className="font-semibold text-gray-700">{clientsStats?.vehicles || 0}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span style={{ color: '#94A3B8' }}>Сотрудников</span>
+                  <span className="font-semibold text-gray-700">{workersCount}</span>
+                </div>
+              </div>
             </button>
 
             {/* Выручка за месяц */}
@@ -396,6 +436,36 @@ export default function Dashboard() {
                       </div>
                       <p className="text-2xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>{value}</p>
                     </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Финансовая разбивка месяца */}
+              <div className="card p-0 overflow-hidden">
+                <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #F1F5F9' }}>
+                  <p className="text-sm font-semibold text-gray-800">Доход за месяц</p>
+                  <button onClick={() => navigate('/statistics')} className="text-xs font-medium flex items-center gap-1" style={{ color: '#2563EB' }}>
+                    Подробнее <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 divide-x">
+                  {[
+                    { label: 'Запчасти', value: partsCost, color: '#16A34A', bg: 'rgba(22,163,74,0.1)', icon: Package },
+                    { label: 'Работы', value: workCost, color: '#7C3AED', bg: 'rgba(124,58,237,0.1)', icon: Wrench },
+                    { label: 'Итого', value: totalCost, color: '#2563EB', bg: 'rgba(37,99,235,0.1)', icon: DollarSign },
+                  ].map(({ label, value, color, bg, icon: Icon }) => (
+                    <div key={label} className="px-4 py-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: bg }}>
+                          <Icon className="w-3.5 h-3.5" style={{ color }} />
+                        </div>
+                        <span className="text-xs font-medium" style={{ color: '#64748B' }}>{label}</span>
+                      </div>
+                      <p className="text-xl font-bold text-gray-900" style={{ letterSpacing: '-0.02em' }}>
+                        {value >= 1000 ?  : value} ₴
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>закрыто: {completedCount}</p>
+                    </div>
                   ))}
                 </div>
               </div>
