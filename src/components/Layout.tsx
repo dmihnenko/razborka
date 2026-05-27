@@ -55,7 +55,7 @@ export default function Layout() {
     queryFn: async () => {
       const { data } = await supabase
         .from(ownerCompanyTable)
-        .select('id, phone')
+        .select('id, name, phone')
         .eq('id', ownerCompanyId!)
         .single()
       return data
