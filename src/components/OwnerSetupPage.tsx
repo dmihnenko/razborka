@@ -9,14 +9,17 @@ interface Props {
   profile: any
   onLogout: () => void
   onComplete: () => void
+  existingCompanyId?: string
+  existingCompanyName?: string
 }
 
-export default function OwnerSetupPage({ profile, onLogout, onComplete }: Props) {
+export default function OwnerSetupPage({ profile, onLogout, onComplete, existingCompanyId, existingCompanyName }: Props) {
   const queryClient = useQueryClient()
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
   const isPartsOwner = profile?.roles?.some((r: any) => r.name === 'parts_owner')
+  const isUpdate = !!existingCompanyId
 
-  const [companyName, setCompanyName] = useState('')
+  const [companyName, setCompanyName] = useState(existingCompanyName || '')
   const [companyPhone, setCompanyPhone] = useState('')
   const [companyAddress, setCompanyAddress] = useState('')
 
@@ -29,21 +32,27 @@ export default function OwnerSetupPage({ profile, onLogout, onComplete }: Props)
       const table = isStoOwner ? 'sto_companies' : 'parts_companies'
       const field = isStoOwner ? 'sto_company_id' : 'parts_company_id'
 
-      // Создаём компанию
-      const { data: company, error: companyError } = await supabase
-        .from(table)
-        .insert({ name: companyName.trim(), phone: companyPhone, address: companyAddress || null, is_active: true })
-        .select('id').single()
+      if (isUpdate && existingCompanyId) {
+        // Обновляем существующую компанию
+        const { error } = await supabase
+          .from(table)
+          .update({ name: companyName.trim(), phone: companyPhone, address: companyAddress || null })
+          .eq('id', existingCompanyId)
+        if (error) throw error
+      } else {
+        // Создаём новую компанию
+        const { data: company, error: companyError } = await supabase
+          .from(table)
+          .insert({ name: companyName.trim(), phone: companyPhone, address: companyAddress || null, is_active: true })
+          .select('id').single()
+        if (companyError) throw companyError
 
-      if (companyError) throw companyError
-
-      // Привязываем к профилю
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update({ [field]: company.id })
-        .eq('id', profile.id)
-
-      if (profileError) throw profileError
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .update({ [field]: company.id })
+          .eq('id', profile.id)
+        if (profileError) throw profileError
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userProfile'] })
@@ -56,6 +65,7 @@ export default function OwnerSetupPage({ profile, onLogout, onComplete }: Props)
 
   const Icon = isStoOwner ? Wrench : Package
   const label = isStoOwner ? 'СТО' : 'авторазборки'
+  const title = isUpdate ?  : 
   const color = isStoOwner ? 'text-blue-600 bg-blue-50' : 'text-orange-600 bg-orange-50'
   const accentColor = isStoOwner ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-600 hover:bg-orange-700'
 
@@ -84,7 +94,7 @@ export default function OwnerSetupPage({ profile, onLogout, onComplete }: Props)
           <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm ${color}`}>
             <Icon className="w-7 h-7" strokeWidth={1.5} />
           </div>
-          <h1 className="text-xl font-bold text-gray-900 mb-1">Настройка {label}</h1>
+          <h1 className="text-xl font-bold text-gray-900 mb-1">{title}</h1>
           <p className="text-sm text-gray-500">
             Заполните данные компании — без этого работники не смогут найти вас при регистрации
           </p>

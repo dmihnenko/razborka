@@ -43,6 +43,25 @@ export default function Layout() {
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
   
   // Загружаем настройки СТО для работников
+  // Компания владельца — для проверки телефона
+  const ownerCompanyId = profile?.sto_company_id || profile?.parts_company_id
+  const ownerCompanyTable = profile?.sto_company_id ? 'sto_companies' : 'parts_companies'
+
+  const { data: ownerCompany } = useQuery({
+    queryKey: ['owner_company_phone', ownerCompanyId],
+    enabled: !!ownerCompanyId && (
+      !!profile?.roles?.some((r: any) => r.name === 'sto_owner' || r.name === 'parts_owner')
+    ),
+    queryFn: async () => {
+      const { data } = await supabase
+        .from(ownerCompanyTable)
+        .select('id, phone')
+        .eq('id', ownerCompanyId!)
+        .single()
+      return data
+    },
+  })
+
   const { data: stoCompany } = useQuery({
     queryKey: ['sto_company', profile?.sto_company_id],
     queryFn: async () => {
@@ -162,14 +181,19 @@ export default function Layout() {
   // Владелец СТО/разборки без компании — обязан заполнить данные
   const isStoOwnerRole = profile?.roles?.some((r: any) => r.name === 'sto_owner')
   const isPartsOwnerRole = profile?.roles?.some((r: any) => r.name === 'parts_owner')
-  const needsSetup = (isStoOwnerRole && !profile?.sto_company_id) || (isPartsOwnerRole && !profile?.parts_company_id)
+  // Нужна настройка: нет компании ИЛИ есть компания но без телефона (работники не смогут найти)
+  const noCompany = (isStoOwnerRole && !profile?.sto_company_id) || (isPartsOwnerRole && !profile?.parts_company_id)
+  const hasCompanyNoPhone = ownerCompanyId && ownerCompany !== undefined && !ownerCompany?.phone
+  const needsSetup = noCompany || !!hasCompanyNoPhone
 
   if (needsSetup && primaryRole) {
     return (
       <OwnerSetupPage
         profile={profile}
         onLogout={handleLogout}
-        onComplete={() => window.location.reload()}
+        onComplete={() => { localStorage.removeItem('tsp_profile_cache'); window.location.reload() }}
+        existingCompanyId={hasCompanyNoPhone ? ownerCompanyId : undefined}
+        existingCompanyName={hasCompanyNoPhone ? ownerCompany?.name : undefined}
       />
     )
   }
