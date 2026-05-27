@@ -25,7 +25,6 @@ import AppointmentModal from '@/components/appointments/AppointmentModal'
 import MyVehicles from './MyVehicles'
 import WorkerDashboard from './WorkerDashboard'
 import { useNavigate, Link } from 'react-router-dom'
-import PageHeader from '@/components/PageHeader'
 
 export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -211,28 +210,33 @@ export default function Dashboard() {
   const currentMonth = new Date().toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
 
   return (
-    <div className="container-mobile">
-      <PageHeader
-        title="Панель управления"
-        actions={
-          <div className="flex gap-2">
-            <button
-              onClick={() => navigate('/statistics')}
-              className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 flex items-center gap-1.5"
-            >
-              <TrendingUp className="w-4 h-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Статистика</span>
-            </button>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="btn-touch bg-primary text-white hover:bg-primary/90 flex items-center justify-center gap-2"
-            >
-              <Plus className="w-5 h-5 flex-shrink-0" />
-              <span>Новая запись</span>
-            </button>
-          </div>
-        }
-      />
+    <div className="space-y-4 sm:space-y-5">
+      {/* Хедер страницы — стиль как в разборке */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ letterSpacing: '-0.025em', lineHeight: 1.2 }}>
+            СТО
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color: '#64748B' }}>Управление сервисом и заявками</p>
+        </div>
+        <div className="flex gap-2 flex-shrink-0">
+          <button onClick={() => navigate('/customers')}
+            className="btn-secondary btn-sm hidden sm:flex items-center gap-1.5">
+            <Users className="w-4 h-4" />
+            <span>Клиенты</span>
+          </button>
+          <button onClick={() => navigate('/vehicles')}
+            className="btn-secondary btn-sm hidden sm:flex items-center gap-1.5">
+            <Car className="w-4 h-4" />
+            <span>Авто</span>
+          </button>
+          <button onClick={() => setIsModalOpen(true)}
+            className="btn-primary btn-sm flex items-center gap-1.5">
+            <Plus className="w-4 h-4" />
+            <span>Новая запись</span>
+          </button>
+        </div>
+      </div>
 
       {/* Алерт о неоплаченных */}
       {!isLoading && unpaidCount > 0 && (
