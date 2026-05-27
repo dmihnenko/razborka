@@ -16,7 +16,10 @@ import {
   DollarSign,
   Trash2,
   ArrowRight,
-  Calendar
+  Calendar,
+  Car,
+  Users as UsersIcon,
+  Settings as SettingsIcon
 } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 import MyVehicles from './MyVehicles'
@@ -137,6 +140,23 @@ export default function Dashboard() {
 
       if (countError) throw countError
       return count || 0
+    },
+    enabled: !!profile?.sto_company_id,
+  })
+
+  // Последние заявки для дашборда
+  const { data: recentAppointments = [] } = useQuery({
+    queryKey: ['dashboard-recent-appointments', profile?.sto_company_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('id, status, created_at, customers(name), vehicles(brand, model)')
+        .eq('sto_company_id', profile?.sto_company_id)
+        .not('status', 'in', '(archived,deleted)')
+        .order('created_at', { ascending: false })
+        .limit(5)
+      if (error) throw error
+      return data ?? []
     },
     enabled: !!profile?.sto_company_id,
   })
@@ -345,6 +365,113 @@ export default function Dashboard() {
               </div>
             )}
 
+          </div>
+
+          {/* ── Нижний блок: разбивка + управление + последние заявки ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+            {/* Левая колонка (2/3) */}
+            <div className="lg:col-span-2 space-y-4">
+
+              {/* Разбивка заявок по статусам */}
+              <div className="card p-0 overflow-hidden">
+                <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #F1F5F9' }}>
+                  <p className="text-sm font-semibold text-gray-800">Заявки по статусам</p>
+                  <button onClick={() => navigate('/appointments')} className="text-xs font-medium flex items-center gap-1" style={{ color: '#2563EB' }}>
+                    Все <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 divide-x">
+                  {[
+                    { label: 'Ожидают', value: scheduledCount, color: '#7C3AED', bg: 'rgba(124,58,237,0.1)', icon: Clock, path: '/appointments' },
+                    { label: 'В работе', value: inProgressCount, color: '#D97706', bg: 'rgba(217,119,6,0.1)', icon: Wrench, path: '/appointments' },
+                    { label: 'Готовые', value: readyCount, color: '#16A34A', bg: 'rgba(22,163,74,0.1)', icon: CheckCircle, path: '/appointments?status=ready' },
+                  ].map(({ label, value, color, bg, icon: Icon, path }) => (
+                    <button key={label} onClick={() => navigate(path)} className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: bg }}>
+                          <Icon className="w-3.5 h-3.5" style={{ color }} />
+                        </div>
+                        <span className="text-xs font-medium" style={{ color: '#64748B' }}>{label}</span>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>{value}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Быстрые ссылки */}
+              <div className="card p-0 overflow-hidden">
+                <div className="px-4 py-3" style={{ borderBottom: '1px solid #F1F5F9' }}>
+                  <p className="text-sm font-semibold text-gray-800">Управление</p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-5">
+                  {[
+                    { label: 'Клиенты', icon: Users, path: '/customers', color: '#2563EB', bg: 'rgba(37,99,235,0.09)' },
+                    { label: 'Автомобили', icon: Car, path: '/vehicles', color: '#D97706', bg: 'rgba(217,119,6,0.09)' },
+                    { label: 'Сотрудники', icon: UsersIcon, path: '/sto/employees', color: '#16A34A', bg: 'rgba(22,163,74,0.09)' },
+                    { label: 'Аналитика', icon: TrendingUp, path: '/analytics', color: '#7C3AED', bg: 'rgba(124,58,237,0.09)' },
+                    { label: 'Настройки', icon: SettingsIcon, path: '/sto/settings', color: '#475569', bg: 'rgba(71,85,105,0.09)' },
+                  ].map(({ label, icon: Icon, path, color, bg }) => (
+                    <button key={path} onClick={() => navigate(path)}
+                      className="flex flex-col items-center gap-2 py-5 px-3 hover:bg-gray-50 transition-colors group"
+                      style={{ borderRight: '1px solid #F1F5F9' }}>
+                      <div className="w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105" style={{ backgroundColor: bg }}>
+                        <Icon className="w-5 h-5" style={{ color }} />
+                      </div>
+                      <span className="text-xs font-medium text-gray-600">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Правая колонка: последние заявки */}
+            <div className="card p-0 overflow-hidden flex flex-col">
+              <div className="px-4 py-3 flex items-center justify-between flex-shrink-0" style={{ borderBottom: '1px solid #F1F5F9' }}>
+                <p className="text-sm font-semibold text-gray-800">Последние заявки</p>
+                <button onClick={() => navigate('/appointments')} className="text-xs font-medium flex items-center gap-1" style={{ color: '#2563EB' }}>
+                  Все <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {recentAppointments.length > 0 ? (
+                <div className="flex-1 overflow-auto divide-y">
+                  {recentAppointments.map((appt: any) => (
+                    <button key={appt.id} onClick={() => navigate('/appointments/' + appt.id)}
+                      className="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <span className="text-sm font-semibold text-gray-900 truncate">{appt.customers?.name || 'Клиент'}</span>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0" style={{
+                          backgroundColor: appt.status === 'ready' ? 'rgba(22,163,74,0.1)' : appt.status === 'in_progress' ? 'rgba(217,119,6,0.1)' : 'rgba(124,58,237,0.1)',
+                          color: appt.status === 'ready' ? '#16A34A' : appt.status === 'in_progress' ? '#D97706' : '#7C3AED'
+                        }}>
+                          {appt.status === 'scheduled' ? 'Ожидает' : appt.status === 'in_progress' ? 'В работе' : appt.status === 'ready' ? 'Готово' : appt.status}
+                        </span>
+                      </div>
+                      {appt.vehicles && (
+                        <p className="text-xs truncate" style={{ color: '#64748B' }}>{appt.vehicles.brand} {appt.vehicles.model}</p>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center py-10 px-4 text-center">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ backgroundColor: '#F1F5F9' }}>
+                    <FileText className="w-6 h-6" style={{ color: '#94A3B8' }} />
+                  </div>
+                  <p className="text-sm font-medium text-gray-600">Нет заявок</p>
+                </div>
+              )}
+
+              <div className="flex-shrink-0 p-3" style={{ borderTop: '1px solid #F1F5F9' }}>
+                <button onClick={() => setIsModalOpen(true)}
+                  className="btn-primary w-full flex items-center justify-center gap-2 btn-sm">
+                  <Plus className="w-4 h-4" />
+                  Новая запись
+                </button>
+              </div>
+            </div>
           </div>
 
         </div>
