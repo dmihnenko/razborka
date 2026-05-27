@@ -14,7 +14,9 @@ import {
   TrendingUp,
   Users,
   DollarSign,
-  Trash2
+  Trash2,
+  ArrowRight,
+  Calendar
 } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 import MyVehicles from './MyVehicles'
@@ -205,26 +207,90 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="space-y-4 sm:space-y-6">
-          {/* Быстрая статистика по заявкам */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {/* Активные заявки */}
-            {[
-              { label: 'Активные',   value: activeCount,    icon: FileText,    color: 'text-blue-500',   bg: 'bg-blue-50',   href: '/appointments' },
-              { label: 'Ожидают',    value: scheduledCount, icon: Clock,       color: 'text-purple-500', bg: 'bg-purple-50', href: '/appointments' },
-              { label: 'В работе',   value: inProgressCount,icon: Wrench,      color: 'text-orange-500', bg: 'bg-orange-50', href: '/appointments' },
-              { label: 'Готовые',    value: readyCount,     icon: CheckCircle, color: 'text-green-500',  bg: 'bg-green-50',  href: '/appointments?status=ready' },
-            ].map(({ label, value, icon: Icon, color, bg, href }) => (
-              <div key={label} onClick={() => navigate(href)}
-                className="stat-card cursor-pointer">
-                <div className="flex items-start justify-between">
-                  <p className="text-sm font-medium text-gray-500">{label}</p>
-                  <div className={`p-1.5 rounded-xl ${bg}`}>
-                    <Icon className={`w-4 h-4 ${color}`} strokeWidth={1.5} />
-                  </div>
+          {/* KPI — стиль как в разборке */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+
+            {/* Заявки */}
+            <button onClick={() => navigate('/appointments')}
+              className="stat-card cursor-pointer text-left group">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
+                  <FileText className="w-5 h-5" style={{ color: '#2563EB' }} />
                 </div>
-                <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">{value}</p>
+                <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#2563EB' }} />
               </div>
-            ))}
+              <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Заявки</p>
+              <p className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>{activeCount}</p>
+              <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid #F1F5F9' }}>
+                <div className="flex justify-between text-xs">
+                  <span style={{ color: '#94A3B8' }}>Ожидают</span>
+                  <span className="font-semibold" style={{ color: '#7C3AED' }}>{scheduledCount}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span style={{ color: '#94A3B8' }}>В работе</span>
+                  <span className="font-semibold" style={{ color: '#D97706' }}>{inProgressCount}</span>
+                </div>
+              </div>
+            </button>
+
+            {/* Готовые */}
+            <button onClick={() => navigate('/appointments?status=ready')}
+              className="stat-card cursor-pointer text-left group">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
+                  <CheckCircle className="w-5 h-5" style={{ color: '#16A34A' }} />
+                </div>
+                <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#16A34A' }} />
+              </div>
+              <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Готовые</p>
+              <p className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>{readyCount}</p>
+              <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid #F1F5F9' }}>
+                <div className="flex justify-between text-xs">
+                  <span style={{ color: '#94A3B8' }}>Неоплачено</span>
+                  <span className="font-semibold" style={{ color: unpaidCount > 0 ? '#DC2626' : '#94A3B8' }}>{unpaidCount}</span>
+                </div>
+              </div>
+            </button>
+
+            {/* Работники */}
+            <button onClick={() => navigate('/sto/employees')}
+              className="stat-card cursor-pointer text-left group">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(99,102,241,0.1)' }}>
+                  <Users className="w-5 h-5" style={{ color: '#6366F1' }} />
+                </div>
+                <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#6366F1' }} />
+              </div>
+              <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Сотрудники</p>
+              <p className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>{workersCount}</p>
+            </button>
+
+            {/* Выручка за месяц */}
+            <button
+              onClick={() => navigate(`/monthly-revenue?year=${new Date().getFullYear()}&month=${new Date().getMonth() + 1}`)}
+              className="stat-card cursor-pointer text-left group"
+              style={{ background: 'linear-gradient(135deg, #1E3A6E 0%, #1E40AF 100%)', border: 'none' }}>
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+                  <DollarSign className="w-5 h-5 text-white" />
+                </div>
+                <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-white" />
+              </div>
+              <p className="text-xs font-medium mb-0.5" style={{ color: 'rgba(255,255,255,0.7)' }}>Доход за месяц</p>
+              <p className="text-3xl font-bold text-white" style={{ letterSpacing: '-0.03em' }}>
+                {totalCost >= 1000 ? `${Math.round(totalCost/1000)}к` : totalCost} ₴
+              </p>
+              <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+                <div className="flex justify-between text-xs">
+                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>Работы</span>
+                  <span className="font-semibold text-white">{workCost >= 1000 ? `${Math.round(workCost/1000)}к` : workCost} ₴</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>Запчасти</span>
+                  <span className="font-semibold text-white">{partsCost >= 1000 ? `${Math.round(partsCost/1000)}к` : partsCost} ₴</span>
+                </div>
+              </div>
+            </button>
           </div>
 
           {/* Алерты и информация */}
@@ -279,82 +345,8 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Информация о работниках */}
-            <div 
-              onClick={() => navigate('/sto/employees')}
-              className="stat-card cursor-pointer"
-            >
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-indigo-100">
-                  <Users className="w-5 h-5 text-indigo-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-mobile-base font-semibold text-gray-900 mb-1">
-                    Работники СТО
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Всего сотрудников: {workersCount}
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
 
-          {/* Статистика текущего месяца */}
-          <div 
-            onClick={() => navigate(`/monthly-revenue?year=${new Date().getFullYear()}&month=${new Date().getMonth() + 1}`)}
-            className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5 md:p-6 cursor-pointer hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900">
-                Доход за {currentMonth}
-              </h2>
-              <span className="text-mobile-sm text-gray-600">
-                Закрыто: {completedCount}
-              </span>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              {/* Сумма запчастей */}
-              <div className="p-3 sm:p-4 rounded-lg bg-green-50 border border-green-100">
-                <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                  <div className="p-1.5 sm:p-2 rounded bg-green-100">
-                    <Package className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-                  </div>
-                  <p className="text-sm font-semibold text-green-800">Запчасти</p>
-                </div>
-                <p className="text-xl sm:text-2xl font-bold text-green-900">
-                  {partsCost.toLocaleString('ru-RU')} ₴
-                </p>
-              </div>
-
-              {/* Сумма работ */}
-              <div className="p-3 sm:p-4 rounded-lg bg-purple-50 border border-purple-100">
-                <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                  <div className="p-1.5 sm:p-2 rounded bg-purple-100">
-                    <Wrench className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
-                  </div>
-                  <p className="text-sm font-semibold text-purple-800">Работы</p>
-                </div>
-                <p className="text-xl sm:text-2xl font-bold text-purple-900">
-                  {workCost.toLocaleString('ru-RU')} ₴
-                </p>
-              </div>
-
-              {/* Общая сумма */}
-              <div className="p-3 sm:p-4 rounded-lg bg-blue-50 border border-blue-100">
-                <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                  <div className="p-1.5 sm:p-2 rounded bg-blue-100">
-                    <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-                  </div>
-                  <p className="text-sm font-semibold text-blue-800">Всего</p>
-                </div>
-                <p className="text-xl sm:text-2xl font-bold text-blue-900">
-                  {totalCost.toLocaleString('ru-RU')} ₴
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
