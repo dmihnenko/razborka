@@ -16,7 +16,6 @@ export default function PartsEmployees() {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
-  const [addEmployeeEmail, setAddEmployeeEmail] = useState('')
 
   // Получить список сотрудников разборки
   const { data: employees = [], isLoading } = useQuery({
@@ -48,55 +47,6 @@ export default function PartsEmployees() {
     )
   })
 
-
-  // Мутация для добавления сотрудника
-  const addEmployeeMutation = useMutation({
-    mutationFn: async (email: string) => {
-      // Найти пользователя по email
-      const { data: users, error: searchError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('email', email.trim().toLowerCase())
-        .limit(1)
-
-      if (searchError) throw searchError
-      if (!users || users.length === 0) {
-        throw new Error('Пользователь с таким email не найден')
-      }
-
-      const user = users[0]
-
-      // Проверить, не назначен ли уже
-      if (user.parts_company_id === partsCompanyId) {
-        throw new Error('Этот пользователь уже работает в вашей разборке')
-      }
-
-      if (user.parts_company_id) {
-        throw new Error('Этот пользователь уже работает в другой разборке')
-      }
-
-      // Назначить пользователя в разборку
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({ parts_company_id: partsCompanyId })
-        .eq('id', user.id)
-
-      if (updateError) throw updateError
-
-      return user
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['parts-employees'] })
-      setShowAddModal(false)
-      setAddEmployeeEmail('')
-    },
-  })
-
-  const handleAddEmployee = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (addEmployeeEmail.trim()) {
-      addEmployeeMutation.mutate(addEmployeeEmail)
-    }
   }
 
   const stats = {
@@ -294,76 +244,6 @@ export default function PartsEmployees() {
         )}
       </div>
 
-      {/* Add Employee Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Добавить сотрудника</h2>
-              <button
-                onClick={() => {
-                  setShowAddModal(false)
-                  setAddEmployeeEmail('')
-                  addEmployeeMutation.reset()
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleAddEmployee} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email сотрудника
-                </label>
-                <input
-                  type="email"
-                  value={addEmployeeEmail}
-                  onChange={(e) => setAddEmployeeEmail(e.target.value)}
-                  placeholder="email@example.com"
-                  required
-                  className="w-full px-4 py-2.5 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                />
-                <p className="mt-2 text-sm text-gray-500">
-                  Введите email пользователя, который уже зарегистрирован в системе
-                </p>
-              </div>
-
-              {addEmployeeMutation.isError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm text-red-800">
-                    {addEmployeeMutation.error instanceof Error 
-                      ? addEmployeeMutation.error.message 
-                      : 'Ошибка при добавлении сотрудника'}
-                  </p>
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddModal(false)
-                    setAddEmployeeEmail('')
-                    addEmployeeMutation.reset()
-                  }}
-                  className="flex-1 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-                >
-                  Отмена
-                </button>
-                <button
-                  type="submit"
-                  disabled={addEmployeeMutation.isPending || !addEmployeeEmail.trim()}
-                  className="flex-1 px-4 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {addEmployeeMutation.isPending ? 'Добавление...' : 'Добавить'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
