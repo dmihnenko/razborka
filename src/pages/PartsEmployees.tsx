@@ -16,7 +16,6 @@ export default function PartsEmployees() {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
-  const [showAddModal, setShowAddModal] = useState(false)
   const [addEmployeeEmail, setAddEmployeeEmail] = useState('')
 
   // Получить список сотрудников разборки
@@ -117,15 +116,7 @@ export default function PartsEmployees() {
         title="Сотрудники"
         subtitle={`Всего: ${stats.total}`}
         backPath="/parts/dashboard"
-        actions={
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="hidden sm:inline">Добавить</span>
-          </button>
-        }
+
       />
 
       {/* Content */}
