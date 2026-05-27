@@ -462,7 +462,7 @@ export default function Dashboard() {
                         <span className="text-xs font-medium" style={{ color: '#64748B' }}>{label}</span>
                       </div>
                       <p className="text-xl font-bold text-gray-900" style={{ letterSpacing: '-0.02em' }}>
-                        {value >= 1000 ?  : value} ₴
+                        {value >= 1000 ? Math.round(value/1000) + "к" : value} ₴
                       </p>
                       <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>закрыто: {completedCount}</p>
                     </div>
