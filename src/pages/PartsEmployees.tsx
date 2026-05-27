@@ -47,7 +47,6 @@ export default function PartsEmployees() {
     )
   })
 
-  }
 
   const stats = {
     total: employees.length,
