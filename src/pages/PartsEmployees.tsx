@@ -144,7 +144,7 @@ export default function PartsEmployees() {
               {searchQuery ? 'Сотрудники не найдены' : 'Нет сотрудников'}
             </p>
             {!searchQuery && (
-              <p className="text-sm text-gray-400">Добавьте сотрудников через панель администратора</p>
+              <p className="text-sm text-gray-400">Работники найдут вас при регистрации, введя номер телефона вашей разборки</p>
             )}
           </div>
         ) : viewMode === 'grid' ? (

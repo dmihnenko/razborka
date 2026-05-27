@@ -73,8 +73,8 @@ export default function StoEmployees() {
       ) : employees.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-8 sm:p-12 text-center">
           <UserCog className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
-          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Нет работников</h3>
-          <p className="text-sm sm:text-base text-gray-600 mb-4">Добавьте первого работника для вашего СТО</p>
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Пока нет работников</h3>
+          <p className="text-sm sm:text-base text-gray-500">Работники найдут вас при регистрации, введя номер телефона вашего СТО</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
