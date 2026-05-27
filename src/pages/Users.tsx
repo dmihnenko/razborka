@@ -306,12 +306,14 @@ export default function Users() {
           </h1>
           <p className="text-xs text-gray-400 mt-0.5">{users.length} {users.length === 1 ? 'запись' : users.length < 5 ? 'записи' : 'записей'}</p>
         </div>
-        <button onClick={handleCreateUser}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm">
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">{isAdmin ? 'Добавить пользователя' : 'Добавить сотрудника'}</span>
-          <span className="sm:hidden">Добавить</span>
-        </button>
+        {isAdmin && (
+          <button onClick={handleCreateUser}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Добавить пользователя</span>
+            <span className="sm:hidden">Добавить</span>
+          </button>
+        )}
       </div>
 
       {/* Поиск */}

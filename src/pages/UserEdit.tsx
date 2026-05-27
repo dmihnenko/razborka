@@ -110,6 +110,9 @@ export default function UserEdit() {
 
   const createCompanyMutation = useMutation({
     mutationFn: async (form: InlineForm) => {
+      if (!form.phone || form.phone.replace(/\D/g, '').length < 10) {
+        throw new Error('Укажите телефон компании — по нему работники найдут вас')
+      }
       const table = form.type === 'sto' ? 'sto_companies' : 'parts_companies'
       const field = form.type === 'sto' ? 'sto_company_id' : 'parts_company_id'
       const { data: company, error } = await supabase.from(table)
@@ -454,7 +457,7 @@ export default function UserEdit() {
                       onChange={e => setInlineForm(p => p ? { ...p, name: e.target.value } : null)}
                       className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
                     <div className="grid grid-cols-2 gap-2">
-                      <input type="text" placeholder="Телефон" value={inlineForm.phone}
+                      <input type="text" placeholder="Телефон *" value={inlineForm.phone}
                         onChange={e => setInlineForm(p => p ? { ...p, phone: e.target.value } : null)}
                         className="px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
                       <input type="text" placeholder="Адрес" value={inlineForm.address}

@@ -116,6 +116,7 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
     const isWorker = selectedType === 'sto_worker' || selectedType === 'parts_worker'
 
     if (isOwner && !companyName.trim()) return toast.error('Укажите название компании')
+    if (isOwner && companyPhone.replace(/\D/g, '').length < 10) return toast.error('Укажите телефон компании — по нему работники найдут вас')
     if (isWorker && ownerPhone.replace(/\D/g, '').length < 10) return toast.error('Введите корректный номер телефона')
 
     setSubmitting(true)
@@ -287,7 +288,7 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Телефон компании</label>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Телефон компании <span className="text-red-400 normal-case font-normal">*</span> <span className="text-gray-400 normal-case font-normal text-[11px]">— по нему вас найдут работники</span></label>
                         <div className="relative">
                           <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" strokeWidth={1.5} />
                           <IMaskInput
