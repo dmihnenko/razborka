@@ -65,7 +65,7 @@ export default function OwnerSetupPage({ profile, onLogout, onComplete, existing
 
   const Icon = isStoOwner ? Wrench : Package
   const label = isStoOwner ? 'СТО' : 'авторазборки'
-  const title = isUpdate ?  : 
+  const title = isUpdate ? 'Добавьте телефон ' + label : 'Настройка ' + label
   const color = isStoOwner ? 'text-blue-600 bg-blue-50' : 'text-orange-600 bg-orange-50'
   const accentColor = isStoOwner ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-600 hover:bg-orange-700'
 
