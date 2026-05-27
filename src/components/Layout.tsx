@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { LayoutSkeleton } from './LayoutSkeleton'
 import WaitingAccessPage from './WaitingAccessPage'
+import OwnerSetupPage from './OwnerSetupPage'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
@@ -154,6 +155,21 @@ export default function Layout() {
       <WaitingAccessPage
         profile={profile}
         onLogout={handleLogout}
+      />
+    )
+  }
+
+  // Владелец СТО/разборки без компании — обязан заполнить данные
+  const isStoOwnerRole = profile?.roles?.some((r: any) => r.name === 'sto_owner')
+  const isPartsOwnerRole = profile?.roles?.some((r: any) => r.name === 'parts_owner')
+  const needsSetup = (isStoOwnerRole && !profile?.sto_company_id) || (isPartsOwnerRole && !profile?.parts_company_id)
+
+  if (needsSetup && primaryRole) {
+    return (
+      <OwnerSetupPage
+        profile={profile}
+        onLogout={handleLogout}
+        onComplete={() => window.location.reload()}
       />
     )
   }
