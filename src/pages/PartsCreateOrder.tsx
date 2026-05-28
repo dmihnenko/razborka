@@ -70,9 +70,7 @@ export default function PartsCreateOrder() {
           {/* Customer Selection */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="bg-blue-100 p-2 rounded-lg">
-                <UsersIcon className="w-5 h-5 text-blue-600" />
-              </div>
+              
               <h2 className="text-lg font-semibold text-gray-900">Информация о клиенте</h2>
             </div>
 

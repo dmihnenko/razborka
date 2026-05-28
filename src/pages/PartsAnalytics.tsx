@@ -184,12 +184,10 @@ export default function PartsAnalytics() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Main Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 sm:mb-6">
+          <div className="stat-card">
             <div className="flex items-center justify-between mb-3">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <DollarSign className="w-6 h-6 text-blue-600" />
-              </div>
+              
               <TrendingUp className="w-5 h-5 text-green-500" />
             </div>
             <p className="text-sm text-gray-600 mb-1">Общая выручка</p>
@@ -201,11 +199,9 @@ export default function PartsAnalytics() {
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-5">
+          <div className="stat-card">
             <div className="flex items-center justify-between mb-3">
-              <div className="bg-green-100 p-3 rounded-lg">
-                <ShoppingCart className="w-6 h-6 text-green-600" />
-              </div>
+              
               <BarChart3 className="w-5 h-5 text-gray-400" />
             </div>
             <p className="text-sm text-gray-600 mb-1">Средний чек</p>
@@ -217,11 +213,9 @@ export default function PartsAnalytics() {
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-5">
+          <div className="stat-card">
             <div className="flex items-center justify-between mb-3">
-              <div className="bg-purple-100 p-3 rounded-lg">
-                <Package className="w-6 h-6 text-purple-600" />
-              </div>
+              
               <TrendingUp className="w-5 h-5 text-green-500" />
             </div>
             <p className="text-sm text-gray-600 mb-1">Продано запчастей</p>
@@ -231,11 +225,9 @@ export default function PartsAnalytics() {
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-5">
+          <div className="stat-card">
             <div className="flex items-center justify-between mb-3">
-              <div className="bg-yellow-100 p-3 rounded-lg">
-                <Car className="w-6 h-6 text-yellow-600" />
-              </div>
+              
               <Calendar className="w-5 h-5 text-gray-400" />
             </div>
             <p className="text-sm text-gray-600 mb-1">Разобрано авто</p>
@@ -328,17 +320,17 @@ export default function PartsAnalytics() {
         </div>
 
         {/* Additional Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
-          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
-            <div className="flex items-center justify-between mb-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4 sm:mt-6">
+          <div className="stat-card">
+            <div className="flex items-start justify-between mb-3">
               <p className="text-sm text-gray-600">Всего заказов</p>
               <ShoppingCart className="w-4 h-4 text-gray-400" />
             </div>
             <p className="text-2xl font-bold text-gray-900">{overallStats?.totalOrders || 0}</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-5">
-            <div className="flex items-center justify-between mb-2">
+          <div className="stat-card">
+            <div className="flex items-start justify-between mb-3">
               <p className="text-sm text-gray-600">Коэффициент завершения</p>
               <TrendingUp className="w-4 h-4 text-green-500" />
             </div>
@@ -350,8 +342,8 @@ export default function PartsAnalytics() {
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-5">
-            <div className="flex items-center justify-between mb-2">
+          <div className="stat-card">
+            <div className="flex items-start justify-between mb-3">
               <p className="text-sm text-gray-600">Средняя цена запчасти</p>
               <Package className="w-4 h-4 text-gray-400" />
             </div>
@@ -362,8 +354,8 @@ export default function PartsAnalytics() {
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-5">
-            <div className="flex items-center justify-between mb-2">
+          <div className="stat-card">
+            <div className="flex items-start justify-between mb-3">
               <p className="text-sm text-gray-600">Прогресс разборки</p>
               <Car className="w-4 h-4 text-gray-400" />
             </div>

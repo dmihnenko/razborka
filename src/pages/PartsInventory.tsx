@@ -591,7 +591,7 @@ export default function PartsInventory() {
             </button>
           ))}
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <div className="stat-card">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs sm:text-sm text-gray-600">Стоимость</p>
               <span className="w-2.5 h-2.5 rounded-full bg-blue-400 flex-shrink-0" />

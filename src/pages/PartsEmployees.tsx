@@ -68,25 +68,25 @@ export default function PartsEmployees() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
-            <div className="flex items-center justify-between mb-2">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4 sm:mb-6">
+          <div className="stat-card">
+            <div className="flex items-start justify-between mb-3">
               <p className="text-xs sm:text-sm text-gray-600">Всего сотрудников</p>
               <Users className="w-4 h-4 text-gray-400" />
             </div>
             <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.total}</p>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-            <div className="flex items-center justify-between mb-2">
+          <div className="stat-card">
+            <div className="flex items-start justify-between mb-3">
               <p className="text-xs sm:text-sm text-gray-600">С email</p>
               <UserCheck className="w-4 h-4 text-green-500" />
             </div>
             <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.active}</p>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-            <div className="flex items-center justify-between mb-2">
+          <div className="stat-card">
+            <div className="flex items-start justify-between mb-3">
               <p className="text-xs sm:text-sm text-gray-600">С телефоном</p>
               <Phone className="w-4 h-4 text-blue-500" />
             </div>

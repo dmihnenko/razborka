@@ -182,7 +182,7 @@ export default function PartsVehicles() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 sm:mb-6">
           {[
             { key: 'all', label: 'Всего', value: stats.total, color: 'gray', ring: 'ring-primary', dot: 'bg-gray-400' },
             { key: 'awaiting', label: 'Ожидают', value: stats.awaiting, color: 'yellow', ring: 'ring-yellow-500', dot: 'bg-yellow-500' },

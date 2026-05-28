@@ -166,7 +166,7 @@ export default function PartsOrderDetails() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6">
         {/* Status Actions */}
         {canManage && (
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <div className="stat-card">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Статус заказа:
             </label>
