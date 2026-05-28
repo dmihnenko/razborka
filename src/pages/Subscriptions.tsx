@@ -294,15 +294,17 @@ export default function Subscriptions() {
       {/* Активные подписки */}
       {activeTab === 'active' && (
         <div className="bg-white rounded-lg shadow-sm">
-          <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Активные подписки компаний</h2>
-            <button
-              onClick={() => setIsAssignModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
-            >
-              <Plus size={20} />
-              Назначить подписку
-            </button>
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">Активные подписки компаний</h2>
+              <button
+                onClick={() => setIsAssignModalOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-primary text-white rounded-xl hover:bg-primary/90 text-sm font-semibold whitespace-nowrap"
+              >
+                <Plus size={16} />
+                Назначить
+              </button>
+            </div>
           </div>
           
           <div className="p-6">
@@ -318,74 +320,50 @@ export default function Subscriptions() {
             ) : (
               <div className="space-y-4">
                 {companySubscriptions.map((subscription) => (
-                  <div key={subscription.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <Building2 size={20} className="text-gray-500" />
-                          <h3 className="text-lg font-semibold">{subscription.company?.name}</h3>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            subscription.company_type === 'sto' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : 'bg-green-100 text-green-800'
-                          }`}>
-                            {subscription.company_type === 'sto' ? 'СТО' : 'Разборка'}
+                  <div key={subscription.id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-sm transition-shadow">
+                    {/* Хедер карточки */}
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <Building2 size={16} className="text-gray-400 flex-shrink-0" />
+                        <span className="text-sm font-bold text-gray-900 truncate">{subscription.company?.name}</span>
+                        <span className={`flex-shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                          subscription.company_type === 'sto' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {subscription.company_type === 'sto' ? 'СТО' : 'Разборка'}
+                        </span>
+                        <span className={`flex-shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                          subscription.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {subscription.is_active ? 'Активна' : 'Неактивна'}
+                        </span>
+                        {isExpired(subscription) && (
+                          <span className="flex-shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                            Истекла
                           </span>
-                          {subscription.is_active ? (
-                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              Активна
-                            </span>
-                          ) : (
-                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              Неактивна
-                            </span>
-                          )}
-                          {isExpired(subscription) && (
-                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              Истекла
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
-                          <div>
-                            <span className="font-medium">План:</span> {subscription.subscription?.name}
-                          </div>
-                          <div>
-                            <span className="font-medium">Цена:</span> ₴{subscription.subscription?.price}
-                          </div>
-                          <div>
-                            <span className="font-medium">Начало:</span> {new Date(subscription.start_date).toLocaleDateString('ru-RU')}
-                          </div>
-                          <div>
-                            <span className="font-medium">Окончание:</span> {
-                              subscription.end_date 
-                                ? new Date(subscription.end_date).toLocaleDateString('ru-RU')
-                                : 'Бессрочно'
-                            }
-                          </div>
-                        </div>
+                        )}
                       </div>
-
-                      <div className="flex gap-2 ml-4">
+                      {/* Кнопки внутри карточки */}
+                      <div className="flex gap-1 flex-shrink-0">
                         {subscription.is_active && (
-                          <button
-                            onClick={() => handleDeactivate(subscription)}
-                            className="p-2 text-yellow-600 hover:bg-yellow-50 rounded"
-                            title="Деактивировать"
-                          >
-                            <XCircle size={18} />
+                          <button onClick={() => handleDeactivate(subscription)}
+                            className="w-8 h-8 flex items-center justify-center text-amber-500 hover:bg-amber-50 rounded-lg transition-colors"
+                            title="Деактивировать">
+                            <XCircle size={16} />
                           </button>
                         )}
-                        
-                        <button
-                          onClick={() => handleDelete(subscription)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded"
-                          title="Удалить"
-                        >
-                          <Trash2 size={18} />
+                        <button onClick={() => handleDelete(subscription)}
+                          className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Удалить">
+                          <Trash2 size={16} />
                         </button>
                       </div>
+                    </div>
+                    {/* Тело карточки */}
+                    <div className="px-4 py-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-gray-500">
+                      <div><span className="font-medium text-gray-700">План:</span> {subscription.subscription?.name}</div>
+                      <div><span className="font-medium text-gray-700">Цена:</span> ₴{subscription.subscription?.price}</div>
+                      <div><span className="font-medium text-gray-700">Начало:</span> {new Date(subscription.start_date).toLocaleDateString('ru-RU')}</div>
+                      <div><span className="font-medium text-gray-700">Окончание:</span> {subscription.end_date ? new Date(subscription.end_date).toLocaleDateString('ru-RU') : 'Бессрочно'}</div>
                     </div>
                   </div>
                 ))}
