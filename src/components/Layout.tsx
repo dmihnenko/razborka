@@ -244,16 +244,17 @@ export default function Layout() {
 
         {/* Footer */}
         <div className="px-2 py-3 border-t border-gray-100 space-y-0.5">
-          {/* Переключатель ролей для десктопа */}
-          {hasMultipleRoles && (
+          {/* Переключатель ролей для десктопа — только неактивные не-admin роли */}
+          {hasMultipleRoles && switchableRoles.filter((r: string) => !['admin','user'].includes(r) && r !== activeRoleName).length > 0 && (
             <div className="hidden lg:block mb-2 px-1">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 px-2">Активная роль</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 px-2">Переключить</p>
               <div className="space-y-0.5">
-                {switchableRoles.map((roleName: string) => {
+                {switchableRoles
+                  .filter((r: string) => !['admin', 'user'].includes(r) && r !== activeRoleName)
+                  .map((roleName: string) => {
                   const labels: Record<string,string> = {
                     sto_owner: 'СТО', sto_worker: 'Работник СТО',
                     parts_owner: 'Авторазборка', parts_worker: 'Работник разборки',
-                    admin: 'Администратор'
                   }
                   const isActive = activeRoleName === roleName
                   return (
