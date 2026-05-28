@@ -66,7 +66,7 @@ export default function PartsEmployees() {
       />
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <div className="w-full py-4 sm:py-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4 sm:mb-6">
           <div className="stat-card">

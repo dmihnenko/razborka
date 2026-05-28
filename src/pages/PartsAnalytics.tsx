@@ -182,7 +182,7 @@ export default function PartsAnalytics() {
       />
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="w-full py-6">
         {/* Main Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 sm:mb-6">
           <div className="stat-card">

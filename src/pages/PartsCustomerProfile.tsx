@@ -235,7 +235,7 @@ export default function PartsCustomerProfile() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="w-full">
       <div className="mb-6">
         <Link
           to="/parts/customers"

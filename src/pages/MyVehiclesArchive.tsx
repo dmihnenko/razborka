@@ -33,7 +33,7 @@ export default function MyVehiclesArchive() {
 
   return (
     <div className="min-h-dvh bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="w-full py-8">
         {/* Заголовок */}
         <div className="mb-8">
           <button

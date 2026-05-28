@@ -514,7 +514,7 @@ export default function PartsInventory() {
     <div className="min-h-dvh bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full">
           {/* Top row */}
           <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
             <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -550,7 +550,7 @@ export default function PartsInventory() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <div className="w-full py-4 sm:py-6">
         {/* No-price banner */}
         {stats.noPrice > 0 && (
           <div className="mb-4 flex items-center justify-between gap-3 bg-amber-50 border border-amber-300 rounded-lg px-4 py-3">

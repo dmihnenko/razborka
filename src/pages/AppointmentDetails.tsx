@@ -300,7 +300,7 @@ export default function AppointmentDetails() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 w-full">
       {/* Хедер с кнопкой назад */}
       <div className="mb-4 sm:mb-6">
         <button
