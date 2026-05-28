@@ -254,7 +254,7 @@ export default function Layout() {
                   .map((roleName: string) => {
                   const labels: Record<string,string> = {
                     sto_owner: 'СТО', sto_worker: 'Работник СТО',
-                    parts_owner: 'Авторазборка', parts_worker: 'Работник разборки',
+                    parts_owner: 'Авторазборка', parts_worker: 'Авторазборка',
                   }
                   const isActive = activeRoleName === roleName
                   return (

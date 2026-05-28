@@ -26,7 +26,7 @@ const roleLabels: Record<string, string> = {
   sto_owner: 'Владелец СТО',
   sto_worker: 'Работник СТО',
   parts_owner: 'Владелец авторазборки',
-  parts_worker: 'Работник разборки',
+  parts_worker: 'Авторазборка',
   user: 'Личные автомобили',
 }
 
