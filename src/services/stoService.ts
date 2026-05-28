@@ -272,3 +272,11 @@ export async function bulkAssignAppointments(
     .is('assigned_to', null)
   if (error) throw error
 }
+
+export async function fetchStoClientStats(stoCompanyId: string): Promise<{ customers: number; vehicles: number }> {
+  const [{ count: customers }, { count: vehicles }] = await Promise.all([
+    supabase.from('customers').select('*', { count: 'exact', head: true }).eq('sto_company_id', stoCompanyId),
+    supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('sto_company_id', stoCompanyId),
+  ])
+  return { customers: customers || 0, vehicles: vehicles || 0 }
+}

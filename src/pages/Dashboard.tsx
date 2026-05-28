@@ -25,6 +25,7 @@ import AppointmentModal from '@/components/appointments/AppointmentModal'
 import MyVehicles from './MyVehicles'
 import WorkerDashboard from './WorkerDashboard'
 import { useNavigate, Link } from 'react-router-dom'
+import { fetchStoClientStats } from '@/services/stoService'
 
 export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -146,13 +147,7 @@ export default function Dashboard() {
   // Статистика клиентов и автомобилей
   const { data: clientsStats } = useQuery({
     queryKey: ['dashboard-clients-stats', profile?.sto_company_id],
-    queryFn: async () => {
-      const [{ count: customers }, { count: vehicles }] = await Promise.all([
-        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('sto_company_id', profile?.sto_company_id),
-        supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('sto_company_id', profile?.sto_company_id),
-      ])
-      return { customers: customers || 0, vehicles: vehicles || 0 }
-    },
+    queryFn: () => fetchStoClientStats(profile!.sto_company_id!),
     enabled: !!profile?.sto_company_id,
   })
 

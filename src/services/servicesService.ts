@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { moveToTrash } from './trashService'
 
 export interface ServiceCategory {
   id: string
@@ -83,9 +84,14 @@ export async function updateService(id: string, serviceData: {
 }
 
 /** Delete a service by id */
-export async function deleteService(id: string): Promise<void> {
-  const { error } = await supabase.from('services').delete().eq('id', id)
-  if (error) throw error
+export async function deleteService(id: string, serviceData?: any, stoCompanyId?: string | null): Promise<void> {
+  await moveToTrash({
+    entityType: 'service',
+    entityId: id,
+    entityLabel: serviceData?.name || 'Услуга',
+    entityData: serviceData || {},
+    stoCompanyId,
+  })
 }
 
 /** Fetch a single service raw (for trash snapshot) */

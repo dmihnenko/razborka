@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { moveToTrash } from './trashService'
 
 export interface Customer {
   id: string
@@ -73,13 +74,15 @@ export async function updateCustomer(id: string, customerData: Partial<CustomerF
   if (error) throw error
 }
 
-/** Delete a customer by id */
-export async function deleteCustomer(id: string): Promise<void> {
-  const { error } = await supabase.from('customers').delete().eq('id', id)
-  if (error) {
-    console.error('Delete error:', error)
-    throw error
-  }
+/** Soft-delete a customer (move to trash) */
+export async function deleteCustomer(id: string, customerData?: any, stoCompanyId?: string | null): Promise<void> {
+  await moveToTrash({
+    entityType: 'customer',
+    entityId: id,
+    entityLabel: customerData?.name || 'Клиент',
+    entityData: customerData || {},
+    stoCompanyId,
+  })
 }
 
 /** Fetch all customer data for trash (vehicles + appointments snapshot) */
