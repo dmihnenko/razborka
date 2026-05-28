@@ -16,7 +16,7 @@ interface Props {
 export default function OwnerSetupPage({ profile, onLogout, onComplete, existingCompanyId, existingCompanyName }: Props) {
   const queryClient = useQueryClient()
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
-  const isPartsOwner = profile?.roles?.some((r: any) => r.name === 'parts_owner')
+
   const isUpdate = !!existingCompanyId
 
   const [companyName, setCompanyName] = useState(existingCompanyName || '')

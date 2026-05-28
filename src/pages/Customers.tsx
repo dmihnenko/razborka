@@ -16,7 +16,6 @@ import {
   updateCustomer,
   deleteCustomer,
   fetchCustomerForTrash,
-  type CustomerFormData,
 } from '@/services/customersService'
 
 interface CustomerModalProps {

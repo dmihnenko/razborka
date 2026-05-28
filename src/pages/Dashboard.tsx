@@ -16,7 +16,6 @@ import {
   DollarSign,
   Trash2,
   ArrowRight,
-  Calendar,
   Car,
   Users as UsersIcon,
   Settings as SettingsIcon
@@ -202,8 +201,6 @@ export default function Dashboard() {
   const isLoading = statsLoading || monthlyLoading || workersLoading
 
   // Получаем название текущего месяца
-  const currentMonth = new Date().toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
-
   return (
     <div className="space-y-4 sm:space-y-5">
       {/* Хедер страницы — стиль как в разборке */}

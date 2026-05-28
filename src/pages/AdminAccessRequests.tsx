@@ -2,9 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchAccessRequests, approveAccessRequest, rejectAccessRequest } from '@/services/adminService'
 import { toast } from 'sonner'
-import { CheckCircle2, XCircle, Clock, Building2, Phone, MapPin, User, Wrench, Package, Car, ChevronDown } from 'lucide-react'
-import { useConfirm } from '@/hooks/useConfirm'
-import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import { CheckCircle2, XCircle, Clock, Building2, Phone, MapPin, User, Wrench, Package, Car } from 'lucide-react'
 
 const roleLabels: Record<string, string> = {
   sto_owner: 'Владелец СТО',
@@ -32,7 +30,6 @@ const roleColors: Record<string, string> = {
 
 export default function AdminAccessRequests() {
   const queryClient = useQueryClient()
-  const { confirm, dialogProps } = useConfirm()
   const [rejectReason, setRejectReason] = useState('')
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending')
@@ -61,10 +58,6 @@ export default function AdminAccessRequests() {
     },
     onError: () => toast.error('Ошибка'),
   })
-
-  const counts = {
-    pending: requests.filter((r: any) => filter === 'all' ? r.status === 'pending' : true).length,
-  }
 
   return (
     <div className="space-y-5">
@@ -197,7 +190,6 @@ export default function AdminAccessRequests() {
           })}
         </div>
       )}
-      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

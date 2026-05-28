@@ -83,7 +83,6 @@ export default function UserEdit() {
   }), [roles, isAdmin, isStoOwner, isPartsOwner])
 
   const selectedRoles = useMemo(() => allowedRoles.filter(r => formData.role_ids.includes(r.id)), [allowedRoles, formData.role_ids])
-  const selectedRoleNames = useMemo(() => selectedRoles.map(r => r.name), [selectedRoles])
 
 
   const totalSteps: Step = 2

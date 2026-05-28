@@ -5,7 +5,7 @@ import { ArrowLeft, User, Lock, Building2, Shield, ChevronRight, Eye, EyeOff } f
 import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
-import { getRoles, type Role } from '../services/userService'
+import { getRoles } from '../services/userService'
 import { getStoCompanies, getPartsCompanies } from '../services/companyService'
 import { useIsAdmin, useUserProfile } from '@/hooks/useUserProfile'
 

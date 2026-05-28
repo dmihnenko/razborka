@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import { checkUsernameExists, getUserByUsername, getUserRolesWithNames } from '@/services/userService'
+import { checkUsernameExists, getUserRolesWithNames } from '@/services/userService'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { getDefaultRouteForRoles } from '../config/navigation'

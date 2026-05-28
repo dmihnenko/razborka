@@ -2,10 +2,9 @@ import { useState } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Eye, UserCog, Trash2, Edit } from 'lucide-react'
+import { Eye, UserCog, Trash2, Edit } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useNavigate } from 'react-router-dom'
-import { IMaskInput } from 'react-imask'
 import {
   fetchStoEmployees,
   deactivateStoEmployee,

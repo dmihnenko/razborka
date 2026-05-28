@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
-import { Search, Users, Grid, List, UserCheck, UserX, Mail, Phone, Plus, X } from 'lucide-react'
+import { Search, Users, Grid, List, UserCheck, UserX, Mail, Phone } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 
 type ViewMode = 'grid' | 'list'
@@ -12,7 +12,6 @@ type ViewMode = 'grid' | 'list'
 export default function PartsEmployees() {
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
-  const queryClient = useQueryClient()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -32,8 +31,7 @@ export default function PartsEmployees() {
       if (error) throw error
       return data || []
     },
-    enabled: !!partsCompanyId,
-  })
+    enabled: !!partsCompanyId })
 
   // Фильтрация по поиску
   const filteredEmployees = employees.filter(emp => {
@@ -51,8 +49,7 @@ export default function PartsEmployees() {
   const stats = {
     total: employees.length,
     active: employees.filter(e => e.email).length,
-    withPhone: employees.filter(e => e.phone).length,
-  }
+    withPhone: employees.filter(e => e.phone).length }
 
   if (!partsCompanyId) {
     return <PartsAccessDenied />
