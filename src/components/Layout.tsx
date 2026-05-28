@@ -315,7 +315,7 @@ export default function Layout() {
             {/* Кнопки переключения ролей */}
             <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto scrollbar-none">
               {switchableRoles
-                .filter((r: string) => !['admin', 'user'].includes(r))
+                .filter((r: string) => !['admin', 'user'].includes(r) && r !== activeRoleName)
                 .map((roleName: string) => {
                   const labels: Record<string,string> = {
                     sto_owner: 'СТО', sto_worker: 'Работник СТО',
