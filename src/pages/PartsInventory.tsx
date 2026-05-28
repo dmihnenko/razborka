@@ -573,58 +573,23 @@ export default function PartsInventory() {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <button
-            onClick={() => setStatusFilter('all')}
-            className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all text-left ${
-              statusFilter === 'all' ? 'ring-2 ring-primary' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">Всего</p>
-              <span className="w-2.5 h-2.5 rounded-full bg-gray-400 flex-shrink-0" />
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{sourceFilter === 'vehicles' ? stats.total : stats.totalQuantity}</p>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter('available')}
-            className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all text-left ${
-              statusFilter === 'available' ? 'ring-2 ring-green-500' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">В наличии</p>
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.available}</p>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter('reserved')}
-            className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all text-left ${
-              statusFilter === 'reserved' ? 'ring-2 ring-yellow-500' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">Зарезервировано</p>
-              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-yellow-600">{stats.reserved}</p>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter(statusFilter === 'sold' ? 'all' : 'sold')}
-            className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all text-left ${
-              statusFilter === 'sold' ? 'ring-2 ring-blue-500' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">Продано</p>
-              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.sold}</p>
-          </button>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4 sm:mb-6">
+          {[
+            { key: 'all',       label: 'Всего',          value: sourceFilter === 'vehicles' ? stats.total : stats.totalQuantity, dot: 'bg-gray-400',   text: 'text-gray-900',   ring: 'ring-primary' },
+            { key: 'available', label: 'В наличии',      value: stats.available, dot: 'bg-emerald-500', text: 'text-emerald-600', ring: 'ring-emerald-500' },
+            { key: 'reserved',  label: 'Зарезервировано',value: stats.reserved,  dot: 'bg-amber-400',  text: 'text-amber-600',  ring: 'ring-amber-400' },
+            { key: 'sold',      label: 'Продано',        value: stats.sold,      dot: 'bg-blue-500',   text: 'text-blue-600',   ring: 'ring-blue-500' },
+          ].map(({ key, label, value, dot, text, ring }) => (
+            <button key={key}
+              onClick={() => setStatusFilter(key === 'sold' && statusFilter === 'sold' ? 'all' : key as any)}
+              className={`stat-card cursor-pointer text-left ${statusFilter === key ? `ring-2 ${ring}` : ''}`}>
+              <div className="flex items-start justify-between mb-3">
+                <p className="text-xs font-medium" style={{ color: '#64748B' }}>{label}</p>
+                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-0.5 ${dot}`} />
+              </div>
+              <p className={`text-3xl font-bold ${text}`} style={{ letterSpacing: '-0.03em' }}>{value}</p>
+            </button>
+          ))}
 
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <div className="flex items-center justify-between mb-2">

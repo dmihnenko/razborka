@@ -121,65 +121,28 @@ export default function PartsOrders() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <button
-            onClick={() => setStatusFilter('all')}
-            className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all text-left ${
-              statusFilter === 'all' ? 'ring-2 ring-primary' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">Всего</p>
-              <ShoppingCart className="w-4 h-4 text-gray-400" />
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4 sm:mb-6">
+          {[
+            { key: 'all',        label: 'Всего',    value: stats.total,       dot: 'bg-gray-400',   text: 'text-gray-900',   ring: 'ring-primary' },
+            { key: 'new',        label: 'Новые',    value: stats.new,         dot: 'bg-blue-500',   text: 'text-blue-600',   ring: 'ring-blue-500' },
+            { key: 'in_progress',label: 'В работе', value: stats.in_progress, dot: 'bg-amber-400',  text: 'text-amber-600',  ring: 'ring-amber-400' },
+            { key: 'completed',  label: 'Завершены',value: stats.completed,   dot: 'bg-emerald-500',text: 'text-emerald-600',ring: 'ring-emerald-500' },
+          ].map(({ key, label, value, dot, text, ring }) => (
+            <button key={key} onClick={() => setStatusFilter(key as any)}
+              className={`stat-card cursor-pointer text-left ${statusFilter === key ? `ring-2 ${ring}` : ''}`}>
+              <div className="flex items-start justify-between mb-3">
+                <p className="text-xs font-medium" style={{ color: '#64748B' }}>{label}</p>
+                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-0.5 ${dot}`} />
+              </div>
+              <p className={`text-3xl font-bold ${text}`} style={{ letterSpacing: '-0.03em' }}>{value}</p>
+            </button>
+          ))}
+          <div className="stat-card">
+            <div className="flex items-start justify-between mb-3">
+              <p className="text-xs font-medium" style={{ color: '#64748B' }}>Выручка</p>
+              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-0.5 bg-purple-400" />
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.total}</p>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter('new')}
-            className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all text-left ${
-              statusFilter === 'new' ? 'ring-2 ring-blue-500' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">Новые</p>
-              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.new}</p>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter('in_progress')}
-            className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all text-left ${
-              statusFilter === 'in_progress' ? 'ring-2 ring-yellow-500' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">В работе</p>
-              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-yellow-600">{stats.in_progress}</p>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter('completed')}
-            className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all text-left ${
-              statusFilter === 'completed' ? 'ring-2 ring-green-500' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">Завершены</p>
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.completed}</p>
-          </button>
-
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">Выручка</p>
-              <DollarSign className="w-4 h-4 text-purple-500" />
-            </div>
-            <p className="text-lg sm:text-xl font-bold text-purple-600">{formatUSD(stats.totalRevenue)}</p>
+            <p className="text-2xl font-bold text-purple-600" style={{ letterSpacing: '-0.03em' }}>{formatUSD(stats.totalRevenue)}</p>
           </div>
         </div>
 
