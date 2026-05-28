@@ -51,9 +51,7 @@ export default function PartsInventory() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [vehicleFilter, setVehicleFilter] = useState<string>('all') // vehicle_id or 'all'
-  const [viewMode, setViewMode] = useState<ViewMode>(() =>
-    typeof window !== 'undefined' && window.innerWidth >= 768 ? 'list' : 'grid'
-  )
+  const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<PartsInventoryItem | null>(null)
   const [sellingItem, setSellingItem] = useState<PartsInventoryItem | null>(null)
@@ -745,13 +743,13 @@ export default function PartsInventory() {
             )}
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {filteredAndSorted.map((item) => (
               <div
                 key={item.id}
-                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all overflow-hidden group flex flex-col"
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden group flex flex-col"
               >
-                <div className="p-5 flex-1">
+                <div className="p-4 flex-1">
                   {/* Status & Low Stock Warning */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
@@ -788,92 +786,79 @@ export default function PartsInventory() {
                     </div>
                   </div>
 
-                  {/* Part Info */}
-                  <div className="mb-4">
+                  {/* Название + артикул */}
+                  <div className="mb-3">
                     <h3
-                      className="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary transition-colors line-clamp-2 cursor-pointer hover:text-primary"
+                      className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-2 cursor-pointer leading-snug"
                       onClick={(e) => { e.stopPropagation(); navigate(`/parts/inventory/${item.id}`) }}
                     >
                       {item.name}
                     </h3>
-                    {item.part_number && (
-                      <p className="text-sm text-gray-600">Арт: {item.part_number}</p>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      {item.category && (
+                        <span className="text-[11px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md">{item.category.name}</span>
+                      )}
+                      {item.part_number && (
+                        <span className="text-[11px] text-gray-400 font-mono">#{item.part_number}</span>
+                      )}
+                      {item.condition && (
+                        <span className="text-[11px] text-gray-400">{PARTS_CONDITION_LABELS[item.condition]}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Авто */}
+                  {item.vehicle && (
+                    <div className="text-xs text-gray-500 mb-3 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
+                      <span className="truncate">{item.vehicle.make} {item.vehicle.model} {item.vehicle.year}</span>
+                    </div>
+                  )}
+
+                  {/* Количество + склад */}
+                  <div className="flex items-center gap-3 mb-3">
+                    {!item.vehicle_id && (
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${item.quantity <= 2 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
+                        {item.quantity} шт
+                      </span>
                     )}
-                    {item.category && (
-                      <p className="text-xs text-gray-500 mt-1">{item.category.name}</p>
+                    {item.location && (
+                      <span className="text-xs text-gray-400 truncate">📍 {item.location}</span>
                     )}
                   </div>
 
-                  {/* Details */}
-                  <div className="space-y-2 text-sm mb-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Состояние:</span>
-                      <span className="font-medium">{PARTS_CONDITION_LABELS[item.condition]}</span>
-                    </div>
-                    {!item.vehicle_id && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Количество:</span>
-                        <span className={`font-bold ${item.quantity <= 2 ? 'text-red-600' : 'text-gray-900'}`}>
-                          {item.quantity} шт
-                        </span>
-                      </div>
-                    )}
-                    {item.selling_price && (
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                        <span className="text-gray-600">Цена:</span>
-                        <span className="font-bold text-primary text-lg">{formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}</span>
-                      </div>
-                    )}
-                    {item.status === 'sold' && item.sold_to_customer && (
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                        <span className="text-gray-600">Покупатель:</span>
-                        <span className="font-medium text-gray-900 truncate ml-2">{item.sold_to_customer.full_name}</span>
-                      </div>
+                  {/* Цена */}
+                  <div className="mt-auto">
+                    {item.selling_price ? (
+                      <p className="text-lg font-bold text-primary" style={{ letterSpacing: '-0.02em' }}>
+                        {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-amber-600 font-medium">Цена не указана</p>
                     )}
                     {item.status === 'sold' && item.sold_price && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Продано за:</span>
-                        <span className="font-bold text-green-700">{formatPrice(item.sold_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}</span>
-                      </div>
+                      <p className="text-xs text-green-600 mt-0.5">Продано: {formatPrice(item.sold_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}</p>
                     )}
                   </div>
-
-                  {item.location && (
-                    <div className="text-xs text-gray-500 mb-3">
-                      📍 {item.location}
-                    </div>
-                  )}
-
-                  {item.description && (
-                    <div className="pt-3 border-t border-gray-100">
-                      <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
-                    </div>
-                  )}
                 </div>
 
-                {/* Actions Footer */}
-                <div className="bg-gray-50 px-4 py-3 flex gap-2">
-                  <button
-                    onClick={(e) => handleEdit(item, e)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
-                  >
-                    Редактировать
+                {/* Actions */}
+                <div className="px-4 py-3 border-t border-gray-100 flex gap-2">
+                  <button onClick={(e) => handleEdit(item, e)}
+                    className="flex-1 py-2 text-xs font-semibold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
+                    Изменить
                   </button>
                   {item.status !== 'sold' && (
-                    <button
-                      onClick={(e) => handleSell(item, e)}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors"
-                    >
-                      <DollarSign className="w-4 h-4" />
+                    <button onClick={(e) => handleSell(item, e)}
+                      className="flex-1 flex items-center justify-center gap-1 py-2 text-xs font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors">
+                      <DollarSign className="w-3.5 h-3.5" strokeWidth={2} />
                       Продать
                     </button>
                   )}
-                  <button
-                    onClick={(e) => handleDelete(item, e)}
-                    className="p-2 text-red-500 border border-red-100 bg-white hover:bg-red-50 hover:border-red-200 rounded-lg transition-colors"
-                    title="Удалить"
-                  >
-                    <Trash2 className="w-4 h-4" />
+                  <button onClick={(e) => handleDelete(item, e)}
+                    className="w-9 h-9 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-xl transition-colors flex-shrink-0"
+                    title="Удалить">
+                    <Trash2 className="w-4 h-4" strokeWidth={1.5} />
                   </button>
                 </div>
               </div>
