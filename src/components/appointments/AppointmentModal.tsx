@@ -14,6 +14,7 @@ import VehicleSelector from './VehicleSelector'
 import WorkItemsManager from './WorkItemsManager'
 import PartItemsManager from './PartItemsManager'
 import AppointmentSummary from './AppointmentSummary'
+import DateTimePicker from './DateTimePicker'
 
 interface Props {
   isOpen: boolean
@@ -24,10 +25,11 @@ interface Props {
 
 const steps = [
   { id: 1, name: 'Клиент', description: 'Выбор клиента' },
-  { id: 2, name: 'Автомобиль', description: 'Выбор транспорта' },
-  { id: 3, name: 'Работы', description: 'Список работ' },
-  { id: 4, name: 'Запчасти', description: 'Список запчастей' },
-  { id: 5, name: 'Проверка', description: 'Итоговая сводка' },
+  { id: 2, name: 'Авто', description: 'Выбор транспорта' },
+  { id: 3, name: 'Дата', description: 'Дата и время' },
+  { id: 4, name: 'Работы', description: 'Список работ' },
+  { id: 5, name: 'Запчасти', description: 'Список запчастей' },
+  { id: 6, name: 'Итог', description: 'Проверка и сохранение' },
 ]
 
 export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuccess }: Props) {
@@ -95,8 +97,8 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
         parts_paid: existingAppointment.parts_paid || false,
         work_paid: existingAppointment.work_paid || false,
       })
-      // При редактировании начинаем с шага 3 (работы)
-      setCurrentStep(3)
+      // При редактировании начинаем с шага 4 (работы)
+      setCurrentStep(4)
     } else {
       // Сбросить форму при создании новой заявки
       setFormData({
@@ -260,7 +262,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
   const handleBack = () => {
     if (currentStep > 1) {
       // Для работников шаг 1 и 2 недоступны при редактировании
-      if (isStoWorker && !isStoOwner && appointmentId && currentStep === 3) {
+      if (isStoWorker && !isStoOwner && appointmentId && currentStep === 4) {
         return
       }
       setCurrentStep(currentStep - 1)
@@ -384,20 +386,35 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
           )}
 
           {currentStep === 3 && (
+            <div>
+              <div className="mb-4">
+                <h3 className="text-base font-bold text-gray-900">Дата и время записи</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Выберите удобную дату и свободный слот</p>
+              </div>
+              <DateTimePicker
+                value={formData.scheduledDate}
+                onChange={(val) => setFormData({ ...formData, scheduledDate: val })}
+                stoCompanyId={profile?.sto_company_id}
+                excludeAppointmentId={appointmentId}
+              />
+            </div>
+          )}
+
+          {currentStep === 4 && (
             <WorkItemsManager
               items={formData.workItems}
               onChange={(items) => setFormData({ ...formData, workItems: items })}
             />
           )}
 
-          {currentStep === 4 && (
+          {currentStep === 5 && (
             <PartItemsManager
               items={formData.partItems}
               onChange={(items) => setFormData({ ...formData, partItems: items })}
             />
           )}
 
-          {currentStep === 5 && (
+          {currentStep === 6 && (
             <AppointmentSummary
               formData={formData}
               onUpdate={(data) => setFormData({ ...formData, ...data })}
@@ -408,7 +425,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
 
         {/* Footer */}
         <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex items-center gap-2 sm:gap-3">
-          {currentStep > 1 && !(isStoWorker && !isStoOwner && appointmentId && currentStep === 3) && (
+          {currentStep > 1 && !(isStoWorker && !isStoOwner && appointmentId && currentStep === 4) && (
             <button
               type="button"
               onClick={handleBack}
