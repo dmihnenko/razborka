@@ -47,6 +47,7 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
 
   const [step, setStep] = useState<Step>('select')
   const [selectedType, setSelectedType] = useState<RequestType | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<'sto' | 'parts' | 'user' | null>(null)
   const [existingRequest, setExistingRequest] = useState<AccessRequest | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -222,36 +223,95 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
             </p>
           </div>
 
-          {/* ─── ШАГ 1: Выбор роли ─── */}
-          {step === 'select' && (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100">
-                <h2 className="text-sm font-bold text-gray-800">Кто вы в системе?</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Выберите — администратор назначит доступ</p>
+          {/* ─── ШАГ 1: Выбор категории ─── */}
+          {step === 'select' && !selectedCategory && (
+            <div className="space-y-3">
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <h2 className="text-sm font-bold text-gray-800">Выберите направление</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">Вы работаете с СТО, авторазборкой или ведёте личные авто?</p>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {[
+                    { id: 'sto' as const, icon: Wrench, color: 'text-blue-600 bg-blue-50', label: 'СТО', desc: 'Автосервис, заявки, ремонт автомобилей' },
+                    { id: 'parts' as const, icon: Package, color: 'text-orange-600 bg-orange-50', label: 'Авторазборка', desc: 'Склад запчастей, заказы, продажи' },
+                    { id: 'user' as const, icon: Car, color: 'text-purple-600 bg-purple-50', label: 'Личные автомобили', desc: 'Учёт своих авто, расходы, история' },
+                  ].map(opt => {
+                    const Icon = opt.icon
+                    return (
+                      <button key={opt.id} type="button"
+                        onClick={() => {
+                          if (opt.id === 'user') { handleSelectType('user'); return }
+                          setSelectedCategory(opt.id)
+                        }}
+                        className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors text-left">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${opt.color}`}>
+                          <Icon className="w-6 h-6" strokeWidth={1.5} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-base font-bold text-gray-900">{opt.label}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{opt.desc}</p>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-              <div className="divide-y divide-gray-100">
-                {[
-                  { type: 'sto_owner' as RequestType, icon: Building2, color: 'text-blue-600 bg-blue-50', label: 'Владелец СТО', desc: 'Открываю/веду автосервис' },
-                  { type: 'sto_worker' as RequestType, icon: Wrench, color: 'text-cyan-600 bg-cyan-50', label: 'Работник СТО', desc: 'Работаю в автосервисе' },
-                  { type: 'parts_owner' as RequestType, icon: Package, color: 'text-orange-600 bg-orange-50', label: 'Владелец авторазборки', desc: 'Открываю/веду разборку' },
-                  { type: 'parts_worker' as RequestType, icon: Package, color: 'text-amber-600 bg-amber-50', label: 'Работник разборки', desc: 'Работаю на авторазборке' },
-                  { type: 'user' as RequestType, icon: Car, color: 'text-purple-600 bg-purple-50', label: 'Личные автомобили', desc: 'Веду учёт своих авто' },
-                ].map(opt => {
-                  const Icon = opt.icon
-                  return (
-                    <button key={opt.type} type="button" onClick={() => handleSelectType(opt.type)}
-                      className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors text-left">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${opt.color}`}>
-                        <Icon className="w-5 h-5" strokeWidth={1.5} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800">{opt.label}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{opt.desc}</p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
-                    </button>
-                  )
-                })}
+            </div>
+          )}
+
+          {/* ─── ШАГ 1б: Выбор роли внутри категории ─── */}
+          {step === 'select' && selectedCategory && selectedCategory !== 'user' && (
+            <div className="space-y-3">
+              <button type="button" onClick={() => setSelectedCategory(null)}
+                className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
+                Назад
+              </button>
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${selectedCategory === 'sto' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
+                      {selectedCategory === 'sto' ? <Wrench className="w-4 h-4" strokeWidth={1.5} /> : <Package className="w-4 h-4" strokeWidth={1.5} />}
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-bold text-gray-800">{selectedCategory === 'sto' ? 'СТО' : 'Авторазборка'}</h2>
+                      <p className="text-xs text-gray-400">Кем вы являетесь?</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {[
+                    {
+                      type: (selectedCategory + '_owner') as RequestType,
+                      label: 'Владелец',
+                      desc: selectedCategory === 'sto' ? 'Управляю СТО — клиенты, заявки, сотрудники' : 'Управляю разборкой — запчасти, заказы, склад',
+                      icon: Building2,
+                    },
+                    {
+                      type: (selectedCategory + '_worker') as RequestType,
+                      label: 'Работник',
+                      desc: selectedCategory === 'sto' ? 'Работаю в СТО — принимаю и обрабатываю заявки' : 'Работаю на разборке — обрабатываю заказы и склад',
+                      icon: Users,
+                    },
+                  ].map(opt => {
+                    const Icon = opt.icon
+                    return (
+                      <button key={opt.type} type="button" onClick={() => handleSelectType(opt.type)}
+                        className="w-full flex items-center gap-4 px-5 py-5 hover:bg-gray-50 transition-colors text-left">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${selectedCategory === 'sto' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
+                          <Icon className="w-6 h-6" strokeWidth={1.5} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-base font-bold text-gray-900">{opt.label}</p>
+                          <p className="text-xs text-gray-400 mt-1">{opt.desc}</p>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </div>
           )}
