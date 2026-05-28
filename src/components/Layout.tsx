@@ -318,8 +318,8 @@ export default function Layout() {
                 .filter((r: string) => !['admin', 'user'].includes(r) && r !== activeRoleName)
                 .map((roleName: string) => {
                   const labels: Record<string,string> = {
-                    sto_owner: 'СТО', sto_worker: 'Работник СТО',
-                    parts_owner: 'Разборка', parts_worker: 'Работник разборки',
+                    sto_owner: 'СТО', sto_worker: 'СТО',
+                    parts_owner: 'Разборка', parts_worker: 'Разборка',
                   }
                   if (!labels[roleName]) return null
                   const isActive = activeRoleName === roleName
