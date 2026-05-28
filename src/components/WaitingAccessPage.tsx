@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Car, Wrench, Package, CheckCircle2, LogOut, Sparkles, Clock, XCircle, RefreshCw, ChevronRight, ArrowLeft, Building2, Phone, MapPin, AlertCircle } from 'lucide-react'
+import { Car, Wrench, Package, CheckCircle2, LogOut, Sparkles, Clock, XCircle, RefreshCw, ChevronRight, ArrowLeft, Building2, Users, Phone, MapPin, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { IMaskInput } from 'react-imask'
