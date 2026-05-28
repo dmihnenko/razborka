@@ -309,3 +309,16 @@ export async function getUserRolesWithNames(userId: string): Promise<{
 
   return { roleNames, primaryRoleName }
 }
+
+export async function fetchUserProfileForEdit(userId: string) {
+  const { data: profile, error } = await supabase.from('user_profiles').select('*').eq('id', userId).single()
+  if (error) throw error
+  const { data: userRoles } = await supabase.from('user_roles').select('role_id, is_primary').eq('user_id', userId)
+  return { ...profile, user_roles: userRoles || [] }
+}
+
+export async function fetchAllActiveRoles() {
+  const { data, error } = await supabase.from('roles').select('*').eq('is_active', true)
+  if (error) throw error
+  return data
+}

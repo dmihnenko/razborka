@@ -109,3 +109,8 @@ export async function fetchCustomerOptions(): Promise<CustomerOption[]> {
     .order('name')
   return data || []
 }
+
+export async function fetchVehicleAppointments(vehicleId: string) {
+  const { data } = await supabase.from('appointments').select('*').eq('vehicle_id', vehicleId)
+  return data || []
+}

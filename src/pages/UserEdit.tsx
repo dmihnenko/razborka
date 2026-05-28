@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useIsAdmin, useUserProfile } from '@/hooks/useUserProfile'
 import { ROLE_COLORS } from '@/utils/roles'
-import { updateUserProfile, updateUserRoles } from '@/services/userService'
+import { updateUserProfile, updateUserRoles, fetchUserProfileForEdit, fetchAllActiveRoles } from '@/services/userService'
 
 interface Role { id: string; name: string; display_name: string; description: string | null; is_active: boolean }
 type Step = 1 | 2 | 3
@@ -48,12 +48,7 @@ export default function UserEdit() {
   const { data: userProfile, isLoading } = useQuery({
     queryKey: ['user_profile', id],
     enabled: !!id,
-    queryFn: async () => {
-      const { data: profile, error } = await supabase.from('user_profiles').select('*').eq('id', id!).single()
-      if (error) throw error
-      const { data: userRoles } = await supabase.from('user_roles').select('role_id, is_primary').eq('user_id', id!)
-      return { ...profile, user_roles: userRoles || [] }
-    }
+    queryFn: () => fetchUserProfileForEdit(id!)
   })
 
   useEffect(() => {
@@ -76,11 +71,7 @@ export default function UserEdit() {
 
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('roles').select('*').eq('is_active', true)
-      if (error) throw error
-      return data as Role[]
-    }
+    queryFn: () => fetchAllActiveRoles() as Promise<Role[]>
   })
 
   const allowedRoles = useMemo(() => roles.filter(role => {

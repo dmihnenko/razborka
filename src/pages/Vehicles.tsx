@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Search } from 'lucide-react'
 import { useSearchParams, Link, useNavigate } from 'react-router-dom'
@@ -14,6 +13,7 @@ import {
   fetchVehicles,
   fetchVehicleById,
   deleteVehicle,
+  fetchVehicleAppointments,
   createVehicle,
   updateVehicle,
   fetchCustomerOptions,
@@ -80,7 +80,7 @@ export default function Vehicles() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const vehicle = await fetchVehicleById(id)
-      const { data: appts } = await supabase.from('appointments').select('*').eq('vehicle_id', id)
+      const appts = await fetchVehicleAppointments(id)
       if (vehicle) {
         await moveToTrash({
           entityType: 'vehicle',
