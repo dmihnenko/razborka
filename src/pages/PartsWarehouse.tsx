@@ -159,7 +159,7 @@ export default function PartsWarehouse() {
 
   if (!partsCompanyId) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-dvh bg-gray-50 flex items-center justify-center">
         <p className="text-gray-600">Нет доступа к разборке</p>
       </div>
     )
@@ -169,7 +169,7 @@ export default function PartsWarehouse() {
   const usedCount = Object.keys(usageMap).length
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-dvh bg-gray-50">
       <PartsPageHeader
         title="Места хранения"
         subtitle={totalLocations > 0 ? `${totalLocations} мест · ${usedCount} задействовано` : undefined}

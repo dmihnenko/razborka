@@ -59,7 +59,7 @@ export default function VehicleAccessPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#0D1117' }}>
+    <div className="min-h-dvh flex flex-col" style={{ background: '#0D1117' }}>
       <PublicBrandHeader subtitle="Доступ по коду" />
       <div className="flex-1 flex items-center justify-center px-4 py-8">
       <div className="max-w-md w-full">

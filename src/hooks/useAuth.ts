@@ -10,15 +10,15 @@ export function useAuth() {
     let mounted = true
 
     // Проверяем текущую сессию
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
+    supabase.auth.getUser().then(({ data: { user }, error }) => {
       if (!mounted) return
-      if (error || !session) {
+      if (error || !user) {
         // Сессия невалидна — очищаем localStorage
         localStorage.removeItem('tsp_profile_cache')
         localStorage.removeItem('activeRole')
         setUser(null)
       } else {
-        setUser(session.user ?? null)
+        setUser(user)
       }
       setLoading(false)
     }).catch(() => {

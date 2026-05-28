@@ -112,7 +112,7 @@ export default function MyVehicles() {
               
               {/* Стоимость */}
               <div className="bg-blue-50 rounded-lg px-2 py-0.5 sm:px-3 sm:py-1 border border-blue-200 flex-shrink-0">
-                <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide leading-tight text-right">Стоимость</p>
+                <p className="text-xs sm:text-xs text-gray-500 uppercase tracking-wide leading-tight text-right">Стоимость</p>
                 <p className="text-sm sm:text-base md:text-lg font-bold text-blue-600 whitespace-nowrap leading-tight">
                   ${grandTotal.toFixed(2)}
                 </p>
@@ -121,7 +121,7 @@ export default function MyVehicles() {
           ) : (
             <div className="flex justify-end">
               <div className="bg-blue-50 rounded-lg px-2 py-0.5 sm:px-3 sm:py-1 border border-blue-200">
-                <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide leading-tight text-right">Стоимость</p>
+                <p className="text-xs sm:text-xs text-gray-500 uppercase tracking-wide leading-tight text-right">Стоимость</p>
                 <p className="text-sm sm:text-base md:text-lg font-bold text-blue-600 whitespace-nowrap leading-tight">
                   ${grandTotal.toFixed(2)}
                 </p>
@@ -144,14 +144,14 @@ export default function MyVehicles() {
 
   if (!profile) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-dvh">
         <p className="text-gray-500">Загрузка...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-dvh bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Заголовок с мягким оформлением */}
         <div className="mb-6 bg-white border border-gray-200 rounded-xl shadow-sm p-4 sm:p-6">

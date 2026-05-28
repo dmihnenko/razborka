@@ -185,16 +185,16 @@ export default function ShareLinkModal({ isOpen, onClose, vehicleId, userId }: P
                           {link.code}
                         </span>
                         {isExpired(link) && (
-                          <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] sm:text-xs rounded whitespace-nowrap">
+                          <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs sm:text-xs rounded whitespace-nowrap">
                             Истек
                           </span>
                         )}
                         {!link.expiresAt && (
-                          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] sm:text-xs rounded whitespace-nowrap">
+                          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs sm:text-xs rounded whitespace-nowrap">
                             Бессрочный
                           </span>
                         )}
-                        <span className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap hidden sm:inline">
+                        <span className="text-xs sm:text-xs text-gray-500 whitespace-nowrap hidden sm:inline">
                           {formatDateTime(link.createdAt)}
                           {link.expiresAt && ` • ${formatDateTime(link.expiresAt)}`}
                         </span>

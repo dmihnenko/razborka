@@ -61,7 +61,7 @@ export default function PartsCreateOrder() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-dvh bg-gray-50">
       <PartsPageHeader title="Создание заказа" backPath="/parts/orders" maxWidth="3xl" />
 
       {/* Content */}

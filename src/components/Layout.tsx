@@ -247,7 +247,7 @@ export default function Layout() {
           {/* Переключатель ролей для десктопа */}
           {hasMultipleRoles && (
             <div className="hidden lg:block mb-2 px-1">
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 px-2">Активная роль</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 px-2">Активная роль</p>
               <div className="space-y-0.5">
                 {switchableRoles.map((roleName: string) => {
                   const labels: Record<string,string> = {
@@ -273,7 +273,7 @@ export default function Layout() {
                       }`}>
                       <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isActive ? 'bg-primary' : 'bg-gray-300'}`} />
                       {labels[roleName] || roleName}
-                      {isActive && <span className="ml-auto text-[10px] opacity-60">активна</span>}
+                      {isActive && <span className="ml-auto text-xs opacity-60">активна</span>}
                     </button>
                   )
                 })}

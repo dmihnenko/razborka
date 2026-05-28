@@ -101,7 +101,7 @@ export default function PartsOrders() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-dvh bg-gray-50">
       {/* Header */}
       <PartsPageHeader
         title="Заказы"

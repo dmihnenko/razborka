@@ -469,7 +469,7 @@ export default function PartsDashboard() {
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <span
-                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                        className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold"
                         style={{ backgroundColor: 'rgba(37,99,235,0.08)', color: '#1D4ED8' }}
                       >
                         {getPartsOrderStatusText(order.status)}

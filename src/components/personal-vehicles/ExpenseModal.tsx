@@ -247,7 +247,7 @@ export default function ExpenseModal({ isOpen, onClose, category, editItem, onSa
                         <button
                           type="button"
                           onClick={() => handleChangeCurrency(index, 'USD')}
-                          className={`px-1.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-sm rounded transition-colors ${
+                          className={`px-1.5 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm rounded transition-colors ${
                             item.currency === 'USD'
                               ? 'bg-blue-700 text-white'
                               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -259,7 +259,7 @@ export default function ExpenseModal({ isOpen, onClose, category, editItem, onSa
                         <button
                           type="button"
                           onClick={() => handleChangeCurrency(index, 'UAH')}
-                          className={`px-1.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-sm rounded transition-colors ${
+                          className={`px-1.5 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm rounded transition-colors ${
                             item.currency === 'UAH'
                               ? 'bg-blue-700 text-white'
                               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -308,7 +308,7 @@ export default function ExpenseModal({ isOpen, onClose, category, editItem, onSa
                   rows={8}
                   required
                 />
-                <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-gray-500">
+                <p className="mt-1.5 sm:mt-2 text-xs sm:text-xs text-gray-500">
                   Формат: название сумма валюта (каждый расход с новой строки). Валюта USD используется по умолчанию.
                 </p>
               </div>

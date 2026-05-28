@@ -37,7 +37,7 @@ function OrderCard({ order }: { order: any }) {
                 {v.make} {v.model}{v.year ? ` ${v.year}` : ''}
               </span>
               {v.vin && (
-                <span className="font-mono text-[10px] text-gray-400 truncate">{v.vin}</span>
+                <span className="font-mono text-xs text-gray-400 truncate">{v.vin}</span>
               )}
             </div>
             <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${getPartsOrderStatusColor(order.status)}`}>
@@ -158,7 +158,7 @@ export default function PublicPartsCustomerView() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="min-h-dvh bg-slate-50 flex flex-col">
         <PublicBrandHeader subtitle="Авторазборка · заказы" />
         <div className="flex-1 flex justify-center items-center">
           <Spinner size="lg" />
@@ -173,7 +173,7 @@ export default function PublicPartsCustomerView() {
   const doneTotal    = doneOrders.reduce((s, o) => s + (o.total_amount ?? 0), 0)
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-dvh bg-slate-50">
       <PublicBrandHeader subtitle="Авторазборка · заказы" />
       <div className="py-4 sm:py-8">
       <div className="max-w-2xl mx-auto px-3 sm:px-4">
@@ -196,14 +196,14 @@ export default function PublicPartsCustomerView() {
             </div>
             <div className="flex gap-3 sm:gap-4 shrink-0">
               <div className="text-center">
-                <p className="text-[10px] text-gray-400">Активных</p>
+                <p className="text-xs text-gray-400">Активных</p>
                 <p className="text-base sm:text-xl font-bold text-blue-600">{activeOrders.length}</p>
-                {activeTotal > 0 && <p className="text-[10px] text-blue-400">{formatCurrency(activeTotal)}</p>}
+                {activeTotal > 0 && <p className="text-xs text-blue-400">{formatCurrency(activeTotal)}</p>}
               </div>
               <div className="text-center">
-                <p className="text-[10px] text-gray-400">Завершённых</p>
+                <p className="text-xs text-gray-400">Завершённых</p>
                 <p className="text-base sm:text-xl font-bold text-gray-500">{doneOrders.length}</p>
-                {doneTotal > 0 && <p className="text-[10px] text-gray-400">{formatCurrency(doneTotal)}</p>}
+                {doneTotal > 0 && <p className="text-xs text-gray-400">{formatCurrency(doneTotal)}</p>}
               </div>
             </div>
           </div>

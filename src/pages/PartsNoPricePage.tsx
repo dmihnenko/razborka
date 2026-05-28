@@ -133,14 +133,14 @@ export default function PartsNoPricePage() {
 
   if (!partsCompanyId) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-dvh bg-gray-50 flex items-center justify-center">
         <p className="text-gray-500">Нет доступа к разборке</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-dvh bg-gray-50">
       <PartsPageHeader
         title="Запчасти без цены"
         subtitle={!isLoading ? `${noPriceItems.length} позиций требуют заполнения` : undefined}

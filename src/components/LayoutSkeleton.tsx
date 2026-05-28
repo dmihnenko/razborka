@@ -6,7 +6,7 @@
 /** Full-page skeleton that mimics the new Layout structure */
 export function LayoutSkeleton() {
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-dvh bg-gray-100">
       {/* Sidebar skeleton */}
       <div className="hidden md:flex md:flex-col md:w-16 lg:w-64 bg-white border-r border-gray-200 flex-shrink-0">
         {/* Logo area */}

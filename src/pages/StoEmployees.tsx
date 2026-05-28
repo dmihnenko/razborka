@@ -8,7 +8,6 @@ import { useNavigate } from 'react-router-dom'
 import { IMaskInput } from 'react-imask'
 import {
   fetchStoEmployees,
-  createStoEmployee,
   deactivateStoEmployee,
   updateStoEmployeeName,
   bulkAssignAppointments,
@@ -167,118 +166,6 @@ export default function StoEmployees() {
           }}
         />
       )}
-    </div>
-  )
-}
-
-function AddEmployeeModal({ onClose, stoCompanyId }: { onClose: () => void; stoCompanyId: string }) {
-  const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-    full_name: '',
-    phone: ''
-  })
-  const queryClient = useQueryClient()
-
-  const createEmployeeMutation = useMutation({
-    mutationFn: (data: typeof formData) => createStoEmployee(data, stoCompanyId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sto_employees', stoCompanyId] })
-      toast.success('Работник добавлен')
-      onClose()
-    },
-    onError: (error: Error) => {
-      toast.error('Ошибка при добавлении: ' + error.message)
-    }
-  })
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!formData.username || !formData.password) {
-      toast.error('Заполните обязательные поля')
-      return
-    }
-    createEmployeeMutation.mutate(formData)
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
-        <h2 className="text-xl font-bold mb-4">Добавить работника</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Логин (username) *
-            </label>
-            <input
-              type="text"
-              value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="worker1"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Пароль *
-            </label>
-            <input
-              type="text"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Минимум 6 символов"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">Пароль будет виден в списке работников</p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              ФИО
-            </label>
-            <input
-              type="text"
-              value={formData.full_name}
-              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Иванов Иван Иванович"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Телефон
-            </label>
-            <IMaskInput
-              mask="+380 (00) 000-00-00"
-              value={formData.phone}
-              onAccept={(value) => setFormData({ ...formData, phone: value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="+380 (XX) XXX-XX-XX"
-            />
-          </div>
-
-          <div className="flex justify-end space-x-3 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              disabled={createEmployeeMutation.isPending}
-              className="px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
-            >
-              {createEmployeeMutation.isPending ? 'Добавление...' : 'Добавить'}
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   )
 }

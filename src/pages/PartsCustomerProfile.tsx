@@ -220,7 +220,7 @@ export default function PartsCustomerProfile() {
 
   if (customerLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-dvh">
         <Spinner size="lg" />
       </div>
     )

@@ -187,14 +187,14 @@ export default function Support() {
 
   if (chatsLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-gray-50 flex items-center justify-center p-4">
         <Spinner size="md" />
       </div>
     )
   }
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+    <div className="h-dvh bg-gray-50 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-3 sm:px-4 py-3 sm:py-4 flex-shrink-0">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
@@ -437,7 +437,7 @@ export default function Support() {
                                   {msg.message}
                                 </p>
                                 <div className="flex items-center justify-end gap-1 mt-1">
-                                  <p className={`text-[10px] sm:text-xs ${isOwn ? 'text-blue-100' : 'text-gray-400'}`}>
+                                  <p className={`text-xs sm:text-xs ${isOwn ? 'text-blue-100' : 'text-gray-400'}`}>
                                     {new Date(msg.created_at).toLocaleTimeString('ru-RU', { 
                                       hour: '2-digit', 
                                       minute: '2-digit' 

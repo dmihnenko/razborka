@@ -116,7 +116,7 @@ export default function PublicCustomerView() {
 
   if (vehiclesLoading || appointmentsLoading || partsOrdersLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="min-h-dvh bg-slate-50 flex flex-col">
         <PublicBrandHeader subtitle="История обслуживания" />
         <div className="flex-1 flex justify-center items-center">
           <Spinner size="lg" />
@@ -129,7 +129,7 @@ export default function PublicCustomerView() {
   const archivedAppointments = (appointments ?? []).filter(a => DONE_STATUSES.has(a.status))
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-dvh bg-slate-50">
       <PublicBrandHeader subtitle="История обслуживания" />
       <div className="py-3 sm:py-6">
       <div className="max-w-2xl mx-auto px-3 sm:px-4">
@@ -154,16 +154,16 @@ export default function PublicCustomerView() {
             </div>
             <div className="flex gap-3 sm:gap-4 shrink-0">
               <div className="text-center">
-                <p className="text-[10px] text-gray-400">Активных</p>
+                <p className="text-xs text-gray-400">Активных</p>
                 <p className="text-base sm:text-xl font-bold text-blue-600">{activeAppointments.length}</p>
               </div>
               <div className="text-center">
-                <p className="text-[10px] text-gray-400">Завершённых</p>
+                <p className="text-xs text-gray-400">Завершённых</p>
                 <p className="text-base sm:text-xl font-bold text-gray-500">{archivedAppointments.length}</p>
               </div>
               {partsOrders && partsOrders.length > 0 && (
                 <div className="text-center">
-                  <p className="text-[10px] text-gray-400">Заказов</p>
+                  <p className="text-xs text-gray-400">Заказов</p>
                   <p className="text-base sm:text-xl font-bold text-green-600">{partsOrders.length}</p>
                 </div>
               )}
@@ -207,7 +207,7 @@ export default function PublicCustomerView() {
                       {vehicle.color && <span> · {vehicle.color}</span>}
                     </p>
                     {vehicle.vin && (
-                      <p className="text-[10px] text-gray-400 font-mono truncate mt-0.5">{vehicle.vin}</p>
+                      <p className="text-xs text-gray-400 font-mono truncate mt-0.5">{vehicle.vin}</p>
                     )}
                   </div>
                 </div>
@@ -293,7 +293,7 @@ export default function PublicCustomerView() {
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between text-[10px] text-gray-400 pt-1.5 border-t border-gray-200">
+                  <div className="flex items-center justify-between text-xs text-gray-400 pt-1.5 border-t border-gray-200">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {new Date(order.order_date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -307,7 +307,7 @@ export default function PublicCustomerView() {
         )}
 
         {/* Футер */}
-        <p className="text-center text-[10px] sm:text-xs text-gray-400 py-4 px-2">
+        <p className="text-center text-xs sm:text-xs text-gray-400 py-4 px-2">
           Эта страница создана для вашего удобства · Здесь вы можете отслеживать состояние заявок в любое время
         </p>
       </div>
@@ -331,7 +331,7 @@ function AppointmentCard({ appointment }: { appointment: any }) {
             </span>
           )}
           {appointment.vehicles?.vin && (
-            <span className="font-mono text-[10px] text-gray-400 truncate">
+            <span className="font-mono text-xs text-gray-400 truncate">
               {appointment.vehicles.vin}
             </span>
           )}
@@ -365,7 +365,7 @@ function AppointmentCard({ appointment }: { appointment: any }) {
       )}
 
       {/* Дата */}
-      <div className="flex items-center justify-between text-[10px] text-gray-400 pt-1.5 border-t border-gray-200">
+      <div className="flex items-center justify-between text-xs text-gray-400 pt-1.5 border-t border-gray-200">
         <span className="flex items-center gap-1">
           <Clock className="w-3 h-3" />
           {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU', {

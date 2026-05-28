@@ -195,7 +195,7 @@ export default function PartsCategories() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-dvh bg-gray-50">
       <PartsPageHeader
         title="Категории запчастей"
         subtitle={`${categories.length} своих категорий`}

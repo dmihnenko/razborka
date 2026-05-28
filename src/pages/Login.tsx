@@ -199,7 +199,7 @@ export default function Login() {
         .btn-primary:not(:disabled):active { transform: translateY(0); }
       `}</style>
 
-      <div className="login-root flex min-h-screen" style={{ background: '#080C14' }}>
+      <div className="login-root flex min-h-dvh" style={{ background: '#080C14' }}>
 
         {/* ─── Left brand panel ─────────────────────────────── */}
         <div

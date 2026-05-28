@@ -223,14 +223,14 @@ export default function AdminSupport() {
 
   if (chatsLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-gray-50 flex items-center justify-center p-4">
         <Spinner size="md" />
       </div>
     )
   }
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+    <div className="h-dvh bg-gray-50 flex flex-col overflow-hidden">
       <div className="bg-white border-b border-gray-200 px-3 sm:px-4 py-3 sm:py-4 flex-shrink-0">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
@@ -246,11 +246,11 @@ export default function AdminSupport() {
           <div className="hidden sm:flex items-center gap-2 sm:gap-4">
             <div className="text-center px-3 py-1 bg-green-50 rounded-lg">
               <p className="text-lg font-bold text-green-600">{stats.active}</p>
-              <p className="text-[10px] text-gray-600">Активных</p>
+              <p className="text-xs text-gray-600">Активных</p>
             </div>
             <div className="text-center px-3 py-1 bg-gray-50 rounded-lg">
               <p className="text-lg font-bold text-gray-600">{stats.closed}</p>
-              <p className="text-[10px] text-gray-600">Закрытых</p>
+              <p className="text-xs text-gray-600">Закрытых</p>
             </div>
           </div>
         </div>
@@ -438,7 +438,7 @@ export default function AdminSupport() {
                                 )}
                                 <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words">{msg.message}</p>
                                 <div className="flex items-center justify-end gap-1 mt-1">
-                                  <p className={`text-[10px] sm:text-xs ${isAdmin ? 'text-blue-100' : 'text-gray-400'}`}>{new Date(msg.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
+                                  <p className={`text-xs sm:text-xs ${isAdmin ? 'text-blue-100' : 'text-gray-400'}`}>{new Date(msg.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
                                   {isAdmin && <CheckCheck className="w-3 h-3 text-blue-200" />}
                                 </div>
                               </div>

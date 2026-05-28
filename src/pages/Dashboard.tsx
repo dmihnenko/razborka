@@ -516,7 +516,7 @@ export default function Dashboard() {
                       className="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <span className="text-sm font-semibold text-gray-900 truncate">{appt.customers?.name || 'Клиент'}</span>
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0" style={{
+                        <span className="text-xs font-semibold px-1.5 py-0.5 rounded flex-shrink-0" style={{
                           backgroundColor: appt.status === 'ready' ? 'rgba(22,163,74,0.1)' : appt.status === 'in_progress' ? 'rgba(217,119,6,0.1)' : 'rgba(124,58,237,0.1)',
                           color: appt.status === 'ready' ? '#16A34A' : appt.status === 'in_progress' ? '#D97706' : '#7C3AED'
                         }}>

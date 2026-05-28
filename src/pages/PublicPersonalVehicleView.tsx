@@ -151,7 +151,7 @@ export default function PublicPersonalVehicleView() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-dvh">
         <p className="text-gray-500">Загрузка...</p>
       </div>
     )
@@ -159,7 +159,7 @@ export default function PublicPersonalVehicleView() {
 
   if (!vehicle) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-dvh">
         <p className="text-gray-500 mb-4">Автомобиль не найден</p>
         <button
           onClick={() => navigate('/my-vehicles')}
@@ -174,7 +174,7 @@ export default function PublicPersonalVehicleView() {
   const isOwner = profile?.id === vehicle.userId
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-dvh bg-slate-50">
       {!isOwner && <PublicBrandHeader subtitle="Личный автомобиль" />}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
         {/* Кнопка назад */}
@@ -284,7 +284,7 @@ export default function PublicPersonalVehicleView() {
 
                 {vehicle.vin && (
                   <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">VIN</p>
+                    <p className="text-xs sm:text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">VIN</p>
                     <p className="text-xs sm:text-sm md:text-base font-mono font-semibold text-gray-900 break-all">{vehicle.vin}</p>
                   </div>
                 )}

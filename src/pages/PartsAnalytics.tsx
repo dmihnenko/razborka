@@ -173,7 +173,7 @@ export default function PartsAnalytics() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-dvh bg-gray-50">
       {/* Header */}
       <PartsPageHeader
         title="Аналитика"
@@ -265,7 +265,7 @@ export default function PartsAnalytics() {
 
                   return (
                     <div key={month} className="flex flex-col items-center gap-1 flex-1 min-w-0 group">
-                      <span className="text-[10px] font-semibold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      <span className="text-xs font-semibold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                         {formatPrice(data.revenue, 'USD')}
                       </span>
                       <div className="w-full flex items-end" style={{ height: '120px' }}>
@@ -275,7 +275,7 @@ export default function PartsAnalytics() {
                           title={`${month}: ${formatPrice(data.revenue, 'USD')} · ${data.orders} зак.`}
                         />
                       </div>
-                      <span className="text-[10px] text-gray-500 leading-none truncate w-full text-center">{month.replace(' г.', '')}</span>
+                      <span className="text-xs text-gray-500 leading-none truncate w-full text-center">{month.replace(' г.', '')}</span>
                       <span className="text-[9px] text-gray-400 leading-none">{data.orders}</span>
                     </div>
                   )

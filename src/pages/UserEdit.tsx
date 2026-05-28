@@ -57,6 +57,7 @@ export default function UserEdit() {
   })
 
   useEffect(() => {
+    // Сбрасываем форму при смене пользователя или при загрузке профиля
     if (userProfile) {
       const userRoles = userProfile.user_roles || []
       const primary = userRoles.find((r: any) => r.is_primary)
@@ -71,7 +72,7 @@ export default function UserEdit() {
         parts_company_id: userProfile.parts_company_id || '',
       })
     }
-  }, [userProfile])
+  }, [id, userProfile])  // id в зависимостях — сброс при смене пользователя
 
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
@@ -281,7 +282,7 @@ export default function UserEdit() {
                     return (
                       <span key={role.id} className={`inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-xl text-sm font-semibold ${c.bg} ${c.text}`}>
                         {role.display_name}
-                        {formData.primary_role_id === role.id && <span className="text-[10px] bg-white/60 px-1.5 py-0.5 rounded font-bold">осн.</span>}
+                        {formData.primary_role_id === role.id && <span className="text-xs bg-white/60 px-1.5 py-0.5 rounded font-bold">осн.</span>}
                         <button type="button" onClick={() => toggleRole(role.id)} className="p-0.5 rounded hover:bg-black/10">
                           <X className="w-3.5 h-3.5" />
                         </button>

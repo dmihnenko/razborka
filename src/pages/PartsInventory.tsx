@@ -513,7 +513,7 @@ export default function PartsInventory() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-dvh bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1180,7 +1180,7 @@ export default function PartsInventory() {
       {/* Sell Modal */}
       {sellingItem && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-screen items-center justify-center px-4">
+          <div className="flex min-h-dvh items-center justify-center px-4">
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setSellingItem(null)} />
             <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm p-6 z-10">
               <h3 className="text-lg font-semibold text-gray-900 mb-1">Продать запчасть</h3>
@@ -1306,7 +1306,7 @@ export default function PartsInventory() {
       {/* Bulk Sell Modal */}
       {isBulkSellOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-screen items-center justify-center px-4 py-8">
+          <div className="flex min-h-dvh items-center justify-center px-4 py-8">
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setIsBulkSellOpen(false)} />
             <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg p-6 z-10">
               <h3 className="text-lg font-semibold text-gray-900 mb-1">Продать зарезервированные запчасти</h3>
@@ -1672,7 +1672,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+      <div className="flex min-h-dvh items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose} />
 
         <div className="inline-block align-bottom bg-white rounded-t-2xl sm:rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">

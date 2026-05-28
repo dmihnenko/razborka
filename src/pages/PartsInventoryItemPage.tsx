@@ -80,7 +80,7 @@ export default function PartsInventoryItemPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-dvh">
         <Spinner size="xl" />
       </div>
     )
@@ -88,7 +88,7 @@ export default function PartsInventoryItemPage() {
 
   if (error || !item) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+      <div className="flex flex-col items-center justify-center min-h-dvh gap-4">
         <Package className="w-12 h-12 text-gray-300" />
         <p className="text-gray-500">Запчасть не найдена</p>
         <button onClick={() => navigate('/parts/inventory')} className="text-primary hover:underline">
@@ -101,7 +101,7 @@ export default function PartsInventoryItemPage() {
   const isSold = item.status === 'sold'
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-dvh bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">

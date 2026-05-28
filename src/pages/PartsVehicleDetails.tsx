@@ -232,7 +232,7 @@ export default function PartsVehicleDetails() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-dvh">
         <Spinner size="lg" />
       </div>
     )

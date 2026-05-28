@@ -143,7 +143,7 @@ export default function AdminLayout() {
           <div className="hidden lg:block space-y-4">
             {navGroups.map(group => (
               <div key={group.title}>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-3 mb-1.5">{group.title}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 px-3 mb-1.5">{group.title}</p>
                 <div className="space-y-0.5">
                   {group.items.map(item => <NavLink key={item.href} item={item} />)}
                 </div>
@@ -156,7 +156,7 @@ export default function AdminLayout() {
         <div className="border-t border-gray-100 p-2 space-y-0.5 flex-shrink-0">
           {/* Быстрый доступ */}
           <div className="hidden lg:block mb-2">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-3 mb-1.5">Переключить</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 px-3 mb-1.5">Переключить</p>
             {quickItems.map(q => {
               const Icon = q.icon
               return (
@@ -222,7 +222,7 @@ export default function AdminLayout() {
             <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-4">
               {navGroups.map(group => (
                 <div key={group.title}>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-2 mb-1.5">{group.title}</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400 px-2 mb-1.5">{group.title}</p>
                   <div className="space-y-0.5">
                     {group.items.map(item => <NavLink key={item.href} item={item} onClick={() => setMobileOpen(false)} />)}
                   </div>
@@ -232,7 +232,7 @@ export default function AdminLayout() {
 
             {/* Footer */}
             <div className="border-t border-gray-100 p-3 space-y-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-2 mb-1">Переключить</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 px-2 mb-1">Переключить</p>
               <div className="grid grid-cols-3 gap-2">
                 {quickItems.map(q => {
                   const Icon = q.icon
