@@ -317,11 +317,11 @@ export default function Customers() {
 }
 
 function CustomerModal({ customer, onClose }: CustomerModalProps) {
+  const { data: profile } = useUserProfile()
   const [formData, setFormData] = useState({
     name: customer?.name || '',
     phone: customer?.phone || '',
     email: customer?.email || '',
-    address: customer?.address || '',
     notes: customer?.notes || '',
   })
 
@@ -334,7 +334,7 @@ function CustomerModal({ customer, onClose }: CustomerModalProps) {
       if (customer) {
         await updateCustomer(customer.id, data)
       } else {
-        await createCustomer(data)
+        await createCustomer(data, profile?.sto_company_id)
       }
     },
     onSuccess: () => {
@@ -390,15 +390,6 @@ function CustomerModal({ customer, onClose }: CustomerModalProps) {
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Адрес</label>
-            <input
-              type="text"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>

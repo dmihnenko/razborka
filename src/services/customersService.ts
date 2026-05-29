@@ -63,8 +63,11 @@ export async function fetchCustomerById(id: string): Promise<Customer> {
 }
 
 /** Create a new customer */
-export async function createCustomer(customerData: CustomerFormData): Promise<void> {
-  const { error } = await supabase.from('customers').insert([customerData])
+export async function createCustomer(customerData: CustomerFormData, stoCompanyId?: string | null): Promise<void> {
+  const { error } = await supabase.from('customers').insert([{
+    ...customerData,
+    sto_company_id: stoCompanyId || null,
+  }])
   if (error) throw error
 }
 
