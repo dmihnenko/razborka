@@ -132,7 +132,7 @@ export default function PublicCustomerView() {
     <div className="min-h-dvh bg-slate-50">
       <PublicBrandHeader subtitle="История обслуживания" />
       <div className="py-3 sm:py-6">
-      <div className="max-w-2xl mx-auto px-3 sm:px-4">
+      <div className="w-full px-3 sm:px-4">
 
         {/* Заголовок */}
         <div className="bg-white rounded-xl shadow-sm p-4 sm:p-5 mb-3 sm:mb-4">
