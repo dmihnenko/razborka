@@ -342,6 +342,7 @@ function VehicleModal({
     mileage: vehicle?.mileage || '',
   })
 
+  const { data: profile } = useUserProfile()
   useBlockScroll(true)
 
   const queryClient = useQueryClient()
@@ -361,7 +362,7 @@ function VehicleModal({
       if (vehicle) {
         await updateVehicle(vehicle.id, vehicleData)
       } else {
-        await createVehicle(vehicleData)
+        await createVehicle(vehicleData, profile?.sto_company_id)
       }
     },
     onSuccess: () => {

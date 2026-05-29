@@ -83,8 +83,11 @@ export async function fetchVehicleById(id: string): Promise<Vehicle | null> {
 }
 
 /** Create a new vehicle */
-export async function createVehicle(vehicleData: VehicleSaveData): Promise<void> {
-  const { error } = await supabase.from('vehicles').insert([vehicleData])
+export async function createVehicle(vehicleData: VehicleSaveData, stoCompanyId?: string | null): Promise<void> {
+  const { error } = await supabase.from('vehicles').insert([{
+    ...vehicleData,
+    sto_company_id: stoCompanyId || null,
+  }])
   if (error) throw error
 }
 
