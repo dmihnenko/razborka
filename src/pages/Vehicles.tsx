@@ -347,11 +347,21 @@ function VehicleModal({
 
   const queryClient = useQueryClient()
 
-  const { data: customers } = useQuery({
+  const { data: customers = [] } = useQuery({
     queryKey: ['customers-list', profile?.sto_company_id],
     enabled: !!profile?.sto_company_id,
     queryFn: () => fetchCustomerOptions(profile?.sto_company_id),
   })
+
+  const filteredCustomers = useMemo(() => {
+    if (!customerSearch.trim()) return []
+    const q = customerSearch.toLowerCase()
+    const digits = q.replace(/\D/g, '')
+    return customers.filter((c: any) =>
+      c.name.toLowerCase().includes(q) ||
+      (digits.length >= 3 && c.phone && c.phone.replace(/\D/g, '').includes(digits))
+    )
+  }, [customers, customerSearch])
 
   const mutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -423,32 +433,21 @@ function VehicleModal({
               className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
             {showCustomerDropdown && customerSearch && (
-              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                {customers
-                  ?.filter((c: any) => {
-                    const q = customerSearch.toLowerCase()
-                    return c.name.toLowerCase().includes(q) || 
-                           (c.phone && c.phone.replace(/\D/g,'').includes(q.replace(/\D/g,'')))
-                  })
-                  .map((customer: any) => (
-                    <div
-                      key={customer.id}
-                      onClick={() => {
-                        setFormData({ ...formData, customer_id: customer.id })
-                        setCustomerSearch(customer.name)
-                        setShowCustomerDropdown(false)
-                      }}
-                      className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer flex items-center justify-between gap-2"
-                    >
-                      <span className="text-sm font-medium text-gray-800">{customer.name}</span>
-                      {customer.phone && <span className="text-xs text-gray-400 font-mono flex-shrink-0">{customer.phone}</span>}
-                    </div>
-                  ))}
-                {customers?.filter((c: any) => {
-                  const q = customerSearch.toLowerCase()
-                  return c.name.toLowerCase().includes(q) || (c.phone && c.phone.replace(/\D/g,'').includes(q.replace(/\D/g,'')))
-                }).length === 0 && (
-                  <div className="px-3 py-2 text-gray-500">Клиент не найден</div>
+              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl max-h-56 overflow-auto">
+                {filteredCustomers.length > 0 ? filteredCustomers.map((customer: any) => (
+                  <div key={customer.id}
+                    onClick={() => {
+                      setFormData({ ...formData, customer_id: customer.id })
+                      setCustomerSearch(customer.name)
+                      setShowCustomerDropdown(false)
+                    }}
+                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between gap-2 border-b border-gray-100 last:border-0"
+                  >
+                    <span className="text-sm font-semibold text-gray-800">{customer.name}</span>
+                    {customer.phone && <span className="text-xs text-gray-400 font-mono flex-shrink-0">{customer.phone}</span>}
+                  </div>
+                )) : (
+                  <div className="px-4 py-3 text-sm text-gray-400">Клиент не найден</div>
                 )}
               </div>
             )}
