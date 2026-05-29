@@ -88,6 +88,9 @@ export async function createVehicle(vehicleData: VehicleSaveData, stoCompanyId?:
   const { error } = await supabase.from('vehicles').insert([{
     ...vehicleData,
     sto_company_id: stoCompanyId || null,
+    // Empty string → null to avoid unique constraint on vin/license_plate
+    vin: vehicleData.vin?.trim() || null,
+    license_plate: vehicleData.license_plate?.trim() || null,
   }])
   if (error) {
     if (error.code === '23505') {
@@ -99,8 +102,15 @@ export async function createVehicle(vehicleData: VehicleSaveData, stoCompanyId?:
 
 /** Update an existing vehicle */
 export async function updateVehicle(id: string, vehicleData: Partial<VehicleSaveData>): Promise<void> {
-  const { error } = await supabase.from('vehicles').update(vehicleData).eq('id', id)
-  if (error) throw error
+  const { error } = await supabase.from('vehicles').update({
+    ...vehicleData,
+    vin: vehicleData.vin?.trim() || null,
+    license_plate: vehicleData.license_plate?.trim() || null,
+  }).eq('id', id)
+  if (error) {
+    if (error.code === '23505') throw new Error('409: ' + error.message)
+    throw error
+  }
 }
 
 /** Delete a vehicle by id */
