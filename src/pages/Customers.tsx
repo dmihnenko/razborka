@@ -75,7 +75,7 @@ export default function Customers() {
       await deleteCustomer(id)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      queryClient.invalidateQueries({ queryKey: ['customers'], exact: false })
       toast.success('Клиент удален')
     },
     onError: (error: any) => {
@@ -340,7 +340,7 @@ function CustomerModal({ customer, onClose }: CustomerModalProps) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      queryClient.invalidateQueries({ queryKey: ['customers'], exact: false })
       toast.success(customer ? 'Клиент обновлен' : 'Клиент добавлен')
       onClose()
     },
