@@ -110,11 +110,20 @@ export async function deleteVehicle(id: string, vehicleData?: any, stoCompanyId?
 }
 
 /** Fetch customers list (id + name) for vehicle owner dropdown */
-export async function fetchCustomerOptions(): Promise<CustomerOption[]> {
-  const { data } = await supabase
+export async function fetchCustomerOptions(stoCompanyId?: string | null): Promise<CustomerOption[]> {
+  let query = supabase
     .from('customers')
     .select('id, name, phone')
     .order('name')
+  
+  // Always filter by company for security
+  if (stoCompanyId) {
+    query = query.eq('sto_company_id', stoCompanyId)
+  } else {
+    return []
+  }
+  
+  const { data } = await query
   return data || []
 }
 

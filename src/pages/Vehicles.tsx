@@ -348,8 +348,9 @@ function VehicleModal({
   const queryClient = useQueryClient()
 
   const { data: customers } = useQuery({
-    queryKey: ['customers-list'],
-    queryFn: fetchCustomerOptions,
+    queryKey: ['customers-list', profile?.sto_company_id],
+    enabled: !!profile?.sto_company_id,
+    queryFn: () => fetchCustomerOptions(profile?.sto_company_id),
   })
 
   const mutation = useMutation({
