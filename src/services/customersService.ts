@@ -6,7 +6,7 @@ export interface Customer {
   name: string
   phone: string
   email: string | null
-  address: string | null
+  address?: string | null
   notes: string | null
   sto_company_id: string | null
   created_at: string
@@ -17,7 +17,7 @@ export interface CustomerFormData {
   name: string
   phone: string
   email: string
-  address: string
+  address?: string
   notes: string
 }
 
