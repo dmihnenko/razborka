@@ -28,7 +28,7 @@ export async function getAdminStats(): Promise<AdminStats> {
       safeCount(supabase.from('sto_companies').select('*', { count: 'exact', head: true }).eq('is_active', true)),
       safeCount(supabase.from('parts_companies').select('*', { count: 'exact', head: true }).eq('is_active', true)),
       safeCount(supabase.from('company_subscriptions').select('*', { count: 'exact', head: true }).eq('is_active', true)),
-      safeCount(supabase.from('support_tickets').select('*', { count: 'exact', head: true }).eq('status', 'open')),
+      safeCount(supabase.from('support_chats').select('*', { count: 'exact', head: true }).eq('status', 'open')),
     ])
 
   return { users, activeUsers, roles, stoCompanies, partsCompanies, subscriptions, openTickets }
