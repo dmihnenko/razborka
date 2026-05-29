@@ -48,10 +48,11 @@ export default function Vehicles() {
 
   const { data: vehicles, isLoading } = useQuery({
     queryKey: ['vehicles', customerId, stoCompanyId],
-    enabled: !isStoOwner || !!stoCompanyId,
+    // Ждём загрузки профиля — НИКОГДА не грузим без фильтра
+    enabled: !!profile && !!stoCompanyId,
     queryFn: () =>
       fetchVehicles({
-        stoCompanyId: isStoOwner ? stoCompanyId : null,
+        stoCompanyId: stoCompanyId, // всегда фильтруем по компании
         customerId,
       }),
   })

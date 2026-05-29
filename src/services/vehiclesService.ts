@@ -42,8 +42,12 @@ export async function fetchVehicles(params?: {
     .select('*, customers(name, id)')
     .order('created_at', { ascending: false })
 
+  // SECURITY: Always filter by company — never return all vehicles
   if (params?.stoCompanyId) {
     query = query.eq('sto_company_id', params.stoCompanyId)
+  } else if (!params?.customerId) {
+    // No company and no customer filter — return empty to prevent data leak
+    return []
   }
   if (params?.customerId) {
     query = query.eq('customer_id', params.customerId)

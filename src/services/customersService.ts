@@ -21,7 +21,7 @@ export interface CustomerFormData {
   notes: string
 }
 
-/** Fetch all customers, optionally filtered by company, with vehicles count */
+/** Fetch customers filtered by company — ALWAYS requires stoCompanyId for security */
 export async function fetchCustomers(params?: {
   stoCompanyId?: string | null
 }): Promise<Customer[]> {
@@ -30,8 +30,12 @@ export async function fetchCustomers(params?: {
     .select('*')
     .order('name', { ascending: true })
 
+  // SECURITY: Always filter by company — never return all customers
   if (params?.stoCompanyId) {
     query = query.eq('sto_company_id', params.stoCompanyId)
+  } else {
+    // Return empty if no company context — prevents data leak
+    return []
   }
 
   const { data, error } = await query

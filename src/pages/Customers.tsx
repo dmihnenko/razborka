@@ -34,13 +34,15 @@ export default function Customers() {
   const { data: profile } = useUserProfile()
 
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
+  const isStoWorker = profile?.roles?.some((r: any) => r.name === 'sto_worker')
   const stoCompanyId = profile?.sto_company_id
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ['customers', stoCompanyId],
-    enabled: !isStoOwner || !!stoCompanyId,
+    // Ждём загрузки профиля и company_id — НИКОГДА не грузим без фильтра
+    enabled: !!profile && !!(stoCompanyId),
     queryFn: () =>
-      fetchCustomers({ stoCompanyId: isStoOwner ? stoCompanyId : null }),
+      fetchCustomers({ stoCompanyId }),
   })
 
   // Фильтрация клиентов по поисковому запросу
