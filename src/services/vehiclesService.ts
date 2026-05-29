@@ -89,7 +89,12 @@ export async function createVehicle(vehicleData: VehicleSaveData, stoCompanyId?:
     ...vehicleData,
     sto_company_id: stoCompanyId || null,
   }])
-  if (error) throw error
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('409: ' + error.message)
+    }
+    throw error
+  }
 }
 
 /** Update an existing vehicle */

@@ -381,8 +381,16 @@ function VehicleModal({
       toast.success(vehicle ? 'Автомобиль обновлен' : 'Автомобиль добавлен')
       onClose()
     },
-    onError: () => {
-      toast.error('Ошибка при сохранении')
+    onError: (error: any) => {
+      const msg = error?.message || ''
+      if (msg.includes('409') || msg.includes('conflict') || msg.includes('unique') || 
+          msg.includes('vehicles_vin_key') || error?.code === '23505') {
+        toast.error('Автомобиль с таким VIN уже есть в системе', { duration: 3000 })
+      } else if (msg.includes('license_plate')) {
+        toast.error('Автомобиль с таким номером уже существует', { duration: 3000 })
+      } else {
+        toast.error('Ошибка при сохранении автомобиля')
+      }
     },
   })
 
