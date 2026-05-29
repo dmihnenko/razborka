@@ -1,5 +1,4 @@
 import { supabase } from '../lib/supabase'
-import { moveToTrash } from './trashService'
 
 export interface Vehicle {
   id: string
@@ -113,15 +112,10 @@ export async function updateVehicle(id: string, vehicleData: Partial<VehicleSave
   }
 }
 
-/** Delete a vehicle by id */
-export async function deleteVehicle(id: string, vehicleData?: any, stoCompanyId?: string | null): Promise<void> {
-  await moveToTrash({
-    entityType: 'vehicle',
-    entityId: id,
-    entityLabel: vehicleData ? `${vehicleData.brand || ''} ${vehicleData.model || ''}`.trim() : 'Автомобиль',
-    entityData: vehicleData || {},
-    stoCompanyId,
-  })
+/** Delete a vehicle by id (caller must call moveToTrash first with full snapshot) */
+export async function deleteVehicle(id: string): Promise<void> {
+  const { error } = await supabase.from('vehicles').delete().eq('id', id)
+  if (error) throw error
 }
 
 /** Fetch customers list (id + name) for vehicle owner dropdown */
