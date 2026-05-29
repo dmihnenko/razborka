@@ -382,24 +382,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Неоплаченные заявки */}
-            {unpaidCount > 0 && (
-              <div className="card-mobile bg-red-50 border-red-200">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-red-100">
-                    <AlertCircle className="w-5 h-5 text-red-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-mobile-base font-semibold text-red-900 mb-1">
-                      Требуют оплаты
-                    </p>
-                    <p className="text-sm text-red-700">
-                      {unpaidCount} {unpaidCount === 1 ? 'заявка' : unpaidCount < 5 ? 'заявки' : 'заявок'} с неоплаченными услугами
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+
 
           </div>
 
