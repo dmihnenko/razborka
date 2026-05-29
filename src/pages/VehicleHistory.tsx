@@ -75,7 +75,7 @@ export default function VehicleHistory() {
   const totalParts = allAppts.reduce((s, a) => s + calcPartsCost(a), 0)
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="w-full">
       {/* Back */}
       <div className="mb-5">
         {vehicle.customers?.id ? (
@@ -95,7 +95,7 @@ export default function VehicleHistory() {
       </div>
 
       {/* Vehicle card */}
-      <div className="bg-white rounded-xl shadow-sm p-5 mb-5">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
             <Car className="w-6 h-6 text-primary" />
@@ -124,25 +124,31 @@ export default function VehicleHistory() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-5">
-        <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-          <Calendar className="w-5 h-5 text-blue-500 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-gray-900">{appointments?.length ?? 0}</p>
-          <p className="text-xs text-gray-400">Всего заявок</p>
+        <div className="stat-card">
+          <div className="flex items-start justify-between mb-3">
+            <p className="text-xs font-medium" style={{ color: '#64748B' }}>Всего заявок</p>
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-400 flex-shrink-0 mt-0.5" />
+          </div>
+          <p className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>{appointments?.length ?? 0}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-          <Package className="w-5 h-5 text-purple-500 mx-auto mb-1" />
-          <p className="text-lg font-bold text-gray-900">{formatCurrency(totalParts)}</p>
-          <p className="text-xs text-gray-400">Итого запчасти</p>
+        <div className="stat-card">
+          <div className="flex items-start justify-between mb-3">
+            <p className="text-xs font-medium" style={{ color: '#64748B' }}>Запчасти</p>
+            <span className="w-2.5 h-2.5 rounded-full bg-purple-400 flex-shrink-0 mt-0.5" />
+          </div>
+          <p className="text-2xl font-bold text-gray-900" style={{ letterSpacing: '-0.02em' }}>{formatCurrency(totalParts)}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-          <Wrench className="w-5 h-5 text-orange-500 mx-auto mb-1" />
-          <p className="text-lg font-bold text-gray-900">{formatCurrency(totalWork)}</p>
-          <p className="text-xs text-gray-400">На работы</p>
+        <div className="stat-card">
+          <div className="flex items-start justify-between mb-3">
+            <p className="text-xs font-medium" style={{ color: '#64748B' }}>Работы</p>
+            <span className="w-2.5 h-2.5 rounded-full bg-orange-400 flex-shrink-0 mt-0.5" />
+          </div>
+          <p className="text-2xl font-bold text-gray-900" style={{ letterSpacing: '-0.02em' }}>{formatCurrency(totalWork)}</p>
         </div>
       </div>
 
       {/* Appointments list */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center gap-2">
           <Calendar className="w-4 h-4 text-primary" />
           <h2 className="font-bold text-gray-900">История заявок</h2>
