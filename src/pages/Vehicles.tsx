@@ -418,15 +418,17 @@ function VehicleModal({
                 setShowCustomerDropdown(true)
               }}
               onFocus={() => setShowCustomerDropdown(true)}
-              placeholder="Введите имя клиента..."
+              placeholder="Имя или телефон клиента..."
               className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
             {showCustomerDropdown && customerSearch && (
               <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
                 {customers
-                  ?.filter((c: any) => 
-                    c.name.toLowerCase().includes(customerSearch.toLowerCase())
-                  )
+                  ?.filter((c: any) => {
+                    const q = customerSearch.toLowerCase()
+                    return c.name.toLowerCase().includes(q) || 
+                           (c.phone && c.phone.replace(/\D/g,'').includes(q.replace(/\D/g,'')))
+                  })
                   .map((customer: any) => (
                     <div
                       key={customer.id}
@@ -435,14 +437,16 @@ function VehicleModal({
                         setCustomerSearch(customer.name)
                         setShowCustomerDropdown(false)
                       }}
-                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                      className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer flex items-center justify-between gap-2"
                     >
-                      {customer.name}
+                      <span className="text-sm font-medium text-gray-800">{customer.name}</span>
+                      {customer.phone && <span className="text-xs text-gray-400 font-mono flex-shrink-0">{customer.phone}</span>}
                     </div>
                   ))}
-                {customers?.filter((c: any) => 
-                  c.name.toLowerCase().includes(customerSearch.toLowerCase())
-                ).length === 0 && (
+                {customers?.filter((c: any) => {
+                  const q = customerSearch.toLowerCase()
+                  return c.name.toLowerCase().includes(q) || (c.phone && c.phone.replace(/\D/g,'').includes(q.replace(/\D/g,'')))
+                }).length === 0 && (
                   <div className="px-3 py-2 text-gray-500">Клиент не найден</div>
                 )}
               </div>

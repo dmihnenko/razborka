@@ -30,6 +30,7 @@ export interface VehicleSaveData {
 export interface CustomerOption {
   id: string
   name: string
+  phone?: string | null
 }
 
 /** Fetch all vehicles, optionally filtered by company and/or customer */
@@ -112,7 +113,7 @@ export async function deleteVehicle(id: string, vehicleData?: any, stoCompanyId?
 export async function fetchCustomerOptions(): Promise<CustomerOption[]> {
   const { data } = await supabase
     .from('customers')
-    .select('id, name')
+    .select('id, name, phone')
     .order('name')
   return data || []
 }
