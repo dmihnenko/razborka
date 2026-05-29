@@ -191,3 +191,7 @@ export async function fetchVehicleAppointments(vehicleId: string): Promise<any[]
   const { data } = await supabase.from('appointments').select('*').eq('vehicle_id', vehicleId)
   return data || []
 }
+
+// SECURITY RULE: Every fetch function MUST filter by company_id
+// Never return data without company context — return [] instead
+// This prevents data leaks between companies
