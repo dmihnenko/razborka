@@ -18,6 +18,14 @@ function toLocalISO(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
+// Парсит локальный ISO-строку как ЛОКАЛЬНОЕ время (new Date(str) может интерпретировать как UTC в некоторых браузерах)
+function parseLocalISO(str: string | null | undefined): Date | null {
+  if (!str) return null
+  const m = str.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
+  if (!m) return null
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4] ?? 0), Number(m[5] ?? 0), 0, 0)
+}
+
 const TIME_SLOTS = Array.from({ length: 25 }, (_, i) => {
   const hour = Math.floor(i / 2) + 8
   const min = i % 2 === 0 ? '00' : '30'
@@ -38,7 +46,7 @@ function getFirstDayOfMonth(year: number, month: number) {
 
 export default function DateTimePicker({ value, onChange, endValue, onEndChange, stoCompanyId, excludeAppointmentId }: Props) {
   const now = new Date()
-  const selected = value ? new Date(value) : null
+  const selected = parseLocalISO(value)
 
   const [viewYear, setViewYear] = useState(selected?.getFullYear() ?? now.getFullYear())
   const [viewMonth, setViewMonth] = useState(selected?.getMonth() ?? now.getMonth())
@@ -91,7 +99,7 @@ export default function DateTimePicker({ value, onChange, endValue, onEndChange,
     }))
   }, [monthAppointments, selectedDate, excludeAppointmentId])
 
-  const selectedEnd = endValue ? new Date(endValue) : null
+  const selectedEnd = parseLocalISO(endValue)
 
   const selectedTime = selected && selectedDate && 
     selected.getDate() === selectedDate.getDate() &&
@@ -127,14 +135,14 @@ export default function DateTimePicker({ value, onChange, endValue, onEndChange,
   }
 
   const handleDayClick = (day: number) => {
-    const date = new Date(viewYear, viewMonth, day, 9, 0, 0)
     const today = new Date(); today.setHours(0,0,0,0)
-    if (date < today) return
-    setSelectedDate(date)
-    // Если уже есть время — сохраняем его
-    if (selected && selectedDate) {
-      date.setHours(selected.getHours(), selected.getMinutes())
-    }
+    const dayStart = new Date(viewYear, viewMonth, day)
+    if (dayStart < today) return
+    // Сохраняем уже выбранное время, иначе 9:00 по умолчанию
+    const h = selected ? selected.getHours() : 9
+    const m = selected ? selected.getMinutes() : 0
+    const date = new Date(viewYear, viewMonth, day, h, m, 0, 0)
+    setSelectedDate(new Date(date)) // не мутируем объект после setSelectedDate
     onChange(toLocalISO(date))
   }
 

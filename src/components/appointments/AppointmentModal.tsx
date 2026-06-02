@@ -89,16 +89,21 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
           `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T09:00`
       }
       // Преобразуем в локальный формат datetime-local (без UTC-конвертации)
-      const toLocalISO = (d: Date) => {
-        const pad = (n: number) => String(n).padStart(2, '0')
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const toLocalISO = (d: Date) =>
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+      // new Date() для строки с зоной (из Supabase) всегда корректен; для строки без зоны — парсим вручную
+      const parseLocal = (s: string) => {
+        const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
+        if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4] ?? 9), Number(m[5] ?? 0), 0, 0)
+        return new Date(s)
       }
-      scheduledDate = toLocalISO(new Date(scheduledDate))
+      scheduledDate = toLocalISO(new Date(scheduledDate)) // scheduledDate из Supabase содержит TZ → safe
       
       // Восстанавливаем время окончания из duration_minutes
       let scheduledEndDate: string | null = null
       if (existingAppointment.duration_minutes && existingAppointment.duration_minutes > 0) {
-        const endDate = new Date(scheduledDate)
+        const endDate = parseLocal(scheduledDate) // теперь парсим локальную строку безопасно
         endDate.setMinutes(endDate.getMinutes() + existingAppointment.duration_minutes)
         scheduledEndDate = toLocalISO(endDate)
       }
