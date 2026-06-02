@@ -261,18 +261,33 @@ export default function DateTimePicker({ value, onChange, endValue, onEndChange,
                   {selectedTime}{selectedEndTime ? ` – ${selectedEndTime}` : ''}
                 </span>
                 {durationLabel && (
-                  <span className="text-xs text-gray-400 font-medium">{durationLabel}</span>
+                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg">
+                    {durationLabel}
+                  </span>
                 )}
               </span>
             )}
           </div>
-          {onEndChange && startIdx !== -1 && endIdx === -1 && (
-            <div className="px-4 py-2 bg-indigo-50/60 border-b border-indigo-100">
-              <p className="text-[11px] text-indigo-500 font-medium">
-                Начало: <strong>{selectedTime}</strong> — кликните на время окончания
-              </p>
+
+          {/* Подсказка: 1-й клик — начало, 2-й — конец */}
+          {onEndChange && (
+            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+              {startIdx === -1 || !selectedTime ? (
+                <p className="text-[11px] text-gray-500">
+                  Кликните на <strong>время начала</strong> — можно выбрать 1 час или диапазон
+                </p>
+              ) : endIdx === -1 ? (
+                <p className="text-[11px] text-indigo-500 font-medium">
+                  Начало: <strong>{selectedTime}</strong> — теперь кликните на <strong>время окончания</strong>
+                </p>
+              ) : (
+                <p className="text-[11px] text-emerald-600 font-medium">
+                  Выбрано: <strong>{selectedTime} – {selectedEndTime}</strong> · <strong>{durationLabel}</strong> · кликните начало чтобы изменить
+                </p>
+              )}
             </div>
           )}
+
           <div className="p-3 grid grid-cols-4 sm:grid-cols-6 gap-1.5">
             {TIME_SLOTS.map((slot, idx) => {
               const isTaken = takenSlots.has(slot)
@@ -296,6 +311,21 @@ export default function DateTimePicker({ value, onChange, endValue, onEndChange,
               )
             })}
           </div>
+
+          {/* Итог: выбранный диапазон и количество часов */}
+          {selectedTime && durationLabel && (
+            <div className="px-4 py-3 border-t border-gray-100 bg-emerald-50/60 flex items-center justify-between">
+              <span className="text-xs text-gray-600">
+                <span className="font-semibold text-indigo-700">{selectedTime}</span>
+                {selectedEndTime && (
+                  <> → <span className="font-semibold text-indigo-700">{selectedEndTime}</span></>
+                )}
+              </span>
+              <span className="text-sm font-bold text-emerald-700 bg-emerald-100 px-3 py-0.5 rounded-full">
+                ⏱ {durationLabel}
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>

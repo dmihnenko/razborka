@@ -40,7 +40,11 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
   const [formData, setFormData] = useState<AppointmentFormValues>({
     customer_id: '',
     vehicle_id: '',
-    scheduledDate: new Date().toISOString().slice(0, 16),
+    scheduledDate: (() => {
+      const now = new Date()
+      const pad = (n: number) => String(n).padStart(2, '0')
+      return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T09:00`
+    })(),
     scheduledEndDate: null,
     status: 'in_progress',
     notes: '',
@@ -79,17 +83,24 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
       // Обработка даты: если Invalid Date, используем created_at или updated_at
       let scheduledDate = existingAppointment.scheduled_date
       if (!scheduledDate || isNaN(new Date(scheduledDate).getTime())) {
-        scheduledDate = existingAppointment.created_at || existingAppointment.updated_at || new Date().toISOString()
+        const now = new Date()
+        const pad = (n: number) => String(n).padStart(2, '0')
+        scheduledDate = existingAppointment.created_at || existingAppointment.updated_at ||
+          `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T09:00`
       }
-      // Преобразуем в формат datetime-local
-      scheduledDate = new Date(scheduledDate).toISOString().slice(0, 16)
+      // Преобразуем в локальный формат datetime-local (без UTC-конвертации)
+      const toLocalISO = (d: Date) => {
+        const pad = (n: number) => String(n).padStart(2, '0')
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+      }
+      scheduledDate = toLocalISO(new Date(scheduledDate))
       
       // Восстанавливаем время окончания из duration_minutes
       let scheduledEndDate: string | null = null
       if (existingAppointment.duration_minutes && existingAppointment.duration_minutes > 0) {
         const endDate = new Date(scheduledDate)
         endDate.setMinutes(endDate.getMinutes() + existingAppointment.duration_minutes)
-        scheduledEndDate = endDate.toISOString().slice(0, 16)
+        scheduledEndDate = toLocalISO(endDate)
       }
 
       setFormData({
@@ -415,9 +426,9 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
               </div>
               <DateTimePicker
                 value={formData.scheduledDate}
-                onChange={(val) => setFormData({ ...formData, scheduledDate: val })}
+                onChange={(val) => setFormData(prev => ({ ...prev, scheduledDate: val }))}
                 endValue={formData.scheduledEndDate}
-                onEndChange={(val) => setFormData({ ...formData, scheduledEndDate: val })}
+                onEndChange={(val) => setFormData(prev => ({ ...prev, scheduledEndDate: val }))}
                 stoCompanyId={profile?.sto_company_id}
                 excludeAppointmentId={appointmentId}
               />
