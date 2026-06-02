@@ -79,7 +79,7 @@ export default function CalendarView({ isOpen, onClose }: Props) {
       const { data, error } = await supabase
         .from('appointments')
         .select(`
-          id, status, scheduled_date, duration_minutes, notes,
+          id, status, scheduled_date, notes,
           customers(id, name, phone),
           vehicles(id, brand, model, license_plate),
           assigned_to_profile:user_profiles!assigned_to(full_name, email)
@@ -298,9 +298,6 @@ export default function CalendarView({ isOpen, onClose }: Props) {
                   <div className="p-2 space-y-1.5">
                     {selectedAppts.map((appt: any) => {
                       const sc = STATUS_MAP[appt.status] ?? STATUS_MAP.scheduled
-                      const endDate = appt.duration_minutes
-                        ? new Date(appt._date.getTime() + appt.duration_minutes * 60_000)
-                        : null
                       const workerName = appt.assigned_to_profile?.full_name
                         ?? appt.assigned_to_profile?.email?.split('@')[0]
                         ?? null
@@ -318,15 +315,7 @@ export default function CalendarView({ isOpen, onClose }: Props) {
                               <Clock className="w-3.5 h-3.5 text-gray-400" />
                               <span className="text-xs font-bold text-gray-800">
                                 {fmtTime(appt._date)}
-                                {endDate ? <> – <span className="font-normal text-gray-500">{fmtTime(endDate)}</span></> : ''}
                               </span>
-                              {appt.duration_minutes && (
-                                <span className="text-[10px] text-gray-400">
-                                  ({appt.duration_minutes >= 60
-                                    ? `${Math.floor(appt.duration_minutes / 60)} ч${appt.duration_minutes % 60 ? ` ${appt.duration_minutes % 60} мин` : ''}`
-                                    : `${appt.duration_minutes} мин`})
-                                </span>
-                              )}
                             </div>
                             <span
                               className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"

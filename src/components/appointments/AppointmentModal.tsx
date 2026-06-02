@@ -148,15 +148,6 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
       const totalWork = data.workItems.reduce((sum, item) => sum + item.price, 0)
       const totalParts = data.partItems.reduce((sum, item) => sum + item.totalPrice, 0)
 
-      // Вычисляем duration_minutes из диапазона времени
-      let durationMinutes: number | null = null
-      if (data.scheduledEndDate) {
-        const start = new Date(data.scheduledDate)
-        const end = new Date(data.scheduledEndDate)
-        const diff = Math.round((end.getTime() - start.getTime()) / 60000)
-        if (diff > 0) durationMinutes = diff
-      }
-
       if (appointmentId) {
         // Обновление существующей заявки
         const { data: appointment, error } = await supabase
@@ -165,7 +156,6 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
             customer_id: data.customer_id,
             vehicle_id: data.vehicle_id,
             scheduled_date: data.scheduledDate,
-            duration_minutes: durationMinutes,
             status: data.status,
             notes: data.notes || null,
             work_items: data.workItems,
@@ -194,7 +184,6 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
             customer_id: data.customer_id,
             vehicle_id: data.vehicle_id,
             scheduled_date: data.scheduledDate,
-            duration_minutes: durationMinutes,
             status: 'in_progress',
             notes: data.notes,
             work_items: data.workItems,
