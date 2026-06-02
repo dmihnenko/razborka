@@ -79,6 +79,7 @@ export interface Database {
           color: string
           icon: string | null
           sort_order: number
+          sto_company_id: string | null
         }
         Insert: {
           id?: string
@@ -88,6 +89,7 @@ export interface Database {
           color?: string
           icon?: string | null
           sort_order?: number
+          sto_company_id?: string | null
         }
         Update: {
           id?: string
@@ -97,6 +99,7 @@ export interface Database {
           color?: string
           icon?: string | null
           sort_order?: number
+          sto_company_id?: string | null
         }
       }
       customers: {
@@ -178,6 +181,7 @@ export interface Database {
           price: number
           duration_minutes: number | null
           category_id: string | null
+          sto_company_id: string | null
         }
         Insert: {
           id?: string
@@ -187,6 +191,7 @@ export interface Database {
           price: number
           duration_minutes?: number | null
           category_id?: string | null
+          sto_company_id?: string | null
         }
         Update: {
           id?: string
@@ -196,6 +201,7 @@ export interface Database {
           price?: number
           duration_minutes?: number | null
           category_id?: string | null
+          sto_company_id?: string | null
         }
       }
       appointments: {

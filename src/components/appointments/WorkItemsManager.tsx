@@ -40,18 +40,21 @@ export default function WorkItemsManager({ items, onChange }: Props) {
     staleTime: 0, // Всегда перезагружать при монтировании
   })
 
-  // Загружаем услуги из справочника
+  // Загружаем услуги из справочника — только для текущего СТО
   const { data: services } = useQuery({
-    queryKey: ['services'],
+    queryKey: ['services', profile?.sto_company_id],
     queryFn: async () => {
+      if (!profile?.sto_company_id) return []
       const { data, error } = await supabase
         .from('services')
         .select('*, service_categories(name, color)')
+        .eq('sto_company_id', profile.sto_company_id)
         .order('name')
       
       if (error) throw error
       return data
     },
+    enabled: !!profile?.sto_company_id,
   })
 
   const totalCost = items.reduce((sum, item) => sum + item.price, 0)

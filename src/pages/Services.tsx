@@ -28,14 +28,18 @@ export default function Services() {
   const { confirm: showConfirm, dialogProps } = useConfirm()
   const { data: profile } = useUserProfile()
 
+  const stoCompanyId = profile?.sto_company_id
+
   const { data: services, isLoading } = useQuery({
-    queryKey: ['services'],
-    queryFn: fetchServices,
+    queryKey: ['services', stoCompanyId],
+    queryFn: () => fetchServices(stoCompanyId!),
+    enabled: !!stoCompanyId,
   })
 
   const { data: categories } = useQuery({
-    queryKey: ['service-categories'],
-    queryFn: fetchServiceCategories,
+    queryKey: ['service-categories', stoCompanyId],
+    queryFn: () => fetchServiceCategories(stoCompanyId!),
+    enabled: !!stoCompanyId,
   })
 
   // Фильтрация услуг
@@ -350,10 +354,13 @@ function ServiceModal({ service, onClose }: { service: any; onClose: () => void 
   useBlockScroll(true)
 
   const queryClient = useQueryClient()
+  const { data: profile } = useUserProfile()
+  const stoCompanyId = profile?.sto_company_id
 
   const { data: categories } = useQuery({
-    queryKey: ['service-categories'],
-    queryFn: fetchServiceCategories,
+    queryKey: ['service-categories', stoCompanyId],
+    queryFn: () => fetchServiceCategories(stoCompanyId!),
+    enabled: !!stoCompanyId,
   })
 
   const filteredCategories = useMemo(() => {
@@ -380,7 +387,8 @@ function ServiceModal({ service, onClose }: { service: any; onClose: () => void 
       if (service) {
         await updateService(service.id, serviceData)
       } else {
-        await createService(serviceData)
+        if (!stoCompanyId) throw new Error('sto_company_id not found')
+        await createService({ ...serviceData, sto_company_id: stoCompanyId })
       }
     },
     onSuccess: () => {

@@ -6,6 +6,7 @@ export interface ServiceCategory {
   name: string
   color: string
   sort_order: number | null
+  sto_company_id?: string | null
 }
 
 export interface Service {
@@ -15,6 +16,7 @@ export interface Service {
   price: number
   duration_minutes: number | null
   category_id: string | null
+  sto_company_id?: string | null
   service_categories?: ServiceCategory | null
 }
 
@@ -26,22 +28,24 @@ export interface ServiceFormData {
   category_id: string
 }
 
-/** Fetch all services with their categories */
-export async function fetchServices(): Promise<Service[]> {
+/** Fetch services for a specific STO company */
+export async function fetchServices(stoCompanyId: string): Promise<Service[]> {
   const { data, error } = await supabase
     .from('services')
     .select('*, service_categories(name, color)')
+    .eq('sto_company_id', stoCompanyId)
     .order('name')
 
   if (error) throw error
   return data as Service[]
 }
 
-/** Fetch all service categories */
-export async function fetchServiceCategories(): Promise<ServiceCategory[]> {
+/** Fetch service categories for a specific STO company */
+export async function fetchServiceCategories(stoCompanyId: string): Promise<ServiceCategory[]> {
   const { data } = await supabase
     .from('service_categories')
     .select('*')
+    .eq('sto_company_id', stoCompanyId)
     .order('sort_order')
 
   return (data || []) as ServiceCategory[]
@@ -66,6 +70,7 @@ export async function createService(serviceData: {
   price: number
   duration_minutes: number | null
   category_id: string | null
+  sto_company_id: string
 }): Promise<void> {
   const { error } = await supabase.from('services').insert([serviceData])
   if (error) throw error
@@ -98,4 +103,35 @@ export async function deleteService(id: string, serviceData?: any, stoCompanyId?
 export async function fetchServiceRaw(id: string): Promise<any> {
   const { data } = await supabase.from('services').select('*').eq('id', id).single()
   return data
+}
+
+/** Create a new service category */
+export async function createServiceCategory(categoryData: {
+  name: string
+  description?: string | null
+  color: string
+  icon?: string | null
+  sort_order?: number
+  sto_company_id: string
+}): Promise<void> {
+  const { error } = await supabase.from('service_categories').insert([categoryData])
+  if (error) throw error
+}
+
+/** Update an existing service category */
+export async function updateServiceCategory(id: string, categoryData: {
+  name: string
+  description?: string | null
+  color: string
+  icon?: string | null
+  sort_order?: number
+}): Promise<void> {
+  const { error } = await supabase.from('service_categories').update(categoryData).eq('id', id)
+  if (error) throw error
+}
+
+/** Delete a service category */
+export async function deleteServiceCategory(id: string): Promise<void> {
+  const { error } = await supabase.from('service_categories').delete().eq('id', id)
+  if (error) throw error
 }
