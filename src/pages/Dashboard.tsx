@@ -18,9 +18,11 @@ import {
   ArrowRight,
   Car,
   Users as UsersIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  CalendarDays
 } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
+import CalendarView from '@/components/appointments/CalendarView'
 import MyVehicles from './MyVehicles'
 import WorkerDashboard from './WorkerDashboard'
 import { useNavigate, Link } from 'react-router-dom'
@@ -28,6 +30,7 @@ import { fetchStoClientStats } from '@/services/stoService'
 
 export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
   const { data: profile } = useUserProfile()
   const navigate = useNavigate()
 
@@ -221,6 +224,11 @@ export default function Dashboard() {
             className="btn-secondary btn-sm hidden sm:flex items-center gap-1.5">
             <Car className="w-4 h-4" />
             <span>Авто</span>
+          </button>
+          <button onClick={() => setIsCalendarOpen(true)}
+            className="btn-secondary btn-sm flex items-center gap-1.5">
+            <CalendarDays className="w-4 h-4" />
+            <span className="hidden sm:inline">Календарь</span>
           </button>
           <button onClick={() => setIsModalOpen(true)}
             className="btn-primary btn-sm flex items-center gap-1.5">
@@ -530,6 +538,12 @@ export default function Dashboard() {
       <AppointmentModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+      />
+
+      {/* Календарь записей */}
+      <CalendarView
+        isOpen={isCalendarOpen}
+        onClose={() => setIsCalendarOpen(false)}
       />
     </div>
   )
