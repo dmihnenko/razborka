@@ -41,6 +41,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
     customer_id: '',
     vehicle_id: '',
     scheduledDate: new Date().toISOString().slice(0, 16),
+    scheduledEndDate: null,
     status: 'in_progress',
     notes: '',
     workItems: [],
@@ -83,10 +84,19 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
       // Преобразуем в формат datetime-local
       scheduledDate = new Date(scheduledDate).toISOString().slice(0, 16)
       
+      // Восстанавливаем время окончания из duration_minutes
+      let scheduledEndDate: string | null = null
+      if (existingAppointment.duration_minutes && existingAppointment.duration_minutes > 0) {
+        const endDate = new Date(scheduledDate)
+        endDate.setMinutes(endDate.getMinutes() + existingAppointment.duration_minutes)
+        scheduledEndDate = endDate.toISOString().slice(0, 16)
+      }
+
       setFormData({
         customer_id: existingAppointment.customer_id,
         vehicle_id: existingAppointment.vehicle_id,
         scheduledDate,
+        scheduledEndDate,
         status: existingAppointment.status,
         notes: existingAppointment.notes || '',
         workItems: existingAppointment.work_items || [],
@@ -105,6 +115,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
         customer_id: '',
         vehicle_id: '',
         scheduledDate: new Date().toISOString().slice(0, 16),
+        scheduledEndDate: null,
         status: 'in_progress',
         notes: '',
         workItems: [],
@@ -121,6 +132,15 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
       const totalWork = data.workItems.reduce((sum, item) => sum + item.price, 0)
       const totalParts = data.partItems.reduce((sum, item) => sum + item.totalPrice, 0)
 
+      // Вычисляем duration_minutes из диапазона времени
+      let durationMinutes: number | null = null
+      if (data.scheduledEndDate) {
+        const start = new Date(data.scheduledDate)
+        const end = new Date(data.scheduledEndDate)
+        const diff = Math.round((end.getTime() - start.getTime()) / 60000)
+        if (diff > 0) durationMinutes = diff
+      }
+
       if (appointmentId) {
         // Обновление существующей заявки
         const { data: appointment, error } = await supabase
@@ -129,6 +149,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
             customer_id: data.customer_id,
             vehicle_id: data.vehicle_id,
             scheduled_date: data.scheduledDate,
+            duration_minutes: durationMinutes,
             status: data.status,
             notes: data.notes || null,
             work_items: data.workItems,
@@ -157,6 +178,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
             customer_id: data.customer_id,
             vehicle_id: data.vehicle_id,
             scheduled_date: data.scheduledDate,
+            duration_minutes: durationMinutes,
             status: 'in_progress',
             notes: data.notes,
             work_items: data.workItems,
@@ -394,6 +416,8 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
               <DateTimePicker
                 value={formData.scheduledDate}
                 onChange={(val) => setFormData({ ...formData, scheduledDate: val })}
+                endValue={formData.scheduledEndDate}
+                onEndChange={(val) => setFormData({ ...formData, scheduledEndDate: val })}
                 stoCompanyId={profile?.sto_company_id}
                 excludeAppointmentId={appointmentId}
               />

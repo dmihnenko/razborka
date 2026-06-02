@@ -75,6 +75,7 @@ export interface AppointmentFormValues {
   customer_id: string;
   vehicle_id: string;
   scheduledDate: string;
+  scheduledEndDate?: string | null;
   status: AppointmentStatus;
   notes: string;
   workItems: WorkItem[];

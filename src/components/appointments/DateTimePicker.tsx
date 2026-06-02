@@ -4,10 +4,18 @@ import { ChevronLeft, ChevronRight, Clock, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 interface Props {
-  value: string // ISO datetime
+  value: string // ISO datetime (start)
   onChange: (value: string) => void
+  endValue?: string | null // ISO datetime (end, optional)
+  onEndChange?: (value: string | null) => void
   stoCompanyId?: string | null
   excludeAppointmentId?: string // для редактирования — исключаем текущую запись
+}
+
+// Форматирует Date в локальный ISO-строку YYYY-MM-DDTHH:MM (без UTC-конвертации)
+function toLocalISO(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 const TIME_SLOTS = Array.from({ length: 25 }, (_, i) => {
@@ -28,7 +36,7 @@ function getFirstDayOfMonth(year: number, month: number) {
   return day === 0 ? 6 : day - 1 // Mon=0
 }
 
-export default function DateTimePicker({ value, onChange, stoCompanyId, excludeAppointmentId }: Props) {
+export default function DateTimePicker({ value, onChange, endValue, onEndChange, stoCompanyId, excludeAppointmentId }: Props) {
   const now = new Date()
   const selected = value ? new Date(value) : null
 
@@ -83,11 +91,31 @@ export default function DateTimePicker({ value, onChange, stoCompanyId, excludeA
     }))
   }, [monthAppointments, selectedDate, excludeAppointmentId])
 
+  const selectedEnd = endValue ? new Date(endValue) : null
+
   const selectedTime = selected && selectedDate && 
     selected.getDate() === selectedDate.getDate() &&
     selected.getMonth() === selectedDate.getMonth()
     ? `${String(selected.getHours()).padStart(2,'0')}:${String(selected.getMinutes()).padStart(2,'0')}`
     : null
+
+  const selectedEndTime = selectedEnd && selectedDate &&
+    selectedEnd.getDate() === selectedDate.getDate() &&
+    selectedEnd.getMonth() === selectedDate.getMonth()
+    ? `${String(selectedEnd.getHours()).padStart(2,'0')}:${String(selectedEnd.getMinutes()).padStart(2,'0')}`
+    : null
+
+  // Индексы слотов начала и конца в массиве TIME_SLOTS
+  const startIdx = selectedTime ? TIME_SLOTS.indexOf(selectedTime) : -1
+  const endIdx = selectedEndTime ? TIME_SLOTS.indexOf(selectedEndTime) : -1
+
+  // Длительность в часах и минутах
+  const durationLabel = startIdx !== -1 && endIdx !== -1 && endIdx > startIdx ? (() => {
+    const totalMins = (endIdx - startIdx) * 30
+    const h = Math.floor(totalMins / 60)
+    const m = totalMins % 60
+    return h > 0 ? (m > 0 ? `${h} ч ${m} мин` : `${h} ч`) : `${m} мин`
+  })() : null
 
   const prevMonth = () => {
     if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) }
@@ -107,15 +135,34 @@ export default function DateTimePicker({ value, onChange, stoCompanyId, excludeA
     if (selected && selectedDate) {
       date.setHours(selected.getHours(), selected.getMinutes())
     }
-    onChange(date.toISOString().slice(0, 16))
+    onChange(toLocalISO(date))
   }
 
   const handleTimeClick = (time: string) => {
     if (!selectedDate) return
     const [h, m] = time.split(':').map(Number)
-    const date = new Date(selectedDate)
-    date.setHours(h, m, 0, 0)
-    onChange(date.toISOString().slice(0, 16))
+    const clickedIdx = TIME_SLOTS.indexOf(time)
+
+    if (onEndChange) {
+      // Режим range-выбора
+      if (startIdx === -1 || clickedIdx <= startIdx) {
+        // Ещё нет начала или клик раньше/равно начала — меняем старт, сбрасываем конец
+        const date = new Date(selectedDate)
+        date.setHours(h, m, 0, 0)
+        onChange(toLocalISO(date))
+        onEndChange(null)
+      } else {
+        // Клик после начала — устанавливаем конец диапазона
+        const date = new Date(selectedDate)
+        date.setHours(h, m, 0, 0)
+        onEndChange(toLocalISO(date))
+      }
+    } else {
+      // Обычный одиночный выбор
+      const date = new Date(selectedDate)
+      date.setHours(h, m, 0, 0)
+      onChange(toLocalISO(date))
+    }
   }
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth)
@@ -209,21 +256,37 @@ export default function DateTimePicker({ value, onChange, stoCompanyId, excludeA
             <Clock className="w-4 h-4 text-indigo-500" strokeWidth={1.5} />
             <span className="text-sm font-bold text-gray-800">Время записи</span>
             {selectedTime && (
-              <span className="ml-auto text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg">
-                {selectedTime}
+              <span className="ml-auto flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg">
+                  {selectedTime}{selectedEndTime ? ` – ${selectedEndTime}` : ''}
+                </span>
+                {durationLabel && (
+                  <span className="text-xs text-gray-400 font-medium">{durationLabel}</span>
+                )}
               </span>
             )}
           </div>
+          {onEndChange && startIdx !== -1 && endIdx === -1 && (
+            <div className="px-4 py-2 bg-indigo-50/60 border-b border-indigo-100">
+              <p className="text-[11px] text-indigo-500 font-medium">
+                Начало: <strong>{selectedTime}</strong> — кликните на время окончания
+              </p>
+            </div>
+          )}
           <div className="p-3 grid grid-cols-4 sm:grid-cols-6 gap-1.5">
-            {TIME_SLOTS.map(slot => {
+            {TIME_SLOTS.map((slot, idx) => {
               const isTaken = takenSlots.has(slot)
-              const isCurrentSelected = selectedTime === slot
+              const isStart = selectedTime === slot
+              const isEnd = selectedEndTime === slot
+              const isInRange = startIdx !== -1 && endIdx !== -1 && idx > startIdx && idx < endIdx
+              const isCurrentSelected = isStart || isEnd
               return (
                 <button key={slot} type="button"
                   onClick={() => !isTaken && handleTimeClick(slot)}
                   disabled={isTaken}
                   className={`h-10 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1 ${
                     isCurrentSelected ? 'bg-indigo-600 text-white shadow-sm' :
+                    isInRange ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' :
                     isTaken ? 'bg-gray-100 text-gray-300 cursor-not-allowed line-through' :
                     'bg-gray-50 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 border border-transparent'
                   }`}>
