@@ -48,6 +48,7 @@ const MonthlyDetails = lazy(() => import('./pages/MonthlyDetails'))
 const MonthlyStatistics = lazy(() => import('./pages/MonthlyStatistics'))
 const MonthlyRevenue = lazy(() => import('./pages/MonthlyRevenue'))
 const ActivityHistory = lazy(() => import('./pages/ActivityHistory'))
+const CalendarPage = lazy(() => import('./pages/CalendarPage'))
 const PartsDashboard = lazy(() => import('./pages/PartsDashboard'))
 const PartsVehicles = lazy(() => import('./pages/PartsVehicles'))
 const PartsVehicleDetails = lazy(() => import('./pages/PartsVehicleDetails'))
@@ -168,6 +169,7 @@ function App() {
           <Route path="sto/employees/:employeeId" element={<EmployeeProfile />} />
           <Route path="sto/settings" element={<StoSettings />} />
           <Route path="worker/dashboard" element={<WorkerDashboard />} />
+          <Route path="sto/calendar" element={<CalendarPage />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="monthly-revenue" element={<MonthlyRevenue />} />
           <Route path="history" element={<ActivityHistory />} />

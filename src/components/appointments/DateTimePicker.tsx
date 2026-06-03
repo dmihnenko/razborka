@@ -26,12 +26,10 @@ function parseLocalISO(str: string | null | undefined): Date | null {
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4] ?? 0), Number(m[5] ?? 0), 0, 0)
 }
 
-const TIME_SLOTS = Array.from({ length: 25 }, (_, i) => {
-  const hour = Math.floor(i / 2) + 8
-  const min = i % 2 === 0 ? '00' : '30'
-  if (hour > 20) return null
-  return `${String(hour).padStart(2, '0')}:${min}`
-}).filter(Boolean) as string[]
+const TIME_SLOTS = Array.from({ length: 13 }, (_, i) => {
+  const hour = i + 8 // 08:00 — 20:00
+  return `${String(hour).padStart(2, '0')}:00`
+})
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']

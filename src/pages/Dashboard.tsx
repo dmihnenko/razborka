@@ -22,7 +22,6 @@ import {
   CalendarDays
 } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
-import CalendarView from '@/components/appointments/CalendarView'
 import MyVehicles from './MyVehicles'
 import WorkerDashboard from './WorkerDashboard'
 import { useNavigate, Link } from 'react-router-dom'
@@ -30,7 +29,6 @@ import { fetchStoClientStats } from '@/services/stoService'
 
 export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
   const { data: profile } = useUserProfile()
   const navigate = useNavigate()
 
@@ -225,7 +223,7 @@ export default function Dashboard() {
             <Car className="w-4 h-4" />
             <span>Авто</span>
           </button>
-          <button onClick={() => setIsCalendarOpen(true)}
+          <button onClick={() => navigate('/sto/calendar')}
             className="btn-secondary btn-sm flex items-center gap-1.5">
             <CalendarDays className="w-4 h-4" />
             <span className="hidden sm:inline">Календарь</span>
@@ -540,11 +538,6 @@ export default function Dashboard() {
         onClose={() => setIsModalOpen(false)}
       />
 
-      {/* Календарь записей */}
-      <CalendarView
-        isOpen={isCalendarOpen}
-        onClose={() => setIsCalendarOpen(false)}
-      />
     </div>
   )
 }
