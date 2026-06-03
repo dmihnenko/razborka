@@ -7,6 +7,7 @@ export interface ServiceCategory {
   color: string
   sort_order: number | null
   sto_company_id?: string | null
+  parent_id?: string | null
 }
 
 export interface Service {
@@ -49,6 +50,21 @@ export async function fetchServiceCategories(stoCompanyId: string): Promise<Serv
     .order('sort_order')
 
   return (data || []) as ServiceCategory[]
+}
+
+/** Fetch all categories and services in one call for hierarchical display */
+export async function fetchServiceCatalog(stoCompanyId: string): Promise<{
+  categories: ServiceCategory[]
+  services: Service[]
+}> {
+  const [catRes, svcRes] = await Promise.all([
+    supabase.from('service_categories').select('*').eq('sto_company_id', stoCompanyId).order('sort_order'),
+    supabase.from('services').select('*').eq('sto_company_id', stoCompanyId).order('name'),
+  ])
+  return {
+    categories: (catRes.data || []) as ServiceCategory[],
+    services: (svcRes.data || []) as Service[],
+  }
 }
 
 /** Fetch a single service by id */
@@ -113,6 +129,7 @@ export async function createServiceCategory(categoryData: {
   icon?: string | null
   sort_order?: number
   sto_company_id: string
+  parent_id?: string | null
 }): Promise<void> {
   const { error } = await supabase.from('service_categories').insert([categoryData])
   if (error) throw error
@@ -125,6 +142,7 @@ export async function updateServiceCategory(id: string, categoryData: {
   color: string
   icon?: string | null
   sort_order?: number
+  parent_id?: string | null
 }): Promise<void> {
   const { error } = await supabase.from('service_categories').update(categoryData).eq('id', id)
   if (error) throw error

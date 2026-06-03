@@ -2,532 +2,572 @@ import { useState, useMemo } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, Search, X } from 'lucide-react'
+import {
+  Plus, Pencil, Trash2, ChevronRight, ChevronDown,
+  Wrench, FolderOpen, Folder, Clock, Search, X,
+} from 'lucide-react'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { moveToTrash } from '@/services/trashService'
 import {
-  fetchServices,
-  fetchServiceCategories,
-  fetchServiceRaw,
-  deleteService,
-  createService,
-  updateService,
+  fetchServiceCatalog,
+  createServiceCategory, updateServiceCategory, deleteServiceCategory,
+  createService, updateService, deleteService,
+  type ServiceCategory, type Service,
 } from '@/services/servicesService'
 
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
+function buildTree(categories: ServiceCategory[]) {
+  const roots = categories.filter(c => !c.parent_id)
+  const childrenOf = (id: string) => categories.filter(c => c.parent_id === id)
+  return { roots, childrenOf }
+}
+
+// ─── color palette ────────────────────────────────────────────────────────────
+
+const COLORS = [
+  '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+  '#06B6D4', '#EC4899', '#84CC16', '#F97316', '#6366F1',
+]
+
+// ─── main page ────────────────────────────────────────────────────────────────
+
 export default function Services() {
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingService, setEditingService] = useState<any>(null)
-  const [categoryFilter, setCategoryFilter] = useState('')
-  const [categorySearch, setCategorySearch] = useState('')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
+  const { data: profile } = useUserProfile()
+  const stoCompanyId = profile?.sto_company_id
+  const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
   const queryClient = useQueryClient()
   const { confirm: showConfirm, dialogProps } = useConfirm()
-  const { data: profile } = useUserProfile()
 
-  const stoCompanyId = profile?.sto_company_id
+  const [search, setSearch] = useState('')
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
-  const { data: services, isLoading } = useQuery({
-    queryKey: ['services', stoCompanyId],
-    queryFn: () => fetchServices(stoCompanyId!),
+  // modals
+  const [catModal, setCatModal] = useState<{ open: boolean; item?: ServiceCategory; parentId?: string } | null>(null)
+  const [svcModal, setSvcModal] = useState<{ open: boolean; item?: Service; categoryId?: string } | null>(null)
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['service-catalog', stoCompanyId],
+    queryFn: () => fetchServiceCatalog(stoCompanyId!),
     enabled: !!stoCompanyId,
   })
 
-  const { data: categories } = useQuery({
-    queryKey: ['service-categories', stoCompanyId],
-    queryFn: () => fetchServiceCategories(stoCompanyId!),
-    enabled: !!stoCompanyId,
-  })
+  const categories = data?.categories || []
+  const services = data?.services || []
 
-  // Фильтрация услуг
-  const filteredServices = useMemo(() => {
-    if (!services) return []
-    
-    return services.filter((service) => {
-      const matchesSearch = !searchQuery || 
-        service.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        service.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      
-      const matchesCategory = !categoryFilter || service.category_id === categoryFilter
-      
-      return matchesSearch && matchesCategory
-    })
-  }, [services, searchQuery, categoryFilter])
+  const { roots, childrenOf } = useMemo(() => buildTree(categories), [categories])
+  const servicesOf = (catId: string) => services.filter(s => s.category_id === catId)
 
-  // Фильтрация категорий для выпадающего списка
-  const filteredCategories = useMemo(() => {
-    if (!categories) return []
-    if (!categorySearch) return categories
-    
-    return categories.filter((cat: any) =>
-      cat.name?.toLowerCase().includes(categorySearch.toLowerCase())
+  // search mode: flat list filtered
+  const searchResults = useMemo(() => {
+    if (!search.trim()) return []
+    const q = search.toLowerCase()
+    return services.filter(s =>
+      s.name?.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q)
     )
-  }, [categories, categorySearch])
+  }, [services, search])
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const service = await fetchServiceRaw(id)
-      if (service) {
-        await moveToTrash({
-          entityType: 'service',
-          entityId: id,
-          entityLabel: service.name || 'Услуга',
-          entityData: service,
-          stoCompanyId: profile?.sto_company_id,
-        })
-      }
-      await deleteService(id)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['services'] })
-      toast.success('Услуга удалена')
-    },
+  const toggle = (id: string) =>
+    setExpanded(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['service-catalog', stoCompanyId] })
+
+  // delete category
+  const delCatMutation = useMutation({
+    mutationFn: deleteServiceCategory,
+    onSuccess: () => { invalidate(); toast.success('Категория удалена') },
+    onError: () => toast.error('Ошибка удаления'),
   })
 
-  const selectedCategory = categories?.find((cat: any) => cat.id === categoryFilter)
+  // delete service
+  const delSvcMutation = useMutation({
+    mutationFn: ({ id, svc }: { id: string; svc: Service }) =>
+      deleteService(id, svc, stoCompanyId),
+    onSuccess: () => { invalidate(); queryClient.invalidateQueries({ queryKey: ['services'] }); toast.success('Услуга удалена') },
+    onError: () => toast.error('Ошибка удаления'),
+  })
+
+  const confirmDeleteCat = async (cat: ServiceCategory) => {
+    const children = childrenOf(cat.id)
+    const svcs = servicesOf(cat.id)
+    const total = children.length + svcs.length
+    const msg = total > 0
+      ? `Удалить "${cat.name}"? Вместе с ней будут удалены ${total} вложенных элементов.`
+      : `Удалить категорию "${cat.name}"?`
+    if (await showConfirm({ message: msg, danger: true })) delCatMutation.mutate(cat.id)
+  }
+
+  const confirmDeleteSvc = async (svc: Service) => {
+    if (await showConfirm({ message: `Удалить услугу "${svc.name}"?`, danger: true })) {
+      delSvcMutation.mutate({ id: svc.id, svc })
+    }
+  }
 
   return (
     <div className="container-mobile">
-      <div className="flex items-center justify-between mb-4 sm:mb-6 gap-3">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Услуги</h1>
-        <button
-          onClick={() => {
-            setEditingService(null)
-            setIsModalOpen(true)
-          }}
-          className="btn-touch-sm bg-primary text-white hover:bg-primary/90 flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
-        >
-          <Plus className="w-4 h-4 flex-shrink-0" />
-          <span className="hidden sm:inline">Добавить</span>
-          <span className="sm:hidden">Услуга</span>
-        </button>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Каталог услуг</h1>
+        {isStoOwner && (
+          <button
+            onClick={() => setCatModal({ open: true })}
+            className="btn-touch-sm bg-primary text-white hover:bg-primary/90 flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Категория</span>
+            <span className="sm:hidden">+</span>
+          </button>
+        )}
       </div>
 
-      {/* Фильтры */}
-      <div className="bg-white rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-          {/* Поиск по названию */}
-          <div className="relative">
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Поиск по названию</label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Введите название услуги..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-10 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Фильтр по категории */}
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Категория</label>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Выберите категорию..."
-                value={selectedCategory ? selectedCategory.name : categorySearch}
-                onChange={(e) => {
-                  setCategorySearch(e.target.value)
-                  if (!e.target.value) {
-                    setCategoryFilter('')
-                  }
-                  setShowCategoryDropdown(true)
-                }}
-                onFocus={() => setShowCategoryDropdown(true)}
-                className="pl-3 pr-10 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              {(categoryFilter || categorySearch) && (
-                <button
-                  onClick={() => {
-                    setCategoryFilter('')
-                    setCategorySearch('')
-                    setShowCategoryDropdown(false)
-                  }}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              )}
-              
-              {showCategoryDropdown && filteredCategories.length > 0 && (
-                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                  {filteredCategories.map((cat: any) => (
-                    <div
-                      key={cat.id}
-                      onClick={() => {
-                        setCategoryFilter(cat.id)
-                        setCategorySearch('')
-                        setShowCategoryDropdown(false)
-                      }}
-                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <span
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: cat.color }}
-                      />
-                      <span>{cat.name}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Активные фильтры */}
-        {(categoryFilter || searchQuery) && (
-          <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
-            <span>Активные фильтры:</span>
-            {categoryFilter && selectedCategory && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded">
-                {selectedCategory.name}
-                <button
-                  onClick={() => {
-                    setCategoryFilter('')
-                    setCategorySearch('')
-                  }}
-                  className="hover:text-gray-800"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            {searchQuery && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded">
-                Поиск: "{searchQuery}"
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="hover:text-gray-800"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            <button
-              onClick={() => {
-                setCategoryFilter('')
-                setCategorySearch('')
-                setSearchQuery('')
-              }}
-              className="text-primary hover:text-primary/80 ml-2"
-            >
-              Очистить все
-            </button>
-          </div>
+      {/* Search */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Поиск услуги..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+        />
+        {search && (
+          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <X className="w-4 h-4" />
+          </button>
         )}
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center">
-          <Spinner size="lg" />
+        <div className="flex justify-center py-12"><Spinner size="lg" /></div>
+      ) : search.trim() ? (
+        /* Search results */
+        <div className="bg-white rounded-lg shadow divide-y divide-gray-100">
+          {searchResults.length === 0 ? (
+            <p className="p-6 text-center text-gray-400">Ничего не найдено</p>
+          ) : searchResults.map(svc => (
+            <ServiceRow key={svc.id} svc={svc} isStoOwner={!!isStoOwner}
+              onEdit={() => setSvcModal({ open: true, item: svc })}
+              onDelete={() => confirmDeleteSvc(svc)}
+              catName={categories.find(c => c.id === svc.category_id)?.name}
+            />
+          ))}
+        </div>
+      ) : roots.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <Wrench className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">Каталог пуст. Добавьте первую категорию.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Название услуги
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Категория
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Описание
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Цена
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Длительность
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Действия
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredServices.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                    {searchQuery || categoryFilter ? 'Услуги не найдены' : 'Нет услуг'}
-                  </td>
-                </tr>
-              ) : (
-                filteredServices.map((service) => (
-                  <tr key={service.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{service.name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {service.service_categories ? (
-                        <span
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
-                          style={{ backgroundColor: service.service_categories.color }}
-                        >
-                          {service.service_categories.name}
-                        </span>
-                      ) : (
-                        <span className="text-sm text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-600 max-w-xs truncate">
-                        {service.description || '—'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-primary">
-                        {service.price.toLocaleString('ru-RU')} ₴
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-600">
-                        {service.duration_minutes ? `${service.duration_minutes} мин` : '—'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        /* Tree */
+        <div className="space-y-2">
+          {roots.map(root => {
+            const subs = childrenOf(root.id)
+            const rootSvcs = servicesOf(root.id)
+            const isOpen = expanded.has(root.id)
+            const total = subs.length + rootSvcs.length
+
+            return (
+              <div key={root.id} className="bg-white rounded-lg shadow overflow-hidden">
+                {/* Root category row */}
+                <div className="flex items-center gap-2 px-3 sm:px-4 py-3 bg-gray-50 border-b border-gray-100">
+                  <button
+                    onClick={() => toggle(root.id)}
+                    className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                  >
+                    {isOpen
+                      ? <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      : <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    }
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: root.color || '#94a3b8' }} />
+                    {isOpen ? <FolderOpen className="w-4 h-4 text-gray-500 flex-shrink-0" /> : <Folder className="w-4 h-4 text-gray-500 flex-shrink-0" />}
+                    <span className="font-semibold text-gray-900 text-sm sm:text-base truncate">{root.name}</span>
+                    <span className="text-xs text-gray-400 flex-shrink-0 ml-1">({total})</span>
+                  </button>
+                  {isStoOwner && (
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <button
-                        onClick={() => {
-                          setEditingService(service)
-                          setIsModalOpen(true)
-                        }}
-                        className="text-primary hover:text-primary/80 mr-3"
+                        onClick={() => { setCatModal({ open: true, parentId: root.id }); setExpanded(prev => new Set([...prev, root.id])) }}
+                        className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                        title="Добавить подкатегорию"
                       >
-                        <Pencil className="w-4 h-4 inline" />
+                        <Plus className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={async () => {
-                          const ok = await showConfirm({ message: 'Удалить эту услугу?', danger: true })
-                          if (!ok) return
-                          deleteMutation.mutate(service.id)
-                        }}
-                        className="text-red-600 hover:text-red-800"
+                      <button onClick={() => setSvcModal({ open: true, categoryId: root.id })}
+                        className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                        title="Добавить услугу"
                       >
-                        <Trash2 className="w-4 h-4 inline" />
+                        <Wrench className="w-3.5 h-3.5" />
                       </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                      <button onClick={() => setCatModal({ open: true, item: root })}
+                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => confirmDeleteCat(root)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {isOpen && (
+                  <div>
+                    {/* Direct services on root category */}
+                    {rootSvcs.map(svc => (
+                      <ServiceRow key={svc.id} svc={svc} isStoOwner={!!isStoOwner} indent={1}
+                        onEdit={() => setSvcModal({ open: true, item: svc })}
+                        onDelete={() => confirmDeleteSvc(svc)}
+                      />
+                    ))}
+
+                    {/* Subcategories */}
+                    {subs.map(sub => {
+                      const subSvcs = servicesOf(sub.id)
+                      const subOpen = expanded.has(sub.id)
+                      return (
+                        <div key={sub.id}>
+                          {/* Subcategory row */}
+                          <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-gray-50/60 border-b border-gray-50">
+                            <div className="w-4 flex-shrink-0" /> {/* indent */}
+                            <button
+                              onClick={() => toggle(sub.id)}
+                              className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                            >
+                              {subOpen
+                                ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                : <ChevronRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                              }
+                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: sub.color || root.color || '#94a3b8' }} />
+                              <span className="font-medium text-gray-700 text-sm truncate">{sub.name}</span>
+                              <span className="text-xs text-gray-400 flex-shrink-0">({subSvcs.length})</span>
+                            </button>
+                            {isStoOwner && (
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <button
+                                  onClick={() => { setSvcModal({ open: true, categoryId: sub.id }); setExpanded(prev => new Set([...prev, sub.id])) }}
+                                  className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                                  title="Добавить услугу"
+                                >
+                                  <Wrench className="w-3 h-3" />
+                                </button>
+                                <button onClick={() => setCatModal({ open: true, item: sub })}
+                                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                                <button onClick={() => confirmDeleteCat(sub)}
+                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {subOpen && subSvcs.map(svc => (
+                            <ServiceRow key={svc.id} svc={svc} isStoOwner={!!isStoOwner} indent={2}
+                              onEdit={() => setSvcModal({ open: true, item: svc })}
+                              onDelete={() => confirmDeleteSvc(svc)}
+                            />
+                          ))}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
-      {isModalOpen && (
-        <ServiceModal
-          service={editingService}
-          onClose={() => setIsModalOpen(false)}
+      {/* Category modal */}
+      {catModal?.open && (
+        <CategoryModal
+          item={catModal.item}
+          parentId={catModal.parentId}
+          stoCompanyId={stoCompanyId!}
+          onClose={() => setCatModal(null)}
+          onSaved={invalidate}
         />
       )}
+
+      {/* Service modal */}
+      {svcModal?.open && (
+        <ServiceModal
+          item={svcModal.item}
+          defaultCategoryId={svcModal.categoryId}
+          stoCompanyId={stoCompanyId!}
+          categories={categories}
+          onClose={() => setSvcModal(null)}
+          onSaved={() => { invalidate(); queryClient.invalidateQueries({ queryKey: ['services'] }) }}
+        />
+      )}
+
       <ConfirmDialog {...dialogProps} />
     </div>
   )
 }
 
-function ServiceModal({ service, onClose }: { service: any; onClose: () => void }) {
-  const [formData, setFormData] = useState({
-    name: service?.name || '',
-    description: service?.description || '',
-    price: service?.price || '',
-    duration_minutes: service?.duration_minutes || '',
-    category_id: service?.category_id || '',
-  })
-  const [categorySearch, setCategorySearch] = useState('')
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
+// ─── service row ──────────────────────────────────────────────────────────────
 
+function ServiceRow({
+  svc, isStoOwner, indent = 0, onEdit, onDelete, catName,
+}: {
+  svc: Service
+  isStoOwner: boolean
+  indent?: number
+  onEdit: () => void
+  onDelete: () => void
+  catName?: string
+}) {
+  const pad = indent === 0 ? 'pl-3' : indent === 1 ? 'pl-7' : 'pl-11'
+  return (
+    <div className={`flex items-center gap-2 ${pad} pr-3 sm:pr-4 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50/50`}>
+      <Wrench className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <span className="text-sm text-gray-800">{svc.name}</span>
+        {catName && <span className="ml-2 text-xs text-gray-400">{catName}</span>}
+        {svc.description && <p className="text-xs text-gray-400 truncate">{svc.description}</p>}
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+        {svc.duration_minutes && (
+          <span className="hidden sm:flex items-center gap-1 text-xs text-gray-400">
+            <Clock className="w-3 h-3" />{svc.duration_minutes} мин
+          </span>
+        )}
+        <span className="text-sm font-semibold text-primary">{Number(svc.price).toLocaleString()} ₴</span>
+        {isStoOwner && (
+          <>
+            <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── category modal ───────────────────────────────────────────────────────────
+
+function CategoryModal({ item, parentId, stoCompanyId, onClose, onSaved }: {
+  item?: ServiceCategory
+  parentId?: string
+  stoCompanyId: string
+  onClose: () => void
+  onSaved: () => void
+}) {
   useBlockScroll(true)
-
-  const queryClient = useQueryClient()
-  const { data: profile } = useUserProfile()
-  const stoCompanyId = profile?.sto_company_id
-
-  const { data: categories } = useQuery({
-    queryKey: ['service-categories', stoCompanyId],
-    queryFn: () => fetchServiceCategories(stoCompanyId!),
-    enabled: !!stoCompanyId,
-  })
-
-  const filteredCategories = useMemo(() => {
-    if (!categories) return []
-    if (!categorySearch) return categories
-    
-    return categories.filter((cat: any) =>
-      cat.name?.toLowerCase().includes(categorySearch.toLowerCase())
-    )
-  }, [categories, categorySearch])
-
-  const selectedCategory = categories?.find((cat: any) => cat.id === formData.category_id)
+  const [name, setName] = useState(item?.name || '')
+  const [color, setColor] = useState(item?.color || COLORS[0])
 
   const mutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const serviceData = {
-        name: data.name,
-        description: data.description || null,
-        price: Number(data.price),
-        duration_minutes: data.duration_minutes ? Number(data.duration_minutes) : null,
-        category_id: data.category_id || null,
-      }
-
-      if (service) {
-        await updateService(service.id, serviceData)
+    mutationFn: async () => {
+      if (item) {
+        await updateServiceCategory(item.id, { name, color, sort_order: item.sort_order ?? 0 })
       } else {
-        if (!stoCompanyId) throw new Error('sto_company_id not found')
-        await createService({ ...serviceData, sto_company_id: stoCompanyId })
+        await createServiceCategory({ name, color, sto_company_id: stoCompanyId, parent_id: parentId || null } as any)
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['services'] })
-      toast.success(service ? 'Услуга обновлена' : 'Услуга добавлена')
-      onClose()
-    },
-    onError: () => {
-      toast.error('Ошибка при сохранении')
-    },
+    onSuccess: () => { onSaved(); toast.success(item ? 'Категория обновлена' : 'Категория создана'); onClose() },
+    onError: () => toast.error('Ошибка при сохранении'),
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    mutation.mutate(formData)
-  }
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4">
-          {service ? 'Редактировать услугу' : 'Добавить услугу'}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-900">
+            {item ? 'Редактировать' : parentId ? 'Новая подкатегория' : 'Новая категория'}
+          </h2>
+        </div>
+        <div className="px-5 py-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Название *</label>
+            <label className="text-sm font-medium text-gray-700">Название *</label>
             <input
+              autoFocus
               type="text"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && name.trim()) mutation.mutate() }}
+              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             />
           </div>
-          
+          <div>
+            <label className="text-sm font-medium text-gray-700">Цвет</label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {COLORS.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`w-7 h-7 rounded-full transition-transform ${color === c ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''}`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+            Отмена
+          </button>
+          <button
+            onClick={() => mutation.mutate()}
+            disabled={!name.trim() || mutation.isPending}
+            className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            {mutation.isPending ? 'Сохранение...' : 'Сохранить'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── service modal ────────────────────────────────────────────────────────────
+
+function ServiceModal({ item, defaultCategoryId, stoCompanyId, categories, onClose, onSaved }: {
+  item?: Service
+  defaultCategoryId?: string
+  stoCompanyId: string
+  categories: ServiceCategory[]
+  onClose: () => void
+  onSaved: () => void
+}) {
+  useBlockScroll(true)
+  const [form, setForm] = useState({
+    name: item?.name || '',
+    description: item?.description || '',
+    price: item?.price != null ? String(item.price) : '',
+    duration_minutes: item?.duration_minutes != null ? String(item.duration_minutes) : '',
+    category_id: item?.category_id || defaultCategoryId || '',
+  })
+  const [catSearch, setCatSearch] = useState('')
+  const [showCatDrop, setShowCatDrop] = useState(false)
+
+  const filteredCats = categories.filter(c =>
+    !catSearch || c.name.toLowerCase().includes(catSearch.toLowerCase())
+  )
+  const selectedCat = categories.find(c => c.id === form.category_id)
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        name: form.name,
+        description: form.description || null,
+        price: Number(form.price),
+        duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
+        category_id: form.category_id || null,
+      }
+      if (item) {
+        await updateService(item.id, payload)
+      } else {
+        await createService({ ...payload, sto_company_id: stoCompanyId })
+      }
+    },
+    onSuccess: () => { onSaved(); toast.success(item ? 'Услуга обновлена' : 'Услуга создана'); onClose() },
+    onError: () => toast.error('Ошибка при сохранении'),
+  })
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm max-h-[90vh] flex flex-col">
+        <div className="px-5 py-4 border-b border-gray-100 flex-shrink-0">
+          <h2 className="font-semibold text-gray-900">{item ? 'Редактировать услугу' : 'Новая услуга'}</h2>
+        </div>
+        <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+          {/* Name */}
+          <div>
+            <label className="text-sm font-medium text-gray-700">Название *</label>
+            <input autoFocus type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            />
+          </div>
+
+          {/* Category */}
           <div className="relative">
-            <label className="block text-sm font-medium text-gray-700">Категория</label>
+            <label className="text-sm font-medium text-gray-700">Категория / подкатегория</label>
             <input
               type="text"
-              placeholder="Выберите категорию..."
-              value={selectedCategory ? selectedCategory.name : categorySearch}
-              onChange={(e) => {
-                setCategorySearch(e.target.value)
-                if (!e.target.value) {
-                  setFormData({ ...formData, category_id: '' })
-                }
-                setShowCategoryDropdown(true)
-              }}
-              onFocus={() => setShowCategoryDropdown(true)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="Выбрать..."
+              value={selectedCat ? selectedCat.name : catSearch}
+              onChange={e => { setCatSearch(e.target.value); if (!e.target.value) setForm(f => ({ ...f, category_id: '' })); setShowCatDrop(true) }}
+              onFocus={() => setShowCatDrop(true)}
+              className="mt-1 w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             />
-            {(formData.category_id || categorySearch) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData({ ...formData, category_id: '' })
-                  setCategorySearch('')
-                  setShowCategoryDropdown(false)
-                }}
-                className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
-              >
+            {(form.category_id || catSearch) && (
+              <button type="button" onClick={() => { setForm(f => ({ ...f, category_id: '' })); setCatSearch(''); setShowCatDrop(false) }}
+                className="absolute right-2 top-8 text-gray-400 hover:text-gray-600">
                 <X className="w-4 h-4" />
               </button>
             )}
-            
-            {showCategoryDropdown && filteredCategories.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-auto">
-                {filteredCategories.map((cat: any) => (
-                  <div
-                    key={cat.id}
-                    onClick={() => {
-                      setFormData({ ...formData, category_id: cat.id })
-                      setCategorySearch('')
-                      setShowCategoryDropdown(false)
-                    }}
-                    className="px-3 py-2 cursor-pointer hover:bg-gray-100 flex items-center gap-2"
+            {showCatDrop && filteredCats.length > 0 && (
+              <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-auto">
+                {filteredCats.map(cat => (
+                  <button key={cat.id} type="button"
+                    onClick={() => { setForm(f => ({ ...f, category_id: cat.id })); setCatSearch(''); setShowCatDrop(false) }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
                   >
-                    <span
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: cat.color }}
-                    />
-                    <span>{cat.name}</span>
-                  </div>
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                    {cat.parent_id && <span className="text-gray-300 text-xs">└</span>}
+                    {cat.name}
+                  </button>
                 ))}
               </div>
             )}
           </div>
-          
+
+          {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Описание</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            <label className="text-sm font-medium text-gray-700">Описание</label>
+            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              rows={2} className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             />
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Цена (₴) *</label>
-            <input
-              type="number"
-              required
-              min="0"
-              step="0.01"
-              value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+
+          {/* Price + Duration */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Цена (₴) *</label>
+              <input type="number" min="0" step="0.01" value={form.price}
+                onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Время (мин)</label>
+              <input type="number" min="0" value={form.duration_minutes}
+                onChange={e => setForm(f => ({ ...f, duration_minutes: e.target.value }))}
+                placeholder="необяз."
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              />
+            </div>
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Длительность (минут)</label>
-            <input
-              type="number"
-              min="0"
-              value={formData.duration_minutes}
-              onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-          
-          <div className="flex justify-end space-x-3 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50"
-            >
-              {mutation.isPending ? 'Сохранение...' : 'Сохранить'}
-            </button>
-          </div>
-        </form>
+        </div>
+
+        <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2 flex-shrink-0">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">Отмена</button>
+          <button
+            onClick={() => mutation.mutate()}
+            disabled={!form.name.trim() || !form.price || mutation.isPending}
+            className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            {mutation.isPending ? 'Сохранение...' : 'Сохранить'}
+          </button>
+        </div>
       </div>
     </div>
   )
