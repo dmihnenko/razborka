@@ -17,7 +17,7 @@ export default function AppointmentComments({ appointmentId, stoCompanyId }: Pro
   const [text, setText] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  const { data: comments = [], isLoading } = useQuery<AppointmentComment[]>({
+  const { data: comments = [], isLoading, isError } = useQuery<AppointmentComment[]>({
     queryKey: ['appointment-comments', appointmentId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -25,10 +25,15 @@ export default function AppointmentComments({ appointmentId, stoCompanyId }: Pro
         .select('*, author_profile:user_profiles(full_name, email)')
         .eq('appointment_id', appointmentId)
         .order('created_at', { ascending: true })
-      if (error) throw error
+      if (error) {
+        // Таблица ещё не создана — возвращаем пустой массив
+        if (error.code === '42P01' || (error as any).status === 404) return []
+        throw error
+      }
       return data as AppointmentComment[]
     },
     enabled: !!appointmentId,
+    retry: false,
   })
 
   useEffect(() => {
@@ -47,7 +52,10 @@ export default function AppointmentComments({ appointmentId, stoCompanyId }: Pro
           user_id: profile?.id,
           text: commentText.trim(),
         })
-      if (error) throw error
+      if (error) {
+        if ((error as any).status === 404) throw new Error('Таблица комментариев не создана. Запустите миграцию в Supabase.')
+        throw error
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointment-comments', appointmentId] })
@@ -91,6 +99,8 @@ export default function AppointmentComments({ appointmentId, stoCompanyId }: Pro
 
   const authorName = (c: AppointmentComment) =>
     c.author_profile?.full_name || c.author_profile?.email || 'Неизвестно'
+
+  if (isError) return null
 
   return (
     <div className="bg-white rounded-lg shadow p-4 sm:p-6">
