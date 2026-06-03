@@ -4,11 +4,55 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { ArrowLeft, Calendar, User, Car, Phone, FileText, Package, Wrench, DollarSign, UserCog, History } from 'lucide-react'
+import {
+  ArrowLeft, Calendar, User, Car, Phone, FileText,
+  Package, Wrench, DollarSign, UserCog, History,
+  ChevronDown, CheckCircle2, Clock, Archive, Trash2,
+  AlertTriangle, Pencil, Check, X,
+} from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 import ReassignWorkerModal from '@/components/appointments/ReassignWorkerModal'
 import AppointmentComments from '@/components/appointments/AppointmentComments'
 import { toast } from 'sonner'
+
+// ─── Status config ────────────────────────────────────────────────────────────
+
+const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  scheduled:       { label: 'Запланирована',   color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
+  in_progress:     { label: 'В работе',        color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
+  completed:       { label: 'Готова',          color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
+  ready:           { label: 'Готова',          color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
+  cancelled:       { label: 'Отменена',        color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
+  archived:        { label: 'Архив',           color: '#6B7280', bg: '#F9FAFB', border: '#E5E7EB' },
+  pending_deletion:{ label: 'Запрос удаления', color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
+}
+
+const STATUS_ICON: Record<string, React.ElementType> = {
+  scheduled: Clock,
+  in_progress: Wrench,
+  completed: CheckCircle2,
+  ready: CheckCircle2,
+  cancelled: X,
+  archived: Archive,
+  pending_deletion: Trash2,
+}
+
+function StatusChip({ status, size = 'md' }: { status: string; size?: 'sm' | 'md' }) {
+  const cfg = STATUS_CFG[status] || STATUS_CFG.archived
+  const Icon = STATUS_ICON[status] || Clock
+  const sm = size === 'sm'
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 font-semibold rounded-full border ${sm ? 'text-xs px-2 py-0.5' : 'text-sm px-3 py-1'}`}
+      style={{ color: cfg.color, backgroundColor: cfg.bg, borderColor: cfg.border }}
+    >
+      <Icon className={sm ? 'w-3 h-3' : 'w-3.5 h-3.5'} />
+      {cfg.label}
+    </span>
+  )
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function AppointmentDetails() {
   const { appointmentId } = useParams()
@@ -18,51 +62,29 @@ export default function AppointmentDetails() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
   const [paymentConfirmModal, setPaymentConfirmModal] = useState<{
-    isOpen: boolean
-    type: 'parts' | 'work'
-    currentValue: boolean
+    isOpen: boolean; type: 'parts' | 'work'; currentValue: boolean
   } | null>(null)
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
   const [reassignModal, setReassignModal] = useState<{
-    isOpen: boolean
-    appointmentId: string
-    currentWorkerId: string | null
-    customerName: string
-    vehicleName: string
+    isOpen: boolean; appointmentId: string; currentWorkerId: string | null
+    customerName: string; vehicleName: string
   } | null>(null)
   const { data: profile } = useUserProfile()
-
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
 
-  // Получаем количество работников СТО
   const { data: workersCount = 0 } = useQuery({
     queryKey: ['sto_workers_count', profile?.sto_company_id],
     queryFn: async () => {
-      const { data: workerRole } = await supabase
-        .from('roles')
-        .select('id')
-        .eq('name', 'sto_worker')
-        .single()
-
+      const { data: workerRole } = await supabase.from('roles').select('id').eq('name', 'sto_worker').single()
       if (!workerRole) return 0
-
-      const { data: userRoles } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role_id', workerRole.id)
-
+      const { data: userRoles } = await supabase.from('user_roles').select('user_id').eq('role_id', workerRole.id)
       if (!userRoles) return 0
-
-      const { count } = await supabase
-        .from('user_profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('sto_company_id', profile?.sto_company_id)
-        .eq('is_active', true)
+      const { count } = await supabase.from('user_profiles').select('id', { count: 'exact', head: true })
+        .eq('sto_company_id', profile?.sto_company_id).eq('is_active', true)
         .in('id', userRoles.map(ur => ur.user_id))
-
       return count || 0
     },
-    enabled: !!profile?.sto_company_id && isStoOwner
+    enabled: !!profile?.sto_company_id && !!isStoOwner,
   })
 
   const { data: appointment, isLoading } = useQuery({
@@ -70,117 +92,72 @@ export default function AppointmentDetails() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('appointments')
-        .select(`
-          *,
-          customers(name, phone),
-          vehicles(brand, model, license_plate, vin),
+        .select(`*, customers(name, phone), vehicles(brand, model, license_plate, vin),
           appointment_parts(id, description, quantity, store_cost, client_cost, created_at),
           appointment_services(id, description, cost, created_at),
           created_by_profile:user_profiles!created_by(full_name, email),
-          assigned_to_profile:user_profiles!assigned_to(full_name, email)
-        `)
-        .eq('id', appointmentId)
-        .single()
-      
+          assigned_to_profile:user_profiles!assigned_to(full_name, email)`)
+        .eq('id', appointmentId).single()
       if (error) throw error
       return data
     },
-    enabled: !!appointmentId
+    enabled: !!appointmentId,
   })
 
-  // История обслуживания автомобиля
   const { data: vehicleHistory = [] } = useQuery({
     queryKey: ['vehicle-service-history', appointment?.vehicle_id, appointmentId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('appointments')
         .select('id, scheduled_date, status, total_work_cost, total_parts_cost, total_cost, work_items, part_items')
-        .eq('vehicle_id', appointment!.vehicle_id)
-        .neq('id', appointmentId!)
+        .eq('vehicle_id', appointment!.vehicle_id).neq('id', appointmentId!)
         .not('status', 'in', '("deleted","pending_deletion")')
-        .order('scheduled_date', { ascending: false })
-        .limit(20)
+        .order('scheduled_date', { ascending: false }).limit(20)
       if (error) throw error
       return data
     },
     enabled: !!appointment?.vehicle_id,
   })
 
-  // Мутация для обновления статуса оплаты
   const updatePaymentMutation = useMutation({
-    mutationFn: async ({ type, value }: { type: 'parts' | 'work', value: boolean }) => {
+    mutationFn: async ({ type, value }: { type: 'parts' | 'work'; value: boolean }) => {
       const field = type === 'parts' ? 'parts_paid' : 'work_paid'
-      
-      // Получаем текущие данные заявки
-      const { data: current } = await supabase
-        .from('appointments')
+      const { data: current } = await supabase.from('appointments')
         .select('parts_paid, work_paid, parts_cost, total_parts_cost, total_work_cost, status')
-        .eq('id', appointmentId)
-        .single()
-      
+        .eq('id', appointmentId).single()
       if (!current) throw new Error('Appointment not found')
-      
-      // Обновляем поле оплаты
       const updatedData: any = { [field]: value }
-      
-      // Проверяем, должны ли мы архивировать заявку
       const hasParts = ((current.parts_cost || current.total_parts_cost) || 0) > 0
       const hasWork = (current.total_work_cost || 0) > 0
-      
       const willBePartsPaid = type === 'parts' ? value : current.parts_paid
       const willBeWorkPaid = type === 'work' ? value : current.work_paid
-      
-      const shouldArchive = 
-        (current.status === 'completed' || current.status === 'ready') &&
-        (!hasParts || willBePartsPaid) &&
-        (!hasWork || willBeWorkPaid)
-      
+      const shouldArchive = (current.status === 'completed' || current.status === 'ready')
+        && (!hasParts || willBePartsPaid) && (!hasWork || willBeWorkPaid)
       if (shouldArchive) {
         updatedData.status = 'archived'
         updatedData.closed_date = new Date().toISOString()
-        // Если запчастей/работ нет — авто-отмечаем как оплачено
         if (!hasParts) updatedData.parts_paid = true
         if (!hasWork) updatedData.work_paid = true
       }
-      
-      const { error } = await supabase
-        .from('appointments')
-        .update(updatedData)
-        .eq('id', appointmentId)
-      
+      const { error } = await supabase.from('appointments').update(updatedData).eq('id', appointmentId)
       if (error) throw error
-      
       return { archived: shouldArchive }
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['appointment', appointmentId] })
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard-monthly-revenue'] })
-      
-      if (result.archived) {
-        toast.success('Оплата подтверждена. Заявка отправлена в архив')
-      } else {
-        toast.success('Статус оплаты обновлен')
-      }
+      toast.success(result.archived ? 'Оплата подтверждена. Заявка отправлена в архив' : 'Статус оплаты обновлён')
     },
-    onError: () => {
-      toast.error('Ошибка при обновлении статуса оплаты')
-    }
+    onError: () => toast.error('Ошибка при обновлении статуса оплаты'),
   })
 
-  // Мутация для обновления статуса заявки
   const updateStatusMutation = useMutation({
     mutationFn: async (status: string) => {
       const isUnarchiving = appointment?.status === 'archived'
       const isArchiving = status === 'archived'
       const updateData: any = { status }
-      // При возврате из архива — сбрасываем дату закрытия и оплаты
-      if (isUnarchiving) {
-        updateData.closed_date = null
-        updateData.parts_paid = false
-        updateData.work_paid = false
-      }
-      // При архивировании вручную — авто-оплачиваем то, чего нет
+      if (isUnarchiving) { updateData.closed_date = null; updateData.parts_paid = false; updateData.work_paid = false }
       if (isArchiving) {
         const hasParts = ((appointment?.parts_cost || appointment?.total_parts_cost) || 0) > 0
         const hasWork = (appointment?.total_work_cost || 0) > 0
@@ -188,56 +165,22 @@ export default function AppointmentDetails() {
         if (!hasParts) updateData.parts_paid = true
         if (!hasWork) updateData.work_paid = true
       }
-      const { data, error } = await supabase
-        .from('appointments')
-        .update(updateData)
-        .eq('id', appointmentId)
-        .select()
-      
-      if (error) {
-        console.error('Supabase error:', error)
-        throw error
-      }
-      return data
+      const { error } = await supabase.from('appointments').update(updateData).eq('id', appointmentId).select()
+      if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointment', appointmentId] })
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard-monthly-revenue'] })
-      toast.success('Статус заявки обновлен')
+      toast.success('Статус обновлён')
       setShowStatusDropdown(false)
     },
-    onError: (error: any) => {
-      console.error('Update status error:', error)
-      toast.error(`Ошибка при обновлении статуса: ${error.message || 'Неизвестная ошибка'}`)
-    }
+    onError: (e: any) => toast.error(`Ошибка: ${e.message || 'Неизвестная ошибка'}`),
   })
 
-  const handlePaymentChange = (type: 'parts' | 'work', currentValue: boolean) => {
-    setPaymentConfirmModal({
-      isOpen: true,
-      type,
-      currentValue
-    })
-  }
-
-  const confirmPaymentChange = () => {
-    if (paymentConfirmModal) {
-      updatePaymentMutation.mutate({
-        type: paymentConfirmModal.type,
-        value: !paymentConfirmModal.currentValue
-      })
-      setPaymentConfirmModal(null)
-    }
-  }
-
-  // Мутация для exclude_from_stats
-  const updateExcludeFromStatsMutation = useMutation({
+  const updateExcludeMutation = useMutation({
     mutationFn: async (value: boolean) => {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ exclude_from_stats: value })
-        .eq('id', appointmentId)
+      const { error } = await supabase.from('appointments').update({ exclude_from_stats: value }).eq('id', appointmentId)
       if (error) throw error
     },
     onSuccess: () => {
@@ -245,29 +188,18 @@ export default function AppointmentDetails() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-monthly-revenue'] })
       toast.success(appointment?.exclude_from_stats ? 'Включена в статистику' : 'Исключена из статистики')
     },
-    onError: () => {
-      toast.error('Ошибка при обновлении')
-    }
+    onError: () => toast.error('Ошибка при обновлении'),
   })
 
   const handleStatusChange = (newStatus: string) => {
-    if (newStatus === 'archived') {
-      setShowStatusDropdown(false)
-      setShowArchiveConfirm(true)
-      return
-    }
+    if (newStatus === 'archived') { setShowStatusDropdown(false); setShowArchiveConfirm(true); return }
     updateStatusMutation.mutate(newStatus)
   }
 
   const availableStatuses = appointment?.status === 'archived'
-    ? (isStoOwner ? [
-        { value: 'in_progress', label: 'В работе' },
-        { value: 'completed', label: 'Готова' },
-      ] : [])
+    ? (isStoOwner ? [{ value: 'in_progress', label: 'В работе' }, { value: 'completed', label: 'Готова' }] : [])
     : appointment?.status === 'pending_deletion'
-    ? (isStoOwner ? [
-        { value: 'in_progress', label: 'Отклонить удаление' },
-      ] : [])
+    ? (isStoOwner ? [{ value: 'in_progress', label: 'Отклонить удаление' }] : [])
     : [
         { value: 'scheduled', label: 'Запланирована' },
         { value: 'in_progress', label: 'В работе' },
@@ -276,647 +208,524 @@ export default function AppointmentDetails() {
         ...(isStoOwner ? [{ value: 'archived', label: 'В архив' }] : []),
       ]
 
-  const statusColors = {
-    scheduled: 'bg-purple-100 text-purple-800',
-    in_progress: 'bg-blue-100 text-blue-800',
-    completed: 'bg-green-100 text-green-800',
-    cancelled: 'bg-red-100 text-red-800',
-    archived: 'bg-gray-200 text-gray-600',
-    pending_deletion: 'bg-red-200 text-red-900',
-  }
+  // ── Derived values ──────────────────────────────────────────────────────────
 
-  const statusLabels = {
-    scheduled: 'Запланирована',
-    in_progress: 'В работе',
-    completed: 'Готова',
-    cancelled: 'Отменена',
-    archived: 'Архив',
-    pending_deletion: 'Запрос на удаление',
-  }
+  const hasOldParts = appointment?.appointment_parts?.length > 0
+  const hasNewParts = appointment?.part_items?.length > 0
+  const hasParts = hasOldParts || hasNewParts
+  const partsCost = appointment?.parts_cost || appointment?.total_parts_cost
+    || (hasOldParts ? appointment.appointment_parts.reduce((s: number, p: any) => s + (p.store_cost || 0) * (p.quantity || 1), 0) : 0)
+    || (hasNewParts ? appointment?.part_items.reduce((s: number, p: any) => s + (p.totalPrice || 0), 0) : 0) || 0
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-dvh">
-        <Spinner size="lg" />
-      </div>
-    )
-  }
+  const hasOldServices = appointment?.appointment_services?.length > 0
+  const hasNewServices = appointment?.work_items?.length > 0
+  const hasWork = hasOldServices || hasNewServices
+  const workCost = appointment?.total_work_cost
+    || (hasOldServices ? appointment.appointment_services.reduce((s: number, sv: any) => s + (sv.cost || 0), 0) : 0)
+    || (hasNewServices ? appointment?.work_items.reduce((s: number, w: any) => s + (w.price || 0), 0) : 0) || 0
 
-  if (!appointment) {
-    return (
-      <div className="p-4 sm:p-6 lg:p-8">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Заявка не найдена</h2>
-          <button
-            onClick={() => navigate('/appointments')}
-            className="text-primary hover:underline"
-          >
-            Вернуться к списку заявок
-          </button>
-        </div>
-      </div>
-    )
-  }
+  const totalCost = partsCost + workCost
+
+  const workerName = appointment?.assigned_to_name
+    || appointment?.assigned_to_profile?.full_name
+    || appointment?.assigned_to_profile?.email
+
+  const shortId = appointmentId ? `#${appointmentId.slice(-6).toUpperCase()}` : ''
+
+  // ── Loading / not found ─────────────────────────────────────────────────────
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Spinner size="lg" />
+    </div>
+  )
+
+  if (!appointment) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-8">
+      <FileText className="w-12 h-12 text-gray-300" />
+      <p className="text-gray-500 font-medium">Заявка не найдена</p>
+      <button onClick={() => navigate('/appointments')} className="text-primary text-sm hover:underline">
+        Вернуться к списку
+      </button>
+    </div>
+  )
+
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 w-full">
-      {/* Хедер с кнопкой назад */}
-      <div className="mb-4 sm:mb-6">
-        <button
-          onClick={() => location.state?.from ? navigate(location.state.from) : navigate(-1)}
-          className="flex items-center text-mobile-base text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-          Назад
-        </button>
-        
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="heading-mobile-1">Заявка</h1>
-            <p className="text-mobile-sm text-gray-500 mt-1">
-              Создана {new Date(appointment.created_at).toLocaleDateString('ru-RU')}
+    <div className="min-h-screen bg-slate-50">
+
+      {/* ── Sticky page header ─────────────────────────────────────────────── */}
+      <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 flex items-center gap-3">
+          {/* Back */}
+          <button
+            onClick={() => location.state?.from ? navigate(location.state.from) : navigate(-1)}
+            className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 transition-colors flex-shrink-0 -ml-1 p-1 rounded-lg hover:bg-gray-100"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="hidden sm:inline text-sm font-medium">Назад</span>
+          </button>
+
+          {/* Title */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-bold text-gray-900 text-sm sm:text-base truncate">
+                {appointment.customers?.name || 'Заявка'}
+              </span>
+              <span className="text-xs text-gray-400 font-mono flex-shrink-0 hidden sm:block">{shortId}</span>
+            </div>
+            <p className="text-xs text-gray-400 leading-none mt-0.5">
+              {new Date(appointment.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' })}
             </p>
           </div>
-          <div className="flex items-center flex-wrap gap-2">
-            {/* Статус с выпадающим списком */}
-            <div className="relative">
-              <button
-                onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                disabled={(appointment.status === 'archived' && !isStoOwner) || (appointment.status === 'pending_deletion' && !isStoOwner)}
-                className={`px-3 py-1.5 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} ${((appointment.status !== 'archived' && appointment.status !== 'pending_deletion') || isStoOwner) ? 'hover:opacity-80 transition-opacity cursor-pointer' : 'cursor-default'}`}
-              >
-                {statusLabels[appointment.status as keyof typeof statusLabels]}
-              </button>
-              {showStatusDropdown && availableStatuses.length > 0 && (
-                <div className="absolute right-0 z-10 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200">
-                  {availableStatuses.map((status) => (
-                    <button
-                      key={status.value}
-                      onClick={() => handleStatusChange(status.value)}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-md last:rounded-b-md"
-                    >
-                      {status.label}
+
+          {/* Status chip — clickable */}
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={() => availableStatuses.length > 0 && setShowStatusDropdown(v => !v)}
+              disabled={availableStatuses.length === 0}
+              className="flex items-center gap-1.5 transition-opacity hover:opacity-80 disabled:cursor-default"
+            >
+              <StatusChip status={appointment.status} size="sm" />
+              {availableStatuses.length > 0 && <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
+            </button>
+            {showStatusDropdown && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowStatusDropdown(false)} />
+                <div className="absolute right-0 top-full mt-2 z-20 bg-white rounded-xl shadow-xl border border-gray-100 py-1 min-w-[180px]">
+                  {availableStatuses.map(s => (
+                    <button key={s.value} onClick={() => handleStatusChange(s.value)}
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 transition-colors first:rounded-t-xl last:rounded-b-xl">
+                      {React.createElement(STATUS_ICON[s.value] || Clock, { className: 'w-4 h-4 flex-shrink-0', style: { color: STATUS_CFG[s.value]?.color } })}
+                      <span>{s.label}</span>
+                      {appointment.status === s.value && <Check className="w-4 h-4 ml-auto text-primary" />}
                     </button>
                   ))}
                 </div>
-              )}
-            </div>
-            
-            {/* Кнопка переназначения */}
+              </>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             {isStoOwner && workersCount > 1 && (
               <button
                 onClick={() => setReassignModal({
-                  isOpen: true,
-                  appointmentId: appointment.id,
+                  isOpen: true, appointmentId: appointment.id,
                   currentWorkerId: appointment.assigned_to,
-                  customerName: appointment.customers?.name || 'Неизвестно',
+                  customerName: appointment.customers?.name || '',
                   vehicleName: `${appointment.vehicles?.brand || ''} ${appointment.vehicles?.model || ''}`.trim(),
                 })}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} hover:opacity-80 transition-opacity`}
+                className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Переназначить работника"
               >
-                <UserCog className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Переназначить</span>
+                <UserCog className="w-4 h-4" />
               </button>
             )}
             <button
               onClick={() => setIsEditModalOpen(true)}
-              className={`px-3 py-1.5 text-sm font-semibold rounded ${statusColors[appointment.status as keyof typeof statusColors]} hover:opacity-80 transition-opacity`}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
             >
-              Изменить
+              <Pencil className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Изменить</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Основная информация */}
-        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-          {/* Клиент и автомобиль */}
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 className="heading-mobile-2 mb-4">Информация о клиенте</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-start">
-                <User className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mt-1 mr-2 sm:mr-3 flex-shrink-0" />
-                <div>
-                  <p className="text-mobile-sm text-gray-500">Клиент</p>
-                  <p className="text-mobile-base text-gray-900 font-medium">{appointment.customers?.name}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start">
-                <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mt-1 mr-2 sm:mr-3 flex-shrink-0" />
-                <div>
-                  <p className="text-mobile-sm text-gray-500">Телефон</p>
-                  <p className="text-mobile-base text-gray-900 font-medium">{appointment.customers?.phone}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start">
-                <Car className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mt-1 mr-2 sm:mr-3 flex-shrink-0" />
-                <div>
-                  <p className="text-mobile-sm text-gray-500">Автомобиль</p>
-                  <p className="text-mobile-base text-gray-900 font-medium">
-                    {appointment.vehicles?.brand} {appointment.vehicles?.model}
-                  </p>
+      {/* ── Page body ──────────────────────────────────────────────────────── */}
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4">
 
-                </div>
+        {/* ── Customer + vehicle hero ──────────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:divide-x divide-gray-100">
+            {/* Customer */}
+            <div className="flex items-start gap-3 p-4 sm:p-5 flex-1">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
+                <User className="w-5 h-5 text-primary" />
               </div>
-              
-              {appointment.vehicles?.vin && (
-                <div className="flex items-start">
-                  <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mt-1 mr-2 sm:mr-3 flex-shrink-0" />
-                  <div>
-                    <p className="text-mobile-sm text-gray-500">VIN</p>
-                    <p 
-                      className="text-mobile-sm text-gray-900 font-mono cursor-pointer hover:text-blue-600 transition-colors"
-                      onClick={() => {
-                        navigator.clipboard.writeText(appointment.vehicles.vin)
-                        toast.success('VIN скопирован', { duration: 500 })
-                      }}
-                      title="Нажмите, чтобы скопировать"
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-gray-400 mb-0.5">Клиент</p>
+                <p className="font-semibold text-gray-900 leading-tight">{appointment.customers?.name || '—'}</p>
+                {appointment.customers?.phone && (
+                  <a href={`tel:${appointment.customers.phone}`}
+                    className="text-sm text-primary hover:underline flex items-center gap-1 mt-1">
+                    <Phone className="w-3 h-3" />{appointment.customers.phone}
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* Vehicle */}
+            <div className="flex items-start gap-3 p-4 sm:p-5 flex-1 border-t sm:border-t-0 border-gray-100">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: 'rgba(217,119,6,0.1)' }}>
+                <Car className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-gray-400 mb-0.5">Автомобиль</p>
+                <p className="font-semibold text-gray-900 leading-tight">
+                  {appointment.vehicles?.brand} {appointment.vehicles?.model}
+                </p>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                  {appointment.vehicles?.license_plate && (
+                    <span className="text-xs font-mono bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
+                      {appointment.vehicles.license_plate}
+                    </span>
+                  )}
+                  {appointment.vehicles?.vin && (
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(appointment.vehicles.vin); toast.success('VIN скопирован', { duration: 1200 }) }}
+                      className="text-xs font-mono text-gray-400 hover:text-primary transition-colors truncate max-w-[140px]"
+                      title="Нажмите чтобы скопировать"
                     >
                       {appointment.vehicles.vin}
-                    </p>
-                  </div>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Date + worker compact */}
+            <div className="flex flex-row sm:flex-col justify-between sm:justify-center gap-4 p-4 sm:p-5 sm:w-44 border-t sm:border-t-0 border-gray-100">
+              <div>
+                <p className="text-xs font-medium text-gray-400 mb-0.5 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />Запись
+                </p>
+                <p className="text-sm font-semibold text-gray-800">
+                  {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                </p>
+                {appointment.scheduled_time && (
+                  <p className="text-xs text-gray-500 mt-0.5">{appointment.scheduled_time}</p>
+                )}
+              </div>
+              {workerName && (
+                <div>
+                  <p className="text-xs font-medium text-gray-400 mb-0.5 flex items-center gap-1">
+                    <UserCog className="w-3 h-3" />Работник
+                  </p>
+                  <p className="text-sm font-semibold text-gray-800 truncate">{workerName}</p>
                 </div>
               )}
             </div>
           </div>
-
-          {/* Запчасти */}
-          {(() => {
-            const hasOldParts = appointment.appointment_parts && appointment.appointment_parts.length > 0
-            const hasNewParts = appointment.part_items && appointment.part_items.length > 0
-            const hasCost = (appointment.parts_cost || appointment.total_parts_cost) && (appointment.parts_cost || appointment.total_parts_cost) > 0
-            const partsCost = appointment.parts_cost || appointment.total_parts_cost || 0
-            
-            if (!hasOldParts && !hasNewParts && !hasCost) return null
-            
-            return (
-              <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-                <h2 className="heading-mobile-2 mb-4 flex items-center">
-                  <Package className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-                  Запчасти {(hasOldParts || hasNewParts) && `(${(appointment.appointment_parts?.length || 0) + (appointment.part_items?.length || 0)})`}
-                </h2>
-                <div className="space-y-2 sm:space-y-3">
-                  {/* Старый формат - appointment_parts */}
-                  {hasOldParts && appointment.appointment_parts.map((part: any) => (
-                    <div key={part.id} className="flex items-start justify-between border-b border-gray-100 pb-2">
-                      <p className="text-mobile-base text-black flex-1">{part.description}</p>
-                      {part.store_cost !== null && part.store_cost > 0 && (
-                        <span className="text-mobile-base text-black font-medium ml-4">₴{(part.store_cost * (part.quantity || 1)).toFixed(2)}</span>
-                      )}
-                    </div>
-                  ))}
-                  
-                  {/* Новый формат - part_items */}
-                  {hasNewParts && appointment.part_items.map((part: any, index: number) => (
-                    <div key={`part-${index}`} className="flex items-start justify-between border-b border-gray-100 pb-2">
-                      <div className="flex-1">
-                        <p className="text-mobile-base text-black">{part.name}</p>
-                        {part.quantity > 1 && (
-                          <p className="text-mobile-sm text-gray-500">Количество: {part.quantity}</p>
-                        )}
-                      </div>
-                      <span className="text-mobile-base text-black font-medium ml-4">₴{part.totalPrice.toFixed(2)}</span>
-                    </div>
-                  ))}
-                  
-                  {!hasOldParts && !hasNewParts && hasCost && (
-                    <p className="text-mobile-sm text-gray-500 italic">Детали не указаны</p>
-                  )}
-                  
-                  {hasCost && (
-                    <div className="pt-2 border-t-2 border-gray-200">
-                      <div className="flex justify-between items-center">
-                        <span className="text-mobile-base font-semibold text-black">Итого запчасти:</span>
-                        <span className="text-mobile-lg font-bold text-black">
-                          ₴{partsCost.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })()}
-
-          {/* Работы */}
-          {(() => {
-            const hasOldServices = appointment.appointment_services && appointment.appointment_services.length > 0
-            const hasNewServices = appointment.work_items && appointment.work_items.length > 0
-            const hasCost = appointment.total_work_cost && appointment.total_work_cost > 0
-            
-            if (!hasOldServices && !hasNewServices && !hasCost) return null
-            
-            return (
-              <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-                <h2 className="heading-mobile-2 mb-4 flex items-center">
-                  <Wrench className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-                  Работы {(hasOldServices || hasNewServices) && `(${(appointment.appointment_services?.length || 0) + (appointment.work_items?.length || 0)})`}
-                </h2>
-                <div className="space-y-2 sm:space-y-3">
-                  {/* Старый формат - appointment_services */}
-                  {hasOldServices && appointment.appointment_services.map((service: any) => (
-                    <div key={service.id} className="flex items-start justify-between border-b border-gray-100 pb-2">
-                      <p className="text-mobile-base text-black flex-1">{service.description}</p>
-                      {service.cost !== null && service.cost > 0 && (
-                        <span className="text-mobile-base text-black font-medium ml-4">₴{service.cost.toFixed(2)}</span>
-                      )}
-                    </div>
-                  ))}
-                  
-                  {/* Новый формат - work_items */}
-                  {hasNewServices && appointment.work_items.map((work: any, index: number) => (
-                    <div key={`work-${index}`} className="flex items-start justify-between border-b border-gray-100 pb-2">
-                      <p className="text-mobile-base text-black flex-1">{work.name}</p>
-                      <span className="text-mobile-base text-black font-medium ml-4">₴{work.price.toFixed(2)}</span>
-                    </div>
-                  ))}
-                  
-                  {!hasOldServices && !hasNewServices && hasCost && (
-                    <p className="text-mobile-sm text-gray-500 italic">Детали не указаны</p>
-                  )}
-                  
-                  {hasCost && (
-                    <div className="pt-2 border-t-2 border-gray-200">
-                      <div className="flex justify-between items-center">
-                        <span className="text-mobile-base font-semibold text-black">Итого работы:</span>
-                        <span className="text-mobile-lg font-bold text-black">
-                          ₴{appointment.total_work_cost.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })()}
-          {/* Комментарии */}
-          <AppointmentComments
-            appointmentId={appointment.id}
-            stoCompanyId={appointment.sto_company_id}
-          />
         </div>
 
-        {/* Боковая панель */}
-        <div className="space-y-4 sm:space-y-6">
-          {/* Даты и время */}
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 className="heading-mobile-3 mb-4 flex items-center">
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
-              Даты
-            </h2>
-            
-            <div className="space-y-3">
-              <div>
-                <p className="text-mobile-sm text-gray-500">Запланирована</p>
-                <p className="text-mobile-base text-gray-900 font-medium">
-                  {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU')}
-                  {appointment.scheduled_time && ` ${appointment.scheduled_time}`}
-                </p>
-              </div>
-              
-              {appointment.completed_at && (
-                <div>
-                  <p className="text-mobile-sm text-gray-500">Выполнена</p>
-                  <p className="text-mobile-base text-gray-900 font-medium">
-                    {new Date(appointment.completed_at).toLocaleDateString('ru-RU')}
-                  </p>
+        {/* ── Main grid ────────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+          {/* Left column — works, parts, comments */}
+          <div className="lg:col-span-2 space-y-4">
+
+            {/* Works */}
+            {hasWork && (
+              <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="flex items-center gap-2.5 px-4 sm:px-5 py-3.5 border-b border-gray-100">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(124,58,237,0.1)' }}>
+                    <Wrench className="w-4 h-4 text-violet-600" />
+                  </div>
+                  <h2 className="font-semibold text-gray-900 text-sm sm:text-base">Работы</h2>
+                  {(hasOldServices || hasNewServices) && (
+                    <span className="ml-1 text-xs text-gray-400">
+                      {(appointment.appointment_services?.length || 0) + (appointment.work_items?.length || 0)} позиций
+                    </span>
+                  )}
                 </div>
-              )}
-            </div>
+                <div className="divide-y divide-gray-50">
+                  {hasOldServices && appointment.appointment_services.map((s: any) => (
+                    <div key={s.id} className="flex items-center justify-between px-4 sm:px-5 py-3 gap-3">
+                      <p className="text-sm text-gray-800 flex-1">{s.description}</p>
+                      {s.cost > 0 && <span className="text-sm font-semibold text-gray-900 flex-shrink-0">₴{s.cost.toLocaleString()}</span>}
+                    </div>
+                  ))}
+                  {hasNewServices && appointment.work_items.map((w: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between px-4 sm:px-5 py-3 gap-3">
+                      <p className="text-sm text-gray-800 flex-1">{w.name}</p>
+                      <span className="text-sm font-semibold text-gray-900 flex-shrink-0">₴{Number(w.price).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+                {workCost > 0 && (
+                  <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-t border-gray-100 bg-gray-50/60">
+                    <span className="text-sm font-medium text-gray-500">Итого работы</span>
+                    <span className="text-base font-bold text-gray-900">₴{workCost.toLocaleString()}</span>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Parts */}
+            {hasParts && (
+              <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="flex items-center gap-2.5 px-4 sm:px-5 py-3.5 border-b border-gray-100">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
+                    <Package className="w-4 h-4 text-green-600" />
+                  </div>
+                  <h2 className="font-semibold text-gray-900 text-sm sm:text-base">Запчасти</h2>
+                  {(hasOldParts || hasNewParts) && (
+                    <span className="ml-1 text-xs text-gray-400">
+                      {(appointment.appointment_parts?.length || 0) + (appointment.part_items?.length || 0)} позиций
+                    </span>
+                  )}
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {hasOldParts && appointment.appointment_parts.map((p: any) => (
+                    <div key={p.id} className="flex items-center justify-between px-4 sm:px-5 py-3 gap-3">
+                      <p className="text-sm text-gray-800 flex-1">{p.description}</p>
+                      {p.store_cost > 0 && (
+                        <span className="text-sm font-semibold text-gray-900 flex-shrink-0">
+                          ₴{(p.store_cost * (p.quantity || 1)).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {hasNewParts && appointment.part_items.map((p: any, i: number) => (
+                    <div key={i} className="flex items-start justify-between px-4 sm:px-5 py-3 gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-800">{p.name}</p>
+                        {p.quantity > 1 && <p className="text-xs text-gray-400 mt-0.5">{p.quantity} шт.</p>}
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900 flex-shrink-0">₴{Number(p.totalPrice).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+                {partsCost > 0 && (
+                  <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-t border-gray-100 bg-gray-50/60">
+                    <span className="text-sm font-medium text-gray-500">Итого запчасти</span>
+                    <span className="text-base font-bold text-gray-900">₴{partsCost.toLocaleString()}</span>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Comments */}
+            <AppointmentComments appointmentId={appointment.id} stoCompanyId={appointment.sto_company_id} />
           </div>
 
-          {/* Работник */}
-          {isStoOwner && workersCount > 1 && (appointment.assigned_to_profile || appointment.assigned_to_name) && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="heading-mobile-3 mb-4 flex items-center">
-                <Wrench className="w-5 h-5 mr-2" />
-                Работник
-              </h2>
-              <p className="text-mobile-base text-gray-900 font-medium">
-                {appointment.assigned_to_name || appointment.assigned_to_profile?.full_name || appointment.assigned_to_profile?.email}
-              </p>
-            </div>
-          )}
+          {/* Right sidebar */}
+          <div className="space-y-4">
 
-          {/* Финансы */}
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 className="heading-mobile-2 mb-4 sm:mb-6 flex items-center">
-              <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 mr-2 flex-shrink-0" />
-              Оплата
-            </h2>
-            
-            <div className="space-y-3">
-              {/* Запчасти */}
-              {(() => {
-                // Старый формат
-                const hasOldParts = appointment.appointment_parts && appointment.appointment_parts.length > 0
-                const calculatedOldPartsCost = hasOldParts 
-                  ? appointment.appointment_parts.reduce((sum: number, p: any) => sum + ((p.store_cost || 0) * (p.quantity || 1)), 0)
-                  : 0
-                
-                // Новый формат
-                const hasNewParts = appointment.part_items && appointment.part_items.length > 0
-                const calculatedNewPartsCost = hasNewParts
-                  ? appointment.part_items.reduce((sum: number, p: any) => sum + (p.totalPrice || 0), 0)
-                  : 0
-                
-                const partsCost = appointment.parts_cost || appointment.total_parts_cost || calculatedOldPartsCost || calculatedNewPartsCost
-                
-                if (!hasOldParts && !hasNewParts && partsCost === 0) return null
-                
-                return (
-                  <div className="pb-3 border-b border-gray-100">
-                    <div className="flex justify-between items-start">
-                      <div className="flex flex-col gap-2">
-                        <span className="text-mobile-base font-semibold text-black">Запчасти</span>
-                        {isStoOwner ? (
-                          <label className="flex items-center gap-2 cursor-pointer group">
-                            <div className="relative">
-                              <input
-                                type="checkbox"
-                                checked={appointment.parts_paid}
-                                onChange={() => handlePaymentChange('parts', appointment.parts_paid)}
-                                className="sr-only peer"
-                              />
-                              <div className="w-5 h-5 border-2 rounded border-gray-300 peer-checked:bg-green-700 peer-checked:border-green-600 transition-all flex items-center justify-center">
-                                {appointment.parts_paid && (
-                                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                )}
-                              </div>
-                            </div>
-                            <span className="text-mobile-sm text-gray-600 group-hover:text-gray-900">Оплачено</span>
-                          </label>
-                        ) : (
-                          <span className={`text-mobile-sm px-2 py-1 rounded inline-block ${appointment.parts_paid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {appointment.parts_paid ? 'Оплачено' : 'Не оплачено'}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-mobile-lg font-bold text-black">₴{partsCost.toFixed(2)}</p>
-                      </div>
-                    </div>
+            {/* Payment card */}
+            {(hasParts || hasWork) && (
+              <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="flex items-center gap-2.5 px-4 sm:px-5 py-3.5 border-b border-gray-100">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
+                    <DollarSign className="w-4 h-4 text-primary" />
                   </div>
-                );
-              })()}
-              
-              {/* Работы */}
-              {(() => {
-                // Старый формат
-                const hasOldServices = appointment.appointment_services && appointment.appointment_services.length > 0
-                const calculatedOldServicesCost = hasOldServices
-                  ? appointment.appointment_services.reduce((sum: number, s: any) => sum + (s.cost || 0), 0)
-                  : 0
-                
-                // Новый формат
-                const hasNewServices = appointment.work_items && appointment.work_items.length > 0
-                const calculatedNewServicesCost = hasNewServices
-                  ? appointment.work_items.reduce((sum: number, w: any) => sum + (w.price || 0), 0)
-                  : 0
-                
-                const workCost = appointment.total_work_cost || calculatedOldServicesCost || calculatedNewServicesCost
-                
-                if (!hasOldServices && !hasNewServices && workCost === 0) return null
-                
-                return (
-                  <div className="pb-3 border-b border-gray-100">
-                    <div className="flex justify-between items-start">
-                      <div className="flex flex-col gap-2">
-                        <span className="text-mobile-base font-semibold text-black">Работы</span>
-                        {isStoOwner ? (
-                          <label className="flex items-center gap-2 cursor-pointer group">
-                            <div className="relative">
-                              <input
-                                type="checkbox"
-                                checked={appointment.work_paid}
-                                onChange={() => handlePaymentChange('work', appointment.work_paid)}
-                                className="sr-only peer"
-                              />
-                              <div className="w-5 h-5 border-2 rounded border-gray-300 peer-checked:bg-green-700 peer-checked:border-green-600 transition-all flex items-center justify-center">
-                                {appointment.work_paid && (
-                                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                )}
-                              </div>
-                            </div>
-                            <span className="text-mobile-sm text-gray-600 group-hover:text-gray-900">Оплачено</span>
-                          </label>
-                        ) : (
-                          <span className={`text-mobile-sm px-2 py-1 rounded inline-block ${appointment.work_paid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {appointment.work_paid ? 'Оплачено' : 'Не оплачено'}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-mobile-lg font-bold text-black">₴{workCost.toFixed(2)}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-              
-              {/* Итого */}
-              {(() => {
-                // Считаем общую сумму из всех возможных источников
-                const oldPartsCost = appointment.appointment_parts?.reduce((sum: number, p: any) => 
-                  sum + ((p.store_cost || 0) * (p.quantity || 1)), 0) || 0
-                const newPartsCost = appointment.part_items?.reduce((sum: number, p: any) => 
-                  sum + (p.totalPrice || 0), 0) || 0
-                const oldServicesCost = appointment.appointment_services?.reduce((sum: number, s: any) => 
-                  sum + (s.cost || 0), 0) || 0
-                const newServicesCost = appointment.work_items?.reduce((sum: number, w: any) => 
-                  sum + (w.price || 0), 0) || 0
-                
-                const totalParts = appointment.parts_cost || appointment.total_parts_cost || oldPartsCost || newPartsCost
-                const totalWork = appointment.total_work_cost || oldServicesCost || newServicesCost
-                const totalCost = totalParts + totalWork
-                
-                return totalCost > 0 && (
-                  <div className="pt-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-mobile-lg font-bold text-black">Итого</span>
-                      <span className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
-                        ₴{totalCost.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
+                  <h2 className="font-semibold text-gray-900">Оплата</h2>
+                </div>
 
-          {/* История обслуживания автомобиля */}
-          {vehicleHistory.length > 0 && (
-            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-              <h2 className="heading-mobile-3 mb-3 flex items-center gap-2">
-                <History className="w-4 h-4 flex-shrink-0" />
-                История авто
-                <span className="text-sm font-normal text-gray-400">({vehicleHistory.length})</span>
-              </h2>
-              <div className="space-y-2">
-                {vehicleHistory.map((h: any) => {
-                  const hStatusColors: Record<string, string> = {
-                    scheduled: 'bg-purple-100 text-purple-700',
-                    in_progress: 'bg-blue-100 text-blue-700',
-                    completed: 'bg-green-100 text-green-700',
-                    ready: 'bg-green-100 text-green-700',
-                    cancelled: 'bg-red-100 text-red-700',
-                    archived: 'bg-gray-100 text-gray-600',
-                  }
-                  const hStatusLabels: Record<string, string> = {
-                    scheduled: 'Запланирована',
-                    in_progress: 'В работе',
-                    completed: 'Готова',
-                    ready: 'Готова',
-                    cancelled: 'Отменена',
-                    archived: 'Архив',
-                  }
-                  const total = h.total_cost || (h.total_work_cost || 0) + (h.total_parts_cost || 0)
-                  const workCount = h.work_items?.length || 0
-                  const partCount = h.part_items?.length || 0
-                  return (
-                    <Link
-                      key={h.id}
-                      to={`/sto/appointments/${h.id}`}
-                      className="block p-2.5 rounded-lg border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-colors group"
-                    >
-                      <div className="flex items-start justify-between gap-2">
+                <div className="p-4 sm:p-5 space-y-3">
+                  {/* Parts payment row */}
+                  {hasParts && partsCost > 0 && (
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-700">Запчасти</p>
+                        <p className="text-xs text-gray-400">₴{partsCost.toLocaleString()}</p>
+                      </div>
+                      {isStoOwner ? (
+                        <button
+                          onClick={() => setPaymentConfirmModal({ isOpen: true, type: 'parts', currentValue: appointment.parts_paid })}
+                          disabled={updatePaymentMutation.isPending}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                            appointment.parts_paid
+                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {appointment.parts_paid
+                            ? <><CheckCircle2 className="w-3.5 h-3.5" />Оплачено</>
+                            : <><Clock className="w-3.5 h-3.5" />Не оплачено</>
+                          }
+                        </button>
+                      ) : (
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${appointment.parts_paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {appointment.parts_paid ? 'Оплачено' : 'Не оплачено'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Work payment row */}
+                  {hasWork && workCost > 0 && (
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-700">Работы</p>
+                        <p className="text-xs text-gray-400">₴{workCost.toLocaleString()}</p>
+                      </div>
+                      {isStoOwner ? (
+                        <button
+                          onClick={() => setPaymentConfirmModal({ isOpen: true, type: 'work', currentValue: appointment.work_paid })}
+                          disabled={updatePaymentMutation.isPending}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                            appointment.work_paid
+                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {appointment.work_paid
+                            ? <><CheckCircle2 className="w-3.5 h-3.5" />Оплачено</>
+                            : <><Clock className="w-3.5 h-3.5" />Не оплачено</>
+                          }
+                        </button>
+                      ) : (
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${appointment.work_paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {appointment.work_paid ? 'Оплачено' : 'Не оплачено'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Total */}
+                  {totalCost > 0 && (
+                    <div className="pt-3 mt-1 border-t border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-gray-700">Итого</span>
+                        <span className="text-2xl font-bold text-primary" style={{ letterSpacing: '-0.02em' }}>
+                          ₴{totalCost.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* Vehicle history */}
+            {vehicleHistory.length > 0 && (
+              <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="flex items-center gap-2.5 px-4 sm:px-5 py-3.5 border-b border-gray-100">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(100,116,139,0.1)' }}>
+                    <History className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <h2 className="font-semibold text-gray-900">История авто</h2>
+                  <span className="text-xs text-gray-400">{vehicleHistory.length}</span>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {(vehicleHistory as any[]).map((h) => {
+                    const cfg = STATUS_CFG[h.status] || STATUS_CFG.archived
+                    const total = h.total_cost || (h.total_work_cost || 0) + (h.total_parts_cost || 0)
+                    return (
+                      <Link key={h.id} to={`/sto/appointments/${h.id}`}
+                        className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-gray-50 transition-colors group">
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-gray-700 group-hover:text-gray-900">
-                            {new Date(h.scheduled_date).toLocaleDateString('ru-RU')}
+                          <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                            {new Date(h.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </p>
-                          {(workCount > 0 || partCount > 0) && (
-                            <p className="text-xs text-gray-400 mt-0.5 truncate">
-                              {workCount > 0 && `${workCount} раб.`}
-                              {workCount > 0 && partCount > 0 && ' · '}
-                              {partCount > 0 && `${partCount} зап.`}
-                            </p>
-                          )}
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ color: cfg.color, backgroundColor: cfg.bg }}>
+                              {cfg.label}
+                            </span>
+                            {((h.work_items?.length || 0) + (h.part_items?.length || 0)) > 0 && (
+                              <span className="text-xs text-gray-400">
+                                {h.work_items?.length > 0 && `${h.work_items.length} раб.`}
+                                {h.work_items?.length > 0 && h.part_items?.length > 0 && ' · '}
+                                {h.part_items?.length > 0 && `${h.part_items.length} зап.`}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                          <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${hStatusColors[h.status] || 'bg-gray-100 text-gray-600'}`}>
-                            {hStatusLabels[h.status] || h.status}
-                          </span>
-                          {total > 0 && (
-                            <span className="text-xs font-semibold text-gray-700">₴{total.toFixed(0)}</span>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
-          )}
+                        {total > 0 && (
+                          <span className="text-sm font-bold text-gray-700 flex-shrink-0">₴{Math.round(total).toLocaleString()}</span>
+                        )}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
 
-          {/* Исключить из статистики (только для владельца, только для архивных) */}
-          {isStoOwner && appointment.status === 'archived' && (
-            <div className="bg-white rounded-lg shadow p-4">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={!!appointment.exclude_from_stats}
-                    onChange={() => updateExcludeFromStatsMutation.mutate(!appointment.exclude_from_stats)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-5 h-5 border-2 rounded border-gray-300 peer-checked:bg-orange-500 peer-checked:border-orange-500 transition-all flex items-center justify-center">
-                    {appointment.exclude_from_stats && (
-                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
+            {/* Exclude from stats */}
+            {isStoOwner && appointment.status === 'archived' && (
+              <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div className="relative mt-0.5 flex-shrink-0">
+                    <input type="checkbox" checked={!!appointment.exclude_from_stats}
+                      onChange={() => updateExcludeMutation.mutate(!appointment.exclude_from_stats)}
+                      className="sr-only peer" />
+                    <div className="w-5 h-5 border-2 rounded border-gray-300 peer-checked:bg-orange-500 peer-checked:border-orange-500 transition-all flex items-center justify-center">
+                      {appointment.exclude_from_stats && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Исключить из статистики</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Не учитывать в отчётах за месяц</p>
+                  </div>
+                </label>
+              </section>
+            )}
+
+            {/* Ready for pickup */}
+            {appointment.ready_for_pickup && (
+              <div className="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-2xl text-sm font-medium text-green-700">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                Готово к выдаче
+              </div>
+            )}
+
+            {/* Pending deletion (owner) */}
+            {isStoOwner && appointment.status === 'pending_deletion' && (
+              <section className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 sm:p-5">
+                <div className="flex items-start gap-2 mb-3">
+                  <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-red-900">Работник запросил удаление</p>
+                    <p className="text-xs text-red-600 mt-0.5">Действие необратимо</p>
                   </div>
                 </div>
-                <div>
-                  <p className="text-mobile-sm font-medium text-gray-900">Исключить из статистики</p>
-                  <p className="text-xs text-gray-500">Не учитывать в отчётах за месяц</p>
+                <div className="flex gap-2">
+                  <button onClick={() => updateStatusMutation.mutate('deleted')}
+                    disabled={updateStatusMutation.isPending}
+                    className="flex-1 py-2 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors">
+                    Удалить
+                  </button>
+                  <button onClick={() => updateStatusMutation.mutate('in_progress')}
+                    disabled={updateStatusMutation.isPending}
+                    className="flex-1 py-2 bg-white text-gray-700 text-sm font-medium rounded-xl border border-gray-200 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+                    Отклонить
+                  </button>
                 </div>
-              </label>
-            </div>
-          )}
+              </section>
+            )}
 
-          {/* Дополнительная информация */}
-          {appointment.ready_for_pickup && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-mobile-base text-green-800 font-medium">✓ Готово к выдаче</p>
-            </div>
-          )}
-
-          {/* Блок подтверждения удаления (для владельца) */}
-          {isStoOwner && appointment.status === 'pending_deletion' && (
-            <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
-              <p className="text-sm font-semibold text-red-900 mb-1">🗑️ Работник запросил удаление</p>
-              <p className="text-xs text-red-700 mb-3">Действие необратимо. Только вы можете подтвердить удаление.</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => updateStatusMutation.mutate('deleted')}
-                  disabled={updateStatusMutation.isPending}
-                  className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded hover:bg-red-700 disabled:opacity-50"
-                >
-                  Подтвердить удаление
-                </button>
-                <button
-                  onClick={() => updateStatusMutation.mutate('in_progress')}
-                  disabled={updateStatusMutation.isPending}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded hover:bg-gray-300 disabled:opacity-50"
-                >
-                  Отклонить
-                </button>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Модалки */}
-      <AppointmentModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        appointmentId={appointment.id}
-      />
+      {/* ── Modals ──────────────────────────────────────────────────────────── */}
+
+      <AppointmentModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} appointmentId={appointment.id} />
 
       {reassignModal && (
-        <ReassignWorkerModal
-          isOpen={reassignModal.isOpen}
-          onClose={() => setReassignModal(null)}
-          appointmentId={reassignModal.appointmentId}
-          currentWorkerId={reassignModal.currentWorkerId}
-          appointmentInfo={{
-            customerName: reassignModal.customerName,
-            vehicleName: reassignModal.vehicleName
-          }}
+        <ReassignWorkerModal isOpen={reassignModal.isOpen} onClose={() => setReassignModal(null)}
+          appointmentId={reassignModal.appointmentId} currentWorkerId={reassignModal.currentWorkerId}
+          appointmentInfo={{ customerName: reassignModal.customerName, vehicleName: reassignModal.vehicleName }}
         />
       )}
 
-      {/* Модалка подтверждения архивирования */}
+      {/* Archive confirm */}
       {showArchiveConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 max-w-md w-full mx-4">
-            <h3 className="heading-mobile-3 mb-4">Перенести в архив?</h3>
-            <p className="text-mobile-base text-gray-600 mb-6">
-              Заявка будет перенесена в архив и попадёт в статистику текущего месяца.
-              Вернуть её из архива можно будет позже.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowArchiveConfirm(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-              >
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <Archive className="w-5 h-5 text-gray-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Перенести в архив?</h3>
+                <p className="text-sm text-gray-500 mt-1">Заявка попадёт в статистику месяца. Вернуть из архива можно позже.</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setShowArchiveConfirm(false)}
+                className="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
                 Отмена
               </button>
-              <button
-                onClick={() => { updateStatusMutation.mutate('archived'); setShowArchiveConfirm(false) }}
+              <button onClick={() => { updateStatusMutation.mutate('archived'); setShowArchiveConfirm(false) }}
                 disabled={updateStatusMutation.isPending}
-                className="px-4 py-2 bg-gray-700 text-white hover:bg-gray-800 rounded-md transition-colors disabled:opacity-50"
-              >
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-gray-800 hover:bg-gray-900 rounded-xl disabled:opacity-50 transition-colors">
                 {updateStatusMutation.isPending ? 'Обновление...' : 'В архив'}
               </button>
             </div>
@@ -924,32 +733,37 @@ export default function AppointmentDetails() {
         </div>
       )}
 
-      {/* Модалка подтверждения оплаты */}
+      {/* Payment confirm */}
       {paymentConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 max-w-md w-full mx-4">
-            <h3 className="heading-mobile-3 mb-4">
-              Подтверждение изменения статуса оплаты
-            </h3>
-            <p className="text-mobile-base text-gray-600 mb-6">
-              {paymentConfirmModal.currentValue 
-                ? `Вы уверены, что хотите отметить ${paymentConfirmModal.type === 'parts' ? 'запчасти' : 'работы'} как неоплаченные?`
-                : `Вы уверены, что хотите отметить ${paymentConfirmModal.type === 'parts' ? 'запчасти' : 'работы'} как оплаченные?`
-              }
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setPaymentConfirmModal(null)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-              >
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${paymentConfirmModal.currentValue ? 'bg-red-100' : 'bg-green-100'}`}>
+                <DollarSign className={`w-5 h-5 ${paymentConfirmModal.currentValue ? 'text-red-600' : 'text-green-600'}`} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Подтверждение оплаты</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {paymentConfirmModal.currentValue
+                    ? `Отметить ${paymentConfirmModal.type === 'parts' ? 'запчасти' : 'работы'} как неоплаченные?`
+                    : `Отметить ${paymentConfirmModal.type === 'parts' ? 'запчасти' : 'работы'} как оплаченные?`
+                  }
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setPaymentConfirmModal(null)}
+                className="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
                 Отмена
               </button>
               <button
-                onClick={confirmPaymentChange}
+                onClick={() => {
+                  updatePaymentMutation.mutate({ type: paymentConfirmModal.type, value: !paymentConfirmModal.currentValue })
+                  setPaymentConfirmModal(null)
+                }}
                 disabled={updatePaymentMutation.isPending}
-                className="px-4 py-2 bg-primary text-white hover:bg-primary/90 rounded-md transition-colors disabled:opacity-50"
-              >
-                {updatePaymentMutation.isPending ? 'Обновление...' : 'Подтвердить'}
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-xl disabled:opacity-50 transition-colors">
+                Подтвердить
               </button>
             </div>
           </div>
@@ -958,3 +772,6 @@ export default function AppointmentDetails() {
     </div>
   )
 }
+
+// Required for createElement in JSX
+import React from 'react'
