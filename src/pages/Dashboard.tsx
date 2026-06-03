@@ -493,7 +493,7 @@ export default function Dashboard() {
               {recentAppointments.length > 0 ? (
                 <div className="flex-1 overflow-auto divide-y">
                   {recentAppointments.map((appt: any) => (
-                    <button key={appt.id} onClick={() => navigate('/appointments/' + appt.id)}
+                    <button key={appt.id} onClick={() => navigate('/sto/appointments/' + appt.id)}
                       className="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <span className="text-sm font-semibold text-gray-900 truncate">{appt.customers?.name || 'Клиент'}</span>
