@@ -1,3 +1,4 @@
+import React from 'react'
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { Spinner } from '@/components/ui/Spinner'
 import { useState } from 'react'
@@ -347,8 +348,8 @@ export default function AppointmentDetails() {
                 <User className="w-5 h-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-medium text-gray-400 mb-0.5">Клиент</p>
-                <p className="font-semibold text-gray-900 leading-tight">{appointment.customers?.name || '—'}</p>
+                <p className="text-xs font-medium text-gray-400 mb-1">Клиент</p>
+                <p className="text-sm font-semibold text-gray-900 leading-tight">{appointment.customers?.name || '—'}</p>
                 {appointment.customers?.phone && (
                   <a href={`tel:${appointment.customers.phone}`}
                     className="text-sm text-primary hover:underline flex items-center gap-1 mt-1">
@@ -365,8 +366,8 @@ export default function AppointmentDetails() {
                 <Car className="w-5 h-5 text-amber-600" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-medium text-gray-400 mb-0.5">Автомобиль</p>
-                <p className="font-semibold text-gray-900 leading-tight">
+                <p className="text-xs font-medium text-gray-400 mb-1">Автомобиль</p>
+                <p className="text-sm font-semibold text-gray-900 leading-tight">
                   {appointment.vehicles?.brand} {appointment.vehicles?.model}
                 </p>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
@@ -389,12 +390,13 @@ export default function AppointmentDetails() {
             </div>
 
             {/* Date + worker compact */}
-            <div className="flex flex-row sm:flex-col justify-between sm:justify-center gap-4 p-4 sm:p-5 sm:w-44 border-t sm:border-t-0 border-gray-100">
+            <div className="flex flex-row sm:flex-col justify-start sm:justify-start gap-6 sm:gap-4 p-4 sm:p-5 sm:w-44 border-t sm:border-t-0 border-gray-100">
               <div>
-                <p className="text-xs font-medium text-gray-400 mb-0.5 flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />Запись
+                <p className="text-xs font-medium text-gray-400 mb-1 flex items-center gap-1">
+                  <Calendar className="w-3 h-3 flex-shrink-0" />
+                  <span>Запись</span>
                 </p>
-                <p className="text-sm font-semibold text-gray-800">
+                <p className="text-sm font-semibold text-gray-800 leading-tight">
                   {new Date(appointment.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                 </p>
                 {appointment.scheduled_time && (
@@ -403,10 +405,11 @@ export default function AppointmentDetails() {
               </div>
               {workerName && (
                 <div>
-                  <p className="text-xs font-medium text-gray-400 mb-0.5 flex items-center gap-1">
-                    <UserCog className="w-3 h-3" />Работник
+                  <p className="text-xs font-medium text-gray-400 mb-1 flex items-center gap-1">
+                    <UserCog className="w-3 h-3 flex-shrink-0" />
+                    <span>Работник</span>
                   </p>
-                  <p className="text-sm font-semibold text-gray-800 truncate">{workerName}</p>
+                  <p className="text-sm font-semibold text-gray-800 leading-tight truncate">{workerName}</p>
                 </div>
               )}
             </div>
@@ -435,22 +438,22 @@ export default function AppointmentDetails() {
                 </div>
                 <div className="divide-y divide-gray-50">
                   {hasOldServices && appointment.appointment_services.map((s: any) => (
-                    <div key={s.id} className="flex items-center justify-between px-4 sm:px-5 py-3 gap-3">
-                      <p className="text-sm text-gray-800 flex-1">{s.description}</p>
-                      {s.cost > 0 && <span className="text-sm font-semibold text-gray-900 flex-shrink-0">₴{s.cost.toLocaleString()}</span>}
+                    <div key={s.id} className="flex items-start justify-between px-4 sm:px-5 py-3.5 gap-4">
+                      <p className="text-sm text-gray-800 flex-1 leading-snug">{s.description}</p>
+                      {s.cost > 0 && <span className="text-sm font-semibold text-gray-900 flex-shrink-0 tabular-nums">₴{s.cost.toLocaleString()}</span>}
                     </div>
                   ))}
                   {hasNewServices && appointment.work_items.map((w: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between px-4 sm:px-5 py-3 gap-3">
-                      <p className="text-sm text-gray-800 flex-1">{w.name}</p>
-                      <span className="text-sm font-semibold text-gray-900 flex-shrink-0">₴{Number(w.price).toLocaleString()}</span>
+                    <div key={i} className="flex items-start justify-between px-4 sm:px-5 py-3.5 gap-4">
+                      <p className="text-sm text-gray-800 flex-1 leading-snug">{w.name}</p>
+                      <span className="text-sm font-semibold text-gray-900 flex-shrink-0 tabular-nums">₴{Number(w.price).toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
                 {workCost > 0 && (
                   <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-t border-gray-100 bg-gray-50/60">
                     <span className="text-sm font-medium text-gray-500">Итого работы</span>
-                    <span className="text-base font-bold text-gray-900">₴{workCost.toLocaleString()}</span>
+                    <span className="text-sm font-bold text-gray-900 tabular-nums">₴{workCost.toLocaleString()}</span>
                   </div>
                 )}
               </section>
@@ -472,29 +475,29 @@ export default function AppointmentDetails() {
                 </div>
                 <div className="divide-y divide-gray-50">
                   {hasOldParts && appointment.appointment_parts.map((p: any) => (
-                    <div key={p.id} className="flex items-center justify-between px-4 sm:px-5 py-3 gap-3">
-                      <p className="text-sm text-gray-800 flex-1">{p.description}</p>
+                    <div key={p.id} className="flex items-start justify-between px-4 sm:px-5 py-3.5 gap-4">
+                      <p className="text-sm text-gray-800 flex-1 leading-snug">{p.description}</p>
                       {p.store_cost > 0 && (
-                        <span className="text-sm font-semibold text-gray-900 flex-shrink-0">
+                        <span className="text-sm font-semibold text-gray-900 flex-shrink-0 tabular-nums">
                           ₴{(p.store_cost * (p.quantity || 1)).toLocaleString()}
                         </span>
                       )}
                     </div>
                   ))}
                   {hasNewParts && appointment.part_items.map((p: any, i: number) => (
-                    <div key={i} className="flex items-start justify-between px-4 sm:px-5 py-3 gap-3">
+                    <div key={i} className="flex items-start justify-between px-4 sm:px-5 py-3.5 gap-4">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-800">{p.name}</p>
+                        <p className="text-sm text-gray-800 leading-snug">{p.name}</p>
                         {p.quantity > 1 && <p className="text-xs text-gray-400 mt-0.5">{p.quantity} шт.</p>}
                       </div>
-                      <span className="text-sm font-semibold text-gray-900 flex-shrink-0">₴{Number(p.totalPrice).toLocaleString()}</span>
+                      <span className="text-sm font-semibold text-gray-900 flex-shrink-0 tabular-nums">₴{Number(p.totalPrice).toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
                 {partsCost > 0 && (
                   <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-t border-gray-100 bg-gray-50/60">
                     <span className="text-sm font-medium text-gray-500">Итого запчасти</span>
-                    <span className="text-base font-bold text-gray-900">₴{partsCost.toLocaleString()}</span>
+                    <span className="text-sm font-bold text-gray-900 tabular-nums">₴{partsCost.toLocaleString()}</span>
                   </div>
                 )}
               </section>
@@ -522,26 +525,25 @@ export default function AppointmentDetails() {
                   {hasParts && partsCost > 0 && (
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-700">Запчасти</p>
-                        <p className="text-xs text-gray-400">₴{partsCost.toLocaleString()}</p>
+                        <p className="text-sm font-medium text-gray-700 leading-tight">Запчасти</p>
+                        <p className="text-xs text-gray-400 mt-0.5 tabular-nums">₴{partsCost.toLocaleString()}</p>
                       </div>
                       {isStoOwner ? (
                         <button
                           onClick={() => setPaymentConfirmModal({ isOpen: true, type: 'parts', currentValue: appointment.parts_paid })}
                           disabled={updatePaymentMutation.isPending}
-                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex-shrink-0 ${
                             appointment.parts_paid
                               ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                           }`}
                         >
-                          {appointment.parts_paid
-                            ? <><CheckCircle2 className="w-3.5 h-3.5" />Оплачено</>
-                            : <><Clock className="w-3.5 h-3.5" />Не оплачено</>
-                          }
+                          <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                          {appointment.parts_paid ? 'Оплачено' : 'Не оплачено'}
                         </button>
                       ) : (
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${appointment.parts_paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg flex-shrink-0 ${appointment.parts_paid ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                          <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
                           {appointment.parts_paid ? 'Оплачено' : 'Не оплачено'}
                         </span>
                       )}
@@ -552,26 +554,25 @@ export default function AppointmentDetails() {
                   {hasWork && workCost > 0 && (
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-700">Работы</p>
-                        <p className="text-xs text-gray-400">₴{workCost.toLocaleString()}</p>
+                        <p className="text-sm font-medium text-gray-700 leading-tight">Работы</p>
+                        <p className="text-xs text-gray-400 mt-0.5 tabular-nums">₴{workCost.toLocaleString()}</p>
                       </div>
                       {isStoOwner ? (
                         <button
                           onClick={() => setPaymentConfirmModal({ isOpen: true, type: 'work', currentValue: appointment.work_paid })}
                           disabled={updatePaymentMutation.isPending}
-                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex-shrink-0 ${
                             appointment.work_paid
                               ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                           }`}
                         >
-                          {appointment.work_paid
-                            ? <><CheckCircle2 className="w-3.5 h-3.5" />Оплачено</>
-                            : <><Clock className="w-3.5 h-3.5" />Не оплачено</>
-                          }
+                          <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                          {appointment.work_paid ? 'Оплачено' : 'Не оплачено'}
                         </button>
                       ) : (
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${appointment.work_paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg flex-shrink-0 ${appointment.work_paid ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                          <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
                           {appointment.work_paid ? 'Оплачено' : 'Не оплачено'}
                         </span>
                       )}
@@ -580,10 +581,10 @@ export default function AppointmentDetails() {
 
                   {/* Total */}
                   {totalCost > 0 && (
-                    <div className="pt-3 mt-1 border-t border-gray-100">
-                      <div className="flex items-center justify-between">
+                    <div className="pt-3 border-t border-gray-100">
+                      <div className="flex items-baseline justify-between gap-2">
                         <span className="text-sm font-semibold text-gray-700">Итого</span>
-                        <span className="text-2xl font-bold text-primary" style={{ letterSpacing: '-0.02em' }}>
+                        <span className="text-2xl font-bold text-primary tabular-nums" style={{ letterSpacing: '-0.02em' }}>
                           ₴{totalCost.toLocaleString()}
                         </span>
                       </div>
@@ -773,5 +774,3 @@ export default function AppointmentDetails() {
   )
 }
 
-// Required for createElement in JSX
-import React from 'react'
