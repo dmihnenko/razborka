@@ -25,24 +25,24 @@ const PLAN_KEY = (p: Subscription) =>
   (p.max_appointments ?? 999) <= 50 ? 'start' : 'business'
 
 const PLAN_FEATURES_MAP: Record<string, string[]> = {
-  start:    ['До 50 заявок на місяць', 'До 100 клієнтів', 'До 3 майстрів', 'Календар записів', 'Каталог послуг'],
-  business: ['До 200 заявок на місяць', 'До 500 клієнтів', 'До 10 майстрів', 'Аналітика доходів', 'Всі функції'],
-  pro:      ['Безліміт заявок', 'Безліміт клієнтів', 'Необм. кількість майстрів', 'Пріоритетна підтримка', 'Всі функції'],
-  lifetime: ['Безліміт назавжди', 'Безліміт клієнтів', 'Необм. кількість майстрів', 'Оновлення безкоштовно', 'Всі функції'],
+  start:    ['До 50 заявок в месяц', 'До 100 клиентов', 'До 3 мастеров', 'Календарь записей', 'Каталог услуг'],
+  business: ['До 200 заявок в месяц', 'До 500 клиентов', 'До 10 мастеров', 'Аналитика доходов', 'Все функции'],
+  pro:      ['Безлимит заявок', 'Безлимит клиентов', 'Неогр. количество мастеров', 'Приоритетная поддержка', 'Все функции'],
+  lifetime: ['Безлимит навсегда', 'Безлимит клиентов', 'Неогр. количество мастеров', 'Обновления бесплатно', 'Все функции'],
 }
 
 const PLAN_COLORS: Record<string, { color: string; bg: string; badge?: string }> = {
   start:    { color: '#2563EB', bg: '#EFF6FF' },
-  business: { color: '#7C3AED', bg: '#F5F3FF', badge: 'Популярний' },
-  pro:      { color: '#059669', bg: '#F0FDF4', badge: 'Вигідно' },
+  business: { color: '#7C3AED', bg: '#F5F3FF', badge: 'Популярный' },
+  pro:      { color: '#059669', bg: '#F0FDF4', badge: 'Выгодно' },
   lifetime: { color: '#D97706', bg: '#FFFBEB' },
 }
 
 const DURATION_OPTIONS = [
-  { value: 1,   label: '1 місяць' },
-  { value: 3,   label: '3 місяці' },
-  { value: 6,   label: '6 місяців' },
-  { value: 12,  label: '12 місяців (рік)' },
+  { value: 1,  label: '1 месяц' },
+  { value: 3,  label: '3 месяца' },
+  { value: 6,  label: '6 месяцев' },
+  { value: 12, label: '12 месяцев (год)' },
 ]
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -67,10 +67,10 @@ function subStatus(sub: CompanySubscription): 'active' | 'expiring' | 'expired' 
 }
 
 const STATUS_STYLE = {
-  active:   { label: 'Активна',   cls: 'bg-green-100 text-green-700' },
-  expiring: { label: 'Спливає',   cls: 'bg-amber-100 text-amber-700' },
-  expired:  { label: 'Прострочена', cls: 'bg-red-100 text-red-700' },
-  inactive: { label: 'Неактивна', cls: 'bg-gray-100 text-gray-500' },
+  active:   { label: 'Активна',     cls: 'bg-green-100 text-green-700' },
+  expiring: { label: 'Истекает',    cls: 'bg-amber-100 text-amber-700' },
+  expired:  { label: 'Просрочена',  cls: 'bg-red-100 text-red-700' },
+  inactive: { label: 'Неактивна',   cls: 'bg-gray-100 text-gray-500' },
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
@@ -80,6 +80,7 @@ export default function Subscriptions() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [isAssignOpen, setIsAssignOpen] = useState(false)
+  const [editingPlan, setEditingPlan] = useState<Subscription | null>(null)
   const [assignForm, setAssignForm] = useState({
     companyType: 'sto' as 'sto' | 'parts',
     companyId: '',
@@ -102,20 +103,20 @@ export default function Subscriptions() {
 
   const assignMutation = useMutation({
     mutationFn: assignSubscription,
-    onSuccess: () => { invalidate(); toast.success('Підписку призначено'); setIsAssignOpen(false); setAssignForm({ companyType: 'sto', companyId: '', subscriptionId: '', months: 1 }) },
-    onError: (e: any) => toast.error(e.message || 'Помилка'),
+    onSuccess: () => { invalidate(); toast.success('Подписка назначена'); setIsAssignOpen(false); setAssignForm({ companyType: 'sto', companyId: '', subscriptionId: '', months: 1 }) },
+    onError: (e: any) => toast.error(e.message || 'Ошибка'),
   })
 
   const deactivateMutation = useMutation({
     mutationFn: deactivateSubscription,
-    onSuccess: () => { invalidate(); toast.success('Деактивовано') },
-    onError: () => toast.error('Помилка деактивації'),
+    onSuccess: () => { invalidate(); toast.success('Деактивировано') },
+    onError: () => toast.error('Ошибка деактивації'),
   })
 
   const deleteMutation = useMutation({
     mutationFn: deleteCompanySubscription,
-    onSuccess: () => { invalidate(); toast.success('Видалено') },
-    onError: () => toast.error('Помилка видалення'),
+    onSuccess: () => { invalidate(); toast.success('Удалено') },
+    onError: () => toast.error('Ошибка видалення'),
   })
 
   // Filtered company subscriptions
@@ -137,7 +138,7 @@ export default function Subscriptions() {
   const selectedPlan  = plans.find(p => p.id === assignForm.subscriptionId)
 
   const handleAssignSubmit = () => {
-    if (!assignForm.companyId || !assignForm.subscriptionId) { toast.error('Виберіть компанію та план'); return }
+    if (!assignForm.companyId || !assignForm.subscriptionId) { toast.error('Выберите компанию и план'); return }
     const plan = plans.find(p => p.id === assignForm.subscriptionId)
     let endDate: string | undefined
     if (plan?.type !== 'lifetime') {
@@ -154,24 +155,24 @@ export default function Subscriptions() {
       {/* ── Page header ── */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Підписки</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Управління тарифами СТО та авторозборок</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Подписки</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Управление тарифами СТО и авторазборок</p>
         </div>
         <button onClick={() => setIsAssignOpen(true)}
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors">
           <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Призначити</span>
+          <span className="hidden sm:inline">Назначить</span>
         </button>
       </div>
 
       {/* ── Stats row ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
-          { label: 'Активних',   value: stats?.total_active || 0,   icon: CheckCircle2, color: '#16A34A', bg: '#F0FDF4' },
-          { label: 'Місячних',   value: stats?.total_monthly || 0,  icon: Calendar,     color: '#2563EB', bg: '#EFF6FF' },
-          { label: 'Річних',     value: stats?.total_yearly || 0,   icon: TrendingUp,   color: '#7C3AED', bg: '#F5F3FF' },
-          { label: 'Безстрок.',  value: stats?.total_lifetime || 0, icon: Infinity,     color: '#D97706', bg: '#FFFBEB' },
-          { label: 'Дохід/міс', value: `₴${(stats?.revenue_this_month || 0).toLocaleString()}`, icon: CreditCard, color: '#059669', bg: '#F0FDF4' },
+          { label: 'Активных',   value: stats?.total_active || 0,   icon: CheckCircle2, color: '#16A34A', bg: '#F0FDF4' },
+          { label: 'Месячных',   value: stats?.total_monthly || 0,  icon: Calendar,     color: '#2563EB', bg: '#EFF6FF' },
+          { label: 'Годовых',    value: stats?.total_yearly || 0,   icon: TrendingUp,   color: '#7C3AED', bg: '#F5F3FF' },
+          { label: 'Бессрочных', value: stats?.total_lifetime || 0, icon: Infinity,     color: '#D97706', bg: '#FFFBEB' },
+          { label: 'Доход/мес',  value: `₴${(stats?.revenue_this_month || 0).toLocaleString()}`, icon: CreditCard, color: '#059669', bg: '#F0FDF4' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: bg }}>
@@ -189,8 +190,8 @@ export default function Subscriptions() {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="flex border-b border-gray-100">
           {[
-            { key: 'companies', label: `Компанії (${allSubs.length})` },
-            { key: 'plans',     label: 'Тарифні плани' },
+            { key: 'companies', label: `Компании (${allSubs.length})` },
+            { key: 'plans',     label: 'Тарифные планы' },
           ].map(t => (
             <button key={t.key} onClick={() => setActiveTab(t.key as any)}
               className={`px-5 py-3.5 text-sm font-semibold transition-colors ${activeTab === t.key ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-800'}`}>
@@ -206,7 +207,7 @@ export default function Subscriptions() {
             <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input type="text" placeholder="Пошук компанії..." value={search}
+                <input type="text" placeholder="Поиск компании..." value={search}
                   onChange={e => setSearch(e.target.value)}
                   className="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
                 {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>}
@@ -242,7 +243,7 @@ export default function Subscriptions() {
                           <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
                           <span className="font-semibold text-gray-900 text-sm truncate">{sub.company?.name || '—'}</span>
                           <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${sub.company_type === 'sto' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
-                            {sub.company_type === 'sto' ? 'СТО' : 'Розборка'}
+                            {sub.company_type === 'sto' ? 'СТО' : 'Разборка'}
                           </span>
                           <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${stStyle.cls}`}>{stStyle.label}</span>
                         </div>
@@ -269,14 +270,14 @@ export default function Subscriptions() {
                       <div className="flex items-center gap-1 flex-shrink-0">
                         {sub.is_active && !isExpired(sub) && (
                           <button
-                            onClick={async () => { if (await showConfirm({ message: `Деактивувати підписку для ${sub.company?.name}?`, danger: true })) deactivateMutation.mutate(sub.id) }}
-                            className="w-8 h-8 flex items-center justify-center text-amber-500 hover:bg-amber-50 rounded-xl transition-colors" title="Деактивувати">
+                            onClick={async () => { if (await showConfirm({ message: `Деактивировать подписку для ${sub.company?.name}?`, danger: true })) deactivateMutation.mutate(sub.id) }}
+                            className="w-8 h-8 flex items-center justify-center text-amber-500 hover:bg-amber-50 rounded-xl transition-colors" title="Деактивировать">
                             <XCircle className="w-4 h-4" />
                           </button>
                         )}
                         <button
-                          onClick={async () => { if (await showConfirm({ message: `Видалити підписку для ${sub.company?.name}?`, danger: true })) deleteMutation.mutate(sub.id) }}
-                          className="w-8 h-8 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-xl transition-colors" title="Видалити">
+                          onClick={async () => { if (await showConfirm({ message: `Удалить подписку для ${sub.company?.name}?`, danger: true })) deleteMutation.mutate(sub.id) }}
+                          className="w-8 h-8 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-xl transition-colors" title="Удалить">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -313,7 +314,7 @@ export default function Subscriptions() {
                       )}
                       <div className="p-5">
                         <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: clr.color }}>
-                          {plan.type === 'lifetime' ? 'Безстроково' : plan.type === 'yearly' ? '12 місяців' : plan.duration_months ? `${plan.duration_months} міс.` : 'Місячний'}
+                          {plan.type === 'lifetime' ? 'Бессрочно' : plan.type === 'yearly' ? '12 месяцев' : plan.duration_months ? `${plan.duration_months} мес.` : 'Месячный'}
                         </p>
                         <h3 className="text-xl font-bold text-gray-900 mb-3">{plan.name}</h3>
 
@@ -323,8 +324,8 @@ export default function Subscriptions() {
                             ₴{plan.price.toLocaleString()}
                           </span>
                           {plan.type === 'lifetime'
-                            ? <span className="text-sm text-gray-500 ml-1">назавжди</span>
-                            : <span className="text-sm text-gray-500 ml-1">/{plan.duration_months === 1 ? 'міс' : `${plan.duration_months} міс`}</span>
+                            ? <span className="text-sm text-gray-500 ml-1">навсегда</span>
+                            : <span className="text-sm text-gray-500 ml-1">/{plan.duration_months === 1 ? 'мес' : `${plan.duration_months} мес`}</span>
                           }
                         </div>
 
@@ -333,14 +334,15 @@ export default function Subscriptions() {
                           <div className="flex items-center gap-1.5 text-xs text-gray-600">
                             <FileText className="w-3.5 h-3.5" style={{ color: clr.color }} />
                             {plan.max_appointments === null ? '∞ заявок' : `${plan.max_appointments} заявок`}
+
                           </div>
                           <div className="flex items-center gap-1.5 text-xs text-gray-600">
                             <Users className="w-3.5 h-3.5" style={{ color: clr.color }} />
-                            {plan.max_customers === null ? '∞ клієнтів' : `${plan.max_customers} клієнтів`}
+                            {plan.max_customers === null ? '∞ клиентов' : `${plan.max_customers} клиентов`}
                           </div>
                           <div className="flex items-center gap-1.5 text-xs text-gray-600">
                             <Wrench className="w-3.5 h-3.5" style={{ color: clr.color }} />
-                            {plan.max_workers === null ? '∞ майстрів' : `${plan.max_workers} майстри`}
+                            {plan.max_workers === null ? '∞ мастеров' : `${plan.max_workers} мастера`}
                           </div>
                         </div>
 
@@ -354,12 +356,21 @@ export default function Subscriptions() {
                           ))}
                         </ul>
 
-                        {/* Companies on plan */}
-                        <div className="pt-3 border-t border-black/10 text-xs text-gray-500">
-                          {companiesOnPlan > 0
-                            ? `Використовують: ${companiesOnPlan} компані${companiesOnPlan === 1 ? 'я' : 'ї'}`
-                            : 'Ніхто не підписаний'
-                          }
+                        {/* Companies on plan + edit */}
+                        <div className="pt-3 border-t border-black/10 flex items-center justify-between">
+                          <span className="text-xs text-gray-500">
+                            {companiesOnPlan > 0
+                              ? `Используют: ${companiesOnPlan} компани${companiesOnPlan === 1 ? 'я' : 'й'}`
+                              : 'Никто не подписан'
+                            }
+                          </span>
+                          <button
+                            onClick={() => setEditingPlan(plan)}
+                            className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary transition-colors px-2 py-1 rounded-lg hover:bg-primary/10"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            Изменить
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -370,6 +381,15 @@ export default function Subscriptions() {
           </div>
         )}
       </div>
+
+      {/* ── Plan Edit Modal ── */}
+      {editingPlan && (
+        <PlanEditModal
+          plan={editingPlan}
+          onClose={() => setEditingPlan(null)}
+          onSaved={() => queryClient.invalidateQueries({ queryKey: ['subscription-plans'] })}
+        />
+      )}
 
       {/* ── Assign Modal ── */}
       {isAssignOpen && (
@@ -398,7 +418,7 @@ function AssignModal({ plans, allPlans, companies, form, onFormChange, onSubmit,
 
   const endDatePreview = (() => {
     if (!selectedPlan) return null
-    if (selectedPlan.type === 'lifetime') return 'Безстроково'
+    if (selectedPlan.type === 'lifetime') return 'Бессрочно'
     const d = new Date()
     d.setMonth(d.getMonth() + form.months)
     return d.toLocaleDateString('uk-UA', { day: '2-digit', month: 'long', year: 'numeric' })
@@ -408,20 +428,20 @@ function AssignModal({ plans, allPlans, companies, form, onFormChange, onSubmit,
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
-          <h2 className="font-bold text-gray-900">Призначити підписку</h2>
+          <h2 className="font-bold text-gray-900">Назначить підписку</h2>
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
         </div>
 
         <div className="p-5 space-y-4 overflow-y-auto flex-1">
           {/* Company type */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 block mb-2">Тип компанії</label>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">Тип компании</label>
             <div className="flex gap-2">
               {['sto', 'parts'].map(t => (
                 <button key={t} type="button"
                   onClick={() => onFormChange({ ...form, companyType: t, companyId: '', subscriptionId: '' })}
                   className={`flex-1 py-2 text-sm font-semibold rounded-xl border-2 transition-all ${form.companyType === t ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-                  {t === 'sto' ? 'СТО' : 'Авторозборка'}
+                  {t === 'sto' ? 'СТО' : 'Авторазборка'}
                 </button>
               ))}
             </div>
@@ -429,17 +449,17 @@ function AssignModal({ plans, allPlans, companies, form, onFormChange, onSubmit,
 
           {/* Company */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 block mb-2">Компанія *</label>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">Компания *</label>
             <select value={form.companyId} onChange={e => onFormChange({ ...form, companyId: e.target.value })}
               className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white">
-              <option value="">Оберіть компанію...</option>
+              <option value="">Выберите компанию...</option>
               {companies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
 
           {/* Plan */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 block mb-2">Тарифний план *</label>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">Тарифный план *</label>
             <div className="space-y-2">
               {plans.filter((p: Subscription) => p.company_type === form.companyType).map((p: Subscription) => {
                 const key = PLAN_KEY(p)
@@ -452,9 +472,9 @@ function AssignModal({ plans, allPlans, companies, form, onFormChange, onSubmit,
                     <div>
                       <p className="text-sm font-semibold text-gray-900">{p.name}</p>
                       <p className="text-xs text-gray-500">
-                        {p.max_appointments ? `До ${p.max_appointments} заявок` : 'Безліміт'}
+                        {p.max_appointments ? `До ${p.max_appointments} заявок` : 'Безлимит'}
                         {' · '}
-                        {p.max_customers ? `${p.max_customers} клієнтів` : 'Безліміт клієнтів'}
+                        {p.max_customers ? `${p.max_customers} клиентов` : 'Безлимит клиентов'}
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0 ml-3">
@@ -470,7 +490,7 @@ function AssignModal({ plans, allPlans, companies, form, onFormChange, onSubmit,
           {/* Duration (if not lifetime) */}
           {selectedPlan && selectedPlan.type !== 'lifetime' && (
             <div>
-              <label className="text-sm font-semibold text-gray-700 block mb-2">Тривалість</label>
+              <label className="text-sm font-semibold text-gray-700 block mb-2">Длительность</label>
               <div className="grid grid-cols-2 gap-2">
                 {DURATION_OPTIONS.map(opt => (
                   <button key={opt.value} type="button"
@@ -490,16 +510,99 @@ function AssignModal({ plans, allPlans, companies, form, onFormChange, onSubmit,
 
           {selectedPlan?.type === 'lifetime' && (
             <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800">
-              ✓ Безстрокова підписка — жодної дати закінчення
+              ✓ Бессрочная подписка — без даты окончания
             </div>
           )}
         </div>
 
         <div className="px-5 py-4 border-t border-gray-100 flex gap-2 flex-shrink-0">
-          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Скасувати</button>
+          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Отмена</button>
           <button onClick={onSubmit} disabled={isPending || !form.companyId || !form.subscriptionId}
             className="flex-1 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl disabled:opacity-50 transition-colors">
-            {isPending ? 'Збереження...' : 'Призначити'}
+            {isPending ? 'Сохранение...' : 'Назначить'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Plan Edit Modal ──────────────────────────────────────────────────────────
+
+import { supabase } from '@/lib/supabase'
+
+function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose: () => void; onSaved: () => void }) {
+  useBlockScroll(true)
+  const [form, setForm] = useState({
+    name:             plan.name,
+    description:      plan.description || '',
+    price:            String(plan.price),
+    max_appointments: plan.max_appointments != null ? String(plan.max_appointments) : '',
+    max_customers:    plan.max_customers    != null ? String(plan.max_customers)    : '',
+    max_workers:      plan.max_workers      != null ? String(plan.max_workers)      : '',
+    duration_months:  plan.duration_months  != null ? String(plan.duration_months)  : '',
+  })
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('subscriptions').update({
+        name:             form.name.trim(),
+        description:      form.description.trim() || null,
+        price:            Number(form.price),
+        max_appointments: form.max_appointments ? Number(form.max_appointments) : null,
+        max_customers:    form.max_customers    ? Number(form.max_customers)    : null,
+        max_workers:      form.max_workers      ? Number(form.max_workers)      : null,
+        duration_months:  form.duration_months  ? Number(form.duration_months)  : null,
+      }).eq('id', plan.id)
+      if (error) throw error
+      toast.success('План обновлён')
+      onSaved()
+      onClose()
+    } catch (e: any) {
+      toast.error(e.message || 'Ошибка сохранения')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const field = (label: string, key: keyof typeof form, type = 'text', hint?: string) => (
+    <div>
+      <label className="text-sm font-semibold text-gray-700 block mb-1">{label}</label>
+      {hint && <p className="text-xs text-gray-400 mb-1">{hint}</p>}
+      <input
+        type={type}
+        value={form[key]}
+        onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+      />
+    </div>
+  )
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+          <h2 className="font-bold text-gray-900">Редактировать план: {plan.name}</h2>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+        </div>
+        <div className="p-5 space-y-4 overflow-y-auto flex-1">
+          {field('Название', 'name')}
+          {field('Описание', 'description')}
+          {field('Цена (₴)', 'price', 'number')}
+          <div className="grid grid-cols-2 gap-3">
+            {field('Лимит заявок', 'max_appointments', 'number', 'Пусто = безлимит')}
+            {field('Лимит клиентов', 'max_customers', 'number', 'Пусто = безлимит')}
+            {field('Лимит мастеров', 'max_workers', 'number', 'Пусто = безлимит')}
+            {field('Длительность (мес)', 'duration_months', 'number', 'Пусто = бессрочно')}
+          </div>
+        </div>
+        <div className="px-5 py-4 border-t border-gray-100 flex gap-2 flex-shrink-0">
+          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Отмена</button>
+          <button onClick={handleSave} disabled={saving || !form.name.trim() || !form.price}
+            className="flex-1 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl disabled:opacity-50 transition-colors">
+            {saving ? 'Сохранение...' : 'Сохранить'}
           </button>
         </div>
       </div>

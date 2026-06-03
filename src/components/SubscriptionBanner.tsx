@@ -18,7 +18,7 @@ export default function SubscriptionBanner({ context }: Props) {
   const maxVal   = context === 'appointments' ? limits.maxAppointments : limits.maxCustomers
   const usedVal  = context === 'appointments' ? usage.appointments     : usage.customers
   const pct      = context === 'appointments' ? usagePct.appointments  : usagePct.customers
-  const label    = context === 'appointments' ? 'заявок' : 'клієнтів'
+  const label    = context === 'appointments' ? 'заявок' : 'клиентов'
 
   const isAtLimit    = maxVal !== null && usedVal >= maxVal
   const isNearLimit  = maxVal !== null && pct >= 80 && !isAtLimit
@@ -54,9 +54,9 @@ export default function SubscriptionBanner({ context }: Props) {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold leading-tight" style={{ color: scheme.text }}>
             {isAtLimit
-              ? `Досягнуто ліміту ${label} (${usedVal}/${maxVal})`
+              ? `Достигнут лимит ${label} (${usedVal}/${maxVal})`
               : isExpiringSoon && daysLeft !== null
-              ? `Підписка «${planName}» закінчується через ${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дні' : 'днів'}`
+              ? `Подписка «${planName}» истекает через ${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}`
               : `Тариф «${planName}» · ${usedVal}/${maxVal} ${label}`
             }
           </p>
@@ -78,7 +78,7 @@ export default function SubscriptionBanner({ context }: Props) {
         className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
         style={{ backgroundColor: scheme.icon, color: '#fff' }}
       >
-        {isAtLimit ? 'Оновити тариф' : 'Деталі тарифу'}
+        {isAtLimit ? 'Обновить тариф' : 'Детали тарифа'}
       </button>
     </div>
   )

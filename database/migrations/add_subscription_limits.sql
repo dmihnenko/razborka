@@ -11,22 +11,22 @@ INSERT INTO subscriptions (name, description, price, type, company_type, is_acti
 VALUES
   (
     'Старт',
-    'Базовий функціонал для невеликих СТО — 1 місяць',
+    'Базовый функционал для небольших СТО — 1 месяц',
     499, 'monthly', 'sto', true, 50, 100, 3, 1
   ),
   (
-    'Бізнес',
-    'Розширений функціонал для СТО середнього розміру — 6 місяців',
+    'Бизнес',
+    'Расширенный функционал для СТО среднего размера — 6 месяцев',
     2499, 'monthly', 'sto', true, 200, 500, 10, 6
   ),
   (
-    'Профі',
-    'Безлімітний функціонал для великих СТО — 12 місяців',
+    'Профи',
+    'Безлимитный функционал для крупных СТО — 12 месяцев',
     4499, 'yearly', 'sto', true, NULL, NULL, NULL, 12
   ),
   (
     'Навсегда',
-    'Повний функціонал без обмежень — безстрокова ліцензія',
+    'Полный функционал без ограничений — бессрочная лицензия',
     9999, 'lifetime', 'sto', true, NULL, NULL, NULL, NULL
   )
 ON CONFLICT DO NOTHING;
@@ -34,5 +34,5 @@ ON CONFLICT DO NOTHING;
 -- Для существующих планов типа 'monthly'/'yearly'/'lifetime' без лимитов — обновить разумными значениями
 -- (UPDATE только там, где колонки ещё NULL и name соответствует)
 UPDATE subscriptions SET max_appointments = 50,  max_customers = 100, max_workers = 3,  duration_months = 1  WHERE name ILIKE '%старт%'    AND company_type = 'sto' AND max_appointments IS NULL;
-UPDATE subscriptions SET max_appointments = 200, max_customers = 500, max_workers = 10, duration_months = 6  WHERE name ILIKE '%бізнес%'   AND company_type = 'sto' AND max_appointments IS NULL;
-UPDATE subscriptions SET duration_months = 12 WHERE name ILIKE '%профі%'    AND company_type = 'sto' AND duration_months IS NULL;
+UPDATE subscriptions SET max_appointments = 200, max_customers = 500, max_workers = 10, duration_months = 6  WHERE name ILIKE '%бизнес%'   AND company_type = 'sto' AND max_appointments IS NULL;
+UPDATE subscriptions SET duration_months = 12 WHERE name ILIKE '%профи%'    AND company_type = 'sto' AND duration_months IS NULL;

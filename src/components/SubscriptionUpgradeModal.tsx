@@ -13,7 +13,7 @@ interface Props {
 const UPGRADE_PLANS = [
   {
     name: 'Старт',
-    subtitle: '1 місяць',
+    subtitle: '1 месяц',
     price: 499,
     maxAppointments: 50,
     maxCustomers: 100,
@@ -22,17 +22,17 @@ const UPGRADE_PLANS = [
   },
   {
     name: 'Бізнес',
-    subtitle: '6 місяців',
+    subtitle: '6 месяцев',
     price: 2499,
     maxAppointments: 200,
     maxCustomers: 500,
     color: '#7C3AED',
     bg: '#F5F3FF',
-    badge: 'Популярний',
+    badge: 'Популярный',
   },
   {
     name: 'Профі',
-    subtitle: '12 місяців',
+    subtitle: '12 месяцев',
     price: 4499,
     maxAppointments: null,
     maxCustomers: null,
@@ -41,19 +41,19 @@ const UPGRADE_PLANS = [
   },
   {
     name: 'Навсегда',
-    subtitle: 'Безстроково',
+    subtitle: 'Бессрочно',
     price: 9999,
     maxAppointments: null,
     maxCustomers: null,
     color: '#D97706',
     bg: '#FFFBEB',
-    badge: 'Вигідно',
+    badge: 'Выгодно',
   },
 ]
 
 export default function SubscriptionUpgradeModal({ isOpen, onClose, context, currentPlan, used, limit }: Props) {
   const navigate = useNavigate()
-  const label = context === 'appointments' ? 'заявок' : 'клієнтів'
+  const label = context === 'appointments' ? 'заявок' : 'клиентов'
 
   if (!isOpen) return null
 
@@ -68,9 +68,9 @@ export default function SubscriptionUpgradeModal({ isOpen, onClose, context, cur
               <Lock className="w-5 h-5 text-amber-600" />
             </div>
             <div>
-              <h2 className="font-bold text-gray-900 text-base">Досягнуто ліміту</h2>
+              <h2 className="font-bold text-gray-900 text-base">Достигнут лимит</h2>
               <p className="text-sm text-gray-500 mt-0.5">
-                Ліміт тарифу «{currentPlan || 'Пробний'}»: {used}/{limit} {label}
+                Лимит тарифа «{currentPlan || 'Пробный'}»: {used}/{limit} {label}
               </p>
             </div>
           </div>
@@ -82,7 +82,7 @@ export default function SubscriptionUpgradeModal({ isOpen, onClose, context, cur
         {/* Plans */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
           <p className="text-sm text-gray-600 mb-4">
-            Оновіть тариф щоб продовжити роботу без обмежень:
+            Обновите тариф чтобы продолжить работу без ограничений:
           </p>
 
           {UPGRADE_PLANS.map((p) => {
@@ -110,7 +110,7 @@ export default function SubscriptionUpgradeModal({ isOpen, onClose, context, cur
                   <div className="flex items-center gap-1.5 text-xs text-gray-600">
                     <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: p.color }} />
                     {limitValue === null
-                      ? `Безліміт ${label}`
+                      ? `Безлимит ${label}`
                       : `До ${limitValue} ${label}`
                     }
                   </div>
@@ -131,13 +131,13 @@ export default function SubscriptionUpgradeModal({ isOpen, onClose, context, cur
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary text-white font-semibold text-sm rounded-xl hover:bg-primary/90 transition-colors"
           >
             <Zap className="w-4 h-4" />
-            Переглянути всі тарифи та оновити
+            Посмотреть все тарифы и обновить
           </button>
           <button
             onClick={onClose}
             className="w-full py-2.5 text-gray-500 text-sm font-medium hover:text-gray-700 transition-colors"
           >
-            Закрити
+            Закрыть
           </button>
         </div>
       </div>
