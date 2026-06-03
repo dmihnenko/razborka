@@ -262,7 +262,7 @@ export default function AppointmentSummary({ formData, onUpdate, isEditing }: Pr
                 ))
             )}
           </select>
-          {isStoOwner && formData.status === 'ready' && !(formData.parts_paid && formData.work_paid) && (
+          {isStoOwner && formData.status === 'ready' && (totalParts > 0 || totalWork > 0) && !(formData.parts_paid && formData.work_paid) && (
             <p className="text-xs text-amber-600 mt-1">
               ⚠️ Для завершения необходимо отметить оплату
             </p>

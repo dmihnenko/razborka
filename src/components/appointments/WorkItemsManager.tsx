@@ -51,7 +51,15 @@ export default function WorkItemsManager({ items, onChange }: Props) {
         .eq('sto_company_id', profile.sto_company_id)
         .order('name')
       
-      if (error) throw error
+      if (error) {
+        // service_categories может не существовать — fallback без категорий
+        const { data: plain } = await supabase
+          .from('services')
+          .select('*')
+          .eq('sto_company_id', profile.sto_company_id)
+          .order('name')
+        return plain ?? []
+      }
       return data
     },
     enabled: !!profile?.sto_company_id,

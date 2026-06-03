@@ -115,12 +115,10 @@ export default function DateTimePicker({ value, onChange, endValue, onEndChange,
   const startIdx = selectedTime ? TIME_SLOTS.indexOf(selectedTime) : -1
   const endIdx = selectedEndTime ? TIME_SLOTS.indexOf(selectedEndTime) : -1
 
-  // Длительность в часах и минутах
+  // Длительность в часах (слоты по 1 часу)
   const durationLabel = startIdx !== -1 && endIdx !== -1 && endIdx > startIdx ? (() => {
-    const totalMins = (endIdx - startIdx) * 30
-    const h = Math.floor(totalMins / 60)
-    const m = totalMins % 60
-    return h > 0 ? (m > 0 ? `${h} ч ${m} мин` : `${h} ч`) : `${m} мин`
+    const hours = endIdx - startIdx
+    return hours === 1 ? '1 ч' : `${hours} ч`
   })() : null
 
   const prevMonth = () => {
@@ -318,20 +316,7 @@ export default function DateTimePicker({ value, onChange, endValue, onEndChange,
             })}
           </div>
 
-          {/* Итог: выбранный диапазон и количество часов */}
-          {selectedTime && durationLabel && (
-            <div className="px-4 py-3 border-t border-gray-100 bg-emerald-50/60 flex items-center justify-between">
-              <span className="text-xs text-gray-600">
-                <span className="font-semibold text-indigo-700">{selectedTime}</span>
-                {selectedEndTime && (
-                  <> → <span className="font-semibold text-indigo-700">{selectedEndTime}</span></>
-                )}
-              </span>
-              <span className="text-sm font-bold text-emerald-700 bg-emerald-100 px-3 py-0.5 rounded-full">
-                ⏱ {durationLabel}
-              </span>
-            </div>
-          )}
+
         </div>
       )}
     </div>
