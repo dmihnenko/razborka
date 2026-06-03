@@ -71,6 +71,19 @@ export interface Appointment {
   firebase_id?: string;
 }
 
+export interface AppointmentComment {
+  id: string;
+  appointment_id: string;
+  sto_company_id: string;
+  user_id: string;
+  text: string;
+  created_at: string;
+  author_profile?: {
+    full_name: string | null;
+    email: string | null;
+  };
+}
+
 export interface AppointmentFormValues {
   customer_id: string;
   vehicle_id: string;

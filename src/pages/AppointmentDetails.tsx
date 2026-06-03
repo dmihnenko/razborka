@@ -1,12 +1,13 @@
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { Spinner } from '@/components/ui/Spinner'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { ArrowLeft, Calendar, User, Car, Phone, FileText, Package, Wrench, DollarSign, UserCog } from 'lucide-react'
+import { ArrowLeft, Calendar, User, Car, Phone, FileText, Package, Wrench, DollarSign, UserCog, History } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 import ReassignWorkerModal from '@/components/appointments/ReassignWorkerModal'
+import AppointmentComments from '@/components/appointments/AppointmentComments'
 import { toast } from 'sonner'
 
 export default function AppointmentDetails() {
@@ -85,6 +86,24 @@ export default function AppointmentDetails() {
       return data
     },
     enabled: !!appointmentId
+  })
+
+  // История обслуживания автомобиля
+  const { data: vehicleHistory = [] } = useQuery({
+    queryKey: ['vehicle-service-history', appointment?.vehicle_id, appointmentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('id, scheduled_date, status, total_work_cost, total_parts_cost, total_cost, work_items, part_items')
+        .eq('vehicle_id', appointment!.vehicle_id)
+        .neq('id', appointmentId!)
+        .not('status', 'in', '("deleted","pending_deletion")')
+        .order('scheduled_date', { ascending: false })
+        .limit(20)
+      if (error) throw error
+      return data
+    },
+    enabled: !!appointment?.vehicle_id,
   })
 
   // Мутация для обновления статуса оплаты
@@ -534,6 +553,11 @@ export default function AppointmentDetails() {
               </div>
             )
           })()}
+          {/* Комментарии */}
+          <AppointmentComments
+            appointmentId={appointment.id}
+            stoCompanyId={appointment.sto_company_id}
+          />
         </div>
 
         {/* Боковая панель */}
@@ -727,6 +751,70 @@ export default function AppointmentDetails() {
               })()}
             </div>
           </div>
+
+          {/* История обслуживания автомобиля */}
+          {vehicleHistory.length > 0 && (
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+              <h2 className="heading-mobile-3 mb-3 flex items-center gap-2">
+                <History className="w-4 h-4 flex-shrink-0" />
+                История авто
+                <span className="text-sm font-normal text-gray-400">({vehicleHistory.length})</span>
+              </h2>
+              <div className="space-y-2">
+                {vehicleHistory.map((h: any) => {
+                  const hStatusColors: Record<string, string> = {
+                    scheduled: 'bg-purple-100 text-purple-700',
+                    in_progress: 'bg-blue-100 text-blue-700',
+                    completed: 'bg-green-100 text-green-700',
+                    ready: 'bg-green-100 text-green-700',
+                    cancelled: 'bg-red-100 text-red-700',
+                    archived: 'bg-gray-100 text-gray-600',
+                  }
+                  const hStatusLabels: Record<string, string> = {
+                    scheduled: 'Запланирована',
+                    in_progress: 'В работе',
+                    completed: 'Готова',
+                    ready: 'Готова',
+                    cancelled: 'Отменена',
+                    archived: 'Архив',
+                  }
+                  const total = h.total_cost || (h.total_work_cost || 0) + (h.total_parts_cost || 0)
+                  const workCount = h.work_items?.length || 0
+                  const partCount = h.part_items?.length || 0
+                  return (
+                    <Link
+                      key={h.id}
+                      to={`/sto/appointments/${h.id}`}
+                      className="block p-2.5 rounded-lg border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-colors group"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-700 group-hover:text-gray-900">
+                            {new Date(h.scheduled_date).toLocaleDateString('ru-RU')}
+                          </p>
+                          {(workCount > 0 || partCount > 0) && (
+                            <p className="text-xs text-gray-400 mt-0.5 truncate">
+                              {workCount > 0 && `${workCount} раб.`}
+                              {workCount > 0 && partCount > 0 && ' · '}
+                              {partCount > 0 && `${partCount} зап.`}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                          <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${hStatusColors[h.status] || 'bg-gray-100 text-gray-600'}`}>
+                            {hStatusLabels[h.status] || h.status}
+                          </span>
+                          {total > 0 && (
+                            <span className="text-xs font-semibold text-gray-700">₴{total.toFixed(0)}</span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Исключить из статистики (только для владельца, только для архивных) */}
           {isStoOwner && appointment.status === 'archived' && (
