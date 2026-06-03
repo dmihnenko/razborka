@@ -8,13 +8,18 @@ import { Plus, List, TrendingUp, Check } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 import ReassignWorkerModal from '@/components/appointments/ReassignWorkerModal'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import SubscriptionBanner from '@/components/SubscriptionBanner'
+import SubscriptionUpgradeModal from '@/components/SubscriptionUpgradeModal'
+import { useSubscriptionLimits } from '@/hooks/useSubscription'
 
 export default function Appointments() {
   const [searchParams, setSearchParams] = useSearchParams()
   const statusFilter = searchParams.get('status')
   const vehicleIdFilter = searchParams.get('vehicleId')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [editingAppointment, setEditingAppointment] = useState<any>(null)
+  const { canCreate, usage, limits, plan, hasSubscription } = useSubscriptionLimits()
   const [showArchived, setShowArchived] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const [reassignModal, setReassignModal] = useState<{
@@ -142,6 +147,7 @@ export default function Appointments() {
 
   return (
     <div className="container-mobile">
+      <SubscriptionBanner context="appointments" />
       {/* Actions */}
       <div className="flex justify-end gap-2 flex-wrap mb-4 sm:mb-6">
         {statusFilter && (
@@ -177,6 +183,7 @@ export default function Appointments() {
         {!showArchived && (
           <button
             onClick={() => {
+              if (!canCreate.appointment()) { setShowUpgradeModal(true); return }
               setEditingAppointment(null)
               setIsModalOpen(true)
             }}
@@ -598,6 +605,15 @@ export default function Appointments() {
           }}
         />
       )}
+
+      <SubscriptionUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        context="appointments"
+        currentPlan={hasSubscription ? plan?.name : 'Пробний'}
+        used={usage.appointments}
+        limit={limits.maxAppointments ?? 10}
+      />
     </div>
   )
 }

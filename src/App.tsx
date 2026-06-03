@@ -71,6 +71,7 @@ const ProfileSettings = lazy(() => import('./pages/ProfileSettings'))
 const DatabasePage = lazy(() => import('./pages/Database'))
 const AdminSettings = lazy(() => import('./pages/AdminSettings'))
 const AdminAccessRequests = lazy(() => import('./pages/AdminAccessRequests'))
+const StoSubscriptionPage = lazy(() => import('./pages/StoSubscriptionPage'))
 
 import { useAuth } from './hooks/useAuth'
 import { useUserProfile } from './hooks/useUserProfile'
@@ -170,6 +171,7 @@ function App() {
           <Route path="sto/settings" element={<StoSettings />} />
           <Route path="worker/dashboard" element={<WorkerDashboard />} />
           <Route path="sto/calendar" element={<CalendarPage />} />
+          <Route path="sto/subscription" element={<StoSubscriptionPage />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="monthly-revenue" element={<MonthlyRevenue />} />
           <Route path="history" element={<ActivityHistory />} />
