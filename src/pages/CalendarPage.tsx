@@ -63,6 +63,7 @@ export default function CalendarPage() {
   const [viewMonth, setViewMonth] = useState(todayM)
   const [selectedDay, setSelectedDay] = useState<number | null>(todayD)
   const [isNewModalOpen, setIsNewModalOpen] = useState(false)
+  const [modalPrefilledDate, setModalPrefilledDate] = useState<string | undefined>()
 
   const prevMonth = () => {
     if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) } else setViewMonth(m => m - 1)
@@ -82,6 +83,11 @@ export default function CalendarPage() {
     const next = day === selectedDay ? null : day
     setSelectedDay(next)
     if (next) setTimeout(() => listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+  }
+
+  const openNewModal = (date?: string) => {
+    setModalPrefilledDate(date)
+    setIsNewModalOpen(true)
   }
 
   const { data: appointments = [], isLoading } = useQuery({
@@ -153,7 +159,7 @@ export default function CalendarPage() {
             <CalendarDays className="w-5 h-5 text-primary flex-shrink-0" />
             <h1 className="font-bold text-gray-900 text-base sm:text-lg truncate">Календарь</h1>
           </div>
-          <button onClick={() => setIsNewModalOpen(true)}
+          <button onClick={() => openNewModal()}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex-shrink-0">
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Новая запись</span>
@@ -301,7 +307,11 @@ export default function CalendarPage() {
                      plural(selectedAppts.length, 'запись', 'записи', 'записей')}
                   </p>
                 </div>
-                <button onClick={() => setIsNewModalOpen(true)}
+                <button
+                  onClick={() => {
+                    const pad = (n: number) => String(n).padStart(2, '0')
+                    openNewModal(`${viewYear}-${pad(viewMonth + 1)}-${pad(selectedDay!)}`)
+                  }}
                   className="inline-flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors flex-shrink-0">
                   <Plus className="w-4 h-4" />
                   <span className="hidden sm:inline">Добавить</span>
@@ -321,7 +331,11 @@ export default function CalendarPage() {
                   </div>
                   <p className="font-medium text-gray-500 mb-1">Записей нет</p>
                   <p className="text-sm text-gray-400 mb-5">На этот день ничего не запланировано</p>
-                  <button onClick={() => setIsNewModalOpen(true)}
+                  <button
+                    onClick={() => {
+                      const pad = (n: number) => String(n).padStart(2, '0')
+                      openNewModal(`${viewYear}-${pad(viewMonth + 1)}-${pad(selectedDay!)}`)
+                    }}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary/90 transition-colors">
                     <Plus className="w-4 h-4" />Создать запись
                   </button>
@@ -428,7 +442,11 @@ export default function CalendarPage() {
       </div>
 
       {/* Modal */}
-      <AppointmentModal isOpen={isNewModalOpen} onClose={() => setIsNewModalOpen(false)} />
+      <AppointmentModal
+        isOpen={isNewModalOpen}
+        onClose={() => { setIsNewModalOpen(false); setModalPrefilledDate(undefined) }}
+        prefilledDate={modalPrefilledDate}
+      />
     </div>
   )
 }

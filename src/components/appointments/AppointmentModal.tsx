@@ -21,9 +21,10 @@ interface Props {
   onClose: () => void
   appointmentId?: string
   onSuccess?: (id: string) => void
+  prefilledDate?: string // ISO date string YYYY-MM-DD, skips date step
 }
 
-const steps = [
+const ALL_STEPS = [
   { id: 1, name: 'Клиент', description: 'Выбор клиента' },
   { id: 2, name: 'Авто', description: 'Выбор транспорта' },
   { id: 3, name: 'Дата', description: 'Дата и время' },
@@ -32,7 +33,7 @@ const steps = [
   { id: 6, name: 'Итог', description: 'Проверка и сохранение' },
 ]
 
-export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuccess }: Props) {
+export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuccess, prefilledDate }: Props) {
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
   const { confirm: showConfirm, dialogProps } = useConfirm()
@@ -59,7 +60,19 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
   // Проверка роли работника
   const isStoWorker = profile?.roles?.some((r: any) => r.name === 'sto_worker')
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
-  
+
+  // Если дата prefilled — шаг 3 скрываем, шаги перенумеровываем
+  const steps = prefilledDate && !appointmentId
+    ? ALL_STEPS.filter(s => s.id !== 3).map((s, idx) => ({ ...s, id: idx + 1 }))
+    : ALL_STEPS
+
+  // Маппинг: визуальный шаг → реальный шаг формы (1-based)
+  const realStepId = (visualStep: number): number => {
+    if (!prefilledDate || appointmentId) return visualStep
+    // visual 1→1, 2→2, 3→4, 4→5, 5→6
+    return visualStep >= 3 ? visualStep + 1 : visualStep
+  }
+
   // Загрузка существующей заявки для редактирования
   const { data: existingAppointment } = useQuery({
     queryKey: ['appointment', appointmentId],
@@ -127,10 +140,17 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
       setCurrentStep(4)
     } else {
       // Сбросить форму при создании новой заявки
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const defaultDate = prefilledDate
+        ? `${prefilledDate}T09:00`
+        : (() => {
+            const now = new Date()
+            return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T09:00`
+          })()
       setFormData({
         customer_id: '',
         vehicle_id: '',
-        scheduledDate: new Date().toISOString().slice(0, 16),
+        scheduledDate: defaultDate,
         scheduledEndDate: null,
         status: 'in_progress',
         notes: '',
@@ -297,18 +317,11 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
   }
 
   const canProceed = () => {
-    switch (currentStep) {
-      case 1:
-        return formData.customer_id !== ''
-      case 2:
-        return formData.vehicle_id !== ''
-      case 3:
-      case 4:
-        return true // Работы и запчасти опциональны
-      case 5:
-        return true
-      default:
-        return false
+    switch (realStepId(currentStep)) {
+      case 1: return formData.customer_id !== ''
+      case 2: return formData.vehicle_id !== ''
+      case 3: case 4: case 5: return true
+      default: return false
     }
   }
 
@@ -397,14 +410,14 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
-          {currentStep === 1 && (
+          {realStepId(currentStep) === 1 && (
             <ClientSelector
               selectedId={formData.customer_id}
               onSelect={(id, customer) => setFormData({ ...formData, customer_id: id, vehicle_id: '', selectedClient: customer })}
             />
           )}
 
-          {currentStep === 2 && (
+          {realStepId(currentStep) === 2 && (
             <VehicleSelector
               customerId={formData.customer_id}
               selectedId={formData.vehicle_id}
@@ -412,7 +425,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
             />
           )}
 
-          {currentStep === 3 && (
+          {realStepId(currentStep) === 3 && (
             <div>
               <div className="mb-4">
                 <h3 className="text-base font-bold text-gray-900">Дата и время записи</h3>
@@ -429,21 +442,21 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
             </div>
           )}
 
-          {currentStep === 4 && (
+          {realStepId(currentStep) === 4 && (
             <WorkItemsManager
               items={formData.workItems}
               onChange={(items) => setFormData({ ...formData, workItems: items })}
             />
           )}
 
-          {currentStep === 5 && (
+          {realStepId(currentStep) === 5 && (
             <PartItemsManager
               items={formData.partItems}
               onChange={(items) => setFormData({ ...formData, partItems: items })}
             />
           )}
 
-          {currentStep === 6 && (
+          {realStepId(currentStep) === 6 && (
             <AppointmentSummary
               formData={formData}
               onUpdate={(data) => setFormData({ ...formData, ...data })}
