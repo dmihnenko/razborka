@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Check } from 'lucide-react'
+import { X, Check, ChevronLeft } from 'lucide-react'
 import { AppointmentFormValues } from '@/types/appointments'
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -341,75 +341,87 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
     if (ok) deleteMutation.mutate()
   }
 
+  const progress = ((currentStep - 1) / (steps.length - 1)) * 100
+  const stepInfo = steps[currentStep - 1]
+  const isLastStep = currentStep === steps.length
+  const showBack = currentStep > 1 && !(isStoWorker && !isStoOwner && appointmentId && currentStep === 4)
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between relative">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {appointmentId ? 'Редактировать запись' : 'Новая запись на обслуживание'}
+    <div className="modal-overlay">
+      {/* Bottom-sheet mobile / centered dialog desktop */}
+      <div className="modal-sheet sm:max-w-xl">
+
+        {/* Ручка (только мобиль) */}
+        <div className="modal-handle" />
+
+        {/* ── Шапка ──────────────────────────────────────────────────── */}
+        <div className="modal-header">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-base font-bold text-gray-900 leading-tight">
+              {appointmentId ? 'Редактировать запись' : 'Новая запись'}
             </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Шаг {currentStep} из {steps.length}: {steps[currentStep - 1].description}
+            <p className="text-xs text-gray-400 mt-0.5">
+              {stepInfo.description} · шаг {currentStep} из {steps.length}
             </p>
           </div>
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose();
-            }}
-            className="absolute top-4 right-4 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-900 hover:text-gray-700 transition-colors"
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition-colors flex-shrink-0"
             aria-label="Закрыть"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Progress Steps */}
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between relative">
-            {/* Progress Line */}
-            <div className="absolute top-5 left-12 right-12 h-0.5 bg-gray-200 -z-10">
-              <div
-                className="h-full bg-primary transition-all duration-300"
-                style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
-              />
-            </div>
-
-            {steps.map((step) => (
-              <div key={step.id} className="flex flex-col items-center flex-1">
+        {/* ── Прогресс шагов ─────────────────────────────────────────── */}
+        <div className="px-5 pt-3 pb-2 border-b border-gray-100">
+          {/* Полоска */}
+          <div className="h-1 bg-gray-100 rounded-sm mb-3 overflow-hidden">
+            <div
+              className="h-1 bg-primary transition-all duration-300 rounded-sm"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          {/* Шаги */}
+          <div className="flex items-start gap-1">
+            {steps.map((step) => {
+              const done   = step.id < currentStep
+              const active = step.id === currentStep
+              const canJump = !!appointmentId
+              return (
                 <button
+                  key={step.id}
                   type="button"
-                  onClick={() => appointmentId ? setCurrentStep(step.id) : null}
-                  disabled={!appointmentId && step.id !== currentStep}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 ${
-                    appointmentId || step.id <= currentStep ? 'cursor-pointer hover:scale-110' : 'cursor-not-allowed opacity-60'
-                  } ${
-                    step.id < currentStep
-                      ? 'bg-green-500 text-white hover:bg-green-700'
-                      : step.id === currentStep
-                      ? 'bg-primary text-white ring-4 ring-primary/20'
-                      : 'bg-gray-200 text-gray-500 ' + (appointmentId ? 'hover:bg-gray-300' : '')
-                  }`}
+                  onClick={() => canJump && setCurrentStep(step.id)}
+                  disabled={!canJump && !active}
+                  className="flex-1 flex flex-col items-center gap-1 group"
                 >
-                  {step.id < currentStep ? <Check className="w-5 h-5" /> : step.id}
+                  <span
+                    className={`w-7 h-7 flex items-center justify-center text-xs font-bold rounded-lg transition-all
+                      ${done
+                        ? 'bg-green-500 text-white'
+                        : active
+                          ? 'bg-primary text-white ring-2 ring-primary/20'
+                          : 'bg-gray-100 text-gray-400 ' + (canJump ? 'group-hover:bg-gray-200' : '')
+                      }`}
+                  >
+                    {done ? <Check className="w-3.5 h-3.5" /> : step.id}
+                  </span>
+                  <span
+                    className={`text-[10px] font-medium leading-none hidden xs:block
+                      ${active ? 'text-primary' : done ? 'text-green-600' : 'text-gray-400'}`}
+                  >
+                    {step.name}
+                  </span>
                 </button>
-                <span
-                  className={`mt-2 text-xs font-medium ${
-                    step.id === currentStep ? 'text-primary' : 'text-gray-500'
-                  }`}
-                >
-                  {step.name}
-                </span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        {/* ── Тело формы ─────────────────────────────────────────────── */}
+        <div className="modal-body">
           {realStepId(currentStep) === 1 && (
             <ClientSelector
               selectedId={formData.customer_id}
@@ -428,7 +440,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
           {realStepId(currentStep) === 3 && (
             <div>
               <div className="mb-4">
-                <h3 className="text-base font-bold text-gray-900">Дата и время записи</h3>
+                <h3 className="text-sm font-bold text-gray-900">Дата и время записи</h3>
                 <p className="text-xs text-gray-400 mt-0.5">Выберите удобную дату и свободный слот</p>
               </div>
               <DateTimePicker
@@ -465,58 +477,69 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex items-center gap-2 sm:gap-3">
-          {currentStep > 1 && !(isStoWorker && !isStoOwner && appointmentId && currentStep === 4) && (
-            <button
-              type="button"
-              onClick={handleBack}
-              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium text-center"
-            >
-              Назад
-            </button>
-          )}
-          
-          {appointmentId && (
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-white bg-red-700 rounded-lg hover:bg-red-800 disabled:opacity-50 transition-colors font-medium text-center"
-            >
-              {deleteMutation.isPending ? 'Удаление...' : 'Удалить'}
-            </button>
-          )}
-          
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium border-2 border-gray-300 text-center"
-          >
-            Отмена
-          </button>
+        {/* ── Подвал ─────────────────────────────────────────────────── */}
+        <div className="modal-footer">
+          <div className="flex items-center gap-2">
 
-          {currentStep < steps.length ? (
+            {/* Назад */}
+            {showBack ? (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Назад
+              </button>
+            ) : (
+              /* Удалить (только при редактировании, на шаге 1 / если нет Назад) */
+              appointmentId && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleteMutation.isPending}
+                  className="px-3 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {deleteMutation.isPending ? 'Удаление…' : 'Удалить'}
+                </button>
+              )
+            )}
+
+            <div className="flex-1" />
+
+            {/* Отмена */}
             <button
               type="button"
-              onClick={handleNext}
-              disabled={!canProceed()}
-              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-center"
+              onClick={onClose}
+              className="px-4 py-2.5 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
             >
-              Далее
+              Отмена
             </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => createMutation.mutate(formData)}
-              disabled={createMutation.isPending}
-              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base text-white bg-green-700 rounded-lg hover:bg-green-800 disabled:opacity-50 transition-colors font-medium text-center whitespace-nowrap"
-            >
-              {createMutation.isPending ? 'Сохранение...' : (appointmentId ? 'Сохранить' : 'Создать')}
-            </button>
-          )}
+
+            {/* Далее / Сохранить */}
+            {isLastStep ? (
+              <button
+                type="button"
+                onClick={() => createMutation.mutate(formData)}
+                disabled={createMutation.isPending}
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors"
+              >
+                {createMutation.isPending ? 'Сохранение…' : appointmentId ? 'Сохранить' : 'Создать запись'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={!canProceed()}
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-all"
+              >
+                Далее
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
       <ConfirmDialog {...dialogProps} />
     </div>
   )
