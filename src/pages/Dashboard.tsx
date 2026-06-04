@@ -286,7 +286,7 @@ export default function Dashboard() {
             </button>
 
             {/* Готовые */}
-            <button onClick={() => navigate('/appointments?status=ready')}
+            <button onClick={() => navigate('/appointments?tab=completed')}
               className="stat-card cursor-pointer text-left group">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
@@ -408,9 +408,9 @@ export default function Dashboard() {
                 </div>
                 <div className="grid grid-cols-3 divide-x">
                   {[
-                    { label: 'Ожидают', value: scheduledCount, color: '#7C3AED', bg: 'rgba(124,58,237,0.1)', icon: Clock, path: '/appointments' },
-                    { label: 'В работе', value: inProgressCount, color: '#D97706', bg: 'rgba(217,119,6,0.1)', icon: Wrench, path: '/appointments' },
-                    { label: 'Готовые', value: readyCount, color: '#16A34A', bg: 'rgba(22,163,74,0.1)', icon: CheckCircle, path: '/appointments?status=ready' },
+                    { label: 'Ожидают', value: scheduledCount, color: '#7C3AED', bg: 'rgba(124,58,237,0.1)', icon: Clock, path: '/appointments?tab=scheduled' },
+                    { label: 'В работе', value: inProgressCount, color: '#D97706', bg: 'rgba(217,119,6,0.1)', icon: Wrench, path: '/appointments?tab=in_progress' },
+                    { label: 'Готовые', value: readyCount, color: '#16A34A', bg: 'rgba(22,163,74,0.1)', icon: CheckCircle, path: '/appointments?tab=completed' },
                   ].map(({ label, value, color, bg, icon: Icon, path }) => (
                     <button key={label} onClick={() => navigate(path)} className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group">
                       <div className="flex items-center gap-2 mb-2">

@@ -486,6 +486,8 @@ export default function AppointmentsBoard() {
   const [searchParams] = useSearchParams()
   const [view, setView] = useState<View>(() => {
     const v = searchParams.get('view')
+    // ?tab= подразумевает список с фильтром
+    if (searchParams.get('tab')) return 'list'
     return (v === 'day' || v === 'week' || v === 'list' || v === 'kanban') ? v : 'kanban'
   })
   const [selectedDate, setSelectedDate]         = useState(() => { const d = new Date(); d.setHours(0,0,0,0); return d })
@@ -493,11 +495,17 @@ export default function AppointmentsBoard() {
   const [search, setSearch]                     = useState('')
   const [showArchived, setShowArchived]         = useState(false)
   const [mechanicFilter, setMechanicFilter]     = useState('all')
-  const [listStatusFilter, setListStatusFilter] = useState('active')
+  const [listStatusFilter, setListStatusFilter] = useState<string>(() => {
+    const t = searchParams.get('tab')
+    return (t === 'scheduled' || t === 'in_progress' || t === 'completed' || t === 'all') ? t : 'active'
+  })
   const [isNewModalOpen, setIsNewModalOpen]     = useState(false)
   const [newModalDate, setNewModalDate]         = useState<string | undefined>()
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  const [mobileKanbanCol, setMobileKanbanCol]   = useState<string>('scheduled')
+  const [mobileKanbanCol, setMobileKanbanCol]   = useState<string>(() => {
+    const t = searchParams.get('tab')
+    return (t === 'scheduled' || t === 'in_progress' || t === 'completed') ? t : 'in_progress'
+  })
   const [weekMobileOffset, setWeekMobileOffset] = useState<0 | 3>(0)
 
   const currentHourRef = useRef<HTMLDivElement>(null)
