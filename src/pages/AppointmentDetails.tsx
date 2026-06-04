@@ -8,7 +8,7 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import {
   ArrowLeft, Calendar, User, Car, Phone, FileText,
   Package, Wrench, DollarSign, UserCog, History,
-  ChevronDown, CheckCircle2, Clock, Archive, Trash2,
+  CheckCircle2, Clock, Archive, Trash2,
   AlertTriangle, Pencil, Check, X,
 } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
@@ -27,6 +27,8 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
   archived:        { label: 'Архив',           color: '#6B7280', bg: '#F9FAFB', border: '#E5E7EB' },
   pending_deletion:{ label: 'Запрос удаления', color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
 }
+
+const STATUS_FLOW = ['scheduled', 'in_progress', 'completed', 'archived'] as const
 
 const STATUS_ICON: Record<string, React.ElementType> = {
   scheduled: Clock,
@@ -61,7 +63,7 @@ export default function AppointmentDetails() {
   const location = useLocation()
   const queryClient = useQueryClient()
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false) // kept for compat
   const [paymentConfirmModal, setPaymentConfirmModal] = useState<{
     isOpen: boolean; type: 'parts' | 'work'; currentValue: boolean
   } | null>(null)
@@ -281,31 +283,31 @@ export default function AppointmentDetails() {
             </p>
           </div>
 
-          {/* Status chip — clickable */}
-          <div className="relative flex-shrink-0">
-            <button
-              onClick={() => availableStatuses.length > 0 && setShowStatusDropdown(v => !v)}
-              disabled={availableStatuses.length === 0}
-              className="flex items-center gap-1.5 transition-opacity hover:opacity-80 disabled:cursor-default"
-            >
-              <StatusChip status={appointment.status} size="sm" />
-              {availableStatuses.length > 0 && <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
-            </button>
-            {showStatusDropdown && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowStatusDropdown(false)} />
-                <div className="absolute right-0 top-full mt-2 z-20 bg-white rounded-xl shadow-xl border border-gray-100 py-1 min-w-[180px]">
-                  {availableStatuses.map(s => (
-                    <button key={s.value} onClick={() => handleStatusChange(s.value)}
-                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 transition-colors first:rounded-t-xl last:rounded-b-xl">
-                      {React.createElement(STATUS_ICON[s.value] || Clock, { className: 'w-4 h-4 flex-shrink-0', style: { color: STATUS_CFG[s.value]?.color } })}
-                      <span>{s.label}</span>
-                      {appointment.status === s.value && <Check className="w-4 h-4 ml-auto text-primary" />}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
+          {/* Status flow — прямоугольные кнопки */}
+          <div className="flex items-center gap-1 overflow-x-auto flex-shrink-0 scrollbar-none">
+            {STATUS_FLOW.map(s => {
+              const scfg  = STATUS_CFG[s]
+              const isActive = appointment.status === s || (s === 'completed' && appointment.status === 'ready')
+              const canClick = !isActive && availableStatuses.some(a => a.value === s)
+              return (
+                <button
+                  key={s}
+                  onClick={() => canClick && handleStatusChange(s)}
+                  disabled={!canClick}
+                  className={`flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-all
+                    ${isActive ? 'shadow-sm' : canClick ? 'hover:opacity-80 cursor-pointer' : 'opacity-35 cursor-default'}`}
+                  style={isActive
+                    ? { color: '#fff', backgroundColor: scfg.color, borderColor: scfg.color }
+                    : { color: scfg.color, backgroundColor: scfg.bg, borderColor: scfg.border }
+                  }
+                >
+                  {React.createElement(STATUS_ICON[s] || Clock, {
+                    className: 'w-3 h-3 flex-shrink-0 hidden sm:block',
+                  })}
+                  <span className="whitespace-nowrap">{scfg.label}</span>
+                </button>
+              )
+            })}
           </div>
 
           {/* Actions */}
