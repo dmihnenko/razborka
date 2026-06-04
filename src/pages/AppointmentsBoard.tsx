@@ -779,8 +779,12 @@ export default function AppointmentsBoard() {
 
   const openNew = (date?: string) => {
     if (!canCreate.appointment()) { setShowUpgradeModal(true); return }
-    setNewModalDate(date)
-    setIsNewModalOpen(true)
+    if (date) {
+      // Дата из клика на день/ячейку — открываем страницу с prefilled датой
+      navigate(`/appointments/new?date=${date.slice(0, 10)}`)
+    } else {
+      navigate('/appointments/new')
+    }
   }
 
   // ── Уникальные механики из данных ────────────────────────────────────────

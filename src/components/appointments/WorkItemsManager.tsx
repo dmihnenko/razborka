@@ -72,7 +72,7 @@ export default function WorkItemsManager({ items, onChange }: Props) {
           <button
             type="button"
             onClick={() => setShowPicker(v => !v)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-semibold"
           >
             <BookOpen className="w-4 h-4" />
             {showPicker ? 'Скрыть каталог' : 'Выбрать из каталога'}

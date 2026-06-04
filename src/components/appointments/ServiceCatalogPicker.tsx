@@ -61,7 +61,7 @@ export default function ServiceCatalogPicker({ stoCompanyId, selectedNames = [],
   }
 
   return (
-    <div className="border border-gray-200 rounded-xl bg-white shadow-lg overflow-hidden">
+    <div className="border border-gray-200 rounded-xl bg-white shadow-sm overflow-hidden">
       {/* Search bar */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100">
         <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -84,7 +84,7 @@ export default function ServiceCatalogPicker({ stoCompanyId, selectedNames = [],
       </div>
 
       {/* Content */}
-      <div className="max-h-72 overflow-y-auto">
+      <div className="max-h-80 overflow-y-auto">
         {isLoading ? (
           <div className="flex justify-center py-6">
             <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
