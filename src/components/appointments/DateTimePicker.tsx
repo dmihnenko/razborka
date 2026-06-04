@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -14,66 +14,204 @@ interface Props {
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-function toLocalISO(date: Date): string {
+function toLocalISO(d: Date): string {
   const p = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}T${p(date.getHours())}:${p(date.getMinutes())}`
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
 }
-
-function parseLocalISO(str: string | null | undefined): Date | null {
+function parseLocalISO(str?: string | null): Date | null {
   if (!str) return null
   const m = str.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
   if (!m) return null
-  return new Date(+m[1], +m[2] - 1, +m[3], +(m[4] ?? 0), +(m[5] ?? 0), 0, 0)
+  return new Date(+m[1], +m[2]-1, +m[3], +(m[4]??0), +(m[5]??0), 0, 0)
 }
-
-function fmtDuration(minutes: number): string {
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  if (m === 0) return `${h} ч`
-  return `${h} ч ${m} мин`
-}
-
-function fmtDate(d: Date): string {
-  const DAYS = ['вс','пн','вт','ср','чт','пт','сб']
+function fmtDateLong(d: Date): string {
+  const DAYS   = ['вс','пн','вт','ср','чт','пт','сб']
   const MONTHS = ['января','февраля','марта','апреля','мая','июня',
                   'июля','августа','сентября','октября','ноября','декабря']
   return `${DAYS[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]}`
 }
+function addMinutes(base: Date, min: number): Date {
+  return new Date(base.getTime() + min * 60_000)
+}
+function calcEndTime(startStr: string, selDate: Date, durMin: number): string {
+  const [h, m] = startStr.split(':').map(Number)
+  const start = new Date(selDate); start.setHours(h, m, 0, 0)
+  return `${String(addMinutes(start, durMin).getHours()).padStart(2,'0')}:${String(addMinutes(start, durMin).getMinutes()).padStart(2,'0')}`
+}
 
-// Слоты с 08:00 до 20:00 по 30 мин
-const SLOTS = Array.from({ length: 25 }, (_, i) => {
+// ─── data ─────────────────────────────────────────────────────────────────────
+
+// Время начала: каждые 30 мин с 08:00 до 19:30
+const START_TIMES = Array.from({ length: 24 }, (_, i) => {
   const totalMin = 8 * 60 + i * 30
-  const h = Math.floor(totalMin / 60)
-  const m = totalMin % 60
+  const h = Math.floor(totalMin / 60), m = totalMin % 60
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`
 })
+
+// Длительность: от 30 мин до 8 ч по 30 мин
+const DURATIONS: { label: string; min: number }[] = [
+  { label: '30 мин', min: 30  },
+  { label: '1 ч',    min: 60  },
+  { label: '1 ч 30', min: 90  },
+  { label: '2 ч',    min: 120 },
+  { label: '2 ч 30', min: 150 },
+  { label: '3 ч',    min: 180 },
+  { label: '3 ч 30', min: 210 },
+  { label: '4 ч',    min: 240 },
+  { label: '4 ч 30', min: 270 },
+  { label: '5 ч',    min: 300 },
+  { label: '6 ч',    min: 360 },
+  { label: '7 ч',    min: 420 },
+  { label: '8 ч',    min: 480 },
+]
 
 const WEEKDAYS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
 const MONTHS_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь',
                    'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
 
-function getDaysInMonth(y: number, m: number) { return new Date(y, m + 1, 0).getDate() }
+function getDaysInMonth(y: number, m: number) { return new Date(y, m+1, 0).getDate() }
 function getFirstDay(y: number, m: number) {
-  const d = new Date(y, m, 1).getDay()
-  return d === 0 ? 6 : d - 1
+  const d = new Date(y, m, 1).getDay(); return d === 0 ? 6 : d - 1
 }
 
-// ─── component ────────────────────────────────────────────────────────────────
+// ─── ScrollDrum ───────────────────────────────────────────────────────────────
+// iOS-style drum scroll picker
+
+const ITEM_H = 48  // px per item
+const VISIBLE = 5  // видимых элементов (нечётное — центральный = выбранный)
+
+interface DrumProps<T> {
+  items: T[]
+  value: T
+  onChange: (v: T) => void
+  getLabel: (v: T) => string
+}
+
+function ScrollDrum<T>({ items, value, onChange, getLabel }: DrumProps<T>) {
+  const ref = useRef<HTMLDivElement>(null)
+  const timer = useRef<ReturnType<typeof setTimeout>>()
+  const selectedIdx = items.indexOf(value)
+
+  // Инициализация позиции
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.scrollTop = selectedIdx * ITEM_H
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const snap = useCallback(() => {
+    if (!ref.current) return
+    const idx = Math.max(0, Math.min(items.length - 1,
+      Math.round(ref.current.scrollTop / ITEM_H)
+    ))
+    ref.current.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' })
+    onChange(items[idx])
+  }, [items, onChange])
+
+  const onScroll = () => {
+    clearTimeout(timer.current)
+    timer.current = setTimeout(snap, 120)
+  }
+
+  const goTo = (idx: number) => {
+    if (!ref.current) return
+    ref.current.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' })
+    onChange(items[idx])
+  }
+
+  return (
+    <div className="relative overflow-hidden select-none" style={{ height: ITEM_H * VISIBLE }}>
+      {/* Верхняя затухающая рамка */}
+      <div className="absolute inset-x-0 top-0 z-10 pointer-events-none"
+           style={{ height: ITEM_H * 2, background: 'linear-gradient(to bottom, white 0%, rgba(255,255,255,0.6) 100%)' }} />
+      {/* Нижняя */}
+      <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none"
+           style={{ height: ITEM_H * 2, background: 'linear-gradient(to top, white 0%, rgba(255,255,255,0.6) 100%)' }} />
+      {/* Рамка выбранного элемента */}
+      <div className="absolute inset-x-3 z-10 pointer-events-none rounded-lg border-2 border-primary/20 bg-primary/5"
+           style={{ top: ITEM_H * 2, height: ITEM_H }} />
+
+      {/* Прокручиваемый список */}
+      <div
+        ref={ref}
+        onScroll={onScroll}
+        className="h-full overflow-y-scroll"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {/* Отступ сверху чтобы первый элемент мог оказаться по центру */}
+        <div style={{ height: ITEM_H * 2 }} />
+
+        {items.map((item, idx) => {
+          const isActive = item === value
+          return (
+            <div
+              key={idx}
+              onClick={() => goTo(idx)}
+              style={{ height: ITEM_H }}
+              className={`flex items-center justify-center cursor-pointer transition-all px-2
+                ${isActive
+                  ? 'text-primary font-bold text-base'
+                  : 'text-gray-400 font-medium text-sm'}`}
+            >
+              {getLabel(item)}
+            </div>
+          )
+        })}
+
+        {/* Отступ снизу */}
+        <div style={{ height: ITEM_H * 2 }} />
+      </div>
+    </div>
+  )
+}
+
+// ─── main component ───────────────────────────────────────────────────────────
 
 export default function DateTimePicker({
   value, onChange, endValue, onEndChange, stoCompanyId, excludeAppointmentId,
 }: Props) {
   const now = new Date()
-  const selected = parseLocalISO(value)
+  const selectedStart = parseLocalISO(value)
 
-  const [phase, setPhase] = useState<'date' | 'time'>(selected ? 'time' : 'date')
-  const [viewYear, setViewYear]   = useState(selected?.getFullYear()  ?? now.getFullYear())
-  const [viewMonth, setViewMonth] = useState(selected?.getMonth()     ?? now.getMonth())
-  const [selDate, setSelDate]     = useState<Date | null>(selected)
+  // Фаза: дата или время
+  const [phase, setPhase] = useState<'date' | 'time'>(selectedStart ? 'time' : 'date')
 
-  const timeListRef = useRef<HTMLDivElement>(null)
+  // Навигация по календарю
+  const [viewYear,  setViewYear]  = useState(selectedStart?.getFullYear()  ?? now.getFullYear())
+  const [viewMonth, setViewMonth] = useState(selectedStart?.getMonth()     ?? now.getMonth())
 
-  // Подгрузка занятости месяца
+  // Выбранная дата (без времени)
+  const [selDate, setSelDate] = useState<Date | null>(
+    selectedStart ? new Date(selectedStart.getFullYear(), selectedStart.getMonth(), selectedStart.getDate()) : null
+  )
+
+  // Выбранное время начала (строка "HH:MM")
+  const [startTime, setStartTime] = useState<string>(() => {
+    if (selectedStart) {
+      const h = String(selectedStart.getHours()).padStart(2,'0')
+      const m = String(selectedStart.getMinutes()).padStart(2,'0')
+      const t = `${h}:${m}`
+      return START_TIMES.includes(t) ? t : '09:00'
+    }
+    return '09:00'
+  })
+
+  // Выбранная длительность
+  const [durMin, setDurMin] = useState<number>(() => {
+    const end = parseLocalISO(endValue)
+    if (end && selectedStart) {
+      const diff = Math.round((end.getTime() - selectedStart.getTime()) / 60_000)
+      const found = DURATIONS.find(d => d.min === diff)
+      return found ? found.min : 60
+    }
+    return 60
+  })
+
+  // Вычисляем конечное время
+  const endTime = selDate ? calcEndTime(startTime, selDate, durMin) : null
+
+  // Загружаем занятость месяца
   const { data: monthAppts = [] } = useQuery({
     queryKey: ['appts-month', stoCompanyId, viewYear, viewMonth],
     queryFn: async () => {
@@ -90,10 +228,9 @@ export default function DateTimePicker({
       return data || []
     },
     enabled: !!stoCompanyId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 2 * 60_000,
   })
 
-  // Загруженность по дням
   const dayLoad = useMemo(() => {
     const map: Record<number, number> = {}
     monthAppts.forEach((a: any) => {
@@ -103,102 +240,40 @@ export default function DateTimePicker({
     return map
   }, [monthAppts, excludeAppointmentId])
 
-  // Занятые слоты выбранного дня
-  const takenSlots = useMemo(() => {
-    if (!selDate) return new Set<string>()
-    return new Set(
-      monthAppts
-        .filter((a: any) => {
-          if (excludeAppointmentId && a.id === excludeAppointmentId) return false
-          const d = new Date(a.scheduled_date)
-          return d.getFullYear() === selDate.getFullYear() &&
-                 d.getMonth()    === selDate.getMonth()    &&
-                 d.getDate()     === selDate.getDate()
-        })
-        .map((a: any) => {
-          const d = new Date(a.scheduled_date)
-          const h = String(d.getHours()).padStart(2,'0')
-          const m = String(d.getMinutes()).padStart(2,'0')
-          return `${h}:${m}`
-        })
-    )
-  }, [monthAppts, selDate, excludeAppointmentId])
-
-  // Текущие выбранные времена
-  const startTime = selected && selDate &&
-    selected.getDate() === selDate.getDate() && selected.getMonth() === selDate.getMonth()
-    ? `${String(selected.getHours()).padStart(2,'0')}:${String(selected.getMinutes()).padStart(2,'0')}`
-    : null
-
-  const endDate = parseLocalISO(endValue)
-  const endTime = endDate && selDate &&
-    endDate.getDate() === selDate.getDate() && endDate.getMonth() === selDate.getMonth()
-    ? `${String(endDate.getHours()).padStart(2,'0')}:${String(endDate.getMinutes()).padStart(2,'0')}`
-    : null
-
-  const startIdx = startTime ? SLOTS.indexOf(startTime) : -1
-  const endIdx   = endTime   ? SLOTS.indexOf(endTime)   : -1
-
-  const durationMin = startIdx !== -1 && endIdx !== -1 && endIdx > startIdx
-    ? (endIdx - startIdx) * 30
-    : null
-
-  // Скроллим к активному слоту при открытии
+  // Применяем изменения в родителя при смене времени/длительности
   useEffect(() => {
-    if (phase === 'time' && startIdx !== -1 && timeListRef.current) {
-      const el = timeListRef.current.children[Math.max(0, startIdx - 2)] as HTMLElement
-      el?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    if (!selDate) return
+    const [h, m] = startTime.split(':').map(Number)
+    const start = new Date(selDate); start.setHours(h, m, 0, 0)
+    onChange(toLocalISO(start))
+    if (onEndChange) {
+      const end = new Date(start.getTime() + durMin * 60_000)
+      onEndChange(toLocalISO(end))
     }
-  }, [phase, startIdx])
+  }, [startTime, durMin, selDate]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
+  // ── Calendar handlers ────────────────────────────────────────────────────
 
   const prevMonth = () => viewMonth === 0
-    ? (setViewYear(y => y - 1), setViewMonth(11))
-    : setViewMonth(m => m - 1)
+    ? (setViewYear(y => y-1), setViewMonth(11))
+    : setViewMonth(m => m-1)
   const nextMonth = () => viewMonth === 11
-    ? (setViewYear(y => y + 1), setViewMonth(0))
-    : setViewMonth(m => m + 1)
+    ? (setViewYear(y => y+1), setViewMonth(0))
+    : setViewMonth(m => m+1)
 
   const handleDayClick = (day: number) => {
     const today = new Date(); today.setHours(0,0,0,0)
     const dayDate = new Date(viewYear, viewMonth, day)
     if (dayDate < today) return
-
-    const h = selected ? selected.getHours()   : 9
-    const m = selected ? selected.getMinutes() : 0
-    const dt = new Date(viewYear, viewMonth, day, h, m, 0, 0)
-    setSelDate(new Date(viewYear, viewMonth, day, 0, 0, 0, 0))
-    onChange(toLocalISO(dt))
-    // Переходим к выбору времени
-    setTimeout(() => setPhase('time'), 80)
-  }
-
-  const handleSlotClick = (slot: string) => {
-    if (!selDate || takenSlots.has(slot)) return
-    const [h, m] = slot.split(':').map(Number)
-    const clickedIdx = SLOTS.indexOf(slot)
-
-    if (onEndChange) {
-      if (startIdx === -1 || clickedIdx <= startIdx) {
-        // Устанавливаем начало, сбрасываем конец
-        const dt = new Date(selDate); dt.setHours(h, m, 0, 0)
-        onChange(toLocalISO(dt))
-        onEndChange(null)
-      } else {
-        // Устанавливаем конец диапазона
-        const dt = new Date(selDate); dt.setHours(h, m, 0, 0)
-        onEndChange(toLocalISO(dt))
-      }
-    } else {
-      const dt = new Date(selDate); dt.setHours(h, m, 0, 0)
-      onChange(toLocalISO(dt))
-    }
+    setSelDate(dayDate)
+    setTimeout(() => setPhase('time'), 60)
   }
 
   const today = new Date(); today.setHours(0,0,0,0)
   const daysInMonth = getDaysInMonth(viewYear, viewMonth)
   const firstDay    = getFirstDay(viewYear, viewMonth)
+
+  const durObj = DURATIONS.find(d => d.min === durMin) ?? DURATIONS[1]
 
   function loadColor(n: number) {
     if (n <= 2) return 'bg-emerald-400'
@@ -206,20 +281,18 @@ export default function DateTimePicker({
     return 'bg-red-400'
   }
 
-  // ── Phase: DATE ─────────────────────────────────────────────────────────────
+  // ── Phase: DATE ────────────────────────────────────────────────────────────
   if (phase === 'date') {
     return (
       <div className="space-y-3">
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          {/* Навигация по месяцу */}
+          {/* Навигация */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <button type="button" onClick={prevMonth}
               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
               <ChevronLeft className="w-4 h-4 text-gray-600" />
             </button>
-            <span className="text-sm font-bold text-gray-900">
-              {MONTHS_RU[viewMonth]} {viewYear}
-            </span>
+            <span className="text-sm font-bold text-gray-900">{MONTHS_RU[viewMonth]} {viewYear}</span>
             <button type="button" onClick={nextMonth}
               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
               <ChevronRight className="w-4 h-4 text-gray-600" />
@@ -236,12 +309,12 @@ export default function DateTimePicker({
           {/* Дни */}
           <div className="grid grid-cols-7 px-3 pb-3 gap-y-1">
             {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
-            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
+            {Array.from({ length: daysInMonth }, (_, i) => i+1).map(day => {
               const d = new Date(viewYear, viewMonth, day); d.setHours(0,0,0,0)
-              const isPast     = d < today
-              const isToday    = d.getTime() === today.getTime()
-              const isSel      = selDate && selDate.getDate() === day && selDate.getMonth() === viewMonth && selDate.getFullYear() === viewYear
-              const load       = dayLoad[day] || 0
+              const isPast  = d < today
+              const isToday = d.getTime() === today.getTime()
+              const isSel   = selDate && selDate.getDate() === day && selDate.getMonth() === viewMonth && selDate.getFullYear() === viewYear
+              const load    = dayLoad[day] || 0
               return (
                 <button key={day} type="button"
                   onClick={() => !isPast && handleDayClick(day)}
@@ -264,7 +337,7 @@ export default function DateTimePicker({
           {/* Легенда */}
           <div className="flex items-center gap-4 px-4 py-2 border-t border-gray-100 bg-gray-50/60">
             <span className="text-[11px] text-gray-400 font-medium">Загруженность:</span>
-            {[['bg-emerald-400','1–2'],['bg-amber-400','3–5'],['bg-red-400','6+']].map(([c, l]) => (
+            {[['bg-emerald-400','1–2'],['bg-amber-400','3–5'],['bg-red-400','6+']] .map(([c,l]) => (
               <span key={l} className="flex items-center gap-1">
                 <span className={`w-2 h-2 rounded-sm ${c}`} />
                 <span className="text-[11px] text-gray-500">{l}</span>
@@ -273,15 +346,12 @@ export default function DateTimePicker({
           </div>
         </div>
 
-        {/* Если дата уже выбрана — показать кнопку перехода к времени */}
+        {/* Переход к времени если дата уже выбрана */}
         {selDate && (
-          <button
-            type="button"
-            onClick={() => setPhase('time')}
-            className="w-full flex items-center justify-between px-4 py-3 bg-primary/5 border border-primary/20 rounded-lg hover:bg-primary/10 transition-colors"
-          >
+          <button type="button" onClick={() => setPhase('time')}
+            className="w-full flex items-center justify-between px-4 py-3 bg-primary/5 border border-primary/20 rounded-lg hover:bg-primary/10 transition-colors">
             <span className="text-sm font-semibold text-primary">
-              {fmtDate(selDate)} — выбрать время
+              {fmtDateLong(selDate)} — выбрать время
             </span>
             <ArrowRight className="w-4 h-4 text-primary" />
           </button>
@@ -290,114 +360,69 @@ export default function DateTimePicker({
     )
   }
 
-  // ── Phase: TIME ─────────────────────────────────────────────────────────────
+  // ── Phase: TIME ────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+
       {/* Назад к дате */}
-      <button
-        type="button"
-        onClick={() => setPhase('date')}
-        className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors -mt-1"
-      >
+      <button type="button" onClick={() => setPhase('date')}
+        className="flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-900 transition-colors">
         <ChevronLeft className="w-4 h-4" />
-        {selDate ? fmtDate(selDate) : 'Выбрать дату'}
+        {selDate ? fmtDateLong(selDate) : 'Выбрать дату'}
       </button>
 
-      {/* Сводка выбранного времени */}
+      {/* Сводка: начало + длительность = конец */}
       <div className="bg-white border border-gray-200 rounded-xl p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 text-center">
-            <p className="text-[11px] font-medium text-gray-400 mb-1">Начало</p>
-            <p className="text-2xl font-bold text-gray-900 tabular-nums leading-none">
-              {startTime ?? '—'}
-            </p>
+        <div className="flex items-center gap-2 text-center">
+          <div className="flex-1">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Начало</p>
+            <p className="text-3xl font-bold text-gray-900 tabular-nums leading-none">{startTime}</p>
           </div>
 
-          <ArrowRight className="w-5 h-5 text-gray-300 flex-shrink-0" />
+          <div className="text-gray-300 font-light text-xl flex-shrink-0">+</div>
 
-          <div className="flex-1 text-center">
-            <p className="text-[11px] font-medium text-gray-400 mb-1">Конец</p>
-            <p className={`text-2xl font-bold tabular-nums leading-none ${endTime ? 'text-gray-900' : 'text-gray-300'}`}>
-              {endTime ?? '—'}
-            </p>
+          <div className="flex-1">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Длительность</p>
+            <p className="text-xl font-bold text-primary leading-none">{durObj.label}</p>
           </div>
 
-          {durationMin !== null && (
-            <>
-              <div className="w-px h-10 bg-gray-100 flex-shrink-0" />
-              <div className="flex-1 text-center">
-                <p className="text-[11px] font-medium text-gray-400 mb-1">Длительность</p>
-                <p className="text-base font-bold text-green-600 leading-none">
-                  {fmtDuration(durationMin)}
-                </p>
-              </div>
-            </>
-          )}
+          <div className="text-gray-300 font-light text-xl flex-shrink-0">=</div>
+
+          <div className="flex-1">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Конец</p>
+            <p className="text-3xl font-bold text-green-600 tabular-nums leading-none">{endTime ?? '—'}</p>
+          </div>
         </div>
-
-        {/* Подсказка */}
-        <p className="text-[11px] text-gray-400 mt-3 text-center">
-          {startIdx === -1
-            ? 'Нажмите на время начала записи'
-            : endIdx === -1
-              ? 'Теперь выберите время окончания'
-              : 'Нажмите на другое начало чтобы изменить'}
-        </p>
       </div>
 
-      {/* Timeline слотов */}
+      {/* Барабанные колонки */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Расписание</span>
-          <span className="text-xs text-gray-400">08:00 – 20:00</span>
-        </div>
+        <div className="grid grid-cols-2 divide-x divide-gray-100">
+          {/* Время начала */}
+          <div>
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide text-center py-2.5 border-b border-gray-100">
+              Время начала
+            </p>
+            <ScrollDrum
+              items={START_TIMES}
+              value={startTime}
+              onChange={setStartTime}
+              getLabel={v => v}
+            />
+          </div>
 
-        <div ref={timeListRef} className="overflow-y-auto max-h-[340px]">
-          {SLOTS.map((slot, idx) => {
-            const isTaken   = takenSlots.has(slot)
-            const isStart   = startTime === slot
-            const isEnd     = endTime === slot
-            const isInRange = startIdx !== -1 && endIdx !== -1 && idx > startIdx && idx < endIdx
-            const isActive  = isStart || isEnd
-
-            return (
-              <button
-                key={slot}
-                type="button"
-                onClick={() => handleSlotClick(slot)}
-                disabled={isTaken}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all
-                  ${isActive
-                    ? 'bg-primary text-white'
-                    : isInRange
-                      ? 'bg-primary/10 text-primary'
-                      : isTaken
-                        ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
-                        : 'hover:bg-gray-50 text-gray-700'
-                  }
-                  border-b border-gray-50 last:border-0`}
-              >
-                {/* Время */}
-                <span className={`w-11 text-sm font-bold tabular-nums flex-shrink-0
-                  ${isActive ? 'text-white' : isInRange ? 'text-primary' : isTaken ? 'text-gray-300' : 'text-gray-700'}`}>
-                  {slot}
-                </span>
-
-                {/* Визуальная полоска */}
-                <div className="flex-1 h-2 rounded-sm overflow-hidden bg-gray-100">
-                  {isActive && <div className="h-full bg-white/50" />}
-                  {isInRange && <div className="h-full bg-primary/40" />}
-                  {isTaken && <div className="h-full bg-gray-200" />}
-                </div>
-
-                {/* Метка */}
-                <span className={`text-[10px] font-bold flex-shrink-0 w-12 text-right
-                  ${isActive ? 'text-white' : isInRange ? 'text-primary/70' : 'text-transparent'}`}>
-                  {isStart ? 'начало' : isEnd ? 'конец' : isInRange ? '·' : isTaken ? 'занято' : ''}
-                </span>
-              </button>
-            )
-          })}
+          {/* Длительность */}
+          <div>
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide text-center py-2.5 border-b border-gray-100">
+              Длительность
+            </p>
+            <ScrollDrum
+              items={DURATIONS.map(d => d.min)}
+              value={durMin}
+              onChange={setDurMin}
+              getLabel={min => DURATIONS.find(d => d.min === min)?.label ?? ''}
+            />
+          </div>
         </div>
       </div>
     </div>
