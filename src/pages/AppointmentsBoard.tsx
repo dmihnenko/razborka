@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import {
-  Plus, ChevronLeft, ChevronRight, LayoutGrid, CalendarDays,
+  Plus, ChevronLeft, ChevronRight, ChevronDown, LayoutGrid, CalendarDays,
   Calendar, User, Car, Clock, Wrench, ArrowRight,
   Archive, Search, X, List, Phone, MoveRight,
 } from 'lucide-react'
@@ -632,6 +632,17 @@ export default function AppointmentsBoard() {
   const [isNewModalOpen, setIsNewModalOpen]     = useState(false)
   const [newModalDate, setNewModalDate]         = useState<string | undefined>()
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  // Секции списка — все открыты по умолчанию
+  const [listOpenSections, setListOpenSections] = useState<Set<string>>(
+    () => new Set(['scheduled', 'in_progress', 'completed', 'archived'])
+  )
+  const toggleListSection = (id: string) =>
+    setListOpenSections(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+
   const [mobileKanbanCol, setMobileKanbanCol]   = useState<string>(() => {
     const t = searchParams.get('tab')
     return (t === 'scheduled' || t === 'in_progress' || t === 'completed') ? t : 'in_progress'
@@ -1307,61 +1318,96 @@ export default function AppointmentsBoard() {
           </div>
         )}
 
-        {/* ══════════════ LIST ══════════════ */}
+        {/* ══════════════ LIST — секции по статусу ══════════════ */}
         {view === 'list' && (
-          <div>
-            {/* Табы статусов (десктоп) */}
-            <div className="hidden sm:flex items-center gap-1.5 mb-4 flex-wrap">
-              {([
-                { id: 'active',      label: 'Активные' },
-                { id: 'scheduled',   label: 'Запланировано' },
-                { id: 'in_progress', label: 'В работе' },
-                { id: 'completed',   label: 'Готово' },
-                { id: 'all',         label: 'Все' },
-              ] as const).map(tab => {
-                const count = tab.id === 'active'
-                  ? (kanbanAppts as any[]).filter(a => !['archived','cancelled'].includes(a.status)).length
-                  : tab.id === 'all'
-                    ? (kanbanAppts as any[]).length
-                    : tab.id === 'completed'
-                      ? (kanbanAppts as any[]).filter(a => ['completed','ready'].includes(a.status)).length
-                      : (kanbanAppts as any[]).filter(a => a.status === tab.id).length
+          kanbanLoading ? <Spinner /> : (
+            <div className="space-y-3">
+              {KANBAN_COLS.filter(col => showArchived || col.id !== 'archived').map(col => {
+                const appts   = kanbanByStatus[col.id] || []
+                const revenue = columnRevenue[col.id] || 0
+                const isOpen  = listOpenSections.has(col.id)
+
                 return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setListStatusFilter(tab.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all
-                      ${listStatusFilter === tab.id
-                        ? 'bg-primary text-white border-primary shadow-sm'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
-                  >
-                    {tab.label}
-                    <span className={`tabular-nums ${listStatusFilter === tab.id ? 'opacity-80' : 'text-gray-400'}`}>
-                      {count}
-                    </span>
-                  </button>
+                  <div key={col.id} className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+
+                    {/* Заголовок секции */}
+                    <button
+                      onClick={() => toggleListSection(col.id)}
+                      className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                          style={{ backgroundColor: col.color }}
+                        />
+                        <span className="font-bold text-gray-900">{col.label}</span>
+                        <span
+                          className="text-xs font-bold tabular-nums px-1.5 py-0.5 rounded-md"
+                          style={{ color: col.color, backgroundColor: col.bg }}
+                        >
+                          {appts.length}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {revenue > 0 && (
+                          <span className="text-sm font-bold tabular-nums" style={{ color: col.color }}>
+                            {fmtMoney(revenue)}
+                          </span>
+                        )}
+                        <ChevronDown
+                          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                        />
+                      </div>
+                    </button>
+
+                    {/* Карточки секции */}
+                    {isOpen && (
+                      <div className="border-t border-gray-100 p-3 sm:p-4">
+                        {appts.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                            <p className="text-sm font-medium">Нет записей</p>
+                            {col.id === 'scheduled' && (
+                              <button
+                                onClick={() => openNew()}
+                                className="mt-2 text-sm text-primary font-semibold hover:underline flex items-center gap-1"
+                              >
+                                <Plus className="w-3.5 h-3.5" /> Добавить запись
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                            {appts.map(appt => (
+                              <AppointmentCard
+                                key={appt.id}
+                                appt={appt}
+                                onStatusChange={handleStatusChange}
+                                showDate
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )
               })}
-            </div>
 
-            {kanbanLoading ? <Spinner /> : listData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-                <p className="text-sm font-medium mb-3">Нет записей</p>
-                <button
-                  onClick={() => openNew()}
-                  className="text-sm text-primary font-semibold hover:underline flex items-center gap-1"
-                >
-                  <Plus className="w-4 h-4" /> Создать запись
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                {listData.map(appt => (
-                  <ListRow key={appt.id} appt={appt} onStatusChange={handleStatusChange} />
-                ))}
-              </div>
-            )}
-          </div>
+              {/* Пусто совсем */}
+              {KANBAN_COLS.filter(col => showArchived || col.id !== 'archived')
+                .every(col => (kanbanByStatus[col.id] || []).length === 0) && (
+                <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                  <p className="text-sm font-medium mb-3">Нет записей</p>
+                  <button
+                    onClick={() => openNew()}
+                    className="text-sm text-primary font-semibold hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="w-4 h-4" /> Создать запись
+                  </button>
+                </div>
+              )}
+            </div>
+          )
         )}
       </div>
 
