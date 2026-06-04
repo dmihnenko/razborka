@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
@@ -34,6 +34,13 @@ const KANBAN_COLS = [
   { id: 'completed',   label: 'Готово',         color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
   { id: 'archived',    label: 'Архив',          color: '#6B7280', bg: '#F9FAFB', border: '#E5E7EB' },
 ]
+
+const MOBILE_KANBAN_LABELS: Record<string, string> = {
+  scheduled:   'План',
+  in_progress: 'Раб',
+  completed:   'Гот',
+  archived:    'Арх',
+}
 
 const WEEKDAYS   = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
@@ -108,11 +115,11 @@ function AppointmentCard({
   onStatusChange: (id: string, status: string) => void
   showDate?: boolean
 }) {
-  const navigate = useNavigate()
-  const cfg       = STATUS_CFG[appt.status] ?? STATUS_CFG.scheduled
-  const date      = parseLocal(appt.scheduled_date)
-  const time      = date ? fmtTime(date) : '—'
-  const cost      = totalCost(appt)
+  const navigate   = useNavigate()
+  const cfg        = STATUS_CFG[appt.status] ?? STATUS_CFG.scheduled
+  const date       = parseLocal(appt.scheduled_date)
+  const time       = date ? fmtTime(date) : '—'
+  const cost       = totalCost(appt)
   const worksCount = appt.work_items?.length || appt.appointment_services?.length || 0
   const firstWork  = appt.work_items?.[0]?.name || appt.appointment_services?.[0]?.description
   const mechanic   = appt.assigned_to_profile?.full_name
@@ -121,26 +128,24 @@ function AppointmentCard({
   const hasParts   = (appt.total_parts_cost || 0) > 0
 
   return (
-    <div
-      className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all overflow-hidden"
-      style={{ borderColor: cfg.border }}
-    >
-      <div className="h-1 flex-shrink-0" style={{ backgroundColor: cfg.color }} />
+    <div className="flex rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition-all">
+      {/* Левая цветная полоска */}
+      <div className="w-[3px] flex-shrink-0" style={{ backgroundColor: cfg.color }} />
 
-      <div className="p-3 sm:p-4">
-        {/* Time + status badge + payment dot */}
-        <div className="flex items-start justify-between gap-2 mb-2.5">
+      <div className="flex-1 p-3 min-w-0">
+        {/* Строка 1: время + статус + payment dot */}
+        <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
             <span className="text-sm font-bold text-gray-900 tabular-nums">{time}</span>
             {showDate && date && (
-              <span className="text-xs text-gray-400 ml-1">{fmtDate(date)}</span>
+              <span className="text-[11px] text-gray-400">{fmtDate(date)}</span>
             )}
           </div>
           <div className="flex items-center gap-1.5">
             <PaymentDot appt={appt} />
             <span
-              className="text-[11px] font-semibold px-2 py-0.5 rounded-full border"
+              className="text-[11px] font-semibold px-2 py-0.5 rounded-md border"
               style={{ color: cfg.color, backgroundColor: cfg.bg, borderColor: cfg.border }}
             >
               {cfg.label}
@@ -148,17 +153,17 @@ function AppointmentCard({
           </div>
         </div>
 
-        {/* Customer + phone */}
+        {/* Строка 2: клиент + телефон */}
         <div className="flex items-center gap-2 mb-1">
           <User className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-          <p className="text-sm font-semibold text-gray-900 leading-tight line-clamp-1 flex-1">
+          <p className="text-sm font-semibold text-gray-900 line-clamp-1 flex-1">
             {appt.customers?.name || 'Клиент не указан'}
           </p>
           {phone && (
             <a
               href={`tel:${phone}`}
               onClick={e => e.stopPropagation()}
-              className="flex-shrink-0 text-primary hover:text-primary/70 transition-colors"
+              className="flex-shrink-0 text-blue-600 hover:text-blue-500 transition-colors"
               title={phone}
             >
               <Phone className="w-3.5 h-3.5" />
@@ -166,7 +171,7 @@ function AppointmentCard({
           )}
         </div>
 
-        {/* Vehicle */}
+        {/* Строка 3: авто + гос. номер */}
         {appt.vehicles && (
           <div className="flex items-center gap-2 mb-1">
             <Car className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -181,9 +186,9 @@ function AppointmentCard({
           </div>
         )}
 
-        {/* Services */}
+        {/* Строка 4: работы */}
         {firstWork && (
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-2">
             <Wrench className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
             <p className="text-xs text-gray-500 line-clamp-1 flex-1">
               {firstWork}{worksCount > 1 ? ` +${worksCount - 1}` : ''}
@@ -191,8 +196,8 @@ function AppointmentCard({
           </div>
         )}
 
-        {/* Cost + mechanic */}
-        <div className="flex items-center justify-between gap-2 mt-2">
+        {/* Строка 5: стоимость + механик */}
+        <div className="flex items-center justify-between gap-2">
           {cost > 0 ? (
             <span className="text-sm font-bold text-gray-900 tabular-nums">{fmtMoney(cost)}</span>
           ) : (
@@ -200,41 +205,47 @@ function AppointmentCard({
           )}
           {mechanic && (
             <span className="text-[10px] text-gray-400 truncate max-w-[90px]" title={mechanic}>
-              👷 {mechanic.split(' ')[0]}
+              {mechanic.split(' ')[0]}
             </span>
           )}
         </div>
 
-        {/* Payment pills */}
+        {/* Строка 6: оплата badges */}
         {(hasWork || hasParts) && (
           <div className="flex gap-1.5 mt-1.5">
             {hasWork && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${appt.work_paid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium
+                ${appt.work_paid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
                 Работы {appt.work_paid ? '✓' : '—'}
               </span>
             )}
             {hasParts && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${appt.parts_paid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium
+                ${appt.parts_paid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
                 Запчасти {appt.parts_paid ? '✓' : '—'}
               </span>
             )}
           </div>
         )}
 
-        {/* Actions */}
+        {/* Строка 7: action buttons */}
         <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-gray-100">
           {cfg.next && (
             <button
               onClick={e => { e.stopPropagation(); onStatusChange(appt.id, cfg.next!) }}
               className="flex-1 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all hover:opacity-90 active:scale-95"
-              style={{ color: STATUS_CFG[cfg.next!].color, borderColor: STATUS_CFG[cfg.next!].border, backgroundColor: STATUS_CFG[cfg.next!].bg }}
+              style={{
+                color: STATUS_CFG[cfg.next!].color,
+                borderColor: STATUS_CFG[cfg.next!].border,
+                backgroundColor: STATUS_CFG[cfg.next!].bg,
+              }}
             >
               {cfg.nextLabel}
             </button>
           )}
           <button
             onClick={() => navigate(`/sto/appointments/${appt.id}`)}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-gray-500 hover:text-primary border border-gray-200 hover:border-primary/30 rounded-lg transition-all"
+            className="p-2 text-gray-400 hover:text-blue-600 border border-gray-200 hover:border-blue-200 rounded-lg transition-all"
           >
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
@@ -264,13 +275,13 @@ function ListRow({ appt, onStatusChange }: { appt: any; onStatusChange: (id: str
       onClick={() => navigate(`/sto/appointments/${appt.id}`)}
     >
       <div className="flex items-stretch">
-        {/* Status color bar */}
-        <div className="w-1 rounded-l-xl flex-shrink-0" style={{ backgroundColor: cfg.color }} />
+        {/* Цветная левая полоска */}
+        <div className="w-[3px] rounded-l-xl flex-shrink-0" style={{ backgroundColor: cfg.color }} />
 
         <div className="flex-1 px-3 py-3 min-w-0">
           <div className="flex items-center gap-3">
 
-            {/* Date / time */}
+            {/* Дата / время */}
             <div className="flex-shrink-0 w-[4.5rem] text-center">
               {date ? (
                 <>
@@ -282,7 +293,7 @@ function ListRow({ appt, onStatusChange }: { appt: any; onStatusChange: (id: str
               )}
             </div>
 
-            {/* Client + vehicle */}
+            {/* Клиент + авто */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
                 <p className="text-sm font-semibold text-gray-900 truncate leading-tight">
@@ -292,7 +303,7 @@ function ListRow({ appt, onStatusChange }: { appt: any; onStatusChange: (id: str
                   <a
                     href={`tel:${phone}`}
                     onClick={e => e.stopPropagation()}
-                    className="text-primary hover:text-primary/70 flex-shrink-0"
+                    className="text-blue-600 hover:text-blue-500 flex-shrink-0"
                     title={phone}
                   >
                     <Phone className="w-3.5 h-3.5" />
@@ -311,7 +322,7 @@ function ListRow({ appt, onStatusChange }: { appt: any; onStatusChange: (id: str
               )}
             </div>
 
-            {/* Works + mechanic */}
+            {/* Работы + механик */}
             <div className="hidden md:block flex-1 min-w-0">
               {firstWork ? (
                 <p className="text-xs text-gray-600 line-clamp-2 leading-tight">
@@ -321,31 +332,31 @@ function ListRow({ appt, onStatusChange }: { appt: any; onStatusChange: (id: str
                 <p className="text-xs text-gray-300">Работы не указаны</p>
               )}
               {mechanic && (
-                <p className="text-[10px] text-gray-400 mt-0.5">👷 {mechanic}</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">{mechanic}</p>
               )}
             </div>
 
-            {/* Cost + payment */}
+            {/* Стоимость + оплата */}
             <div className="hidden sm:flex flex-col items-end flex-shrink-0 w-24 gap-0.5">
               {cost > 0 && (
                 <p className="text-sm font-bold text-gray-900 tabular-nums">{fmtMoney(cost)}</p>
               )}
               {hasWork && (
-                <span className={`text-[9px] px-1 py-0.5 rounded font-medium ${appt.work_paid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-500'}`}>
+                <span className={`text-[9px] px-1 py-0.5 rounded-md font-medium ${appt.work_paid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-500'}`}>
                   Работы {appt.work_paid ? '✓' : '—'}
                 </span>
               )}
               {hasParts && (
-                <span className={`text-[9px] px-1 py-0.5 rounded font-medium ${appt.parts_paid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-500'}`}>
+                <span className={`text-[9px] px-1 py-0.5 rounded-md font-medium ${appt.parts_paid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-500'}`}>
                   Запчасти {appt.parts_paid ? '✓' : '—'}
                 </span>
               )}
             </div>
 
-            {/* Status + action */}
+            {/* Статус + кнопки */}
             <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
               <span
-                className="text-[11px] font-semibold px-2 py-0.5 rounded-full border whitespace-nowrap"
+                className="text-[11px] font-semibold px-2 py-0.5 rounded-md border whitespace-nowrap"
                 style={{ color: cfg.color, backgroundColor: cfg.bg, borderColor: cfg.border }}
               >
                 {cfg.label}
@@ -362,15 +373,103 @@ function ListRow({ appt, onStatusChange }: { appt: any; onStatusChange: (id: str
                 )}
                 <button
                   onClick={e => { e.stopPropagation(); navigate(`/sto/appointments/${appt.id}`) }}
-                  className="p-1.5 text-gray-400 hover:text-primary border border-gray-200 hover:border-primary/30 rounded-lg transition-all"
+                  className="p-1.5 text-gray-400 hover:text-blue-600 border border-gray-200 hover:border-blue-200 rounded-lg transition-all"
                 >
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
           </div>
+
+          {/* Мобильная строка оплаты */}
+          {(hasWork || hasParts) && (
+            <div className="sm:hidden flex items-center gap-1.5 mt-1.5 pl-[calc(3px+1rem)]">
+              {cost > 0 && (
+                <span className="text-xs font-bold text-gray-900 tabular-nums">{fmtMoney(cost)}</span>
+              )}
+              {hasWork && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium
+                  ${appt.work_paid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-500'}`}>
+                  Р {appt.work_paid ? '✓' : '—'}
+                </span>
+              )}
+              {hasParts && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium
+                  ${appt.parts_paid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-500'}`}>
+                  З {appt.parts_paid ? '✓' : '—'}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── KanbanColumn ─────────────────────────────────────────────────────────────
+
+function KanbanColumn({
+  col, colAppts, colRev, onStatusChange, onNew,
+}: {
+  col: typeof KANBAN_COLS[number]
+  colAppts: any[]
+  colRev: number
+  onStatusChange: (id: string, status: string) => void
+  onNew: () => void
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      {/* Column header */}
+      <div
+        className="flex items-center justify-between px-3 py-2.5 rounded-lg border"
+        style={{ backgroundColor: col.bg, borderColor: col.border }}
+      >
+        <div className="flex items-center gap-2">
+          <span
+            className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+            style={{ backgroundColor: col.color }}
+          />
+          <span className="text-sm font-bold text-gray-800">{col.label}</span>
+          <span
+            className="text-xs font-bold tabular-nums px-1.5 py-0.5 rounded-md bg-white"
+            style={{ color: col.color }}
+          >
+            {colAppts.length}
+          </span>
+        </div>
+        {colRev > 0 && (
+          <span className="text-xs font-bold tabular-nums" style={{ color: col.color }}>
+            {fmtMoney(colRev)}
+          </span>
+        )}
+      </div>
+
+      {/* Cards */}
+      {colAppts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8 rounded-xl border-2 border-dashed border-gray-200 text-gray-400">
+          <p className="text-xs font-medium">Нет записей</p>
+          {col.id === 'scheduled' && (
+            <button
+              onClick={onNew}
+              className="mt-2 text-xs text-primary font-semibold hover:underline flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" /> Добавить
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {colAppts.map(appt => (
+            <AppointmentCard
+              key={appt.id}
+              appt={appt}
+              onStatusChange={onStatusChange}
+              showDate
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -378,8 +477,8 @@ function ListRow({ appt, onStatusChange }: { appt: any; onStatusChange: (id: str
 // ─── main board ──────────────────────────────────────────────────────────────
 
 export default function AppointmentsBoard() {
-  const navigate     = useNavigate()
-  const queryClient  = useQueryClient()
+  const navigate    = useNavigate()
+  const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
   const { canCreate, usage, limits, hasSubscription, plan } = useSubscriptionLimits()
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
@@ -389,17 +488,28 @@ export default function AppointmentsBoard() {
     const v = searchParams.get('view')
     return (v === 'day' || v === 'week' || v === 'list' || v === 'kanban') ? v : 'kanban'
   })
-  const [selectedDate, setSelectedDate]     = useState(() => { const d = new Date(); d.setHours(0,0,0,0); return d })
-  const [weekStart, setWeekStart]           = useState(() => getWeekStart(new Date()))
-  const [search, setSearch]                 = useState('')
-  const [showArchived, setShowArchived]     = useState(false)
-  const [mechanicFilter, setMechanicFilter] = useState('all')
+  const [selectedDate, setSelectedDate]         = useState(() => { const d = new Date(); d.setHours(0,0,0,0); return d })
+  const [weekStart, setWeekStart]               = useState(() => getWeekStart(new Date()))
+  const [search, setSearch]                     = useState('')
+  const [showArchived, setShowArchived]         = useState(false)
+  const [mechanicFilter, setMechanicFilter]     = useState('all')
   const [listStatusFilter, setListStatusFilter] = useState('active')
-  const [isNewModalOpen, setIsNewModalOpen] = useState(false)
-  const [newModalDate, setNewModalDate]     = useState<string | undefined>()
+  const [isNewModalOpen, setIsNewModalOpen]     = useState(false)
+  const [newModalDate, setNewModalDate]         = useState<string | undefined>()
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [mobileKanbanCol, setMobileKanbanCol]   = useState<string>('scheduled')
+  const [weekMobileOffset, setWeekMobileOffset] = useState<0 | 3>(0)
+
+  const currentHourRef = useRef<HTMLDivElement>(null)
 
   const stoId = profile?.sto_company_id
+
+  // ── Прокрутка к текущему часу в day-вид ─────────────────────────────────
+  useEffect(() => {
+    if (view === 'day') {
+      currentHourRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [view, selectedDate])
 
   // ── Kanban / List query ────────────────────────────────────────────────────
   const { data: kanbanAppts = [], isLoading: kanbanLoading } = useQuery({
@@ -507,7 +617,7 @@ export default function AppointmentsBoard() {
     setIsNewModalOpen(true)
   }
 
-  // ── Unique mechanics derived from data ───────────────────────────────────
+  // ── Уникальные механики из данных ────────────────────────────────────────
   const mechanics = useMemo(() => {
     const names = new Set<string>()
     ;(kanbanAppts as any[]).forEach(a => {
@@ -516,7 +626,7 @@ export default function AppointmentsBoard() {
     return Array.from(names).sort()
   }, [kanbanAppts])
 
-  // ── Filter helper ─────────────────────────────────────────────────────────
+  // ── Фильтр ────────────────────────────────────────────────────────────────
   const applyFilters = (list: any[]) => {
     let r = list
     if (search.trim()) {
@@ -615,6 +725,12 @@ export default function AppointmentsBoard() {
 
   const currentHour = new Date().getHours()
 
+  // Видимые колонки kanban (с учётом архива)
+  const visibleKanbanCols = KANBAN_COLS.filter(col => showArchived || col.id !== 'archived')
+
+  // Активная мобильная kanban-колонка
+  const activeMobileKanbanCol = visibleKanbanCols.find(c => c.id === mobileKanbanCol) ?? visibleKanbanCols[0]
+
   // ─── render ───────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-50">
@@ -624,27 +740,30 @@ export default function AppointmentsBoard() {
         <div className="max-w-7xl mx-auto px-3 sm:px-5">
           <div className="h-14 flex items-center gap-2 sm:gap-3">
 
-            {/* Title */}
+            {/* Заголовок */}
             <h1 className="font-bold text-gray-900 text-base sm:text-lg flex-shrink-0">Записи</h1>
 
-            {/* View switcher */}
-            <div className="flex items-center bg-gray-100 rounded-xl p-0.5 gap-0.5 flex-shrink-0">
+            {/* Переключатель вида */}
+            <div className="flex items-center bg-gray-100 rounded-lg p-0.5 gap-0.5 flex-shrink-0">
               {([
-                { id: 'kanban', icon: LayoutGrid,   label: 'Доска'   },
-                { id: 'day',    icon: CalendarDays,  label: 'День'    },
-                { id: 'week',   icon: Calendar,      label: 'Неделя'  },
-                { id: 'list',   icon: List,          label: 'Список'  },
+                { id: 'kanban', icon: LayoutGrid,  label: 'Доска'   },
+                { id: 'day',    icon: CalendarDays, label: 'День'    },
+                { id: 'week',   icon: Calendar,     label: 'Неделя'  },
+                { id: 'list',   icon: List,         label: 'Список'  },
               ] as const).map(({ id, icon: Icon, label }) => (
-                <button key={id} onClick={() => setView(id)}
-                  className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold transition-all
-                    ${view === id ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                <button
+                  key={id}
+                  onClick={() => setView(id)}
+                  className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all
+                    ${view === id ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                >
                   <Icon className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">{label}</span>
                 </button>
               ))}
             </div>
 
-            {/* Search */}
+            {/* Поиск (десктоп) */}
             <div className="relative flex-1 max-w-xs hidden sm:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -652,22 +771,24 @@ export default function AppointmentsBoard() {
                 placeholder="Клиент, авто, номер..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-7 py-1.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+                className="w-full pl-9 pr-7 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
               />
               {search && (
-                <button onClick={() => setSearch('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            {/* Mechanic filter (owner only, when there are mechanics) */}
+            {/* Фильтр механика (только владелец) */}
             {isStoOwner && mechanics.length > 0 && (
               <select
                 value={mechanicFilter}
                 onChange={e => setMechanicFilter(e.target.value)}
-                className="hidden sm:block text-xs border border-gray-200 rounded-xl px-2.5 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 flex-shrink-0 max-w-[140px]"
+                className="hidden sm:block text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 flex-shrink-0 max-w-[140px]"
               >
                 <option value="all">Все механики</option>
                 {mechanics.map(m => (
@@ -676,11 +797,11 @@ export default function AppointmentsBoard() {
               </select>
             )}
 
-            {/* Archive toggle */}
+            {/* Архив */}
             {(view === 'kanban' || view === 'list') && (
               <button
                 onClick={() => setShowArchived(v => !v)}
-                className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all flex-shrink-0
+                className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all flex-shrink-0
                   ${showArchived ? 'bg-gray-100 border-gray-300 text-gray-700' : 'border-gray-200 text-gray-400 hover:text-gray-600'}`}
               >
                 <Archive className="w-3.5 h-3.5" />
@@ -688,16 +809,16 @@ export default function AppointmentsBoard() {
               </button>
             )}
 
-            {/* Quick stats */}
+            {/* Быстрая статистика */}
             <div className="hidden xl:flex items-center gap-1.5 text-xs flex-shrink-0">
-              <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded-lg font-semibold tabular-nums" title="Записей сегодня">
+              <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded-md font-semibold tabular-nums" title="Записей сегодня">
                 📅 {stats.todayCount}
               </span>
-              <span className="bg-orange-50 text-orange-700 px-2 py-1 rounded-lg font-semibold tabular-nums" title="В работе">
+              <span className="bg-orange-50 text-orange-700 px-2 py-1 rounded-md font-semibold tabular-nums" title="В работе">
                 🔧 {stats.inProgress}
               </span>
               {stats.totalRevenue > 0 && (
-                <span className="bg-green-50 text-green-700 px-2 py-1 rounded-lg font-semibold tabular-nums" title="Выручка (в работе + готово)">
+                <span className="bg-green-50 text-green-700 px-2 py-1 rounded-md font-semibold tabular-nums" title="Выручка (в работе + готово)">
                   {fmtMoney(stats.totalRevenue)}
                 </span>
               )}
@@ -705,17 +826,17 @@ export default function AppointmentsBoard() {
 
             <div className="flex-1" />
 
-            {/* New appointment */}
+            {/* Кнопка новой записи */}
             <button
               onClick={() => openNew()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors flex-shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 transition-colors flex-shrink-0"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Запись</span>
             </button>
           </div>
 
-          {/* Mobile search */}
+          {/* Мобильный поиск */}
           <div className="sm:hidden pb-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -724,7 +845,7 @@ export default function AppointmentsBoard() {
                 placeholder="Клиент, авто, номер..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-7 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none bg-gray-50"
+                className="w-full pl-9 pr-7 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none bg-gray-50"
               />
               {search && (
                 <button onClick={() => setSearch('')}
@@ -734,6 +855,30 @@ export default function AppointmentsBoard() {
               )}
             </div>
           </div>
+
+          {/* Мобильные табы фильтра списка */}
+          {view === 'list' && (
+            <div className="sm:hidden overflow-x-auto flex gap-1.5 pb-1 -mx-3 px-3">
+              {([
+                { id: 'active',      label: 'Активные' },
+                { id: 'scheduled',   label: 'Запланировано' },
+                { id: 'in_progress', label: 'В работе' },
+                { id: 'completed',   label: 'Готово' },
+                { id: 'all',         label: 'Все' },
+              ] as const).map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setListStatusFilter(tab.id)}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all
+                    ${listStatusFilter === tab.id
+                      ? 'bg-primary text-white border-primary shadow-sm'
+                      : 'bg-white text-gray-600 border-gray-200'}`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -742,67 +887,66 @@ export default function AppointmentsBoard() {
         {/* ══════════════ KANBAN ══════════════ */}
         {view === 'kanban' && (
           kanbanLoading ? <Spinner /> : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
-              {KANBAN_COLS.filter(col => showArchived || col.id !== 'archived').map(col => {
-                const colAppts  = kanbanByStatus[col.id] || []
-                const colRev    = columnRevenue[col.id]  || 0
-                return (
-                  <div key={col.id} className="flex flex-col gap-2">
-                    {/* Column header */}
-                    <div
-                      className="flex items-center justify-between px-3 py-2.5 rounded-xl border"
-                      style={{ backgroundColor: col.bg, borderColor: col.border }}
+            <>
+              {/* Мобильные табы kanban-колонок */}
+              <div className="flex sm:hidden gap-1 mb-3 bg-gray-100 p-0.5 rounded-lg">
+                {visibleKanbanCols.map(col => {
+                  const count = kanbanByStatus[col.id]?.length || 0
+                  return (
+                    <button
+                      key={col.id}
+                      onClick={() => setMobileKanbanCol(col.id)}
+                      className={`flex-1 py-1.5 text-[11px] font-semibold rounded-md transition-all
+                        ${mobileKanbanCol === col.id
+                          ? 'bg-white shadow-sm text-gray-900'
+                          : 'text-gray-500'}`}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: col.color }} />
-                        <span className="text-sm font-bold text-gray-800">{col.label}</span>
-                        <span
-                          className="text-xs font-bold tabular-nums px-1.5 py-0.5 rounded-full bg-white"
-                          style={{ color: col.color }}
-                        >
-                          {colAppts.length}
-                        </span>
-                      </div>
-                      {colRev > 0 && (
-                        <span className="text-xs font-bold tabular-nums" style={{ color: col.color }}>
-                          {fmtMoney(colRev)}
-                        </span>
-                      )}
-                    </div>
+                      {MOBILE_KANBAN_LABELS[col.id] || col.label.slice(0, 3)}
+                      {count > 0 ? ` ${count}` : ''}
+                    </button>
+                  )
+                })}
+              </div>
 
-                    {/* Cards */}
-                    {colAppts.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-8 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400">
-                        <p className="text-xs font-medium">Нет записей</p>
-                        {col.id === 'scheduled' && (
-                          <button onClick={() => openNew()}
-                            className="mt-2 text-xs text-primary font-semibold hover:underline flex items-center gap-1">
-                            <Plus className="w-3 h-3" /> Добавить
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-2">
-                        {colAppts.map(appt => (
-                          <AppointmentCard key={appt.id} appt={appt}
-                            onStatusChange={handleStatusChange} showDate />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+              {/* Мобиль: только активная колонка */}
+              <div className="sm:hidden">
+                {activeMobileKanbanCol && (
+                  <KanbanColumn
+                    col={activeMobileKanbanCol}
+                    colAppts={kanbanByStatus[activeMobileKanbanCol.id] || []}
+                    colRev={columnRevenue[activeMobileKanbanCol.id] || 0}
+                    onStatusChange={handleStatusChange}
+                    onNew={() => openNew()}
+                  />
+                )}
+              </div>
+
+              {/* Десктоп: все колонки */}
+              <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+                {visibleKanbanCols.map(col => (
+                  <KanbanColumn
+                    key={col.id}
+                    col={col}
+                    colAppts={kanbanByStatus[col.id] || []}
+                    colRev={columnRevenue[col.id] || 0}
+                    onStatusChange={handleStatusChange}
+                    onNew={() => openNew()}
+                  />
+                ))}
+              </div>
+            </>
           )
         )}
 
         {/* ══════════════ DAY ══════════════ */}
         {view === 'day' && (
           <div className="max-w-2xl mx-auto">
-            {/* Nav */}
-            <div className="flex items-center justify-between mb-4 bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3">
-              <button onClick={() => setSelectedDate(d => addDays(d, -1))}
-                className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors">
+            {/* Навигация */}
+            <div className="flex items-center justify-between mb-4 bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+              <button
+                onClick={() => setSelectedDate(d => addDays(d, -1))}
+                className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+              >
                 <ChevronLeft className="w-5 h-5 text-gray-600" />
               </button>
               <div className="text-center">
@@ -813,13 +957,19 @@ export default function AppointmentsBoard() {
                 <p className="text-xs text-gray-400 mt-0.5">
                   {WEEKDAYS[(selectedDate.getDay() + 6) % 7]}
                   {!isToday && (
-                    <button onClick={() => setSelectedDate(new Date())}
-                      className="ml-2 text-primary font-semibold hover:underline">Сегодня</button>
+                    <button
+                      onClick={() => setSelectedDate(new Date())}
+                      className="ml-2 text-primary font-semibold hover:underline"
+                    >
+                      Сегодня
+                    </button>
                   )}
                 </p>
               </div>
-              <button onClick={() => setSelectedDate(d => addDays(d, 1))}
-                className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors">
+              <button
+                onClick={() => setSelectedDate(d => addDays(d, 1))}
+                className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+              >
                 <ChevronRight className="w-5 h-5 text-gray-600" />
               </button>
             </div>
@@ -830,7 +980,11 @@ export default function AppointmentsBoard() {
                   const appts = dayByHour[hour] || []
                   const isCurrentHour = isToday && currentHour === hour
                   return (
-                    <div key={hour} className="flex gap-3">
+                    <div
+                      key={hour}
+                      ref={isCurrentHour ? currentHourRef : undefined}
+                      className="flex gap-3 scroll-mt-16"
+                    >
                       <div className="w-12 flex-shrink-0 pt-2 text-right">
                         <span className={`text-xs font-semibold ${isCurrentHour ? 'text-primary' : 'text-gray-400'}`}>
                           {String(hour).padStart(2,'0')}:00
@@ -841,8 +995,11 @@ export default function AppointmentsBoard() {
                         {appts.length > 0 ? (
                           <div className="space-y-2 pb-2">
                             {appts.map(appt => (
-                              <AppointmentCard key={appt.id} appt={appt}
-                                onStatusChange={handleStatusChange} />
+                              <AppointmentCard
+                                key={appt.id}
+                                appt={appt}
+                                onStatusChange={handleStatusChange}
+                              />
                             ))}
                           </div>
                         ) : (
@@ -852,7 +1009,7 @@ export default function AppointmentsBoard() {
                               d.setHours(hour, 0, 0, 0)
                               openNew(isoDate(d) + `T${String(hour).padStart(2,'0')}:00`)
                             }}
-                            className="w-full h-10 flex items-center justify-center text-gray-300 hover:text-primary hover:bg-primary/5 rounded-xl border border-dashed border-transparent hover:border-primary/20 transition-all group text-xs"
+                            className="w-full h-10 flex items-center justify-center text-gray-300 hover:text-primary hover:bg-primary/5 rounded-lg border border-dashed border-transparent hover:border-primary/20 transition-all group text-xs"
                           >
                             <Plus className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity mr-1" />
                             <span className="opacity-0 group-hover:opacity-100 transition-opacity">Добавить запись</span>
@@ -870,9 +1027,12 @@ export default function AppointmentsBoard() {
         {/* ══════════════ WEEK ══════════════ */}
         {view === 'week' && (
           <div>
-            <div className="flex items-center justify-between mb-4 bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3">
-              <button onClick={() => setWeekStart(d => addDays(d, -7))}
-                className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors">
+            {/* Навигация */}
+            <div className="flex items-center justify-between mb-4 bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+              <button
+                onClick={() => setWeekStart(d => addDays(d, -7))}
+                className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+              >
                 <ChevronLeft className="w-5 h-5 text-gray-600" />
               </button>
               <div className="text-center">
@@ -880,82 +1040,77 @@ export default function AppointmentsBoard() {
                   {weekStart.getDate()} {MONTHS_GEN[weekStart.getMonth()]} — {weekEnd.getDate()} {MONTHS_GEN[weekEnd.getMonth()]}
                 </p>
                 {!weekDays.some(d => d.isToday) && (
-                  <button onClick={() => setWeekStart(getWeekStart(new Date()))}
-                    className="text-xs text-primary font-semibold hover:underline mt-0.5">
+                  <button
+                    onClick={() => setWeekStart(getWeekStart(new Date()))}
+                    className="text-xs text-primary font-semibold hover:underline mt-0.5"
+                  >
                     Текущая неделя
                   </button>
                 )}
               </div>
-              <button onClick={() => setWeekStart(d => addDays(d, 7))}
-                className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors">
+              <button
+                onClick={() => setWeekStart(d => addDays(d, 7))}
+                className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+              >
                 <ChevronRight className="w-5 h-5 text-gray-600" />
               </button>
             </div>
 
             {weekLoading ? <Spinner /> : (
-              <div className="grid grid-cols-7 gap-2">
-                {weekDays.map(({ date, appts, isToday: isDayToday }, idx) => {
-                  const isWeekend = idx >= 5
-                  return (
-                    <div key={idx}
-                      className={`rounded-2xl overflow-hidden border bg-white shadow-sm
-                        ${isDayToday ? 'border-primary ring-2 ring-primary/20' : 'border-gray-100'}`}>
-                      <button
-                        onClick={() => { setSelectedDate(date); setView('day') }}
-                        className={`w-full px-2 py-2.5 text-center border-b border-gray-100 hover:bg-gray-50 transition-colors ${isDayToday ? 'bg-primary/5' : ''}`}>
-                        <p className={`text-[11px] font-semibold ${isWeekend ? 'text-red-400' : 'text-gray-500'}`}>
-                          {WEEKDAYS[idx]}
-                        </p>
-                        <p className={`text-lg font-bold leading-tight
-                          ${isDayToday ? 'text-primary' : isWeekend ? 'text-red-400' : 'text-gray-900'}`}>
-                          {date.getDate()}
-                        </p>
-                        {appts.length > 0 && (
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full
-                            ${isDayToday ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'}`}>
-                            {appts.length}
-                          </span>
-                        )}
-                      </button>
-                      <div className="p-1.5 space-y-1 min-h-[80px]">
-                        {appts.length === 0 ? (
-                          <button
-                            onClick={() => { setSelectedDate(date); openNew(isoDate(date) + 'T09:00') }}
-                            className="w-full h-8 flex items-center justify-center text-gray-200 hover:text-primary hover:bg-primary/5 rounded-lg transition-all group">
-                            <Plus className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </button>
-                        ) : (
-                          <>
-                            {appts.slice(0, 4).map(appt => {
-                              const cfg = STATUS_CFG[appt.status] ?? STATUS_CFG.scheduled
-                              const d   = parseLocal(appt.scheduled_date)
-                              return (
-                                <button key={appt.id}
-                                  onClick={() => navigate(`/sto/appointments/${appt.id}`)}
-                                  className="w-full text-left px-1.5 py-1 rounded-lg hover:opacity-80 transition-opacity"
-                                  style={{ backgroundColor: cfg.bg, borderLeft: `3px solid ${cfg.color}` }}>
-                                  <p className="text-[10px] font-bold tabular-nums" style={{ color: cfg.color }}>
-                                    {d ? fmtTime(d) : '—'}
-                                  </p>
-                                  <p className="text-[10px] text-gray-700 truncate leading-tight">
-                                    {appt.customers?.name?.split(' ')[0] || '—'}
-                                  </p>
-                                </button>
-                              )
-                            })}
-                            {appts.length > 4 && (
-                              <button onClick={() => { setSelectedDate(date); setView('day') }}
-                                className="w-full text-[10px] text-primary font-semibold text-center py-0.5 hover:underline">
-                                +{appts.length - 4} ещё
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+              <>
+                {/* Десктоп: все 7 дней */}
+                <div className="hidden sm:grid sm:grid-cols-7 gap-2">
+                  {weekDays.map(({ date, appts, isToday: isDayToday }, idx) => (
+                    <WeekDayCell
+                      key={idx}
+                      date={date}
+                      appts={appts}
+                      isDayToday={isDayToday}
+                      idx={idx}
+                      onDayClick={() => { setSelectedDate(date); setView('day') }}
+                      onNewAppt={() => { setSelectedDate(date); openNew(isoDate(date) + 'T09:00') }}
+                      navigate={navigate}
+                    />
+                  ))}
+                </div>
+
+                {/* Мобиль: переключатель Пн–Ср / Чт–Вс + 4 дня */}
+                <div className="sm:hidden">
+                  <div className="flex items-center gap-2 mb-3">
+                    <button
+                      onClick={() => setWeekMobileOffset(0)}
+                      className={`flex-1 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all
+                        ${weekMobileOffset === 0 ? 'bg-primary text-white border-primary' : 'border-gray-200 text-gray-600 bg-white'}`}
+                    >
+                      Пн–Ср
+                    </button>
+                    <button
+                      onClick={() => setWeekMobileOffset(3)}
+                      className={`flex-1 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all
+                        ${weekMobileOffset === 3 ? 'bg-primary text-white border-primary' : 'border-gray-200 text-gray-600 bg-white'}`}
+                    >
+                      Чт–Вс
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {weekDays.slice(weekMobileOffset, weekMobileOffset + 4).map(({ date, appts, isToday: isDayToday }, i) => {
+                      const idx = weekMobileOffset + i
+                      return (
+                        <WeekDayCell
+                          key={idx}
+                          date={date}
+                          appts={appts}
+                          isDayToday={isDayToday}
+                          idx={idx}
+                          onDayClick={() => { setSelectedDate(date); setView('day') }}
+                          onNewAppt={() => { setSelectedDate(date); openNew(isoDate(date) + 'T09:00') }}
+                          navigate={navigate}
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+              </>
             )}
           </div>
         )}
@@ -963,8 +1118,8 @@ export default function AppointmentsBoard() {
         {/* ══════════════ LIST ══════════════ */}
         {view === 'list' && (
           <div>
-            {/* Status tabs */}
-            <div className="flex items-center gap-1.5 mb-4 flex-wrap">
+            {/* Табы статусов (десктоп) */}
+            <div className="hidden sm:flex items-center gap-1.5 mb-4 flex-wrap">
               {([
                 { id: 'active',      label: 'Активные' },
                 { id: 'scheduled',   label: 'Запланировано' },
@@ -983,7 +1138,7 @@ export default function AppointmentsBoard() {
                   <button
                     key={tab.id}
                     onClick={() => setListStatusFilter(tab.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all
                       ${listStatusFilter === tab.id
                         ? 'bg-primary text-white border-primary shadow-sm'
                         : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
@@ -1000,8 +1155,10 @@ export default function AppointmentsBoard() {
             {kanbanLoading ? <Spinner /> : listData.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                 <p className="text-sm font-medium mb-3">Нет записей</p>
-                <button onClick={() => openNew()}
-                  className="text-sm text-primary font-semibold hover:underline flex items-center gap-1">
+                <button
+                  onClick={() => openNew()}
+                  className="text-sm text-primary font-semibold hover:underline flex items-center gap-1"
+                >
                   <Plus className="w-4 h-4" /> Создать запись
                 </button>
               </div>
@@ -1039,6 +1196,90 @@ export default function AppointmentsBoard() {
     </div>
   )
 }
+
+// ─── WeekDayCell ─────────────────────────────────────────────────────────────
+
+function WeekDayCell({
+  date, appts, isDayToday, idx, onDayClick, onNewAppt, navigate,
+}: {
+  date: Date
+  appts: any[]
+  isDayToday: boolean
+  idx: number
+  onDayClick: () => void
+  onNewAppt: () => void
+  navigate: (path: string) => void
+}) {
+  const isWeekend = idx >= 5
+  return (
+    <div
+      className={`rounded-xl overflow-hidden border bg-white shadow-sm
+        ${isDayToday ? 'border-primary ring-2 ring-primary/20' : 'border-gray-100'}`}
+    >
+      <button
+        onClick={onDayClick}
+        className={`w-full px-2 py-2.5 text-center border-b border-gray-100 hover:bg-gray-50 transition-colors rounded-t-xl
+          ${isDayToday ? 'bg-primary/5' : ''}`}
+      >
+        <p className={`text-[11px] font-semibold ${isWeekend ? 'text-red-400' : 'text-gray-500'}`}>
+          {WEEKDAYS[idx]}
+        </p>
+        <p className={`text-lg font-bold leading-tight
+          ${isDayToday ? 'text-primary' : isWeekend ? 'text-red-400' : 'text-gray-900'}`}>
+          {date.getDate()}
+        </p>
+        {appts.length > 0 && (
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md
+            ${isDayToday ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'}`}>
+            {appts.length}
+          </span>
+        )}
+      </button>
+      <div className="p-1.5 space-y-1 min-h-[80px]">
+        {appts.length === 0 ? (
+          <button
+            onClick={onNewAppt}
+            className="w-full h-8 flex items-center justify-center text-gray-200 hover:text-primary hover:bg-primary/5 rounded-lg transition-all group"
+          >
+            <Plus className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+        ) : (
+          <>
+            {appts.slice(0, 4).map(appt => {
+              const cfg = STATUS_CFG[appt.status] ?? STATUS_CFG.scheduled
+              const d   = parseLocal(appt.scheduled_date)
+              return (
+                <button
+                  key={appt.id}
+                  onClick={() => navigate(`/sto/appointments/${appt.id}`)}
+                  className="w-full text-left px-1.5 py-1 rounded-lg hover:opacity-80 transition-opacity"
+                  style={{ backgroundColor: cfg.bg, borderLeft: `3px solid ${cfg.color}` }}
+                >
+                  <p className="text-[10px] font-bold tabular-nums" style={{ color: cfg.color }}>
+                    {d ? fmtTime(d) : '—'}
+                  </p>
+                  <p className="text-[10px] text-gray-700 truncate leading-tight">
+                    {appt.customers?.name?.split(' ')[0] || '—'}
+                  </p>
+                </button>
+              )
+            })}
+            {appts.length > 4 && (
+              <button
+                onClick={onDayClick}
+                className="w-full text-[10px] text-primary font-semibold text-center py-0.5 hover:underline"
+              >
+                +{appts.length - 4} ещё
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Spinner ──────────────────────────────────────────────────────────────────
 
 function Spinner() {
   return (
