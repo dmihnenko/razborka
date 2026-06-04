@@ -1,62 +1,85 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Clock, Check } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 interface Props {
-  value: string // ISO datetime (start)
+  value: string
   onChange: (value: string) => void
-  endValue?: string | null // ISO datetime (end, optional)
+  endValue?: string | null
   onEndChange?: (value: string | null) => void
   stoCompanyId?: string | null
-  excludeAppointmentId?: string // для редактирования — исключаем текущую запись
+  excludeAppointmentId?: string
 }
 
-// Форматирует Date в локальный ISO-строку YYYY-MM-DDTHH:MM (без UTC-конвертации)
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
 function toLocalISO(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}T${p(date.getHours())}:${p(date.getMinutes())}`
 }
 
-// Парсит локальный ISO-строку как ЛОКАЛЬНОЕ время (new Date(str) может интерпретировать как UTC в некоторых браузерах)
 function parseLocalISO(str: string | null | undefined): Date | null {
   if (!str) return null
   const m = str.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
   if (!m) return null
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4] ?? 0), Number(m[5] ?? 0), 0, 0)
+  return new Date(+m[1], +m[2] - 1, +m[3], +(m[4] ?? 0), +(m[5] ?? 0), 0, 0)
 }
 
-const TIME_SLOTS = Array.from({ length: 13 }, (_, i) => {
-  const hour = i + 8 // 08:00 — 20:00
-  return `${String(hour).padStart(2, '0')}:00`
+function fmtDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (m === 0) return `${h} ч`
+  return `${h} ч ${m} мин`
+}
+
+function fmtDate(d: Date): string {
+  const DAYS = ['вс','пн','вт','ср','чт','пт','сб']
+  const MONTHS = ['января','февраля','марта','апреля','мая','июня',
+                  'июля','августа','сентября','октября','ноября','декабря']
+  return `${DAYS[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]}`
+}
+
+// Слоты с 08:00 до 20:00 по 30 мин
+const SLOTS = Array.from({ length: 25 }, (_, i) => {
+  const totalMin = 8 * 60 + i * 30
+  const h = Math.floor(totalMin / 60)
+  const m = totalMin % 60
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`
 })
 
-const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
-const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
+const WEEKDAYS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
+const MONTHS_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь',
+                   'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
 
-function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate()
-}
-function getFirstDayOfMonth(year: number, month: number) {
-  const day = new Date(year, month, 1).getDay()
-  return day === 0 ? 6 : day - 1 // Mon=0
+function getDaysInMonth(y: number, m: number) { return new Date(y, m + 1, 0).getDate() }
+function getFirstDay(y: number, m: number) {
+  const d = new Date(y, m, 1).getDay()
+  return d === 0 ? 6 : d - 1
 }
 
-export default function DateTimePicker({ value, onChange, endValue, onEndChange, stoCompanyId, excludeAppointmentId }: Props) {
+// ─── component ────────────────────────────────────────────────────────────────
+
+export default function DateTimePicker({
+  value, onChange, endValue, onEndChange, stoCompanyId, excludeAppointmentId,
+}: Props) {
   const now = new Date()
   const selected = parseLocalISO(value)
 
-  const [viewYear, setViewYear] = useState(selected?.getFullYear() ?? now.getFullYear())
-  const [viewMonth, setViewMonth] = useState(selected?.getMonth() ?? now.getMonth())
-  const [selectedDate, setSelectedDate] = useState<Date | null>(selected)
+  const [phase, setPhase] = useState<'date' | 'time'>(selected ? 'time' : 'date')
+  const [viewYear, setViewYear]   = useState(selected?.getFullYear()  ?? now.getFullYear())
+  const [viewMonth, setViewMonth] = useState(selected?.getMonth()     ?? now.getMonth())
+  const [selDate, setSelDate]     = useState<Date | null>(selected)
 
-  // Загружаем занятость месяца
-  const { data: monthAppointments = [] } = useQuery({
-    queryKey: ['appointments-month', stoCompanyId, viewYear, viewMonth],
+  const timeListRef = useRef<HTMLDivElement>(null)
+
+  // Подгрузка занятости месяца
+  const { data: monthAppts = [] } = useQuery({
+    queryKey: ['appts-month', stoCompanyId, viewYear, viewMonth],
     queryFn: async () => {
       if (!stoCompanyId) return []
       const from = new Date(viewYear, viewMonth, 1).toISOString()
-      const to = new Date(viewYear, viewMonth + 1, 0, 23, 59, 59).toISOString()
+      const to   = new Date(viewYear, viewMonth + 1, 0, 23, 59, 59).toISOString()
       const { data } = await supabase
         .from('appointments')
         .select('scheduled_date, id')
@@ -70,255 +93,313 @@ export default function DateTimePicker({ value, onChange, endValue, onEndChange,
     staleTime: 2 * 60 * 1000,
   })
 
-  // Занятость по дням
+  // Загруженность по дням
   const dayLoad = useMemo(() => {
     const map: Record<number, number> = {}
-    monthAppointments.forEach((a: any) => {
+    monthAppts.forEach((a: any) => {
       if (excludeAppointmentId && a.id === excludeAppointmentId) return
-      const d = new Date(a.scheduled_date).getDate()
-      map[d] = (map[d] || 0) + 1
+      map[new Date(a.scheduled_date).getDate()] = (map[new Date(a.scheduled_date).getDate()] || 0) + 1
     })
     return map
-  }, [monthAppointments, excludeAppointmentId])
+  }, [monthAppts, excludeAppointmentId])
 
   // Занятые слоты выбранного дня
   const takenSlots = useMemo(() => {
-    if (!selectedDate) return new Set<string>()
-    const dayAppts = monthAppointments.filter((a: any) => {
-      if (excludeAppointmentId && a.id === excludeAppointmentId) return false
-      const d = new Date(a.scheduled_date)
-      return d.getFullYear() === selectedDate.getFullYear() &&
-             d.getMonth() === selectedDate.getMonth() &&
-             d.getDate() === selectedDate.getDate()
-    })
-    return new Set(dayAppts.map((a: any) => {
-      const d = new Date(a.scheduled_date)
-      return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
-    }))
-  }, [monthAppointments, selectedDate, excludeAppointmentId])
+    if (!selDate) return new Set<string>()
+    return new Set(
+      monthAppts
+        .filter((a: any) => {
+          if (excludeAppointmentId && a.id === excludeAppointmentId) return false
+          const d = new Date(a.scheduled_date)
+          return d.getFullYear() === selDate.getFullYear() &&
+                 d.getMonth()    === selDate.getMonth()    &&
+                 d.getDate()     === selDate.getDate()
+        })
+        .map((a: any) => {
+          const d = new Date(a.scheduled_date)
+          const h = String(d.getHours()).padStart(2,'0')
+          const m = String(d.getMinutes()).padStart(2,'0')
+          return `${h}:${m}`
+        })
+    )
+  }, [monthAppts, selDate, excludeAppointmentId])
 
-  const selectedEnd = parseLocalISO(endValue)
-
-  const selectedTime = selected && selectedDate && 
-    selected.getDate() === selectedDate.getDate() &&
-    selected.getMonth() === selectedDate.getMonth()
+  // Текущие выбранные времена
+  const startTime = selected && selDate &&
+    selected.getDate() === selDate.getDate() && selected.getMonth() === selDate.getMonth()
     ? `${String(selected.getHours()).padStart(2,'0')}:${String(selected.getMinutes()).padStart(2,'0')}`
     : null
 
-  const selectedEndTime = selectedEnd && selectedDate &&
-    selectedEnd.getDate() === selectedDate.getDate() &&
-    selectedEnd.getMonth() === selectedDate.getMonth()
-    ? `${String(selectedEnd.getHours()).padStart(2,'0')}:${String(selectedEnd.getMinutes()).padStart(2,'0')}`
+  const endDate = parseLocalISO(endValue)
+  const endTime = endDate && selDate &&
+    endDate.getDate() === selDate.getDate() && endDate.getMonth() === selDate.getMonth()
+    ? `${String(endDate.getHours()).padStart(2,'0')}:${String(endDate.getMinutes()).padStart(2,'0')}`
     : null
 
-  // Индексы слотов начала и конца в массиве TIME_SLOTS
-  const startIdx = selectedTime ? TIME_SLOTS.indexOf(selectedTime) : -1
-  const endIdx = selectedEndTime ? TIME_SLOTS.indexOf(selectedEndTime) : -1
+  const startIdx = startTime ? SLOTS.indexOf(startTime) : -1
+  const endIdx   = endTime   ? SLOTS.indexOf(endTime)   : -1
 
-  // Длительность в часах (слоты по 1 часу)
-  const durationLabel = startIdx !== -1 && endIdx !== -1 && endIdx > startIdx ? (() => {
-    const hours = endIdx - startIdx
-    return hours === 1 ? '1 ч' : `${hours} ч`
-  })() : null
+  const durationMin = startIdx !== -1 && endIdx !== -1 && endIdx > startIdx
+    ? (endIdx - startIdx) * 30
+    : null
 
-  const prevMonth = () => {
-    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) }
-    else setViewMonth(m => m - 1)
-  }
-  const nextMonth = () => {
-    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0) }
-    else setViewMonth(m => m + 1)
-  }
+  // Скроллим к активному слоту при открытии
+  useEffect(() => {
+    if (phase === 'time' && startIdx !== -1 && timeListRef.current) {
+      const el = timeListRef.current.children[Math.max(0, startIdx - 2)] as HTMLElement
+      el?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    }
+  }, [phase, startIdx])
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
+
+  const prevMonth = () => viewMonth === 0
+    ? (setViewYear(y => y - 1), setViewMonth(11))
+    : setViewMonth(m => m - 1)
+  const nextMonth = () => viewMonth === 11
+    ? (setViewYear(y => y + 1), setViewMonth(0))
+    : setViewMonth(m => m + 1)
 
   const handleDayClick = (day: number) => {
     const today = new Date(); today.setHours(0,0,0,0)
-    const dayStart = new Date(viewYear, viewMonth, day)
-    if (dayStart < today) return
-    // Сохраняем уже выбранное время, иначе 9:00 по умолчанию
-    const h = selected ? selected.getHours() : 9
+    const dayDate = new Date(viewYear, viewMonth, day)
+    if (dayDate < today) return
+
+    const h = selected ? selected.getHours()   : 9
     const m = selected ? selected.getMinutes() : 0
-    const date = new Date(viewYear, viewMonth, day, h, m, 0, 0)
-    setSelectedDate(new Date(date)) // не мутируем объект после setSelectedDate
-    onChange(toLocalISO(date))
+    const dt = new Date(viewYear, viewMonth, day, h, m, 0, 0)
+    setSelDate(new Date(viewYear, viewMonth, day, 0, 0, 0, 0))
+    onChange(toLocalISO(dt))
+    // Переходим к выбору времени
+    setTimeout(() => setPhase('time'), 80)
   }
 
-  const handleTimeClick = (time: string) => {
-    if (!selectedDate) return
-    const [h, m] = time.split(':').map(Number)
-    const clickedIdx = TIME_SLOTS.indexOf(time)
+  const handleSlotClick = (slot: string) => {
+    if (!selDate || takenSlots.has(slot)) return
+    const [h, m] = slot.split(':').map(Number)
+    const clickedIdx = SLOTS.indexOf(slot)
 
     if (onEndChange) {
-      // Режим range-выбора
       if (startIdx === -1 || clickedIdx <= startIdx) {
-        // Ещё нет начала или клик раньше/равно начала — меняем старт, сбрасываем конец
-        const date = new Date(selectedDate)
-        date.setHours(h, m, 0, 0)
-        onChange(toLocalISO(date))
+        // Устанавливаем начало, сбрасываем конец
+        const dt = new Date(selDate); dt.setHours(h, m, 0, 0)
+        onChange(toLocalISO(dt))
         onEndChange(null)
       } else {
-        // Клик после начала — устанавливаем конец диапазона
-        const date = new Date(selectedDate)
-        date.setHours(h, m, 0, 0)
-        onEndChange(toLocalISO(date))
+        // Устанавливаем конец диапазона
+        const dt = new Date(selDate); dt.setHours(h, m, 0, 0)
+        onEndChange(toLocalISO(dt))
       }
     } else {
-      // Обычный одиночный выбор
-      const date = new Date(selectedDate)
-      date.setHours(h, m, 0, 0)
-      onChange(toLocalISO(date))
+      const dt = new Date(selDate); dt.setHours(h, m, 0, 0)
+      onChange(toLocalISO(dt))
     }
   }
 
+  const today = new Date(); today.setHours(0,0,0,0)
   const daysInMonth = getDaysInMonth(viewYear, viewMonth)
-  const firstDay = getFirstDayOfMonth(viewYear, viewMonth)
-  const today = new Date()
-  today.setHours(0,0,0,0)
+  const firstDay    = getFirstDay(viewYear, viewMonth)
 
-  function getDayColor(count: number): string {
-    if (count === 0) return ''
-    if (count <= 2) return 'bg-emerald-400'
-    if (count <= 5) return 'bg-amber-400'
+  function loadColor(n: number) {
+    if (n <= 2) return 'bg-emerald-400'
+    if (n <= 5) return 'bg-amber-400'
     return 'bg-red-400'
   }
 
-  return (
-    <div className="space-y-4">
-      {/* Календарь */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {/* Навигация по месяцу */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <button type="button" onClick={prevMonth}
-            className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors">
-            <ChevronLeft className="w-4 h-4 text-gray-600" strokeWidth={2} />
-          </button>
-          <span className="text-sm font-bold text-gray-900">
-            {MONTHS[viewMonth]} {viewYear}
-          </span>
-          <button type="button" onClick={nextMonth}
-            className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors">
-            <ChevronRight className="w-4 h-4 text-gray-600" strokeWidth={2} />
-          </button>
-        </div>
-
-        {/* Дни недели */}
-        <div className="grid grid-cols-7 px-3 py-2">
-          {WEEKDAYS.map(d => (
-            <div key={d} className="text-center text-[11px] font-semibold text-gray-400 py-1">{d}</div>
-          ))}
-        </div>
-
-        {/* Дни месяца */}
-        <div className="grid grid-cols-7 px-3 pb-3 gap-y-1">
-          {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
-          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
-            const date = new Date(viewYear, viewMonth, day)
-            date.setHours(0,0,0,0)
-            const isPast = date < today
-            const isToday = date.getTime() === today.getTime()
-            const isSelected = selectedDate &&
-              selectedDate.getDate() === day &&
-              selectedDate.getMonth() === viewMonth &&
-              selectedDate.getFullYear() === viewYear
-            const load = dayLoad[day] || 0
-
-            return (
-              <button key={day} type="button"
-                onClick={() => !isPast && handleDayClick(day)}
-                disabled={isPast}
-                className={`relative flex flex-col items-center justify-center h-10 rounded-xl text-sm font-medium transition-all ${
-                  isSelected ? 'bg-indigo-600 text-white shadow-sm' :
-                  isToday ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-300' :
-                  isPast ? 'text-gray-300 cursor-not-allowed' :
-                  'text-gray-700 hover:bg-gray-100'
-                }`}>
-                <span>{day}</span>
-                {/* Индикатор загруженности */}
-                {!isPast && load > 0 && (
-                  <span className={`absolute bottom-1 w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white/70' : getDayColor(load)}`} />
-                )}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Легенда */}
-        <div className="flex items-center gap-4 px-4 py-2.5 border-t border-gray-100 bg-gray-50/50">
-          <span className="text-[11px] text-gray-400 font-medium">Загруженность:</span>
-          {[['bg-emerald-400', '1-2'], ['bg-amber-400', '3-5'], ['bg-red-400', '6+']].map(([color, label]) => (
-            <span key={label} className="flex items-center gap-1">
-              <span className={`w-2 h-2 rounded-full ${color}`} />
-              <span className="text-[11px] text-gray-500">{label}</span>
+  // ── Phase: DATE ─────────────────────────────────────────────────────────────
+  if (phase === 'date') {
+    return (
+      <div className="space-y-3">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          {/* Навигация по месяцу */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <button type="button" onClick={prevMonth}
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
+              <ChevronLeft className="w-4 h-4 text-gray-600" />
+            </button>
+            <span className="text-sm font-bold text-gray-900">
+              {MONTHS_RU[viewMonth]} {viewYear}
             </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Выбор времени */}
-      {selectedDate && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-indigo-500" strokeWidth={1.5} />
-            <span className="text-sm font-bold text-gray-800">Время записи</span>
-            {selectedTime && (
-              <span className="ml-auto flex items-center gap-1.5">
-                <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg">
-                  {selectedTime}{selectedEndTime ? ` – ${selectedEndTime}` : ''}
-                </span>
-                {durationLabel && (
-                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg">
-                    {durationLabel}
-                  </span>
-                )}
-              </span>
-            )}
+            <button type="button" onClick={nextMonth}
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
+              <ChevronRight className="w-4 h-4 text-gray-600" />
+            </button>
           </div>
 
-          {/* Подсказка: 1-й клик — начало, 2-й — конец */}
-          {onEndChange && (
-            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-              {startIdx === -1 || !selectedTime ? (
-                <p className="text-[11px] text-gray-500">
-                  Кликните на <strong>время начала</strong> — можно выбрать 1 час или диапазон
-                </p>
-              ) : endIdx === -1 ? (
-                <p className="text-[11px] text-indigo-500 font-medium">
-                  Начало: <strong>{selectedTime}</strong> — теперь кликните на <strong>время окончания</strong>
-                </p>
-              ) : (
-                <p className="text-[11px] text-emerald-600 font-medium">
-                  Выбрано: <strong>{selectedTime} – {selectedEndTime}</strong> · <strong>{durationLabel}</strong> · кликните начало чтобы изменить
-                </p>
-              )}
-            </div>
-          )}
+          {/* Дни недели */}
+          <div className="grid grid-cols-7 px-3 py-2 border-b border-gray-50">
+            {WEEKDAYS.map(d => (
+              <div key={d} className="text-center text-[11px] font-semibold text-gray-400 py-1">{d}</div>
+            ))}
+          </div>
 
-          <div className="p-3 grid grid-cols-4 sm:grid-cols-6 gap-1.5">
-            {TIME_SLOTS.map((slot, idx) => {
-              const isTaken = takenSlots.has(slot)
-              const isStart = selectedTime === slot
-              const isEnd = selectedEndTime === slot
-              const isInRange = startIdx !== -1 && endIdx !== -1 && idx > startIdx && idx < endIdx
-              const isCurrentSelected = isStart || isEnd
+          {/* Дни */}
+          <div className="grid grid-cols-7 px-3 pb-3 gap-y-1">
+            {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
+            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
+              const d = new Date(viewYear, viewMonth, day); d.setHours(0,0,0,0)
+              const isPast     = d < today
+              const isToday    = d.getTime() === today.getTime()
+              const isSel      = selDate && selDate.getDate() === day && selDate.getMonth() === viewMonth && selDate.getFullYear() === viewYear
+              const load       = dayLoad[day] || 0
               return (
-                <button key={slot} type="button"
-                  onClick={() => !isTaken && handleTimeClick(slot)}
-                  disabled={isTaken}
-                  className={`h-10 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1 ${
-                    isCurrentSelected ? 'bg-indigo-600 text-white shadow-sm' :
-                    isInRange ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' :
-                    isTaken ? 'bg-gray-100 text-gray-300 cursor-not-allowed line-through' :
-                    'bg-gray-50 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 border border-transparent'
-                  }`}>
-                  {isCurrentSelected && <Check className="w-3 h-3" strokeWidth={3} />}
-                  {slot}
+                <button key={day} type="button"
+                  onClick={() => !isPast && handleDayClick(day)}
+                  disabled={isPast}
+                  className={`relative flex flex-col items-center justify-center h-10 rounded-lg text-sm font-semibold transition-all
+                    ${isSel   ? 'bg-primary text-white shadow-sm' :
+                      isToday ? 'bg-primary/10 text-primary ring-1 ring-primary/30' :
+                      isPast  ? 'text-gray-300 cursor-not-allowed' :
+                                'text-gray-700 hover:bg-gray-100'}`}
+                >
+                  {day}
+                  {!isPast && load > 0 && (
+                    <span className={`absolute bottom-1 w-1 h-1 rounded-sm ${isSel ? 'bg-white/60' : loadColor(load)}`} />
+                  )}
                 </button>
               )
             })}
           </div>
 
-
+          {/* Легенда */}
+          <div className="flex items-center gap-4 px-4 py-2 border-t border-gray-100 bg-gray-50/60">
+            <span className="text-[11px] text-gray-400 font-medium">Загруженность:</span>
+            {[['bg-emerald-400','1–2'],['bg-amber-400','3–5'],['bg-red-400','6+']].map(([c, l]) => (
+              <span key={l} className="flex items-center gap-1">
+                <span className={`w-2 h-2 rounded-sm ${c}`} />
+                <span className="text-[11px] text-gray-500">{l}</span>
+              </span>
+            ))}
+          </div>
         </div>
-      )}
+
+        {/* Если дата уже выбрана — показать кнопку перехода к времени */}
+        {selDate && (
+          <button
+            type="button"
+            onClick={() => setPhase('time')}
+            className="w-full flex items-center justify-between px-4 py-3 bg-primary/5 border border-primary/20 rounded-lg hover:bg-primary/10 transition-colors"
+          >
+            <span className="text-sm font-semibold text-primary">
+              {fmtDate(selDate)} — выбрать время
+            </span>
+            <ArrowRight className="w-4 h-4 text-primary" />
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  // ── Phase: TIME ─────────────────────────────────────────────────────────────
+  return (
+    <div className="space-y-3">
+      {/* Назад к дате */}
+      <button
+        type="button"
+        onClick={() => setPhase('date')}
+        className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors -mt-1"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        {selDate ? fmtDate(selDate) : 'Выбрать дату'}
+      </button>
+
+      {/* Сводка выбранного времени */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 text-center">
+            <p className="text-[11px] font-medium text-gray-400 mb-1">Начало</p>
+            <p className="text-2xl font-bold text-gray-900 tabular-nums leading-none">
+              {startTime ?? '—'}
+            </p>
+          </div>
+
+          <ArrowRight className="w-5 h-5 text-gray-300 flex-shrink-0" />
+
+          <div className="flex-1 text-center">
+            <p className="text-[11px] font-medium text-gray-400 mb-1">Конец</p>
+            <p className={`text-2xl font-bold tabular-nums leading-none ${endTime ? 'text-gray-900' : 'text-gray-300'}`}>
+              {endTime ?? '—'}
+            </p>
+          </div>
+
+          {durationMin !== null && (
+            <>
+              <div className="w-px h-10 bg-gray-100 flex-shrink-0" />
+              <div className="flex-1 text-center">
+                <p className="text-[11px] font-medium text-gray-400 mb-1">Длительность</p>
+                <p className="text-base font-bold text-green-600 leading-none">
+                  {fmtDuration(durationMin)}
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Подсказка */}
+        <p className="text-[11px] text-gray-400 mt-3 text-center">
+          {startIdx === -1
+            ? 'Нажмите на время начала записи'
+            : endIdx === -1
+              ? 'Теперь выберите время окончания'
+              : 'Нажмите на другое начало чтобы изменить'}
+        </p>
+      </div>
+
+      {/* Timeline слотов */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Расписание</span>
+          <span className="text-xs text-gray-400">08:00 – 20:00</span>
+        </div>
+
+        <div ref={timeListRef} className="overflow-y-auto max-h-[340px]">
+          {SLOTS.map((slot, idx) => {
+            const isTaken   = takenSlots.has(slot)
+            const isStart   = startTime === slot
+            const isEnd     = endTime === slot
+            const isInRange = startIdx !== -1 && endIdx !== -1 && idx > startIdx && idx < endIdx
+            const isActive  = isStart || isEnd
+
+            return (
+              <button
+                key={slot}
+                type="button"
+                onClick={() => handleSlotClick(slot)}
+                disabled={isTaken}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all
+                  ${isActive
+                    ? 'bg-primary text-white'
+                    : isInRange
+                      ? 'bg-primary/10 text-primary'
+                      : isTaken
+                        ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                        : 'hover:bg-gray-50 text-gray-700'
+                  }
+                  border-b border-gray-50 last:border-0`}
+              >
+                {/* Время */}
+                <span className={`w-11 text-sm font-bold tabular-nums flex-shrink-0
+                  ${isActive ? 'text-white' : isInRange ? 'text-primary' : isTaken ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {slot}
+                </span>
+
+                {/* Визуальная полоска */}
+                <div className="flex-1 h-2 rounded-sm overflow-hidden bg-gray-100">
+                  {isActive && <div className="h-full bg-white/50" />}
+                  {isInRange && <div className="h-full bg-primary/40" />}
+                  {isTaken && <div className="h-full bg-gray-200" />}
+                </div>
+
+                {/* Метка */}
+                <span className={`text-[10px] font-bold flex-shrink-0 w-12 text-right
+                  ${isActive ? 'text-white' : isInRange ? 'text-primary/70' : 'text-transparent'}`}>
+                  {isStart ? 'начало' : isEnd ? 'конец' : isInRange ? '·' : isTaken ? 'занято' : ''}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
