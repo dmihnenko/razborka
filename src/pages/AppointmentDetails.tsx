@@ -44,7 +44,7 @@ function StatusChip({ status, size = 'md' }: { status: string; size?: 'sm' | 'md
   const sm = size === 'sm'
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-semibold rounded-full border ${sm ? 'text-xs px-2 py-0.5' : 'text-sm px-3 py-1'}`}
+      className={`inline-flex items-center gap-1.5 font-semibold rounded-md border ${sm ? 'text-xs px-2 py-0.5' : 'text-sm px-3 py-1'}`}
       style={{ color: cfg.color, backgroundColor: cfg.bg, borderColor: cfg.border }}
     >
       <Icon className={sm ? 'w-3 h-3' : 'w-3.5 h-3.5'} />
@@ -616,7 +616,7 @@ export default function AppointmentDetails() {
                             {new Date(h.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </p>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ color: cfg.color, backgroundColor: cfg.bg }}>
+                            <span className="text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ color: cfg.color, backgroundColor: cfg.bg }}>
                               {cfg.label}
                             </span>
                             {((h.work_items?.length || 0) + (h.part_items?.length || 0)) > 0 && (
@@ -679,12 +679,12 @@ export default function AppointmentDetails() {
                 <div className="flex gap-2">
                   <button onClick={() => updateStatusMutation.mutate('deleted')}
                     disabled={updateStatusMutation.isPending}
-                    className="flex-1 py-2 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors">
+                    className="flex-1 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors">
                     Удалить
                   </button>
                   <button onClick={() => updateStatusMutation.mutate('in_progress')}
                     disabled={updateStatusMutation.isPending}
-                    className="flex-1 py-2 bg-white text-gray-700 text-sm font-medium rounded-xl border border-gray-200 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+                    className="flex-1 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 transition-colors">
                     Отклонить
                   </button>
                 </div>
@@ -721,12 +721,12 @@ export default function AppointmentDetails() {
             </div>
             <div className="flex gap-2">
               <button onClick={() => setShowArchiveConfirm(false)}
-                className="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+                className="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
                 Отмена
               </button>
               <button onClick={() => { updateStatusMutation.mutate('archived'); setShowArchiveConfirm(false) }}
                 disabled={updateStatusMutation.isPending}
-                className="flex-1 py-2.5 text-sm font-medium text-white bg-gray-800 hover:bg-gray-900 rounded-xl disabled:opacity-50 transition-colors">
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-gray-800 hover:bg-gray-900 rounded-lg disabled:opacity-50 transition-colors">
                 {updateStatusMutation.isPending ? 'Обновление...' : 'В архив'}
               </button>
             </div>
@@ -754,7 +754,7 @@ export default function AppointmentDetails() {
             </div>
             <div className="flex gap-2">
               <button onClick={() => setPaymentConfirmModal(null)}
-                className="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+                className="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
                 Отмена
               </button>
               <button
@@ -763,7 +763,7 @@ export default function AppointmentDetails() {
                   setPaymentConfirmModal(null)
                 }}
                 disabled={updatePaymentMutation.isPending}
-                className="flex-1 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-xl disabled:opacity-50 transition-colors">
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg disabled:opacity-50 transition-colors">
                 Подтвердить
               </button>
             </div>

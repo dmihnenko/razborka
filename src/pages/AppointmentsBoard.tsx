@@ -975,50 +975,87 @@ export default function AppointmentsBoard() {
             </div>
 
             {dayLoading ? <Spinner /> : (
-              <div className="space-y-0.5">
-                {HOUR_RANGE.map(hour => {
-                  const appts = dayByHour[hour] || []
-                  const isCurrentHour = isToday && currentHour === hour
-                  return (
-                    <div
-                      key={hour}
-                      ref={isCurrentHour ? currentHourRef : undefined}
-                      className="flex gap-3 scroll-mt-16"
-                    >
-                      <div className="w-12 flex-shrink-0 pt-2 text-right">
-                        <span className={`text-xs font-semibold ${isCurrentHour ? 'text-primary' : 'text-gray-400'}`}>
-                          {String(hour).padStart(2,'0')}:00
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        {isCurrentHour && <div className="h-0.5 bg-primary rounded-full mb-1 opacity-60" />}
-                        {appts.length > 0 ? (
-                          <div className="space-y-2 pb-2">
-                            {appts.map(appt => (
-                              <AppointmentCard
-                                key={appt.id}
-                                appt={appt}
-                                onStatusChange={handleStatusChange}
-                              />
-                            ))}
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              const d = new Date(selectedDate)
-                              d.setHours(hour, 0, 0, 0)
-                              openNew(isoDate(d) + `T${String(hour).padStart(2,'0')}:00`)
-                            }}
-                            className="w-full h-10 flex items-center justify-center text-gray-300 hover:text-primary hover:bg-primary/5 rounded-lg border border-dashed border-transparent hover:border-primary/20 transition-all group text-xs"
+              <div className="space-y-2">
+                {/* Сетка: 4 колонки на десктопе, 2 на мобиле */}
+                {[0, 4, 8].map(offset => (
+                  <div key={offset} className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {HOUR_RANGE.slice(offset, offset + 4).map(hour => {
+                      const appts = dayByHour[hour] || []
+                      const isCurrentHour = isToday && currentHour === hour
+                      return (
+                        <div
+                          key={hour}
+                          ref={isCurrentHour ? currentHourRef : undefined}
+                          className={`rounded-lg border bg-white overflow-hidden min-h-[110px] flex flex-col scroll-mt-20
+                            ${isCurrentHour
+                              ? 'border-primary ring-1 ring-primary/20 shadow-sm'
+                              : 'border-gray-200'}`}
+                        >
+                          {/* Заголовок часа */}
+                          <div
+                            className={`px-2.5 py-1.5 flex items-center justify-between border-b flex-shrink-0
+                              ${isCurrentHour
+                                ? 'bg-primary border-primary'
+                                : 'bg-gray-50 border-gray-100'}`}
                           >
-                            <Plus className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity mr-1" />
-                            <span className="opacity-0 group-hover:opacity-100 transition-opacity">Добавить запись</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
+                            <span className={`text-xs font-bold tabular-nums ${isCurrentHour ? 'text-white' : 'text-gray-500'}`}>
+                              {String(hour).padStart(2,'0')}:00
+                            </span>
+                            {appts.length > 0 && (
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md
+                                ${isCurrentHour ? 'bg-white/20 text-white' : 'bg-white text-gray-600 border border-gray-200'}`}>
+                                {appts.length}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Содержимое */}
+                          <div className="flex-1 p-1.5 space-y-1">
+                            {appts.length === 0 ? (
+                              <button
+                                onClick={() => {
+                                  const d = new Date(selectedDate)
+                                  d.setHours(hour, 0, 0, 0)
+                                  openNew(isoDate(d) + `T${String(hour).padStart(2,'0')}:00`)
+                                }}
+                                className="w-full h-full min-h-[60px] flex items-center justify-center text-gray-200 hover:text-primary hover:bg-primary/5 rounded-md transition-all group"
+                              >
+                                <Plus className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </button>
+                            ) : (
+                              appts.map(appt => {
+                                const cfg = STATUS_CFG[appt.status] ?? STATUS_CFG.scheduled
+                                const cost = totalCost(appt)
+                                return (
+                                  <button
+                                    key={appt.id}
+                                    onClick={() => navigate(`/sto/appointments/${appt.id}`)}
+                                    className="w-full text-left rounded-md px-2 py-1.5 hover:opacity-80 transition-opacity"
+                                    style={{ backgroundColor: cfg.bg, borderLeft: `3px solid ${cfg.color}` }}
+                                  >
+                                    <p className="text-[11px] font-bold truncate" style={{ color: cfg.color }}>
+                                      {appt.customers?.name?.split(' ')[0] || '—'}
+                                    </p>
+                                    {appt.vehicles && (
+                                      <p className="text-[10px] text-gray-500 truncate leading-tight">
+                                        {appt.vehicles.brand} {appt.vehicles.model}
+                                      </p>
+                                    )}
+                                    {cost > 0 && (
+                                      <p className="text-[10px] font-semibold text-gray-700 mt-0.5">
+                                        ₴{cost.toLocaleString('ru-RU')}
+                                      </p>
+                                    )}
+                                  </button>
+                                )
+                              })
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ))}
               </div>
             )}
           </div>
