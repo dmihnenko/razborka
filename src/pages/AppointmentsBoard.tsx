@@ -7,7 +7,7 @@ import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import {
   Plus, ChevronLeft, ChevronRight, LayoutGrid, CalendarDays,
   Calendar, User, Car, Clock, Wrench, ArrowRight,
-  Archive, Search, X, List, Phone,
+  Archive, Search, X, List, Phone, MoveRight,
 } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 import SubscriptionUpgradeModal from '@/components/SubscriptionUpgradeModal'
@@ -82,6 +82,136 @@ function totalCost(a: any) {
   return a.total_cost || (a.total_work_cost || 0) + (a.total_parts_cost || 0)
 }
 
+// ─── Status transition meta ───────────────────────────────────────────────────
+
+const TRANSITION_META: Record<string, { title: string; description: string; confirmLabel: string; icon: string }> = {
+  'scheduled→in_progress': {
+    title:        'Начать работу?',
+    description:  'Заявка перейдёт в статус «В работе». Клиент будет ожидать уведомления о завершении.',
+    confirmLabel: 'Начать работу',
+    icon:         '🔧',
+  },
+  'in_progress→completed': {
+    title:        'Завершить работу?',
+    description:  'Работы по заявке завершены. Автомобиль готов к выдаче клиенту.',
+    confirmLabel: 'Отметить готовым',
+    icon:         '✅',
+  },
+  'completed→archived': {
+    title:        'Закрыть заявку?',
+    description:  'Заявка будет добавлена в архив и включена в статистику месяца. Вернуть из архива можно позже.',
+    confirmLabel: 'Закрыть и в архив',
+    icon:         '📁',
+  },
+  'ready→archived': {
+    title:        'Закрыть заявку?',
+    description:  'Заявка будет добавлена в архив и включена в статистику месяца.',
+    confirmLabel: 'Закрыть и в архив',
+    icon:         '📁',
+  },
+}
+
+function getTransitionMeta(from: string, to: string) {
+  return TRANSITION_META[`${from}→${to}`] ?? {
+    title:        'Изменить статус?',
+    description:  `Статус заявки будет изменён с «${STATUS_CFG[from]?.label ?? from}» на «${STATUS_CFG[to]?.label ?? to}».`,
+    confirmLabel: STATUS_CFG[to]?.label ?? 'Подтвердить',
+    icon:         '🔄',
+  }
+}
+
+// ─── StatusConfirmModal ───────────────────────────────────────────────────────
+
+interface StatusConfirmState {
+  id: string
+  fromStatus: string
+  toStatus: string
+  clientName: string
+  vehicleName: string
+}
+
+function StatusConfirmModal({
+  state, onCancel, onConfirm, isPending,
+}: {
+  state: StatusConfirmState | null
+  onCancel: () => void
+  onConfirm: () => void
+  isPending: boolean
+}) {
+  if (!state) return null
+
+  const meta    = getTransitionMeta(state.fromStatus, state.toStatus)
+  const fromCfg = STATUS_CFG[state.fromStatus] ?? STATUS_CFG.scheduled
+  const toCfg   = STATUS_CFG[state.toStatus]   ?? STATUS_CFG.scheduled
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-xl shadow-2xl overflow-hidden">
+
+        {/* Ручка (мобиль) */}
+        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-1 sm:hidden" />
+
+        {/* Заголовок */}
+        <div className="px-5 pt-4 pb-3 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <span className="text-xl leading-none">{meta.icon}</span>
+            <h2 className="text-base font-bold text-gray-900">{meta.title}</h2>
+          </div>
+        </div>
+
+        <div className="px-5 py-4 space-y-4">
+          {/* Клиент / авто */}
+          <div className="bg-gray-50 rounded-lg px-3.5 py-2.5">
+            <p className="text-sm font-semibold text-gray-900 leading-tight">{state.clientName}</p>
+            {state.vehicleName && (
+              <p className="text-xs text-gray-500 mt-0.5">{state.vehicleName}</p>
+            )}
+          </div>
+
+          {/* Переход статуса */}
+          <div className="flex items-center gap-2">
+            <span
+              className="flex-1 text-center text-xs font-semibold px-3 py-2 rounded-lg border"
+              style={{ color: fromCfg.color, backgroundColor: fromCfg.bg, borderColor: fromCfg.border }}
+            >
+              {fromCfg.label}
+            </span>
+            <MoveRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <span
+              className="flex-1 text-center text-xs font-semibold px-3 py-2 rounded-lg border"
+              style={{ color: toCfg.color, backgroundColor: toCfg.bg, borderColor: toCfg.border }}
+            >
+              {toCfg.label}
+            </span>
+          </div>
+
+          {/* Описание */}
+          <p className="text-sm text-gray-600 leading-relaxed">{meta.description}</p>
+        </div>
+
+        {/* Кнопки */}
+        <div className="px-5 pb-5 flex gap-2" style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}>
+          <button
+            onClick={onCancel}
+            disabled={isPending}
+            className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isPending}
+            className="flex-1 py-2.5 text-sm font-semibold text-white rounded-lg transition-colors disabled:opacity-50"
+            style={{ backgroundColor: toCfg.color }}
+          >
+            {isPending ? 'Сохраняем…' : meta.confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── PaymentDot ───────────────────────────────────────────────────────────────
 
 function PaymentDot({ appt }: { appt: any }) {
@@ -112,7 +242,7 @@ function AppointmentCard({
   appt, onStatusChange, showDate = false,
 }: {
   appt: any
-  onStatusChange: (id: string, status: string) => void
+  onStatusChange: (id: string, status: string, appt: any) => void
   showDate?: boolean
 }) {
   const navigate   = useNavigate()
@@ -232,7 +362,7 @@ function AppointmentCard({
         <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-gray-100">
           {cfg.next && (
             <button
-              onClick={e => { e.stopPropagation(); onStatusChange(appt.id, cfg.next!) }}
+              onClick={e => { e.stopPropagation(); onStatusChange(appt.id, cfg.next!, appt) }}
               className="flex-1 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all hover:opacity-90 active:scale-95"
               style={{
                 color: STATUS_CFG[cfg.next!].color,
@@ -257,7 +387,7 @@ function AppointmentCard({
 
 // ─── ListRow ──────────────────────────────────────────────────────────────────
 
-function ListRow({ appt, onStatusChange }: { appt: any; onStatusChange: (id: string, status: string) => void }) {
+function ListRow({ appt, onStatusChange }: { appt: any; onStatusChange: (id: string, status: string, appt: any) => void }) {
   const navigate   = useNavigate()
   const cfg        = STATUS_CFG[appt.status] ?? STATUS_CFG.scheduled
   const date       = parseLocal(appt.scheduled_date)
@@ -364,7 +494,7 @@ function ListRow({ appt, onStatusChange }: { appt: any; onStatusChange: (id: str
               <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                 {cfg.next && (
                   <button
-                    onClick={() => onStatusChange(appt.id, cfg.next!)}
+                    onClick={() => onStatusChange(appt.id, cfg.next!, appt)}
                     className="text-[10px] font-semibold px-2 py-0.5 rounded-lg border-2 transition-all hover:opacity-80 whitespace-nowrap hidden sm:block"
                     style={{ color: STATUS_CFG[cfg.next!].color, borderColor: STATUS_CFG[cfg.next!].border, backgroundColor: STATUS_CFG[cfg.next!].bg }}
                   >
@@ -415,7 +545,7 @@ function KanbanColumn({
   col: typeof KANBAN_COLS[number]
   colAppts: any[]
   colRev: number
-  onStatusChange: (id: string, status: string) => void
+  onStatusChange: (id: string, status: string, appt: any) => void
   onNew: () => void
 }) {
   return (
@@ -507,6 +637,7 @@ export default function AppointmentsBoard() {
     return (t === 'scheduled' || t === 'in_progress' || t === 'completed') ? t : 'in_progress'
   })
   const [weekMobileOffset, setWeekMobileOffset] = useState<0 | 3>(0)
+  const [confirmModal, setConfirmModal]         = useState<StatusConfirmState | null>(null)
 
   const currentHourRef = useRef<HTMLDivElement>(null)
 
@@ -617,7 +748,23 @@ export default function AppointmentsBoard() {
     onError: () => toast.error('Ошибка при обновлении статуса'),
   })
 
-  const handleStatusChange = (id: string, status: string) => statusMutation.mutate({ id, status })
+  const handleStatusChange = (id: string, toStatus: string, appt: any) => {
+    setConfirmModal({
+      id,
+      fromStatus:  appt.status,
+      toStatus,
+      clientName:  appt.customers?.name || 'Клиент',
+      vehicleName: appt.vehicles
+        ? `${appt.vehicles.brand} ${appt.vehicles.model}`.trim()
+        : '',
+    })
+  }
+
+  const confirmStatusChange = () => {
+    if (!confirmModal) return
+    statusMutation.mutate({ id: confirmModal.id, status: confirmModal.toStatus })
+    setConfirmModal(null)
+  }
 
   const openNew = (date?: string) => {
     if (!canCreate.appointment()) { setShowUpgradeModal(true); return }
@@ -1219,6 +1366,13 @@ export default function AppointmentsBoard() {
       </div>
 
       {/* ── Modals ─────────────────────────────────────────────────────────── */}
+      <StatusConfirmModal
+        state={confirmModal}
+        onCancel={() => setConfirmModal(null)}
+        onConfirm={confirmStatusChange}
+        isPending={statusMutation.isPending}
+      />
+
       <AppointmentModal
         isOpen={isNewModalOpen}
         onClose={() => { setIsNewModalOpen(false); setNewModalDate(undefined) }}
