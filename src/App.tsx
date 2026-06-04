@@ -16,7 +16,7 @@ import LandingPage from './pages/LandingPage'
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Customers = lazy(() => import('./pages/Customers'))
 const Vehicles = lazy(() => import('./pages/Vehicles'))
-const Appointments = lazy(() => import('./pages/Appointments'))
+const Appointments = lazy(() => import('./pages/AppointmentsBoard'))
 const AppointmentDetails = lazy(() => import('./pages/AppointmentDetails'))
 const WorkOrders = lazy(() => import('./pages/WorkOrders'))
 const Services = lazy(() => import('./pages/Services'))
