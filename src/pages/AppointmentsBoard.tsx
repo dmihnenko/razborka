@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useSubscriptionLimits } from '@/hooks/useSubscription'
@@ -384,7 +384,11 @@ export default function AppointmentsBoard() {
   const { canCreate, usage, limits, hasSubscription, plan } = useSubscriptionLimits()
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
 
-  const [view, setView]                     = useState<View>('kanban')
+  const [searchParams] = useSearchParams()
+  const [view, setView] = useState<View>(() => {
+    const v = searchParams.get('view')
+    return (v === 'day' || v === 'week' || v === 'list' || v === 'kanban') ? v : 'kanban'
+  })
   const [selectedDate, setSelectedDate]     = useState(() => { const d = new Date(); d.setHours(0,0,0,0); return d })
   const [weekStart, setWeekStart]           = useState(() => getWeekStart(new Date()))
   const [search, setSearch]                 = useState('')

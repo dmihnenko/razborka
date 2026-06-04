@@ -223,10 +223,10 @@ export default function Dashboard() {
             <Car className="w-4 h-4" />
             <span>Авто</span>
           </button>
-          <button onClick={() => navigate('/sto/calendar')}
+          <button onClick={() => navigate('/appointments?view=week')}
             className="btn-secondary btn-sm flex items-center gap-1.5">
             <CalendarDays className="w-4 h-4" />
-            <span className="hidden sm:inline">Календарь</span>
+            <span className="hidden sm:inline">Записи</span>
           </button>
           <button onClick={() => setIsModalOpen(true)}
             className="btn-primary btn-sm flex items-center gap-1.5">
