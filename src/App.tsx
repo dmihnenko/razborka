@@ -19,6 +19,7 @@ const Vehicles = lazy(() => import('./pages/Vehicles'))
 const Appointments = lazy(() => import('./pages/AppointmentsBoard'))
 const AppointmentDetails = lazy(() => import('./pages/AppointmentDetails'))
 const AppointmentCreate  = lazy(() => import('./pages/AppointmentCreate'))
+const AppointmentsArchive = lazy(() => import('./pages/AppointmentsArchive'))
 const WorkOrders = lazy(() => import('./pages/WorkOrders'))
 const Services = lazy(() => import('./pages/Services'))
 const Parts = lazy(() => import('./pages/Parts'))
@@ -157,6 +158,8 @@ function App() {
           <Route path="vehicles" element={<Vehicles />} />
           <Route path="appointments" element={<Appointments />} />
           <Route path="appointments/new" element={<AppointmentCreate />} />
+          <Route path="appointments/archive" element={<AppointmentsArchive />} />
+          <Route path="sto/appointments/:appointmentId/edit" element={<AppointmentCreate />} />
           <Route path="statistics" element={<MonthlyStatistics />} />
           <Route path="statistics/month/:month" element={<MonthlyDetails />} />
           <Route path="sto/appointments/:appointmentId" element={<AppointmentDetails />} />

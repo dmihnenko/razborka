@@ -38,6 +38,17 @@ function calcEndTime(startStr: string, selDate: Date, durMin: number): string {
   const start = new Date(selDate); start.setHours(h, m, 0, 0)
   return `${String(addMinutes(start, durMin).getHours()).padStart(2,'0')}:${String(addMinutes(start, durMin).getMinutes()).padStart(2,'0')}`
 }
+// Длительность в часах: число ("2" или "2,5")
+function hoursNum(durMin: number): string {
+  const h = durMin / 60
+  return Number.isInteger(h) ? String(h) : h.toFixed(1).replace('.', ',')
+}
+function hoursLabel(durMin: number): string {
+  return `${hoursNum(durMin)} ч`
+}
+const DUR_STEP = 30   // шаг 30 мин
+const DUR_MIN  = 30
+const DUR_MAX  = 720  // до 12 ч
 
 // ─── data ─────────────────────────────────────────────────────────────────────
 
@@ -47,23 +58,6 @@ const START_TIMES = Array.from({ length: 24 }, (_, i) => {
   const h = Math.floor(totalMin / 60), m = totalMin % 60
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`
 })
-
-// Длительность: от 30 мин до 8 ч по 30 мин
-const DURATIONS: { label: string; min: number }[] = [
-  { label: '30 мин', min: 30  },
-  { label: '1 ч',    min: 60  },
-  { label: '1 ч 30', min: 90  },
-  { label: '2 ч',    min: 120 },
-  { label: '2 ч 30', min: 150 },
-  { label: '3 ч',    min: 180 },
-  { label: '3 ч 30', min: 210 },
-  { label: '4 ч',    min: 240 },
-  { label: '4 ч 30', min: 270 },
-  { label: '5 ч',    min: 300 },
-  { label: '6 ч',    min: 360 },
-  { label: '7 ч',    min: 420 },
-  { label: '8 ч',    min: 480 },
-]
 
 const WEEKDAYS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
 const MONTHS_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь',
@@ -197,13 +191,12 @@ export default function DateTimePicker({
     return '09:00'
   })
 
-  // Выбранная длительность
+  // Выбранная длительность (в минутах)
   const [durMin, setDurMin] = useState<number>(() => {
     const end = parseLocalISO(endValue)
     if (end && selectedStart) {
       const diff = Math.round((end.getTime() - selectedStart.getTime()) / 60_000)
-      const found = DURATIONS.find(d => d.min === diff)
-      return found ? found.min : 60
+      return diff > 0 ? diff : 60
     }
     return 60
   })
@@ -272,8 +265,6 @@ export default function DateTimePicker({
   const today = new Date(); today.setHours(0,0,0,0)
   const daysInMonth = getDaysInMonth(viewYear, viewMonth)
   const firstDay    = getFirstDay(viewYear, viewMonth)
-
-  const durObj = DURATIONS.find(d => d.min === durMin) ?? DURATIONS[1]
 
   function loadColor(n: number) {
     if (n <= 2) return 'bg-emerald-400'
@@ -383,7 +374,7 @@ export default function DateTimePicker({
 
           <div className="flex-1">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Длительность</p>
-            <p className="text-xl font-bold text-primary leading-none">{durObj.label}</p>
+            <p className="text-xl font-bold text-primary leading-none">{hoursLabel(durMin)}</p>
           </div>
 
           <div className="text-gray-300 font-light text-xl flex-shrink-0">=</div>
@@ -411,17 +402,46 @@ export default function DateTimePicker({
             />
           </div>
 
-          {/* Длительность */}
+          {/* Длительность — сколько часов занят мастер */}
           <div>
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide text-center py-2.5 border-b border-gray-100">
-              Длительность
+              Часов
             </p>
-            <ScrollDrum
-              items={DURATIONS.map(d => d.min)}
-              value={durMin}
-              onChange={setDurMin}
-              getLabel={min => DURATIONS.find(d => d.min === min)?.label ?? ''}
-            />
+            <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: ITEM_H * 5 - 41 }}>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDurMin(m => Math.max(DUR_MIN, m - DUR_STEP))}
+                  className="w-11 h-11 flex items-center justify-center rounded-xl border border-gray-200 text-gray-600 text-2xl font-bold leading-none hover:bg-gray-50 active:scale-95 transition disabled:opacity-30"
+                  disabled={durMin <= DUR_MIN}
+                  aria-label="Меньше"
+                >−</button>
+
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={hoursNum(durMin)}
+                  onChange={e => {
+                    const h = parseFloat(e.target.value.replace(',', '.'))
+                    if (!isNaN(h) && h > 0) {
+                      setDurMin(Math.min(DUR_MAX, Math.max(DUR_MIN, Math.round(h * 2) / 2 * 60)))
+                    }
+                  }}
+                  className="w-16 text-center text-4xl font-bold text-primary tabular-nums leading-none bg-transparent border-b-2 border-primary/20 focus:border-primary outline-none py-1"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setDurMin(m => Math.min(DUR_MAX, m + DUR_STEP))}
+                  className="w-11 h-11 flex items-center justify-center rounded-xl border border-gray-200 text-gray-600 text-2xl font-bold leading-none hover:bg-gray-50 active:scale-95 transition disabled:opacity-30"
+                  disabled={durMin >= DUR_MAX}
+                  aria-label="Больше"
+                >+</button>
+              </div>
+              <p className="text-xs text-gray-400 text-center px-3">
+                Мастер занят ~{hoursLabel(durMin)}
+              </p>
+            </div>
           </div>
         </div>
       </div>

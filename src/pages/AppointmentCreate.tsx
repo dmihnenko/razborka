@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useQueryClient, useMutation } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
+import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { toast } from 'sonner'
@@ -53,9 +53,11 @@ export default function AppointmentCreate() {
   const queryClient  = useQueryClient()
   const { data: profile } = useUserProfile()
 
+  const { appointmentId } = useParams()
+  const isEdit = !!appointmentId
   const prefilledDate = searchParams.get('date')
 
-  const [openSection, setOpenSection] = useState<SectionId>('client')
+  const [openSection, setOpenSection] = useState<SectionId>(isEdit ? 'works' : 'client')
 
   const [form, setForm] = useState<AppointmentFormValues>(() => {
     const now = new Date()
@@ -77,6 +79,57 @@ export default function AppointmentCreate() {
     }
   })
 
+  // ── Загрузка заявки для редактирования ──────────────────────────────────────
+  const { data: existing } = useQuery({
+    queryKey: ['appointment', appointmentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*, customers(*), vehicles(*)')
+        .eq('id', appointmentId)
+        .single()
+      if (error) throw error
+      return data
+    },
+    enabled: isEdit,
+  })
+
+  useEffect(() => {
+    if (!existing) return
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const toLocalISO = (d: Date) =>
+      `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    const parseLocal = (s: string) => {
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
+      if (m) return new Date(+m[1], +m[2]-1, +m[3], +(m[4] ?? 9), +(m[5] ?? 0))
+      return new Date(s)
+    }
+    let sd: string = existing.scheduled_date
+    if (!sd || isNaN(new Date(sd).getTime())) sd = existing.created_at || existing.updated_at
+    const scheduledDate = toLocalISO(new Date(sd))
+    let scheduledEndDate: string | null = null
+    if (existing.duration_minutes && existing.duration_minutes > 0) {
+      const end = parseLocal(scheduledDate)
+      end.setMinutes(end.getMinutes() + existing.duration_minutes)
+      scheduledEndDate = toLocalISO(end)
+    }
+    setForm({
+      customer_id:      existing.customer_id,
+      vehicle_id:       existing.vehicle_id,
+      scheduledDate,
+      scheduledEndDate,
+      status:           existing.status,
+      notes:            existing.notes || '',
+      workItems:        existing.work_items || [],
+      partItems:        existing.part_items || [],
+      selectedClient:   existing.customers,
+      selectedVehicle:  existing.vehicles,
+      assigned_to:      existing.assigned_to,
+      parts_paid:       existing.parts_paid || false,
+      work_paid:        existing.work_paid || false,
+    })
+  }, [existing])
+
   const goNext = (current: SectionId) => {
     const idx = SECTIONS.findIndex(s => s.id === current)
     if (idx < SECTIONS.length - 1) setOpenSection(SECTIONS[idx + 1].id)
@@ -97,6 +150,30 @@ export default function AppointmentCreate() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      if (isEdit) {
+        const { data, error } = await supabase
+          .from('appointments')
+          .update({
+            customer_id:      form.customer_id,
+            vehicle_id:       form.vehicle_id,
+            scheduled_date:   form.scheduledDate,
+            status:           form.status,
+            notes:            form.notes || null,
+            work_items:       form.workItems,
+            part_items:       form.partItems,
+            total_work_cost:  totalWork,
+            total_parts_cost: totalParts,
+            total_cost:       totalCost,
+            assigned_to:      form.assigned_to || null,
+            parts_paid:       form.parts_paid || false,
+            work_paid:        form.work_paid || false,
+          })
+          .eq('id', appointmentId)
+          .select()
+          .single()
+        if (error) throw error
+        return data
+      }
       const { data, error } = await supabase
         .from('appointments')
         .insert({
@@ -124,7 +201,8 @@ export default function AppointmentCreate() {
     onSuccess: (appt) => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
       queryClient.invalidateQueries({ queryKey: ['board-kanban'] })
-      toast.success('Запись создана!')
+      if (isEdit) queryClient.invalidateQueries({ queryKey: ['appointment', appointmentId] })
+      toast.success(isEdit ? 'Запись обновлена!' : 'Запись создана!')
       navigate(`/sto/appointments/${appt.id}`)
     },
     onError: (err: any) => toast.error(`Ошибка: ${err.message}`),
@@ -145,7 +223,7 @@ export default function AppointmentCreate() {
           </button>
 
           <div className="flex-1 min-w-0">
-            <h1 className="font-bold text-gray-900 text-base leading-tight">Новая запись</h1>
+            <h1 className="font-bold text-gray-900 text-base leading-tight">{isEdit ? 'Редактирование записи' : 'Новая запись'}</h1>
             {form.selectedClient && (
               <p className="text-xs text-gray-400 leading-none mt-0.5 truncate">
                 {(form.selectedClient as any).name}
@@ -159,7 +237,7 @@ export default function AppointmentCreate() {
             disabled={!canSubmit || createMutation.isPending}
             className="px-4 py-1.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-40 transition-colors flex-shrink-0"
           >
-            {createMutation.isPending ? 'Создание…' : 'Создать'}
+            {createMutation.isPending ? 'Сохранение…' : isEdit ? 'Сохранить' : 'Создать'}
           </button>
         </div>
       </div>
@@ -312,7 +390,7 @@ export default function AppointmentCreate() {
                 disabled={!canSubmit || createMutation.isPending}
                 className="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-40 transition-colors text-sm"
               >
-                {createMutation.isPending ? 'Создание…' : 'Создать запись'}
+                {createMutation.isPending ? 'Сохранение…' : isEdit ? 'Сохранить' : 'Создать запись'}
               </button>
             </div>
           </div>
@@ -415,7 +493,7 @@ export default function AppointmentCreate() {
                 disabled={!canSubmit || createMutation.isPending}
                 className="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-40 transition-colors text-sm"
               >
-                {createMutation.isPending ? 'Создание…' : 'Создать запись'}
+                {createMutation.isPending ? 'Сохранение…' : isEdit ? 'Сохранить' : 'Создать запись'}
               </button>
 
               {!canSubmit && (

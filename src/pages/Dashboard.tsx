@@ -519,13 +519,6 @@ export default function Dashboard() {
                 </div>
               )}
 
-              <div className="flex-shrink-0 p-3" style={{ borderTop: '1px solid #F1F5F9' }}>
-                <button onClick={() => setIsModalOpen(true)}
-                  className="btn-primary w-full flex items-center justify-center gap-2 btn-sm">
-                  <Plus className="w-4 h-4" />
-                  Новая запись
-                </button>
-              </div>
             </div>
           </div>
 

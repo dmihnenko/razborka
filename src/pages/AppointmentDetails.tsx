@@ -345,7 +345,14 @@ export default function AppointmentDetails() {
               </button>
             )}
             <button
-              onClick={() => setIsEditModalOpen(true)}
+              onClick={() => {
+                // Десктоп — редактирование на отдельной странице; мобайл — модалка (bottom-sheet)
+                if (window.matchMedia('(min-width: 1024px)').matches) {
+                  navigate(`/sto/appointments/${appointment.id}/edit`)
+                } else {
+                  setIsEditModalOpen(true)
+                }
+              }}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
             >
               <Pencil className="w-3.5 h-3.5" />
