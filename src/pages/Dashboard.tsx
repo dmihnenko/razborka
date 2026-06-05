@@ -26,6 +26,7 @@ import MyVehicles from './MyVehicles'
 import WorkerDashboard from './WorkerDashboard'
 import { useNavigate, Link } from 'react-router-dom'
 import { fetchStoClientStats } from '@/services/stoService'
+import { fmtMoneyShort } from '@/utils/money'
 
 export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -264,21 +265,21 @@ export default function Dashboard() {
             <button onClick={() => navigate('/appointments')}
               className="stat-card cursor-pointer text-left group">
               <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
-                  <FileText className="w-5 h-5" style={{ color: '#2563EB' }} />
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-5 h-5 text-blue-600" />
                 </div>
-                <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#2563EB' }} />
+                <ArrowRight className="w-4 h-4 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-              <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Заявки</p>
-              <p className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>{activeCount}</p>
-              <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid #F1F5F9' }}>
+              <p className="text-xs font-medium text-gray-500 mb-0.5">Заявки</p>
+              <p className="text-3xl font-bold text-gray-900 tracking-tight">{activeCount}</p>
+              <div className="mt-3 pt-3 space-y-1 border-t border-gray-100">
                 <div className="flex justify-between text-xs">
-                  <span style={{ color: '#94A3B8' }}>Ожидают</span>
-                  <span className="font-semibold" style={{ color: '#7C3AED' }}>{scheduledCount}</span>
+                  <span className="text-gray-400">Ожидают</span>
+                  <span className="font-semibold text-violet-600">{scheduledCount}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span style={{ color: '#94A3B8' }}>В работе</span>
-                  <span className="font-semibold" style={{ color: '#D97706' }}>{inProgressCount}</span>
+                  <span className="text-gray-400">В работе</span>
+                  <span className="font-semibold text-amber-600">{inProgressCount}</span>
                 </div>
               </div>
             </button>
@@ -287,17 +288,17 @@ export default function Dashboard() {
             <button onClick={() => navigate('/appointments?tab=completed')}
               className="stat-card cursor-pointer text-left group">
               <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
-                  <CheckCircle className="w-5 h-5" style={{ color: '#16A34A' }} />
+                <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
                 </div>
-                <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#16A34A' }} />
+                <ArrowRight className="w-4 h-4 text-green-600 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-              <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Готовые</p>
-              <p className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>{readyCount}</p>
-              <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid #F1F5F9' }}>
+              <p className="text-xs font-medium text-gray-500 mb-0.5">Готовые</p>
+              <p className="text-3xl font-bold text-gray-900 tracking-tight">{readyCount}</p>
+              <div className="mt-3 pt-3 space-y-1 border-t border-gray-100">
                 <div className="flex justify-between text-xs">
-                  <span style={{ color: '#94A3B8' }}>Неоплачено</span>
-                  <span className="font-semibold" style={{ color: unpaidCount > 0 ? '#DC2626' : '#94A3B8' }}>{unpaidCount}</span>
+                  <span className="text-gray-400">Неоплачено</span>
+                  <span className={`font-semibold ${unpaidCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>{unpaidCount}</span>
                 </div>
               </div>
             </button>
@@ -306,20 +307,20 @@ export default function Dashboard() {
             <button onClick={() => navigate('/customers')}
               className="stat-card cursor-pointer text-left group">
               <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(99,102,241,0.1)' }}>
-                  <Users className="w-5 h-5" style={{ color: '#6366F1' }} />
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center flex-shrink-0">
+                  <Users className="w-5 h-5 text-indigo-500" />
                 </div>
-                <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#6366F1' }} />
+                <ArrowRight className="w-4 h-4 text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-              <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Клиенты</p>
-              <p className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>{clientsStats?.customers || 0}</p>
-              <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid #F1F5F9' }}>
+              <p className="text-xs font-medium text-gray-500 mb-0.5">Клиенты</p>
+              <p className="text-3xl font-bold text-gray-900 tracking-tight">{clientsStats?.customers || 0}</p>
+              <div className="mt-3 pt-3 space-y-1 border-t border-gray-100">
                 <div className="flex justify-between text-xs">
-                  <span style={{ color: '#94A3B8' }}>Автомобилей</span>
+                  <span className="text-gray-400">Автомобилей</span>
                   <span className="font-semibold text-gray-700">{clientsStats?.vehicles || 0}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span style={{ color: '#94A3B8' }}>Сотрудников</span>
+                  <span className="text-gray-400">Сотрудников</span>
                   <span className="font-semibold text-gray-700">{workersCount}</span>
                 </div>
               </div>
@@ -328,26 +329,23 @@ export default function Dashboard() {
             {/* Выручка за месяц */}
             <button
               onClick={() => navigate(`/monthly-revenue?year=${new Date().getFullYear()}&month=${new Date().getMonth() + 1}`)}
-              className="stat-card cursor-pointer text-left group"
-              style={{ background: 'linear-gradient(135deg, #1E3A6E 0%, #1E40AF 100%)', border: 'none' }}>
+              className="stat-card cursor-pointer text-left group border-0 bg-gradient-to-br from-[#1E3A6E] to-[#1E40AF]">
               <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+                <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
                   <DollarSign className="w-5 h-5 text-white" />
                 </div>
-                <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-white" />
+                <ArrowRight className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-              <p className="text-xs font-medium mb-0.5" style={{ color: 'rgba(255,255,255,0.7)' }}>Доход за месяц</p>
-              <p className="text-3xl font-bold text-white" style={{ letterSpacing: '-0.03em' }}>
-                {totalCost >= 1000 ? `${Math.round(totalCost/1000)}к` : totalCost} ₴
-              </p>
-              <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+              <p className="text-xs font-medium text-white/70 mb-0.5">Доход за месяц</p>
+              <p className="text-3xl font-bold text-white tracking-tight">{fmtMoneyShort(totalCost)}</p>
+              <div className="mt-3 pt-3 space-y-1 border-t border-white/15">
                 <div className="flex justify-between text-xs">
-                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>Работы</span>
-                  <span className="font-semibold text-white">{workCost >= 1000 ? `${Math.round(workCost/1000)}к` : workCost} ₴</span>
+                  <span className="text-white/60">Работы</span>
+                  <span className="font-semibold text-white">{fmtMoneyShort(workCost)}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>Запчасти</span>
-                  <span className="font-semibold text-white">{partsCost >= 1000 ? `${Math.round(partsCost/1000)}к` : partsCost} ₴</span>
+                  <span className="text-white/60">Запчасти</span>
+                  <span className="font-semibold text-white">{fmtMoneyShort(partsCost)}</span>
                 </div>
               </div>
             </button>
