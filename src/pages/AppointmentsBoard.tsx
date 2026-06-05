@@ -472,7 +472,7 @@ export default function AppointmentsBoard() {
   const [selectedDate, setSelectedDate]         = useState(() => { const d = new Date(); d.setHours(0,0,0,0); return d })
   const [weekStart, setWeekStart]               = useState(() => getWeekStart(new Date()))
   const [search, setSearch]                     = useState('')
-  const [showArchived, setShowArchived]         = useState(false)
+  const showArchived = false  // архив вынесен на отдельную страницу /appointments/archive
   const [mechanicFilter, setMechanicFilter]     = useState('all')
   const [listStatusFilter, setListStatusFilter] = useState<string>(() => {
     const t = searchParams.get('tab')
@@ -799,17 +799,14 @@ export default function AppointmentsBoard() {
               </select>
             )}
 
-            {/* Архив */}
-            {(view === 'kanban' || view === 'list') && (
-              <button
-                onClick={() => setShowArchived(v => !v)}
-                className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all flex-shrink-0
-                  ${showArchived ? 'bg-gray-100 border-gray-300 text-gray-700' : 'border-gray-200 text-gray-400 hover:text-gray-600'}`}
-              >
-                <Archive className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Архив</span>
-              </button>
-            )}
+            {/* Архив — отдельная страница-история */}
+            <button
+              onClick={() => navigate('/appointments/archive')}
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-300 transition-all flex-shrink-0"
+            >
+              <Archive className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">Архив</span>
+            </button>
 
             {/* Быстрая статистика */}
             <div className="hidden xl:flex items-center gap-1.5 text-xs flex-shrink-0">
