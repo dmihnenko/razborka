@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Spinner } from '@/components/ui/Spinner'
 import { supabase } from '@/lib/supabase'
-import { X, Package, Wrench, EyeOff, Eye } from 'lucide-react'
+import { Package, Wrench, EyeOff, Eye, TrendingUp } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { MONTH_NAMES_RU } from '@/utils/status'
-import { useBlockScroll } from '@/hooks/useBlockScroll'
+import Modal from '@/components/ui/Modal'
 import { useToggleAppointmentExclude } from '@/hooks/useToggleAppointmentExclude'
 
 type AppointmentRow = {
@@ -27,7 +27,6 @@ interface MonthlyRevenueModalProps {
 
 export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: MonthlyRevenueModalProps) {
   const { data: profile } = useUserProfile()
-  useBlockScroll(isOpen)
 
   const { data: appointments, isLoading } = useQuery({
     queryKey: ['monthly-appointments', profile?.sto_company_id, year, month],
@@ -61,33 +60,22 @@ export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: Mo
 
   const toggleExcludeMutation = useToggleAppointmentExclude()
 
-  if (!isOpen) return null
-
   const included = appointments?.filter(a => !a.exclude_from_stats) || []
   const excluded = appointments?.filter(a => a.exclude_from_stats) || []
 
-  const includedTotal = included.reduce((sum, a) => 
+  const includedTotal = included.reduce((sum, a) =>
     sum + ((a.parts_cost || a.total_parts_cost) || 0) + (a.total_work_cost || 0), 0
   )
 
   return (
-    <div className="modal-overlay">
-      <div className="bg-white rounded-t-2xl sm:rounded-lg shadow-xl max-w-4xl w-full max-h-[90dvh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Закрытые заявки - {MONTH_NAMES_RU[month - 1]} {year}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      icon={<div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center"><TrendingUp className="w-5 h-5 text-green-600" /></div>}
+      title={`Закрытые заявки — ${MONTH_NAMES_RU[month - 1]} ${year}`}
+      subtitle={`Учитывается в статистике: ${includedTotal.toLocaleString('ru-RU')} ₴`}
+    >
           {isLoading ? (
             <div className="flex justify-center py-8">
               <Spinner size="md" />
@@ -236,8 +224,6 @@ export default function MonthlyRevenueModal({ isOpen, onClose, year, month }: Mo
               )}
             </div>
           )}
-        </div>
-      </div>
-    </div>
+    </Modal>
   )
 }

@@ -321,6 +321,13 @@
     to   { opacity: 1; }
   }
   .animate-fade-in { animation: fade-in 0.2s ease-out; }
+
+  /* Desktop-модалка: лёгкий pop-in (scale + fade) */
+  @keyframes modal-pop {
+    from { transform: scale(0.96); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
+  .animate-modal-pop { animation: modal-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1); }
 }
 
 /* ═══════════════════════════════════════════════════════════════

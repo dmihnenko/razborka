@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react'
-import { X, AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-react'
+import { AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-react'
+import Modal from './ui/Modal'
 
 type AlertType = 'success' | 'error' | 'info'
 
@@ -79,110 +80,79 @@ export function AlertProvider({ children }: { children: ReactNode }) {
   }, [confirm])
 
   useEffect(() => {
+    if (!confirm) return
     const handleKey = (e: KeyboardEvent) => {
-      if (!confirm) return
-      if (e.key === 'Escape') {
-        if (confirm.onCancel) confirm.onCancel()
-        setConfirm(null)
-      }
-      if (e.key === 'Enter') {
-        confirm.onConfirm()
-        setConfirm(null)
-      }
+      if (e.key === 'Enter') { confirm.onConfirm(); setConfirm(null) }
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [confirm])
 
-  const getIcon = () => {
+  const alertIcon = () => {
     switch (alert?.type) {
-      case 'success':
-        return <CheckCircle className="w-6 h-6 text-green-600" />
-      case 'error':
-        return <AlertCircle className="w-6 h-6 text-red-600" />
-      default:
-        return <Info className="w-6 h-6 text-blue-600" />
-    }
-  }
-
-  const getColors = () => {
-    switch (alert?.type) {
-      case 'success':
-        return 'bg-green-50 border-green-200'
-      case 'error':
-        return 'bg-red-50 border-red-200'
-      default:
-        return 'bg-blue-50 border-blue-200'
+      case 'success': return { Icon: CheckCircle, cls: 'bg-green-100 text-green-600' }
+      case 'error':   return { Icon: AlertCircle,  cls: 'bg-red-100 text-red-600' }
+      default:        return { Icon: Info,         cls: 'bg-blue-100 text-blue-600' }
     }
   }
 
   return (
     <AlertContext.Provider value={{ showAlert, showConfirm }}>
       {children}
-      
-      {/* Alert Modal */}
-      {alert && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
-          <div className={`bg-white rounded-lg shadow-xl max-w-md w-full p-6 border-2 ${getColors()}`}>
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 mt-0.5">
-                {getIcon()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-gray-900 text-base leading-relaxed">
-                  {alert.message}
-                </p>
-              </div>
+
+      {/* Alert */}
+      {alert && (() => {
+        const { Icon, cls } = alertIcon()
+        return (
+          <Modal
+            isOpen
+            onClose={closeAlert}
+            size="sm"
+            icon={<div className={`w-10 h-10 rounded-xl flex items-center justify-center ${cls}`}><Icon className="w-5 h-5" /></div>}
+            title={alert.type === 'success' ? 'Готово' : alert.type === 'error' ? 'Ошибка' : 'Уведомление'}
+            footer={
               <button
                 onClick={closeAlert}
-                className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="mt-5 flex justify-end">
-              <button
-                onClick={closeAlert}
-                className="px-6 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors font-medium"
+                className="w-full py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors"
               >
                 OK
               </button>
-            </div>
-          </div>
-        </div>
-      )}
+            }
+          >
+            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{alert.message}</p>
+          </Modal>
+        )
+      })()}
 
-      {/* Confirm Modal */}
+      {/* Confirm */}
       {confirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={handleCancel} />
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-start gap-4 mb-5">
-              <div className="p-2 rounded-full flex-shrink-0 bg-red-100">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-gray-900 mb-1">Подтвердите действие</h3>
-                <p className="text-sm text-gray-600">{confirm.message}</p>
-              </div>
-            </div>
-            <div className="flex gap-3 justify-end">
+        <Modal
+          isOpen
+          onClose={handleCancel}
+          size="sm"
+          hideClose
+          icon={<div className="w-10 h-10 rounded-xl flex items-center justify-center bg-red-100"><AlertTriangle className="w-5 h-5 text-red-600" /></div>}
+          title="Подтвердите действие"
+          footer={
+            <div className="flex gap-2">
               <button
                 onClick={handleCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
                 {confirm.cancelText}
               </button>
               <button
                 ref={confirmBtnRef}
                 onClick={handleConfirm}
-                className="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors bg-red-600 hover:bg-red-700"
+                className="flex-1 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
               >
                 {confirm.confirmText}
               </button>
             </div>
-          </div>
-        </div>
+          }
+        >
+          <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{confirm.message}</p>
+        </Modal>
       )}
     </AlertContext.Provider>
   )

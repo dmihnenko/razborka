@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Search } from 'lucide-react'
 import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { useBlockScroll } from '@/hooks/useBlockScroll'
+import Modal from '@/components/ui/Modal'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { moveToTrash } from '@/services/trashService'
@@ -343,7 +343,6 @@ function VehicleModal({
   })
 
   const { data: profile } = useUserProfile()
-  useBlockScroll(true)
 
   const queryClient = useQueryClient()
 
@@ -418,14 +417,32 @@ function VehicleModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto relative">
-        <div className="sticky top-0 bg-white px-4 sm:px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg sm:text-xl font-bold">
-            {vehicle ? 'Редактировать автомобиль' : 'Добавить автомобиль'}
-          </h2>
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="md"
+      title={vehicle ? 'Редактировать автомобиль' : 'Добавить автомобиль'}
+      footer={
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={mutation.isPending}
+            className="flex-1 py-2.5 text-sm font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            {mutation.isPending ? 'Сохранение…' : 'Сохранить'}
+          </button>
         </div>
-        <form onSubmit={handleSubmit} className="px-4 sm:px-6 py-4 space-y-4">
+      }
+    >
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Владелец *</label>
             <input
@@ -520,25 +537,8 @@ function VehicleModal({
               className="block w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
+          <button type="submit" className="hidden" />
         </form>
-        <div className="sticky bottom-0 bg-white px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex items-center gap-2 sm:gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium border-2 border-gray-300"
-          >
-            Отмена
-          </button>
-          <button
-            type="submit"
-            onClick={handleSubmit}
-            disabled={mutation.isPending}
-            className="flex-1 px-4 py-2.5 sm:py-3 text-sm sm:text-base text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
-          >
-            {mutation.isPending ? 'Сохранение...' : 'Сохранить'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   )
 }

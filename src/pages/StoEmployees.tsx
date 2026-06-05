@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Eye, UserCog, Trash2, Edit } from 'lucide-react'
+import { Eye, UserCog, Trash2, Edit, AlertTriangle } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import Modal from '@/components/ui/Modal'
 import { useNavigate } from 'react-router-dom'
 import {
   fetchStoEmployees,
@@ -189,55 +190,49 @@ function BulkAssignModal({ isOpen, onClose, employees }: { isOpen: boolean; onCl
     }
   })
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          Массовое назначение заявок
-        </h2>
-
-        <p className="text-sm text-gray-600 mb-4">
-          Выберите работника, которому будут назначены все незакрепленные заявки (включая архивные).
-        </p>
-
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Работник
-          </label>
-          <select
-            value={selectedWorkerId}
-            onChange={(e) => setSelectedWorkerId(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="">Выберите работника</option>
-            {employees.map((employee) => (
-              <option key={employee.id} value={employee.id}>
-                {employee.full_name || employee.username}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex justify-end space-x-3">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="md"
+      icon={<div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><UserCog className="w-5 h-5 text-primary" /></div>}
+      title="Массовое назначение заявок"
+      footer={
+        <div className="flex gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+            className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
           >
             Отмена
           </button>
           <button
             onClick={() => bulkAssignMutation.mutate(selectedWorkerId)}
             disabled={!selectedWorkerId || bulkAssignMutation.isPending}
-            className="px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-2.5 text-sm font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
-            {bulkAssignMutation.isPending ? 'Назначение...' : 'Назначить'}
+            {bulkAssignMutation.isPending ? 'Назначение…' : 'Назначить'}
           </button>
         </div>
-      </div>
-    </div>
+      }
+    >
+      <p className="text-sm text-gray-600 mb-4">
+        Выберите работника, которому будут назначены все незакреплённые заявки (включая архивные).
+      </p>
+      <label className="form-label">Работник</label>
+      <select
+        value={selectedWorkerId}
+        onChange={(e) => setSelectedWorkerId(e.target.value)}
+        className="form-select"
+      >
+        <option value="">Выберите работника</option>
+        {employees.map((employee) => (
+          <option key={employee.id} value={employee.id}>
+            {employee.full_name || employee.username}
+          </option>
+        ))}
+      </select>
+    </Modal>
   )
 }
 
@@ -268,58 +263,56 @@ function EditEmployeeModal({ employee, onClose }: { employee: StoEmployee; onClo
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          Редактировать работника
-        </h2>
-
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Логин
-            </label>
-            <input
-              type="text"
-              value={employee.username || ''}
-              disabled
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed"
-            />
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Полное имя <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Введите полное имя"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              autoFocus
-            />
-          </div>
-
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              disabled={updateEmployeeMutation.isPending || !fullName.trim()}
-              className="px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {updateEmployeeMutation.isPending ? 'Сохранение...' : 'Сохранить'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="md"
+      icon={<div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Edit className="w-5 h-5 text-primary" /></div>}
+      title="Редактировать работника"
+      footer={
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={updateEmployeeMutation.isPending || !fullName.trim()}
+            className="flex-1 py-2.5 text-sm font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            {updateEmployeeMutation.isPending ? 'Сохранение…' : 'Сохранить'}
+          </button>
+        </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="form-label">Логин</label>
+          <input
+            type="text"
+            value={employee.username || ''}
+            disabled
+            className="form-input bg-gray-50 text-gray-500 cursor-not-allowed"
+          />
+        </div>
+        <div>
+          <label className="form-label">Полное имя <span className="text-red-500">*</span></label>
+          <input
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Введите полное имя"
+            className="form-input"
+            autoFocus
+          />
+        </div>
+        <button type="submit" className="hidden" />
+      </form>
+    </Modal>
   )
 }
 
@@ -333,45 +326,44 @@ function DeleteEmployeeConfirmModal({
   onConfirm: () => void 
 }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-2xl font-bold text-red-600 mb-4">
-          Удаление работника
-        </h2>
-
-        <div className="mb-6">
-          <p className="text-gray-900 mb-3">
-            Вы действительно хотите удалить работника{' '}
-            <span className="font-semibold">{employee.full_name || employee.username}</span>?
-          </p>
-          
-          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-            <p className="text-sm text-yellow-800">
-              <strong>Важно:</strong> Его активные заявки будут автоматически:
-            </p>
-            <ul className="list-disc list-inside text-sm text-yellow-800 mt-2 space-y-1">
-              <li>Переназначены другому работнику, если он один в системе</li>
-              <li>Сняты с назначения, если работников несколько или нет</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="flex justify-end space-x-3">
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="md"
+      hideClose
+      icon={<div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-red-600" /></div>}
+      title="Удаление работника"
+      footer={
+        <div className="flex gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+            className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
           >
             Отмена
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 text-white bg-red-700 rounded-md hover:bg-red-800"
+            className="flex-1 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
           >
             Удалить работника
           </button>
         </div>
+      }
+    >
+      <p className="text-sm text-gray-700 mb-3">
+        Вы действительно хотите удалить работника{' '}
+        <span className="font-semibold">{employee.full_name || employee.username}</span>?
+      </p>
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+        <p className="text-sm text-yellow-800">
+          <strong>Важно:</strong> Его активные заявки будут автоматически:
+        </p>
+        <ul className="list-disc list-inside text-sm text-yellow-800 mt-2 space-y-1">
+          <li>Переназначены другому работнику, если он один в системе</li>
+          <li>Сняты с назначения, если работников несколько или нет</li>
+        </ul>
       </div>
-    </div>
+    </Modal>
   )
 }

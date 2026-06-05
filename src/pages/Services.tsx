@@ -6,7 +6,7 @@ import {
   Plus, Pencil, Trash2, ChevronRight, ChevronDown,
   Wrench, FolderOpen, Folder, Clock, Search, X,
 } from 'lucide-react'
-import { useBlockScroll } from '@/hooks/useBlockScroll'
+import Modal from '@/components/ui/Modal'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { useUserProfile } from '@/hooks/useUserProfile'
@@ -369,7 +369,6 @@ function CategoryModal({ item, parentId, stoCompanyId, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
-  useBlockScroll(true)
   const [name, setName] = useState(item?.name || '')
   const [color, setColor] = useState(item?.color || COLORS[0])
 
@@ -386,54 +385,54 @@ function CategoryModal({ item, parentId, stoCompanyId, onClose, onSaved }: {
   })
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">
-            {item ? 'Редактировать' : parentId ? 'Новая подкатегория' : 'Новая категория'}
-          </h2>
-        </div>
-        <div className="px-5 py-4 space-y-4">
-          <div>
-            <label className="text-sm font-medium text-gray-700">Название *</label>
-            <input
-              autoFocus
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && name.trim()) mutation.mutate() }}
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Цвет</label>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {COLORS.map(c => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  className={`w-7 h-7 rounded-full transition-transform ${color === c ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''}`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="sm"
+      title={item ? 'Редактировать' : parentId ? 'Новая подкатегория' : 'Новая категория'}
+      footer={
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
             Отмена
           </button>
           <button
             onClick={() => mutation.mutate()}
             disabled={!name.trim() || mutation.isPending}
-            className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            className="flex-1 py-2.5 text-sm font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
-            {mutation.isPending ? 'Сохранение...' : 'Сохранить'}
+            {mutation.isPending ? 'Сохранение…' : 'Сохранить'}
           </button>
         </div>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <label className="form-label">Название *</label>
+          <input
+            autoFocus
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && name.trim()) mutation.mutate() }}
+            className="form-input"
+          />
+        </div>
+        <div>
+          <label className="form-label">Цвет</label>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {COLORS.map(c => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setColor(c)}
+                className={`w-7 h-7 rounded-full transition-transform ${color === c ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''}`}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -447,7 +446,6 @@ function ServiceModal({ item, defaultCategoryId, stoCompanyId, categories, onClo
   onClose: () => void
   onSaved: () => void
 }) {
-  useBlockScroll(true)
   const [form, setForm] = useState({
     name: item?.name || '',
     description: item?.description || '',
@@ -483,12 +481,25 @@ function ServiceModal({ item, defaultCategoryId, stoCompanyId, categories, onClo
   })
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm max-h-[90vh] flex flex-col">
-        <div className="px-5 py-4 border-b border-gray-100 flex-shrink-0">
-          <h2 className="font-semibold text-gray-900">{item ? 'Редактировать услугу' : 'Новая услуга'}</h2>
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="sm"
+      title={item ? 'Редактировать услугу' : 'Новая услуга'}
+      footer={
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Отмена</button>
+          <button
+            onClick={() => mutation.mutate()}
+            disabled={!form.name.trim() || !form.price || mutation.isPending}
+            className="flex-1 py-2.5 text-sm font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            {mutation.isPending ? 'Сохранение…' : 'Сохранить'}
+          </button>
         </div>
-        <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+      }
+    >
+        <div className="space-y-4">
           {/* Name */}
           <div>
             <label className="text-sm font-medium text-gray-700">Название *</label>
@@ -557,18 +568,6 @@ function ServiceModal({ item, defaultCategoryId, stoCompanyId, categories, onClo
             </div>
           </div>
         </div>
-
-        <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2 flex-shrink-0">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">Отмена</button>
-          <button
-            onClick={() => mutation.mutate()}
-            disabled={!form.name.trim() || !form.price || mutation.isPending}
-            className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
-          >
-            {mutation.isPending ? 'Сохранение...' : 'Сохранить'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   )
 }

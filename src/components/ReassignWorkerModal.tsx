@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
-import { X } from 'lucide-react'
+import { UserCog } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { useBlockScroll } from '@/hooks/useBlockScroll'
+import Modal from '@/components/ui/Modal'
 import { toast } from 'sonner'
 
 interface Props {
@@ -36,7 +36,6 @@ export default function ReassignWorkerModal({
   const [selectedWorkerId, setSelectedWorkerId] = useState(currentWorkerId || '')
   const { data: profile } = useUserProfile()
   const queryClient = useQueryClient()
-  useBlockScroll(isOpen)
 
   const { data: workers = [], isLoading } = useQuery({
     queryKey: ['sto_workers', profile?.sto_company_id],
@@ -102,95 +101,67 @@ export default function ReassignWorkerModal({
     },
   })
 
-  if (!isOpen) return null
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const submit = () => {
     if (selectedWorkerId && selectedWorkerId !== currentWorkerId) {
       reassignMutation.mutate(selectedWorkerId)
     }
   }
 
   return (
-    <div className="modal-overlay">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto">
-        {/* Header */}
-        <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-base sm:text-lg font-bold text-gray-900">Переназначить работника</h2>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="md"
+      icon={<div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><UserCog className="w-5 h-5 text-primary" /></div>}
+      title="Переназначить работника"
+      subtitle="Назначьте другого мастера на заявку"
+      footer={
+        <div className="flex gap-2">
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose();
-            }}
-            className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label="Закрыть"
+            onClick={onClose}
+            className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5" />
+            Отмена
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={reassignMutation.isPending || !selectedWorkerId || selectedWorkerId === currentWorkerId}
+            className="flex-1 py-2.5 text-sm font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {reassignMutation.isPending ? 'Сохранение…' : 'Переназначить'}
           </button>
         </div>
-
-        {/* Body */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6">
-          <div className="mb-4">
-            <p className="text-sm text-gray-600 mb-2">{entityLabel}</p>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="font-medium text-gray-900">{entityInfo.customerName}</p>
-              <p className="text-sm text-gray-600">{entityInfo.vehicleName}</p>
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Выберите работника
-            </label>
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Spinner size="md" />
-              </div>
-            ) : workers.length === 0 ? (
-              <p className="text-sm text-gray-500 py-4">Нет доступных работников</p>
-            ) : (
-              <select
-                value={selectedWorkerId}
-                onChange={(e) => setSelectedWorkerId(e.target.value)}
-                className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                required
-              >
-                <option value="">-- Выберите работника --</option>
-                {workers.map((worker) => (
-                  <option key={worker.id} value={worker.id}>
-                    {worker.full_name || worker.email}
-                    {worker.id === currentWorkerId && ' (текущий)'}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2.5 min-h-[40px] text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              disabled={
-                reassignMutation.isPending ||
-                !selectedWorkerId ||
-                selectedWorkerId === currentWorkerId
-              }
-              className="px-4 py-2.5 min-h-[40px] text-sm text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
-            >
-              {reassignMutation.isPending ? 'Сохранение...' : 'Переназначить'}
-            </button>
-          </div>
-        </form>
+      }
+    >
+      <div className="mb-4">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">{entityLabel}</p>
+        <div className="bg-gray-50 rounded-lg px-3.5 py-2.5">
+          <p className="font-semibold text-gray-900 text-sm">{entityInfo.customerName}</p>
+          <p className="text-xs text-gray-500 mt-0.5">{entityInfo.vehicleName}</p>
+        </div>
       </div>
-    </div>
+
+      <label className="block text-sm font-medium text-gray-700 mb-2">Выберите работника</label>
+      {isLoading ? (
+        <div className="flex justify-center py-8"><Spinner size="md" /></div>
+      ) : workers.length === 0 ? (
+        <p className="text-sm text-gray-500 py-4">Нет доступных работников</p>
+      ) : (
+        <select
+          value={selectedWorkerId}
+          onChange={(e) => setSelectedWorkerId(e.target.value)}
+          className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+        >
+          <option value="">— Выберите работника —</option>
+          {workers.map((worker) => (
+            <option key={worker.id} value={worker.id}>
+              {worker.full_name || worker.email}{worker.id === currentWorkerId ? ' (текущий)' : ''}
+            </option>
+          ))}
+        </select>
+      )}
+    </Modal>
   )
 }
