@@ -130,6 +130,13 @@ export default function AppointmentCreate() {
     })
   }, [existing])
 
+  // На создании по умолчанию исполнитель — текущий пользователь (владелец)
+  useEffect(() => {
+    if (!isEdit && profile?.id) {
+      setForm(p => p.assigned_to === undefined ? { ...p, assigned_to: profile.id } : p)
+    }
+  }, [isEdit, profile?.id])
+
   const goNext = (current: SectionId) => {
     const idx = SECTIONS.findIndex(s => s.id === current)
     if (idx < SECTIONS.length - 1) setOpenSection(SECTIONS[idx + 1].id)
@@ -348,6 +355,9 @@ export default function AppointmentCreate() {
                           endValue={form.scheduledEndDate}
                           onEndChange={val => setForm(p => ({ ...p, scheduledEndDate: val }))}
                           stoCompanyId={profile?.sto_company_id}
+                          excludeAppointmentId={appointmentId}
+                          workerId={form.assigned_to ?? null}
+                          onWorkerChange={id => setForm(p => ({ ...p, assigned_to: id ?? undefined }))}
                         />
                       )}
 

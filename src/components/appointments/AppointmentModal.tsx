@@ -450,6 +450,8 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
                 onEndChange={(val) => setFormData(prev => ({ ...prev, scheduledEndDate: val }))}
                 stoCompanyId={profile?.sto_company_id}
                 excludeAppointmentId={appointmentId}
+                workerId={formData.assigned_to ?? null}
+                onWorkerChange={(id) => setFormData(prev => ({ ...prev, assigned_to: id ?? undefined }))}
               />
             </div>
           )}

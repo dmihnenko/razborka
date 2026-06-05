@@ -10,6 +10,9 @@ interface Props {
   onEndChange?: (value: string | null) => void
   stoCompanyId?: string | null
   excludeAppointmentId?: string
+  /** Выбранный мастер (assigned_to). Если передан onWorkerChange — показывается блок выбора мастера */
+  workerId?: string | null
+  onWorkerChange?: (id: string | null) => void
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -49,6 +52,18 @@ function hoursLabel(durMin: number): string {
 const DUR_STEP = 30   // шаг 30 мин
 const DUR_MIN  = 30
 const DUR_MAX  = 720  // до 12 ч
+
+function initials(name?: string | null): string {
+  if (!name) return '?'
+  const p = name.trim().split(/\s+/)
+  return ((p[0]?.[0] ?? '') + (p[1]?.[0] ?? '')).toUpperCase() || '?'
+}
+const AVATAR_BG = ['#2563EB','#7C3AED','#16A34A','#D97706','#DC2626','#0891B2','#DB2777','#4F46E5']
+function avatarColor(id: string): string {
+  let h = 0
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
+  return AVATAR_BG[h % AVATAR_BG.length]
+}
 
 // ─── data ─────────────────────────────────────────────────────────────────────
 
@@ -164,6 +179,7 @@ function ScrollDrum<T>({ items, value, onChange, getLabel }: DrumProps<T>) {
 
 export default function DateTimePicker({
   value, onChange, endValue, onEndChange, stoCompanyId, excludeAppointmentId,
+  workerId, onWorkerChange,
 }: Props) {
   const now = new Date()
   const selectedStart = parseLocalISO(value)
@@ -232,6 +248,24 @@ export default function DateTimePicker({
     })
     return map
   }, [monthAppts, excludeAppointmentId])
+
+  // Мастера СТО (для выбора исполнителя)
+  const { data: workers = [] } = useQuery({
+    queryKey: ['datetime-workers', stoCompanyId],
+    queryFn: async () => {
+      if (!stoCompanyId) return []
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('id, full_name, email')
+        .eq('sto_company_id', stoCompanyId)
+        .eq('is_active', true)
+        .order('full_name')
+      if (error) return []
+      return data ?? []
+    },
+    enabled: !!stoCompanyId && !!onWorkerChange,
+    staleTime: 5 * 60_000,
+  })
 
   // Применяем изменения в родителя при смене времени/длительности
   useEffect(() => {
@@ -445,6 +479,56 @@ export default function DateTimePicker({
           </div>
         </div>
       </div>
+
+      {/* Выбор мастера */}
+      {onWorkerChange && (
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">
+            Мастер, который выполнит ремонт
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {/* Не назначен */}
+            <button
+              type="button"
+              onClick={() => onWorkerChange(null)}
+              className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border text-sm font-medium transition-all
+                ${!workerId
+                  ? 'border-primary bg-primary/5 text-primary'
+                  : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+            >
+              <span className="w-7 h-7 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-xs font-bold flex-shrink-0">—</span>
+              Не назначен
+            </button>
+
+            {(workers as any[]).map(w => {
+              const name = w.full_name || w.email?.split('@')[0] || 'Без имени'
+              const active = workerId === w.id
+              return (
+                <button
+                  key={w.id}
+                  type="button"
+                  onClick={() => onWorkerChange(w.id)}
+                  className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border text-sm font-medium transition-all
+                    ${active
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-gray-200 text-gray-700 hover:border-gray-300'}`}
+                >
+                  <span
+                    className="w-7 h-7 rounded-full text-white flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    style={{ backgroundColor: avatarColor(w.id) }}
+                  >
+                    {initials(w.full_name || w.email)}
+                  </span>
+                  <span className="truncate max-w-[140px]">{name}</span>
+                </button>
+              )
+            })}
+          </div>
+          {workers.length === 0 && (
+            <p className="text-xs text-gray-400">Нет доступных мастеров</p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
