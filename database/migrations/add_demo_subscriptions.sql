@@ -1,102 +1,97 @@
--- Создание демо-подписок и автоматическое назначение новым компаниям
+-- ╔══════════════════════════════════════════════════════════════════════════╗
+-- ║  Демо-подписка на 1 месяц для новых СТО и разборок                          ║
+-- ║                                                                            ║
+-- ║  При создании компании (sto_companies / parts_companies) владелец          ║
+-- ║  автоматически получает бесплатную демо-подписку на 1 месяц, чтобы          ║
+-- ║  ознакомиться с системой и наполнить её своими данными.                    ║
+-- ║  (В таблице subscriptions нет колонок лимитов — активная подписка даёт      ║
+-- ║   полный доступ; ограничения включаются только когда подписки нет.)        ║
+-- ║                                                                            ║
+-- ║  Идемпотентно — безопасно запускать повторно. Supabase → SQL editor.       ║
+-- ╚══════════════════════════════════════════════════════════════════════════╝
 
--- 1. Добавляем демо-подписки
-INSERT INTO subscriptions (name, type, price, company_type, description, is_active) VALUES
-  ('Демо-подписка СТО', 'monthly', 0, 'sto', 'Бесплатная демо-подписка на 1 месяц для новых СТО', true),
-  ('Демо-подписка разборки', 'monthly', 0, 'parts', 'Бесплатная демо-подписка на 1 месяц для новых разборок', true)
-ON CONFLICT DO NOTHING;
+-- ─── 1. Демо-планы (1 месяц, цена 0) ──────────────────────────────────────────
 
--- 2. Функция для автоматического назначения демо-подписки СТО
+INSERT INTO subscriptions (name, type, price, company_type, description, is_active)
+SELECT 'Демо-подписка СТО', 'monthly', 0, 'sto',
+       'Бесплатная демо-подписка на 1 месяц для новых СТО', true
+WHERE NOT EXISTS (
+  SELECT 1 FROM subscriptions WHERE company_type = 'sto' AND price = 0 AND type = 'monthly'
+);
+
+INSERT INTO subscriptions (name, type, price, company_type, description, is_active)
+SELECT 'Демо-подписка разборки', 'monthly', 0, 'parts',
+       'Бесплатная демо-подписка на 1 месяц для новых разборок', true
+WHERE NOT EXISTS (
+  SELECT 1 FROM subscriptions WHERE company_type = 'parts' AND price = 0 AND type = 'monthly'
+);
+
+-- ─── 2. Функции назначения (SECURITY DEFINER → обходят RLS при самостоятельной
+--        регистрации владельца; ошибки не ломают создание компании) ───────────
+
 CREATE OR REPLACE FUNCTION assign_demo_subscription_to_sto()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   demo_subscription_id UUID;
-  end_date TIMESTAMPTZ;
 BEGIN
-  -- Получаем ID демо-подписки для СТО
   SELECT id INTO demo_subscription_id
   FROM subscriptions
-  WHERE company_type = 'sto' 
-    AND type = 'monthly' 
-    AND price = 0 
-    AND is_active = true
+  WHERE company_type = 'sto' AND price = 0 AND is_active = true
+  ORDER BY created_at
   LIMIT 1;
 
-  -- Если нашли демо-подписку
   IF demo_subscription_id IS NOT NULL THEN
-    -- Устанавливаем срок действия - 1 месяц от текущей даты
-    end_date := NOW() + INTERVAL '1 month';
-    
-    -- Создаём запись о подписке
-    INSERT INTO company_subscriptions (
-      company_type,
-      company_id,
-      subscription_id,
-      start_date,
-      end_date,
-      is_active
-    ) VALUES (
-      'sto',
-      NEW.id,
-      demo_subscription_id,
-      NOW(),
-      end_date,
-      true
-    );
-    
-    RAISE NOTICE 'Демо-подписка назначена СТО % до %', NEW.name, end_date;
+    INSERT INTO company_subscriptions
+      (company_type, company_id, subscription_id, start_date, end_date, is_active)
+    VALUES
+      ('sto', NEW.id, demo_subscription_id, NOW(), NOW() + INTERVAL '1 month', true)
+    ON CONFLICT (company_type, company_id) DO NOTHING;
   END IF;
 
   RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  -- Не даём ошибке назначения подписки сорвать регистрацию компании
+  RAISE WARNING 'assign_demo_subscription_to_sto failed: %', SQLERRM;
+  RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
--- 3. Функция для автоматического назначения демо-подписки разборке
 CREATE OR REPLACE FUNCTION assign_demo_subscription_to_parts()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   demo_subscription_id UUID;
-  end_date TIMESTAMPTZ;
 BEGIN
-  -- Получаем ID демо-подписки для разборки
   SELECT id INTO demo_subscription_id
   FROM subscriptions
-  WHERE company_type = 'parts' 
-    AND type = 'monthly' 
-    AND price = 0 
-    AND is_active = true
+  WHERE company_type = 'parts' AND price = 0 AND is_active = true
+  ORDER BY created_at
   LIMIT 1;
 
-  -- Если нашли демо-подписку
   IF demo_subscription_id IS NOT NULL THEN
-    -- Устанавливаем срок действия - 1 месяц от текущей даты
-    end_date := NOW() + INTERVAL '1 month';
-    
-    -- Создаём запись о подписке
-    INSERT INTO company_subscriptions (
-      company_type,
-      company_id,
-      subscription_id,
-      start_date,
-      end_date,
-      is_active
-    ) VALUES (
-      'parts',
-      NEW.id,
-      demo_subscription_id,
-      NOW(),
-      end_date,
-      true
-    );
-    
-    RAISE NOTICE 'Демо-подписка назначена разборке % до %', NEW.name, end_date;
+    INSERT INTO company_subscriptions
+      (company_type, company_id, subscription_id, start_date, end_date, is_active)
+    VALUES
+      ('parts', NEW.id, demo_subscription_id, NOW(), NOW() + INTERVAL '1 month', true)
+    ON CONFLICT (company_type, company_id) DO NOTHING;
   END IF;
 
   RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'assign_demo_subscription_to_parts failed: %', SQLERRM;
+  RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
--- 4. Создаём триггеры для автоматического назначения
+-- ─── 3. Триггеры на создание компании ─────────────────────────────────────────
+
 DROP TRIGGER IF EXISTS trigger_assign_demo_to_sto ON sto_companies;
 CREATE TRIGGER trigger_assign_demo_to_sto
   AFTER INSERT ON sto_companies
@@ -109,12 +104,31 @@ CREATE TRIGGER trigger_assign_demo_to_parts
   FOR EACH ROW
   EXECUTE FUNCTION assign_demo_subscription_to_parts();
 
--- Комментарии
-COMMENT ON FUNCTION assign_demo_subscription_to_sto() IS 'Автоматически назначает демо-подписку на 1 месяц новым СТО';
-COMMENT ON FUNCTION assign_demo_subscription_to_parts() IS 'Автоматически назначает демо-подписку на 1 месяц новым разборкам';
+COMMENT ON FUNCTION assign_demo_subscription_to_sto()   IS 'Назначает демо-подписку на 1 месяц новым СТО';
+COMMENT ON FUNCTION assign_demo_subscription_to_parts() IS 'Назначает демо-подписку на 1 месяц новым разборкам';
 
--- Проверка созданных подписок
-SELECT id, name, type, price, company_type, description 
-FROM subscriptions 
-WHERE price = 0 
-ORDER BY company_type;
+-- ─── 4. Бэкофилл: выдать демо-подписку уже существующим компаниям без подписки ─
+--        (UNIQUE(company_type, company_id) → ON CONFLICT DO NOTHING).
+
+INSERT INTO company_subscriptions (company_type, company_id, subscription_id, start_date, end_date, is_active)
+SELECT 'sto', sc.id,
+       (SELECT id FROM subscriptions WHERE company_type = 'sto' AND price = 0 AND is_active = true ORDER BY created_at LIMIT 1),
+       NOW(), NOW() + INTERVAL '1 month', true
+FROM sto_companies sc
+WHERE EXISTS (SELECT 1 FROM subscriptions WHERE company_type = 'sto' AND price = 0 AND is_active = true)
+ON CONFLICT (company_type, company_id) DO NOTHING;
+
+INSERT INTO company_subscriptions (company_type, company_id, subscription_id, start_date, end_date, is_active)
+SELECT 'parts', pc.id,
+       (SELECT id FROM subscriptions WHERE company_type = 'parts' AND price = 0 AND is_active = true ORDER BY created_at LIMIT 1),
+       NOW(), NOW() + INTERVAL '1 month', true
+FROM parts_companies pc
+WHERE EXISTS (SELECT 1 FROM subscriptions WHERE company_type = 'parts' AND price = 0 AND is_active = true)
+ON CONFLICT (company_type, company_id) DO NOTHING;
+
+-- ─── Проверка ─────────────────────────────────────────────────────────────────
+SELECT cs.company_type, count(*) AS active_demo
+FROM company_subscriptions cs
+JOIN subscriptions s ON s.id = cs.subscription_id
+WHERE s.price = 0 AND cs.is_active = true
+GROUP BY cs.company_type;
