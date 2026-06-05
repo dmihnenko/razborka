@@ -110,7 +110,7 @@ export default function Subscriptions() {
   const deactivateMutation = useMutation({
     mutationFn: deactivateSubscription,
     onSuccess: () => { invalidate(); toast.success('Деактивировано') },
-    onError: () => toast.error('Ошибка деактивації'),
+    onError: () => toast.error('Ошибка деактивации'),
   })
 
   const deleteMutation = useMutation({
@@ -214,11 +214,11 @@ export default function Subscriptions() {
               </div>
               <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white">
-                <option value="all">Всі статуси</option>
-                <option value="active">Активні</option>
-                <option value="expiring">Спливають</option>
-                <option value="expired">Прострочені</option>
-                <option value="inactive">Неактивні</option>
+                <option value="all">Все статусы</option>
+                <option value="active">Активные</option>
+                <option value="expiring">Истекают</option>
+                <option value="expired">Просроченные</option>
+                <option value="inactive">Неактивные</option>
               </select>
             </div>
 
@@ -227,7 +227,7 @@ export default function Subscriptions() {
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <CreditCard className="w-12 h-12 text-gray-200 mb-3" />
-                <p className="font-medium text-gray-500">Підписок не знайдено</p>
+                <p className="font-medium text-gray-500">Подписки не найдены</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
@@ -250,12 +250,12 @@ export default function Subscriptions() {
                         <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
                           <span className="font-medium text-gray-700">{sub.subscription?.name || '—'}</span>
                           <span>·</span>
-                          <span>{new Date(sub.start_date).toLocaleDateString('uk-UA')}</span>
+                          <span>{new Date(sub.start_date).toLocaleDateString('ru-RU')}</span>
                           <span>→</span>
-                          <span>{sub.end_date ? new Date(sub.end_date).toLocaleDateString('uk-UA') : '∞'}</span>
+                          <span>{sub.end_date ? new Date(sub.end_date).toLocaleDateString('ru-RU') : '∞'}</span>
                           {dl !== null && dl <= 30 && (
                             <span className={`font-semibold ${dl <= 7 ? 'text-red-600' : 'text-amber-600'}`}>
-                              {dl === 0 ? 'Сьогодні' : `${dl} ${dl === 1 ? 'день' : 'дн.'}`}
+                              {dl === 0 ? 'Сегодня' : `${dl} ${dl === 1 ? 'день' : 'дн.'}`}
                             </span>
                           )}
                         </div>
@@ -421,14 +421,14 @@ function AssignModal({ plans, allPlans, companies, form, onFormChange, onSubmit,
     if (selectedPlan.type === 'lifetime') return 'Бессрочно'
     const d = new Date()
     d.setMonth(d.getMonth() + form.months)
-    return d.toLocaleDateString('uk-UA', { day: '2-digit', month: 'long', year: 'numeric' })
+    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })
   })()
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
-          <h2 className="font-bold text-gray-900">Назначить підписку</h2>
+          <h2 className="font-bold text-gray-900">Назначить подписку</h2>
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
         </div>
 
@@ -502,7 +502,7 @@ function AssignModal({ plans, allPlans, companies, form, onFormChange, onSubmit,
               </div>
               {endDatePreview && (
                 <p className="mt-2 text-xs text-gray-500">
-                  Дата закінчення: <span className="font-semibold text-gray-700">{endDatePreview}</span>
+                  Дата окончания: <span className="font-semibold text-gray-700">{endDatePreview}</span>
                 </p>
               )}
             </div>

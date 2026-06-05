@@ -21,7 +21,7 @@ const UPGRADE_PLANS = [
     bg: '#EFF6FF',
   },
   {
-    name: 'Бізнес',
+    name: 'Бизнес',
     subtitle: '6 месяцев',
     price: 2499,
     maxAppointments: 200,
@@ -31,7 +31,7 @@ const UPGRADE_PLANS = [
     badge: 'Популярный',
   },
   {
-    name: 'Профі',
+    name: 'Профи',
     subtitle: '12 месяцев',
     price: 4499,
     maxAppointments: null,

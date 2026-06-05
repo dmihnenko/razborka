@@ -41,7 +41,7 @@ export const stoOwnerMenu: MenuItem[] = [
   { name: 'Счета', href: '/invoices', icon: FileText },
   { name: 'Сотрудники', href: '/sto/employees', icon: Users },
   { name: 'Аналитика', href: '/analytics', icon: LineChart },
-  { name: 'Підписка', href: '/sto/subscription', icon: CreditCard },
+  { name: 'Подписка', href: '/sto/subscription', icon: CreditCard },
   { name: 'Настройки', href: '/sto/settings', icon: SlidersHorizontal },
   { name: 'Поддержка', href: '/support', icon: MessageCircle },
   { name: 'Профиль', href: '/profile', icon: CircleUser },

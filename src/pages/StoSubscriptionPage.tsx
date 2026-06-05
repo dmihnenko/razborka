@@ -116,7 +116,7 @@ export default function StoSubscriptionPage() {
   const planBg    = PLANS.find(p => p.key === currentKey)?.bg    || '#F8FAFC'
 
   return (
-    <div className="max-w-4xl mx-auto pb-12 space-y-6">
+    <div className="w-full pb-12 space-y-6">
 
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Мой тариф</h1>
@@ -181,7 +181,7 @@ export default function StoSubscriptionPage() {
       {/* Plan comparison */}
       <div>
         <h2 className="text-base font-bold text-gray-900 mb-4">Доступные тарифы</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {PLANS.filter(p => p.key !== 'free').map(p => {
             const isCurrent = p.key === currentKey
             return (

@@ -59,13 +59,15 @@ export default function ProfileSettings() {
     passwordForm.newPassword === passwordForm.confirmPassword
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
+    <div className="w-full space-y-5">
       {/* Заголовок */}
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
         <span>Настройки</span>
         <ChevronRight className="w-4 h-4" />
         <span className="font-semibold text-gray-900">Мой профиль</span>
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
 
       {/* Информация об аккаунте */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -223,6 +225,7 @@ export default function ProfileSettings() {
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )
