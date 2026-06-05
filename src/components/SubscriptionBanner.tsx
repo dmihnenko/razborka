@@ -29,30 +29,24 @@ export default function SubscriptionBanner({ context }: Props) {
   // Don't show if below 60% and not expiring
   if (!isAtLimit && !isNearLimit && !isExpiringSoon) return null
 
-  const planName = hasSubscription ? plan?.name : 'Пробний'
+  const planName = hasSubscription ? plan?.name : 'Пробный'
 
-  // Color scheme
+  // Цветовая схема на токенах Tailwind (адаптируется к тёмной теме)
   const scheme = isAtLimit
-    ? { bg: '#FEF2F2', border: '#FECACA', icon: '#DC2626', text: '#991B1B', bar: '#DC2626' }
+    ? { wrap: 'bg-red-50 border-red-200',     icon: 'text-red-600',   text: 'text-red-800',   bar: 'bg-red-600',   btn: 'bg-red-600 hover:bg-red-700' }
     : isNearLimit
-    ? { bg: '#FFFBEB', border: '#FDE68A', icon: '#D97706', text: '#92400E', bar: '#D97706' }
-    : { bg: '#EFF6FF', border: '#BFDBFE', icon: '#2563EB', text: '#1E40AF', bar: '#2563EB' }
+    ? { wrap: 'bg-amber-50 border-amber-200', icon: 'text-amber-600', text: 'text-amber-800', bar: 'bg-amber-600', btn: 'bg-amber-600 hover:bg-amber-700' }
+    : { wrap: 'bg-blue-50 border-blue-200',   icon: 'text-blue-600',  text: 'text-blue-800',  bar: 'bg-blue-600',  btn: 'bg-blue-600 hover:bg-blue-700' }
+
+  const Icon = isAtLimit ? AlertTriangle : isExpiringSoon ? Clock : Zap
 
   return (
-    <div
-      className="rounded-xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 mb-4"
-      style={{ backgroundColor: scheme.bg, borderColor: scheme.border }}
-    >
+    <div className={`rounded-xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 mb-4 ${scheme.wrap}`}>
       <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
-        {isAtLimit
-          ? <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 sm:mt-0" style={{ color: scheme.icon }} />
-          : isExpiringSoon
-          ? <Clock className="w-4 h-4 flex-shrink-0 mt-0.5 sm:mt-0" style={{ color: scheme.icon }} />
-          : <Zap className="w-4 h-4 flex-shrink-0 mt-0.5 sm:mt-0" style={{ color: scheme.icon }} />
-        }
+        <Icon className={`w-4 h-4 flex-shrink-0 mt-0.5 sm:mt-0 ${scheme.icon}`} />
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold leading-tight" style={{ color: scheme.text }}>
+          <p className={`text-sm font-semibold leading-tight ${scheme.text}`}>
             {isAtLimit
               ? `Достигнут лимит ${label} (${usedVal}/${maxVal})`
               : isExpiringSoon && daysLeft !== null
@@ -63,11 +57,8 @@ export default function SubscriptionBanner({ context }: Props) {
 
           {/* Usage bar */}
           {maxVal !== null && !isExpiringSoon && (
-            <div className="mt-1.5 h-1.5 rounded-full bg-black/10 overflow-hidden" style={{ maxWidth: 200 }}>
-              <div
-                className="h-full rounded-full transition-all"
-                style={{ width: `${pct}%`, backgroundColor: scheme.bar }}
-              />
+            <div className="mt-1.5 h-1.5 rounded-full bg-black/10 overflow-hidden max-w-[200px]">
+              <div className={`h-full rounded-full transition-all ${scheme.bar}`} style={{ width: `${pct}%` }} />
             </div>
           )}
         </div>
@@ -75,8 +66,7 @@ export default function SubscriptionBanner({ context }: Props) {
 
       <button
         onClick={() => navigate('/sto/subscription')}
-        className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
-        style={{ backgroundColor: scheme.icon, color: '#fff' }}
+        className={`flex-shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap text-white ${scheme.btn}`}
       >
         {isAtLimit ? 'Обновить тариф' : 'Детали тарифа'}
       </button>

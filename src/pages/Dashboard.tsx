@@ -207,10 +207,8 @@ export default function Dashboard() {
       {/* Хедер страницы — стиль как в разборке */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ letterSpacing: '-0.025em', lineHeight: 1.2 }}>
-            СТО
-          </h1>
-          <p className="text-sm mt-0.5" style={{ color: '#64748B' }}>Управление сервисом и заявками</p>
+          <h1 className="page-title">СТО</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Управление сервисом и заявками</p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <button onClick={() => navigate('/customers')}

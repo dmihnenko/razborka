@@ -3,7 +3,9 @@ import { Spinner } from '@/components/ui/Spinner'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { Link } from 'react-router-dom'
-import { TrendingUp } from 'lucide-react'
+import { BarChart2 } from 'lucide-react'
+import PageHeader from '@/components/PageHeader'
+import EmptyState from '@/components/ui/EmptyState'
 
 /**
  * Страница статистики по месяцам - только таблица
@@ -86,10 +88,7 @@ export default function MonthlyStatistics() {
 
   return (
     <div className="container-mobile">
-      <div className="flex items-center gap-3 mb-4 sm:mb-6">
-        <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-primary flex-shrink-0" />
-        <h1 className="heading-mobile-1">Статистика по месяцам</h1>
-      </div>
+      <PageHeader title="Статистика по месяцам" subtitle="Доходы и закрытые заявки по месяцам" />
 
       {isLoading ? (
         <div className="flex justify-center py-12">
@@ -98,7 +97,7 @@ export default function MonthlyStatistics() {
       ) : monthlyStats && monthlyStats.length > 0 ? (
         <>
           {/* Desktop таблица */}
-          <div className="hidden md:block bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="hidden md:block card p-0 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -192,14 +191,11 @@ export default function MonthlyStatistics() {
           </div>
         </>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-          <p className="text-gray-500 text-mobile-base">
-            Нет данных для отображения статистики
-          </p>
-          <p className="text-gray-400 text-mobile-sm mt-2">
-            Закройте первую заявку, чтобы увидеть статистику
-          </p>
-        </div>
+        <EmptyState
+          icon={BarChart2}
+          title="Нет данных для статистики"
+          description="Закройте первую заявку, чтобы увидеть статистику по месяцам"
+        />
       )}
     </div>
   )

@@ -5,6 +5,7 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { toast } from 'sonner'
 import { Settings as SettingsIcon, Wrench, Trash2, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import PageHeader from '@/components/PageHeader'
 
 export default function StoSettings() {
   const { data: profile } = useUserProfile()
@@ -71,16 +72,11 @@ export default function StoSettings() {
 
   return (
     <div className="container-mobile">
-      <div className="mb-4 sm:mb-6">
-        <h1 className="heading-mobile-1">Настройки СТО</h1>
-        {stoCompany?.name && (
-          <p className="text-mobile-sm text-gray-500 mt-1">{stoCompany.name}</p>
-        )}
-      </div>
+      <PageHeader title="Настройки СТО" subtitle={stoCompany?.name || undefined} />
 
       <div className="space-y-4">
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="card p-4 sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
@@ -123,7 +119,7 @@ export default function StoSettings() {
         {/* Корзина */}
         <Link
           to="/sto/trash"
-          className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 flex items-center gap-4 hover:bg-gray-50 transition-colors"
+          className="card p-4 sm:p-6 flex items-center gap-4 hover:bg-gray-50 transition-colors"
         >
           <div className="p-2 bg-red-100 rounded-lg flex-shrink-0">
             <Trash2 className="w-5 h-5 text-red-600" />

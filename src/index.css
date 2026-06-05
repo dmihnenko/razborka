@@ -147,7 +147,7 @@
 
   /* ── Cards ─────────────────────────────────────────────── */
   .card {
-    @apply bg-white rounded-xl border border-gray-200 p-5;
+    @apply bg-white rounded-2xl border border-gray-100 p-5;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     transition: box-shadow 0.15s ease;
   }

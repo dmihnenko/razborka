@@ -6,6 +6,7 @@ import { Plus, Pencil, Trash2, Search } from 'lucide-react'
 import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import Modal from '@/components/ui/Modal'
+import PageHeader from '@/components/PageHeader'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { moveToTrash } from '@/services/trashService'
@@ -110,30 +111,31 @@ export default function Vehicles() {
         </p>
       )}
 
-      {/* Search and Actions */}
-      <div className="flex justify-end gap-3 mb-4 sm:mb-6 flex-wrap">
-        <div className="relative flex-1 sm:flex-initial">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Поиск по марке, модели, VIN..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full sm:w-80 pl-9 sm:pl-10 pr-4 py-2 text-mobile-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-          />
-        </div>
-        <button
-          onClick={() => {
-            setEditingVehicle(null)
-            setCustomerSearch('')
-            setIsModalOpen(true)
-          }}
-          className="btn-touch-sm bg-primary text-white hover:bg-primary/90 flex items-center gap-1.5 whitespace-nowrap"
-        >
-          <Plus className="w-4 h-4 flex-shrink-0" />
-          <span className="hidden sm:inline">Добавить</span>
-          <span className="sm:hidden">Авто</span>
-        </button>
+      <PageHeader
+        title="Автомобили"
+        subtitle="Автопарк клиентов"
+        actions={
+          <button
+            onClick={() => { setEditingVehicle(null); setCustomerSearch(''); setIsModalOpen(true) }}
+            className="btn-primary btn-sm flex items-center gap-1.5 whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Добавить</span>
+            <span className="sm:hidden">Авто</span>
+          </button>
+        }
+      />
+
+      {/* Поиск */}
+      <div className="relative mb-4 sm:mb-6 sm:max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Поиск по марке, модели, VIN..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="form-input pl-9"
+        />
       </div>
 
       {isLoading ? (
@@ -143,7 +145,7 @@ export default function Vehicles() {
       ) : (
         <>
           {/* Десктопная таблица */}
-          <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
+          <div className="hidden md:block card p-0 overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>

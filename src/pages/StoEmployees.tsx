@@ -5,6 +5,8 @@ import { toast } from 'sonner'
 import { Eye, UserCog, Trash2, Edit, AlertTriangle } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import Modal from '@/components/ui/Modal'
+import PageHeader from '@/components/PageHeader'
+import EmptyState from '@/components/ui/EmptyState'
 import { useNavigate } from 'react-router-dom'
 import {
   fetchStoEmployees,
@@ -46,35 +48,31 @@ export default function StoEmployees() {
 
   return (
     <div className="container-mobile">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Сотрудники СТО</h1>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1">Управление работниками вашего СТО</p>
-        </div>
-        <div className="flex gap-2 sm:gap-3 flex-wrap">
-          {employees.length > 0 && (
-            <button
-              onClick={() => setIsBulkAssignModalOpen(true)}
-              className="btn-touch-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 flex items-center gap-1.5"
-            >
-              <UserCog className="w-4 h-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Назначить заявки</span>
-              <span className="sm:hidden">Назначить</span>
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Сотрудники СТО"
+        subtitle="Управление работниками вашего СТО"
+        actions={employees.length > 0 && (
+          <button
+            onClick={() => setIsBulkAssignModalOpen(true)}
+            className="btn-secondary btn-sm flex items-center gap-1.5"
+          >
+            <UserCog className="w-4 h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Назначить заявки</span>
+            <span className="sm:hidden">Назначить</span>
+          </button>
+        )}
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-8 sm:py-12">
           <Spinner size="lg" />
         </div>
       ) : employees.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-8 sm:p-12 text-center">
-          <UserCog className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
-          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Пока нет работников</h3>
-          <p className="text-sm sm:text-base text-gray-500">Работники найдут вас при регистрации, введя номер телефона вашего СТО</p>
-        </div>
+        <EmptyState
+          icon={UserCog}
+          title="Пока нет работников"
+          description="Работники найдут вас при регистрации, введя номер телефона вашего СТО"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6">
           {employees.map((employee) => (

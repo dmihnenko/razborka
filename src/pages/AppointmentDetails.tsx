@@ -15,20 +15,8 @@ import AppointmentModal from '@/components/appointments/AppointmentModal'
 import ReassignWorkerModal from '@/components/appointments/ReassignWorkerModal'
 import AppointmentComments from '@/components/appointments/AppointmentComments'
 import { toast } from 'sonner'
-
-// ─── Status config ────────────────────────────────────────────────────────────
-
-const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  scheduled:       { label: 'Запланирована',   color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
-  in_progress:     { label: 'В работе',        color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
-  completed:       { label: 'Готова',          color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
-  ready:           { label: 'Готова',          color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
-  cancelled:       { label: 'Отменена',        color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
-  archived:        { label: 'Архив',           color: '#6B7280', bg: '#F9FAFB', border: '#E5E7EB' },
-  pending_deletion:{ label: 'Запрос удаления', color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
-}
-
-const STATUS_FLOW = ['scheduled', 'in_progress', 'completed', 'archived'] as const
+import { STATUS_CFG, STATUS_FLOW } from '@/constants/appointmentStatus'
+import { fmtMoney } from '@/utils/money'
 
 // Заголовок/описание подтверждения для конкретного перехода статуса
 const TRANSITION_META: Record<string, { title: string; description: string; confirm: string }> = {
@@ -46,19 +34,9 @@ function getTransitionMeta(from: string, to: string) {
   }
 }
 
-const STATUS_ICON: Record<string, React.ElementType> = {
-  scheduled: Clock,
-  in_progress: Wrench,
-  completed: CheckCircle2,
-  ready: CheckCircle2,
-  cancelled: X,
-  archived: Archive,
-  pending_deletion: Trash2,
-}
-
 function StatusChip({ status, size = 'md' }: { status: string; size?: 'sm' | 'md' }) {
   const cfg = STATUS_CFG[status] || STATUS_CFG.archived
-  const Icon = STATUS_ICON[status] || Clock
+  const Icon = cfg.icon || Clock
   const sm = size === 'sm'
   return (
     <span
@@ -181,6 +159,10 @@ export default function AppointmentDetails() {
       if (isArchiving) {
         const hasParts = ((appointment?.parts_cost || appointment?.total_parts_cost) || 0) > 0
         const hasWork = (appointment?.total_work_cost || 0) > 0
+        // Архивировать можно только при полной оплате
+        if ((hasParts && !appointment?.parts_paid) || (hasWork && !appointment?.work_paid)) {
+          throw new Error('В архив можно перенести только после полной оплаты работ и запчастей')
+        }
         updateData.closed_date = new Date().toISOString()
         if (!hasParts) updateData.parts_paid = true
         if (!hasWork) updateData.work_paid = true
@@ -213,7 +195,17 @@ export default function AppointmentDetails() {
 
   const handleStatusChange = (newStatus: string) => {
     setShowStatusDropdown(false)
-    if (newStatus === 'archived') { setShowArchiveConfirm(true); return }
+    if (newStatus === 'archived') {
+      // В архив — только при полной оплате работ и запчастей
+      const needParts = partsCost > 0 && !appointment?.parts_paid
+      const needWork  = workCost  > 0 && !appointment?.work_paid
+      if (needParts || needWork) {
+        toast.error('В архив можно перенести только после полной оплаты работ и запчастей')
+        return
+      }
+      setShowArchiveConfirm(true)
+      return
+    }
     setStatusConfirm(newStatus)
   }
 
@@ -319,7 +311,7 @@ export default function AppointmentDetails() {
                     : { color: scfg.color, backgroundColor: scfg.bg, borderColor: scfg.border }
                   }
                 >
-                  {React.createElement(STATUS_ICON[s] || Clock, {
+                  {React.createElement(scfg.icon || Clock, {
                     className: 'w-3 h-3 flex-shrink-0 hidden sm:block',
                   })}
                   <span className="whitespace-nowrap">{scfg.label}</span>

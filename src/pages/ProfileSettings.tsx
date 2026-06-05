@@ -70,7 +70,7 @@ export default function ProfileSettings() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
 
       {/* Информация об аккаунте */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
             <User className="w-4 h-4 text-blue-700" />
@@ -110,7 +110,7 @@ export default function ProfileSettings() {
       </div>
 
       {/* Редактирование профиля */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
             <User className="w-4 h-4 text-purple-700" />
@@ -127,7 +127,7 @@ export default function ProfileSettings() {
               type="text"
               value={profileForm.full_name}
               onChange={e => setProfileForm({ ...profileForm, full_name: e.target.value })}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               placeholder="Иванов Иван Иванович"
             />
           </div>
@@ -137,7 +137,7 @@ export default function ProfileSettings() {
               type="tel"
               value={profileForm.phone}
               onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               placeholder="+380 XX XXX-XX-XX"
             />
           </div>
@@ -155,7 +155,7 @@ export default function ProfileSettings() {
       </div>
 
       {/* Смена пароля */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
             <Lock className="w-4 h-4 text-orange-700" />
@@ -173,7 +173,7 @@ export default function ProfileSettings() {
                 type={showNew ? 'text' : 'password'}
                 value={passwordForm.newPassword}
                 onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 placeholder="Новый пароль"
                 autoComplete="new-password"
               />
@@ -197,7 +197,7 @@ export default function ProfileSettings() {
                 type={showConfirm ? 'text' : 'password'}
                 value={passwordForm.confirmPassword}
                 onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 placeholder="Повторите пароль"
                 autoComplete="new-password"
               />

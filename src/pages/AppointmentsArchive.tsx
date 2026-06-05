@@ -8,12 +8,12 @@ import {
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { Spinner } from '@/components/ui/Spinner'
+import { fmtMoney } from '@/utils/money'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
 const DAYS   = ['вс','пн','вт','ср','чт','пт','сб']
 
-function fmtMoney(n: number) { return `₴${(n || 0).toLocaleString('ru-RU')}` }
 function totalCost(a: any) { return a.total_cost || (a.total_work_cost || 0) + (a.total_parts_cost || 0) }
 function parseDate(s: string | null): Date | null {
   if (!s) return null

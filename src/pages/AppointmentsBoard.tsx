@@ -12,21 +12,10 @@ import {
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 import SubscriptionUpgradeModal from '@/components/SubscriptionUpgradeModal'
 import { toast } from 'sonner'
+import { STATUS_CFG } from '@/constants/appointmentStatus'
+import { fmtMoney } from '@/utils/money'
 
 // ─── constants ────────────────────────────────────────────────────────────────
-
-const STATUS_CFG: Record<string, {
-  label: string; color: string; bg: string; border: string
-  next?: string; nextLabel?: string
-}> = {
-  scheduled:        { label: 'Запланировано', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', next: 'in_progress', nextLabel: 'В работу' },
-  in_progress:      { label: 'В работе',      color: '#D97706', bg: '#FFFBEB', border: '#FDE68A', next: 'completed',   nextLabel: 'Готово' },
-  completed:        { label: 'Готово',         color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0', next: 'archived',   nextLabel: 'В архив' },
-  ready:            { label: 'Готово',         color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0', next: 'archived',   nextLabel: 'В архив' },
-  archived:         { label: 'Архив',          color: '#6B7280', bg: '#F9FAFB', border: '#E5E7EB' },
-  cancelled:        { label: 'Отменено',       color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
-  pending_deletion: { label: 'На удаление',    color: '#B91C1C', bg: '#FEF2F2', border: '#FECACA' },
-}
 
 const KANBAN_COLS = [
   { id: 'scheduled',   label: 'Запланировано', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
@@ -75,9 +64,6 @@ function getWeekStart(d: Date) {
   r.setDate(r.getDate() - (day === 0 ? 6 : day - 1))
   r.setHours(0,0,0,0)
   return r
-}
-function fmtMoney(n: number) {
-  return `₴${n.toLocaleString('ru-RU')}`
 }
 function totalCost(a: any) {
   return a.total_cost || (a.total_work_cost || 0) + (a.total_parts_cost || 0)
@@ -593,7 +579,18 @@ export default function AppointmentsBoard() {
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const payload: any = { status }
-      if (status === 'archived') payload.closed_date = new Date().toISOString()
+      if (status === 'archived') {
+        // Архивировать можно только при полной оплате работ и запчастей
+        const { data: cur } = await supabase.from('appointments')
+          .select('parts_paid, work_paid, parts_cost, total_parts_cost, total_work_cost')
+          .eq('id', id).single()
+        const pCost = (cur?.parts_cost ?? cur?.total_parts_cost) || 0
+        const wCost = cur?.total_work_cost || 0
+        if ((pCost > 0 && !cur?.parts_paid) || (wCost > 0 && !cur?.work_paid)) {
+          throw new Error('В архив можно перенести только после полной оплаты работ и запчастей')
+        }
+        payload.closed_date = new Date().toISOString()
+      }
       const { error } = await supabase.from('appointments').update(payload).eq('id', id)
       if (error) throw error
     },
@@ -604,10 +601,19 @@ export default function AppointmentsBoard() {
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
       toast.success('Статус обновлён')
     },
-    onError: () => toast.error('Ошибка при обновлении статуса'),
+    onError: (e: any) => toast.error(e?.message || 'Ошибка при обновлении статуса'),
   })
 
   const handleStatusChange = (id: string, toStatus: string, appt: any) => {
+    // В архив — только при полной оплате работ и запчастей
+    if (toStatus === 'archived') {
+      const pCost = (appt.parts_cost ?? appt.total_parts_cost) || 0
+      const wCost = appt.total_work_cost || 0
+      if ((pCost > 0 && !appt.parts_paid) || (wCost > 0 && !appt.work_paid)) {
+        toast.error('В архив можно перенести только после полной оплаты работ и запчастей')
+        return
+      }
+    }
     setConfirmModal({
       id,
       fromStatus:  appt.status,

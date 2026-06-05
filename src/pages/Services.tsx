@@ -7,6 +7,8 @@ import {
   Wrench, FolderOpen, Folder, Clock, Search, X,
 } from 'lucide-react'
 import Modal from '@/components/ui/Modal'
+import PageHeader from '@/components/PageHeader'
+import EmptyState from '@/components/ui/EmptyState'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { useUserProfile } from '@/hooks/useUserProfile'
@@ -111,20 +113,20 @@ export default function Services() {
 
   return (
     <div className="container-mobile">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Каталог услуг</h1>
-        {isStoOwner && (
+      <PageHeader
+        title="Каталог услуг"
+        subtitle="Услуги и категории работ"
+        actions={isStoOwner && (
           <button
             onClick={() => setCatModal({ open: true })}
-            className="btn-touch-sm bg-primary text-white hover:bg-primary/90 flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
+            className="btn-primary btn-sm flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Категория</span>
             <span className="sm:hidden">+</span>
           </button>
         )}
-      </div>
+      />
 
       {/* Search */}
       <div className="relative mb-4">
@@ -134,7 +136,7 @@ export default function Services() {
           placeholder="Поиск услуги..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          className="form-input pl-9 pr-8"
         />
         {search && (
           <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -147,7 +149,7 @@ export default function Services() {
         <div className="flex justify-center py-12"><Spinner size="lg" /></div>
       ) : search.trim() ? (
         /* Search results */
-        <div className="bg-white rounded-lg shadow divide-y divide-gray-100">
+        <div className="card p-0 overflow-hidden divide-y divide-gray-100">
           {searchResults.length === 0 ? (
             <p className="p-6 text-center text-gray-400">Ничего не найдено</p>
           ) : searchResults.map(svc => (
@@ -159,10 +161,7 @@ export default function Services() {
           ))}
         </div>
       ) : roots.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
-          <Wrench className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Каталог пуст. Добавьте первую категорию.</p>
-        </div>
+        <EmptyState icon={Wrench} title="Каталог пуст" description="Добавьте первую категорию услуг" />
       ) : (
         /* Tree */
         <div className="space-y-2">
