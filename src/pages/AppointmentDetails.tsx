@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import {
-  ArrowLeft, Calendar, User, Car, Phone, FileText,
+  ArrowLeft, ArrowRight, Calendar, User, Car, Phone, FileText,
   Package, Wrench, DollarSign, UserCog, History,
   CheckCircle2, Clock, Archive, Trash2,
   AlertTriangle, Pencil, Check, X,
@@ -29,6 +29,22 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
 }
 
 const STATUS_FLOW = ['scheduled', 'in_progress', 'completed', 'archived'] as const
+
+// Заголовок/описание подтверждения для конкретного перехода статуса
+const TRANSITION_META: Record<string, { title: string; description: string; confirm: string }> = {
+  'scheduled→in_progress':   { title: 'Начать работу?',       description: 'Заявка перейдёт в статус «В работе».', confirm: 'Начать работу' },
+  'in_progress→completed':   { title: 'Завершить работу?',    description: 'Работы завершены, автомобиль готов к выдаче клиенту.', confirm: 'Отметить готовым' },
+  'completed→in_progress':   { title: 'Вернуть в работу?',    description: 'Заявка вернётся в статус «В работе».', confirm: 'Вернуть в работу' },
+  'in_progress→scheduled':   { title: 'Вернуть в план?',      description: 'Заявка вернётся в статус «Запланирована».', confirm: 'Вернуть в план' },
+  'pending_deletion':        { title: 'Запросить удаление?',  description: 'Будет отправлен запрос на удаление заявки. Владелец СТО подтвердит или отклонит его.', confirm: 'Запросить удаление' },
+}
+function getTransitionMeta(from: string, to: string) {
+  return TRANSITION_META[`${from}→${to}`] ?? TRANSITION_META[to] ?? {
+    title:       'Изменить статус?',
+    description: `Статус заявки будет изменён на «${STATUS_CFG[to]?.label ?? to}».`,
+    confirm:     STATUS_CFG[to]?.label ?? 'Подтвердить',
+  }
+}
 
 const STATUS_ICON: Record<string, React.ElementType> = {
   scheduled: Clock,
@@ -68,6 +84,7 @@ export default function AppointmentDetails() {
     isOpen: boolean; type: 'parts' | 'work'; currentValue: boolean
   } | null>(null)
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
+  const [statusConfirm, setStatusConfirm] = useState<string | null>(null)
   const [reassignModal, setReassignModal] = useState<{
     isOpen: boolean; appointmentId: string; currentWorkerId: string | null
     customerName: string; vehicleName: string
@@ -195,8 +212,9 @@ export default function AppointmentDetails() {
   })
 
   const handleStatusChange = (newStatus: string) => {
-    if (newStatus === 'archived') { setShowStatusDropdown(false); setShowArchiveConfirm(true); return }
-    updateStatusMutation.mutate(newStatus)
+    setShowStatusDropdown(false)
+    if (newStatus === 'archived') { setShowArchiveConfirm(true); return }
+    setStatusConfirm(newStatus)
   }
 
   const availableStatuses = appointment?.status === 'archived'
@@ -260,7 +278,7 @@ export default function AppointmentDetails() {
 
       {/* ── Sticky page header ─────────────────────────────────────────────── */}
       <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 flex items-center gap-3">
+        <div className="w-full px-3 sm:px-6 h-14 flex items-center gap-3">
           {/* Back */}
           <button
             onClick={() => location.state?.from ? navigate(location.state.from) : navigate(-1)}
@@ -338,7 +356,7 @@ export default function AppointmentDetails() {
       </div>
 
       {/* ── Page body ──────────────────────────────────────────────────────── */}
-      <div className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4">
+      <div className="w-full px-3 sm:px-6 py-4 sm:py-6 space-y-4">
 
         {/* ── Customer + vehicle hero ──────────────────────────────────────── */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -735,6 +753,67 @@ export default function AppointmentDetails() {
           </div>
         </div>
       )}
+
+      {/* Status change confirm */}
+      {statusConfirm && (() => {
+        const fromCfg = STATUS_CFG[appointment.status] ?? STATUS_CFG.scheduled
+        const toCfg   = STATUS_CFG[statusConfirm] ?? STATUS_CFG.scheduled
+        const meta    = getTransitionMeta(appointment.status, statusConfirm)
+        return (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+            <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
+              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-1 sm:hidden" />
+
+              <div className="px-5 pt-4 pb-3 border-b border-gray-100">
+                <h3 className="text-base font-bold text-gray-900">{meta.title}</h3>
+              </div>
+
+              <div className="px-5 py-4 space-y-4">
+                {/* Клиент / авто */}
+                <div className="bg-gray-50 rounded-lg px-3.5 py-2.5">
+                  <p className="text-sm font-semibold text-gray-900 leading-tight">
+                    {appointment.customers?.name || 'Клиент не указан'}
+                  </p>
+                  {appointment.vehicles && (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {appointment.vehicles.brand} {appointment.vehicles.model}
+                    </p>
+                  )}
+                </div>
+
+                {/* Переход статуса */}
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 text-center text-xs font-semibold px-3 py-2 rounded-lg border"
+                    style={{ color: fromCfg.color, backgroundColor: fromCfg.bg, borderColor: fromCfg.border }}>
+                    {fromCfg.label}
+                  </span>
+                  <ArrowRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <span className="flex-1 text-center text-xs font-semibold px-3 py-2 rounded-lg border"
+                    style={{ color: toCfg.color, backgroundColor: toCfg.bg, borderColor: toCfg.border }}>
+                    {toCfg.label}
+                  </span>
+                </div>
+
+                <p className="text-sm text-gray-600 leading-relaxed">{meta.description}</p>
+              </div>
+
+              <div className="px-5 pb-5 flex gap-2" style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}>
+                <button onClick={() => setStatusConfirm(null)} disabled={updateStatusMutation.isPending}
+                  className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50">
+                  Отмена
+                </button>
+                <button
+                  onClick={() => { updateStatusMutation.mutate(statusConfirm); setStatusConfirm(null) }}
+                  disabled={updateStatusMutation.isPending}
+                  className="flex-1 py-2.5 text-sm font-semibold text-white rounded-lg transition-colors disabled:opacity-50"
+                  style={{ backgroundColor: toCfg.color }}>
+                  {updateStatusMutation.isPending ? 'Сохраняем…' : meta.confirm}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Payment confirm */}
       {paymentConfirmModal && (

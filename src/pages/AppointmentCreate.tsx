@@ -135,7 +135,7 @@ export default function AppointmentCreate() {
 
       {/* ── Sticky header ──────────────────────────────────────────────────── */}
       <div className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
+        <div className="w-full px-4 sm:px-6 h-14 flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 transition-colors p-1 rounded-lg hover:bg-gray-100 -ml-1 flex-shrink-0"
@@ -165,7 +165,7 @@ export default function AppointmentCreate() {
       </div>
 
       {/* ── Body ───────────────────────────────────────────────────────────── */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5">
+      <div className="w-full px-4 sm:px-6 py-5">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
 
           {/* ── Form sections ────────────────────────────────────────────── */}
