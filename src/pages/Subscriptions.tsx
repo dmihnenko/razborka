@@ -2,8 +2,7 @@ import { useState, useMemo } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import {
   CreditCard, TrendingUp, Plus, Trash2, Calendar, Building2,
-  CheckCircle2, XCircle, Search, X, Infinity, Users, FileText,
-  Wrench, ChevronDown, Edit2,
+  CheckCircle2, XCircle, Search, X, Infinity, Edit2,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -11,32 +10,13 @@ import {
   getSubscriptionPlans, getAllCompanySubscriptions, getSubscriptionStats,
   deactivateSubscription, deleteCompanySubscription, assignSubscription,
   getStoCompanies, getPartsCompanies,
+  getSubscriptionRequests, approveSubscriptionRequest, rejectSubscriptionRequest,
 } from '@/services/subscriptionService'
 import type { CompanySubscription, Subscription } from '@/types/subscription'
+import { durationLabel } from '@/config/subscriptionPlans'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
-
-// ─── Plan feature map ─────────────────────────────────────────────────────────
-
-const PLAN_KEY = (p: Subscription) =>
-  p.type === 'lifetime' ? 'lifetime' :
-  (p.max_appointments === null && p.max_customers === null) ? 'pro' :
-  (p.max_appointments ?? 999) <= 50 ? 'start' : 'business'
-
-const PLAN_FEATURES_MAP: Record<string, string[]> = {
-  start:    ['До 50 заявок в месяц', 'До 100 клиентов', 'До 3 мастеров', 'Календарь записей', 'Каталог услуг'],
-  business: ['До 200 заявок в месяц', 'До 500 клиентов', 'До 10 мастеров', 'Аналитика доходов', 'Все функции'],
-  pro:      ['Безлимит заявок', 'Безлимит клиентов', 'Неогр. количество мастеров', 'Приоритетная поддержка', 'Все функции'],
-  lifetime: ['Безлимит навсегда', 'Безлимит клиентов', 'Неогр. количество мастеров', 'Обновления бесплатно', 'Все функции'],
-}
-
-const PLAN_COLORS: Record<string, { color: string; bg: string; badge?: string }> = {
-  start:    { color: '#2563EB', bg: '#EFF6FF' },
-  business: { color: '#7C3AED', bg: '#F5F3FF', badge: 'Популярный' },
-  pro:      { color: '#059669', bg: '#F0FDF4', badge: 'Выгодно' },
-  lifetime: { color: '#D97706', bg: '#FFFBEB' },
-}
 
 const DURATION_OPTIONS = [
   { value: 1,  label: '1 месяц' },
@@ -76,7 +56,7 @@ const STATUS_STYLE = {
 // ─── component ────────────────────────────────────────────────────────────────
 
 export default function Subscriptions() {
-  const [activeTab, setActiveTab] = useState<'companies' | 'plans'>('companies')
+  const [activeTab, setActiveTab] = useState<'companies' | 'plans' | 'requests'>('companies')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [isAssignOpen, setIsAssignOpen] = useState(false)
@@ -95,11 +75,23 @@ export default function Subscriptions() {
   const { data: stats } = useQuery({ queryKey: ['subscription-stats'], queryFn: getSubscriptionStats })
   const { data: stoCompanies  = [] } = useQuery({ queryKey: ['sto-companies-list'],  queryFn: getStoCompanies,   enabled: assignForm.companyType === 'sto' })
   const { data: partsCompanies = [] } = useQuery({ queryKey: ['parts-companies-list'], queryFn: getPartsCompanies, enabled: assignForm.companyType === 'parts' })
+  const { data: requests = [] } = useQuery({ queryKey: ['subscription-requests'], queryFn: () => getSubscriptionRequests('pending') })
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['company-subscriptions'] })
     queryClient.invalidateQueries({ queryKey: ['subscription-stats'] })
   }
+
+  const approveMutation = useMutation({
+    mutationFn: approveSubscriptionRequest,
+    onSuccess: () => { invalidate(); queryClient.invalidateQueries({ queryKey: ['subscription-requests'] }); toast.success('Заявка подтверждена, подписка назначена') },
+    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+  })
+  const rejectMutation = useMutation({
+    mutationFn: (id: string) => rejectSubscriptionRequest(id),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['subscription-requests'] }); toast.success('Заявка отклонена') },
+    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+  })
 
   const assignMutation = useMutation({
     mutationFn: assignSubscription,
@@ -132,7 +124,6 @@ export default function Subscriptions() {
     return list
   }, [allSubs, search, statusFilter])
 
-  const stoPlans   = plans.filter(p => p.company_type === 'sto')
   const companies  = assignForm.companyType === 'sto' ? stoCompanies : partsCompanies
   const filteredPlans = plans.filter(p => p.company_type === assignForm.companyType)
   const selectedPlan  = plans.find(p => p.id === assignForm.subscriptionId)
@@ -190,6 +181,7 @@ export default function Subscriptions() {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="flex border-b border-gray-100">
           {[
+            { key: 'requests',  label: `Заявки (${requests.length})` },
             { key: 'companies', label: `Компании (${allSubs.length})` },
             { key: 'plans',     label: 'Тарифные планы' },
           ].map(t => (
@@ -199,6 +191,58 @@ export default function Subscriptions() {
             </button>
           ))}
         </div>
+
+        {/* ── Requests tab ── */}
+        {activeTab === 'requests' && (
+          <div className="p-4">
+            {requests.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-14 text-center">
+                <CheckCircle2 className="w-12 h-12 text-gray-200 mb-3" />
+                <p className="font-medium text-gray-500">Нет новых заявок</p>
+                <p className="text-sm text-gray-400 mt-1">Заявки владельцев на подписку появятся здесь</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-50">
+                {requests.map((r: any) => (
+                  <div key={r.id} className="py-3.5 flex items-center gap-3 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <span className="font-semibold text-gray-900 text-sm truncate">{r.company_name}</span>
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${r.company_type === 'sto' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                          {r.company_type === 'sto' ? 'СТО' : 'Разборка'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
+                        <span className="font-medium text-gray-700">{r.plan?.name || 'Тариф'}</span>
+                        <span>·</span>
+                        <span>Срок: {durationLabel(r.months)}</span>
+                        <span>·</span>
+                        <span>{new Date(r.created_at).toLocaleDateString('ru-RU')}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => approveMutation.mutate(r.id)}
+                        disabled={approveMutation.isPending}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        <CheckCircle2 className="w-4 h-4" /> Подтвердить
+                      </button>
+                      <button
+                        onClick={() => rejectMutation.mutate(r.id)}
+                        disabled={rejectMutation.isPending}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        <XCircle className="w-4 h-4" /> Отклонить
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Companies tab ── */}
         {activeTab === 'companies' && (
@@ -296,26 +340,24 @@ export default function Subscriptions() {
               <div className="flex justify-center py-12"><Spinner size="lg" /></div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {stoPlans.map(plan => {
-                  const key = PLAN_KEY(plan)
-                  const clr = PLAN_COLORS[key] || PLAN_COLORS.start
-                  const features = PLAN_FEATURES_MAP[key] || []
+                {plans.map(plan => {
+                  const isParts = plan.company_type === 'parts'
+                  const clr = isParts ? { color: '#16A34A', bg: '#F0FDF4' } : { color: '#2563EB', bg: '#EFF6FF' }
                   const companiesOnPlan = allSubs.filter(s => s.subscription_id === plan.id && s.is_active).length
 
                   return (
                     <div key={plan.id}
                       className="relative rounded-2xl border-2 overflow-hidden transition-all hover:shadow-md"
                       style={{ borderColor: clr.color + '40', backgroundColor: clr.bg }}>
-                      {clr.badge && (
-                        <div className="absolute top-3 right-3 text-xs font-bold px-2 py-0.5 rounded-full text-white"
-                          style={{ backgroundColor: clr.color }}>
-                          {clr.badge}
-                        </div>
-                      )}
                       <div className="p-5">
-                        <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: clr.color }}>
-                          {plan.type === 'lifetime' ? 'Бессрочно' : plan.type === 'yearly' ? '12 месяцев' : plan.duration_months ? `${plan.duration_months} мес.` : 'Месячный'}
-                        </p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: clr.color }}>
+                            {isParts ? 'Разборка' : 'СТО'}
+                          </span>
+                          <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                            {plan.type === 'lifetime' ? 'Бессрочный' : plan.price === 0 ? 'Демо' : 'Месячный'}
+                          </span>
+                        </div>
                         <h3 className="text-xl font-bold text-gray-900 mb-3">{plan.name}</h3>
 
                         {/* Price */}
@@ -323,38 +365,14 @@ export default function Subscriptions() {
                           <span className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
                             ₴{plan.price.toLocaleString()}
                           </span>
-                          {plan.type === 'lifetime'
-                            ? <span className="text-sm text-gray-500 ml-1">навсегда</span>
-                            : <span className="text-sm text-gray-500 ml-1">/{plan.duration_months === 1 ? 'мес' : `${plan.duration_months} мес`}</span>
-                          }
+                          <span className="text-sm text-gray-500 ml-1">
+                            {plan.type === 'lifetime' ? 'навсегда' : plan.price === 0 ? '' : '/мес'}
+                          </span>
                         </div>
 
-                        {/* Limits */}
-                        <div className="flex items-center gap-3 mb-4 flex-wrap">
-                          <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                            <FileText className="w-3.5 h-3.5" style={{ color: clr.color }} />
-                            {plan.max_appointments === null ? '∞ заявок' : `${plan.max_appointments} заявок`}
-
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                            <Users className="w-3.5 h-3.5" style={{ color: clr.color }} />
-                            {plan.max_customers === null ? '∞ клиентов' : `${plan.max_customers} клиентов`}
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                            <Wrench className="w-3.5 h-3.5" style={{ color: clr.color }} />
-                            {plan.max_workers === null ? '∞ мастеров' : `${plan.max_workers} мастера`}
-                          </div>
-                        </div>
-
-                        {/* Features */}
-                        <ul className="space-y-1.5 mb-4">
-                          {features.map(f => (
-                            <li key={f} className="flex items-start gap-2 text-xs text-gray-700">
-                              <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: clr.color }} />
-                              {f}
-                            </li>
-                          ))}
-                        </ul>
+                        {plan.description && (
+                          <p className="text-xs text-gray-500 mb-4 leading-relaxed">{plan.description}</p>
+                        )}
 
                         {/* Companies on plan + edit */}
                         <div className="pt-3 border-t border-black/10 flex items-center justify-between">
@@ -462,8 +480,6 @@ function AssignModal({ plans, allPlans, companies, form, onFormChange, onSubmit,
             <label className="text-sm font-semibold text-gray-700 block mb-2">Тарифный план *</label>
             <div className="space-y-2">
               {plans.filter((p: Subscription) => p.company_type === form.companyType).map((p: Subscription) => {
-                const key = PLAN_KEY(p)
-                const clr = PLAN_COLORS[key] || PLAN_COLORS.start
                 const isSelected = form.subscriptionId === p.id
                 return (
                   <button key={p.id} type="button"
@@ -472,9 +488,7 @@ function AssignModal({ plans, allPlans, companies, form, onFormChange, onSubmit,
                     <div>
                       <p className="text-sm font-semibold text-gray-900">{p.name}</p>
                       <p className="text-xs text-gray-500">
-                        {p.max_appointments ? `До ${p.max_appointments} заявок` : 'Безлимит'}
-                        {' · '}
-                        {p.max_customers ? `${p.max_customers} клиентов` : 'Безлимит клиентов'}
+                        {p.type === 'lifetime' ? 'Бессрочный' : p.price === 0 ? 'Демо · 1 месяц' : 'Месячный · выбор срока ниже'}
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0 ml-3">
@@ -537,10 +551,6 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
     name:             plan.name,
     description:      plan.description || '',
     price:            String(plan.price),
-    max_appointments: plan.max_appointments != null ? String(plan.max_appointments) : '',
-    max_customers:    plan.max_customers    != null ? String(plan.max_customers)    : '',
-    max_workers:      plan.max_workers      != null ? String(plan.max_workers)      : '',
-    duration_months:  plan.duration_months  != null ? String(plan.duration_months)  : '',
   })
   const [saving, setSaving] = useState(false)
 
@@ -551,10 +561,6 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
         name:             form.name.trim(),
         description:      form.description.trim() || null,
         price:            Number(form.price),
-        max_appointments: form.max_appointments ? Number(form.max_appointments) : null,
-        max_customers:    form.max_customers    ? Number(form.max_customers)    : null,
-        max_workers:      form.max_workers      ? Number(form.max_workers)      : null,
-        duration_months:  form.duration_months  ? Number(form.duration_months)  : null,
       }).eq('id', plan.id)
       if (error) throw error
       toast.success('План обновлён')
@@ -590,13 +596,11 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
         <div className="p-5 space-y-4 overflow-y-auto flex-1">
           {field('Название', 'name')}
           {field('Описание', 'description')}
-          {field('Цена (₴)', 'price', 'number')}
-          <div className="grid grid-cols-2 gap-3">
-            {field('Лимит заявок', 'max_appointments', 'number', 'Пусто = безлимит')}
-            {field('Лимит клиентов', 'max_customers', 'number', 'Пусто = безлимит')}
-            {field('Лимит мастеров', 'max_workers', 'number', 'Пусто = безлимит')}
-            {field('Длительность (мес)', 'duration_months', 'number', 'Пусто = бессрочно')}
-          </div>
+          {field('Цена (₴/мес)', 'price', 'number')}
+          <p className="text-xs text-gray-400">
+            Лимиты по количеству не используются: активная подписка даёт полный доступ.
+            Срок (1/3/6/12 мес) выбирается при назначении.
+          </p>
         </div>
         <div className="px-5 py-4 border-t border-gray-100 flex gap-2 flex-shrink-0">
           <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Отмена</button>

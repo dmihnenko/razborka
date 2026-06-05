@@ -53,6 +53,23 @@ export interface SubscriptionUsage {
   customers: number
 }
 
+export interface SubscriptionRequest {
+  id: string
+  company_type: 'sto' | 'parts'
+  company_id: string
+  requested_by: string | null
+  plan_id: string | null
+  months: number
+  status: 'pending' | 'approved' | 'rejected'
+  note: string | null
+  created_at: string
+  processed_at: string | null
+  processed_by: string | null
+  // join / derived
+  plan?: { name: string; type: string } | null
+  company_name?: string
+}
+
 // Plan tier display config
 export const PLAN_FEATURES: Record<string, string[]> = {
   free: [

@@ -68,6 +68,7 @@ export const partsOwnerMenu: MenuItem[] = [
   { name: 'Клиенты', href: '/parts/customers', icon: Users },
   { name: 'Сотрудники', href: '/parts/employees', icon: Users },
   { name: 'Аналитика', href: '/parts/analytics', icon: LineChart },
+  { name: 'Подписка', href: '/parts/subscription', icon: CreditCard },
   { name: 'Настройки', href: '/parts/settings', icon: SlidersHorizontal },
   { name: 'Поддержка', href: '/support', icon: MessageCircle },
   { name: 'Профиль', href: '/profile', icon: CircleUser },

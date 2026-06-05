@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { Subscription, CompanySubscription, AssignSubscriptionInput, SubscriptionStats } from '@/types/subscription'
+import type { Subscription, CompanySubscription, AssignSubscriptionInput, SubscriptionStats, SubscriptionRequest } from '@/types/subscription'
 
 // ============================================================================
 // SUBSCRIPTION PLANS
@@ -237,7 +237,116 @@ export async function getPartsCompanies() {
     .select('id, name, is_active')
     .eq('is_active', true)
     .order('name')
-  
+
   if (error) throw error
   return data
+}
+
+// ============================================================================
+// PAID PLAN HELPER
+// ============================================================================
+
+/** Активный платный месячный план для типа компании (канонический «Подписка …») */
+export async function getActivePaidPlan(companyType: 'sto' | 'parts') {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('company_type', companyType)
+    .eq('type', 'monthly')
+    .eq('is_active', true)
+    .gt('price', 0)
+    .order('price', { ascending: true })
+    .limit(1)
+  if (error) throw error
+  return (data?.[0] ?? null) as Subscription | null
+}
+
+// ============================================================================
+// SUBSCRIPTION REQUESTS (заявки владельцев → подтверждение админом)
+// ============================================================================
+
+export async function createSubscriptionRequest(input: {
+  company_type: 'sto' | 'parts'
+  company_id: string
+  plan_id: string
+  months: number
+  note?: string
+}) {
+  const { data: u } = await supabase.auth.getUser()
+  const { error } = await supabase.from('subscription_requests').insert({
+    company_type: input.company_type,
+    company_id: input.company_id,
+    plan_id: input.plan_id,
+    months: input.months,
+    note: input.note || null,
+    requested_by: u?.user?.id ?? null,
+    status: 'pending',
+  })
+  if (error) throw error
+}
+
+/** Последняя заявка компании (для показа статуса владельцу) */
+export async function getMyLatestRequest(companyType: 'sto' | 'parts', companyId: string) {
+  const { data, error } = await supabase
+    .from('subscription_requests')
+    .select('*')
+    .eq('company_type', companyType)
+    .eq('company_id', companyId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) throw error
+  return data as SubscriptionRequest | null
+}
+
+/** Список заявок для админа (по умолчанию — ожидающие), с названием компании */
+export async function getSubscriptionRequests(status: 'pending' | 'approved' | 'rejected' | 'all' = 'pending') {
+  let q = supabase
+    .from('subscription_requests')
+    .select('*, plan:subscriptions(name, type)')
+    .order('created_at', { ascending: false })
+  if (status !== 'all') q = q.eq('status', status)
+  const { data, error } = await q
+  if (error) throw error
+
+  const rows = await Promise.all((data || []).map(async (r: any) => {
+    const tbl = r.company_type === 'sto' ? 'sto_companies' : 'parts_companies'
+    const { data: c } = await supabase.from(tbl).select('name').eq('id', r.company_id).single()
+    return { ...r, company_name: c?.name || '—' }
+  }))
+  return rows as SubscriptionRequest[]
+}
+
+/** Подтвердить заявку: назначить подписку на выбранный срок и отметить approved */
+export async function approveSubscriptionRequest(id: string) {
+  const { data: req, error } = await supabase
+    .from('subscription_requests').select('*').eq('id', id).single()
+  if (error) throw error
+
+  const end = new Date()
+  end.setMonth(end.getMonth() + (req.months || 1))
+
+  await assignSubscription({
+    company_type: req.company_type,
+    company_id: req.company_id,
+    subscription_id: req.plan_id,
+    start_date: new Date().toISOString(),
+    end_date: end.toISOString(),
+  })
+
+  const { data: u } = await supabase.auth.getUser()
+  const { error: uerr } = await supabase
+    .from('subscription_requests')
+    .update({ status: 'approved', processed_at: new Date().toISOString(), processed_by: u?.user?.id ?? null })
+    .eq('id', id)
+  if (uerr) throw uerr
+}
+
+export async function rejectSubscriptionRequest(id: string, note?: string) {
+  const { data: u } = await supabase.auth.getUser()
+  const { error } = await supabase
+    .from('subscription_requests')
+    .update({ status: 'rejected', note: note || null, processed_at: new Date().toISOString(), processed_by: u?.user?.id ?? null })
+    .eq('id', id)
+  if (error) throw error
 }
