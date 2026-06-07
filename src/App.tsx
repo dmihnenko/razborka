@@ -63,6 +63,7 @@ const PartsAnalytics = lazy(() => import('./pages/PartsAnalytics'))
 const PartsCustomers = lazy(() => import('./pages/PartsCustomers'))
 const PartsCustomerProfile = lazy(() => import('./pages/PartsCustomerProfile'))
 const PublicPartsCustomerView = lazy(() => import('./pages/PublicPartsCustomerView'))
+const PublicPartsItemView     = lazy(() => import('./pages/PublicPartsItemView'))
 const PartsCategories = lazy(() => import('./pages/PartsCategories'))
 const PartsSettings = lazy(() => import('./pages/PartsSettings'))
 const PartsWarehouse = lazy(() => import('./pages/PartsWarehouse'))
@@ -149,6 +150,9 @@ function App() {
         
         {/* Публичный профиль клиента разборки */}
         <Route path="/public/parts-customer/:id" element={<PublicPartsCustomerView />} />
+
+        {/* Публичная страница запчасти */}
+        <Route path="/public/parts-item/:id" element={<PublicPartsItemView />} />
         
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />

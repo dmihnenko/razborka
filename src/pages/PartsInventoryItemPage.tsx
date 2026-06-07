@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import {
   ArrowLeft, Pencil, Trash2, DollarSign, Package,
   MapPin, Tag, Car, ChevronRight,
-  Hash, FileText, AlertTriangle, CheckCircle, Clock, Wrench,
+  Hash, FileText, AlertTriangle, CheckCircle, Clock, Wrench, Share2,
 } from 'lucide-react'
 import { getPartsInventoryItem, deletePartsInventoryItem } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
@@ -119,6 +119,29 @@ export default function PartsInventoryItemPage() {
             </h1>
 
             <div className="flex items-center gap-1.5 shrink-0">
+              {/* Поделиться — копирует публичную ссылку */}
+              <button
+                onClick={() => {
+                  const url = `${window.location.origin}/public/parts-item/${id}`
+                  navigator.clipboard.writeText(url)
+                    .then(() => toast.success('Ссылка скопирована'))
+                    .catch(() => {
+                      // Fallback для браузеров без clipboard API
+                      const el = document.createElement('input')
+                      el.value = url
+                      document.body.appendChild(el)
+                      el.select()
+                      document.execCommand('copy')
+                      document.body.removeChild(el)
+                      toast.success('Ссылка скопирована')
+                    })
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-600"
+                title="Скопировать публичную ссылку"
+              >
+                <Share2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Поделиться</span>
+              </button>
               <button
                 onClick={() => navigate('/parts/inventory', { state: { editItemId: id } })}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
