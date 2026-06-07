@@ -244,40 +244,58 @@ export default function Layout() {
 
         {/* Footer */}
         <div className="px-2 py-3 border-t border-gray-100 space-y-0.5">
-          {/* Переключатель ролей для десктопа — только неактивные не-admin роли */}
-          {hasMultipleRoles && switchableRoles.filter((r: string) => !['admin','user'].includes(r) && r !== activeRoleName).length > 0 && (
+          {/* Переключатель ролей для десктопа — ВСЕ роли, активная выделена */}
+          {hasMultipleRoles && (
             <div className="hidden lg:block mb-2 px-1">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 px-2">Переключить</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 px-2">Раздел</p>
               <div className="space-y-0.5">
-                {switchableRoles
-                  .filter((r: string) => !['admin', 'user'].includes(r) && r !== activeRoleName)
-                  .map((roleName: string) => {
+                {(() => {
                   const labels: Record<string,string> = {
-                    sto_owner: 'СТО', sto_worker: 'Работник СТО',
-                    parts_owner: 'Авторазборка', parts_worker: 'Авторазборка',
+                    sto_owner:    'СТО',
+                    sto_worker:   'СТО',
+                    parts_owner:  'Авторазборка',
+                    parts_worker: 'Авторазборка',
                   }
-                  const isActive = activeRoleName === roleName
-                  return (
-                    <button key={roleName} type="button"
-                      onClick={() => { localStorage.setItem('activeRole', roleName)
-                        localStorage.removeItem('tsp_profile_cache')
-                        queryClient.clear()
-                        // Переходим на дашборд активной роли
-                        const roleHome: Record<string,string> = {
-                          sto_owner: '/', sto_worker: '/',
-                          parts_owner: '/parts/dashboard', parts_worker: '/parts/dashboard',
-                          user: '/my-vehicles', admin: '/admin'
-                        }
-                        window.location.href = roleHome[roleName] || '/' }}
-                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        isActive ? 'bg-primary/10 text-primary' : 'text-gray-500 hover:bg-gray-100'
-                      }`}>
-                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isActive ? 'bg-primary' : 'bg-gray-300'}`} />
-                      {labels[roleName] || roleName}
-                      {isActive && <span className="ml-auto text-xs opacity-60">активна</span>}
-                    </button>
-                  )
-                })}
+                  const roleHome: Record<string,string> = {
+                    sto_owner: '/', sto_worker: '/',
+                    parts_owner: '/parts/dashboard', parts_worker: '/parts/dashboard',
+                  }
+                  const seen = new Set<string>()
+                  return switchableRoles
+                    .filter((r: string) => !['admin','user'].includes(r) && labels[r])
+                    .filter((r: string) => {
+                      const label = labels[r]
+                      if (seen.has(label)) return false
+                      seen.add(label)
+                      return true
+                    })
+                    .map((roleName: string) => {
+                      const isActive = activeRoleName === roleName ||
+                        (labels[activeRoleName] === labels[roleName])
+                      return (
+                        <button
+                          key={roleName}
+                          type="button"
+                          onClick={() => {
+                            if (isActive) return
+                            localStorage.setItem('activeRole', roleName)
+                            localStorage.removeItem('tsp_profile_cache')
+                            queryClient.clear()
+                            window.location.href = roleHome[roleName] || '/'
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                            ${isActive
+                              ? 'bg-primary/10 text-primary cursor-default'
+                              : 'text-gray-500 hover:bg-gray-100 cursor-pointer'
+                            }`}
+                        >
+                          <span className={`w-2 h-2 rounded-sm flex-shrink-0 ${isActive ? 'bg-primary' : 'bg-gray-300'}`} />
+                          {labels[roleName]}
+                          {isActive && <span className="ml-auto text-xs text-primary/60 font-normal">активно</span>}
+                        </button>
+                      )
+                    })
+                })()}
               </div>
             </div>
           )}
@@ -313,39 +331,59 @@ export default function Layout() {
           {/* Top bar: кнопки роли + выйти */}
           <div className="px-3 border-b border-gray-100 bg-white flex items-center gap-2 h-[52px]">
 
-            {/* Кнопки переключения ролей */}
-            <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto scrollbar-none">
-              {switchableRoles
-                .filter((r: string) => !['admin', 'user'].includes(r) && r !== activeRoleName)
-                .map((roleName: string) => {
-                  const labels: Record<string,string> = {
-                    sto_owner: 'СТО', sto_worker: 'СТО',
-                    parts_owner: 'Разборка', parts_worker: 'Разборка',
+            {/* Кнопки переключения ролей — показываем ВСЕ, активная выделена */}
+            {hasMultipleRoles && (
+              <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto scrollbar-none">
+                {(() => {
+                  const roleLabels: Record<string,string> = {
+                    sto_owner:    'СТО',
+                    sto_worker:   'СТО',
+                    parts_owner:  'Разборка',
+                    parts_worker: 'Разборка',
                   }
-                  if (!labels[roleName]) return null
-                  const isActive = activeRoleName === roleName
-                  return (
-                    <button key={roleName} type="button"
-                      onClick={() => {
-                        localStorage.setItem('activeRole', roleName)
-                        localStorage.removeItem('tsp_profile_cache')
-                        queryClient.clear()
-                        const roleHome: Record<string,string> = {
-                          sto_owner: '/', sto_worker: '/',
-                          parts_owner: '/parts/dashboard', parts_worker: '/parts/dashboard',
-                        }
-                        window.location.href = roleHome[roleName] || '/'
-                      }}
-                      className={`flex-shrink-0 text-xs font-semibold h-9 px-4 rounded-xl transition-all ${
-                        isActive
-                          ? 'bg-primary text-white shadow-sm'
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                      }`}>
-                      {labels[roleName]}
-                    </button>
-                  )
-                })}
-            </div>
+                  const roleHome: Record<string,string> = {
+                    sto_owner:    '/',
+                    sto_worker:   '/',
+                    parts_owner:  '/parts/dashboard',
+                    parts_worker: '/parts/dashboard',
+                  }
+                  // Дедупликация по label — предпочитаем owner над worker
+                  const seen = new Set<string>()
+                  return switchableRoles
+                    .filter((r: string) => !['admin', 'user'].includes(r) && roleLabels[r])
+                    .filter((r: string) => {
+                      const label = roleLabels[r]
+                      if (seen.has(label)) return false
+                      seen.add(label)
+                      return true
+                    })
+                    .map((roleName: string) => {
+                      const isActive = activeRoleName === roleName ||
+                        (roleLabels[activeRoleName] === roleLabels[roleName])
+                      return (
+                        <button
+                          key={roleName}
+                          type="button"
+                          onClick={() => {
+                            if (isActive) return
+                            localStorage.setItem('activeRole', roleName)
+                            localStorage.removeItem('tsp_profile_cache')
+                            queryClient.clear()
+                            window.location.href = roleHome[roleName] || '/'
+                          }}
+                          className={`flex-shrink-0 text-xs font-semibold h-9 px-4 rounded-lg transition-all
+                            ${isActive
+                              ? 'bg-primary text-white shadow-sm cursor-default'
+                              : 'bg-gray-100 text-gray-500 hover:bg-gray-200 active:bg-gray-300'
+                            }`}
+                        >
+                          {roleLabels[roleName]}
+                        </button>
+                      )
+                    })
+                })()}
+              </div>
+            )}
 
             {/* Кнопка Админ — только если есть роль admin */}
             {isAdmin && (
