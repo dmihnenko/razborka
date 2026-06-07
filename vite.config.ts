@@ -65,37 +65,91 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        // Отключаем debug логи в production
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
+
+        // Offline SPA: все navigate-запросы → index.html,
+        // кроме API, version.json и статических файлов из /public/
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//, /^\/version\.json/, /^\/public\//],
+
         runtimeCaching: [
+          // ── Supabase Auth / Storage / Realtime ───────────────────────────────
+          // Критичные эндпоинты: всегда NetworkFirst, не кешировать долго
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            urlPattern: /^https:\/\/.*\.supabase\.co\/(auth|storage|realtime)\/.*/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-api',
+              cacheName: 'supabase-critical',
+              networkTimeoutSeconds: 5,
               expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 // 24 hours
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 5  // 5 минут
               },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
+              cacheableResponse: { statuses: [0, 200] }
             }
           },
+
+          // ── Supabase REST API (запросы данных) ────────────────────────────────
+          // StaleWhileRevalidate: мгновенный ответ из кеша + тихое обновление.
+          // Подходит для списков/справочников где небольшая задержка обновления ок.
           {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'supabase-rest',
+              expiration: {
+                maxEntries: 150,
+                maxAgeSeconds: 60 * 5  // 5 минут — данные не устаревают надолго
+              },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          },
+
+          // ── Supabase Functions (Edge Functions) ───────────────────────────────
+          // NetworkFirst: вычисляемые результаты, кеш только для offline
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/functions\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-functions',
+              networkTimeoutSeconds: 8,
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 2  // 2 минуты
+              },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          },
+
+          // ── Изображения ImgBB ─────────────────────────────────────────────────
+          // CacheFirst: загруженные фото не меняются — агрессивный кеш
+          {
+            urlPattern: /^https?:\/\/(i\.ibb\.co|imgbb\.com|image\.ibb\.co)\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'imgbb-images',
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 7  // 7 дней
+              },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          },
+
+          // ── Google Fonts ──────────────────────────────────────────────────────
+          // CacheFirst: шрифты версионированы по URL, безопасно кешировать год
+          {
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'google-fonts-cache',
               expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365  // 1 год
               },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
+              cacheableResponse: { statuses: [0, 200] }
             }
           }
         ]

@@ -6,6 +6,7 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
+import { InventoryCard } from '@/components/parts/InventoryCard'
 import { getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
@@ -745,123 +746,18 @@ export default function PartsInventory() {
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {filteredAndSorted.map((item) => (
-              <div
+              <InventoryCard
                 key={item.id}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden group flex flex-col"
-              >
-                <div className="p-4 flex-1">
-                  {/* Status & Low Stock Warning */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      {statusFilter === 'reserved' && (
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(item.id)}
-                          onChange={(e) => { e.stopPropagation(); toggleSelect(item.id, e) }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-4 h-4 accent-yellow-500 cursor-pointer flex-shrink-0"
-                        />
-                      )}
-                      <div className="relative group/status">
-                        <button
-                          onClick={(e) => handleStatusClick(item, e)}
-                          className={`px-3 py-1 rounded-full text-xs font-medium border hover:opacity-80 transition-opacity cursor-pointer ${statusColors[item.status]}`}
-                        >
-                          {statusLabels[item.status]}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {item.vehicle && (
-                        <span className="text-xs text-gray-500 font-medium truncate max-w-[120px]">
-                          {item.vehicle.make} {item.vehicle.model} {item.vehicle.year}
-                        </span>
-                      )}
-                      {!item.vehicle_id && item.quantity <= 2 && item.status === 'available' && (
-                        <div className="flex items-center gap-1 text-red-600">
-                          <AlertTriangle className="w-4 h-4" />
-                          <span className="text-xs font-medium">Мало</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Название + артикул */}
-                  <div className="mb-3">
-                    <h3
-                      className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-2 cursor-pointer leading-snug"
-                      onClick={(e) => { e.stopPropagation(); navigate(`/parts/inventory/${item.id}`) }}
-                    >
-                      {item.name}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      {item.category && (
-                        <span className="text-[11px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md">{item.category.name}</span>
-                      )}
-                      {item.part_number && (
-                        <span className="text-[11px] text-gray-400 font-mono">#{item.part_number}</span>
-                      )}
-                      {item.condition && (
-                        <span className="text-[11px] text-gray-400">{PARTS_CONDITION_LABELS[item.condition]}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Авто */}
-                  {item.vehicle && (
-                    <div className="text-xs text-gray-500 mb-3 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
-                      <span className="truncate">{item.vehicle.make} {item.vehicle.model} {item.vehicle.year}</span>
-                    </div>
-                  )}
-
-                  {/* Количество + склад */}
-                  <div className="flex items-center gap-3 mb-3">
-                    {!item.vehicle_id && (
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${item.quantity <= 2 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
-                        {item.quantity} шт
-                      </span>
-                    )}
-                    {item.location && (
-                      <span className="text-xs text-gray-400 truncate">📍 {item.location}</span>
-                    )}
-                  </div>
-
-                  {/* Цена */}
-                  <div className="mt-auto">
-                    {item.selling_price ? (
-                      <p className="text-lg font-bold text-primary" style={{ letterSpacing: '-0.02em' }}>
-                        {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-amber-600 font-medium">Цена не указана</p>
-                    )}
-                    {item.status === 'sold' && item.sold_price && (
-                      <p className="text-xs text-green-600 mt-0.5">Продано: {formatPrice(item.sold_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="px-4 py-3 border-t border-gray-100 flex gap-2">
-                  <button onClick={(e) => handleEdit(item, e)}
-                    className="flex-1 py-2 text-xs font-semibold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
-                    Изменить
-                  </button>
-                  {item.status !== 'sold' && (
-                    <button onClick={(e) => handleSell(item, e)}
-                      className="flex-1 flex items-center justify-center gap-1 py-2 text-xs font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors">
-                      <DollarSign className="w-3.5 h-3.5" strokeWidth={2} />
-                      Продать
-                    </button>
-                  )}
-                  <button onClick={(e) => handleDelete(item, e)}
-                    className="w-9 h-9 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-xl transition-colors flex-shrink-0"
-                    title="Удалить">
-                    <Trash2 className="w-4 h-4" strokeWidth={1.5} />
-                  </button>
-                </div>
-              </div>
+                item={item}
+                statusFilter={statusFilter}
+                selectedIds={selectedIds}
+                onStatusClick={handleStatusClick}
+                onEdit={handleEdit}
+                onSell={handleSell}
+                onDelete={handleDelete}
+                onNavigate={(id) => navigate(`/parts/inventory/${id}`)}
+                onToggleSelect={(id, e) => toggleSelect(id, e as React.MouseEvent)}
+              />
             ))}
           </div>
         ) : (

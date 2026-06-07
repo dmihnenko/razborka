@@ -1,94 +1,142 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 
-const CHECK_INTERVAL = 4 * 60 * 60 * 1000 // 4 часа
-const VERSION_STORAGE_KEY = 'tsp_app_version'
+const VERSION_KEY    = 'tsp_app_version'
+const INTERVAL_MS    = 15 * 60 * 1000  // 15 мин
+const REVISIT_GAP_MS =  5 * 60 * 1000  // минимум между проверками при visibilitychange
+const REDISPLAY_MS   =  5 * 60 * 1000  // переспросить если пользователь закрыл toast
 
-let isChecking = false
-let isReloading = false
+// Модульные флаги — живут на протяжении всей сессии
+let isChecking   = false
+let updateShown  = false
+let pendingHash  = ''   // новый hash, ещё не принятый пользователем
 
-async function clearSWCacheAndReload(): Promise<void> {
+// ── Перезагрузка ──────────────────────────────────────────────────────────────
+async function reloadApp(): Promise<void> {
   try {
-    // Отписываем все Service Workers
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations()
-      await Promise.all(registrations.map(r => r.unregister()))
-    }
-    // Очищаем все Cache Storage
     if ('caches' in window) {
       const keys = await caches.keys()
-      await Promise.all(keys.map(k => caches.delete(k)))
+      // Не трогаем шрифты и imgbb — они не меняются между деплоями
+      await Promise.all(
+        keys
+          .filter(k => !k.includes('google-fonts') && !k.includes('imgbb-images'))
+          .map(k => caches.delete(k))
+      )
     }
-  } catch {
-    // Игнорируем ошибки очистки
-  }
-  // Очищаем кэш профиля
+  } catch { /* нет доступа к кешу */ }
+
   localStorage.removeItem('tsp_profile_cache')
-  // Hard reload — принудительно загружает с сервера
-  window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now()
+  // Версию не сбрасываем — она уже записана в checkVersion
+  window.location.href = window.location.pathname + '?v=' + Date.now()
 }
 
+// ── Показать toast обновления ─────────────────────────────────────────────────
+function showUpdateToast() {
+  if (updateShown) return
+  updateShown = true
+
+  toast('Доступно обновление', {
+    description: 'Новая версия приложения готова к установке',
+    duration: Infinity,
+    action: {
+      label: 'Обновить',
+      onClick: reloadApp,
+    },
+    onDismiss: () => {
+      // Пользователь закрыл — дать возможность показать снова через 5 мин
+      setTimeout(() => { updateShown = false }, REDISPLAY_MS)
+    },
+  })
+}
+
+// ── Проверка версии по version.json ──────────────────────────────────────────
 async function checkVersion(): Promise<void> {
-  if (isChecking || isReloading) return
+  if (isChecking) return
   isChecking = true
 
   try {
     const res = await fetch(`/version.json?t=${Date.now()}`, {
       cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache' },
+      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
     })
     if (!res.ok) return
 
     const data = await res.json()
-    const newVersion: string = data?.version || data?.hash || ''
-    if (!newVersion) return
+    const newHash: string = data?.hash || data?.version || ''
+    if (!newHash) return
 
-    const storedVersion = localStorage.getItem(VERSION_STORAGE_KEY)
+    const stored = localStorage.getItem(VERSION_KEY)
 
-    if (!storedVersion) {
-      localStorage.setItem(VERSION_STORAGE_KEY, newVersion)
+    if (!stored) {
+      // Первый запуск — запомнить текущую версию, не показывать toast
+      localStorage.setItem(VERSION_KEY, newHash)
       return
     }
 
-    if (newVersion !== storedVersion) {
-      isReloading = true
-      localStorage.setItem(VERSION_STORAGE_KEY, newVersion)
-
-      toast.success('Обновление... 🔄', {
-        duration: 500,
-        position: 'top-center',
-      })
-
-      setTimeout(() => clearSWCacheAndReload(), 500)
+    if (newHash !== stored && newHash !== pendingHash) {
+      // Новая версия обнаружена:
+      // - записываем в localStorage сразу (чтобы не спамить при следующих проверках)
+      // - держим pendingHash чтобы не показывать toast дважды если
+      //   пользователь закрыл его, а следующая проверка вернёт тот же hash
+      pendingHash = newHash
+      localStorage.setItem(VERSION_KEY, newHash)
+      showUpdateToast()
     }
-  } catch {
-    // Игнорируем сетевые ошибки
-  } finally {
+  } catch { /* нет сети — ок */ } finally {
     isChecking = false
   }
 }
 
+// ── Компонент ─────────────────────────────────────────────────────────────────
 export default function VersionChecker() {
+  const lastVisibilityCheck = useRef(0)
+
   useEffect(() => {
     if (!import.meta.env.PROD) return
 
+    // 1. Проверка при старте
     checkVersion()
 
-    const interval = setInterval(() => checkVersion(), CHECK_INTERVAL)
+    // 2. Периодический интервал — 15 мин
+    const interval = setInterval(checkVersion, INTERVAL_MS)
 
-    let lastFocusCheck = 0
-    const onFocus = () => {
+    // 3. При возврате на вкладку — не чаще раза в 5 мин
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible') return
       const now = Date.now()
-      if (now - lastFocusCheck > 30 * 60 * 1000) {
-        lastFocusCheck = now
+      if (now - lastVisibilityCheck.current > REVISIT_GAP_MS) {
+        lastVisibilityCheck.current = now
         checkVersion()
       }
     }
-    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisibility)
+
+    // 4. Service Worker обновился и взял контроль над страницей →
+    //    гарантированно новая версия активна, показываем toast напрямую
+    //    (не делаем fetch version.json — SW уже сменился)
+    let swControlled = false
+    const onControllerChange = () => {
+      if (swControlled) return
+      swControlled = true
+      // Небольшая задержка чтобы новый SW успел полностью инициализироваться
+      setTimeout(() => {
+        // Сбрасываем pendingHash: controllerchange — это свежий сигнал
+        pendingHash = ''
+        updateShown = false
+        showUpdateToast()
+      }, 500)
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', onControllerChange)
+    }
 
     return () => {
       clearInterval(interval)
-      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisibility)
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange)
+      }
     }
   }, [])
 

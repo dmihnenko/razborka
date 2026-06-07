@@ -7,9 +7,11 @@ interface PhotoGalleryProps {
   alt?: string
   /** Main image aspect ratio class. Default: "aspect-video" */
   mainAspect?: string
+  /** Object fit for main image. Default: 'cover' (no black bars) */
+  objectFit?: 'cover' | 'contain'
 }
 
-export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'aspect-video' }: PhotoGalleryProps) {
+export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'aspect-video', objectFit = 'cover' }: PhotoGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
@@ -147,7 +149,9 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
             key={photos[activeIndex].url}
             src={photos[activeIndex].url}
             alt={`${alt} ${activeIndex + 1}`}
-            className="absolute inset-0 w-full h-full object-contain"
+            className={`absolute inset-0 w-full h-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'}`}
+            loading="lazy"
+            decoding="async"
             draggable={false}
           />
 
