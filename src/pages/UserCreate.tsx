@@ -141,7 +141,32 @@ export default function UserCreate() {
       if (fnError) throw new Error(fnError.message)
       if (fnData?.error) throw new Error(fnData.error)
     },
-    onSuccess: () => {
+    onSuccess: async (_, variables) => {
+      // Notify admins about user creation
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.access_token) {
+          await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-user-registered`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({
+                userId: '', // We don't have the ID yet
+                username: variables.username.toLowerCase(),
+                email: variables.email,
+                fullName: variables.full_name,
+              }),
+            }
+          ).catch(err => console.error('Failed to send notification:', err))
+        }
+      } catch (err) {
+        console.error('Error preparing notification:', err)
+      }
+
       queryClient.invalidateQueries({ queryKey: ['users'] })
       queryClient.invalidateQueries({ queryKey: ['userProfile'] })
       toast.success('Пользователь создан')

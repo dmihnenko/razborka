@@ -66,18 +66,43 @@ export default function Login() {
       return
     }
 
-    if (data.user && data.session) {
-      // Email confirmation отключён — пользователь сразу авторизован
-      toast.success('Регистрация успешна!')
-      await handleSuccessfulLogin()
-    } else if (data.user) {
-      // Email confirmation включён — просим войти вручную
-      toast.success('Регистрация успешна! Подтвердите email и войдите в систему')
-      setIsRegisterMode(false)
-      setUsername('')
-      setEmail('')
-      setPassword('')
-      setConfirmPassword('')
+    if (data.user) {
+      // Отправляем уведомление админу о новой регистрации
+      try {
+        const token = data.session?.access_token || ''
+        await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-user-registered`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              userId: data.user.id,
+              username: username.toLowerCase(),
+              email: authEmail,
+              fullName: null,
+            }),
+          }
+        )
+      } catch (err) {
+        console.error('Failed to send admin notification:', err)
+      }
+
+      if (data.session) {
+        // Email confirmation отключён — пользователь сразу авторизован
+        toast.success('Регистрация успешна!')
+        await handleSuccessfulLogin()
+      } else {
+        // Email confirmation включён — просим войти вручную
+        toast.success('Регистрация успешна! Подтвердите email и войдите в систему')
+        setIsRegisterMode(false)
+        setUsername('')
+        setEmail('')
+        setPassword('')
+        setConfirmPassword('')
+      }
     }
 
     setLoading(false)

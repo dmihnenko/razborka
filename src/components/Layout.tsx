@@ -15,8 +15,10 @@ import { useAuth } from '../hooks/useAuth'
 import { getMenuForRoles } from '../config/navigation'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
 import Breadcrumbs from './Breadcrumbs'
+import { useAdminNotifications } from '../hooks/useAdminNotifications'
 
 export default function Layout() {
+  useAdminNotifications()
   const location = useLocation()
   const isAdmin = useIsAdmin()
   const { loading: authLoading } = useAuth()

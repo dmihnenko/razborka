@@ -177,6 +177,8 @@ serve(async (req) => {
     }
 
     // Upsert user profile (UPDATE если профиль уже создан триггером, иначе INSERT)
+    // Auto-activate if company is assigned, otherwise require admin confirmation
+    const isCompanyAssigned = !!(sto_company_id || parts_company_id)
     const profilePayload = {
       id: newUser.user.id,
       full_name: full_name || null,
@@ -185,7 +187,7 @@ serve(async (req) => {
       username: username || null,
       sto_company_id: sto_company_id || null,
       parts_company_id: parts_company_id || null,
-      is_active: true
+      is_active: isCompanyAssigned
     }
 
     const { error: profileError } = await supabaseAdmin
@@ -215,9 +217,26 @@ serve(async (req) => {
       }
     }
 
+    // Send admin notification about user creation
+    try {
+      const notifyPayload = {
+        userId: newUser.user.id,
+        username: username || newUser.user.email,
+        email: finalEmail,
+        fullName: full_name || null
+      }
+
+      // We can't make HTTP calls from Edge Functions easily, so we'll use Realtime instead
+      // The client-side code will handle notifications
+      console.log('User created - notification should be sent from client:', notifyPayload)
+    } catch (notifyError) {
+      console.error('Error preparing notification:', notifyError)
+      // Don't fail user creation if notification fails
+    }
+
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: 'User created successfully',
         user: {
           id: newUser.user.id,
