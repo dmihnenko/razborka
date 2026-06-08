@@ -164,7 +164,11 @@ export default function InvoiceBuilder() {
         </div>
       </div>
 
-      <div className="w-full px-3 sm:px-6 py-5 space-y-4 max-w-4xl mx-auto">
+      <div className="w-full px-3 sm:px-6 py-5">
+       <div className="grid gap-4 lg:grid-cols-3 items-start">
+
+        {/* ── Левая колонка: выбор клиента/заявки ── */}
+        <div className="space-y-4 lg:col-span-1 lg:sticky lg:top-20">
 
         {/* Клиент */}
         <div className="card p-4 sm:p-5">
@@ -218,6 +222,11 @@ export default function InvoiceBuilder() {
             <span className="font-semibold text-gray-900">{vehicleLabel}</span>
           </div>
         )}
+
+        </div>
+
+        {/* ── Правая колонка: позиции счёта ── */}
+        <div className="space-y-4 lg:col-span-2">
 
         {/* Работы */}
         <div className="card p-4 sm:p-5">
@@ -295,6 +304,9 @@ export default function InvoiceBuilder() {
             <p className="text-2xl font-bold text-primary tabular-nums">{fmtMoney(totals.total)}</p>
           </div>
         </div>
+
+        </div>
+       </div>
 
         {!profile && <div className="flex justify-center py-6"><Spinner /></div>}
       </div>
