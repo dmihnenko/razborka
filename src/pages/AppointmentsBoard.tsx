@@ -863,7 +863,7 @@ export default function AppointmentsBoard() {
 
           {/* Мобильные табы фильтра списка */}
           {view === 'list' && (
-            <div className="sm:hidden overflow-x-auto flex gap-1.5 pb-1 -mx-3 px-3">
+            <div className="sm:hidden flex flex-wrap gap-1.5 pb-1">
               {([
                 { id: 'active',      label: 'Активные' },
                 { id: 'scheduled',   label: 'Запланировано' },
