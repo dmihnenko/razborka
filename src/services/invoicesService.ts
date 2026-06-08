@@ -102,6 +102,21 @@ export async function setInvoiceStatus(id: string, status: InvoiceStatus): Promi
     }
     await supabase.from('appointments').update(upd).eq('id', data.appointment_id)
   }
+
+  // Возврат счёта в «Выставлен» отменяет оплату по заявке (и возвращает из архива).
+  if (status === 'issued' && data?.appointment_id) {
+    const { data: appt } = await supabase
+      .from('appointments')
+      .select('status')
+      .eq('id', data.appointment_id)
+      .single()
+    const upd: Record<string, any> = { parts_paid: false, work_paid: false }
+    if (appt && appt.status === 'archived') {
+      upd.status = 'ready'
+      upd.closed_date = null
+    }
+    await supabase.from('appointments').update(upd).eq('id', data.appointment_id)
+  }
 }
 
 export async function deleteInvoice(id: string): Promise<void> {

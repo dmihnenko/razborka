@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
-import { ArrowLeft, Printer, Share2, Pencil, Trash2, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Printer, Share2, Pencil, Trash2, CheckCircle2, RotateCcw } from 'lucide-react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -86,6 +86,13 @@ export default function InvoiceView() {
     const ok = await confirm({ message, confirmText: 'Оплачен' })
     if (ok) statusMutation.mutate('paid')
   }
+  const handleRevertIssued = async () => {
+    const ok = await confirm({
+      message: 'Вернуть счёт в статус «Выставлен» и отменить оплату? Оплата работ и запчастей по заявке будет снята, а если заявка в архиве — вернётся в «Готова».',
+      confirmText: 'Отменить оплату',
+    })
+    if (ok) statusMutation.mutate('issued')
+  }
 
   if (isLoading || !invoice) return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center"><Spinner size="lg" /></div>
@@ -101,9 +108,13 @@ export default function InvoiceView() {
           </button>
           <h1 className="font-bold text-gray-900 text-base flex-1 truncate">Счёт {invoice.invoice_number}</h1>
 
-          {invoice.status !== 'paid' && (
+          {invoice.status !== 'paid' ? (
             <button onClick={handleMarkPaid} className="btn-success btn-sm flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4" /> <span className="hidden sm:inline">Оплачен</span>
+            </button>
+          ) : (
+            <button onClick={handleRevertIssued} className="btn-secondary btn-sm flex items-center gap-1.5">
+              <RotateCcw className="w-4 h-4" /> <span className="hidden sm:inline">Отменить оплату</span>
             </button>
           )}
           <button onClick={() => setShareOpen(true)} className="btn-secondary btn-sm flex items-center gap-1.5">
