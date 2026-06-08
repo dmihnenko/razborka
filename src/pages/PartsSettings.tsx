@@ -1,53 +1,17 @@
-import { useState, useEffect } from 'react'
-import { RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2, Send, Phone, MapPin, Mail } from 'lucide-react'
+import { useState } from 'react'
+import { RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { formatDate } from '@/utils/date'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getImgbbKey, setImgbbKey } from '@/utils/imgbbKey'
-import { getPartsCompanyContacts, updatePartsCompanyContacts } from '@/services/companyService'
 import { toast } from 'sonner'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 export default function PartsSettings() {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
-
-  // Контакты разборки (для покупателей на публичной странице)
-  const { data: contacts } = useQuery({
-    queryKey: ['parts-company-contacts', partsCompanyId],
-    queryFn: () => getPartsCompanyContacts(partsCompanyId!),
-    enabled: !!partsCompanyId,
-  })
-  const [contactForm, setContactForm] = useState({ phone: '', telegram: '', address: '', email: '' })
-  useEffect(() => {
-    if (contacts) {
-      setContactForm({
-        phone: contacts.phone || '',
-        telegram: contacts.telegram || '',
-        address: contacts.address || '',
-        email: contacts.email || '',
-      })
-    }
-  }, [contacts])
-
-  const saveContacts = useMutation({
-    mutationFn: () => updatePartsCompanyContacts(partsCompanyId!, {
-      phone: contactForm.phone.trim() || null,
-      telegram: contactForm.telegram.trim() || null,
-      address: contactForm.address.trim() || null,
-      email: contactForm.email.trim() || null,
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['parts-company-contacts', partsCompanyId] })
-      queryClient.invalidateQueries({ queryKey: ['public-parts-company'] })
-      toast.success('Контакты сохранены')
-    },
-    onError: () => toast.error('Не удалось сохранить контакты'),
-  })
 
   const {
     rate,
@@ -107,79 +71,6 @@ export default function PartsSettings() {
 
           {/* Левая колонка */}
           <div className="space-y-4 sm:space-y-6">
-
-            {/* Контакты для покупателей */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-sky-100 rounded-lg flex-shrink-0">
-                  <Send className="w-4 h-4 text-sky-600" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-gray-900">Контакты для покупателей</h2>
-                  <p className="text-xs text-gray-500">Показываются на публичной странице запчасти</p>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1">
-                    <Send className="w-3.5 h-3.5 text-sky-500" /> Telegram
-                  </label>
-                  <input
-                    type="text"
-                    value={contactForm.telegram}
-                    onChange={e => setContactForm(f => ({ ...f, telegram: e.target.value }))}
-                    placeholder="@username или https://t.me/username"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                  />
-                  <p className="text-[11px] text-gray-400 mt-1">Чтобы покупатели могли написать вам в Telegram</p>
-                </div>
-                <div>
-                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1">
-                    <Phone className="w-3.5 h-3.5 text-green-500" /> Телефон
-                  </label>
-                  <input
-                    type="tel"
-                    value={contactForm.phone}
-                    onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))}
-                    placeholder="+380..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1">
-                    <MapPin className="w-3.5 h-3.5 text-orange-500" /> Адрес / город
-                  </label>
-                  <input
-                    type="text"
-                    value={contactForm.address}
-                    onChange={e => setContactForm(f => ({ ...f, address: e.target.value }))}
-                    placeholder="Город, улица"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1">
-                    <Mail className="w-3.5 h-3.5 text-blue-500" /> Email
-                  </label>
-                  <input
-                    type="email"
-                    value={contactForm.email}
-                    onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
-                    placeholder="email@example.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                  />
-                </div>
-                <button
-                  onClick={() => saveContacts.mutate()}
-                  disabled={saveContacts.isPending}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 font-medium transition-colors text-sm"
-                >
-                  <Save className="w-4 h-4" />
-                  {saveContacts.isPending ? 'Сохранение...' : 'Сохранить контакты'}
-                </button>
-              </div>
-            </div>
 
             {/* Каталог */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
