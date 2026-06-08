@@ -8,9 +8,8 @@ import {
   FileText, 
   Package, 
   Wrench, 
-  Clock, 
+  Clock,
   CheckCircle,
-  AlertCircle,
   TrendingUp,
   Users,
   DollarSign,
@@ -22,6 +21,7 @@ import {
   CalendarDays
 } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
+import StoAlerts from '@/components/dashboard/StoAlerts'
 import MyVehicles from './MyVehicles'
 import WorkerDashboard from './WorkerDashboard'
 import { useNavigate, Link } from 'react-router-dom'
@@ -235,22 +235,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Алерт о неоплаченных */}
-      {!isLoading && unpaidCount > 0 && (
-        <button onClick={() => navigate('/appointments')}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all"
-          style={{ backgroundColor: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.25)' }}>
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(220,38,38,0.12)' }}>
-            <AlertCircle className="w-4 h-4" style={{ color: '#DC2626' }} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold" style={{ color: '#991B1B' }}>
-              {unpaidCount} {unpaidCount === 1 ? 'заявка требует' : unpaidCount < 5 ? 'заявки требуют' : 'заявок требуют'} оплаты
-            </p>
-          </div>
-          <ArrowRight className="w-4 h-4 flex-shrink-0" style={{ color: '#DC2626' }} />
-        </button>
-      )}
+      {/* Уведомления: готовые без оплаты + записи на завтра */}
+      {!isLoading && <StoAlerts />}
 
       {isLoading ? (
         <div className="flex justify-center py-12">

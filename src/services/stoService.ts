@@ -225,6 +225,84 @@ export async function fetchEmployeeMonthlyStats(
   return stats
 }
 
+// ─── Дашборд: уведомления ─────────────────────────────────────────
+
+export interface ReadyUnpaidAlert {
+  id: string
+  customerName: string
+  total: number
+  hasInvoice: boolean // счёт выставлен, но не оплачен (true) | счёт не выставлен (false)
+}
+export interface TomorrowAlert {
+  id: string
+  customerName: string
+  phone: string | null
+  time: string
+  vehicle: string
+}
+
+/** Готовые заявки, требующие оплаты, и записи на завтра (для напоминания клиентам). */
+export async function fetchStoAlerts(stoCompanyId: string): Promise<{
+  readyUnpaid: ReadyUnpaidAlert[]
+  tomorrow: TomorrowAlert[]
+}> {
+  // Готовые заявки
+  const { data: ready } = await supabase
+    .from('appointments')
+    .select('id, total_cost, total_work_cost, total_parts_cost, parts_cost, parts_paid, work_paid, customers(name)')
+    .eq('sto_company_id', stoCompanyId)
+    .eq('status', 'ready')
+
+  const readyRows = (ready || []) as any[]
+  const notPaid = readyRows.filter(a => {
+    const hasParts = ((a.parts_cost || a.total_parts_cost) || 0) > 0
+    const hasWork = (a.total_work_cost || 0) > 0
+    return (hasParts && !a.parts_paid) || (hasWork && !a.work_paid)
+  })
+
+  // Какие из них уже имеют выставленный счёт
+  let invoicedSet = new Set<string>()
+  if (notPaid.length > 0) {
+    const { data: invs } = await supabase
+      .from('sto_invoices')
+      .select('appointment_id, status')
+      .in('appointment_id', notPaid.map(a => a.id))
+    invoicedSet = new Set((invs || []).filter((i: any) => i.appointment_id).map((i: any) => i.appointment_id))
+  }
+
+  const readyUnpaid: ReadyUnpaidAlert[] = notPaid.map(a => ({
+    id: a.id,
+    customerName: a.customers?.name || 'Без клиента',
+    total: Number(a.total_cost) || 0,
+    hasInvoice: invoicedSet.has(a.id),
+  }))
+
+  // Записи на завтра (локальная дата YYYY-MM-DD)
+  const t = new Date()
+  t.setDate(t.getDate() + 1)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const day = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`
+
+  const { data: tomo } = await supabase
+    .from('appointments')
+    .select('id, scheduled_date, customers(name, phone), vehicles(brand, model)')
+    .eq('sto_company_id', stoCompanyId)
+    .gte('scheduled_date', `${day}T00:00`)
+    .lte('scheduled_date', `${day}T23:59`)
+    .not('status', 'in', '("archived","cancelled","deleted","pending_deletion")')
+    .order('scheduled_date', { ascending: true })
+
+  const tomorrow: TomorrowAlert[] = ((tomo || []) as any[]).map(a => ({
+    id: a.id,
+    customerName: a.customers?.name || 'Без клиента',
+    phone: a.customers?.phone || null,
+    time: (a.scheduled_date?.match(/T(\d{2}:\d{2})/) || [])[1] || '',
+    vehicle: a.vehicles ? `${a.vehicles.brand || ''} ${a.vehicles.model || ''}`.trim() : '',
+  }))
+
+  return { readyUnpaid, tomorrow }
+}
+
 export async function createStoEmployee(
   formData: { username: string; password: string; full_name: string; phone: string },
   stoCompanyId: string
