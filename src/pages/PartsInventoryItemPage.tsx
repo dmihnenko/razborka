@@ -316,10 +316,71 @@ export default function PartsInventoryItemPage() {
               </div>
             )}
 
-            {/* Информация о товаре */}
+            {/* Полная информация о товаре */}
             <div className="bg-white rounded-xl shadow-sm p-4">
-              <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-2">Идентификатор</p>
-              <p className="text-xs font-mono text-gray-700 truncate">{item.id}</p>
+              <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-3">Информация</p>
+              <dl className="divide-y divide-gray-100 text-sm">
+                <div className="flex items-center justify-between gap-3 py-2">
+                  <dt className="text-gray-500">Статус</dt>
+                  <dd>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border ${STATUS_CLS[item.status]}`}>
+                      {STATUS_LABEL[item.status]}
+                    </span>
+                  </dd>
+                </div>
+                {item.category && (
+                  <div className="flex items-center justify-between gap-3 py-2">
+                    <dt className="text-gray-500">Категория</dt>
+                    <dd className="font-medium text-gray-900 text-right">{item.category.name}</dd>
+                  </div>
+                )}
+                {item.part_number && (
+                  <div className="flex items-center justify-between gap-3 py-2">
+                    <dt className="text-gray-500">Ориг. номер</dt>
+                    <dd className="font-mono font-semibold text-gray-900 uppercase text-right break-all">{item.part_number.toUpperCase()}</dd>
+                  </div>
+                )}
+                {item.condition && (
+                  <div className="flex items-center justify-between gap-3 py-2">
+                    <dt className="text-gray-500">Состояние</dt>
+                    <dd className="font-medium text-gray-900 text-right">{PARTS_CONDITION_LABELS[item.condition] || item.condition}</dd>
+                  </div>
+                )}
+                {!item.vehicle_id && (
+                  <div className="flex items-center justify-between gap-3 py-2">
+                    <dt className="text-gray-500">Количество</dt>
+                    <dd className={`font-semibold text-right ${lowStock ? 'text-red-600' : 'text-gray-900'}`}>{item.quantity} шт</dd>
+                  </div>
+                )}
+                {item.location && (
+                  <div className="flex items-center justify-between gap-3 py-2">
+                    <dt className="text-gray-500">Место</dt>
+                    <dd className="font-medium text-gray-900 text-right">
+                      {item.location}{item.shelf ? ` · полка ${item.shelf}` : ''}{item.bin ? ` · ячейка ${item.bin}` : ''}
+                    </dd>
+                  </div>
+                )}
+                {item.vehicle && (
+                  <div className="flex items-center justify-between gap-3 py-2">
+                    <dt className="text-gray-500">Авто</dt>
+                    <dd className="font-medium text-gray-900 text-right">
+                      {item.vehicle.make} {item.vehicle.model}{(item.vehicle as any).year ? ` (${(item.vehicle as any).year})` : ''}
+                    </dd>
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-3 py-2">
+                  <dt className="text-gray-500">{isSold ? 'Продано за' : 'Цена'}</dt>
+                  <dd className="font-bold text-gray-900 text-right">
+                    {isSold
+                      ? (item.sold_price ? formatPrice(item.sold_price, (item.price_currency as 'UAH' | 'USD') || 'USD') : '—')
+                      : (item.selling_price ? formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD') : '—')}
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between gap-3 py-2">
+                  <dt className="text-gray-500">Добавлена</dt>
+                  <dd className="font-medium text-gray-900 text-right">{new Date(item.created_at).toLocaleDateString('ru-RU')}</dd>
+                </div>
+              </dl>
             </div>
           </div>
 
