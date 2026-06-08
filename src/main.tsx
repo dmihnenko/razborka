@@ -5,12 +5,12 @@ import App from './App.tsx'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
 
-// Регистрация Service Worker только для production
+// Регистрация Service Worker только для production.
+// НЕ авто-применяем обновление (updateSW(true) перезагружал страницу при каждом
+// обновлении SW, в т.ч. при возврате на вкладку). Обновление предлагает
+// VersionChecker тостом «Обновить» — применяется только по клику пользователя.
 if (import.meta.env.PROD) {
-  const updateSW = registerSW({
-    onNeedRefresh() {
-      updateSW(true) // авто-применение нового SW без ручного подтверждения
-    },
+  registerSW({
     onOfflineReady() {},
   })
 }

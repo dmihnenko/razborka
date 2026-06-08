@@ -26,7 +26,11 @@ export default defineConfig({
     react(),
     versionJsonPlugin,
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt', не 'autoUpdate': новый SW НЕ активируется и НЕ перезагружает
+      // страницу автоматически. Обновление предлагается тостом (VersionChecker),
+      // применяется только по клику пользователя. Иначе страница перезагружалась
+      // при каждом возврате на вкладку (браузер проверяет SW при фокусе).
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
         id: '/',
@@ -70,8 +74,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true,
+        // НЕ skipWaiting/clientsClaim: новый SW ждёт, пока пользователь не нажмёт
+        // «Обновить» — без принудительной активации и перезагрузки вкладки.
 
         // Offline SPA: все navigate-запросы → index.html,
         // кроме API, version.json и статических файлов из /public/
