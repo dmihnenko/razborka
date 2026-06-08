@@ -159,13 +159,23 @@ export default function AppointmentDetails() {
       if (isArchiving) {
         const hasParts = ((appointment?.parts_cost || appointment?.total_parts_cost) || 0) > 0
         const hasWork = (appointment?.total_work_cost || 0) > 0
-        // Архивировать можно только при полной оплате
+        // Архивировать можно только при оплате счёта (parts_paid+work_paid проставляются оплатой счёта)
         if ((hasParts && !appointment?.parts_paid) || (hasWork && !appointment?.work_paid)) {
-          throw new Error('В архив можно перенести только после полной оплаты работ и запчастей')
+          throw new Error('В архив можно перенести только после оплаты счёта по заявке')
         }
         updateData.closed_date = new Date().toISOString()
         if (!hasParts) updateData.parts_paid = true
         if (!hasWork) updateData.work_paid = true
+      }
+      // Заявка «Готова» при уже оплаченном счёте — сразу в архив
+      if (status === 'ready') {
+        const hasParts = ((appointment?.parts_cost || appointment?.total_parts_cost) || 0) > 0
+        const hasWork = (appointment?.total_work_cost || 0) > 0
+        const fullyPaid = (!hasParts || appointment?.parts_paid) && (!hasWork || appointment?.work_paid)
+        if (fullyPaid) {
+          updateData.status = 'archived'
+          updateData.closed_date = new Date().toISOString()
+        }
       }
       const { error } = await supabase.from('appointments').update(updateData).eq('id', appointmentId).select()
       if (error) throw error
@@ -196,11 +206,11 @@ export default function AppointmentDetails() {
   const handleStatusChange = (newStatus: string) => {
     setShowStatusDropdown(false)
     if (newStatus === 'archived') {
-      // В архив — только при полной оплате работ и запчастей
+      // В архив — только при оплате счёта по заявке
       const needParts = partsCost > 0 && !appointment?.parts_paid
       const needWork  = workCost  > 0 && !appointment?.work_paid
       if (needParts || needWork) {
-        toast.error('В архив можно перенести только после полной оплаты работ и запчастей')
+        toast.error('В архив можно перенести только после оплаты счёта по заявке')
         return
       }
       setShowArchiveConfirm(true)

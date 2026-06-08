@@ -87,12 +87,20 @@ export async function setInvoiceStatus(id: string, status: InvoiceStatus): Promi
     .single()
   if (error) throw error
 
-  // Оплата счёта автоматически закрывает оплату работ и запчастей по заявке
+  // Оплата счёта автоматически закрывает оплату работ и запчастей по заявке,
+  // а если заявка «Готова» — переносит её в архив.
   if (status === 'paid' && data?.appointment_id) {
-    await supabase
+    const { data: appt } = await supabase
       .from('appointments')
-      .update({ parts_paid: true, work_paid: true })
+      .select('status')
       .eq('id', data.appointment_id)
+      .single()
+    const upd: Record<string, any> = { parts_paid: true, work_paid: true }
+    if (appt && (appt.status === 'ready' || appt.status === 'completed')) {
+      upd.status = 'archived'
+      upd.closed_date = new Date().toISOString()
+    }
+    await supabase.from('appointments').update(upd).eq('id', data.appointment_id)
   }
 }
 
