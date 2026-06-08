@@ -5,7 +5,7 @@ import { checkUsernameExists, getUserRolesWithNames } from '@/services/userServi
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { getDefaultRouteForRoles } from '../config/navigation'
-import { Wrench } from 'lucide-react'
+import { Wrench, User, Mail, Lock, AtSign, Eye, EyeOff } from 'lucide-react'
 
 export default function Login() {
   const [emailOrUsername, setEmailOrUsername] = useState('')
@@ -15,6 +15,8 @@ export default function Login() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [isRegisterMode, setIsRegisterMode] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -188,6 +190,14 @@ export default function Login() {
     }
   }
 
+  const labelStyle: React.CSSProperties = {
+    color: '#94A3B8',
+    fontSize: '13px',
+    fontWeight: 500,
+    display: 'block',
+    marginBottom: '7px',
+  }
+
   return (
     <>
       <style>{`
@@ -200,19 +210,49 @@ export default function Login() {
             linear-gradient(90deg, rgba(59,130,246,0.07) 1px, transparent 1px);
           background-size: 44px 44px;
         }
+        .field { position: relative; }
+        .field-icon {
+          position: absolute;
+          left: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #64748B;
+          pointer-events: none;
+          transition: color 0.2s;
+        }
         .input-dark {
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.09);
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(148,163,184,0.22);
           color: #F1F5F9;
-          transition: border-color 0.2s, box-shadow 0.2s;
+          transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
           width: 100%;
+          height: 48px;
+          padding-left: 44px;
         }
         .input-dark::placeholder { color: #64748B; }
+        .input-dark:hover { border-color: rgba(148,163,184,0.35); }
         .input-dark:focus {
           outline: none;
+          background: rgba(255,255,255,0.09);
           border-color: #3B82F6;
-          box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+          box-shadow: 0 0 0 3px rgba(59,130,246,0.18);
         }
+        .field:focus-within .field-icon { color: #3B82F6; }
+        .input-trail {
+          position: absolute;
+          right: 6px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #64748B;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 8px;
+          display: flex;
+          border-radius: 8px;
+          transition: color 0.2s, background 0.2s;
+        }
+        .input-trail:hover { color: #94A3B8; background: rgba(255,255,255,0.05); }
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(14px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -305,84 +345,104 @@ export default function Login() {
 
             <form onSubmit={isRegisterMode ? handleRegister : handleLogin}>
 
-              <div className="fu fu-2" style={{ marginBottom:'16px' }}>
+              <div className="fu fu-2" style={{ display:'flex', flexDirection:'column', gap:'16px', marginBottom:'16px' }}>
                 {isRegisterMode ? (
-                  <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
+                  <>
                     <div>
-                      <label style={{ color:'#9CA3AF', fontSize:'12px', fontWeight:'500', display:'block', marginBottom:'6px', letterSpacing:'0.3px' }}>USERNAME *</label>
-                      <input
-                        id="username"
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        required
-                        autoComplete="username"
-                        className="input-dark px-4 py-3 rounded-lg text-sm"
-                        placeholder="username (латиница, цифры, _)"
-                        pattern="[a-zA-Z0-9_]{3,20}"
-                      />
-                      <p style={{ color:'#64748B', fontSize:'11px', marginTop:'4px' }}>3-20 символов: латиница, цифры, _</p>
+                      <label htmlFor="username" style={labelStyle}>Логин</label>
+                      <div className="field">
+                        <User size={18} className="field-icon" />
+                        <input
+                          id="username"
+                          type="text"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          required
+                          autoComplete="username"
+                          className="input-dark rounded-lg text-sm"
+                          placeholder="Придумайте логин"
+                          pattern="[a-zA-Z0-9_]{3,20}"
+                        />
+                      </div>
                     </div>
                     <div>
-                      <label style={{ color:'#9CA3AF', fontSize:'12px', fontWeight:'500', display:'block', marginBottom:'6px', letterSpacing:'0.3px' }}>
-                        EMAIL <span style={{ color:'#EF4444', fontWeight:'400' }}>*</span>
-                      </label>
-                      <input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        autoComplete="email"
-                        required
-                        className="input-dark px-4 py-3 rounded-lg text-sm"
-                        placeholder="email@example.com"
-                      />
+                      <label htmlFor="email" style={labelStyle}>Email</label>
+                      <div className="field">
+                        <Mail size={18} className="field-icon" />
+                        <input
+                          id="email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          autoComplete="email"
+                          required
+                          className="input-dark rounded-lg text-sm"
+                          placeholder="email@example.com"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  </>
                 ) : (
                   <div>
-                    <label htmlFor="emailOrUsername" style={{ color:'#9CA3AF', fontSize:'12px', fontWeight:'500', display:'block', marginBottom:'6px', letterSpacing:'0.3px' }}>EMAIL ИЛИ USERNAME</label>
-                    <input
-                      id="emailOrUsername"
-                      type="text"
-                      value={emailOrUsername}
-                      onChange={(e) => setEmailOrUsername(e.target.value)}
-                      required
-                      autoComplete="username"
-                      className="input-dark px-4 py-3 rounded-lg text-sm"
-                      placeholder="email@example.com или username"
-                    />
+                    <label htmlFor="emailOrUsername" style={labelStyle}>Email или логин</label>
+                    <div className="field">
+                      <AtSign size={18} className="field-icon" />
+                      <input
+                        id="emailOrUsername"
+                        type="text"
+                        value={emailOrUsername}
+                        onChange={(e) => setEmailOrUsername(e.target.value)}
+                        required
+                        autoComplete="username"
+                        className="input-dark rounded-lg text-sm"
+                        placeholder="email@example.com или логин"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
 
-              <div className="fu fu-3" style={{ display:'flex', flexDirection:'column', gap:'14px', marginBottom:'24px' }}>
+              <div className="fu fu-3" style={{ display:'flex', flexDirection:'column', gap:'16px', marginBottom:'24px' }}>
                 <div>
-                  <label htmlFor="password" style={{ color:'#9CA3AF', fontSize:'12px', fontWeight:'500', display:'block', marginBottom:'6px', letterSpacing:'0.3px' }}>ПАРОЛЬ</label>
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
-                    className="input-dark px-4 py-3 rounded-lg text-sm"
-                    placeholder={isRegisterMode ? 'Минимум 6 символов' : ''}
-                  />
+                  <label htmlFor="password" style={labelStyle}>Пароль</label>
+                  <div className="field">
+                    <Lock size={18} className="field-icon" />
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
+                      className="input-dark rounded-lg text-sm"
+                      style={{ paddingRight: '44px' }}
+                      placeholder={isRegisterMode ? 'Минимум 6 символов' : 'Введите пароль'}
+                    />
+                    <button type="button" className="input-trail" onClick={() => setShowPassword(v => !v)} tabIndex={-1} aria-label="Показать пароль">
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
                 {isRegisterMode && (
                   <div>
-                    <label style={{ color:'#9CA3AF', fontSize:'12px', fontWeight:'500', display:'block', marginBottom:'6px', letterSpacing:'0.3px' }}>ПОДТВЕРЖДЕНИЕ ПАРОЛЯ</label>
-                    <input
-                      id="confirmPassword"
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      autoComplete="new-password"
-                      className="input-dark px-4 py-3 rounded-lg text-sm"
-                      placeholder="Повторите пароль"
-                    />
+                    <label htmlFor="confirmPassword" style={labelStyle}>Повторите пароль</label>
+                    <div className="field">
+                      <Lock size={18} className="field-icon" />
+                      <input
+                        id="confirmPassword"
+                        type={showConfirm ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        autoComplete="new-password"
+                        className="input-dark rounded-lg text-sm"
+                        style={{ paddingRight: '44px' }}
+                        placeholder="Ещё раз тот же пароль"
+                      />
+                      <button type="button" className="input-trail" onClick={() => setShowConfirm(v => !v)} tabIndex={-1} aria-label="Показать пароль">
+                        {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
