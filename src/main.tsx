@@ -83,8 +83,19 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         persister,
         maxAge: 1000 * 60 * 60 * 24, // 24ч
         dehydrateOptions: {
-          // Сохраняем только успешные запросы
-          shouldDehydrateQuery: (q) => q.state.status === 'success',
+          // Главное — мгновенно показать ОФОРМЛЕНИЕ (оболочка, навигация, профиль,
+          // компании, роли), а тяжёлые списки (запчасти, заявки, авто, клиенты)
+          // грузить в фоне. Поэтому персистим только лёгкие запросы, а большие
+          // НЕ кладём в localStorage (не раздувают хранилище и не блокируют старт).
+          shouldDehydrateQuery: (q) => {
+            if (q.state.status !== 'success') return false
+            const key = String(q.queryKey?.[0] ?? '')
+            const heavy = [
+              'parts-inventory', 'parts-vehicles', 'parts-orders', 'parts-customers',
+              'appointments', 'customers', 'vehicles', 'work-orders', 'work_orders',
+            ]
+            return !heavy.some(h => key.startsWith(h))
+          },
         },
       }}
     >
