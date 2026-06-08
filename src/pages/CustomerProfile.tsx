@@ -1,4 +1,4 @@
-import { useParams, Link, useLocation } from 'react-router-dom'
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Car, FileText, Phone, Mail, MapPin, Link2, Package, Plus, Pencil, Trash2, ChevronDown } from 'lucide-react'
@@ -19,6 +19,7 @@ import { fetchCustomerVehicles, fetchVehicleById, deleteVehicle } from '@/servic
 export default function CustomerProfile() {
   const { id } = useParams<{ id: string }>()
   const location = useLocation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { confirm: showConfirm, dialogProps } = useConfirm()
   const { data: profile } = useUserProfile()
@@ -224,7 +225,7 @@ export default function CustomerProfile() {
                   </Link>
                   <div className="hidden sm:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={() => { setEditingVehicle(vehicle); setShowVehicleModal(true) }}
+                      onClick={() => navigate(`/vehicles/${vehicle.id}/edit`)}
                       className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
                       title="Редактировать"
                     >
@@ -279,7 +280,7 @@ export default function CustomerProfile() {
                 {/* Mobile-only actions */}
                   <div className="flex items-center gap-1 shrink-0 sm:hidden">
                     <button
-                      onClick={() => { setEditingVehicle(vehicle); setShowVehicleModal(true) }}
+                      onClick={() => navigate(`/vehicles/${vehicle.id}/edit`)}
                       className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors"
                       aria-label="Редактировать"
                   >

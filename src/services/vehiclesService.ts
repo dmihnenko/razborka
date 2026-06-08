@@ -1,5 +1,8 @@
 import { supabase } from '../lib/supabase'
 
+export type FuelType = 'Бензин' | 'Дизель' | 'Электро' | 'Гибрид' | 'Газ'
+export const FUEL_TYPES: FuelType[] = ['Бензин', 'Дизель', 'Электро', 'Гибрид', 'Газ']
+
 export interface Vehicle {
   id: string
   customer_id: string
@@ -10,6 +13,8 @@ export interface Vehicle {
   vin: string | null
   color: string | null
   mileage: number | null
+  engine_volume: number | null
+  fuel_type: string | null
   sto_company_id: string | null
   created_at: string
   customers?: { id: string; name: string } | null
@@ -24,6 +29,8 @@ export interface VehicleSaveData {
   vin: string
   color: string
   mileage: number | null
+  engine_volume?: number | null
+  fuel_type?: string | null
 }
 
 export interface CustomerOption {

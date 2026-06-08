@@ -192,11 +192,7 @@ export default function Vehicles() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
-                      onClick={() => {
-                        setEditingVehicle(vehicle)
-                        setCustomerSearch(vehicle.customers?.name || '')
-                        setIsModalOpen(true)
-                      }}
+                      onClick={() => navigate(`/vehicles/${vehicle.id}/edit`)}
                       className="text-primary hover:text-primary/80 mr-3"
                     >
                       <Pencil className="w-5 h-5" />
@@ -280,11 +276,7 @@ export default function Vehicles() {
               {/* Кнопки действий */}
               <div className="px-3 py-2 bg-gray-50 flex items-center justify-end gap-2 border-t border-gray-100">
                 <button
-                  onClick={() => {
-                    setEditingVehicle(vehicle)
-                    setCustomerSearch(vehicle.customers?.name || '')
-                    setIsModalOpen(true)
-                  }}
+                  onClick={() => navigate(`/vehicles/${vehicle.id}/edit`)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-primary hover:bg-blue-50 rounded transition-colors font-medium"
                 >
                   <Pencil className="w-3.5 h-3.5" />

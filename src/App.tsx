@@ -49,6 +49,7 @@ const PublicPersonalVehicleView = lazy(() => import('./pages/PublicPersonalVehic
 const PublicCustomerView = lazy(() => import('./pages/PublicCustomerView'))
 const CustomerProfile = lazy(() => import('./pages/CustomerProfile'))
 const VehicleHistory = lazy(() => import('./pages/VehicleHistory'))
+const VehicleEdit = lazy(() => import('./pages/VehicleEdit'))
 const VehicleAccessPage = lazy(() => import('./pages/VehicleAccessPage'))
 const Analytics = lazy(() => import('./pages/Analytics'))
 const MonthlyDetails = lazy(() => import('./pages/MonthlyDetails'))
@@ -180,6 +181,8 @@ function App() {
           <Route path="customer/:id" element={<CustomerProfile />} />
           <Route path="vehicle/:vehicleId/history" element={<VehicleHistory />} />
           <Route path="vehicles" element={<Vehicles />} />
+          <Route path="vehicles/new" element={<VehicleEdit />} />
+          <Route path="vehicles/:vehicleId/edit" element={<VehicleEdit />} />
           <Route path="appointments" element={<Appointments />} />
           <Route path="appointments/new" element={<AppointmentCreate />} />
           <Route path="appointments/archive" element={<AppointmentsArchive />} />
