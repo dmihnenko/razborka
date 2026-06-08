@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase'
 import type { Invoice, InvoiceWorkItem, InvoicePartItem, InvoiceStatus, PublicInvoiceData } from '@/types/invoice'
 import { calcInvoiceTotals } from '@/utils/invoiceCalc'
 
-const SELECT = `*, customers(name, phone), vehicles(brand, model, license_plate, vin)`
+const SELECT = `*, customers(name, phone), vehicles(brand, model, license_plate, vin, mileage, year)`
 
 export async function getInvoices(stoCompanyId: string): Promise<Invoice[]> {
   const { data, error } = await supabase

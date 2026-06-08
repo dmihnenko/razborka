@@ -2,7 +2,7 @@ import { fmtMoney } from '@/utils/money'
 import type { Invoice } from '@/types/invoice'
 
 interface Party { name?: string | null; phone?: string | null; address?: string | null; email?: string | null }
-interface Veh { brand?: string | null; model?: string | null; license_plate?: string | null; vin?: string | null }
+interface Veh { brand?: string | null; model?: string | null; license_plate?: string | null; vin?: string | null; mileage?: number | null; year?: number | null }
 
 interface Props {
   invoice: Invoice
@@ -24,7 +24,6 @@ function fmtDate(s?: string | null) {
 }
 
 export default function InvoiceDocument({ invoice, company, customer, vehicle }: Props) {
-  const markup = invoice.total_parts - invoice.total_parts_base
   const st = STATUS_LABEL[invoice.status] ?? STATUS_LABEL.issued
   const apptShort = invoice.appointment_id ? `#${invoice.appointment_id.slice(-6).toUpperCase()}` : null
 
@@ -57,9 +56,10 @@ export default function InvoiceDocument({ invoice, company, customer, vehicle }:
         </div>
         <div>
           <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Автомобиль</p>
-          <p className="font-semibold">{vehicle ? `${vehicle.brand || ''} ${vehicle.model || ''}`.trim() || '—' : '—'}</p>
+          <p className="font-semibold">{vehicle ? `${vehicle.brand || ''} ${vehicle.model || ''}`.trim() || '—' : '—'}{vehicle?.year ? `, ${vehicle.year}` : ''}</p>
           <div className="text-sm text-gray-600 flex flex-wrap gap-x-3">
             {vehicle?.license_plate && <span className="font-mono">{vehicle.license_plate}</span>}
+            {vehicle?.mileage != null && <span>{Number(vehicle.mileage).toLocaleString('ru-RU')} км</span>}
             {vehicle?.vin && <span>VIN: {vehicle.vin}</span>}
           </div>
           {apptShort && <p className="text-xs text-gray-400 mt-1">Заявка {apptShort}</p>}
@@ -121,12 +121,9 @@ export default function InvoiceDocument({ invoice, company, customer, vehicle }:
               ))}
             </tbody>
           </table>
-          <div className="flex flex-col items-end gap-0.5 mt-1.5 text-sm">
-            <div className="flex"><span className="text-gray-500 mr-3">Запчасти (база):</span><span className="tabular-nums">{fmtMoney(invoice.total_parts_base)}</span></div>
-            {invoice.parts_markup_pct > 0 && (
-              <div className="flex"><span className="text-gray-500 mr-3">Наценка {invoice.parts_markup_pct}%:</span><span className="tabular-nums">+{fmtMoney(markup)}</span></div>
-            )}
-            <div className="flex"><span className="text-gray-500 mr-3">Итого запчасти:</span><span className="font-bold tabular-nums">{fmtMoney(invoice.total_parts)}</span></div>
+          <div className="flex justify-end mt-1.5 text-sm">
+            <span className="text-gray-500 mr-3">Итого запчасти:</span>
+            <span className="font-bold tabular-nums">{fmtMoney(invoice.total_parts)}</span>
           </div>
         </div>
       )}
