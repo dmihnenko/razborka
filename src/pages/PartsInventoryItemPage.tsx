@@ -148,8 +148,8 @@ export default function PartsInventoryItemPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 lg:gap-5 items-start">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_460px] gap-4 lg:gap-5 items-start">
 
           {/* ══ ЛЕВАЯ КОЛОНКА: фото + описание ══════════════════════════ */}
           <div className="space-y-3">
@@ -189,6 +189,9 @@ export default function PartsInventoryItemPage() {
 
           {/* ══ ПРАВАЯ КОЛОНКА: инфо-панель (sticky) ════════════════════ */}
           <div className="lg:sticky lg:top-4 space-y-3">
+
+            {/* Верхушка: слева название+цена, справа авто+дата */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
 
             {/* Название + номер + цена */}
             <div className="bg-white rounded-xl shadow-sm p-4 sm:p-5">
@@ -270,25 +273,46 @@ export default function PartsInventoryItemPage() {
               )}
             </div>
 
-            {/* Авто */}
-            {item.vehicle && (
-              <button
-                onClick={() => navigate(`/parts/vehicles/${item.vehicle_id}`)}
-                className="w-full bg-white rounded-xl shadow-sm p-4 text-left hover:shadow-md transition-shadow"
-              >
-                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                  <Car className="w-3.5 h-3.5" /> Снята с авто
-                </h2>
-                <p className="text-sm font-semibold text-gray-900">
-                  {item.vehicle.make} {item.vehicle.model}{(item.vehicle as any).year ? ` (${(item.vehicle as any).year})` : ''}
-                </p>
-                {(item.vehicle as any).vin && (
-                  <p className="text-xs text-gray-400 font-mono mt-0.5">VIN: {(item.vehicle as any).vin}</p>
-                )}
-              </button>
-            )}
+            {/* Снята с авто + Добавлена — правая мини-колонка */}
+            <div className="space-y-3">
+              {item.vehicle && (
+                <button
+                  onClick={() => navigate(`/parts/vehicles/${item.vehicle_id}`)}
+                  className="w-full bg-white rounded-xl shadow-sm p-4 text-left hover:shadow-md transition-shadow"
+                >
+                  <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                    <Car className="w-3.5 h-3.5" /> Снята с авто
+                  </h2>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {item.vehicle.make} {item.vehicle.model}{(item.vehicle as any).year ? ` (${(item.vehicle as any).year})` : ''}
+                  </p>
+                  {(item.vehicle as any).vin && (
+                    <p className="text-xs text-gray-400 font-mono mt-0.5">VIN: {(item.vehicle as any).vin}</p>
+                  )}
+                </button>
+              )}
 
-            {/* Расположение на складе */}
+              {/* Количество / добавлена */}
+              <div className="bg-white rounded-xl shadow-sm p-4">
+                <dl className="divide-y divide-gray-100 text-sm">
+                  {!item.vehicle_id && (
+                    <div className="flex items-center justify-between gap-3 py-2">
+                      <dt className="text-gray-500">Количество</dt>
+                      <dd className={`font-semibold text-right ${lowStock ? 'text-red-600' : 'text-gray-900'}`}>{item.quantity} шт</dd>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between gap-3 py-2">
+                    <dt className="text-gray-500">Добавлена</dt>
+                    <dd className="font-medium text-gray-900 text-right">{new Date(item.created_at).toLocaleDateString('ru-RU')}</dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+
+            {/* конец 2-колоночной верхушки */}
+            </div>
+
+            {/* Расположение на складе — на всю ширину */}
             {(item.location || item.shelf || item.bin) && (
               <div className="bg-white rounded-xl shadow-sm p-4">
                 <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2.5 flex items-center gap-1.5">
@@ -313,22 +337,6 @@ export default function PartsInventoryItemPage() {
                 </div>
               </div>
             )}
-
-            {/* Количество / добавлена */}
-            <div className="bg-white rounded-xl shadow-sm p-4">
-              <dl className="divide-y divide-gray-100 text-sm">
-                {!item.vehicle_id && (
-                  <div className="flex items-center justify-between gap-3 py-2">
-                    <dt className="text-gray-500">Количество</dt>
-                    <dd className={`font-semibold text-right ${lowStock ? 'text-red-600' : 'text-gray-900'}`}>{item.quantity} шт</dd>
-                  </div>
-                )}
-                <div className="flex items-center justify-between gap-3 py-2">
-                  <dt className="text-gray-500">Добавлена</dt>
-                  <dd className="font-medium text-gray-900 text-right">{new Date(item.created_at).toLocaleDateString('ru-RU')}</dd>
-                </div>
-              </dl>
-            </div>
           </div>
         </div>
       </div>
