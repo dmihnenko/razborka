@@ -72,6 +72,32 @@ serve(async (req) => {
       )
     }
 
+    // SECURITY: владелец компании может менять пароль ТОЛЬКО работнику своей
+    // компании и не может трогать админов/владельцев. Без этой проверки
+    // sto_owner мог бы сбросить пароль админу или юзеру чужой компании.
+    const isAdminCaller = roleNames.includes('admin')
+    if (!isAdminCaller) {
+      const [{ data: callerProfile }, { data: targetProfile }, { data: targetRoles }] = await Promise.all([
+        supabaseAdmin.from('user_profiles').select('sto_company_id, parts_company_id').eq('id', user.id).single(),
+        supabaseAdmin.from('user_profiles').select('sto_company_id, parts_company_id').eq('id', targetUserId).single(),
+        supabaseAdmin.from('user_roles').select('roles(name)').eq('user_id', targetUserId),
+      ])
+
+      const targetRoleNames = (targetRoles as any[])?.map((ur: any) => ur.roles?.name) || []
+      const targetIsElevated = targetRoleNames.some((n: string) => ['admin', 'sto_owner', 'parts_owner'].includes(n))
+
+      const sameCompany =
+        (!!callerProfile?.sto_company_id && callerProfile.sto_company_id === targetProfile?.sto_company_id) ||
+        (!!callerProfile?.parts_company_id && callerProfile.parts_company_id === targetProfile?.parts_company_id)
+
+      if (targetIsElevated || !sameCompany) {
+        return new Response(
+          JSON.stringify({ error: 'Access denied: можно менять пароль только работнику своей компании' }),
+          { status: 403, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
     if (newPassword.length < 6) {
       return new Response(
         JSON.stringify({ error: 'Password must be at least 6 characters' }),

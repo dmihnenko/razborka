@@ -140,6 +140,43 @@ serve(async (req) => {
       )
     }
 
+    // SECURITY: только админ может задавать произвольные роли и компанию.
+    // Владелец компании (sto_owner/parts_owner) может создавать ТОЛЬКО работника
+    // СВОЕЙ компании — не доверяем role_ids/company_id из запроса для не-админа,
+    // иначе владелец мог бы выдать себе/другому роль admin или чужую компанию.
+    let finalRoleIds: string[] = Array.isArray(role_ids) ? role_ids : []
+    let finalPrimaryRoleId: string | null = primary_role_id ?? null
+    let finalStoCompanyId: string | null = sto_company_id || null
+    let finalPartsCompanyId: string | null = parts_company_id || null
+
+    if (!isAdmin) {
+      // Компания берётся из профиля вызывающего, а не из тела запроса
+      const { data: callerProfile } = await supabaseAdmin
+        .from('user_profiles')
+        .select('sto_company_id, parts_company_id')
+        .eq('id', user.id)
+        .single()
+
+      const allowedRoleName = isStoOwner ? 'sto_worker' : 'parts_worker'
+      const { data: workerRole, error: workerRoleError } = await supabaseAdmin
+        .from('roles')
+        .select('id')
+        .eq('name', allowedRoleName)
+        .single()
+
+      if (workerRoleError || !workerRole) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to resolve worker role' }),
+          { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+        )
+      }
+
+      finalRoleIds = [workerRole.id]
+      finalPrimaryRoleId = workerRole.id
+      finalStoCompanyId = isStoOwner ? (callerProfile?.sto_company_id ?? null) : null
+      finalPartsCompanyId = isPartsOwner && !isStoOwner ? (callerProfile?.parts_company_id ?? null) : null
+    }
+
     // Генерируем email-заглушку если не указан
     // Санитизируем username для email — убираем спецсимволы
     const safeUsername = (username || String(Date.now()))
@@ -178,15 +215,15 @@ serve(async (req) => {
 
     // Upsert user profile (UPDATE если профиль уже создан триггером, иначе INSERT)
     // Auto-activate if company is assigned, otherwise require admin confirmation
-    const isCompanyAssigned = !!(sto_company_id || parts_company_id)
+    const isCompanyAssigned = !!(finalStoCompanyId || finalPartsCompanyId)
     const profilePayload = {
       id: newUser.user.id,
       full_name: full_name || null,
       phone: phone || null,
       email: finalEmail,
       username: username || null,
-      sto_company_id: sto_company_id || null,
-      parts_company_id: parts_company_id || null,
+      sto_company_id: finalStoCompanyId,
+      parts_company_id: finalPartsCompanyId,
       is_active: isCompanyAssigned
     }
 
@@ -199,12 +236,12 @@ serve(async (req) => {
       throw new Error('Ошибка при создании профиля: ' + profileError.message)
     }
 
-    // Add user roles
-    if (role_ids && Array.isArray(role_ids) && role_ids.length > 0) {
-      const newUserRoles = role_ids.map((roleId: string) => ({
+    // Add user roles (для не-админа finalRoleIds принудительно = [worker role])
+    if (finalRoleIds.length > 0) {
+      const newUserRoles = finalRoleIds.map((roleId: string) => ({
         user_id: newUser.user!.id,
         role_id: roleId,
-        is_primary: roleId === primary_role_id
+        is_primary: roleId === finalPrimaryRoleId
       }))
 
       const { error: rolesInsertError } = await supabaseAdmin
