@@ -22,6 +22,31 @@ export async function updateStoLaborRate(stoCompanyId: string, rate: number): Pr
   if (error) throw error
 }
 
+export type CatalogWorkMode = 'price' | 'norm_hours'
+
+/** Режим каталога работ + ставка. mode: 'price' (цена) | 'norm_hours' (нормо-часы × ставку). */
+export async function fetchStoCatalogSettings(stoCompanyId: string): Promise<{ mode: CatalogWorkMode; rate: number }> {
+  const { data, error } = await supabase
+    .from('sto_companies')
+    .select('catalog_work_mode, labor_rate')
+    .eq('id', stoCompanyId)
+    .single()
+  if (error) return { mode: 'price', rate: 0 }
+  return {
+    mode: data?.catalog_work_mode === 'norm_hours' ? 'norm_hours' : 'price',
+    rate: Number(data?.labor_rate) || 0,
+  }
+}
+
+/** Обновить режим каталога работ компании. */
+export async function updateStoCatalogMode(stoCompanyId: string, mode: CatalogWorkMode): Promise<void> {
+  const { error } = await supabase
+    .from('sto_companies')
+    .update({ catalog_work_mode: mode })
+    .eq('id', stoCompanyId)
+  if (error) throw error
+}
+
 // ─── STO Companies ────────────────────────────────────────────────
 
 export interface StoCompany {

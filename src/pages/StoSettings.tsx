@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { Settings as SettingsIcon, Wrench, Trash2, ChevronRight, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import PageHeader from '@/components/PageHeader'
-import { updateStoLaborRate } from '@/services/stoService'
+import { updateStoLaborRate, updateStoCatalogMode, type CatalogWorkMode } from '@/services/stoService'
 
 export default function StoSettings() {
   const { data: profile } = useUserProfile()
@@ -20,7 +20,7 @@ export default function StoSettings() {
       if (!profile?.sto_company_id) return null
       const { data, error } = await supabase
         .from('sto_companies')
-        .select('id, name, services_menu_enabled, labor_rate')
+        .select('id, name, services_menu_enabled, labor_rate, catalog_work_mode')
         .eq('id', profile?.sto_company_id)
         .single()
 
@@ -46,6 +46,18 @@ export default function StoSettings() {
       toast.success('Ставка сохранена')
     },
     onError: (error: any) => toast.error(error.message || 'Ошибка сохранения ставки'),
+  })
+
+  const catalogMode: CatalogWorkMode = stoCompany?.catalog_work_mode === 'norm_hours' ? 'norm_hours' : 'price'
+  const setCatalogModeMutation = useMutation({
+    mutationFn: (mode: CatalogWorkMode) => updateStoCatalogMode(profile!.sto_company_id!, mode),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sto_company_settings'] })
+      queryClient.invalidateQueries({ queryKey: ['sto-catalog-settings'] })
+      queryClient.invalidateQueries({ queryKey: ['service-catalog'] })
+      toast.success('Режим каталога обновлён')
+    },
+    onError: (error: any) => toast.error(error.message || 'Ошибка'),
   })
 
   // Переключение меню услуг для работников
@@ -136,40 +148,62 @@ export default function StoSettings() {
           </div>
         </div>
 
-        {/* Ставка нормо-часа */}
+        {/* Форма каталога работ */}
         <div className="card p-4 sm:p-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-violet-100 rounded-lg">
               <Clock className="w-5 h-5 text-violet-600" />
             </div>
-            <h2 className="text-mobile-lg font-semibold text-gray-900">Ставка нормо-часа</h2>
+            <h2 className="text-mobile-lg font-semibold text-gray-900">Форма каталога работ</h2>
           </div>
           <p className="text-mobile-sm text-gray-600 mb-4">
-            Стоимость работ в каталоге рассчитывается как <b>нормо-часы × ставка</b>. Та же ставка
-            применяется к записям (работы = нормо-часы × ставку).
+            Как заполняется стоимость работ в каталоге: фиксированной ценой или через нормо-часы × ставку.
           </p>
-          <div className="flex items-center gap-2 max-w-xs">
-            <div className="relative flex-1">
-              <input
-                type="number"
-                min="0"
-                step="1"
-                inputMode="decimal"
-                value={laborRate}
-                onChange={e => setLaborRate(e.target.value)}
-                placeholder="0"
-                className="form-input pr-16 text-right"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">₴/н·ч</span>
-            </div>
-            <button
-              onClick={() => saveLaborRateMutation.mutate()}
-              disabled={saveLaborRateMutation.isPending || laborRate === (stoCompany?.labor_rate != null ? String(stoCompany.labor_rate) : '')}
-              className="btn-primary btn-sm"
-            >
-              {saveLaborRateMutation.isPending ? '…' : 'Сохранить'}
-            </button>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+            {([
+              { mode: 'price' as const, title: 'Цена за работу', desc: 'Указываете цену вручную' },
+              { mode: 'norm_hours' as const, title: 'Нормо-часы × ставка', desc: 'Цена = нормо-часы × ставку' },
+            ]).map(opt => (
+              <button
+                key={opt.mode}
+                onClick={() => { if (catalogMode !== opt.mode) setCatalogModeMutation.mutate(opt.mode) }}
+                disabled={setCatalogModeMutation.isPending}
+                className={`text-left rounded-xl border p-3 transition-all ${
+                  catalogMode === opt.mode ? 'border-primary bg-primary/5 ring-1 ring-primary/30' : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <p className="text-sm font-semibold text-gray-900">{opt.title}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{opt.desc}</p>
+              </button>
+            ))}
           </div>
+
+          {catalogMode === 'norm_hours' && (
+            <div>
+              <label className="form-label">Ставка нормо-часа</label>
+              <div className="flex items-center gap-2 max-w-xs mt-1">
+                <div className="relative flex-1">
+                  <input
+                    type="number" min="0" step="1" inputMode="decimal"
+                    value={laborRate}
+                    onChange={e => setLaborRate(e.target.value)}
+                    placeholder="0"
+                    className="form-input pr-16 text-right"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">₴/н·ч</span>
+                </div>
+                <button
+                  onClick={() => saveLaborRateMutation.mutate()}
+                  disabled={saveLaborRateMutation.isPending || laborRate === (stoCompany?.labor_rate != null ? String(stoCompany.labor_rate) : '')}
+                  className="btn-primary btn-sm"
+                >
+                  {saveLaborRateMutation.isPending ? '…' : 'Сохранить'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-1.5">Та же ставка применяется к записям (работы = нормо-часы × ставку).</p>
+            </div>
+          )}
         </div>
 
         {/* Корзина */}
