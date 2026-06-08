@@ -2,6 +2,9 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
+    <!-- Auto-upgrade any http:// subresource (e.g. user-uploaded photo URLs) to https://
+         to prevent mixed-content "не защищено" warnings in the installed PWA -->
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
