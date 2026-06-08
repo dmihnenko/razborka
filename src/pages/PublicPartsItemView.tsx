@@ -6,8 +6,9 @@ import { supabase } from '@/lib/supabase'
 import {
   Package, Tag, Hash, FileText, Car, Phone, Mail, MapPin,
   CheckCircle, Clock, AlertTriangle, DollarSign,
-  ChevronLeft, ChevronRight, X,
+  ChevronLeft, ChevronRight, X, Copy,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { PublicBrandHeader } from '@/components/PublicBrandHeader'
 import { formatPrice } from '@/utils/currency'
 import { PARTS_CONDITION_LABELS } from '@/utils/status'
@@ -395,12 +396,26 @@ export default function PublicPartsItemView() {
                 {item.name}
               </h1>
 
-              {/* Артикул */}
+              {/* Оригинальный номер */}
               {item.part_number && (
-                <p className="flex items-center gap-1.5 text-sm text-gray-400 mb-3">
-                  <Hash className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span className="font-mono font-medium text-gray-600">{item.part_number}</span>
-                </p>
+                <div className="mb-3">
+                  <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-1">Оригинальный номер</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(item.part_number!.toUpperCase())
+                      toast.success('Номер скопирован')
+                    }}
+                    title="Нажмите, чтобы скопировать"
+                    className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border-2 border-primary/25 shadow-md hover:border-primary/50 hover:shadow-lg active:scale-95 transition-all"
+                  >
+                    <Hash className="w-3.5 h-3.5 text-primary" />
+                    <span className="font-mono font-bold tracking-wider text-gray-800 uppercase">
+                      {item.part_number.toUpperCase()}
+                    </span>
+                    <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-primary transition-colors" />
+                  </button>
+                </div>
               )}
 
               {/* Цена */}

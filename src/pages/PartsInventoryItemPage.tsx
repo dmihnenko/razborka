@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import {
   ArrowLeft, Pencil, Trash2, DollarSign, Package,
   MapPin, Tag, Car, Hash, FileText, AlertTriangle,
-  CheckCircle, Clock, Share2, Edit2,
+  CheckCircle, Clock, Share2, Edit2, Copy,
 } from 'lucide-react'
 import { getPartsInventoryItem, deletePartsInventoryItem } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
@@ -184,13 +184,27 @@ export default function PartsInventoryItemPage() {
                 )}
               </div>
 
-              {/* Название + артикул */}
+              {/* Название + оригинальный номер */}
               <h2 className="text-lg font-bold text-gray-900 mb-1">{item.name}</h2>
               {item.part_number && (
-                <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-3">
-                  <Hash className="w-3 h-3" />
-                  <span className="font-mono text-gray-700">{item.part_number}</span>
-                </p>
+                <div className="mb-3">
+                  <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-1">Оригинальный номер</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(item.part_number!.toUpperCase())
+                      toast.success('Номер скопирован')
+                    }}
+                    title="Нажмите, чтобы скопировать"
+                    className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border-2 border-blue-200 shadow-md hover:border-blue-400 hover:shadow-lg active:scale-95 transition-all"
+                  >
+                    <Hash className="w-3.5 h-3.5 text-blue-500" />
+                    <span className="font-mono font-bold tracking-wider text-gray-800 uppercase">
+                      {item.part_number.toUpperCase()}
+                    </span>
+                    <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                  </button>
+                </div>
               )}
 
               {/* Цена */}
