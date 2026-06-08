@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, FileText, Phone, CalendarClock, ChevronRight } from 'lucide-react'
+import { AlertTriangle, FileText, Phone, CalendarClock, ChevronRight, MessageCircle } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { fetchStoAlerts } from '@/services/stoService'
 import { fmtMoney } from '@/utils/money'
@@ -22,7 +22,7 @@ export default function StoAlerts() {
   if (readyUnpaid.length === 0 && tomorrow.length === 0) return null
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
       {/* Готовые, требующие оплаты */}
       {readyUnpaid.length > 0 && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
@@ -77,12 +77,18 @@ export default function StoAlerts() {
                   {a.vehicle && <p className="text-xs text-gray-500 truncate">{a.vehicle}</p>}
                 </button>
                 {a.phone ? (
-                  <a
-                    href={`tel:${a.phone}`}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md bg-green-100 text-green-700 whitespace-nowrap hover:bg-green-200"
-                  >
-                    <Phone className="w-3 h-3" /> Позвонить
-                  </a>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <a href={`tel:${a.phone}`} title="Позвонить"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-green-100 text-green-700 hover:bg-green-200">
+                      <Phone className="w-3.5 h-3.5" />
+                    </a>
+                    <a
+                      href={`https://wa.me/${a.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Здравствуйте! Напоминаем о записи завтра${a.time ? ' в ' + a.time : ''}${a.vehicle ? ' — ' + a.vehicle : ''}.`)}`}
+                      target="_blank" rel="noreferrer" title="Напомнить в WhatsApp"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
+                      <MessageCircle className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
                 ) : (
                   <ChevronRight className="w-4 h-4 text-gray-300" />
                 )}

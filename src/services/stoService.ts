@@ -271,12 +271,12 @@ export async function fetchStoAlerts(stoCompanyId: string): Promise<{
   readyUnpaid: ReadyUnpaidAlert[]
   tomorrow: TomorrowAlert[]
 }> {
-  // Готовые заявки
+  // Готовые/завершённые заявки (работа сделана — нужен счёт/оплата)
   const { data: ready } = await supabase
     .from('appointments')
     .select('id, total_cost, total_work_cost, total_parts_cost, parts_cost, parts_paid, work_paid, customers(name)')
     .eq('sto_company_id', stoCompanyId)
-    .eq('status', 'ready')
+    .in('status', ['ready', 'completed'])
 
   const readyRows = (ready || []) as any[]
   const notPaid = readyRows.filter(a => {
@@ -302,22 +302,26 @@ export async function fetchStoAlerts(stoCompanyId: string): Promise<{
     hasInvoice: invoicedSet.has(a.id),
   }))
 
-  // Записи на завтра (локальная дата YYYY-MM-DD)
-  const t = new Date()
-  t.setDate(t.getDate() + 1)
+  // Записи на завтра (локальные даты YYYY-MM-DD, формат как в scheduled_date)
   const pad = (n: number) => String(n).padStart(2, '0')
-  const day = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`
+  const fmtDay = (dt: Date) => `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`
+  const t1 = new Date(); t1.setDate(t1.getDate() + 1)
+  const t2 = new Date(); t2.setDate(t2.getDate() + 2)
+  const dayTomorrow = fmtDay(t1)
+  const dayAfter = fmtDay(t2)
 
   const { data: tomo } = await supabase
     .from('appointments')
     .select('id, scheduled_date, customers(name, phone), vehicles(brand, model)')
     .eq('sto_company_id', stoCompanyId)
-    .gte('scheduled_date', `${day}T00:00`)
-    .lte('scheduled_date', `${day}T23:59`)
+    .gte('scheduled_date', `${dayTomorrow}T00:00`)
+    .lt('scheduled_date', `${dayAfter}T00:00`)
     .not('status', 'in', '("archived","cancelled","deleted","pending_deletion")')
     .order('scheduled_date', { ascending: true })
 
-  const tomorrow: TomorrowAlert[] = ((tomo || []) as any[]).map(a => ({
+  const tomorrow: TomorrowAlert[] = ((tomo || []) as any[])
+    .filter(a => String(a.scheduled_date || '').startsWith(dayTomorrow))
+    .map(a => ({
     id: a.id,
     customerName: a.customers?.name || 'Без клиента',
     phone: a.customers?.phone || null,
