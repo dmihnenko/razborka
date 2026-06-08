@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useDeferredValue } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -267,13 +267,16 @@ export default function PartsInventory() {
   const showVehicleButtons = uniqueVehicles.length > 1
 
   // Filter inventory
+  // Бордер активного фильтра обновляется мгновенно (statusFilter), а тяжёлая
+  // перефильтрация списка идёт через deferred — клик по фильтру отзывчивый.
+  const deferredStatusFilter = useDeferredValue(statusFilter)
   const filteredInventory = inventoryBySource.filter((item: PartsInventoryItem) => {
     const matchesSearch = searchQuery === '' ||
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.part_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter
+
+    const matchesStatus = deferredStatusFilter === 'all' || item.status === deferredStatusFilter
     const matchesVehicle = effectiveVehicleFilter === 'all' || item.vehicle_id === effectiveVehicleFilter
     
     return matchesSearch && matchesStatus && matchesVehicle
@@ -282,6 +285,12 @@ export default function PartsInventory() {
   // Sort
   const statusOrder: Record<PartsInventoryStatus, number> = { available: 0, reserved: 1, damaged: 2, sold: 3 }
   const filteredAndSorted = [...filteredInventory].sort((a: PartsInventoryItem, b: PartsInventoryItem) => {
+    // Фильтр «Продано» — по давности продажи: свежие продажи сверху
+    if (statusFilter === 'sold') {
+      const ta = new Date((a as any).updated_at || a.created_at).getTime()
+      const tb = new Date((b as any).updated_at || b.created_at).getTime()
+      return tb - ta
+    }
     let cmp = 0
     if (sortField === 'name') {
       cmp = a.name.localeCompare(b.name, 'ru')
