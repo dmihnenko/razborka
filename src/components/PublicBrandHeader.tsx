@@ -8,7 +8,7 @@ export function PublicBrandHeader({ subtitle }: Props) {
   return (
     <div style={{ background: '#0D1117', borderBottom: '1px solid rgba(59,130,246,0.14)' }}>
       <div
-        className="max-w-2xl mx-auto px-4"
+        className="px-4 sm:px-6"
         style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '12px', paddingBottom: '12px' }}
       >
         <div

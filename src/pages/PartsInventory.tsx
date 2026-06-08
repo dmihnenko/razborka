@@ -102,6 +102,25 @@ export default function PartsInventory() {
     }
   }, [location.state, inventory])
 
+  // Auto-open sell modal when navigated with sellItemId in state (from item page)
+  useEffect(() => {
+    const sellItemId = location.state?.sellItemId
+    if (sellItemId && inventory.length > 0) {
+      const found = inventory.find((i: PartsInventoryItem) => i.id === sellItemId)
+      if (found && found.status !== 'sold') {
+        setSellingItem(found)
+        setSellPrice(found.selling_price ? String(found.selling_price) : '')
+        setSellCurrency((found.price_currency as 'UAH' | 'USD') || 'USD')
+        setSellCustomerId('')
+        setShowNewCustomer(false)
+        setNewCustomerName('')
+        setNewCustomerPhone('')
+        // Clear state so it doesn't reopen on re-render
+        window.history.replaceState({}, '')
+      }
+    }
+  }, [location.state, inventory])
+
   // Reset status filter when switching between Разборка / Магазин
   useEffect(() => {
     setStatusFilter('all')

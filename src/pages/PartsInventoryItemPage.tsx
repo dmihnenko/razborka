@@ -153,11 +153,11 @@ export default function PartsInventoryItemPage() {
 
             {/* Фото */}
             {photos.length > 0 && (
-              <div className="bg-white rounded-xl overflow-hidden shadow-sm">
+              <div className="bg-white rounded-xl overflow-hidden shadow-sm max-w-sm">
                 <PhotoGallery
                   photos={photos as any[]}
                   alt={item.name}
-                  mainAspect="aspect-video"
+                  mainAspect="aspect-[4/3]"
                   objectFit="cover"
                 />
               </div>
@@ -288,9 +288,9 @@ export default function PartsInventoryItemPage() {
           {/* ── Правая колонка: действия и заметки ────────────────────── */}
           <div className="lg:col-span-1 space-y-4">
 
-            {/* Быстрые действия */}
-            <div className="bg-white rounded-xl shadow-sm p-4 space-y-2">
-              {!isSold && (
+            {/* Быстрые действия — продать */}
+            {!isSold && (
+              <div className="bg-white rounded-xl shadow-sm p-4">
                 <button
                   onClick={() => navigate('/parts/inventory', { state: { sellItemId: item.id } })}
                   className="w-full flex items-center justify-center gap-2 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors"
@@ -298,15 +298,8 @@ export default function PartsInventoryItemPage() {
                   <DollarSign className="w-4 h-4" />
                   Продать
                 </button>
-              )}
-              <button
-                onClick={() => navigate('/parts/inventory', { state: { editItemId: id } })}
-                className="w-full flex items-center justify-center gap-2 py-2 bg-gray-100 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                <Edit2 className="w-4 h-4" />
-                Редактировать
-              </button>
-            </div>
+              </div>
+            )}
 
             {/* Заметки */}
             {item.notes && (
