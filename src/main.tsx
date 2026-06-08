@@ -82,6 +82,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       persistOptions={{
         persister,
         maxAge: 1000 * 60 * 60 * 24, // 24ч
+        // При новой версии сборки сбрасываем persist-кэш, чтобы не показывать
+        // устаревший профиль/роли (старое меню) после обновления.
+        buster: import.meta.env.VITE_BUILD_HASH || 'dev',
         dehydrateOptions: {
           // Главное — мгновенно показать ОФОРМЛЕНИЕ (оболочка, навигация, профиль,
           // компании, роли), а тяжёлые списки (запчасти, заявки, авто, клиенты)

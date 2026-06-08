@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo } from 'react'
 import { 
   LogOut,
@@ -20,6 +20,7 @@ import { useAdminNotifications } from '../hooks/useAdminNotifications'
 export default function Layout() {
   useAdminNotifications()
   const location = useLocation()
+  const navigate = useNavigate()
   const isAdmin = useIsAdmin()
   const { loading: authLoading } = useAuth()
   const { data: profile, isLoading } = useUserProfile()
@@ -280,10 +281,11 @@ export default function Layout() {
                           type="button"
                           onClick={() => {
                             if (isActive) return
+                            // SPA-навигация без перезагрузки и очистки кэша —
+                            // профиль остаётся в памяти, меню сразу новой роли,
+                            // без мелькания стартового меню.
                             localStorage.setItem('activeRole', roleName)
-                            localStorage.removeItem('tsp_profile_cache')
-                            queryClient.clear()
-                            window.location.href = roleHome[roleName] || '/'
+                            navigate(roleHome[roleName] || '/')
                           }}
                           className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                             ${isActive
@@ -368,10 +370,11 @@ export default function Layout() {
                           type="button"
                           onClick={() => {
                             if (isActive) return
+                            // SPA-навигация без перезагрузки и очистки кэша —
+                            // профиль остаётся в памяти, меню сразу новой роли,
+                            // без мелькания стартового меню.
                             localStorage.setItem('activeRole', roleName)
-                            localStorage.removeItem('tsp_profile_cache')
-                            queryClient.clear()
-                            window.location.href = roleHome[roleName] || '/'
+                            navigate(roleHome[roleName] || '/')
                           }}
                           className={`flex-shrink-0 text-xs font-semibold h-9 px-4 rounded-lg transition-all
                             ${isActive

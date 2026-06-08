@@ -22,6 +22,11 @@ const versionJsonPlugin = {
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Хеш сборки доступен в клиенте — используется как buster persist-кэша, чтобы
+  // при обновлении версии не восстанавливался устаревший профиль/роли.
+  define: {
+    'import.meta.env.VITE_BUILD_HASH': JSON.stringify(buildHash),
+  },
   plugins: [
     react(),
     versionJsonPlugin,
