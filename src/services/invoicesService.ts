@@ -79,8 +79,21 @@ export async function updateInvoice(id: string, input: InvoiceInput): Promise<In
 }
 
 export async function setInvoiceStatus(id: string, status: InvoiceStatus): Promise<void> {
-  const { error } = await supabase.from('sto_invoices').update({ status, updated_at: new Date().toISOString() }).eq('id', id)
+  const { data, error } = await supabase
+    .from('sto_invoices')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('appointment_id')
+    .single()
   if (error) throw error
+
+  // Оплата счёта автоматически закрывает оплату работ и запчастей по заявке
+  if (status === 'paid' && data?.appointment_id) {
+    await supabase
+      .from('appointments')
+      .update({ parts_paid: true, work_paid: true })
+      .eq('id', data.appointment_id)
+  }
 }
 
 export async function deleteInvoice(id: string): Promise<void> {

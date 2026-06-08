@@ -35,7 +35,15 @@ export default function InvoiceView() {
 
   const statusMutation = useMutation({
     mutationFn: (status: 'issued' | 'paid') => setInvoiceStatus(invoiceId!, status),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['invoice', invoiceId] }); qc.invalidateQueries({ queryKey: ['invoices'] }); toast.success('Статус обновлён') },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['invoice', invoiceId] })
+      qc.invalidateQueries({ queryKey: ['invoices'] })
+      // оплата счёта проставляет оплату по заявке
+      qc.invalidateQueries({ queryKey: ['appointments'] })
+      qc.invalidateQueries({ queryKey: ['board-kanban'] })
+      if (invoice?.appointment_id) qc.invalidateQueries({ queryKey: ['appointment', invoice.appointment_id] })
+      toast.success('Статус обновлён')
+    },
     onError: (e: any) => toast.error(e?.message || 'Ошибка'),
   })
 

@@ -549,6 +549,7 @@ export default function AppointmentDetails() {
                 </div>
 
                 <div className="p-4 sm:p-5 space-y-3">
+                  <p className="text-xs text-gray-400">Оплата проставляется автоматически при оплате счёта по заявке.</p>
                   {/* Parts payment row */}
                   {hasParts && partsCost > 0 && (
                     <div className="flex items-center justify-between gap-3">
@@ -556,25 +557,10 @@ export default function AppointmentDetails() {
                         <p className="text-sm font-medium text-gray-700 leading-tight">Запчасти</p>
                         <p className="text-xs text-gray-400 mt-0.5 tabular-nums">₴{partsCost.toLocaleString()}</p>
                       </div>
-                      {isStoOwner ? (
-                        <button
-                          onClick={() => setPaymentConfirmModal({ isOpen: true, type: 'parts', currentValue: appointment.parts_paid })}
-                          disabled={updatePaymentMutation.isPending}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex-shrink-0 ${
-                            appointment.parts_paid
-                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                          }`}
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                          {appointment.parts_paid ? 'Оплачено' : 'Не оплачено'}
-                        </button>
-                      ) : (
-                        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg flex-shrink-0 ${appointment.parts_paid ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'}`}>
-                          <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                          {appointment.parts_paid ? 'Оплачено' : 'Не оплачено'}
-                        </span>
-                      )}
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg flex-shrink-0 ${appointment.parts_paid ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                        <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                        {appointment.parts_paid ? 'Оплачено' : 'Не оплачено'}
+                      </span>
                     </div>
                   )}
 
@@ -585,25 +571,10 @@ export default function AppointmentDetails() {
                         <p className="text-sm font-medium text-gray-700 leading-tight">Работы</p>
                         <p className="text-xs text-gray-400 mt-0.5 tabular-nums">₴{workCost.toLocaleString()}</p>
                       </div>
-                      {isStoOwner ? (
-                        <button
-                          onClick={() => setPaymentConfirmModal({ isOpen: true, type: 'work', currentValue: appointment.work_paid })}
-                          disabled={updatePaymentMutation.isPending}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex-shrink-0 ${
-                            appointment.work_paid
-                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                          }`}
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                          {appointment.work_paid ? 'Оплачено' : 'Не оплачено'}
-                        </button>
-                      ) : (
-                        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg flex-shrink-0 ${appointment.work_paid ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'}`}>
-                          <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                          {appointment.work_paid ? 'Оплачено' : 'Не оплачено'}
-                        </span>
-                      )}
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg flex-shrink-0 ${appointment.work_paid ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                        <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                        {appointment.work_paid ? 'Оплачено' : 'Не оплачено'}
+                      </span>
                     </div>
                   )}
 

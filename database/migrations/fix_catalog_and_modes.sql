@@ -52,6 +52,7 @@ DROP POLICY IF EXISTS service_categories_select_policy ON service_categories;
 DROP POLICY IF EXISTS service_categories_insert_policy ON service_categories;
 DROP POLICY IF EXISTS service_categories_update_policy ON service_categories;
 DROP POLICY IF EXISTS service_categories_delete_policy ON service_categories;
+DROP POLICY IF EXISTS service_categories_all ON service_categories;
 CREATE POLICY service_categories_all ON service_categories
   USING (sto_company_id IN (SELECT sto_company_id FROM user_profiles WHERE id = auth.uid()))
   WITH CHECK (sto_company_id IN (SELECT sto_company_id FROM user_profiles WHERE id = auth.uid()));
@@ -60,6 +61,7 @@ DROP POLICY IF EXISTS services_select_policy ON services;
 DROP POLICY IF EXISTS services_insert_policy ON services;
 DROP POLICY IF EXISTS services_update_policy ON services;
 DROP POLICY IF EXISTS services_delete_policy ON services;
+DROP POLICY IF EXISTS services_all ON services;
 CREATE POLICY services_all ON services
   USING (sto_company_id IN (SELECT sto_company_id FROM user_profiles WHERE id = auth.uid()))
   WITH CHECK (sto_company_id IN (SELECT sto_company_id FROM user_profiles WHERE id = auth.uid()));
