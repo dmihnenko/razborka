@@ -249,14 +249,29 @@ export default function DateTimePicker({
     return map
   }, [monthAppts, excludeAppointmentId])
 
-  // Мастера СТО (для выбора исполнителя)
+  // Мастера СТО (только роль sto_worker — без владельца)
   const { data: workers = [] } = useQuery({
     queryKey: ['datetime-workers', stoCompanyId],
     queryFn: async () => {
       if (!stoCompanyId) return []
+
+      const { data: role } = await supabase
+        .from('roles')
+        .select('id')
+        .eq('name', 'sto_worker')
+        .single()
+      if (!role) return []
+
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role_id', role.id)
+      if (!userRoles || userRoles.length === 0) return []
+
       const { data, error } = await supabase
         .from('user_profiles')
         .select('id, full_name, email')
+        .in('id', userRoles.map(ur => ur.user_id))
         .eq('sto_company_id', stoCompanyId)
         .eq('is_active', true)
         .order('full_name')
