@@ -585,3 +585,21 @@ svg.lucide {
     font-size: 16px !important;
   }
 }
+
+/* ── Печать: показываем только документ (.print-area) ── */
+@media print {
+  body * { visibility: hidden !important; }
+  .print-area, .print-area * { visibility: visible !important; }
+  .print-area {
+    position: absolute !important;
+    left: 0; top: 0;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 24px !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+  .no-print { display: none !important; }
+}

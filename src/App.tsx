@@ -24,6 +24,9 @@ const WorkOrders = lazy(() => import('./pages/WorkOrders'))
 const Services = lazy(() => import('./pages/Services'))
 const Parts = lazy(() => import('./pages/Parts'))
 const Invoices = lazy(() => import('./pages/Invoices'))
+const InvoiceBuilder = lazy(() => import('./pages/InvoiceBuilder'))
+const InvoiceView = lazy(() => import('./pages/InvoiceView'))
+const PublicInvoiceView = lazy(() => import('./pages/PublicInvoiceView'))
 const Users = lazy(() => import('./pages/Users'))
 const UserCreate = lazy(() => import('./pages/UserCreate'))
 const UserEdit = lazy(() => import('./pages/UserEdit'))
@@ -166,6 +169,9 @@ function App() {
 
         {/* Публичная страница запчасти */}
         <Route path="/public/parts-item/:id" element={<PublicPartsItemView />} />
+
+        {/* Публичная страница счёта */}
+        <Route path="/public/invoice/:token" element={<PublicInvoiceView />} />
         
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
@@ -185,6 +191,9 @@ function App() {
           <Route path="services" element={<Services />} />
           <Route path="parts" element={<Parts />} />
           <Route path="invoices" element={<Invoices />} />
+          <Route path="invoices/new" element={<InvoiceBuilder />} />
+          <Route path="sto/invoices/:invoiceId" element={<InvoiceView />} />
+          <Route path="sto/invoices/:invoiceId/edit" element={<InvoiceBuilder />} />
           <Route path="users" element={<Users />} />
           <Route path="users/new" element={<UserCreate />} />
           <Route path="users/:id/edit" element={<UserEdit />} />

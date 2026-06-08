@@ -322,6 +322,15 @@ export default function AppointmentDetails() {
 
           {/* Actions */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
+            {isStoOwner && (
+              <button
+                onClick={() => navigate(`/invoices/new?appointment=${appointment.id}`)}
+                className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                title="Сформировать счёт"
+              >
+                <FileText className="w-4 h-4" />
+              </button>
+            )}
             {isStoOwner && workersCount > 1 && (
               <button
                 onClick={() => setReassignModal({
