@@ -1,12 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Legend, PieChart, Pie, Cell
 } from 'recharts'
-import { TrendingUp, Calendar, CheckCircle, Clock, XCircle, Wrench, CreditCard, AlertCircle } from 'lucide-react'
+import { TrendingUp, Calendar, CheckCircle, Clock, XCircle, Wrench, CreditCard, AlertCircle, Users, BarChart2, ArrowRight } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { fetchStoEmployees } from '@/services/stoService'
+
+const DOW = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
 const MONTH_NAMES = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
 
@@ -17,6 +21,7 @@ function fmt(n: number) {
 }
 
 const PERIOD_OPTIONS = [
+  { label: '1 мес', months: 1 },
   { label: '3 мес', months: 3 },
   { label: '6 мес', months: 6 },
   { label: '12 мес', months: 12 },
@@ -24,6 +29,7 @@ const PERIOD_OPTIONS = [
 
 export default function Analytics() {
   const { data: profile } = useUserProfile()
+  const navigate = useNavigate()
   const [period, setPeriod] = useState(6)
 
   const { data: monthlyStats } = useQuery({
@@ -118,6 +124,60 @@ export default function Analytics() {
     enabled: !!profile?.sto_company_id,
   })
 
+  const { data: employees = [] } = useQuery({
+    queryKey: ['sto_employees', profile?.sto_company_id],
+    queryFn: () => fetchStoEmployees(profile!.sto_company_id!),
+    enabled: !!profile?.sto_company_id,
+  })
+
+  const { data: apptsRaw = [] } = useQuery({
+    queryKey: ['analytics-appts', profile?.sto_company_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('appointments')
+        .select('assigned_to, total_work_cost, status, closed_date, completed_at, scheduled_date')
+        .eq('sto_company_id', profile?.sto_company_id)
+        .not('status', 'in', '(pending_deletion,deleted)')
+      return (data || []) as any[]
+    },
+    enabled: !!profile?.sto_company_id,
+  })
+
+  const nameById = useMemo(() => {
+    const m: Record<string, string> = {}
+    for (const e of employees) m[e.id] = e.full_name || e.username || 'Мастер'
+    return m
+  }, [employees])
+
+  const { byMaster, byDow } = useMemo(() => {
+    const now = new Date()
+    const cutoff = new Date(now.getFullYear(), now.getMonth() - (period - 1), 1)
+    const masters: Record<string, { count: number; work: number }> = {}
+    const dow = Array.from({ length: 7 }, () => 0)
+    for (const a of apptsRaw) {
+      if (a.scheduled_date) {
+        const d = new Date(a.scheduled_date)
+        if (!isNaN(d.getTime()) && d >= cutoff) dow[(d.getDay() + 6) % 7] += 1
+      }
+      if ((a.status === 'archived' || a.status === 'completed') && a.assigned_to) {
+        const ds = a.closed_date || a.completed_at || a.scheduled_date
+        const d = ds ? new Date(ds) : null
+        if (d && !isNaN(d.getTime()) && d >= cutoff) {
+          const s = masters[a.assigned_to] || (masters[a.assigned_to] = { count: 0, work: 0 })
+          s.count += 1
+          s.work += Number(a.total_work_cost) || 0
+        }
+      }
+    }
+    const byMaster = Object.entries(masters)
+      .map(([id, s]) => ({ id, name: nameById[id] || 'Мастер', count: s.count, work: Math.round(s.work) }))
+      .sort((a, b) => b.work - a.work)
+    const byDow = DOW.map((label, i) => ({ day: label, count: dow[i] }))
+    return { byMaster, byDow }
+  }, [apptsRaw, period, nameById])
+
+  const maxMasterWork = byMaster.reduce((m, x) => Math.max(m, x.work), 0) || 1
+
   const slicedMonthly = monthlyStats ? monthlyStats.slice(-period) : []
 
   const statusPie = overallStats ? [
@@ -168,22 +228,31 @@ export default function Analytics() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold text-gray-900">Аналитика</h1>
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-          {PERIOD_OPTIONS.map(opt => (
-            <button
-              key={opt.months}
-              onClick={() => setPeriod(opt.months)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                period === opt.months
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/statistics')}
+            className="btn-secondary btn-sm flex items-center gap-1.5"
+          >
+            <BarChart2 className="w-4 h-4" /> <span className="hidden sm:inline">Помесячно</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+            {PERIOD_OPTIONS.map(opt => (
+              <button
+                key={opt.months}
+                onClick={() => setPeriod(opt.months)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  period === opt.months
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -321,6 +390,47 @@ export default function Analytics() {
           <p className="text-sm text-gray-500">Недостаточно данных. Закройте несколько заявок для получения статистики.</p>
         </div>
       )}
+
+      {/* По мастерам + загруженность по дням недели */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* По мастерам */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-4">
+          <p className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-gray-400" /> По мастерам (закрыто заявок / заработано)
+          </p>
+          {byMaster.length === 0 ? (
+            <p className="text-xs text-gray-400 py-6 text-center">Нет данных за период</p>
+          ) : (
+            <div className="space-y-2.5">
+              {byMaster.map(m => (
+                <div key={m.id}>
+                  <div className="flex justify-between text-[11px] text-gray-600 mb-0.5">
+                    <span className="font-medium truncate mr-2">{m.name}</span>
+                    <span className="font-semibold whitespace-nowrap">{m.count} зв · {fmt(m.work)}</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-1.5">
+                    <div className="bg-violet-500 h-1.5 rounded-full" style={{ width: `${Math.round((m.work / maxMasterWork) * 100)}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Загруженность по дням недели */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-4">
+          <p className="text-xs font-semibold text-gray-700 mb-3">Загруженность по дням недели</p>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={byDow} margin={{ top: 2, right: 4, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 10 }} width={24} />
+              <Tooltip content={<CustomTooltipCount />} />
+              <Bar dataKey="count" fill="#6366f1" name="Записей" radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   )
 }
