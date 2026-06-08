@@ -148,239 +148,170 @@ export default function PartsInventoryItemPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 space-y-4">
 
-          {/* ── Левая колонка: фото и основная инфо ────────────────────── */}
-          <div className="lg:col-span-2 space-y-4">
+        {/* 1. ФОТО */}
+        {photos.length > 0 && (
+          <div className="bg-white rounded-2xl overflow-hidden shadow-sm max-w-md mx-auto w-full">
+            <PhotoGallery
+              photos={photos as any[]}
+              alt={item.name}
+              mainAspect="aspect-[4/3]"
+              objectFit="cover"
+            />
+          </div>
+        )}
 
-            {/* Основная информация */}
-            <div className="bg-white rounded-xl shadow-sm p-4">
-              {/* Шапка: фото слева + статус, название, оригинальный номер справа */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                {photos.length > 0 && (
-                  <div className="rounded-xl overflow-hidden w-full sm:w-52 md:w-56 flex-shrink-0 self-start">
-                    <PhotoGallery
-                      photos={photos as any[]}
-                      alt={item.name}
-                      mainAspect="aspect-[4/3]"
-                      objectFit="cover"
-                    />
-                  </div>
-                )}
+        {/* 2. НАЗВАНИЕ + ОРИГИНАЛЬНЫЙ НОМЕР + ЦЕНА */}
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-5">
+          {/* Статус + категория */}
+          <div className="flex flex-wrap items-center gap-2 mb-2.5">
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border ${STATUS_CLS[item.status]}`}>
+              {STATUS_LABEL[item.status]}
+            </span>
+            {item.category && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                <Tag className="w-3 h-3" />
+                {item.category.name}
+              </span>
+            )}
+            {lowStock && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                <AlertTriangle className="w-3 h-3" />
+                Мало
+              </span>
+            )}
+          </div>
 
-                <div className="flex-1 min-w-0 flex flex-col">
-                  {/* Статус + категория */}
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border ${STATUS_CLS[item.status]}`}>
-                      {STATUS_LABEL[item.status]}
-                    </span>
-                    {item.category && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                        <Tag className="w-3 h-3" />
-                        {item.category.name}
-                      </span>
-                    )}
-                    {lowStock && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-red-100 text-red-700 border border-red-200">
-                        <AlertTriangle className="w-3 h-3" />
-                        Мало
-                      </span>
-                    )}
-                  </div>
+          {/* Название */}
+          <h2 className="text-xl font-bold text-gray-900 mb-3 leading-snug">{item.name}</h2>
 
-                  {/* Название */}
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 leading-snug">{item.name}</h2>
-
-                  {/* Оригинальный номер */}
-                  {item.part_number && (
-                    <div className="mt-auto">
-                      <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-1">Оригинальный номер</p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(item.part_number!.toUpperCase())
-                          toast.success('Номер скопирован')
-                        }}
-                        title="Нажмите, чтобы скопировать"
-                        className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border-2 border-blue-200 shadow-md hover:border-blue-400 hover:shadow-lg active:scale-95 transition-all"
-                      >
-                        <Hash className="w-3.5 h-3.5 text-blue-500" />
-                        <span className="font-mono font-bold tracking-wider text-gray-800 uppercase">
-                          {item.part_number.toUpperCase()}
-                        </span>
-                        <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Цена */}
-              <div className="py-2.5 border-t border-b border-gray-100 my-3">
-                {isSold ? (
-                  <div>
-                    <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-1">Продано за</p>
-                    <p className="text-2xl font-bold text-gray-600">
-                      {item.sold_price ? formatPrice(item.sold_price, (item.price_currency as 'UAH' | 'USD') || 'USD') : '—'}
-                    </p>
-                  </div>
-                ) : item.selling_price ? (
-                  <div>
-                    <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-1">Цена</p>
-                    <p className="text-3xl font-bold text-primary">
-                      {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-xs text-amber-600 font-medium">Цена не указана</p>
-                )}
-              </div>
-
-              {/* Основные характеристики */}
-              <div className="grid grid-cols-2 gap-3">
-                {item.condition && (
-                  <div>
-                    <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-0.5">Состояние</p>
-                    <p className="text-sm font-semibold text-gray-900">{PARTS_CONDITION_LABELS[item.condition] || item.condition}</p>
-                  </div>
-                )}
-                {!item.vehicle_id && (
-                  <div>
-                    <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-0.5">Количество</p>
-                    <p className={`text-sm font-semibold ${lowStock ? 'text-red-600' : 'text-gray-900'}`}>{item.quantity} шт</p>
-                  </div>
-                )}
-                {item.location && (
-                  <div className="col-span-2">
-                    <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-0.5">Место</p>
-                    <p className="text-sm text-gray-700">{item.location}{item.shelf ? ` · полка ${item.shelf}` : ''}{item.bin ? ` · ячейка ${item.bin}` : ''}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-0.5">Добавлена</p>
-                  <p className="text-sm text-gray-700">{new Date(item.created_at).toLocaleDateString('ru-RU')}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Авто */}
-            {item.vehicle && (
+          {/* Оригинальный номер */}
+          {item.part_number && (
+            <div className="mb-3">
+              <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-1">Оригинальный номер</p>
               <button
-                onClick={() => navigate(`/parts/vehicles/${item.vehicle_id}`)}
-                className="w-full bg-white rounded-xl shadow-sm p-4 text-left hover:shadow-md transition-shadow"
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(item.part_number!.toUpperCase())
+                  toast.success('Номер скопирован')
+                }}
+                title="Нажмите, чтобы скопировать"
+                className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border-2 border-blue-200 shadow-md hover:border-blue-400 hover:shadow-lg active:scale-95 transition-all"
               >
-                <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-2 flex items-center gap-1.5">
-                  <Car className="w-3 h-3" /> Снята с авто
+                <Hash className="w-3.5 h-3.5 text-blue-500" />
+                <span className="font-mono font-bold tracking-wider text-gray-800 uppercase">
+                  {item.part_number.toUpperCase()}
+                </span>
+                <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+              </button>
+            </div>
+          )}
+
+          {/* Цена */}
+          <div className="pt-3 border-t border-gray-100">
+            {isSold ? (
+              <>
+                <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-1">Продано за</p>
+                <p className="text-2xl font-bold text-gray-600">
+                  {item.sold_price ? formatPrice(item.sold_price, (item.price_currency as 'UAH' | 'USD') || 'USD') : '—'}
                 </p>
-                <p className="text-sm font-semibold text-gray-900">
-                  {item.vehicle.make} {item.vehicle.model}
-                  {(item.vehicle as any).year ? ` (${(item.vehicle as any).year})` : ''}
+              </>
+            ) : item.selling_price ? (
+              <>
+                <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-1">Цена</p>
+                <p className="text-3xl font-bold text-primary">
+                  {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
+                </p>
+              </>
+            ) : (
+              <p className="text-xs text-amber-600 font-medium">Цена не указана</p>
+            )}
+          </div>
+        </div>
+
+        {/* 3. ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ */}
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-5">
+          <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-3">Дополнительная информация</p>
+
+          {/* С какой машины — кликабельно */}
+          {item.vehicle && (
+            <button
+              onClick={() => navigate(`/parts/vehicles/${item.vehicle_id}`)}
+              className="w-full flex items-center gap-3 p-3 mb-3 rounded-xl bg-gray-50 border border-gray-100 text-left hover:bg-gray-100 transition-colors"
+            >
+              <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                <Car className="w-4.5 h-4.5 text-blue-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide">Снята с авто</p>
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {item.vehicle.make} {item.vehicle.model}{(item.vehicle as any).year ? ` (${(item.vehicle as any).year})` : ''}
                 </p>
                 {(item.vehicle as any).vin && (
-                  <p className="text-xs text-gray-500 font-mono mt-1">VIN: {(item.vehicle as any).vin}</p>
+                  <p className="text-xs text-gray-400 font-mono truncate">VIN: {(item.vehicle as any).vin}</p>
                 )}
-              </button>
-            )}
+              </div>
+            </button>
+          )}
 
-            {/* Описание */}
-            {item.description && (
-              <div className="bg-white rounded-xl shadow-sm p-4">
-                <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-2 flex items-center gap-1.5">
-                  <FileText className="w-3 h-3" /> Описание
-                </p>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{item.description}</p>
+          {/* Список характеристик */}
+          <dl className="divide-y divide-gray-100 text-sm">
+            {item.location && (
+              <div className="flex items-start justify-between gap-3 py-2">
+                <dt className="text-gray-500 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-gray-400" />Место хранения</dt>
+                <dd className="font-medium text-gray-900 text-right">
+                  {item.location}{item.shelf ? ` · полка ${item.shelf}` : ''}{item.bin ? ` · ячейка ${item.bin}` : ''}
+                </dd>
               </div>
             )}
-          </div>
-
-          {/* ── Правая колонка: действия и заметки ────────────────────── */}
-          <div className="lg:col-span-1 space-y-4">
-
-            {/* Быстрые действия — продать */}
-            {!isSold && (
-              <div className="bg-white rounded-xl shadow-sm p-4">
-                <button
-                  onClick={() => setIsSellOpen(true)}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  <DollarSign className="w-4 h-4" />
-                  Продать
-                </button>
-              </div>
-            )}
-
-            {/* Заметки */}
-            {item.notes && (
-              <div className="bg-white rounded-xl shadow-sm p-4">
-                <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-2">Заметки</p>
-                <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">{item.notes}</p>
-              </div>
-            )}
-
-            {/* Полная информация о товаре */}
-            <div className="bg-white rounded-xl shadow-sm p-4">
-              <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-3">Информация</p>
-              <dl className="divide-y divide-gray-100 text-sm">
-                <div className="flex items-center justify-between gap-3 py-2">
-                  <dt className="text-gray-500">Статус</dt>
-                  <dd>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border ${STATUS_CLS[item.status]}`}>
-                      {STATUS_LABEL[item.status]}
-                    </span>
-                  </dd>
-                </div>
-                {item.category && (
-                  <div className="flex items-center justify-between gap-3 py-2">
-                    <dt className="text-gray-500">Категория</dt>
-                    <dd className="font-medium text-gray-900 text-right">{item.category.name}</dd>
-                  </div>
-                )}
-                {item.condition && (
-                  <div className="flex items-center justify-between gap-3 py-2">
-                    <dt className="text-gray-500">Состояние</dt>
-                    <dd className="font-medium text-gray-900 text-right">{PARTS_CONDITION_LABELS[item.condition] || item.condition}</dd>
-                  </div>
-                )}
-                {!item.vehicle_id && (
-                  <div className="flex items-center justify-between gap-3 py-2">
-                    <dt className="text-gray-500">Количество</dt>
-                    <dd className={`font-semibold text-right ${lowStock ? 'text-red-600' : 'text-gray-900'}`}>{item.quantity} шт</dd>
-                  </div>
-                )}
-                {item.location && (
-                  <div className="flex items-center justify-between gap-3 py-2">
-                    <dt className="text-gray-500">Место</dt>
-                    <dd className="font-medium text-gray-900 text-right">
-                      {item.location}{item.shelf ? ` · полка ${item.shelf}` : ''}{item.bin ? ` · ячейка ${item.bin}` : ''}
-                    </dd>
-                  </div>
-                )}
-                {item.vehicle && (
-                  <div className="flex items-center justify-between gap-3 py-2">
-                    <dt className="text-gray-500">Авто</dt>
-                    <dd className="font-medium text-gray-900 text-right">
-                      {item.vehicle.make} {item.vehicle.model}{(item.vehicle as any).year ? ` (${(item.vehicle as any).year})` : ''}
-                    </dd>
-                  </div>
-                )}
-                <div className="flex items-center justify-between gap-3 py-2">
-                  <dt className="text-gray-500">{isSold ? 'Продано за' : 'Цена'}</dt>
-                  <dd className="font-bold text-gray-900 text-right">
-                    {isSold
-                      ? (item.sold_price ? formatPrice(item.sold_price, (item.price_currency as 'UAH' | 'USD') || 'USD') : '—')
-                      : (item.selling_price ? formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD') : '—')}
-                  </dd>
-                </div>
-                <div className="flex items-center justify-between gap-3 py-2">
-                  <dt className="text-gray-500">Добавлена</dt>
-                  <dd className="font-medium text-gray-900 text-right">{new Date(item.created_at).toLocaleDateString('ru-RU')}</dd>
-                </div>
-              </dl>
+            <div className="flex items-center justify-between gap-3 py-2">
+              <dt className="text-gray-500">Добавлена</dt>
+              <dd className="font-medium text-gray-900 text-right">{new Date(item.created_at).toLocaleDateString('ru-RU')}</dd>
             </div>
-          </div>
+            {item.condition && (
+              <div className="flex items-center justify-between gap-3 py-2">
+                <dt className="text-gray-500">Состояние</dt>
+                <dd className="font-medium text-gray-900 text-right">{PARTS_CONDITION_LABELS[item.condition] || item.condition}</dd>
+              </div>
+            )}
+            {!item.vehicle_id && (
+              <div className="flex items-center justify-between gap-3 py-2">
+                <dt className="text-gray-500">Количество</dt>
+                <dd className={`font-semibold text-right ${lowStock ? 'text-red-600' : 'text-gray-900'}`}>{item.quantity} шт</dd>
+              </div>
+            )}
+          </dl>
 
+          {/* Описание */}
+          {item.description && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5 flex items-center gap-1.5">
+                <FileText className="w-3 h-3" /> Описание
+              </p>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{item.description}</p>
+            </div>
+          )}
+
+          {/* Заметки */}
+          {item.notes && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-1.5">Заметки</p>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{item.notes}</p>
+            </div>
+          )}
         </div>
+
+        {/* 4. КНОПКА ПРОДАТЬ */}
+        {!isSold && (
+          <button
+            onClick={() => setIsSellOpen(true)}
+            className="w-full flex items-center justify-center gap-2 py-3.5 bg-green-600 text-white text-base font-semibold rounded-2xl shadow-sm hover:bg-green-700 active:scale-[0.99] transition-all"
+          >
+            <DollarSign className="w-5 h-5" />
+            Продать
+          </button>
+        )}
       </div>
 
       <ConfirmDialog {...dialogProps} />
