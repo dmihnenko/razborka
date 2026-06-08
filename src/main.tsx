@@ -1,6 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient } from '@tanstack/react-query'
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
 import App from './App.tsx'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
@@ -57,6 +59,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 60 * 24, // 24ч — чтобы кэш переживал выгрузку и сохранялся
       retry: 1,
       refetchOnWindowFocus: false, // Отключаем перезагрузку при возврате на вкладку
       refetchOnMount: false, // Отключаем перезагрузку при монтировании если данные есть
@@ -64,10 +67,28 @@ const queryClient = new QueryClient({
   },
 })
 
+// Сохраняем кэш react-query в localStorage — при повторном открытии/«пробуждении»
+// PWA данные показываются мгновенно из кэша, без полной перезагрузки контекста.
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: 'tsp_rq_cache',
+  throttleTime: 1000,
+})
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister,
+        maxAge: 1000 * 60 * 60 * 24, // 24ч
+        dehydrateOptions: {
+          // Сохраняем только успешные запросы
+          shouldDehydrateQuery: (q) => q.state.status === 'success',
+        },
+      }}
+    >
       <App />
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   </React.StrictMode>,
 )
