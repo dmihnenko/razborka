@@ -93,7 +93,7 @@ export default function DatabasePage() {
         'appointments',
         'work_orders',
         'services',
-        'invoices',
+        'sto_invoices',
         'parts_companies',
         'parts_vehicles',
         'parts_inventory',

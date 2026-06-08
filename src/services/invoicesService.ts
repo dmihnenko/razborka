@@ -6,7 +6,7 @@ const SELECT = `*, customers(name, phone), vehicles(brand, model, license_plate,
 
 export async function getInvoices(stoCompanyId: string): Promise<Invoice[]> {
   const { data, error } = await supabase
-    .from('invoices')
+    .from('sto_invoices')
     .select(SELECT)
     .eq('sto_company_id', stoCompanyId)
     .order('created_at', { ascending: false })
@@ -15,7 +15,7 @@ export async function getInvoices(stoCompanyId: string): Promise<Invoice[]> {
 }
 
 export async function getInvoice(id: string): Promise<Invoice> {
-  const { data, error } = await supabase.from('invoices').select(SELECT).eq('id', id).single()
+  const { data, error } = await supabase.from('sto_invoices').select(SELECT).eq('id', id).single()
   if (error) throw error
   return data as Invoice
 }
@@ -59,7 +59,7 @@ export async function createInvoice(input: InvoiceInput): Promise<Invoice> {
   if (!numErr && num) invoice_number = num as string
 
   const { data, error } = await supabase
-    .from('invoices')
+    .from('sto_invoices')
     .insert({ ...buildPayload(input), invoice_number, created_by: input.created_by ?? null })
     .select(SELECT)
     .single()
@@ -69,7 +69,7 @@ export async function createInvoice(input: InvoiceInput): Promise<Invoice> {
 
 export async function updateInvoice(id: string, input: InvoiceInput): Promise<Invoice> {
   const { data, error } = await supabase
-    .from('invoices')
+    .from('sto_invoices')
     .update({ ...buildPayload(input), updated_at: new Date().toISOString() })
     .eq('id', id)
     .select(SELECT)
@@ -79,12 +79,12 @@ export async function updateInvoice(id: string, input: InvoiceInput): Promise<In
 }
 
 export async function setInvoiceStatus(id: string, status: InvoiceStatus): Promise<void> {
-  const { error } = await supabase.from('invoices').update({ status, updated_at: new Date().toISOString() }).eq('id', id)
+  const { error } = await supabase.from('sto_invoices').update({ status, updated_at: new Date().toISOString() }).eq('id', id)
   if (error) throw error
 }
 
 export async function deleteInvoice(id: string): Promise<void> {
-  const { error } = await supabase.from('invoices').delete().eq('id', id)
+  const { error } = await supabase.from('sto_invoices').delete().eq('id', id)
   if (error) throw error
 }
 
