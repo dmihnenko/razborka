@@ -270,7 +270,7 @@ export default function AppointmentDetails() {
 
       {/* ── Sticky page header ─────────────────────────────────────────────── */}
       <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
-        <div className="w-full px-3 sm:px-6 h-14 flex items-center gap-3">
+        <div className="w-full px-3 sm:px-6 min-h-14 py-2 sm:py-0 flex flex-wrap items-center gap-x-3 gap-y-2">
           {/* Back */}
           <button
             onClick={() => location.state?.from ? navigate(location.state.from) : navigate(-1)}
@@ -293,8 +293,8 @@ export default function AppointmentDetails() {
             </p>
           </div>
 
-          {/* Status flow — прямоугольные кнопки */}
-          <div className="flex items-center gap-1 overflow-x-auto flex-shrink-0 scrollbar-none">
+          {/* Status flow — на мобиле отдельной строкой во всю ширину со скроллом */}
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none w-full sm:w-auto order-last sm:order-none min-w-0">
             {STATUS_FLOW.map(s => {
               const scfg  = STATUS_CFG[s]
               const isActive = appointment.status === s || (s === 'completed' && appointment.status === 'ready')
