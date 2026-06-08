@@ -62,6 +62,8 @@ export default function AppointmentsArchive() {
       a.customers?.name?.toLowerCase().includes(q) ||
       `${a.vehicles?.brand ?? ''} ${a.vehicles?.model ?? ''}`.toLowerCase().includes(q) ||
       a.vehicles?.license_plate?.toLowerCase().includes(q) ||
+      a.id?.toLowerCase().includes(q) ||
+      String(a.request_number ?? '').toLowerCase().includes(q) ||
       (digits.length >= 3 && a.customers?.phone?.replace(/\D/g, '').includes(digits))
     )
   }, [appts, search])

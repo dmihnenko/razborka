@@ -1,4 +1,4 @@
-import { useState, useEffect, useDeferredValue } from 'react'
+import { useState, useEffect, useDeferredValue, useRef } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -46,6 +46,13 @@ const statusColors: Record<PartsInventoryStatus, string> = {
 export default function PartsInventory() {
   const navigate = useNavigate()
   const location = useLocation()
+  const rootRef = useRef<HTMLDivElement>(null)
+  const scrollEl = () => rootRef.current?.closest('.overflow-auto') as HTMLElement | null
+  const goToItem = (id: string) => {
+    const el = scrollEl()
+    sessionStorage.setItem('parts-inv-scroll', String(el ? el.scrollTop : 0))
+    navigate(`/parts/inventory/${id}`)
+  }
   const [searchParams] = useSearchParams()
   const sourceFilter = searchParams.get('source') ?? 'vehicles' // 'vehicles' | 'shop'
   const { confirm: showConfirm, dialogProps } = useConfirm()
@@ -87,6 +94,18 @@ export default function PartsInventory() {
     queryFn: () => getPartsInventory(partsCompanyId!),
     enabled: !!partsCompanyId
   })
+
+  // Восстановление позиции прокрутки при возврате со страницы запчасти
+  useEffect(() => {
+    if (isLoading) return
+    const saved = sessionStorage.getItem('parts-inv-scroll')
+    if (saved == null) return
+    sessionStorage.removeItem('parts-inv-scroll')
+    requestAnimationFrame(() => {
+      const el = scrollEl()
+      if (el) el.scrollTop = Number(saved)
+    })
+  }, [isLoading, inventory.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-open edit modal when navigated back with editItemId in state
   useEffect(() => {
@@ -540,7 +559,7 @@ export default function PartsInventory() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50">
+    <div ref={rootRef} className="min-h-dvh bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="w-full">
@@ -783,7 +802,7 @@ export default function PartsInventory() {
                 onEdit={handleEdit}
                 onSell={handleSell}
                 onDelete={handleDelete}
-                onNavigate={(id) => navigate(`/parts/inventory/${id}`)}
+                onNavigate={goToItem}
                 onToggleSelect={(id, e) => toggleSelect(id, e as React.MouseEvent)}
               />
             ))}
@@ -826,7 +845,7 @@ export default function PartsInventory() {
                     <tr
                       key={item.id}
                       className="hover:bg-blue-50/40 transition-colors group/row cursor-pointer"
-                      onClick={() => navigate(`/parts/inventory/${item.id}`)}
+                      onClick={() => goToItem(item.id)}
                     >
                       <td
                         className={`px-3 py-3 w-8${statusFilter !== 'reserved' ? ' hidden' : ''}`}

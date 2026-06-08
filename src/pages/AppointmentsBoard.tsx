@@ -660,7 +660,9 @@ export default function AppointmentsBoard() {
         a.customers?.phone?.toLowerCase().includes(q) ||
         a.vehicles?.brand?.toLowerCase().includes(q) ||
         a.vehicles?.model?.toLowerCase().includes(q) ||
-        a.vehicles?.license_plate?.toLowerCase().includes(q)
+        a.vehicles?.license_plate?.toLowerCase().includes(q) ||
+        a.id?.toLowerCase().includes(q) ||
+        String(a.request_number ?? '').toLowerCase().includes(q)
       )
     }
     if (mechanicFilter !== 'all') {
