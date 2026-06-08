@@ -32,7 +32,18 @@ export default function Login() {
       toast.error('Username должен содержать 3-20 символов (латиница, цифры, подчёркивание)')
       return
     }
-    
+
+    // Валидация email (обязательное поле)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!email.trim()) {
+      toast.error('Укажите электронную почту')
+      return
+    }
+    if (!emailRegex.test(email.trim())) {
+      toast.error('Введите корректный адрес электронной почты')
+      return
+    }
+
     setLoading(true)
 
     // Проверяем уникальность username
@@ -44,9 +55,8 @@ export default function Login() {
       return
     }
 
-    // Генерируем email для Supabase (если не введен реальный)
-    const authEmail = email.trim() || `${username.toLowerCase()}@internal.tsp.local`
-    const realEmail = email.trim() || null
+    const authEmail = email.trim()
+    const realEmail = email.trim()
 
     const { data, error } = await supabase.auth.signUp({
       email: authEmail,
@@ -315,7 +325,7 @@ export default function Login() {
                     </div>
                     <div>
                       <label style={{ color:'#9CA3AF', fontSize:'12px', fontWeight:'500', display:'block', marginBottom:'6px', letterSpacing:'0.3px' }}>
-                        EMAIL <span style={{ color:'#64748B', fontWeight:'400' }}>(необязательно)</span>
+                        EMAIL <span style={{ color:'#EF4444', fontWeight:'400' }}>*</span>
                       </label>
                       <input
                         id="email"
@@ -323,6 +333,7 @@ export default function Login() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         autoComplete="email"
+                        required
                         className="input-dark px-4 py-3 rounded-lg text-sm"
                         placeholder="email@example.com"
                       />
