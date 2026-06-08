@@ -151,61 +151,67 @@ export default function PartsInventoryItemPage() {
           {/* ── Левая колонка: фото и основная инфо ────────────────────── */}
           <div className="lg:col-span-2 space-y-4">
 
-            {/* Фото */}
-            {photos.length > 0 && (
-              <div className="bg-white rounded-xl overflow-hidden shadow-sm max-w-sm">
-                <PhotoGallery
-                  photos={photos as any[]}
-                  alt={item.name}
-                  mainAspect="aspect-[4/3]"
-                  objectFit="cover"
-                />
-              </div>
-            )}
-
             {/* Основная информация */}
             <div className="bg-white rounded-xl shadow-sm p-4">
-              {/* Статус + категория */}
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border ${STATUS_CLS[item.status]}`}>
-                  {STATUS_LABEL[item.status]}
-                </span>
-                {item.category && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                    <Tag className="w-3 h-3" />
-                    {item.category.name}
-                  </span>
+              {/* Шапка: фото слева + статус, название, оригинальный номер справа */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                {photos.length > 0 && (
+                  <div className="rounded-xl overflow-hidden w-full sm:w-52 md:w-56 flex-shrink-0 self-start">
+                    <PhotoGallery
+                      photos={photos as any[]}
+                      alt={item.name}
+                      mainAspect="aspect-[4/3]"
+                      objectFit="cover"
+                    />
+                  </div>
                 )}
-                {lowStock && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-red-100 text-red-700 border border-red-200">
-                    <AlertTriangle className="w-3 h-3" />
-                    Мало
-                  </span>
-                )}
-              </div>
 
-              {/* Название + оригинальный номер */}
-              <h2 className="text-lg font-bold text-gray-900 mb-1">{item.name}</h2>
-              {item.part_number && (
-                <div className="mb-3">
-                  <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-1">Оригинальный номер</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(item.part_number!.toUpperCase())
-                      toast.success('Номер скопирован')
-                    }}
-                    title="Нажмите, чтобы скопировать"
-                    className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border-2 border-blue-200 shadow-md hover:border-blue-400 hover:shadow-lg active:scale-95 transition-all"
-                  >
-                    <Hash className="w-3.5 h-3.5 text-blue-500" />
-                    <span className="font-mono font-bold tracking-wider text-gray-800 uppercase">
-                      {item.part_number.toUpperCase()}
+                <div className="flex-1 min-w-0 flex flex-col">
+                  {/* Статус + категория */}
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border ${STATUS_CLS[item.status]}`}>
+                      {STATUS_LABEL[item.status]}
                     </span>
-                    <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                  </button>
+                    {item.category && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                        <Tag className="w-3 h-3" />
+                        {item.category.name}
+                      </span>
+                    )}
+                    {lowStock && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                        <AlertTriangle className="w-3 h-3" />
+                        Мало
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Название */}
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 leading-snug">{item.name}</h2>
+
+                  {/* Оригинальный номер */}
+                  {item.part_number && (
+                    <div className="mt-auto">
+                      <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-1">Оригинальный номер</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(item.part_number!.toUpperCase())
+                          toast.success('Номер скопирован')
+                        }}
+                        title="Нажмите, чтобы скопировать"
+                        className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border-2 border-blue-200 shadow-md hover:border-blue-400 hover:shadow-lg active:scale-95 transition-all"
+                      >
+                        <Hash className="w-3.5 h-3.5 text-blue-500" />
+                        <span className="font-mono font-bold tracking-wider text-gray-800 uppercase">
+                          {item.part_number.toUpperCase()}
+                        </span>
+                        <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
 
               {/* Цена */}
               <div className="py-2.5 border-t border-b border-gray-100 my-3">
@@ -325,12 +331,6 @@ export default function PartsInventoryItemPage() {
                   <div className="flex items-center justify-between gap-3 py-2">
                     <dt className="text-gray-500">Категория</dt>
                     <dd className="font-medium text-gray-900 text-right">{item.category.name}</dd>
-                  </div>
-                )}
-                {item.part_number && (
-                  <div className="flex items-center justify-between gap-3 py-2">
-                    <dt className="text-gray-500">Ориг. номер</dt>
-                    <dd className="font-mono font-semibold text-gray-900 uppercase text-right break-all">{item.part_number.toUpperCase()}</dd>
                   </div>
                 )}
                 {item.condition && (

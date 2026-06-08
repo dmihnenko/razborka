@@ -7,6 +7,7 @@ import {
   Car, Wrench, Menu, X, ChevronRight, LayoutGrid
 } from 'lucide-react'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
+import { useAdminNotifications } from '../hooks/useAdminNotifications'
 import { supabase } from '../lib/supabase'
 import { toast } from 'sonner'
 import { LayoutSkeleton } from './LayoutSkeleton'
@@ -72,6 +73,7 @@ function NavLink({ item, collapsed, onClick }: { item: typeof navFlat[0]; collap
 }
 
 export default function AdminLayout() {
+  useAdminNotifications()
   const location = useLocation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
