@@ -51,24 +51,39 @@ export interface PartsCompanyContacts {
 }
 
 export async function getPartsCompanyContacts(id: string): Promise<PartsCompanyContacts> {
+  // Базовые поля грузим всегда; telegram — best-effort (колонки может не быть,
+  // если миграция 012 ещё не применена).
   const { data, error } = await supabase
     .from('parts_companies')
-    .select('id, name, phone, telegram, address, email')
+    .select('id, name, phone, address, email')
     .eq('id', id)
     .single()
   if (error) throw error
-  return data as PartsCompanyContacts
+
+  let telegram: string | null = null
+  try {
+    const tg = await supabase.from('parts_companies').select('telegram').eq('id', id).single()
+    telegram = (tg.data as any)?.telegram ?? null
+  } catch { /* колонки нет */ }
+
+  return { ...(data as any), telegram } as PartsCompanyContacts
 }
 
 export async function updatePartsCompanyContacts(
   id: string,
   fields: { phone?: string | null; telegram?: string | null; address?: string | null; email?: string | null }
 ): Promise<void> {
-  const { error } = await supabase
-    .from('parts_companies')
-    .update(fields)
-    .eq('id', id)
-  if (error) throw error
+  const { error } = await supabase.from('parts_companies').update(fields).eq('id', id)
+  if (!error) return
+  // Если колонки telegram нет — сохраняем остальное без неё
+  if ((error as any)?.code === '42703' || /telegram/i.test(error.message || '')) {
+    const { telegram, ...rest } = fields
+    void telegram
+    const retry = await supabase.from('parts_companies').update(rest).eq('id', id)
+    if (retry.error) throw retry.error
+    return
+  }
+  throw error
 }
 
 // Создать компанию и привязать к пользователю
