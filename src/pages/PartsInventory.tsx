@@ -50,7 +50,7 @@ export default function PartsInventory() {
   const sourceFilter = searchParams.get('source') ?? 'vehicles' // 'vehicles' | 'shop'
   const { confirm: showConfirm, dialogProps } = useConfirm()
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('available')
   const [vehicleFilter, setVehicleFilter] = useState<string>('all') // vehicle_id or 'all'
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -123,7 +123,7 @@ export default function PartsInventory() {
 
   // Reset status filter when switching between Разборка / Магазин
   useEffect(() => {
-    setStatusFilter('all')
+    setStatusFilter('available')
     setSearchQuery('')
     setVehicleFilter('all')
     setSelectedIds(new Set())
