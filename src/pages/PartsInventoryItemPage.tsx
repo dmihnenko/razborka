@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation } from '@tanstack/react-query'
@@ -14,6 +15,7 @@ import { formatPrice } from '@/utils/currency'
 import { PARTS_CONDITION_LABELS } from '@/utils/status'
 import type { PartsInventoryStatus } from '@/types/parts'
 import PhotoGallery from '@/components/parts/PhotoGallery'
+import SellPartModal from '@/components/parts/SellPartModal'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
@@ -33,6 +35,7 @@ export default function PartsInventoryItemPage() {
   const navigate = useNavigate()
   const { confirm: showConfirm, dialogProps } = useConfirm()
   const { data: profile } = useUserProfile()
+  const [isSellOpen, setIsSellOpen] = useState(false)
 
   const { data: item, isLoading, error } = useQuery({
     queryKey: ['parts-inventory-item', id],
@@ -298,7 +301,7 @@ export default function PartsInventoryItemPage() {
             {!isSold && (
               <div className="bg-white rounded-xl shadow-sm p-4">
                 <button
-                  onClick={() => navigate('/parts/inventory', { state: { sellItemId: item.id } })}
+                  onClick={() => setIsSellOpen(true)}
                   className="w-full flex items-center justify-center gap-2 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors"
                 >
                   <DollarSign className="w-4 h-4" />
@@ -381,6 +384,14 @@ export default function PartsInventoryItemPage() {
       </div>
 
       <ConfirmDialog {...dialogProps} />
+
+      {isSellOpen && profile?.parts_company_id && (
+        <SellPartModal
+          item={item}
+          partsCompanyId={profile.parts_company_id}
+          onClose={() => setIsSellOpen(false)}
+        />
+      )}
     </div>
   )
 }
