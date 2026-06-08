@@ -33,6 +33,16 @@ export default function InvoiceView() {
     enabled: !!invoice?.sto_company_id,
   })
 
+  // Статус связанной заявки — для подтверждения оплаты
+  const { data: linkedAppt } = useQuery({
+    queryKey: ['invoice-appt', invoice?.appointment_id],
+    queryFn: async () => {
+      const { data } = await supabase.from('appointments').select('status').eq('id', invoice!.appointment_id!).single()
+      return data
+    },
+    enabled: !!invoice?.appointment_id,
+  })
+
   const statusMutation = useMutation({
     mutationFn: (status: 'issued' | 'paid') => setInvoiceStatus(invoiceId!, status),
     onSuccess: () => {
@@ -58,6 +68,25 @@ export default function InvoiceView() {
     if (ok) deleteMutation.mutate()
   }
 
+  const APPT_STATUS_RU: Record<string, string> = {
+    scheduled: 'Запланирована', in_progress: 'В работе', ready: 'Готова',
+    completed: 'Завершена', archived: 'Архив', cancelled: 'Отменена',
+  }
+  const handleMarkPaid = async () => {
+    if (!invoice) return
+    let message = 'Отметить счёт оплаченным? Оплата работ и запчастей по заявке проставится автоматически.'
+    if (invoice.appointment_id) {
+      if (linkedAppt?.status === 'ready') {
+        message = 'Счёт будет отмечен оплаченным. Заявка в статусе «Готова» — после оплаты она автоматически уйдёт в архив.'
+      } else {
+        const lbl = APPT_STATUS_RU[linkedAppt?.status ?? ''] ?? '—'
+        message = `Счёт будет отмечен оплаченным. Сейчас заявка в статусе «${lbl}». Чтобы после оплаты она ушла в архив, мастер или владелец должен сменить статус заявки на «Готова».`
+      }
+    }
+    const ok = await confirm({ message, confirmText: 'Оплачен' })
+    if (ok) statusMutation.mutate('paid')
+  }
+
   if (isLoading || !invoice) return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center"><Spinner size="lg" /></div>
   )
@@ -73,7 +102,7 @@ export default function InvoiceView() {
           <h1 className="font-bold text-gray-900 text-base flex-1 truncate">Счёт {invoice.invoice_number}</h1>
 
           {invoice.status !== 'paid' && (
-            <button onClick={() => statusMutation.mutate('paid')} className="btn-success btn-sm flex items-center gap-1.5">
+            <button onClick={handleMarkPaid} className="btn-success btn-sm flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4" /> <span className="hidden sm:inline">Оплачен</span>
             </button>
           )}
