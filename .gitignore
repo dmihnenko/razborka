@@ -10,7 +10,14 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dev-dist
 *.local
+
+# Supabase CLI local cache
+supabase/.temp
+
+# Claude Code local (personal) settings — skills in .claude/skills are committed
+.claude/settings.local.json
 
 # Editor directories and files
 .vscode/*
