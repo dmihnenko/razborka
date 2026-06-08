@@ -100,16 +100,19 @@ export default defineConfig({
           },
 
           // ── Supabase REST API (запросы данных) ────────────────────────────────
-          // StaleWhileRevalidate: мгновенный ответ из кеша + тихое обновление.
-          // Подходит для списков/справочников где небольшая задержка обновления ок.
+          // NetworkFirst: данные меняются мутациями (удаление/создание/продажа),
+          // поэтому после изменения рефетч ДОЛЖЕН получить свежий ответ, а не кэш.
+          // Кэш — только офлайн-фолбэк. (react-query держит свой память-кэш, так
+          // что лишних сетевых запросов немного.)
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
-            handler: 'StaleWhileRevalidate',
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'supabase-rest',
+              networkTimeoutSeconds: 3,
               expiration: {
                 maxEntries: 300,
-                maxAgeSeconds: 60 * 30  // храним до 30 мин; SWR всё равно тихо обновляет
+                maxAgeSeconds: 60 * 30
               },
               cacheableResponse: { statuses: [0, 200] }
             }
