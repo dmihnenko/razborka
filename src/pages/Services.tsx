@@ -112,6 +112,60 @@ export default function Services() {
     }
   }
 
+  // Рекурсивный рендер категории любой глубины
+  const renderNode = (cat: ServiceCategory, depth: number) => {
+    const subs = childrenOf(cat.id)
+    const svcs = servicesOf(cat.id)
+    const isOpen = expanded.has(cat.id)
+    const count = subs.length + svcs.length
+    return (
+      <div key={cat.id}>
+        <div className={`flex items-center gap-2 px-3 sm:px-4 ${depth === 0 ? 'py-3 bg-gray-50 border-b border-gray-100' : 'py-2.5 bg-gray-50/60 border-b border-gray-50'}`}>
+          <button onClick={() => toggle(cat.id)} className="flex items-center gap-2 flex-1 min-w-0 text-left">
+            {isOpen
+              ? <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              : <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />}
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color || '#94a3b8' }} />
+            {isOpen ? <FolderOpen className="w-4 h-4 text-gray-500 flex-shrink-0" /> : <Folder className="w-4 h-4 text-gray-500 flex-shrink-0" />}
+            <span className={`truncate ${depth === 0 ? 'font-semibold text-gray-900 text-sm sm:text-base' : 'font-medium text-gray-700 text-sm'}`}>{cat.name}</span>
+            <span className="text-xs text-gray-400 flex-shrink-0 ml-1">({count})</span>
+          </button>
+          {isStoOwner && (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button onClick={() => { setCatModal({ open: true, parentId: cat.id }); setExpanded(prev => new Set([...prev, cat.id])) }}
+                className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded transition-colors" title="Добавить подкатегорию">
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => { setSvcModal({ open: true, categoryId: cat.id }); setExpanded(prev => new Set([...prev, cat.id])) }}
+                className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors" title="Добавить услугу">
+                <Wrench className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => setCatModal({ open: true, item: cat })}
+                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Изменить">
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => confirmDeleteCat(cat)}
+                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Удалить">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+        {isOpen && (
+          <div className="ml-4 sm:ml-5 border-l border-gray-100">
+            {svcs.map(svc => (
+              <ServiceRow key={svc.id} svc={svc} isStoOwner={!!isStoOwner} indent={0}
+                onEdit={() => setSvcModal({ open: true, item: svc })}
+                onDelete={() => confirmDeleteSvc(svc)}
+              />
+            ))}
+            {subs.map(sub => renderNode(sub, depth + 1))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="container-mobile">
       <PageHeader
@@ -164,128 +218,13 @@ export default function Services() {
       ) : roots.length === 0 ? (
         <EmptyState icon={Wrench} title="Каталог пуст" description="Добавьте первую категорию услуг" />
       ) : (
-        /* Tree */
+        /* Tree — рекурсивная иерархия любой глубины */
         <div className="space-y-2">
-          {roots.map(root => {
-            const subs = childrenOf(root.id)
-            const rootSvcs = servicesOf(root.id)
-            const isOpen = expanded.has(root.id)
-            const total = subs.length + rootSvcs.length
-
-            return (
-              <div key={root.id} className="bg-white rounded-lg shadow overflow-hidden">
-                {/* Root category row */}
-                <div className="flex items-center gap-2 px-3 sm:px-4 py-3 bg-gray-50 border-b border-gray-100">
-                  <button
-                    onClick={() => toggle(root.id)}
-                    className="flex items-center gap-2 flex-1 min-w-0 text-left"
-                  >
-                    {isOpen
-                      ? <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      : <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    }
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: root.color || '#94a3b8' }} />
-                    {isOpen ? <FolderOpen className="w-4 h-4 text-gray-500 flex-shrink-0" /> : <Folder className="w-4 h-4 text-gray-500 flex-shrink-0" />}
-                    <span className="font-semibold text-gray-900 text-sm sm:text-base truncate">{root.name}</span>
-                    <span className="text-xs text-gray-400 flex-shrink-0 ml-1">({total})</span>
-                  </button>
-                  {isStoOwner && (
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button
-                        onClick={() => { setCatModal({ open: true, parentId: root.id }); setExpanded(prev => new Set([...prev, root.id])) }}
-                        className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded transition-colors"
-                        title="Добавить подкатегорию"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => setSvcModal({ open: true, categoryId: root.id })}
-                        className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
-                        title="Добавить услугу"
-                      >
-                        <Wrench className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => setCatModal({ open: true, item: root })}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => confirmDeleteCat(root)}
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {isOpen && (
-                  <div>
-                    {/* Direct services on root category */}
-                    {rootSvcs.map(svc => (
-                      <ServiceRow key={svc.id} svc={svc} isStoOwner={!!isStoOwner} indent={1}
-                        onEdit={() => setSvcModal({ open: true, item: svc })}
-                        onDelete={() => confirmDeleteSvc(svc)}
-                      />
-                    ))}
-
-                    {/* Subcategories */}
-                    {subs.map(sub => {
-                      const subSvcs = servicesOf(sub.id)
-                      const subOpen = expanded.has(sub.id)
-                      return (
-                        <div key={sub.id}>
-                          {/* Subcategory row */}
-                          <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-gray-50/60 border-b border-gray-50">
-                            <div className="w-4 flex-shrink-0" /> {/* indent */}
-                            <button
-                              onClick={() => toggle(sub.id)}
-                              className="flex items-center gap-2 flex-1 min-w-0 text-left"
-                            >
-                              {subOpen
-                                ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                                : <ChevronRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                              }
-                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: sub.color || root.color || '#94a3b8' }} />
-                              <span className="font-medium text-gray-700 text-sm truncate">{sub.name}</span>
-                              <span className="text-xs text-gray-400 flex-shrink-0">({subSvcs.length})</span>
-                            </button>
-                            {isStoOwner && (
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                <button
-                                  onClick={() => { setSvcModal({ open: true, categoryId: sub.id }); setExpanded(prev => new Set([...prev, sub.id])) }}
-                                  className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
-                                  title="Добавить услугу"
-                                >
-                                  <Wrench className="w-3 h-3" />
-                                </button>
-                                <button onClick={() => setCatModal({ open: true, item: sub })}
-                                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                >
-                                  <Pencil className="w-3 h-3" />
-                                </button>
-                                <button onClick={() => confirmDeleteCat(sub)}
-                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-
-                          {subOpen && subSvcs.map(svc => (
-                            <ServiceRow key={svc.id} svc={svc} isStoOwner={!!isStoOwner} indent={2}
-                              onEdit={() => setSvcModal({ open: true, item: svc })}
-                              onDelete={() => confirmDeleteSvc(svc)}
-                            />
-                          ))}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )
-          })}
+          {roots.map(root => (
+            <div key={root.id} className="bg-white rounded-lg shadow overflow-hidden">
+              {renderNode(root, 0)}
+            </div>
+          ))}
         </div>
       )}
 
