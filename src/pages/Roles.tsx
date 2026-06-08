@@ -66,82 +66,50 @@ export default function Roles() {
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Название
-                </th>
-                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Отображаемое имя
-                </th>
-                <th className="hidden md:table-cell px-3 sm:px-6 py-2 sm:py-3 text-left text-xs sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Описание
-                </th>
-                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Статус
-                </th>
-                <th className="px-3 sm:px-6 py-2 sm:py-3 text-right text-xs sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Действия
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {roles?.map((role) => (
-              <tr key={role.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    <Shield size={16} className="text-blue-600" />
-                    <span className="font-mono text-sm">{role.name}</span>
+      {/* Список ролей — карточки, адаптивно на всех экранах */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+        {roles?.map((role) => {
+          const isSystem = role.name === 'admin' || role.name === 'user'
+          return (
+            <div key={role.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col gap-2">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                  <Shield size={18} className="text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-semibold text-gray-900">{role.display_name}</span>
+                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${role.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {role.is_active ? 'Активна' : 'Неактивна'}
+                    </span>
                   </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm font-medium text-gray-900">
-                    {role.display_name}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-gray-600">
-                    {role.description || '-'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      role.is_active
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {role.is_active ? 'Активна' : 'Неактивна'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <span className="font-mono text-xs text-gray-400">{role.name}</span>
+                </div>
+                <div className="flex items-center gap-0.5 flex-shrink-0">
                   <button
-                    onClick={() => {
-                      setEditingRole(role)
-                      setIsModalOpen(true)
-                    }}
-                    className="text-blue-600 hover:text-blue-900 mr-4"
+                    onClick={() => { setEditingRole(role); setIsModalOpen(true) }}
+                    title="Редактировать"
+                    className="p-2.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
                   >
-                    <Edit2 size={18} />
+                    <Edit2 size={16} />
                   </button>
-                  {role.name !== 'admin' && role.name !== 'user' && (
+                  {!isSystem && (
                     <button
                       onClick={() => handleDelete(role.id, role.name)}
-                      className="text-red-600 hover:text-red-900"
+                      title="Удалить"
+                      className="p-2.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={16} />
                     </button>
                   )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
+                </div>
+              </div>
+              {role.description && (
+                <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 pl-12">{role.description}</p>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {isModalOpen && (

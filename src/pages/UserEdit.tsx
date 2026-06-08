@@ -121,7 +121,7 @@ export default function UserEdit() {
       const newIds = [...formData.role_ids, roleId]
       setFormData(p => ({ ...p, role_ids: newIds, primary_role_id: p.primary_role_id || roleId }))
     }
-    setRolesOpen(false)
+    // Не закрываем список — даём отметить несколько ролей подряд
   }
 
   const canGoNext = step === 1 ? true : step === 2 ? formData.role_ids.length > 0 : true
@@ -290,7 +290,7 @@ export default function UserEdit() {
                   <ChevronRight className={`w-4 h-4 transition-transform ${rolesOpen ? 'rotate-90' : ''}`} strokeWidth={1.5} />
                 </button>
                 {rolesOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden" style={{ zIndex: 9999 }}>
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50 max-h-72 overflow-y-auto">
                     {allowedRoles.map(role => {
                       const c = ROLE_COLORS[role.name] || ROLE_COLORS.user
                       const isSelected = formData.role_ids.includes(role.id)
