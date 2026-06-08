@@ -96,11 +96,12 @@ export default function PartsInventory() {
       if (found) {
         setEditingItem(found)
         setIsModalOpen(true)
-        // Clear state so it doesn't reopen on re-render
-        window.history.replaceState({}, '')
       }
+      // Чистим состояние через роутер, иначе после сохранения refetch
+      // снова триггерит эффект и модалка открывается повторно
+      navigate(location.pathname + location.search, { replace: true, state: null })
     }
-  }, [location.state, inventory])
+  }, [location.state, inventory]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-open sell modal when navigated with sellItemId in state (from item page)
   useEffect(() => {
@@ -115,11 +116,10 @@ export default function PartsInventory() {
         setShowNewCustomer(false)
         setNewCustomerName('')
         setNewCustomerPhone('')
-        // Clear state so it doesn't reopen on re-render
-        window.history.replaceState({}, '')
       }
+      navigate(location.pathname + location.search, { replace: true, state: null })
     }
-  }, [location.state, inventory])
+  }, [location.state, inventory]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset status filter when switching between Разборка / Магазин
   useEffect(() => {

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Package, ImageIcon, Trash2, Car, Edit2, ShoppingCart, CheckSquare, Square } from 'lucide-react'
+import { Package, ImageIcon, Trash2, Car, Edit2, ShoppingCart, CheckSquare, Square, Share2 } from 'lucide-react'
+import { toast } from 'sonner'
 import type { PartsInventoryItem, PartsInventoryStatus } from '@/types/parts'
 import { formatPrice } from '@/utils/currency'
 import { PARTS_CONDITION_LABELS } from '@/utils/status'
@@ -79,6 +80,20 @@ export function InventoryCard({
   // Low stock indicator (not from vehicle, quantity low, available)
   const lowStock = !item.vehicle_id && item.quantity <= 2 && item.status === 'available'
 
+  // Поделиться публичной ссылкой на запчасть
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const url = `${window.location.origin}/public/parts-item/${item.id}`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: item.name, url })
+      } else {
+        await navigator.clipboard.writeText(url)
+        toast.success('Ссылка скопирована')
+      }
+    } catch { /* отменено пользователем */ }
+  }
+
   return (
     <div
       className={[
@@ -145,19 +160,29 @@ export function InventoryCard({
           </span>
         )}
 
-        {/* Чекбокс для batch-операций — absolute top-right */}
-        {selectable && (statusFilter === 'reserved' || isSelected) && (
+        {/* Действия — absolute top-right */}
+        <div className="absolute top-2 right-2 flex items-center gap-1">
           <button
-            onClick={(e) => { e.stopPropagation(); onToggleSelect!(item.id, e) }}
-            className="absolute top-2 right-2 p-0.5 rounded transition-opacity hover:opacity-90"
-            aria-label={isSelected ? 'Снять выбор' : 'Выбрать'}
+            onClick={handleShare}
+            className="p-1.5 rounded-md bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 transition-colors"
+            aria-label="Поделиться"
+            title="Поделиться"
           >
-            {isSelected
-              ? <CheckSquare className="w-5 h-5 text-blue-400 drop-shadow" />
-              : <Square className="w-5 h-5 text-white/80 drop-shadow" />
-            }
+            <Share2 className="w-3.5 h-3.5 drop-shadow" />
           </button>
-        )}
+          {selectable && (statusFilter === 'reserved' || isSelected) && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleSelect!(item.id, e) }}
+              className="p-0.5 rounded transition-opacity hover:opacity-90"
+              aria-label={isSelected ? 'Снять выбор' : 'Выбрать'}
+            >
+              {isSelected
+                ? <CheckSquare className="w-5 h-5 text-blue-400 drop-shadow" />
+                : <Square className="w-5 h-5 text-white/80 drop-shadow" />
+              }
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── КОНТЕНТ ─────────────────────────────────────────────────────── */}
