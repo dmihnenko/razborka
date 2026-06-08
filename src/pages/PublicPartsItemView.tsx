@@ -51,6 +51,58 @@ function WhatsAppIcon({ className }: { className?: string }) {
   )
 }
 
+// ─── Компактный блок контактов разборки ────────────────────────────────────────
+
+function ContactsCard({ company, phoneRaw }: { company: any; phoneRaw: string | null }) {
+  if (!company) return null
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 lg:sticky lg:top-4">
+      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Продавец</p>
+      <p className="text-base font-bold text-gray-900 mb-2.5 leading-snug">{company.name}</p>
+
+      <div className="space-y-2 text-sm mb-3">
+        {company.phone && (
+          <a href={`tel:${phoneRaw}`} className="flex items-center gap-2 text-gray-700 hover:text-primary transition-colors">
+            <Phone className="w-4 h-4 text-green-600 flex-shrink-0" />
+            <span className="font-semibold">{company.phone}</span>
+          </a>
+        )}
+        {company.address && (
+          <p className="flex items-start gap-2 text-gray-600">
+            <MapPin className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+            <span className="leading-snug">{company.address}</span>
+          </p>
+        )}
+        {company.email && (
+          <a href={`mailto:${company.email}`} className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors min-w-0">
+            <Mail className="w-4 h-4 text-blue-600 flex-shrink-0" />
+            <span className="truncate">{company.email}</span>
+          </a>
+        )}
+      </div>
+
+      {phoneRaw && (
+        <div className="flex gap-2">
+          <a
+            href={`tel:${phoneRaw}`}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 active:scale-[0.98] transition-all"
+          >
+            <Phone className="w-4 h-4" /> Позвонить
+          </a>
+          <a
+            href={`https://wa.me/${phoneRaw.replace('+', '')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 active:scale-[0.98] transition-all"
+          >
+            <WhatsAppIcon className="w-4 h-4 fill-current" /> WhatsApp
+          </a>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Lightbox ──────────────────────────────────────────────────────────────────
 
 function Lightbox({ photos, startIdx, onClose }: {
@@ -333,30 +385,6 @@ export default function PublicPartsItemView() {
               </div>
             )}
 
-            {/* Description — desktop only (under photo) */}
-            {item.description && (
-              <div className="hidden lg:block bg-white rounded-xl shadow-sm p-4">
-                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5" />
-                  Описание
-                </h2>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {item.description}
-                </p>
-              </div>
-            )}
-
-            {/* Notes — desktop only */}
-            {item.notes && (
-              <div className="hidden lg:block bg-white rounded-xl shadow-sm p-4">
-                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                  Примечания
-                </h2>
-                <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed italic">
-                  {item.notes}
-                </p>
-              </div>
-            )}
           </div>
 
           {/* ══ ПРАВАЯ КОЛОНКА: инфо-панель (sticky на десктопе) ════════ */}
@@ -439,27 +467,6 @@ export default function PublicPartsItemView() {
                 )}
               </div>
 
-              {/* CTA кнопки — первый экран */}
-              {phoneRaw && !isSold && (
-                <div className="flex gap-2 mt-3">
-                  <a
-                    href={`tel:${phoneRaw}`}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 active:scale-[0.98] transition-all duration-150"
-                  >
-                    <Phone className="w-4 h-4" />
-                    Позвонить
-                  </a>
-                  <a
-                    href={`https://wa.me/${phoneRaw.replace('+', '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 active:scale-[0.98] transition-all duration-150"
-                  >
-                    <WhatsAppIcon className="w-4 h-4 fill-current" />
-                    WhatsApp
-                  </a>
-                </div>
-              )}
             </div>
 
             {/* ── Карточка: автомобиль ──────────────────────────────── */}
@@ -495,115 +502,46 @@ export default function PublicPartsItemView() {
               </div>
             )}
 
-            {/* ── Контакты компании ─────────────────────────────────── */}
-            {company && (
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-
-                {/* Шапка компании */}
-                <div className="px-4 py-3 border-b border-gray-100">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Продавец</p>
-                  <p className="text-base font-bold text-gray-900">{company.name}</p>
-                  {company.description && (
-                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2 leading-snug">
-                      {company.description}
-                    </p>
-                  )}
-                </div>
-
-                {/* Контакты — кликабельные строки */}
-                <div className="divide-y divide-gray-50">
-
-                  {company.phone && (
-                    <a
-                      href={`tel:${phoneRaw}`}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
-                        <Phone className="w-4 h-4 text-green-600" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium leading-none mb-0.5">Телефон</p>
-                        <p className="text-sm font-semibold text-gray-900">{company.phone}</p>
-                      </div>
-                    </a>
-                  )}
-
-                  {company.email && (
-                    <a
-                      href={`mailto:${company.email}`}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                        <Mail className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium leading-none mb-0.5">Email</p>
-                        <p className="text-sm font-semibold text-gray-900 truncate">{company.email}</p>
-                      </div>
-                    </a>
-                  )}
-
-                  {company.address && (
-                    <div className="flex items-start gap-3 px-4 py-3">
-                      <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <MapPin className="w-4 h-4 text-orange-500" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium leading-none mb-0.5">Адрес</p>
-                        <p className="text-sm font-semibold text-gray-900 leading-snug">{company.address}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* CTA кнопки внизу блока контактов */}
-                {phoneRaw && (
-                  <div className="flex gap-2 p-3 bg-gray-50 border-t border-gray-100">
-                    <a
-                      href={`tel:${phoneRaw}`}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 active:scale-[0.98] transition-all duration-150"
-                    >
-                      <Phone className="w-4 h-4" />
-                      Позвонить
-                    </a>
-                    <a
-                      href={`https://wa.me/${phoneRaw.replace('+', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 active:scale-[0.98] transition-all duration-150"
-                    >
-                      <WhatsAppIcon className="w-4 h-4 fill-current" />
-                      WhatsApp
-                    </a>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
-        {/* ── Описание + Примечания (mobile only, под гридом) ────────── */}
-        {item.description && (
-          <div className="lg:hidden mt-4 bg-white rounded-xl shadow-sm p-4">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5" />
-              Описание
-            </h2>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-              {item.description}
-            </p>
-          </div>
-        )}
+        {/* ── Описание + контакты (компактно справа) ─────────────────── */}
+        {(item.description || item.notes) ? (
+          <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4 items-start">
+            {/* Описание + примечания */}
+            <div className="space-y-3">
+              {item.description && (
+                <div className="bg-white rounded-xl shadow-sm p-4">
+                  <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5" />
+                    Описание
+                  </h2>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
+              )}
+              {item.notes && (
+                <div className="bg-white rounded-xl shadow-sm p-4">
+                  <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                    Примечания
+                  </h2>
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed italic">
+                    {item.notes}
+                  </p>
+                </div>
+              )}
+            </div>
 
-        {item.notes && (
-          <div className="lg:hidden mt-3 bg-white rounded-xl shadow-sm p-4">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-              Примечания
-            </h2>
-            <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed italic">
-              {item.notes}
-            </p>
+            {/* Контакты — компактно, справа от описания */}
+            <ContactsCard company={company} phoneRaw={phoneRaw} />
           </div>
+        ) : (
+          company && (
+            <div className="mt-4 lg:max-w-sm">
+              <ContactsCard company={company} phoneRaw={phoneRaw} />
+            </div>
+          )
         )}
 
         {/* Footer */}
