@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Package, ImageIcon, Trash2, Car, Edit2, ShoppingCart, CheckSquare, Square, Share2 } from 'lucide-react'
-import { toast } from 'sonner'
+import ShareModal from '@/components/ui/ShareModal'
 import type { PartsInventoryItem, PartsInventoryStatus } from '@/types/parts'
 import { formatPrice } from '@/utils/currency'
 import { PARTS_CONDITION_LABELS } from '@/utils/status'
@@ -43,6 +43,7 @@ export function InventoryCard({
 }: InventoryCardProps) {
   const [imgLoaded, setImgLoaded] = useState(false)
   const [imgError, setImgError] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
 
   // Photo helpers
   const photos = item.photos ?? []
@@ -80,19 +81,13 @@ export function InventoryCard({
   // Low stock indicator (not from vehicle, quantity low, available)
   const lowStock = !item.vehicle_id && item.quantity <= 2 && item.status === 'available'
 
-  // Поделиться публичной ссылкой на запчасть
-  const handleShare = async (e: React.MouseEvent) => {
+  // Поделиться публичной ссылкой на запчасть — через единую форму
+  const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation()
-    const url = `${window.location.origin}/public/parts-item/${item.id}`
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: item.name, url })
-      } else {
-        await navigator.clipboard.writeText(url)
-        toast.success('Ссылка скопирована')
-      }
-    } catch { /* отменено пользователем */ }
+    setShareOpen(true)
   }
+  const shareUrl = `${window.location.origin}/public/parts-item/${item.id}`
+  const shareText = [item.name, vehicle, priceDisplay].filter(Boolean).join(' · ')
 
   return (
     <div
@@ -289,6 +284,20 @@ export function InventoryCard({
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
+
+      {shareOpen && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <ShareModal
+            isOpen={shareOpen}
+            onClose={() => setShareOpen(false)}
+            url={shareUrl}
+            title="Поделиться запчастью"
+            subtitle="Ссылка открывает карточку запчасти"
+            shareTitle={item.name}
+            shareText={shareText}
+          />
+        </div>
+      )}
     </div>
   )
 }

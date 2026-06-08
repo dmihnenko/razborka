@@ -16,6 +16,7 @@ import { PARTS_CONDITION_LABELS } from '@/utils/status'
 import type { PartsInventoryStatus } from '@/types/parts'
 import PhotoGallery from '@/components/parts/PhotoGallery'
 import SellPartModal from '@/components/parts/SellPartModal'
+import ShareModal from '@/components/ui/ShareModal'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
@@ -36,6 +37,7 @@ export default function PartsInventoryItemPage() {
   const { confirm: showConfirm, dialogProps } = useConfirm()
   const { data: profile } = useUserProfile()
   const [isSellOpen, setIsSellOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
 
   const { data: item, isLoading, error } = useQuery({
     queryKey: ['parts-inventory-item', id],
@@ -67,21 +69,6 @@ export default function PartsInventoryItemPage() {
     const ok = await showConfirm({ message: `Удалить "${item?.name}"? Это действие нельзя отменить.`, danger: true })
     if (!ok) return
     deleteMutation.mutate()
-  }
-
-  const copyShareLink = () => {
-    const url = `${window.location.origin}/public/parts-item/${id}`
-    navigator.clipboard.writeText(url)
-      .then(() => toast.success('Ссылка скопирована'))
-      .catch(() => {
-        const el = document.createElement('input')
-        el.value = url
-        document.body.appendChild(el)
-        el.select()
-        document.execCommand('copy')
-        document.body.removeChild(el)
-        toast.success('Ссылка скопирована')
-      })
   }
 
   const photos = item?.photos || []
@@ -123,7 +110,7 @@ export default function PartsInventoryItemPage() {
 
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button
-              onClick={copyShareLink}
+              onClick={() => setShareOpen(true)}
               className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               title="Поделиться"
             >
@@ -348,6 +335,18 @@ export default function PartsInventoryItemPage() {
           item={item}
           partsCompanyId={profile.parts_company_id}
           onClose={() => setIsSellOpen(false)}
+        />
+      )}
+
+      {shareOpen && (
+        <ShareModal
+          isOpen={shareOpen}
+          onClose={() => setShareOpen(false)}
+          url={`${window.location.origin}/public/parts-item/${id}`}
+          title="Поделиться запчастью"
+          subtitle="Ссылка открывает карточку запчасти"
+          shareTitle={item.name}
+          shareText={[item.name, item.vehicle ? `${item.vehicle.make} ${item.vehicle.model}` : '', item.selling_price ? formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD') : ''].filter(Boolean).join(' · ')}
         />
       )}
     </div>
