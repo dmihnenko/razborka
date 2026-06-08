@@ -180,8 +180,8 @@ export function InventoryCard({
         {/* Артикул + Состояние */}
         <div className="flex items-center gap-2 flex-wrap">
           {item.part_number && (
-            <span className="font-mono text-[10px] text-gray-400">
-              #{item.part_number}
+            <span className="font-mono text-[10px] text-gray-400 uppercase">
+              {item.part_number}
             </span>
           )}
           {item.condition && (

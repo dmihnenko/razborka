@@ -5,7 +5,7 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   ArrowLeft, Pencil, Trash2, DollarSign, Package,
-  MapPin, Tag, Car, Hash, FileText, AlertTriangle,
+  MapPin, Tag, Car, FileText, AlertTriangle,
   CheckCircle, Clock, Share2, Edit2, Copy,
 } from 'lucide-react'
 import { getPartsInventoryItem, deletePartsInventoryItem } from '@/services/partsService'
@@ -199,7 +199,6 @@ export default function PartsInventoryItemPage() {
                 title="Нажмите, чтобы скопировать"
                 className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border-2 border-blue-200 shadow-md hover:border-blue-400 hover:shadow-lg active:scale-95 transition-all"
               >
-                <Hash className="w-3.5 h-3.5 text-blue-500" />
                 <span className="font-mono font-bold tracking-wider text-gray-800 uppercase">
                   {item.part_number.toUpperCase()}
                 </span>
