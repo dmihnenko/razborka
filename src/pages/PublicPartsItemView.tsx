@@ -52,8 +52,19 @@ function TelegramIcon({ className }: { className?: string }) {
 
 // ─── Компактный блок контактов разборки ────────────────────────────────────────
 
+function telegramHref(tg: string | null | undefined): string | null {
+  if (!tg) return null
+  const v = tg.trim()
+  if (!v) return null
+  if (v.startsWith('http://') || v.startsWith('https://')) return v
+  if (v.startsWith('@')) return `https://t.me/${v.slice(1)}`
+  if (v.startsWith('+')) return `https://t.me/${v}`           // номер телефона
+  return `https://t.me/${v}`                                  // username без @
+}
+
 function ContactsCard({ company, phoneRaw }: { company: any; phoneRaw: string | null }) {
   if (!company) return null
+  const tgHref = telegramHref(company.telegram)
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 lg:sticky lg:top-4">
       <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Продавец</p>
@@ -80,22 +91,26 @@ function ContactsCard({ company, phoneRaw }: { company: any; phoneRaw: string | 
         )}
       </div>
 
-      {phoneRaw && (
+      {(phoneRaw || tgHref) && (
         <div className="flex gap-2">
-          <a
-            href={`tel:${phoneRaw}`}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 active:scale-[0.98] transition-all"
-          >
-            <Phone className="w-4 h-4" /> Позвонить
-          </a>
-          <a
-            href={`https://t.me/${phoneRaw}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#229ED9] text-white text-sm font-semibold rounded-lg hover:bg-[#1c8dc2] active:scale-[0.98] transition-all"
-          >
-            <TelegramIcon className="w-4 h-4 fill-current" /> Telegram
-          </a>
+          {phoneRaw && (
+            <a
+              href={`tel:${phoneRaw}`}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 active:scale-[0.98] transition-all"
+            >
+              <Phone className="w-4 h-4" /> Позвонить
+            </a>
+          )}
+          {tgHref && (
+            <a
+              href={tgHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#229ED9] text-white text-sm font-semibold rounded-lg hover:bg-[#1c8dc2] active:scale-[0.98] transition-all"
+            >
+              <TelegramIcon className="w-4 h-4 fill-current" /> Telegram
+            </a>
+          )}
         </div>
       )}
     </div>
@@ -241,7 +256,7 @@ export default function PublicPartsItemView() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('parts_companies')
-        .select('id, name, phone, address, email, description')
+        .select('id, name, phone, telegram, address, email, description')
         .eq('id', item!.parts_company_id)
         .single()
       if (error) throw error

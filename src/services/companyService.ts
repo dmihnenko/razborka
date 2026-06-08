@@ -39,6 +39,38 @@ export async function getPartsCompanies(): Promise<Company[]> {
   return data as Company[]
 }
 
+// ── Контакты разборки (для публичной страницы запчасти) ──────────────────────
+
+export interface PartsCompanyContacts {
+  id: string
+  name: string
+  phone: string | null
+  telegram: string | null
+  address: string | null
+  email: string | null
+}
+
+export async function getPartsCompanyContacts(id: string): Promise<PartsCompanyContacts> {
+  const { data, error } = await supabase
+    .from('parts_companies')
+    .select('id, name, phone, telegram, address, email')
+    .eq('id', id)
+    .single()
+  if (error) throw error
+  return data as PartsCompanyContacts
+}
+
+export async function updatePartsCompanyContacts(
+  id: string,
+  fields: { phone?: string | null; telegram?: string | null; address?: string | null; email?: string | null }
+): Promise<void> {
+  const { error } = await supabase
+    .from('parts_companies')
+    .update(fields)
+    .eq('id', id)
+  if (error) throw error
+}
+
 // Создать компанию и привязать к пользователю
 export async function createCompanyAndAssign(params: CreateCompanyParams): Promise<CreateCompanyResult> {
   const table = params.type === 'sto' ? 'sto_companies' : 'parts_companies'
