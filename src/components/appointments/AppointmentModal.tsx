@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { X, Check, ChevronLeft } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { X, Check, ChevronLeft, Clock } from 'lucide-react'
 import { AppointmentFormValues } from '@/types/appointments'
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -9,6 +10,7 @@ import { useBlockScroll } from '@/hooks/useBlockScroll'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { moveToTrash } from '@/services/trashService'
+import { fetchStoLaborRate } from '@/services/stoService'
 import ClientSelector from './ClientSelector'
 import VehicleSelector from './VehicleSelector'
 import WorkItemsManager from './WorkItemsManager'
@@ -24,13 +26,18 @@ interface Props {
   prefilledDate?: string // ISO date string YYYY-MM-DD, skips date step
 }
 
-const ALL_STEPS = [
-  { id: 1, name: 'Клиент', description: 'Выбор клиента' },
-  { id: 2, name: 'Авто', description: 'Выбор транспорта' },
-  { id: 3, name: 'Дата', description: 'Дата и время' },
-  { id: 4, name: 'Работы', description: 'Список работ' },
-  { id: 5, name: 'Запчасти', description: 'Список запчастей' },
-  { id: 6, name: 'Итог', description: 'Проверка и сохранение' },
+function fmtHours(h: number): string {
+  return Number.isInteger(h) ? String(h) : h.toFixed(1)
+}
+
+// Порядок: Клиент → Авто → Запчасти → Работы → Время и мастер → Итог
+const STEPS = [
+  { id: 1, name: 'Клиент',   description: 'Выбор клиента' },
+  { id: 2, name: 'Авто',     description: 'Выбор транспорта' },
+  { id: 3, name: 'Запчасти', description: 'Список запчастей' },
+  { id: 4, name: 'Работы',   description: 'Список работ' },
+  { id: 5, name: 'Время',    description: 'Нормо-часы, время и мастер' },
+  { id: 6, name: 'Итог',     description: 'Проверка и сохранение' },
 ]
 
 export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuccess, prefilledDate }: Props) {
@@ -51,6 +58,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
     notes: '',
     workItems: [],
     partItems: [],
+    extraHours: 0,
     parts_paid: false,
     work_paid: false,
   })
@@ -61,17 +69,18 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
   const isStoWorker = profile?.roles?.some((r: any) => r.name === 'sto_worker')
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
 
-  // Если дата prefilled — шаг 3 скрываем, шаги перенумеровываем
-  const steps = prefilledDate && !appointmentId
-    ? ALL_STEPS.filter(s => s.id !== 3).map((s, idx) => ({ ...s, id: idx + 1 }))
-    : ALL_STEPS
+  const steps = STEPS
 
-  // Маппинг: визуальный шаг → реальный шаг формы (1-based)
-  const realStepId = (visualStep: number): number => {
-    if (!prefilledDate || appointmentId) return visualStep
-    // visual 1→1, 2→2, 3→4, 4→5, 5→6
-    return visualStep >= 3 ? visualStep + 1 : visualStep
-  }
+  // Работник (не владелец) при редактировании не видит шаги Клиент/Авто
+  const minStep = (isStoWorker && !isStoOwner && appointmentId) ? 3 : 1
+
+  // Ставка нормо-часа компании
+  const { data: laborRate = 0 } = useQuery({
+    queryKey: ['sto-labor-rate', profile?.sto_company_id],
+    queryFn: () => fetchStoLaborRate(profile!.sto_company_id!),
+    enabled: !!profile?.sto_company_id && isOpen,
+    staleTime: 60_000,
+  })
 
   // Загрузка существующей заявки для редактирования
   const { data: existingAppointment } = useQuery({
@@ -130,6 +139,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
         notes: existingAppointment.notes || '',
         workItems: existingAppointment.work_items || [],
         partItems: existingAppointment.part_items || [],
+        extraHours: existingAppointment.extra_hours ?? 0,
         selectedClient: existingAppointment.customers,
         selectedVehicle: existingAppointment.vehicles,
         assigned_to: existingAppointment.assigned_to,
@@ -156,6 +166,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
         notes: '',
         workItems: [],
         partItems: [],
+        extraHours: 0,
         parts_paid: false,
         work_paid: false,
       })
@@ -165,7 +176,12 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
 
   const createMutation = useMutation({
     mutationFn: async (data: AppointmentFormValues) => {
-      const totalWork = data.workItems.reduce((sum, item) => sum + item.price, 0)
+      // Нормо-часы из каталога + доп. время × ставку; ручные работы — по своей цене
+      const extraHours = data.extraHours ?? 0
+      const catalogNormHours = data.workItems.reduce((s, i) => s + (i.normHours ?? 0), 0)
+      const manualWorkPrice = data.workItems.reduce((s, i) => s + ((i.normHours ?? 0) > 0 ? 0 : i.price), 0)
+      const totalNormHours = catalogNormHours
+      const totalWork = Math.round(((catalogNormHours + extraHours) * laborRate + manualWorkPrice) * 100) / 100
       const totalParts = data.partItems.reduce((sum, item) => sum + item.totalPrice, 0)
 
       if (appointmentId) {
@@ -183,6 +199,9 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
             total_work_cost: totalWork,
             total_parts_cost: totalParts,
             total_cost: totalWork + totalParts,
+            extra_hours: extraHours,
+            total_norm_hours: totalNormHours,
+            labor_rate: laborRate,
             assigned_to: data.assigned_to || null,
             parts_paid: data.parts_paid || false,
             work_paid: data.work_paid || false,
@@ -211,6 +230,9 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
             total_work_cost: totalWork,
             total_parts_cost: totalParts,
             total_cost: totalWork + totalParts,
+            extra_hours: extraHours,
+            total_norm_hours: totalNormHours,
+            labor_rate: laborRate,
             sto_company_id: profile?.sto_company_id,
             created_by: profile?.id,
             assigned_to: data.assigned_to || profile?.id,
@@ -227,6 +249,8 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
     onSuccess: (appointment) => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
       queryClient.invalidateQueries({ queryKey: ['worker_appointments'] })
+      queryClient.invalidateQueries({ queryKey: ['board-kanban'] })
+      queryClient.invalidateQueries({ queryKey: ['appts-month'] })
       toast.success(appointmentId ? 'Запись успешно обновлена!' : 'Запись успешно создана!')
       onSuccess?.(appointment.id)
       onClose()
@@ -307,17 +331,13 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
   }
 
   const handleBack = () => {
-    if (currentStep > 1) {
-      // Для работников шаг 1 и 2 недоступны при редактировании
-      if (isStoWorker && !isStoOwner && appointmentId && currentStep === 4) {
-        return
-      }
+    if (currentStep > minStep) {
       setCurrentStep(currentStep - 1)
     }
   }
 
   const canProceed = () => {
-    switch (realStepId(currentStep)) {
+    switch (currentStep) {
       case 1: return formData.customer_id !== ''
       case 2: return formData.vehicle_id !== ''
       case 3: case 4: case 5: return true
@@ -344,7 +364,14 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
   const progress = ((currentStep - 1) / (steps.length - 1)) * 100
   const stepInfo = steps[currentStep - 1]
   const isLastStep = currentStep === steps.length
-  const showBack = currentStep > 1 && !(isStoWorker && !isStoOwner && appointmentId && currentStep === 4)
+  const showBack = currentStep > minStep
+
+  // Нормо-часы для финального шага
+  const extraHoursVal      = formData.extraHours ?? 0
+  const catalogNormHours   = formData.workItems.reduce((s, i) => s + (i.normHours ?? 0), 0)
+  const manualWorkPriceVal = formData.workItems.reduce((s, i) => s + ((i.normHours ?? 0) > 0 ? 0 : i.price), 0)
+  const billableHours      = catalogNormHours + extraHoursVal
+  const totalWorkVal       = Math.round((billableHours * laborRate + manualWorkPriceVal) * 100) / 100
 
   return (
     <div className="modal-overlay">
@@ -388,7 +415,7 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
             {steps.map((step) => {
               const done   = step.id < currentStep
               const active = step.id === currentStep
-              const canJump = !!appointmentId
+              const canJump = !!appointmentId && step.id >= minStep
               return (
                 <button
                   key={step.id}
@@ -422,14 +449,14 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
 
         {/* ── Тело формы ─────────────────────────────────────────────── */}
         <div className="modal-body">
-          {realStepId(currentStep) === 1 && (
+          {currentStep === 1 && (
             <ClientSelector
               selectedId={formData.customer_id}
               onSelect={(id, customer) => setFormData({ ...formData, customer_id: id, vehicle_id: '', selectedClient: customer })}
             />
           )}
 
-          {realStepId(currentStep) === 2 && (
+          {currentStep === 2 && (
             <VehicleSelector
               customerId={formData.customer_id}
               selectedId={formData.vehicle_id}
@@ -437,40 +464,99 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
             />
           )}
 
-          {realStepId(currentStep) === 3 && (
-            <div>
-              <div className="mb-4">
-                <h3 className="text-sm font-bold text-gray-900">Дата и время записи</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Выберите удобную дату и свободный слот</p>
-              </div>
-              <DateTimePicker
-                value={formData.scheduledDate}
-                onChange={(val) => setFormData(prev => ({ ...prev, scheduledDate: val }))}
-                endValue={formData.scheduledEndDate}
-                onEndChange={(val) => setFormData(prev => ({ ...prev, scheduledEndDate: val }))}
-                stoCompanyId={profile?.sto_company_id}
-                excludeAppointmentId={appointmentId}
-                workerId={formData.assigned_to ?? null}
-                onWorkerChange={(id) => setFormData(prev => ({ ...prev, assigned_to: id ?? undefined }))}
-              />
-            </div>
-          )}
-
-          {realStepId(currentStep) === 4 && (
-            <WorkItemsManager
-              items={formData.workItems}
-              onChange={(items) => setFormData({ ...formData, workItems: items })}
-            />
-          )}
-
-          {realStepId(currentStep) === 5 && (
+          {currentStep === 3 && (
             <PartItemsManager
               items={formData.partItems}
               onChange={(items) => setFormData({ ...formData, partItems: items })}
             />
           )}
 
-          {realStepId(currentStep) === 6 && (
+          {currentStep === 4 && (
+            <WorkItemsManager
+              items={formData.workItems}
+              onChange={(items) => setFormData({ ...formData, workItems: items })}
+            />
+          )}
+
+          {currentStep === 5 && (
+            <div className="space-y-4">
+              {/* Нормо-часы */}
+              <div className="rounded-xl border border-gray-200 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="w-4 h-4 text-violet-500" />
+                  <h3 className="text-sm font-bold text-gray-900">Нормо-часы</h3>
+                </div>
+
+                {formData.workItems.length === 0 ? (
+                  <p className="text-sm text-gray-400">Работы не добавлены — добавьте на шаге «Работы».</p>
+                ) : (
+                  <div className="space-y-1.5 mb-3">
+                    {formData.workItems.map(w => (
+                      <div key={w.id} className="flex justify-between text-sm">
+                        <span className="text-gray-700 truncate flex-1 mr-2">{w.name}</span>
+                        <span className="text-gray-500 tabular-nums flex-shrink-0">
+                          {(w.normHours ?? 0) > 0 ? `${fmtHours(w.normHours ?? 0)} н·ч` : '—'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                  <span className="text-gray-500">Из каталога</span>
+                  <span className="font-semibold text-gray-900 tabular-nums">{fmtHours(catalogNormHours)} н·ч</span>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 mt-3">
+                  <label className="text-sm text-gray-600">Доп. время для работы с авто</label>
+                  <div className="relative w-28">
+                    <input
+                      type="number" min="0" step="0.5" inputMode="decimal"
+                      value={formData.extraHours ?? 0}
+                      onChange={e => setFormData(p => ({ ...p, extraHours: Number(e.target.value) || 0 }))}
+                      className="form-input pr-10 text-right"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">н·ч</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                  <span className="text-sm font-semibold text-gray-600">Итого</span>
+                  <span className="text-sm font-bold text-gray-900 tabular-nums">{fmtHours(billableHours)} н·ч</span>
+                </div>
+                {laborRate > 0 ? (
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-xs text-gray-400">× {laborRate.toLocaleString()} ₴/н·ч</span>
+                    <span className="text-base font-bold text-primary tabular-nums">₴{totalWorkVal.toLocaleString()}</span>
+                  </div>
+                ) : (
+                  <p className="text-xs text-amber-600 mt-2">
+                    Ставка нормо-часа не задана. Задайте её в{' '}
+                    <Link to="/sto/settings" className="underline" onClick={onClose}>Настройках СТО</Link>.
+                  </p>
+                )}
+              </div>
+
+              {/* Дата/время + мастер */}
+              <div>
+                <div className="mb-3">
+                  <h3 className="text-sm font-bold text-gray-900">Дата, время и мастер</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">Выберите слот и исполнителя</p>
+                </div>
+                <DateTimePicker
+                  value={formData.scheduledDate}
+                  onChange={(val) => setFormData(prev => ({ ...prev, scheduledDate: val }))}
+                  stoCompanyId={profile?.sto_company_id}
+                  excludeAppointmentId={appointmentId}
+                  workerId={formData.assigned_to ?? null}
+                  onWorkerChange={(id) => setFormData(prev => ({ ...prev, assigned_to: id ?? undefined }))}
+                  showDuration={false}
+                />
+              </div>
+            </div>
+          )}
+
+          {currentStep === 6 && (
             <AppointmentSummary
               formData={formData}
               onUpdate={(data) => setFormData({ ...formData, ...data })}
