@@ -13,6 +13,8 @@ interface Props {
   /** Выбранный мастер (assigned_to). Если передан onWorkerChange — показывается блок выбора мастера */
   workerId?: string | null
   onWorkerChange?: (id: string | null) => void
+  /** Показывать ли регулятор длительности (по умолчанию true). На финальном шаге часы берутся из нормо-часов. */
+  showDuration?: boolean
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -179,7 +181,7 @@ function ScrollDrum<T>({ items, value, onChange, getLabel }: DrumProps<T>) {
 
 export default function DateTimePicker({
   value, onChange, endValue, onEndChange, stoCompanyId, excludeAppointmentId,
-  workerId, onWorkerChange,
+  workerId, onWorkerChange, showDuration = true,
 }: Props) {
   const now = new Date()
   const selectedStart = parseLocalISO(value)
@@ -419,25 +421,29 @@ export default function DateTimePicker({
             <p className="text-3xl font-bold text-gray-900 tabular-nums leading-none">{startTime}</p>
           </div>
 
-          <div className="text-gray-300 font-light text-xl flex-shrink-0">+</div>
+          {showDuration && (
+            <>
+              <div className="text-gray-300 font-light text-xl flex-shrink-0">+</div>
 
-          <div className="flex-1">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Длительность</p>
-            <p className="text-xl font-bold text-primary leading-none">{hoursLabel(durMin)}</p>
-          </div>
+              <div className="flex-1">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Длительность</p>
+                <p className="text-xl font-bold text-primary leading-none">{hoursLabel(durMin)}</p>
+              </div>
 
-          <div className="text-gray-300 font-light text-xl flex-shrink-0">=</div>
+              <div className="text-gray-300 font-light text-xl flex-shrink-0">=</div>
 
-          <div className="flex-1">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Конец</p>
-            <p className="text-3xl font-bold text-green-600 tabular-nums leading-none">{endTime ?? '—'}</p>
-          </div>
+              <div className="flex-1">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Конец</p>
+                <p className="text-3xl font-bold text-green-600 tabular-nums leading-none">{endTime ?? '—'}</p>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       {/* Барабанные колонки */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="grid grid-cols-2 divide-x divide-gray-100">
+        <div className={showDuration ? 'grid grid-cols-2 divide-x divide-gray-100' : ''}>
           {/* Время начала */}
           <div>
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide text-center py-2.5 border-b border-gray-100">
@@ -452,6 +458,7 @@ export default function DateTimePicker({
           </div>
 
           {/* Длительность — сколько часов занят мастер */}
+          {showDuration && (
           <div>
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide text-center py-2.5 border-b border-gray-100">
               Часов
@@ -492,6 +499,7 @@ export default function DateTimePicker({
               </p>
             </div>
           </div>
+          )}
         </div>
       </div>
 

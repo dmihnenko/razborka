@@ -18,6 +18,7 @@ import {
   createService, updateService, deleteService,
   type ServiceCategory, type Service,
 } from '@/services/servicesService'
+import { fetchStoLaborRate } from '@/services/stoService'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -338,9 +339,9 @@ function ServiceRow({
         {svc.description && <p className="text-xs text-gray-400 truncate">{svc.description}</p>}
       </div>
       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-        {svc.duration_minutes && (
+        {svc.norm_hours != null && (
           <span className="hidden sm:flex items-center gap-1 text-xs text-gray-400">
-            <Clock className="w-3 h-3" />{svc.duration_minutes} мин
+            <Clock className="w-3 h-3" />{svc.norm_hours} н·ч
           </span>
         )}
         <span className="text-sm font-semibold text-primary">{Number(svc.price).toLocaleString()} ₴</span>
@@ -449,11 +450,22 @@ function ServiceModal({ item, defaultCategoryId, stoCompanyId, categories, onClo
     name: item?.name || '',
     description: item?.description || '',
     price: item?.price != null ? String(item.price) : '',
-    duration_minutes: item?.duration_minutes != null ? String(item.duration_minutes) : '',
+    norm_hours: item?.norm_hours != null ? String(item.norm_hours) : '',
     category_id: item?.category_id || defaultCategoryId || '',
   })
   const [catSearch, setCatSearch] = useState('')
   const [showCatDrop, setShowCatDrop] = useState(false)
+
+  // Ставка нормо-часа: цена работы = нормо-часы × ставку
+  const { data: laborRate = 0 } = useQuery({
+    queryKey: ['sto-labor-rate', stoCompanyId],
+    queryFn: () => fetchStoLaborRate(stoCompanyId),
+    staleTime: 60_000,
+  })
+  const hasRate = laborRate > 0
+  const normHoursNum = Number(form.norm_hours) || 0
+  // Цена: при заданной ставке — производная (нормо-часы × ставка); иначе — ручной ввод (fallback)
+  const computedPrice = hasRate ? Math.round(normHoursNum * laborRate * 100) / 100 : Number(form.price) || 0
 
   const filteredCats = categories.filter(c =>
     !catSearch || c.name.toLowerCase().includes(catSearch.toLowerCase())
@@ -465,8 +477,9 @@ function ServiceModal({ item, defaultCategoryId, stoCompanyId, categories, onClo
       const payload = {
         name: form.name,
         description: form.description || null,
-        price: Number(form.price),
-        duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
+        price: computedPrice,
+        norm_hours: form.norm_hours ? normHoursNum : null,
+        duration_minutes: form.norm_hours ? Math.round(normHoursNum * 60) : null,
         category_id: form.category_id || null,
       }
       if (item) {
@@ -490,7 +503,7 @@ function ServiceModal({ item, defaultCategoryId, stoCompanyId, categories, onClo
           <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Отмена</button>
           <button
             onClick={() => mutation.mutate()}
-            disabled={!form.name.trim() || !form.price || mutation.isPending}
+            disabled={!form.name.trim() || (hasRate ? !form.norm_hours : !form.price) || mutation.isPending}
             className="flex-1 py-2.5 text-sm font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
             {mutation.isPending ? 'Сохранение…' : 'Сохранить'}
@@ -548,24 +561,35 @@ function ServiceModal({ item, defaultCategoryId, stoCompanyId, categories, onClo
             />
           </div>
 
-          {/* Price + Duration */}
+          {/* Нормо-часы + цена */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium text-gray-700">Цена (₴) *</label>
-              <input type="number" min="0" step="0.01" value={form.price}
-                onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+              <label className="text-sm font-medium text-gray-700">Нормо-часы {hasRate && '*'}</label>
+              <input type="number" min="0" step="0.5" inputMode="decimal" value={form.norm_hours}
+                onChange={e => setForm(f => ({ ...f, norm_hours: e.target.value }))}
+                placeholder="напр. 1.5"
                 className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Время (мин)</label>
-              <input type="number" min="0" value={form.duration_minutes}
-                onChange={e => setForm(f => ({ ...f, duration_minutes: e.target.value }))}
-                placeholder="необяз."
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              />
+              <label className="text-sm font-medium text-gray-700">Цена (₴) {!hasRate && '*'}</label>
+              {hasRate ? (
+                <div className="mt-1 w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-lg text-sm text-gray-900 font-semibold tabular-nums">
+                  {computedPrice.toLocaleString()} ₴
+                </div>
+              ) : (
+                <input type="number" min="0" step="0.01" value={form.price}
+                  onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                />
+              )}
             </div>
           </div>
+          {hasRate ? (
+            <p className="text-xs text-gray-400">= {normHoursNum || 0} н·ч × {laborRate.toLocaleString()} ₴/н·ч</p>
+          ) : (
+            <p className="text-xs text-amber-600">Ставка нормо-часа не задана — цена вводится вручную. Задать в «Настройки СТО».</p>
+          )}
         </div>
     </Modal>
   )

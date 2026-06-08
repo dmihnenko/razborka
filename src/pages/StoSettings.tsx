@@ -1,11 +1,13 @@
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Spinner } from '@/components/ui/Spinner'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { toast } from 'sonner'
-import { Settings as SettingsIcon, Wrench, Trash2, ChevronRight } from 'lucide-react'
+import { Settings as SettingsIcon, Wrench, Trash2, ChevronRight, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import PageHeader from '@/components/PageHeader'
+import { updateStoLaborRate } from '@/services/stoService'
 
 export default function StoSettings() {
   const { data: profile } = useUserProfile()
@@ -18,14 +20,32 @@ export default function StoSettings() {
       if (!profile?.sto_company_id) return null
       const { data, error } = await supabase
         .from('sto_companies')
-        .select('id, name, services_menu_enabled')
+        .select('id, name, services_menu_enabled, labor_rate')
         .eq('id', profile?.sto_company_id)
         .single()
-      
+
       if (error) throw error
       return data
     },
     enabled: !!profile?.sto_company_id && isStoOwner,
+  })
+
+  // Ставка нормо-часа
+  const [laborRate, setLaborRate] = useState('')
+  useEffect(() => {
+    if (stoCompany) setLaborRate(stoCompany.labor_rate != null ? String(stoCompany.labor_rate) : '')
+  }, [stoCompany])
+
+  const saveLaborRateMutation = useMutation({
+    mutationFn: () => updateStoLaborRate(profile!.sto_company_id!, Number(laborRate) || 0),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sto_company_settings'] })
+      queryClient.invalidateQueries({ queryKey: ['sto-labor-rate'] })
+      queryClient.invalidateQueries({ queryKey: ['service-catalog'] })
+      queryClient.invalidateQueries({ queryKey: ['services'] })
+      toast.success('Ставка сохранена')
+    },
+    onError: (error: any) => toast.error(error.message || 'Ошибка сохранения ставки'),
   })
 
   // Переключение меню услуг для работников
@@ -113,6 +133,42 @@ export default function StoSettings() {
                 </span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Ставка нормо-часа */}
+        <div className="card p-4 sm:p-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-violet-100 rounded-lg">
+              <Clock className="w-5 h-5 text-violet-600" />
+            </div>
+            <h2 className="text-mobile-lg font-semibold text-gray-900">Ставка нормо-часа</h2>
+          </div>
+          <p className="text-mobile-sm text-gray-600 mb-4">
+            Стоимость работ в каталоге рассчитывается как <b>нормо-часы × ставка</b>. Та же ставка
+            применяется к записям (работы = нормо-часы × ставку).
+          </p>
+          <div className="flex items-center gap-2 max-w-xs">
+            <div className="relative flex-1">
+              <input
+                type="number"
+                min="0"
+                step="1"
+                inputMode="decimal"
+                value={laborRate}
+                onChange={e => setLaborRate(e.target.value)}
+                placeholder="0"
+                className="form-input pr-16 text-right"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">₴/н·ч</span>
+            </div>
+            <button
+              onClick={() => saveLaborRateMutation.mutate()}
+              disabled={saveLaborRateMutation.isPending || laborRate === (stoCompany?.labor_rate != null ? String(stoCompany.labor_rate) : '')}
+              className="btn-primary btn-sm"
+            >
+              {saveLaborRateMutation.isPending ? '…' : 'Сохранить'}
+            </button>
           </div>
         </div>
 

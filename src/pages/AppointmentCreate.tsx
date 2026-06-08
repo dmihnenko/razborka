@@ -5,15 +5,22 @@ import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { toast } from 'sonner'
 import {
-  ArrowLeft, User, Car, Calendar, Wrench, Package,
+  ArrowLeft, User, Car, Calendar, Wrench, Package, Clock,
   CheckCircle2, ChevronRight, ChevronDown,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import type { AppointmentFormValues } from '@/types/appointments'
 import ClientSelector from '@/components/appointments/ClientSelector'
 import VehicleSelector from '@/components/appointments/VehicleSelector'
 import DateTimePicker from '@/components/appointments/DateTimePicker'
 import WorkItemsManager from '@/components/appointments/WorkItemsManager'
 import PartItemsManager from '@/components/appointments/PartItemsManager'
+import { fetchStoLaborRate } from '@/services/stoService'
+
+// Нормо-часы в читаемом виде: целое или с одним знаком
+function fmtHours(h: number): string {
+  return Number.isInteger(h) ? String(h) : h.toFixed(1)
+}
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -30,7 +37,7 @@ function fmtDatetime(iso: string): string {
 
 // ─── section types ────────────────────────────────────────────────────────────
 
-type SectionId = 'client' | 'vehicle' | 'datetime' | 'works' | 'parts'
+type SectionId = 'client' | 'vehicle' | 'parts' | 'works' | 'final'
 
 const SECTIONS: {
   id: SectionId
@@ -38,11 +45,11 @@ const SECTIONS: {
   icon: React.ElementType
   optional?: boolean
 }[] = [
-  { id: 'client',   label: 'Клиент',      icon: User      },
-  { id: 'vehicle',  label: 'Автомобиль',  icon: Car       },
-  { id: 'datetime', label: 'Дата и время', icon: Calendar  },
-  { id: 'works',    label: 'Работы',      icon: Wrench    },
-  { id: 'parts',    label: 'Запчасти',    icon: Package, optional: true },
+  { id: 'client',  label: 'Клиент',     icon: User    },
+  { id: 'vehicle', label: 'Автомобиль', icon: Car     },
+  { id: 'parts',   label: 'Запчасти',   icon: Package, optional: true },
+  { id: 'works',   label: 'Работы',     icon: Wrench  },
+  { id: 'final',   label: 'Время и мастер', icon: Calendar },
 ]
 
 // ─── main page ────────────────────────────────────────────────────────────────
@@ -74,9 +81,18 @@ export default function AppointmentCreate() {
       notes:           '',
       workItems:       [],
       partItems:       [],
+      extraHours:      0,
       parts_paid:      false,
       work_paid:       false,
     }
+  })
+
+  // Ставка нормо-часа компании
+  const { data: laborRate = 0 } = useQuery({
+    queryKey: ['sto-labor-rate', profile?.sto_company_id],
+    queryFn: () => fetchStoLaborRate(profile!.sto_company_id!),
+    enabled: !!profile?.sto_company_id,
+    staleTime: 60_000,
   })
 
   // ── Загрузка заявки для редактирования ──────────────────────────────────────
@@ -122,6 +138,7 @@ export default function AppointmentCreate() {
       notes:            existing.notes || '',
       workItems:        existing.work_items || [],
       partItems:        existing.part_items || [],
+      extraHours:       existing.extra_hours ?? 0,
       selectedClient:   existing.customers,
       selectedVehicle:  existing.vehicles,
       assigned_to:      existing.assigned_to,
@@ -143,15 +160,21 @@ export default function AppointmentCreate() {
   }
 
   const isComplete = (id: SectionId): boolean => {
-    if (id === 'client')   return !!form.customer_id
-    if (id === 'vehicle')  return !!form.vehicle_id
-    if (id === 'datetime') return !!form.scheduledDate
+    if (id === 'client')  return !!form.customer_id
+    if (id === 'vehicle') return !!form.vehicle_id
+    if (id === 'final')   return !!form.scheduledDate
     return true
   }
 
   const canSubmit = form.customer_id && form.vehicle_id && form.scheduledDate
 
-  const totalWork  = form.workItems.reduce((s, i) => s + i.price,      0)
+  // Нормо-часы из каталога + доп. время × ставку; ручные работы (без нормо-часов) — по своей цене
+  const extraHours       = form.extraHours ?? 0
+  const catalogNormHours = form.workItems.reduce((s, i) => s + (i.normHours ?? 0), 0)
+  const manualWorkPrice  = form.workItems.reduce((s, i) => s + ((i.normHours ?? 0) > 0 ? 0 : i.price), 0)
+  const totalNormHours   = catalogNormHours
+  const billableHours    = catalogNormHours + extraHours
+  const totalWork  = Math.round((billableHours * laborRate + manualWorkPrice) * 100) / 100
   const totalParts = form.partItems.reduce((s, i) => s + i.totalPrice, 0)
   const totalCost  = totalWork + totalParts
 
@@ -171,6 +194,9 @@ export default function AppointmentCreate() {
             total_work_cost:  totalWork,
             total_parts_cost: totalParts,
             total_cost:       totalCost,
+            extra_hours:      extraHours,
+            total_norm_hours: totalNormHours,
+            labor_rate:       laborRate,
             assigned_to:      form.assigned_to || null,
             parts_paid:       form.parts_paid || false,
             work_paid:        form.work_paid || false,
@@ -194,6 +220,9 @@ export default function AppointmentCreate() {
           total_work_cost:  totalWork,
           total_parts_cost: totalParts,
           total_cost:       totalCost,
+          extra_hours:      extraHours,
+          total_norm_hours: totalNormHours,
+          labor_rate:       laborRate,
           sto_company_id:   profile?.sto_company_id,
           created_by:       profile?.id,
           assigned_to:      form.assigned_to || profile?.id,
@@ -208,6 +237,7 @@ export default function AppointmentCreate() {
     onSuccess: (appt) => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
       queryClient.invalidateQueries({ queryKey: ['board-kanban'] })
+      queryClient.invalidateQueries({ queryKey: ['appts-month'] })
       if (isEdit) queryClient.invalidateQueries({ queryKey: ['appointment', appointmentId] })
       toast.success(isEdit ? 'Запись обновлена!' : 'Запись создана!')
       navigate(`/sto/appointments/${appt.id}`)
@@ -303,16 +333,20 @@ export default function AppointmentCreate() {
                               ? `${(form.selectedVehicle as any)?.brand} ${(form.selectedVehicle as any)?.model}`
                               : form.customer_id ? 'Выберите автомобиль' : '—'
                           )}
-                          {section.id === 'datetime' && fmtDatetime(form.scheduledDate)}
                           {section.id === 'works' && (
                             form.workItems.length > 0
-                              ? `${form.workItems.length} позиций · ₴${totalWork.toLocaleString()}`
+                              ? `${form.workItems.length} позиций · ${fmtHours(totalNormHours)} н·ч · ₴${totalWork.toLocaleString()}`
                               : 'Работы не добавлены'
                           )}
                           {section.id === 'parts' && (
                             form.partItems.length > 0
                               ? `${form.partItems.length} позиций · ₴${totalParts.toLocaleString()}`
                               : 'Запчасти не добавлены'
+                          )}
+                          {section.id === 'final' && (
+                            done
+                              ? `${fmtDatetime(form.scheduledDate)} · ${fmtHours(billableHours)} н·ч`
+                              : 'Укажите время и мастера'
                           )}
                         </p>
                       )}
@@ -348,19 +382,6 @@ export default function AppointmentCreate() {
                         />
                       )}
 
-                      {section.id === 'datetime' && (
-                        <DateTimePicker
-                          value={form.scheduledDate}
-                          onChange={val => setForm(p => ({ ...p, scheduledDate: val }))}
-                          endValue={form.scheduledEndDate}
-                          onEndChange={val => setForm(p => ({ ...p, scheduledEndDate: val }))}
-                          stoCompanyId={profile?.sto_company_id}
-                          excludeAppointmentId={appointmentId}
-                          workerId={form.assigned_to ?? null}
-                          onWorkerChange={id => setForm(p => ({ ...p, assigned_to: id ?? undefined }))}
-                        />
-                      )}
-
                       {section.id === 'works' && (
                         <WorkItemsManager
                           items={form.workItems}
@@ -373,6 +394,78 @@ export default function AppointmentCreate() {
                           items={form.partItems}
                           onChange={items => setForm(p => ({ ...p, partItems: items }))}
                         />
+                      )}
+
+                      {section.id === 'final' && (
+                        <div className="space-y-4">
+                          {/* Нормо-часы */}
+                          <div className="rounded-xl border border-gray-200 p-4">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Clock className="w-4 h-4 text-violet-500" />
+                              <h3 className="text-sm font-bold text-gray-900">Нормо-часы</h3>
+                            </div>
+
+                            {form.workItems.length === 0 ? (
+                              <p className="text-sm text-gray-400">Работы не добавлены — добавьте на шаге «Работы».</p>
+                            ) : (
+                              <div className="space-y-1.5 mb-3">
+                                {form.workItems.map(w => (
+                                  <div key={w.id} className="flex justify-between text-sm">
+                                    <span className="text-gray-700 truncate flex-1 mr-2">{w.name}</span>
+                                    <span className="text-gray-500 tabular-nums flex-shrink-0">
+                                      {(w.normHours ?? 0) > 0 ? `${fmtHours(w.normHours ?? 0)} н·ч` : '—'}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+                              <span className="text-gray-500">Из каталога</span>
+                              <span className="font-semibold text-gray-900 tabular-nums">{fmtHours(catalogNormHours)} н·ч</span>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-3 mt-3">
+                              <label className="text-sm text-gray-600">Доп. время для работы с авто</label>
+                              <div className="relative w-28">
+                                <input
+                                  type="number" min="0" step="0.5" inputMode="decimal"
+                                  value={form.extraHours ?? 0}
+                                  onChange={e => setForm(p => ({ ...p, extraHours: Number(e.target.value) || 0 }))}
+                                  className="form-input pr-10 text-right"
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">н·ч</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                              <span className="text-sm font-semibold text-gray-600">Итого</span>
+                              <span className="text-sm font-bold text-gray-900 tabular-nums">{fmtHours(billableHours)} н·ч</span>
+                            </div>
+                            {laborRate > 0 ? (
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-xs text-gray-400">× {laborRate.toLocaleString()} ₴/н·ч</span>
+                                <span className="text-base font-bold text-primary tabular-nums">₴{totalWork.toLocaleString()}</span>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-amber-600 mt-2">
+                                Ставка нормо-часа не задана. Задайте её в{' '}
+                                <Link to="/sto/settings" className="underline">Настройках СТО</Link>, чтобы считать стоимость работ.
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Дата/время + мастер */}
+                          <DateTimePicker
+                            value={form.scheduledDate}
+                            onChange={val => setForm(p => ({ ...p, scheduledDate: val }))}
+                            stoCompanyId={profile?.sto_company_id}
+                            excludeAppointmentId={appointmentId}
+                            workerId={form.assigned_to ?? null}
+                            onWorkerChange={id => setForm(p => ({ ...p, assigned_to: id ?? undefined }))}
+                            showDuration={false}
+                          />
+                        </div>
                       )}
 
                       {/* Next button (except last section) */}
@@ -466,6 +559,12 @@ export default function AppointmentCreate() {
                           </span>
                         </div>
                       ))}
+                    </div>
+                    <div className="flex justify-between text-xs mt-1.5 pt-1.5 border-t border-gray-50 text-gray-500">
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Нормо-часы</span>
+                      <span className="tabular-nums">
+                        {fmtHours(billableHours)} н·ч{extraHours > 0 && ` (+${fmtHours(extraHours)})`}
+                      </span>
                     </div>
                   </div>
                 )}

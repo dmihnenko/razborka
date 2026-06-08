@@ -48,6 +48,7 @@ export default function WorkItemsManager({ items, onChange }: Props) {
       id: uuidv4(),
       name: svc.name,
       price: Number(svc.price),
+      normHours: svc.norm_hours ?? 0,
       isPaid: false,
     }
     onChange([...items, newItem])
@@ -57,7 +58,7 @@ export default function WorkItemsManager({ items, onChange }: Props) {
     const name = newName.trim()
     const price = parseFloat(newPrice)
     if (!name || isNaN(price) || price < 0) return
-    onChange([...items, { id: uuidv4(), name, price, isPaid: false }])
+    onChange([...items, { id: uuidv4(), name, price, normHours: 0, isPaid: false }])
     setNewName('')
     setNewPrice('')
   }

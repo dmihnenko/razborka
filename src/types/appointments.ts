@@ -20,6 +20,7 @@ export interface WorkItem {
   name: string;
   description?: string;
   price: number;
+  normHours?: number; // нормо-часы из каталога (снимок); ручные работы — 0/undefined
   isPaid: boolean;
   paidAt?: string;
   notes?: string;
@@ -55,6 +56,9 @@ export interface Appointment {
   total_work_cost: number;
   total_parts_cost: number;
   total_cost: number;
+  extra_hours?: number;        // доп. время для работы с авто клиента (н·ч)
+  total_norm_hours?: number;   // сумма нормо-часов каталожных работ
+  labor_rate?: number;         // снимок ставки нормо-часа на момент записи
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -93,6 +97,7 @@ export interface AppointmentFormValues {
   notes: string;
   workItems: WorkItem[];
   partItems: PartItem[];
+  extraHours?: number;
   selectedClient?: any;
   selectedVehicle?: any;
   assigned_to?: string;

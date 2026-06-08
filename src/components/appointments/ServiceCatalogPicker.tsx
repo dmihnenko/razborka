@@ -189,9 +189,9 @@ function ServicePickerRow({ svc, added, indent = 0, catName, onSelect }: {
         {catName && <p className="text-xs text-gray-400 truncate">{catName}</p>}
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
-        {svc.duration_minutes && (
+        {svc.norm_hours != null && (
           <span className="hidden sm:flex items-center gap-0.5 text-xs text-gray-400">
-            <Clock className="w-3 h-3" />{svc.duration_minutes}м
+            <Clock className="w-3 h-3" />{svc.norm_hours} н·ч
           </span>
         )}
         <span className="text-sm font-semibold text-primary">{Number(svc.price).toLocaleString()} ₴</span>

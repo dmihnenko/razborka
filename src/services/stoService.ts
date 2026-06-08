@@ -1,5 +1,27 @@
 import { supabase } from '../lib/supabase'
 
+// ─── Ставка нормо-часа ────────────────────────────────────────────
+
+/** Ставка нормо-часа компании (₴/н·ч). 0, если не задана / колонки ещё нет. */
+export async function fetchStoLaborRate(stoCompanyId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('sto_companies')
+    .select('labor_rate')
+    .eq('id', stoCompanyId)
+    .single()
+  if (error) return 0 // колонка может отсутствовать на отстающем проде
+  return Number(data?.labor_rate) || 0
+}
+
+/** Обновить ставку нормо-часа компании. */
+export async function updateStoLaborRate(stoCompanyId: string, rate: number): Promise<void> {
+  const { error } = await supabase
+    .from('sto_companies')
+    .update({ labor_rate: rate })
+    .eq('id', stoCompanyId)
+  if (error) throw error
+}
+
 // ─── STO Companies ────────────────────────────────────────────────
 
 export interface StoCompany {

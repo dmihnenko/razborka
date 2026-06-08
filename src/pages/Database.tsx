@@ -263,7 +263,7 @@ export default function DatabasePage() {
           <TableStatCard label="Записи" count={counts?.appointments} icon={Calendar} color="bg-green-100 text-green-600" />
           <TableStatCard label="Заказ-наряды" count={counts?.work_orders} icon={Wrench} color="bg-teal-100 text-teal-600" />
           <TableStatCard label="Услуги" count={counts?.services} icon={Wrench} color="bg-emerald-100 text-emerald-600" />
-          <TableStatCard label="Счета" count={counts?.invoices} icon={Receipt} color="bg-lime-100 text-lime-600" />
+          <TableStatCard label="Счета" count={counts?.sto_invoices} icon={Receipt} color="bg-lime-100 text-lime-600" />
         </div>
       </div>
 

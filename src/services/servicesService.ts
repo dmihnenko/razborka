@@ -16,6 +16,7 @@ export interface Service {
   description: string | null
   price: number
   duration_minutes: number | null
+  norm_hours: number | null
   category_id: string | null
   sto_company_id?: string | null
   service_categories?: ServiceCategory | null
@@ -25,7 +26,7 @@ export interface ServiceFormData {
   name: string
   description: string
   price: string | number
-  duration_minutes: string | number
+  norm_hours: string | number
   category_id: string
 }
 
@@ -85,6 +86,7 @@ export async function createService(serviceData: {
   description: string | null
   price: number
   duration_minutes: number | null
+  norm_hours: number | null
   category_id: string | null
   sto_company_id: string
 }): Promise<void> {
@@ -98,6 +100,7 @@ export async function updateService(id: string, serviceData: {
   description: string | null
   price: number
   duration_minutes: number | null
+  norm_hours: number | null
   category_id: string | null
 }): Promise<void> {
   const { error } = await supabase.from('services').update(serviceData).eq('id', id)
