@@ -92,11 +92,11 @@ function ContactsCard({ company, phoneRaw }: { company: any; phoneRaw: string | 
       </div>
 
       {(phoneRaw || tgHref) && (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {phoneRaw && (
             <a
               href={`tel:${phoneRaw}`}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 active:scale-[0.98] transition-all"
+              className="w-40 max-w-full flex items-center justify-center gap-1.5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 active:scale-[0.98] transition-all"
             >
               <Phone className="w-4 h-4" /> Позвонить
             </a>
@@ -106,7 +106,7 @@ function ContactsCard({ company, phoneRaw }: { company: any; phoneRaw: string | 
               href={tgHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#229ED9] text-white text-sm font-semibold rounded-lg hover:bg-[#1c8dc2] active:scale-[0.98] transition-all"
+              className="w-40 max-w-full flex items-center justify-center gap-1.5 py-2.5 bg-[#229ED9] text-white text-sm font-semibold rounded-lg hover:bg-[#1c8dc2] active:scale-[0.98] transition-all"
             >
               <TelegramIcon className="w-4 h-4 fill-current" /> Telegram
             </a>
