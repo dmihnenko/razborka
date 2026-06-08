@@ -254,13 +254,26 @@ export default function PublicPartsItemView() {
   const { data: company } = useQuery({
     queryKey: ['public-parts-company', item?.parts_company_id],
     queryFn: async () => {
+      // Базовые поля грузим всегда. telegram — best-effort: если колонки ещё
+      // нет (миграция 012 не применена), не роняем весь блок контактов.
       const { data, error } = await supabase
         .from('parts_companies')
-        .select('id, name, phone, telegram, address, email, description')
+        .select('id, name, phone, address, email, description')
         .eq('id', item!.parts_company_id)
         .single()
       if (error) throw error
-      return data
+
+      let telegram: string | null = null
+      try {
+        const tg = await supabase
+          .from('parts_companies')
+          .select('telegram')
+          .eq('id', item!.parts_company_id)
+          .single()
+        telegram = (tg.data as any)?.telegram ?? null
+      } catch { /* колонки нет — игнорируем */ }
+
+      return { ...data, telegram }
     },
     enabled: !!item?.parts_company_id,
     staleTime: 5 * 60_000,
