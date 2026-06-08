@@ -30,7 +30,9 @@ const UserEdit = lazy(() => import('./pages/UserEdit'))
 const AdminPanel = lazy(() => import('./pages/AdminPanel'))
 const Roles = lazy(() => import('./pages/Roles'))
 const StoCompanies = lazy(() => import('./pages/StoCompanies'))
+const StoCompanyDetail = lazy(() => import('./pages/StoCompanyDetail'))
 const PartsCompanies = lazy(() => import('./pages/PartsCompanies'))
+const PartsCompanyDetail = lazy(() => import('./pages/PartsCompanyDetail'))
 const Subscriptions = lazy(() => import('./pages/Subscriptions'))
 const StoEmployees = lazy(() => import('./pages/StoEmployees'))
 const StoSettings = lazy(() => import('./pages/StoSettings'))
@@ -222,7 +224,9 @@ function App() {
           <Route path="users/:id/edit" element={<UserEdit />} />
           <Route path="roles" element={<Roles />} />
           <Route path="sto" element={<StoCompanies />} />
+          <Route path="sto/:companyId" element={<StoCompanyDetail />} />
           <Route path="parts-companies" element={<PartsCompanies />} />
+          <Route path="parts-companies/:companyId" element={<PartsCompanyDetail />} />
           <Route path="subscriptions" element={<Subscriptions />} />
           <Route path="support" element={<AdminSupport />} />
           <Route path="settings" element={<AdminSettings />} />

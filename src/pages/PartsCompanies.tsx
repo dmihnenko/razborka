@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { Plus, Edit2, Trash2, Store } from 'lucide-react';
+import { Plus, Edit2, Trash2, Store, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { IMaskInput } from 'react-imask';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -43,6 +44,7 @@ export default function PartsCompanies() {
     description: ''
   });
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { confirm: showConfirm, dialogProps } = useConfirm();
 
   // Загрузка разборок
@@ -222,13 +224,17 @@ export default function PartsCompanies() {
               company.is_active ? 'border-green-200' : 'border-gray-200'
             }`}
           >
-            <div className="flex items-start justify-between mb-4">
+            <button
+              onClick={() => navigate(`/admin/parts-companies/${company.id}`)}
+              className="flex items-start justify-between mb-4 w-full text-left group"
+              title="Открыть статистику"
+            >
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-orange-100 rounded-lg">
                   <Store className="h-6 w-6 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{company.name}</h3>
+                  <h3 className="font-semibold text-gray-900 group-hover:text-orange-700 transition-colors">{company.name}</h3>
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     company.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                   }`}>
@@ -236,7 +242,8 @@ export default function PartsCompanies() {
                   </span>
                 </div>
               </div>
-            </div>
+              <BarChart3 className="h-5 w-5 text-gray-300 group-hover:text-orange-500 transition-colors flex-shrink-0" />
+            </button>
 
             <div className="space-y-2 mb-4 text-sm text-gray-600">
               {company.address && (

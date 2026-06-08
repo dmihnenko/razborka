@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit2, Trash2, Building2, Users, CreditCard } from 'lucide-react';
+import { Plus, Edit2, Trash2, Building2, Users, CreditCard, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -25,6 +26,7 @@ export default function StoCompanies() {
     description: ''
   });
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { confirm: showConfirm, dialogProps } = useConfirm();
 
   const { data: companies = [], isLoading } = useQuery({
@@ -157,13 +159,17 @@ export default function StoCompanies() {
               sto.is_active ? 'border-green-200' : 'border-gray-200'
             }`}
           >
-            <div className="flex items-start justify-between mb-4">
+            <button
+              onClick={() => navigate(`/admin/sto/${sto.id}`)}
+              className="flex items-start justify-between mb-4 w-full text-left group"
+              title="Открыть статистику"
+            >
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <Building2 className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{sto.name}</h3>
+                  <h3 className="font-semibold text-gray-900 group-hover:text-purple-700 transition-colors">{sto.name}</h3>
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     sto.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                   }`}>
@@ -171,7 +177,8 @@ export default function StoCompanies() {
                   </span>
                 </div>
               </div>
-            </div>
+              <BarChart3 className="h-5 w-5 text-gray-300 group-hover:text-purple-500 transition-colors flex-shrink-0" />
+            </button>
 
             <div className="space-y-2 mb-4 text-sm text-gray-600">
               <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
