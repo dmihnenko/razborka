@@ -108,8 +108,8 @@ export default defineConfig({
             options: {
               cacheName: 'supabase-rest',
               expiration: {
-                maxEntries: 150,
-                maxAgeSeconds: 60 * 5  // 5 минут — данные не устаревают надолго
+                maxEntries: 300,
+                maxAgeSeconds: 60 * 30  // храним до 30 мин; SWR всё равно тихо обновляет
               },
               cacheableResponse: { statuses: [0, 200] }
             }
@@ -139,8 +139,8 @@ export default defineConfig({
             options: {
               cacheName: 'imgbb-images',
               expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24 * 7  // 7 дней
+                maxEntries: 400,
+                maxAgeSeconds: 60 * 60 * 24 * 30  // 30 дней — фото не меняются
               },
               cacheableResponse: { statuses: [0, 200] }
             }
@@ -179,7 +179,21 @@ export default defineConfig({
         // Добавляем хеш к именам файлов
         entryFileNames: `assets/[name].[hash].js`,
         chunkFileNames: `assets/[name].[hash].js`,
-        assetFileNames: `assets/[name].[hash].[ext]`
+        assetFileNames: `assets/[name].[hash].[ext]`,
+        // Вендоры в отдельные чанки: их хеши не меняются между деплоями (если
+        // не обновляли зависимости), поэтому браузер держит их в кэше как
+        // immutable, а каждый релиз заново качает только код приложения.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('react-router')) return 'vendor-router'
+          if (id.includes('react-dom') || /[\\/]react[\\/]/.test(id) || id.includes('scheduler')) return 'vendor-react'
+          if (id.includes('@supabase')) return 'vendor-supabase'
+          if (id.includes('@tanstack')) return 'vendor-query'
+          if (id.includes('recharts') || id.includes('d3-') || id.includes('victory')) return 'vendor-charts'
+          if (id.includes('lucide-react')) return 'vendor-icons'
+          if (id.includes('date-fns')) return 'vendor-date'
+          return 'vendor'
+        },
       }
     }
   },
