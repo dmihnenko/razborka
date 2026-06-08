@@ -1,15 +1,18 @@
 import { useParams, Link } from 'react-router-dom'
+import { useState } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Car, Calendar, Wrench, Package, Clock } from 'lucide-react'
+import { ArrowLeft, Car, Calendar, Wrench, Clock, Printer, Share2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { formatCurrency } from '@/utils/currency'
 import { getStatusColor, getStatusText } from '@/utils/status'
+import ShareModal from '@/components/ui/ShareModal'
 
 export default function VehicleHistory() {
   const { vehicleId } = useParams<{ vehicleId: string }>()
+  const [shareOpen, setShareOpen] = useState(false)
 
   const { data: vehicle, isLoading: vehicleLoading } = useQuery({
     queryKey: ['vehicle', vehicleId],
@@ -76,8 +79,8 @@ export default function VehicleHistory() {
 
   return (
     <div className="w-full">
-      {/* Back */}
-      <div className="mb-5">
+      {/* Toolbar (не печатается) */}
+      <div className="mb-5 flex items-center justify-between gap-3 no-print">
         {vehicle.customers?.id ? (
           <Link
             to={`/customer/${vehicle.customers.id}`}
@@ -92,8 +95,19 @@ export default function VehicleHistory() {
             Автомобили
           </Link>
         )}
+        <div className="flex items-center gap-2">
+          {vehicle.customers?.id && (
+            <button onClick={() => setShareOpen(true)} className="btn-secondary btn-sm flex items-center gap-1.5">
+              <Share2 className="w-4 h-4" /> <span className="hidden sm:inline">Поделиться</span>
+            </button>
+          )}
+          <button onClick={() => window.print()} className="btn-secondary btn-sm flex items-center gap-1.5">
+            <Printer className="w-4 h-4" /> <span className="hidden sm:inline">Печать</span>
+          </button>
+        </div>
       </div>
 
+      <div className="print-area">
       {/* Vehicle card */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
         <div className="flex items-start gap-4">
@@ -117,6 +131,8 @@ export default function VehicleHistory() {
               {vehicle.mileage && (
                 <span>{vehicle.mileage.toLocaleString('ru-RU')} км</span>
               )}
+              {vehicle.engine_volume != null && <span>{vehicle.engine_volume} л</span>}
+              {vehicle.fuel_type && <span>{vehicle.fuel_type}</span>}
             </div>
           </div>
         </div>
@@ -221,6 +237,19 @@ export default function VehicleHistory() {
           </div>
         )}
       </div>
+      </div>
+
+      {shareOpen && vehicle.customers?.id && (
+        <ShareModal
+          isOpen={shareOpen}
+          onClose={() => setShareOpen(false)}
+          url={`${window.location.origin}/public/customer/${vehicle.customers.id}`}
+          title="Поделиться с клиентом"
+          subtitle="Публичная страница клиента с его авто и историей"
+          shareTitle={`${vehicle.brand} ${vehicle.model}`}
+          shareText={`История обслуживания ${vehicle.brand} ${vehicle.model}`}
+        />
+      )}
     </div>
   )
 }
