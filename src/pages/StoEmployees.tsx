@@ -2,34 +2,49 @@ import { useState } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Eye, UserCog, Trash2, Edit, AlertTriangle } from 'lucide-react'
+import { Eye, UserCog, Trash2, Edit, AlertTriangle, ChevronLeft, ChevronRight, ClipboardCheck, Wallet } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import Modal from '@/components/ui/Modal'
 import PageHeader from '@/components/PageHeader'
 import EmptyState from '@/components/ui/EmptyState'
 import { useNavigate } from 'react-router-dom'
+import { fmtMoney } from '@/utils/money'
 import {
   fetchStoEmployees,
+  fetchEmployeeMonthlyStats,
   deactivateStoEmployee,
   updateStoEmployeeName,
-  bulkAssignAppointments,
   type StoEmployee,
 } from '@/services/stoService'
 
+const MONTHS_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
+
 export default function StoEmployees() {
-  const [isBulkAssignModalOpen, setIsBulkAssignModalOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<StoEmployee | null>(null)
   const [deletingEmployee, setDeletingEmployee] = useState<StoEmployee | null>(null)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { data: currentUserProfile } = useUserProfile()
+  const isStoOwner = currentUserProfile?.roles?.some((r: any) => r.name === 'sto_owner')
+  const stoCompanyId = currentUserProfile?.sto_company_id
+
+  const now = new Date()
+  const [period, setPeriod] = useState<{ y: number; m: number }>({ y: now.getFullYear(), m: now.getMonth() })
+  const isCurrentMonth = period.y === now.getFullYear() && period.m === now.getMonth()
+  const prevMonth = () => setPeriod(p => { const d = new Date(p.y, p.m - 1, 1); return { y: d.getFullYear(), m: d.getMonth() } })
+  const nextMonth = () => setPeriod(p => { const d = new Date(p.y, p.m + 1, 1); return { y: d.getFullYear(), m: d.getMonth() } })
 
   const { data: employees = [], isLoading } = useQuery({
-    queryKey: ['sto_employees', currentUserProfile?.sto_company_id],
-    queryFn: () => fetchStoEmployees(currentUserProfile!.sto_company_id),
-    enabled: !!currentUserProfile?.sto_company_id,
+    queryKey: ['sto_employees', stoCompanyId],
+    queryFn: () => fetchStoEmployees(stoCompanyId!),
+    enabled: !!stoCompanyId && !!isStoOwner,
   })
 
-  const queryClient = useQueryClient()
+  const { data: stats = {} } = useQuery({
+    queryKey: ['sto_employee_stats', stoCompanyId, period.y, period.m],
+    queryFn: () => fetchEmployeeMonthlyStats(stoCompanyId!, period.y, period.m),
+    enabled: !!stoCompanyId && !!isStoOwner,
+  })
 
   const deleteEmployeeMutation = useMutation({
     mutationFn: (employeeId: string) => deactivateStoEmployee(employeeId),
@@ -37,36 +52,48 @@ export default function StoEmployees() {
       queryClient.invalidateQueries({ queryKey: ['sto_employees'] })
       toast.success('Работник удален. Его заявки переназначены автоматически.')
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Ошибка при удалении работника')
-    }
+    onError: (error: Error) => toast.error(error.message || 'Ошибка при удалении работника'),
   })
 
-  const handleDeleteEmployee = (employee: StoEmployee) => {
-    setDeletingEmployee(employee)
+  const totalClosed = Object.values(stats).reduce((s, v) => s + v.closedCount, 0)
+  const totalEarned = Object.values(stats).reduce((s, v) => s + v.workSum, 0)
+
+  if (!isStoOwner) {
+    return (
+      <div className="container-mobile">
+        <EmptyState icon={AlertTriangle} title="Доступ только для владельца" description="Раздел «Сотрудники» доступен только владельцу СТО." />
+      </div>
+    )
   }
 
   return (
     <div className="container-mobile">
       <PageHeader
         title="Сотрудники СТО"
-        subtitle="Управление работниками вашего СТО"
-        actions={employees.length > 0 && (
-          <button
-            onClick={() => setIsBulkAssignModalOpen(true)}
-            className="btn-secondary btn-sm flex items-center gap-1.5"
-          >
-            <UserCog className="w-4 h-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Назначить заявки</span>
-            <span className="sm:hidden">Назначить</span>
-          </button>
-        )}
+        subtitle="Работники и их результаты за месяц"
       />
 
-      {isLoading ? (
-        <div className="flex justify-center py-8 sm:py-12">
-          <Spinner size="lg" />
+      {/* Период + сводка */}
+      <div className="card p-4 mb-4">
+        <div className="flex items-center justify-between gap-3">
+          <button onClick={prevMonth} className="btn-icon" aria-label="Предыдущий месяц"><ChevronLeft className="w-5 h-5" /></button>
+          <p className="font-bold text-gray-900">{MONTHS_RU[period.m]} {period.y}</p>
+          <button onClick={nextMonth} disabled={isCurrentMonth} className="btn-icon disabled:opacity-30" aria-label="Следующий месяц"><ChevronRight className="w-5 h-5" /></button>
         </div>
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          <div className="rounded-xl bg-blue-50 p-3 text-center">
+            <p className="text-xs text-gray-500">Закрыто заявок</p>
+            <p className="text-2xl font-bold text-blue-700 tabular-nums">{totalClosed}</p>
+          </div>
+          <div className="rounded-xl bg-green-50 p-3 text-center">
+            <p className="text-xs text-gray-500">Заработано (работы)</p>
+            <p className="text-2xl font-bold text-green-700 tabular-nums">{fmtMoney(totalEarned)}</p>
+          </div>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-8 sm:py-12"><Spinner size="lg" /></div>
       ) : employees.length === 0 ? (
         <EmptyState
           icon={UserCog}
@@ -74,78 +101,61 @@ export default function StoEmployees() {
           description="Работники найдут вас при регистрации, введя номер телефона вашего СТО"
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6">
-          {employees.map((employee) => (
-            <div
-              key={employee.id}
-              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-4 sm:p-6"
-            >
-              <div className="flex items-start justify-between mb-3 sm:mb-4">
-                <div className="flex items-center">
-                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-base sm:text-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+          {employees.map((employee) => {
+            const st = stats[employee.id] || { closedCount: 0, workSum: 0 }
+            return (
+              <div key={employee.id} className="card p-4 flex flex-col">
+                {/* Шапка */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-11 w-11 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-lg flex-shrink-0">
                     {employee.full_name?.charAt(0) || employee.username?.charAt(0)?.toUpperCase() || 'W'}
                   </div>
-                  <div className="ml-3 sm:ml-4">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                      {employee.full_name || 'Без имени'}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-gray-500">Работник СТО</p>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-semibold text-gray-900 truncate">{employee.full_name || 'Без имени'}</h3>
+                    <p className="text-xs text-gray-500 font-mono truncate">{employee.username}</p>
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">Логин:</span>
-                  <span className="font-mono font-semibold text-gray-900">{employee.username}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">Пароль:</span>
-                  <span className="font-mono bg-gray-100 px-2 py-1 rounded text-gray-900">
-                  </span>
-                </div>
-                {employee.phone && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Телефон:</span>
-                    <span className="text-gray-900">{employee.phone}</span>
+                {/* Метрики за месяц */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="rounded-lg bg-gray-50 border border-gray-100 p-2.5 text-center">
+                    <ClipboardCheck className="w-4 h-4 text-blue-400 mx-auto mb-0.5" />
+                    <p className="text-lg font-bold tabular-nums text-gray-900 leading-none">{st.closedCount}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">закрыто заявок</p>
                   </div>
-                )}
+                  <div className="rounded-lg bg-gray-50 border border-gray-100 p-2.5 text-center">
+                    <Wallet className="w-4 h-4 text-green-500 mx-auto mb-0.5" />
+                    <p className="text-base font-bold tabular-nums text-gray-900 leading-none">{fmtMoney(st.workSum)}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">заработано</p>
+                  </div>
+                </div>
+
+                {employee.phone && <p className="text-xs text-gray-500 mb-3">тел. {employee.phone}</p>}
+
+                {/* Действия */}
+                <div className="mt-auto flex gap-2">
+                  <button
+                    onClick={() => navigate(`/sto/employees/${employee.id}`)}
+                    className="btn-secondary btn-sm flex-1 flex items-center justify-center gap-1.5"
+                  >
+                    <Eye className="w-4 h-4" /> Статистика
+                  </button>
+                  <button onClick={() => setEditingEmployee(employee)} className="btn-icon" title="Редактировать"><Edit className="w-4 h-4" /></button>
+                  <button
+                    onClick={() => setDeletingEmployee(employee)}
+                    disabled={deleteEmployeeMutation.isPending}
+                    className="btn-icon text-red-500 hover:bg-red-50 disabled:opacity-50"
+                    title="Удалить"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-
-              <button
-                onClick={() => navigate(`/sto/employees/${employee.id}`)}
-                className="w-full flex items-center justify-center px-4 py-2 text-primary border border-primary rounded-md hover:bg-primary hover:text-white transition-colors"
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                Просмотр статистики
-              </button>
-
-              <button
-                onClick={() => setEditingEmployee(employee)}
-                className="w-full mt-2 flex items-center justify-center px-4 py-2 text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50 transition-colors"
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Редактировать
-              </button>
-
-              <button
-                onClick={() => handleDeleteEmployee(employee)}
-                disabled={deleteEmployeeMutation.isPending}
-                className="w-full mt-2 flex items-center justify-center px-4 py-2 text-red-600 border border-red-300 rounded-md hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                {deleteEmployeeMutation.isPending ? 'Удаление...' : 'Удалить работника'}
-              </button>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
-
-      <BulkAssignModal
-        isOpen={isBulkAssignModalOpen}
-        onClose={() => setIsBulkAssignModalOpen(false)}
-        employees={employees}
-      />
 
       {editingEmployee && (
         <EditEmployeeModal
@@ -165,72 +175,6 @@ export default function StoEmployees() {
         />
       )}
     </div>
-  )
-}
-
-function BulkAssignModal({ isOpen, onClose, employees }: { isOpen: boolean; onClose: () => void; employees: StoEmployee[] }) {
-  const [selectedWorkerId, setSelectedWorkerId] = useState('')
-  const queryClient = useQueryClient()
-
-  const bulkAssignMutation = useMutation({
-    mutationFn: (workerId: string) => {
-      const worker = employees.find(e => e.id === workerId)
-      return bulkAssignAppointments(workerId, worker?.full_name || worker?.username || null)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['appointments'] })
-      toast.success('Заявки успешно назначены работнику')
-      onClose()
-      setSelectedWorkerId('')
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Ошибка при назначении заявок')
-    }
-  })
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="md"
-      icon={<div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><UserCog className="w-5 h-5 text-primary" /></div>}
-      title="Массовое назначение заявок"
-      footer={
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-          >
-            Отмена
-          </button>
-          <button
-            onClick={() => bulkAssignMutation.mutate(selectedWorkerId)}
-            disabled={!selectedWorkerId || bulkAssignMutation.isPending}
-            className="flex-1 py-2.5 text-sm font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
-          >
-            {bulkAssignMutation.isPending ? 'Назначение…' : 'Назначить'}
-          </button>
-        </div>
-      }
-    >
-      <p className="text-sm text-gray-600 mb-4">
-        Выберите работника, которому будут назначены все незакреплённые заявки (включая архивные).
-      </p>
-      <label className="form-label">Работник</label>
-      <select
-        value={selectedWorkerId}
-        onChange={(e) => setSelectedWorkerId(e.target.value)}
-        className="form-select"
-      >
-        <option value="">Выберите работника</option>
-        {employees.map((employee) => (
-          <option key={employee.id} value={employee.id}>
-            {employee.full_name || employee.username}
-          </option>
-        ))}
-      </select>
-    </Modal>
   )
 }
 
@@ -314,14 +258,14 @@ function EditEmployeeModal({ employee, onClose }: { employee: StoEmployee; onClo
   )
 }
 
-function DeleteEmployeeConfirmModal({ 
-  employee, 
-  onClose, 
-  onConfirm 
-}: { 
-  employee: StoEmployee; 
-  onClose: () => void; 
-  onConfirm: () => void 
+function DeleteEmployeeConfirmModal({
+  employee,
+  onClose,
+  onConfirm
+}: {
+  employee: StoEmployee;
+  onClose: () => void;
+  onConfirm: () => void
 }) {
   return (
     <Modal

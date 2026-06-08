@@ -190,6 +190,41 @@ export async function fetchStoEmployees(stoCompanyId: string): Promise<StoEmploy
   return data as StoEmployee[]
 }
 
+export interface EmployeeMonthlyStat {
+  closedCount: number
+  workSum: number
+}
+
+/** Статистика мастеров за месяц: закрытых заявок и сумма по работам.
+ *  Закрытыми считаем archived/completed; месяц определяем по closed_date → completed_at → scheduled_date. */
+export async function fetchEmployeeMonthlyStats(
+  stoCompanyId: string,
+  year: number,
+  month: number, // 0-based (как Date.getMonth())
+): Promise<Record<string, EmployeeMonthlyStat>> {
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('assigned_to, total_work_cost, status, closed_date, completed_at, scheduled_date')
+    .eq('sto_company_id', stoCompanyId)
+    .in('status', ['archived', 'completed'])
+
+  if (error) throw error
+
+  const stats: Record<string, EmployeeMonthlyStat> = {}
+  for (const a of (data || []) as any[]) {
+    if (!a.assigned_to) continue
+    const ds = a.closed_date || a.completed_at || a.scheduled_date
+    if (!ds) continue
+    const d = new Date(ds)
+    if (isNaN(d.getTime())) continue
+    if (d.getFullYear() !== year || d.getMonth() !== month) continue
+    const s = stats[a.assigned_to] || (stats[a.assigned_to] = { closedCount: 0, workSum: 0 })
+    s.closedCount += 1
+    s.workSum += Number(a.total_work_cost) || 0
+  }
+  return stats
+}
+
 export async function createStoEmployee(
   formData: { username: string; password: string; full_name: string; phone: string },
   stoCompanyId: string
