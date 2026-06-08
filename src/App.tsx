@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect, lazy, Suspense } from 'react'
+import { useEffect, useRef, lazy, Suspense } from 'react'
 import { Toaster } from 'sonner'
 import { AlertProvider } from './components/CustomAlert'
 import VersionChecker from './components/VersionChecker'
@@ -93,20 +93,31 @@ function PageLoader() {
 
 function App() {
   const queryClient = useQueryClient()
+  const lastUserId = useRef<string | null>(null)
 
   useEffect(() => {
     let mounted = true
 
-    // Управляем кешем при изменении состояния аутентификации
+    // Управляем кешем при изменении состояния аутентификации.
+    // ВАЖНО: supabase повторно шлёт SIGNED_IN при фокусе вкладки/обновлении токена.
+    // Чистим кэш ТОЛЬКО при реальной смене пользователя (вход/выход), иначе при
+    // каждом фокусе страница перезагружала все данные.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
-      
-      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+
+      if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
+        lastUserId.current = null
         queryClient.clear()
         localStorage.removeItem('tsp_profile_cache')
         localStorage.removeItem('activeRole')
+        return
       }
-      if (event === 'SIGNED_IN') {
+
+      if (event === 'SIGNED_IN' && session) {
+        const uid = session.user.id
+        // Тот же пользователь (повторный SIGNED_IN при фокусе) — ничего не делаем
+        if (lastUserId.current === uid) return
+        lastUserId.current = uid
         queryClient.clear()
         queryClient.refetchQueries({ queryKey: ['userProfile'] })
       }
