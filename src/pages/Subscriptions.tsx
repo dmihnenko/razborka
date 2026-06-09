@@ -61,7 +61,7 @@ export default function Subscriptions() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [companyTypeFilter, setCompanyTypeFilter] = useState<'all' | 'sto' | 'parts'>('all')
-  const [planTypeFilter, setPlanTypeFilter] = useState<'all' | 'sto' | 'parts'>('all')
+  const [planTypeFilter, setPlanTypeFilter] = useState<'sto' | 'parts'>('sto')
   const [renewing, setRenewing] = useState<CompanySubscription | null>(null)
   const [isAssignOpen, setIsAssignOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<Subscription | null>(null)
@@ -409,7 +409,7 @@ export default function Subscriptions() {
           <div className="p-4 sm:p-5">
             {/* Фильтр тарифов по типу */}
             <div className="inline-flex rounded-xl bg-gray-100 p-1 mb-4">
-              {([['all','Все'],['sto','СТО'],['parts','Разборка']] as const).map(([v, l]) => (
+              {([['sto','СТО'],['parts','Разборка']] as const).map(([v, l]) => (
                 <button key={v} onClick={() => setPlanTypeFilter(v)}
                   className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${planTypeFilter === v ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
                   {l}
@@ -420,7 +420,7 @@ export default function Subscriptions() {
               <div className="flex justify-center py-12"><Spinner size="lg" /></div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {plans.filter(p => planTypeFilter === 'all' || p.company_type === planTypeFilter).map(plan => {
+                {plans.filter(p => p.company_type === planTypeFilter).map(plan => {
                   const isParts = plan.company_type === 'parts'
                   const clr = isParts ? { color: '#16A34A', bg: '#F0FDF4' } : { color: '#2563EB', bg: '#EFF6FF' }
                   const companiesOnPlan = allSubs.filter(s => s.subscription_id === plan.id && s.is_active).length
