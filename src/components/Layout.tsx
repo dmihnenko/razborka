@@ -146,6 +146,8 @@ export default function Layout() {
     activeRoleName.startsWith('parts') ? 'parts'
       : activeRoleName === 'user' ? 'user'
       : 'sto'
+  // «Мои авто»: меню из одного пункта — сайдбар не нужен, выход выносим вверх справа
+  const isUserCtx = currentCtx === 'user'
 
   const navigation = getMenuForRoles(roleNames)
   
@@ -215,7 +217,7 @@ export default function Layout() {
           DESKTOP SIDEBAR (hidden on mobile)
           ════════════════════════════════════════════ */}
       <aside
-        className="hidden md:flex md:flex-col md:w-16 lg:w-64 bg-white border-r border-gray-200 flex-shrink-0"
+        className={`${isUserCtx ? 'hidden' : 'hidden md:flex'} md:flex-col md:w-16 lg:w-64 bg-white border-r border-gray-200 flex-shrink-0`}
       >
         {/* Переключатель раздела — сверху (дропдаун как в админке) */}
         <div className="hidden lg:flex items-center px-3 h-14 border-b border-gray-100">
@@ -277,6 +279,18 @@ export default function Layout() {
           ════════════════════════════════════════════ */}
       <div ref={scrollRef} className="flex-1 overflow-auto flex flex-col min-w-0">
 
+        {/* ── DESKTOP TOP BAR для «Мои авто» (без сайдбара) ── */}
+        {isUserCtx && (
+          <div className="hidden md:flex items-center justify-between h-14 px-6 bg-white border-b border-gray-200">
+            <ContextSwitcher current={currentCtx} />
+            <button onClick={handleLogout}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-500 bg-gray-100 rounded-xl hover:bg-red-50 hover:text-red-600 transition-colors"
+            >
+              <LogOut className="w-4 h-4" strokeWidth={1.5} /> Выход
+            </button>
+          </div>
+        )}
+
         {/* ── MOBILE HEADER (hidden on md+) ── */}
         <div className="md:hidden bg-white border-b border-gray-200">
           {/* Top bar: кнопки роли + выйти */}
@@ -297,6 +311,7 @@ export default function Layout() {
           </div>
 
           {/* Mobile Navigation — grid cards */}
+          {filteredNavigation.some(item => !item.mobileHidden) && (
           <nav className="grid grid-cols-3 sm:grid-cols-4 gap-2 p-2">
             {filteredNavigation.filter(item => !item.mobileHidden).map((item) => {
               const Icon = item.icon
@@ -323,6 +338,7 @@ export default function Layout() {
             })}
 {/* Admin button rendered via adminMenu navigation items */}
           </nav>
+          )}
         </div>
 
         {/* ── MAIN CONTENT ── */}
