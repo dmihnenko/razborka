@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import {
   LogOut,
   Shield
@@ -20,7 +20,14 @@ import { useAdminNotifications } from '../hooks/useAdminNotifications'
 export default function Layout() {
   useAdminNotifications()
   const location = useLocation()
+  const scrollRef = useRef<HTMLDivElement>(null)
   const isAdmin = useIsAdmin()
+
+  // Сброс прокрутки внутреннего контейнера при переходе между страницами,
+  // иначе новая страница открывается на позиции прокрутки предыдущей.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 })
+  }, [location.pathname])
   const { loading: authLoading } = useAuth()
   const { data: profile, isLoading } = useUserProfile()
   // Показываем скелетон только при первой загрузке — когда auth загружается или профиль ещё не получен
@@ -268,7 +275,7 @@ export default function Layout() {
           Mobile nav is INSIDE here so it scrolls away naturally
           on all platforms including iOS PWA (standalone mode)
           ════════════════════════════════════════════ */}
-      <div className="flex-1 overflow-auto flex flex-col min-w-0">
+      <div ref={scrollRef} className="flex-1 overflow-auto flex flex-col min-w-0">
 
         {/* ── MOBILE HEADER (hidden on md+) ── */}
         <div className="md:hidden bg-white border-b border-gray-200">
