@@ -103,6 +103,13 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
       window.location.reload()
     } catch (e: any) {
       console.error('claim_personal_user_role error:', e)
+      // 23503 + ссылка на users = аккаунт удалён, но в браузере осталась сессия
+      if (e?.code === '23503') {
+        toast.error('Сессия устарела (аккаунт не найден). Войдите заново.')
+        await supabase.auth.signOut()
+        window.location.href = '/login'
+        return
+      }
       toast.error(`Ошибка: ${e?.code || ''} ${e?.message || ''} ${e?.details || ''}`.trim())
       setSubmitting(false)
     }
