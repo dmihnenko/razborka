@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchUsers, fetchActiveRoles, fetchStoCompanies, fetchPartsCompanies, updateUserRolesFull, toggleUserActive, softDeleteUser, getAuthSession } from '@/services/userService';
-import { Plus, Edit2, Trash2, UserCog, Search, CheckCircle2, KeyRound } from 'lucide-react';
+import { fetchUsers, fetchActiveRoles, fetchStoCompanies, fetchPartsCompanies, updateUserRolesFull, toggleUserActive, getAuthSession, softDeleteUserProfile, restoreUserProfile, bulkSetActive, bulkSoftDelete } from '@/services/userService';
+import { Plus, Edit2, Trash2, UserCog, Search, CheckCircle2, KeyRound, RotateCcw, X, CheckSquare, Square } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUserProfile, useIsAdmin } from '@/hooks/useUserProfile';
 import { useSubscriptionLimits } from '@/hooks/useSubscription';
@@ -40,6 +40,13 @@ export default function Users() {
   const [newPassword, setNewPassword] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
+  // Фаза 2: вид (активные / корзина), фильтры, массовый выбор
+  const [view, setView] = useState<'active' | 'trash'>('active');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [companyFilter, setCompanyFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { confirm: showConfirm, dialogProps } = useConfirm();
@@ -55,13 +62,14 @@ export default function Users() {
 
   // Загрузка пользователей
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner],
+    queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner, view],
     queryFn: () => fetchUsers({
       isStoOwner: !!isStoOwner,
       isPartsOwner: !!isPartsOwner,
       isAdmin: !!isAdmin,
       stoCompanyId: currentUserProfile?.sto_company_id,
       partsCompanyId: currentUserProfile?.parts_company_id,
+      onlyDeleted: view === 'trash',
     })
   });
 
@@ -112,17 +120,47 @@ export default function Users() {
 
   const filteredUsers = useMemo(
     () => {
-      if (!searchQuery.trim()) return users;
-      const q = searchQuery.toLowerCase();
-      return users.filter(user =>
-        user.full_name?.toLowerCase().includes(q) ||
-        user.email?.toLowerCase().includes(q) ||
-        user.username?.toLowerCase().includes(q) ||
-        user.phone?.includes(q)
-      );
+      const q = searchQuery.trim().toLowerCase();
+      return users.filter(user => {
+        if (q && !(
+          user.full_name?.toLowerCase().includes(q) ||
+          user.email?.toLowerCase().includes(q) ||
+          user.username?.toLowerCase().includes(q) ||
+          user.phone?.includes(q)
+        )) return false;
+        if (roleFilter !== 'all' && !(user.roles?.some((r: Role) => r.name === roleFilter))) return false;
+        if (companyFilter !== 'all') {
+          if (companyFilter === 'none') {
+            if (user.sto_company_id || user.parts_company_id) return false;
+          } else if (user.sto_company_id !== companyFilter && user.parts_company_id !== companyFilter) {
+            return false;
+          }
+        }
+        if (statusFilter === 'active' && !user.is_active) return false;
+        if (statusFilter === 'inactive' && user.is_active) return false;
+        return true;
+      });
     },
-    [users, searchQuery]
+    [users, searchQuery, roleFilter, companyFilter, statusFilter]
   );
+
+  // Сброс выбора при смене вида/фильтров
+  const visibleIds = useMemo(() => filteredUsers.map(u => u.id), [filteredUsers]);
+  const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAll = () => {
+    setSelectedIds(prev => {
+      if (visibleIds.every(id => prev.has(id))) return new Set();
+      return new Set(visibleIds);
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
 
 
 
@@ -130,7 +168,7 @@ export default function Users() {
   const toggleActiveMutation = useMutation({
     mutationFn: (user: UserProfile) => toggleUserActive(user.id, user.is_active),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('Статус пользователя изменен');
     },
     onError: (error) => {
@@ -139,14 +177,27 @@ export default function Users() {
     }
   });
 
-  // Удаление пользователя — мягкое (деактивация) + удаление из auth через Edge Function
-  const deleteUserMutation = useMutation({
-    mutationFn: async (userId: string) => {
-      await softDeleteUser(userId);
+  const invalidateUsers = () => queryClient.invalidateQueries({ queryKey: ['users'] });
 
+  // Удаление — мягкое (в корзину, восстановимо)
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId: string) => softDeleteUserProfile(userId),
+    onSuccess: () => { invalidateUsers(); toast.success('Пользователь перемещён в корзину'); },
+    onError: (error: any) => toast.error(`Ошибка: ${error.message || 'не удалось удалить'}`),
+  });
+
+  // Восстановление из корзины
+  const restoreMutation = useMutation({
+    mutationFn: (userId: string) => restoreUserProfile(userId),
+    onSuccess: () => { invalidateUsers(); toast.success('Пользователь восстановлен'); },
+    onError: (error: any) => toast.error(`Ошибка: ${error.message || 'не удалось восстановить'}`),
+  });
+
+  // Перманентное удаление из корзины (auth + профиль) через Edge Function
+  const purgeMutation = useMutation({
+    mutationFn: async (userId: string) => {
       const session = await getAuthSession()
       if (!session?.access_token) throw new Error('Сессия истекла. Войдите заново.')
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
         {
@@ -162,14 +213,23 @@ export default function Users() {
       const data = await response.json()
       if (!response.ok || data?.error) throw new Error(data?.error || 'Ошибка удаления')
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner] });
-      toast.success('Пользователь удалён');
+    onSuccess: () => { invalidateUsers(); toast.success('Пользователь удалён навсегда'); },
+    onError: (error: any) => toast.error(`Ошибка: ${error.message || 'не удалось удалить'}`),
+  });
+
+  // Массовые действия
+  const bulkMutation = useMutation({
+    mutationFn: async (action: 'activate' | 'deactivate' | 'delete') => {
+      const ids = Array.from(selectedIds)
+      if (action === 'delete') await bulkSoftDelete(ids)
+      else await bulkSetActive(ids, action === 'activate')
     },
-    onError: (error: any) => {
-      toast.error(`Ошибка при удалении: ${error.message || 'Неизвестная ошибка'}`);
-      console.error(error);
-    }
+    onSuccess: (_d, action) => {
+      invalidateUsers()
+      clearSelection()
+      toast.success(action === 'delete' ? 'Удалены в корзину' : action === 'activate' ? 'Активированы' : 'Деактивированы')
+    },
+    onError: (error: any) => toast.error(`Ошибка: ${error.message || 'массовое действие не выполнено'}`),
   });
 
   // Смена пароля пользователя (admin/owner)
@@ -193,7 +253,7 @@ export default function Users() {
       if (!response.ok || data?.error) throw new Error(data?.error || 'Ошибка смены пароля')
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('Пароль изменён')
       setPasswordModal(null)
       setNewPassword('')
@@ -239,9 +299,24 @@ export default function Users() {
       toast.error('Невозможно удалить администратора');
       return;
     }
-    const ok = await showConfirm({ message: `Вы уверены, что хотите удалить пользователя ${user.full_name || user.email}? Это действие нельзя отменить.`, danger: true });
+    const ok = await showConfirm({ message: `Переместить пользователя ${user.full_name || user.email} в корзину? Его можно будет восстановить.`, danger: true });
     if (!ok) return;
     deleteUserMutation.mutate(user.id);
+  };
+
+  const handlePurgeUser = async (user: UserProfile) => {
+    const ok = await showConfirm({ message: `Удалить НАВСЕГДА пользователя ${user.full_name || user.email}? Это действие необратимо.`, danger: true });
+    if (!ok) return;
+    purgeMutation.mutate(user.id);
+  };
+
+  const handleBulk = async (action: 'activate' | 'deactivate' | 'delete') => {
+    if (selectedIds.size === 0) return;
+    if (action === 'delete') {
+      const ok = await showConfirm({ message: `Переместить выбранных (${selectedIds.size}) в корзину?`, danger: true });
+      if (!ok) return;
+    }
+    bulkMutation.mutate(action);
   };
 
   // Отслеживание изменения ролей
@@ -314,9 +389,9 @@ export default function Users() {
           <h1 className="text-xl font-bold text-gray-900">
             {isAdmin ? 'Пользователи' : isStoOwner ? 'Сотрудники СТО' : isPartsOwner ? 'Сотрудники разборки' : 'Пользователи'}
           </h1>
-          <p className="text-xs text-gray-400 mt-0.5">{users.length} {users.length === 1 ? 'запись' : users.length < 5 ? 'записи' : 'записей'}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{filteredUsers.length} из {users.length}</p>
         </div>
-        {isAdmin && (
+        {isAdmin && view === 'active' && (
           <button onClick={handleCreateUser}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm">
             <Plus className="h-4 w-4" />
@@ -326,25 +401,95 @@ export default function Users() {
         )}
       </div>
 
-      {/* Поиск */}
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Поиск по имени, email, логину..."
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 shadow-sm transition-all"
-        />
+      {/* Вкладки: активные / корзина (admin) */}
+      {isAdmin && (
+        <div className="flex gap-1.5">
+          {([{ id: 'active', label: 'Активные' }, { id: 'trash', label: 'Корзина' }] as const).map(t => (
+            <button key={t.id}
+              onClick={() => { setView(t.id); clearSelection(); }}
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-colors ${view === t.id ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
+              {t.id === 'trash' && <Trash2 className="w-3.5 h-3.5 inline mr-1 -mt-0.5" />}{t.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Поиск + фильтры */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Поиск по имени, email, логину..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 shadow-sm transition-all"
+          />
+        </div>
+        {view === 'active' && (
+          <div className="flex gap-2">
+            <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
+              className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:border-indigo-400 shadow-sm">
+              <option value="all">Все роли</option>
+              {roles.map((r: any) => <option key={r.id} value={r.name}>{r.display_name}</option>)}
+            </select>
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)}
+              className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:border-indigo-400 shadow-sm">
+              <option value="all">Все</option>
+              <option value="active">Активные</option>
+              <option value="inactive">Неактивные</option>
+            </select>
+            {isAdmin && (
+              <select value={companyFilter} onChange={e => setCompanyFilter(e.target.value)}
+                className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:border-indigo-400 shadow-sm max-w-[160px]">
+                <option value="all">Все компании</option>
+                <option value="none">Без компании</option>
+                <optgroup label="СТО">
+                  {stoCompanies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </optgroup>
+                <optgroup label="Разборки">
+                  {partsCompanies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </optgroup>
+              </select>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Панель массовых действий */}
+      {isAdmin && view === 'active' && selectedIds.size > 0 && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-indigo-50 border border-indigo-200 rounded-xl flex-wrap">
+          <span className="text-sm font-semibold text-indigo-700">Выбрано: {selectedIds.size}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => handleBulk('activate')} disabled={bulkMutation.isPending}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50">Активировать</button>
+            <button onClick={() => handleBulk('deactivate')} disabled={bulkMutation.isPending}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50">Деактивировать</button>
+            <button onClick={() => handleBulk('delete')} disabled={bulkMutation.isPending}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-50">В корзину</button>
+            <button onClick={clearSelection}
+              className="px-2 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-100 rounded-lg flex items-center gap-1"><X className="w-3.5 h-3.5" />Снять</button>
+          </div>
+        </div>
+      )}
+
+      {/* Выбрать всё */}
+      {isAdmin && view === 'active' && filteredUsers.length > 0 && (
+        <button onClick={toggleSelectAll} className="flex items-center gap-2 text-xs font-medium text-gray-500 hover:text-gray-700 -mb-2">
+          {allSelected ? <CheckSquare className="w-4 h-4 text-indigo-600" /> : <Square className="w-4 h-4" />}
+          {allSelected ? 'Снять выбор' : 'Выбрать всё'}
+        </button>
+      )}
 
       {/* Список пользователей */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {filteredUsers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-gray-400">
             <UserCog className="w-10 h-10 mb-3 opacity-30" />
-            <p className="text-sm font-medium">{searchQuery ? 'Ничего не найдено' : 'Нет пользователей'}</p>
-            {searchQuery && <p className="text-xs mt-1 opacity-70">Попробуйте изменить запрос</p>}
+            <p className="text-sm font-medium">
+              {view === 'trash' ? 'Корзина пуста' : (searchQuery || roleFilter !== 'all' || companyFilter !== 'all' || statusFilter !== 'all') ? 'Ничего не найдено' : 'Нет пользователей'}
+            </p>
+            {view === 'active' && (searchQuery || roleFilter !== 'all') && <p className="text-xs mt-1 opacity-70">Попробуйте изменить запрос или фильтры</p>}
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -355,17 +500,31 @@ export default function Users() {
                 : null
               const extraRoles = user.roles ? user.roles.length - 1 : 0
 
-              const actions = [
-                { key: 'edit', show: true, title: 'Редактировать', Icon: Edit2, cls: 'text-indigo-600 hover:bg-indigo-50', onClick: () => handleEditUser(user) },
-                { key: 'pwd', show: isAdmin || isStoOwner || isPartsOwner, title: 'Сменить пароль', Icon: KeyRound, cls: 'text-amber-600 hover:bg-amber-50', onClick: () => openPasswordModal(user) },
-                { key: 'roles', show: isAdmin, title: 'Роли', Icon: UserCog, cls: 'text-purple-600 hover:bg-purple-50', onClick: () => handleEditRole(user) },
-                { key: 'activate', show: isAdmin && !user.is_active, title: 'Активировать', Icon: CheckCircle2, cls: 'text-emerald-600 hover:bg-emerald-50', onClick: () => handleToggleActive(user) },
-                { key: 'delete', show: isAdmin, title: 'Удалить', Icon: Trash2, cls: 'text-red-500 hover:bg-red-50', onClick: () => handleDeleteUser(user) },
-              ].filter(a => a.show)
+              const actions = view === 'trash'
+                ? [
+                    { key: 'restore', show: isAdmin, title: 'Восстановить', Icon: RotateCcw, cls: 'text-emerald-600 hover:bg-emerald-50', onClick: () => restoreMutation.mutate(user.id) },
+                    { key: 'purge', show: isAdmin, title: 'Удалить навсегда', Icon: Trash2, cls: 'text-red-500 hover:bg-red-50', onClick: () => handlePurgeUser(user) },
+                  ].filter(a => a.show)
+                : [
+                    { key: 'edit', show: true, title: 'Редактировать', Icon: Edit2, cls: 'text-indigo-600 hover:bg-indigo-50', onClick: () => handleEditUser(user) },
+                    { key: 'pwd', show: isAdmin || isStoOwner || isPartsOwner, title: 'Сменить пароль', Icon: KeyRound, cls: 'text-amber-600 hover:bg-amber-50', onClick: () => openPasswordModal(user) },
+                    { key: 'roles', show: isAdmin, title: 'Роли', Icon: UserCog, cls: 'text-purple-600 hover:bg-purple-50', onClick: () => handleEditRole(user) },
+                    { key: 'activate', show: isAdmin && !user.is_active, title: 'Активировать', Icon: CheckCircle2, cls: 'text-emerald-600 hover:bg-emerald-50', onClick: () => handleToggleActive(user) },
+                    { key: 'delete', show: isAdmin, title: 'В корзину', Icon: Trash2, cls: 'text-red-500 hover:bg-red-50', onClick: () => handleDeleteUser(user) },
+                  ].filter(a => a.show)
+
+              const selectable = isAdmin && view === 'active'
+              const isSel = selectedIds.has(user.id)
 
               return (
-                <div key={user.id} className="px-4 py-3.5 hover:bg-gray-50/80 transition-colors">
+                <div key={user.id} className={`px-4 py-3.5 transition-colors ${isSel ? 'bg-indigo-50/60' : 'hover:bg-gray-50/80'}`}>
                   <div className="flex items-start gap-3">
+                    {/* Чекбокс выбора */}
+                    {selectable && (
+                      <button onClick={() => toggleSelect(user.id)} className="flex-shrink-0 mt-1" aria-label="Выбрать">
+                        {isSel ? <CheckSquare className="w-5 h-5 text-indigo-600" /> : <Square className="w-5 h-5 text-gray-300" />}
+                      </button>
+                    )}
                     {/* Аватар */}
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-sm">
                       {(user.full_name?.charAt(0) || user.email?.charAt(0) || '?').toUpperCase()}

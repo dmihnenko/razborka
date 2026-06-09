@@ -162,21 +162,27 @@ export interface FetchUsersParams {
   partsCompanyId?: string | null
 }
 
-export async function fetchUsers(params: FetchUsersParams): Promise<UserProfileWithRoles[]> {
-  let query = supabase.from('user_profiles').select(`
-    *,
-    sto_companies:sto_company_id(id, name),
-    parts_companies:parts_company_id(id, name)
-  `)
-
-  if (params.isStoOwner && !params.isAdmin) {
-    query = query.eq('sto_company_id', params.stoCompanyId)
+export async function fetchUsers(params: FetchUsersParams & { onlyDeleted?: boolean }): Promise<UserProfileWithRoles[]> {
+  const buildQuery = (withDeletedFilter: boolean) => {
+    let q = supabase.from('user_profiles').select(`
+      *,
+      sto_companies:sto_company_id(id, name),
+      parts_companies:parts_company_id(id, name)
+    `)
+    if (params.isStoOwner && !params.isAdmin) q = q.eq('sto_company_id', params.stoCompanyId)
+    if (params.isPartsOwner && !params.isAdmin && !params.isStoOwner) q = q.eq('parts_company_id', params.partsCompanyId)
+    if (withDeletedFilter) {
+      q = params.onlyDeleted ? q.not('deleted_at', 'is', null) : q.is('deleted_at', null)
+    }
+    return q
   }
-  if (params.isPartsOwner && !params.isAdmin && !params.isStoOwner) {
-    query = query.eq('parts_company_id', params.partsCompanyId)
-  }
 
-  const { data: profiles, error: profilesError } = await query
+  // Фильтр по deleted_at; если колонки ещё нет (миграция 013) — повтор без неё
+  let { data: profiles, error: profilesError } = await buildQuery(true)
+  if (profilesError && ((profilesError as any).code === '42703' || /deleted_at/i.test(profilesError.message))) {
+    if (params.onlyDeleted) return []
+    ;({ data: profiles, error: profilesError } = await buildQuery(false))
+  }
   if (profilesError) throw profilesError
 
   const { data: allRoles, error: rolesError } = await supabase.from('roles').select('*')
@@ -190,6 +196,43 @@ export async function fetchUsers(params: FetchUsersParams): Promise<UserProfileW
     const userRoles = allRoles?.filter(r => userRoleIds.includes(r.id)) || []
     return { ...profile, roles: userRoles, email: profile.email || 'N/A' }
   })
+}
+
+// ── Корзина пользователей (мягкое удаление) ───────────────────────────────────
+export async function softDeleteUserProfile(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({ deleted_at: new Date().toISOString(), is_active: false })
+    .eq('id', userId)
+  if (error) throw error
+}
+
+export async function restoreUserProfile(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({ deleted_at: null, is_active: true })
+    .eq('id', userId)
+  if (error) throw error
+}
+
+// Массовая смена активности
+export async function bulkSetActive(userIds: string[], isActive: boolean): Promise<void> {
+  if (userIds.length === 0) return
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({ is_active: isActive })
+    .in('id', userIds)
+  if (error) throw error
+}
+
+// Массовое мягкое удаление
+export async function bulkSoftDelete(userIds: string[]): Promise<void> {
+  if (userIds.length === 0) return
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({ deleted_at: new Date().toISOString(), is_active: false })
+    .in('id', userIds)
+  if (error) throw error
 }
 
 export async function fetchActiveRoles() {
