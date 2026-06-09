@@ -1,9 +1,8 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useEffect, useMemo } from 'react'
-import { 
+import {
   LogOut,
-  Shield,
-  Wrench
+  Shield
 } from 'lucide-react'
 import { LayoutSkeleton } from './LayoutSkeleton'
 import WaitingAccessPage from './WaitingAccessPage'
@@ -211,18 +210,8 @@ export default function Layout() {
       <aside
         className="hidden md:flex md:flex-col md:w-16 lg:w-64 bg-white border-r border-gray-200 flex-shrink-0"
       >
-        {/* Logo */}
-        <div className="flex items-center justify-center lg:justify-start gap-2.5 px-2 lg:px-5 h-14 border-b border-gray-100">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-            <Wrench className="w-4 h-4 text-white" />
-          </div>
-          <span className="hidden lg:block text-sm font-semibold text-gray-800 truncate">
-            {profile?.full_name?.split(' ')[0] || 'CRM'}
-          </span>
-        </div>
-
         {/* Переключатель раздела — сверху (дропдаун как в админке) */}
-        <div className="hidden lg:block px-3 py-2.5 border-b border-gray-100">
+        <div className="hidden lg:flex items-center px-3 h-14 border-b border-gray-100">
           <ContextSwitcher current={currentCtx} />
         </div>
 
