@@ -209,9 +209,9 @@ export default function PartsCompanies() {
         </div>
         <button
           onClick={handleCreate}
-          className="flex items-center space-x-2 px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800"
+          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-xl hover:bg-purple-700 transition-colors shadow-sm"
         >
-          <Plus className="h-5 w-5" />
+          <Plus className="h-4 w-4" />
           <span>Создать разборку</span>
         </button>
       </div>
