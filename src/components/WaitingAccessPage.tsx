@@ -89,6 +89,14 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
           return
         } catch (e: any) {
           console.error('auto claim_personal_user_role error:', e)
+          // Сессия удалённого аккаунта (нет в auth.users) — выходим и на логин
+          if (e?.code === '23503') {
+            toast.error('Сессия устарела (аккаунт не найден). Войдите заново.')
+            localStorage.removeItem('tsp_profile_cache')
+            await supabase.auth.signOut()
+            window.location.href = '/login'
+            return
+          }
           toast.error(`Авто-выдача роли: ${e?.code || ''} ${e?.message || ''}`.trim())
           // не вышло — покажем обычный статус заявки ниже
         }
