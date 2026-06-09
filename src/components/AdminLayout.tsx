@@ -4,7 +4,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Shield, Users, Settings, BarChart2, LogOut, ClipboardList,
   Building2, Store, CreditCard, MessageCircle,
-  Car, Wrench, Menu, X, ChevronRight, LayoutGrid
+  Car, Wrench, Menu, X, ChevronRight, LayoutGrid, Database
 } from 'lucide-react'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
 import { useAuth } from '../hooks/useAuth'
@@ -37,6 +37,7 @@ const navGroups = [
       { name: 'Поддержка', href: '/admin/support',        icon: MessageCircle },
       { name: 'Заявки',     href: '/admin/access-requests', icon: ClipboardList },
       { name: 'Аналитика', href: '/admin/analytics',      icon: BarChart2 },
+      { name: 'База данных', href: '/admin/database',      icon: Database },
       { name: 'Настройки', href: '/admin/settings',       icon: Settings },
     ]
   }
