@@ -35,14 +35,27 @@ export async function getAdminStats(): Promise<AdminStats> {
 }
 
 export async function fetchAccessRequests(filter: string) {
+  // user_id ссылается на auth.users, поэтому встроенный join user_profiles недоступен —
+  // тянем профили отдельным запросом и сшиваем.
   let q = supabase
     .from('access_requests')
-    .select('*, user:user_profiles!user_id(full_name, username, email)')
+    .select('*')
     .order('created_at', { ascending: false })
   if (filter !== 'all') q = (q as any).eq('status', filter)
   const { data, error } = await q
   if (error) throw error
-  return data
+
+  const rows = data || []
+  const userIds = [...new Set(rows.map((r: any) => r.user_id).filter(Boolean))]
+  let profiles: Record<string, any> = {}
+  if (userIds.length) {
+    const { data: profs } = await supabase
+      .from('user_profiles')
+      .select('id, full_name, username, email')
+      .in('id', userIds)
+    profiles = Object.fromEntries((profs || []).map((p: any) => [p.id, p]))
+  }
+  return rows.map((r: any) => ({ ...r, user: profiles[r.user_id] || null }))
 }
 
 export async function approveAccessRequest(req: any) {
