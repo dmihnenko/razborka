@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Shield, Wrench, Store, Car, ChevronDown, Check } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { useQueryClient } from '@tanstack/react-query'
 
 type ContextId = 'admin' | 'sto' | 'parts' | 'user'
 
@@ -23,6 +24,7 @@ const CONTEXTS: Ctx[] = [
 /** Переключатель контекста (лайаута): Админ / СТО / Разборка / Мои авто. */
 export default function ContextSwitcher({ current, excludeIds = [] }: { current: ContextId; excludeIds?: ContextId[] }) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -57,6 +59,9 @@ export default function ContextSwitcher({ current, excludeIds = [] }: { current:
     if (c.id === current) return
     if (c.id === 'admin') localStorage.removeItem('activeRole')
     else localStorage.setItem('activeRole', roleFor(c.id))
+    // Сбрасываем кэш данных предыдущего раздела (как делала отдельная кнопка «Админ»)
+    localStorage.removeItem('tsp_profile_cache')
+    queryClient.clear()
     navigate(c.path)
   }
 

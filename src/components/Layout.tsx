@@ -223,7 +223,7 @@ export default function Layout() {
 
         {/* Переключатель раздела — сверху (дропдаун как в админке) */}
         <div className="hidden lg:block px-3 py-2.5 border-b border-gray-100">
-          <ContextSwitcher current={currentCtx} excludeIds={['admin']} />
+          <ContextSwitcher current={currentCtx} />
         </div>
 
         {/* Nav */}
@@ -253,14 +253,15 @@ export default function Layout() {
 
         {/* Footer */}
         <div className="px-2 py-3 border-t border-gray-100 space-y-0.5">
+          {/* На lg админ доступен из дропдауна сверху; иконка остаётся только в свёрнутом md-сайдбаре */}
           {isAdmin && (
             <Link
               to="/admin"
               onClick={() => localStorage.removeItem('activeRole')}
-              className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm font-medium text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
+              className="lg:hidden flex items-center justify-center gap-3 w-full px-1 py-2.5 text-sm font-medium text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
+              title="Админ панель"
             >
               <Shield className="w-4 h-4 text-purple-500 flex-shrink-0" strokeWidth={1.5} />
-              <span className="hidden lg:block">Админ панель</span>
             </Link>
           )}
           <button
@@ -287,19 +288,8 @@ export default function Layout() {
 
             {/* Переключатель раздела — дропдаун как в админке */}
             <div className="flex-1 min-w-0">
-              <ContextSwitcher current={currentCtx} excludeIds={['admin']} />
+              <ContextSwitcher current={currentCtx} />
             </div>
-
-            {/* Кнопка Админ — только если есть роль admin */}
-            {isAdmin && (
-              <Link to="/admin"
-                onClick={() => { localStorage.removeItem('activeRole'); localStorage.removeItem('tsp_profile_cache'); queryClient.clear() }}
-                className="flex-shrink-0 flex items-center gap-1.5 h-9 px-3 text-xs font-semibold text-purple-700 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors"
-              >
-                <Shield className="w-3.5 h-3.5" strokeWidth={1.5} />
-                <span>Админ</span>
-              </Link>
-            )}
 
             {/* Кнопка Выйти */}
             <button onClick={handleLogout}
