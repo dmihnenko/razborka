@@ -468,7 +468,7 @@ export default function Login() {
                     : (isForgotMode ? 'Отправить ссылку' : isRegisterMode ? 'Зарегистрироваться' : 'Войти')}
                 </button>
 
-                {!isForgotMode && (
+                {!isForgotMode && !isRegisterMode && (
                   <>
                     <div style={{ display:'flex', alignItems:'center', gap:'12px', margin:'18px 0' }}>
                       <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.08)' }} />
