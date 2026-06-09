@@ -101,8 +101,9 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
       if (error) throw error
       toast.success('Доступ открыт!')
       window.location.reload()
-    } catch {
-      toast.error('Не удалось активировать доступ')
+    } catch (e: any) {
+      console.error('claim_personal_user_role error:', e)
+      toast.error(`Ошибка: ${e?.code || ''} ${e?.message || ''} ${e?.details || ''}`.trim())
       setSubmitting(false)
     }
   }
