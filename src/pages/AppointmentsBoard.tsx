@@ -467,10 +467,12 @@ export default function AppointmentsBoard() {
   const [isNewModalOpen, setIsNewModalOpen]     = useState(false)
   const [newModalDate, setNewModalDate]         = useState<string | undefined>()
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  // Секции списка — все открыты по умолчанию
-  const [listOpenSections, setListOpenSections] = useState<Set<string>>(
-    () => new Set(['scheduled', 'in_progress', 'completed', 'archived'])
-  )
+  // Секции списка — все открыты, но при переходе с дашборда (?tab=) раскрыта только выбранная
+  const [listOpenSections, setListOpenSections] = useState<Set<string>>(() => {
+    const t = searchParams.get('tab')
+    if (t === 'scheduled' || t === 'in_progress' || t === 'completed') return new Set([t])
+    return new Set(['scheduled', 'in_progress', 'completed', 'archived'])
+  })
   const toggleListSection = (id: string) =>
     setListOpenSections(prev => {
       const next = new Set(prev)

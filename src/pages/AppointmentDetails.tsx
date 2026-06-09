@@ -332,15 +332,6 @@ export default function AppointmentDetails() {
 
           {/* Actions */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            {isStoOwner && (
-              <button
-                onClick={() => navigate(`/invoices/new?appointment=${appointment.id}`)}
-                className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                title="Сформировать счёт"
-              >
-                <FileText className="w-4 h-4" />
-              </button>
-            )}
             {isStoOwner && workersCount > 1 && (
               <button
                 onClick={() => setReassignModal({
@@ -673,6 +664,16 @@ export default function AppointmentDetails() {
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
                 Готово к выдаче
               </div>
+            )}
+
+            {/* Выставить счёт (под «Готово к выдаче») */}
+            {isStoOwner && (
+              <button
+                onClick={() => navigate(`/invoices/new?appointment=${appointment.id}`)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white text-sm font-semibold rounded-2xl hover:bg-primary/90 transition-colors"
+              >
+                <FileText className="w-4 h-4" /> Выставить счёт
+              </button>
             )}
 
             {/* Pending deletion (owner) */}
