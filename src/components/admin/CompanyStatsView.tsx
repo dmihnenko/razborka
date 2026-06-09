@@ -1,9 +1,13 @@
 import { useNavigate } from 'react-router-dom'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import {
   ArrowLeft, Phone, MapPin, Mail, Building2, Store,
   ClipboardList, Users, Car, Wrench, Tag, Package, ShoppingCart, UserCircle,
+  CreditCard, Power, PowerOff,
 } from 'lucide-react'
 import type { CompanyDetail } from '@/services/companyStatsService'
+import { setCompanyActive } from '@/services/companyStatsService'
 
 const STAT_ICONS: Record<string, { Icon: any; cls: string }> = {
   appointments: { Icon: ClipboardList, cls: 'bg-violet-50 text-violet-600' },
@@ -26,9 +30,20 @@ interface Props {
 
 export function CompanyStatsView({ detail, isLoading, kind, backPath }: Props) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const KindIcon = kind === 'sto' ? Building2 : Store
   const kindLabel = kind === 'sto' ? 'СТО' : 'Разборка'
   const company = detail?.company
+  const queryKey = [`${kind}-company-detail`, company?.id]
+
+  const toggleActive = useMutation({
+    mutationFn: () => setCompanyActive(kind, company!.id, !company!.is_active),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey })
+      toast.success(company!.is_active ? 'Компания приостановлена' : 'Компания активирована')
+    },
+    onError: () => toast.error('Не удалось изменить статус'),
+  })
 
   return (
     <div className="container-mobile">
@@ -50,7 +65,7 @@ export function CompanyStatsView({ detail, isLoading, kind, backPath }: Props) {
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-lg sm:text-xl font-bold text-gray-900">{company.name}</h1>
                 <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${company.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                  {company.is_active ? 'Активна' : 'Неактивна'}
+                  {company.is_active ? 'Активна' : 'Приостановлена'}
                 </span>
                 <span className="text-[11px] text-gray-400">{kindLabel}</span>
               </div>
@@ -60,9 +75,42 @@ export function CompanyStatsView({ detail, isLoading, kind, backPath }: Props) {
                 {company.email && <span className="inline-flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{company.email}</span>}
               </div>
             </div>
+            {/* Приостановить / активировать */}
+            <button
+              onClick={() => toggleActive.mutate()}
+              disabled={toggleActive.isPending}
+              className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 ${
+                company.is_active
+                  ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
+                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
+              }`}
+            >
+              {company.is_active ? <PowerOff className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">{company.is_active ? 'Приостановить' : 'Активировать'}</span>
+            </button>
           </div>
         )}
       </div>
+
+      {/* Подписка */}
+      {!isLoading && detail && (
+        <div className="card mb-4 sm:mb-6 flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${detail.subscription ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
+            <CreditCard className="w-4.5 h-4.5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-400 uppercase font-semibold tracking-wide">Подписка</p>
+            {detail.subscription ? (
+              <p className="text-sm font-semibold text-gray-900">
+                {detail.subscription.name}
+                {detail.subscription.type && <span className="text-gray-400 font-normal"> · {detail.subscription.type === 'lifetime' ? 'бессрочная' : detail.subscription.type === 'monthly' ? 'месячная' : detail.subscription.type}</span>}
+              </p>
+            ) : (
+              <p className="text-sm font-medium text-amber-600">Без активной подписки</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Статистика */}
       <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2.5">Статистика</h2>
@@ -83,11 +131,36 @@ export function CompanyStatsView({ detail, isLoading, kind, backPath }: Props) {
               ) : (
                 <p className="text-2xl sm:text-3xl font-bold text-gray-900 leading-none">{s.value}</p>
               )}
-              <p className="text-xs text-gray-500 mt-1">{s.label || ' '}</p>
+              <p className="text-xs text-gray-500 mt-1">{s.label || ' '}</p>
             </div>
           )
         })}
       </div>
+
+      {/* Сотрудники */}
+      {!isLoading && detail && detail.workers.length > 0 && (
+        <div className="mt-6">
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2.5">
+            Сотрудники · {detail.workers.length}
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {detail.workers.map(w => (
+              <div key={w.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                  {(w.full_name?.charAt(0) || w.email?.charAt(0) || '?').toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{w.full_name || 'Без имени'}</p>
+                  <p className="text-xs text-gray-400 truncate">{w.email}</p>
+                </div>
+                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${w.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                  {w.is_active ? 'Активен' : 'Неактивен'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
