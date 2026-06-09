@@ -199,28 +199,33 @@ function StatusConfirmModal({
   )
 }
 
-// ─── PaymentDot ───────────────────────────────────────────────────────────────
+// ─── Invoice status ───────────────────────────────────────────────────────────
 
-function PaymentDot({ appt }: { appt: any }) {
+// Доп. запрос: помечаем заявки, по которым выставлен счёт (всё оплачивается одним счётом)
+async function attachInvoiceStatus(rows: any[]) {
+  const ids = rows.map(r => r.id)
+  if (!ids.length) return rows
+  const { data: invs } = await supabase
+    .from('sto_invoices')
+    .select('appointment_id, status')
+    .in('appointment_id', ids)
+  const m = new Map((invs || []).filter((i: any) => i.appointment_id).map((i: any) => [i.appointment_id, i.status]))
+  rows.forEach(r => { r.invoice_status = m.get(r.id) ?? null })
+  return rows
+}
+
+// Единый индикатор: Оплачено / Счёт выставлен / Без счёта
+function InvoiceBadge({ appt }: { appt: any }) {
   const hasWork  = (appt.total_work_cost  || 0) > 0
   const hasParts = (appt.total_parts_cost || 0) > 0
   if (!hasWork && !hasParts) return null
-
-  if (hasWork && hasParts) {
-    if (appt.work_paid && appt.parts_paid)
-      return <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" title="Оплачено полностью" />
-    if (!appt.work_paid && !appt.parts_paid)
-      return <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" title="Не оплачено" />
-    return <span className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0" title="Оплачено частично" />
-  }
-
-  const paid = (hasWork && appt.work_paid) || (hasParts && appt.parts_paid)
-  return (
-    <span
-      className={`w-2 h-2 rounded-full flex-shrink-0 ${paid ? 'bg-green-500' : 'bg-red-400'}`}
-      title={paid ? 'Оплачено' : 'Не оплачено'}
-    />
-  )
+  const paid = (!hasWork || appt.work_paid) && (!hasParts || appt.parts_paid)
+  const invoiced = !!appt.invoice_status
+  if (paid)
+    return <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md border bg-green-50 text-green-700 border-green-200">Оплачено</span>
+  if (invoiced)
+    return <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md border bg-blue-50 text-blue-700 border-blue-200">Счёт выставлен</span>
+  return <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md border bg-gray-50 text-gray-500 border-gray-200">Без счёта</span>
 }
 
 // ─── AppointmentCard ──────────────────────────────────────────────────────────
@@ -260,7 +265,7 @@ function AppointmentCard({
             )}
           </div>
           <div className="flex items-center gap-1.5">
-            <PaymentDot appt={appt} />
+            <InvoiceBadge appt={appt} />
             <span
               className="text-[11px] font-semibold px-2 py-0.5 rounded-md border"
               style={{ color: cfg.color, backgroundColor: cfg.bg, borderColor: cfg.border }}
@@ -326,24 +331,6 @@ function AppointmentCard({
             </span>
           )}
         </div>
-
-        {/* Строка 6: оплата badges */}
-        {(hasWork || hasParts) && (
-          <div className="flex gap-1.5 mt-1.5">
-            {hasWork && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium
-                ${appt.work_paid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
-                Работы {appt.work_paid ? '✓' : '—'}
-              </span>
-            )}
-            {hasParts && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium
-                ${appt.parts_paid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
-                Запчасти {appt.parts_paid ? '✓' : '—'}
-              </span>
-            )}
-          </div>
-        )}
 
         {/* Строка 7: action buttons */}
         <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-gray-100">
@@ -529,7 +516,7 @@ export default function AppointmentsBoard() {
 
       const { data, error } = await q
       if (error) throw error
-      return data ?? []
+      return attachInvoiceStatus(data ?? [])
     },
     enabled: !!stoId,
     staleTime: 30_000,
@@ -559,7 +546,7 @@ export default function AppointmentsBoard() {
         .lte('scheduled_date', to.toISOString())
         .order('scheduled_date', { ascending: true })
       if (error) throw error
-      return data ?? []
+      return attachInvoiceStatus(data ?? [])
     },
     enabled: !!stoId && view === 'day',
     staleTime: 30_000,
@@ -579,7 +566,7 @@ export default function AppointmentsBoard() {
         .lte('scheduled_date', new Date(weekEnd.getTime() + 86399999).toISOString())
         .order('scheduled_date', { ascending: true })
       if (error) throw error
-      return data ?? []
+      return attachInvoiceStatus(data ?? [])
     },
     enabled: !!stoId && view === 'week',
     staleTime: 60_000,
