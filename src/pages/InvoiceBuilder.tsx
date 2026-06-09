@@ -72,7 +72,7 @@ export default function InvoiceBuilder() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('appointments')
-        .select('*, customers(name, phone), vehicles(brand, model, license_plate, vin)')
+        .select('*, customers(name, phone), vehicles(brand, model, license_plate, vin), appointment_services(*), appointment_parts(*)')
         .eq('id', prefillApptId).single()
       if (error) throw error
       return data
@@ -91,10 +91,20 @@ export default function InvoiceBuilder() {
     setAppointmentId(appt.id)
     setVehicleId(appt.vehicle_id)
     setVehicleLabel(appt.vehicles ? `${appt.vehicles.brand} ${appt.vehicles.model}` : '')
-    setWorkItems((appt.work_items || []).map((w: any) => ({
+
+    // Работы: из work_items (новый формат) либо из appointment_services (легаси)
+    const rawWorks = (appt.work_items && appt.work_items.length)
+      ? appt.work_items
+      : (appt.appointment_services || []).map((s: any) => ({ name: s.name || s.description || 'Работа', price: s.cost ?? s.price ?? 0 }))
+    setWorkItems(rawWorks.map((w: any) => ({
       name: w.name, quantity: 1, price: num(w.price), total: num(w.price),
     })))
-    setPartItems((appt.part_items || []).map((p: any) => {
+
+    // Запчасти: из part_items (новый формат) либо из appointment_parts (легаси)
+    const rawParts = (appt.part_items && appt.part_items.length)
+      ? appt.part_items
+      : (appt.appointment_parts || []).map((p: any) => ({ name: p.description || p.name || 'Запчасть', price: p.store_cost ?? p.price ?? 0, quantity: p.quantity ?? 1 }))
+    setPartItems(rawParts.map((p: any) => {
       const q = num(p.quantity) || 1
       const unit = num(p.price)
       return { name: p.name, quantity: q, unitPrice: unit, total: q * unit }
@@ -287,10 +297,10 @@ export default function InvoiceBuilder() {
           </div>
         </div>
 
-        {/* Примечание */}
+        {/* Примечания */}
         <div className="card p-4 sm:p-5">
-          <h2 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2"><FileText className="w-4 h-4 text-gray-400" /> Примечание</h2>
-          <textarea value={note} onChange={e => setNote(e.target.value)} rows={2} className="form-input resize-none" placeholder="Необязательно" />
+          <h2 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2"><FileText className="w-4 h-4 text-gray-400" /> Примечания</h2>
+          <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} className="form-input resize-none" placeholder="Рекомендации по дальнейшему обслуживанию авто, гарантия и т.п." />
         </div>
 
         {/* Итог */}

@@ -308,7 +308,7 @@ export async function fetchStoAlerts(stoCompanyId: string): Promise<{
   const readyUnpaid: ReadyUnpaidAlert[] = notPaid.map(a => ({
     id: a.id,
     customerName: a.customers?.name || 'Без клиента',
-    total: Number(a.total_cost) || 0,
+    total: (Number(a.total_work_cost) || 0) + (Number(a.parts_cost ?? a.total_parts_cost) || 0),
     hasInvoice: invoicedSet.has(a.id),
   }))
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, FileText, CalendarClock, Bell, Check } from 'lucide-react'
+import { AlertTriangle, CalendarClock, Bell, Check } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { fetchStoAlerts, type TomorrowAlert } from '@/services/stoService'
 import { fmtMoney } from '@/utils/money'
@@ -39,22 +39,17 @@ export default function StoAlerts() {
             </div>
             <div className="divide-y divide-gray-50">
               {readyUnpaid.map(a => (
-                <div key={a.id} className="flex items-center gap-2 px-4 py-2.5">
-                  <button onClick={() => navigate(`/sto/appointments/${a.id}`)} className="flex-1 min-w-0 text-left">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{a.customerName}</p>
-                    <p className="text-xs text-gray-500 tabular-nums">{fmtMoney(a.total)}</p>
-                  </button>
-                  {a.hasInvoice ? (
-                    <span className="text-[11px] font-semibold px-2 py-1 rounded-md bg-blue-50 text-blue-700 whitespace-nowrap">Счёт не оплачен</span>
-                  ) : (
-                    <button
-                      onClick={() => navigate(`/invoices/new?appointment=${a.id}`)}
-                      className="btn-primary btn-sm inline-flex items-center gap-1 whitespace-nowrap"
-                    >
-                      <FileText className="w-3.5 h-3.5" /> Выставить счёт
-                    </button>
-                  )}
-                </div>
+                <button
+                  key={a.id}
+                  onClick={() => navigate(`/sto/appointments/${a.id}`)}
+                  className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <span className="text-sm font-semibold text-gray-900 truncate flex-1 min-w-0">{a.customerName}</span>
+                  <span className="text-xs text-gray-500 tabular-nums">{fmtMoney(a.total)}</span>
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${a.hasInvoice ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'}`}>
+                    {a.hasInvoice ? 'не оплачен' : 'нет счёта'}
+                  </span>
+                </button>
               ))}
             </div>
           </div>

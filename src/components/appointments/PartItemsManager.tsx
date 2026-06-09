@@ -151,28 +151,22 @@ export default function PartItemsManager({ items, onChange }: Props) {
         <div className="space-y-2">
           {items.map((item) => (
             <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="font-medium text-gray-900">{item.name}</div>
-                <div className="text-sm text-gray-600 mt-1">
-                  Цена: ₴{(item.price || 0).toFixed(2)}
-                  {/* {(item.markup || 0) > 0 && ` | Наценка: ₴${(item.markup || 0).toFixed(2)}`} */}
-                </div>
+                {(item.quantity || 1) > 1 && (
+                  <div className="text-xs text-gray-500 mt-0.5">₴{(item.price || 0).toFixed(2)} × {item.quantity}</div>
+                )}
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="font-semibold text-gray-900">₴{(item.totalPrice || 0).toFixed(2)}</div>
-                  <div className="text-xs text-gray-500">Итого</div>
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(item.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Удалить"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <div className="font-semibold text-gray-900 whitespace-nowrap">₴{(item.totalPrice || 0).toFixed(2)}</div>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(item.id)}
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Удалить"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
           ))}
