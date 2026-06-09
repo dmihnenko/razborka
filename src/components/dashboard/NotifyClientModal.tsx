@@ -38,7 +38,8 @@ function buildTemplate(appt: any, name: string) {
   const comp = appt?.sto_companies
   const where = [comp?.name && `на ${comp.name}`, comp?.address && `по адресу ${comp.address}`].filter(Boolean).join(' ')
 
-  let t = `Здравствуйте${name ? ', ' + name : ''}!\nНапоминаем о записи${date ? ' ' + date : ''}${time ? ' в ' + time : ''}${where ? ' ' + where : ''}.`
+  const firstName = (name || '').trim().split(/\s+/)[0] || ''
+  let t = `Здравствуйте${firstName ? ', ' + firstName : ''}!\nНапоминаем о записи${date ? ' ' + date : ''}${time ? ' в ' + time : ''}${where ? ' ' + where : ''}.`
   if (veh) t += `\nАвтомобиль: ${veh}${plateOrVin ? `, ${plateOrVin}` : ''}`
   if (works) t += `\nРаботы:\n${works}`
   if (hours > 0) t += `\nОриентировочное время работ: ${hours} ч.`

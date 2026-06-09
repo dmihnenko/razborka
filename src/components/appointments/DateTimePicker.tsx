@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -83,98 +83,6 @@ const MONTHS_RU = ['Январь','Февраль','Март','Апрель','М
 function getDaysInMonth(y: number, m: number) { return new Date(y, m+1, 0).getDate() }
 function getFirstDay(y: number, m: number) {
   const d = new Date(y, m, 1).getDay(); return d === 0 ? 6 : d - 1
-}
-
-// ─── ScrollDrum ───────────────────────────────────────────────────────────────
-// iOS-style drum scroll picker
-
-const ITEM_H = 48  // px per item
-const VISIBLE = 5  // видимых элементов (нечётное — центральный = выбранный)
-
-interface DrumProps<T> {
-  items: T[]
-  value: T
-  onChange: (v: T) => void
-  getLabel: (v: T) => string
-}
-
-function ScrollDrum<T>({ items, value, onChange, getLabel }: DrumProps<T>) {
-  const ref = useRef<HTMLDivElement>(null)
-  const timer = useRef<ReturnType<typeof setTimeout>>()
-  const selectedIdx = items.indexOf(value)
-
-  // Инициализация позиции
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.scrollTop = selectedIdx * ITEM_H
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const snap = useCallback(() => {
-    if (!ref.current) return
-    const idx = Math.max(0, Math.min(items.length - 1,
-      Math.round(ref.current.scrollTop / ITEM_H)
-    ))
-    ref.current.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' })
-    onChange(items[idx])
-  }, [items, onChange])
-
-  const onScroll = () => {
-    clearTimeout(timer.current)
-    timer.current = setTimeout(snap, 120)
-  }
-
-  const goTo = (idx: number) => {
-    if (!ref.current) return
-    ref.current.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' })
-    onChange(items[idx])
-  }
-
-  return (
-    <div className="relative overflow-hidden select-none" style={{ height: ITEM_H * VISIBLE }}>
-      {/* Верхняя затухающая рамка */}
-      <div className="absolute inset-x-0 top-0 z-10 pointer-events-none"
-           style={{ height: ITEM_H * 2, background: 'linear-gradient(to bottom, white 0%, rgba(255,255,255,0.6) 100%)' }} />
-      {/* Нижняя */}
-      <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none"
-           style={{ height: ITEM_H * 2, background: 'linear-gradient(to top, white 0%, rgba(255,255,255,0.6) 100%)' }} />
-      {/* Рамка выбранного элемента */}
-      <div className="absolute inset-x-3 z-10 pointer-events-none rounded-lg border-2 border-primary/20 bg-primary/5"
-           style={{ top: ITEM_H * 2, height: ITEM_H }} />
-
-      {/* Прокручиваемый список */}
-      <div
-        ref={ref}
-        onScroll={onScroll}
-        className="h-full overflow-y-scroll"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        {/* Отступ сверху чтобы первый элемент мог оказаться по центру */}
-        <div style={{ height: ITEM_H * 2 }} />
-
-        {items.map((item, idx) => {
-          const isActive = item === value
-          return (
-            <div
-              key={idx}
-              onClick={() => goTo(idx)}
-              style={{ height: ITEM_H }}
-              className={`flex items-center justify-center cursor-pointer transition-all px-2
-                ${isActive
-                  ? 'text-primary font-bold text-base'
-                  : 'text-gray-400 font-medium text-sm'}`}
-            >
-              {getLabel(item)}
-            </div>
-          )
-        })}
-
-        {/* Отступ снизу */}
-        <div style={{ height: ITEM_H * 2 }} />
-      </div>
-    </div>
-  )
 }
 
 // ─── main component ───────────────────────────────────────────────────────────
@@ -283,6 +191,27 @@ export default function DateTimePicker({
     enabled: !!stoCompanyId && !!onWorkerChange,
     staleTime: 5 * 60_000,
   })
+
+  // График работы СТО — сетка выбора времени
+  const { data: workHours } = useQuery({
+    queryKey: ['sto-work-hours', stoCompanyId],
+    queryFn: async () => {
+      const { data } = await supabase.from('sto_companies').select('work_open, work_close').eq('id', stoCompanyId!).single()
+      return data
+    },
+    enabled: !!stoCompanyId,
+    staleTime: 5 * 60_000,
+  })
+  const timeSlots = useMemo(() => {
+    const start = Math.max(0, Math.min(23, Number(workHours?.work_open ?? 9)))
+    const end = Math.max(start + 1, Math.min(24, Number(workHours?.work_close ?? 19)))
+    const slots: string[] = []
+    for (let h = start; h < end; h++) slots.push(`${String(h).padStart(2, '0')}:00`)
+    return slots
+  }, [workHours])
+
+  // Время выбрано — тогда показываем мастера
+  const [timePicked, setTimePicked] = useState<boolean>(!!selectedStart)
 
   // Применяем изменения в родителя при смене времени/длительности
   useEffect(() => {
@@ -413,98 +342,49 @@ export default function DateTimePicker({
         {selDate ? fmtDateLong(selDate) : 'Выбрать дату'}
       </button>
 
-      {/* Сводка: начало + длительность = конец */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4">
-        <div className="flex items-center gap-2 text-center">
-          <div className="flex-1">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Начало</p>
-            <p className="text-3xl font-bold text-gray-900 tabular-nums leading-none">{startTime}</p>
-          </div>
-
-          {showDuration && (
-            <>
-              <div className="text-gray-300 font-light text-xl flex-shrink-0">+</div>
-
-              <div className="flex-1">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Длительность</p>
-                <p className="text-xl font-bold text-primary leading-none">{hoursLabel(durMin)}</p>
-              </div>
-
-              <div className="text-gray-300 font-light text-xl flex-shrink-0">=</div>
-
-              <div className="flex-1">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Конец</p>
-                <p className="text-3xl font-bold text-green-600 tabular-nums leading-none">{endTime ?? '—'}</p>
-              </div>
-            </>
+      {/* Время — сетка слотов от открытия до закрытия */}
+      <div className="bg-white border border-gray-200 rounded-xl p-3">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Время начала</p>
+          {timePicked && (
+            <p className="text-xs text-gray-500">
+              <span className="font-semibold text-gray-900 tabular-nums">{startTime}</span>
+              {showDuration && endTime ? <span className="text-gray-400"> → {endTime}</span> : null}
+            </p>
           )}
         </div>
-      </div>
-
-      {/* Барабанные колонки */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className={showDuration ? 'grid grid-cols-2 divide-x divide-gray-100' : ''}>
-          {/* Время начала */}
-          <div>
-            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide text-center py-2.5 border-b border-gray-100">
-              Время начала
-            </p>
-            <ScrollDrum
-              items={START_TIMES}
-              value={startTime}
-              onChange={setStartTime}
-              getLabel={v => v}
-            />
-          </div>
-
-          {/* Длительность — сколько часов занят мастер */}
-          {showDuration && (
-          <div>
-            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide text-center py-2.5 border-b border-gray-100">
-              Часов
-            </p>
-            <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: ITEM_H * 5 - 41 }}>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setDurMin(m => Math.max(DUR_MIN, m - DUR_STEP))}
-                  className="w-11 h-11 flex items-center justify-center rounded-xl border border-gray-200 text-gray-600 text-2xl font-bold leading-none hover:bg-gray-50 active:scale-95 transition disabled:opacity-30"
-                  disabled={durMin <= DUR_MIN}
-                  aria-label="Меньше"
-                >−</button>
-
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={hoursNum(durMin)}
-                  onChange={e => {
-                    const h = parseFloat(e.target.value.replace(',', '.'))
-                    if (!isNaN(h) && h > 0) {
-                      setDurMin(Math.min(DUR_MAX, Math.max(DUR_MIN, Math.round(h * 2) / 2 * 60)))
-                    }
-                  }}
-                  className="w-16 text-center text-4xl font-bold text-primary tabular-nums leading-none bg-transparent border-b-2 border-primary/20 focus:border-primary outline-none py-1"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => setDurMin(m => Math.min(DUR_MAX, m + DUR_STEP))}
-                  className="w-11 h-11 flex items-center justify-center rounded-xl border border-gray-200 text-gray-600 text-2xl font-bold leading-none hover:bg-gray-50 active:scale-95 transition disabled:opacity-30"
-                  disabled={durMin >= DUR_MAX}
-                  aria-label="Больше"
-                >+</button>
-              </div>
-              <p className="text-xs text-gray-400 text-center px-3">
-                Мастер занят ~{hoursLabel(durMin)}
-              </p>
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
+          {timeSlots.map(t => {
+            const active = timePicked && startTime === t
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => { setStartTime(t); setTimePicked(true) }}
+                className={`py-2 rounded-lg text-sm font-semibold tabular-nums border transition-colors
+                  ${active ? 'border-primary bg-primary text-white' : 'border-gray-200 text-gray-700 hover:border-primary/40 hover:bg-primary/5'}`}
+              >
+                {t}
+              </button>
+            )
+          })}
+        </div>
+        {showDuration && timePicked && (
+          <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-gray-100">
+            <span className="text-xs text-gray-500">Длительность · мастер занят ~{hoursLabel(durMin)}</span>
+            <div className="flex items-center gap-1.5">
+              <button type="button" onClick={() => setDurMin(m => Math.max(DUR_MIN, m - DUR_STEP))} disabled={durMin <= DUR_MIN}
+                className="w-8 h-8 rounded-lg border border-gray-200 text-gray-600 text-lg font-bold leading-none disabled:opacity-30">−</button>
+              <span className="text-sm font-bold text-primary tabular-nums w-12 text-center">{hoursLabel(durMin)}</span>
+              <button type="button" onClick={() => setDurMin(m => Math.min(DUR_MAX, m + DUR_STEP))} disabled={durMin >= DUR_MAX}
+                className="w-8 h-8 rounded-lg border border-gray-200 text-gray-600 text-lg font-bold leading-none disabled:opacity-30">+</button>
             </div>
           </div>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* Выбор мастера */}
-      {onWorkerChange && (
+      {/* Выбор мастера — после выбора времени */}
+      {onWorkerChange && timePicked && (
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">
             Мастер, который выполнит ремонт

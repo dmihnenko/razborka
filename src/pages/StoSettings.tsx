@@ -20,7 +20,7 @@ export default function StoSettings() {
       if (!profile?.sto_company_id) return null
       const { data, error } = await supabase
         .from('sto_companies')
-        .select('id, name, services_menu_enabled, labor_rate, catalog_work_mode')
+        .select('id, name, services_menu_enabled, labor_rate, catalog_work_mode, work_open, work_close')
         .eq('id', profile?.sto_company_id)
         .single()
 
@@ -46,6 +46,31 @@ export default function StoSettings() {
       toast.success('Ставка сохранена')
     },
     onError: (error: any) => toast.error(error.message || 'Ошибка сохранения ставки'),
+  })
+
+  // График работы СТО
+  const [workOpen, setWorkOpen] = useState('9')
+  const [workClose, setWorkClose] = useState('19')
+  useEffect(() => {
+    if (stoCompany) {
+      setWorkOpen(String(stoCompany.work_open ?? 9))
+      setWorkClose(String(stoCompany.work_close ?? 19))
+    }
+  }, [stoCompany])
+  const saveWorkHoursMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('sto_companies')
+        .update({ work_open: Number(workOpen), work_close: Number(workClose) })
+        .eq('id', profile?.sto_company_id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sto_company_settings'] })
+      queryClient.invalidateQueries({ queryKey: ['sto-work-hours'] })
+      toast.success('График работы сохранён')
+    },
+    onError: (e: any) => toast.error(e.message || 'Ошибка'),
   })
 
   const catalogMode: CatalogWorkMode = stoCompany?.catalog_work_mode === 'norm_hours' ? 'norm_hours' : 'price'
@@ -204,6 +229,36 @@ export default function StoSettings() {
               <p className="text-xs text-gray-400 mt-1.5">Та же ставка применяется к записям (работы = нормо-часы × ставку).</p>
             </div>
           )}
+        </div>
+
+        {/* График работы */}
+        <div className="card p-4 sm:p-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-amber-100 rounded-lg"><Clock className="w-5 h-5 text-amber-600" /></div>
+            <h2 className="text-mobile-lg font-semibold text-gray-900">График работы</h2>
+          </div>
+          <p className="text-mobile-sm text-gray-600 mb-4">Часы работы СТО — из них формируется сетка выбора времени при записи.</p>
+          <div className="flex items-end gap-3 flex-wrap">
+            <div>
+              <label className="form-label">Открытие</label>
+              <select value={workOpen} onChange={e => setWorkOpen(e.target.value)} className="form-select w-28">
+                {Array.from({ length: 24 }, (_, h) => h).map(h => <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="form-label">Закрытие</label>
+              <select value={workClose} onChange={e => setWorkClose(e.target.value)} className="form-select w-28">
+                {Array.from({ length: 24 }, (_, h) => h + 1).map(h => <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>)}
+              </select>
+            </div>
+            <button
+              onClick={() => saveWorkHoursMutation.mutate()}
+              disabled={saveWorkHoursMutation.isPending || (workOpen === String(stoCompany?.work_open ?? 9) && workClose === String(stoCompany?.work_close ?? 19))}
+              className="btn-primary btn-sm"
+            >
+              {saveWorkHoursMutation.isPending ? '…' : 'Сохранить'}
+            </button>
+          </div>
         </div>
 
         {/* Корзина */}
