@@ -136,7 +136,7 @@ export default function InvoiceDocument({ invoice, company, customer, vehicle }:
 
       {invoice.note && (
         <div className="mt-6 pt-4 border-t border-gray-200">
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Примечания</p>
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Рекомендации</p>
           <p className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">{invoice.note}</p>
         </div>
       )}

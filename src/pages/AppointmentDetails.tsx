@@ -102,6 +102,22 @@ export default function AppointmentDetails() {
     enabled: !!appointmentId,
   })
 
+  // Связанный счёт по заявке (для кнопки «Выставить/Показать счёт»)
+  const { data: linkedInvoice } = useQuery({
+    queryKey: ['appointment-invoice', appointmentId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('sto_invoices')
+        .select('id, status')
+        .eq('appointment_id', appointmentId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      return data
+    },
+    enabled: !!appointmentId,
+  })
+
   const { data: vehicleHistory = [] } = useQuery({
     queryKey: ['vehicle-service-history', appointment?.vehicle_id, appointmentId],
     queryFn: async () => {
@@ -666,14 +682,23 @@ export default function AppointmentDetails() {
               </div>
             )}
 
-            {/* Выставить счёт (под «Готово к выдаче») */}
+            {/* Счёт (под «Готово к выдаче») */}
             {isStoOwner && (
-              <button
-                onClick={() => navigate(`/invoices/new?appointment=${appointment.id}`)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white text-sm font-semibold rounded-2xl hover:bg-primary/90 transition-colors"
-              >
-                <FileText className="w-4 h-4" /> Выставить счёт
-              </button>
+              linkedInvoice ? (
+                <button
+                  onClick={() => navigate(`/sto/invoices/${linkedInvoice.id}`)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white text-primary border border-primary/30 text-sm font-semibold rounded-2xl hover:bg-primary/5 transition-colors"
+                >
+                  <FileText className="w-4 h-4" /> Показать счёт
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate(`/invoices/new?appointment=${appointment.id}`)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white text-sm font-semibold rounded-2xl hover:bg-primary/90 transition-colors"
+                >
+                  <FileText className="w-4 h-4" /> Выставить счёт
+                </button>
+              )
             )}
 
             {/* Pending deletion (owner) */}

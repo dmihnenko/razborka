@@ -187,14 +187,18 @@ export default function InvoiceBuilder() {
             <h2 className="text-sm font-bold text-gray-900">Клиент</h2>
             {customer && <span className="text-sm text-gray-500">· {customer.name}</span>}
           </div>
-          <ClientSelector
-            selectedId={customerId}
-            onSelect={(id, c) => { setCustomerId(id); setCustomer(c); setAppointmentId(null) }}
-          />
+          {prefillApptId ? (
+            <p className="text-sm text-gray-700">{customer?.name || '—'}{customer?.phone ? ` · ${customer.phone}` : ''}</p>
+          ) : (
+            <ClientSelector
+              selectedId={customerId}
+              onSelect={(id, c) => { setCustomerId(id); setCustomer(c); setAppointmentId(null) }}
+            />
+          )}
         </div>
 
         {/* Заявка клиента */}
-        {customerId && !isEdit && (
+        {customerId && !isEdit && !prefillApptId && (
           <div className="card p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-3">
               <Calendar className="w-4 h-4 text-gray-400" />
@@ -297,9 +301,9 @@ export default function InvoiceBuilder() {
           </div>
         </div>
 
-        {/* Примечания */}
+        {/* Рекомендации */}
         <div className="card p-4 sm:p-5">
-          <h2 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2"><FileText className="w-4 h-4 text-gray-400" /> Примечания</h2>
+          <h2 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2"><FileText className="w-4 h-4 text-gray-400" /> Рекомендации</h2>
           <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} className="form-input resize-none" placeholder="Рекомендации по дальнейшему обслуживанию авто, гарантия и т.п." />
         </div>
 
