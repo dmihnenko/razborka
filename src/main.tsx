@@ -33,24 +33,61 @@ if (import.meta.env.DEV) {
   }
 }
 
-// Авто-перезагрузка при ошибке загрузки JS-чанков после нового деплоя
-// Браузер кеширует старые хеши файлов, которых уже нет на сервере
-window.addEventListener('vite:preloadError', () => {
+// ── Восстановление при ошибке загрузки JS-чанков ──────────────────────────────
+// После нового деплоя браузер/SW может ссылаться на старые хеши файлов, которых
+// уже нет → бесконечный спиннер. Логика самолечения:
+//  1) первая ошибка — обычная перезагрузка (подтянет свежие файлы);
+//  2) повтор в течение 25с (значит SW отдаёт «битый» кэш) — жёстко: снимаем SW
+//     и чистим кэши, затем перезагружаем. Это разрывает цикл «спиннер/перезагрузка».
+const CHUNK_KEY = 'tsp_chunk_recover_ts'
+let chunkRecovering = false
+
+async function recoverFromChunkFailure() {
+  if (chunkRecovering) return
+  chunkRecovering = true
+  const now = Date.now()
+  const last = Number(sessionStorage.getItem(CHUNK_KEY) || 0)
+  const looping = now - last < 25_000
+
+  if (looping) {
+    // Жёсткое лечение: снять service worker и почистить кэши приложения
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations()
+        await Promise.all(regs.map(r => r.unregister()))
+      }
+      if ('caches' in window) {
+        const keys = await caches.keys()
+        await Promise.all(
+          keys.filter(k => !k.includes('google-fonts') && !k.includes('imgbb')).map(k => caches.delete(k))
+        )
+      }
+    } catch { /* ignore */ }
+    sessionStorage.removeItem(CHUNK_KEY)
+  } else {
+    sessionStorage.setItem(CHUNK_KEY, String(now))
+  }
+  // Сбрасываем счётчик «успешной» загрузки через 30с, чтобы единичные ошибки не копились
   window.location.reload()
+}
+
+window.addEventListener('vite:preloadError', (e: any) => {
+  e?.preventDefault?.()
+  recoverFromChunkFailure()
 })
-// Fallback для браузеров без vite:preloadError
 if (import.meta.env.PROD) {
   window.addEventListener('error', (event) => {
-    const isChunkError =
-      event.message?.includes('Failed to fetch dynamically imported module') ||
-      event.message?.includes('Importing a module script failed')
-    if (isChunkError) {
-      const reloadKey = 'chunk_reload_ts'
-      const lastReload = Number(sessionStorage.getItem(reloadKey) || 0)
-      if (Date.now() - lastReload > 10_000) {
-        sessionStorage.setItem(reloadKey, String(Date.now()))
-        window.location.reload()
-      }
+    const m = event.message || ''
+    if (m.includes('Failed to fetch dynamically imported module') ||
+        m.includes('Importing a module script failed') ||
+        m.includes('error loading dynamically imported module')) {
+      recoverFromChunkFailure()
+    }
+  })
+  window.addEventListener('unhandledrejection', (event) => {
+    const m = String((event as any)?.reason?.message || (event as any)?.reason || '')
+    if (/dynamically imported module|module script failed|ChunkLoadError/i.test(m)) {
+      recoverFromChunkFailure()
     }
   })
 }

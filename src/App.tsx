@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect, useRef, lazy, Suspense } from 'react'
+import { useEffect, useRef, useState, lazy, Suspense } from 'react'
 import { Toaster } from 'sonner'
 import { AlertProvider } from './components/CustomAlert'
 import VersionChecker from './components/VersionChecker'
@@ -93,9 +93,44 @@ import { supabase } from './lib/supabase'
 
 import { LayoutSkeleton } from './components/LayoutSkeleton'
 
-// Компонент загрузки для Suspense
+async function hardRecover() {
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations()
+      await Promise.all(regs.map(r => r.unregister()))
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys()
+      await Promise.all(keys.filter(k => !k.includes('google-fonts') && !k.includes('imgbb')).map(k => caches.delete(k)))
+    }
+  } catch { /* ignore */ }
+  window.location.reload()
+}
+
+// Компонент загрузки для Suspense + «сторож»: если загрузка зависла надолго,
+// предлагаем восстановление (часто причина — устаревший кэш SW в PWA).
 function PageLoader() {
-  return <LayoutSkeleton />
+  const [stuck, setStuck] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setStuck(true), 12_000)
+    return () => clearTimeout(t)
+  }, [])
+  return (
+    <>
+      <LayoutSkeleton />
+      {stuck && (
+        <div className="fixed inset-x-0 bottom-0 z-50 p-4 flex justify-center">
+          <div className="bg-white shadow-xl border border-gray-200 rounded-2xl px-4 py-3 flex items-center gap-3 max-w-sm w-full">
+            <p className="text-sm text-gray-700 flex-1">Загрузка затянулась. Обновить приложение?</p>
+            <button onClick={hardRecover}
+              className="px-3 py-1.5 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/90 transition-colors flex-shrink-0">
+              Обновить
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  )
 }
 
 function App() {
