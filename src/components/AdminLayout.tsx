@@ -7,6 +7,7 @@ import {
   Car, Wrench, Menu, X, ChevronRight, LayoutGrid
 } from 'lucide-react'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
+import { useAuth } from '../hooks/useAuth'
 import { useAdminNotifications } from '../hooks/useAdminNotifications'
 import { supabase } from '../lib/supabase'
 import { toast } from 'sonner'
@@ -78,6 +79,7 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const isAdmin = useIsAdmin()
+  const { user, loading: authLoading } = useAuth()
   const { data: profile, isLoading } = useUserProfile()
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -94,7 +96,9 @@ export default function AdminLayout() {
     setMobileOpen(false)
   }
 
-  if (isLoading) return <LayoutSkeleton />
+  // Пока грузится сессия/профиль — спиннер, а не «Доступ запрещён»
+  // (иначе при входе админом на миг мелькает запрет, пока роли не загрузились)
+  if (authLoading || isLoading || (!!user && !profile)) return <LayoutSkeleton />
 
   if (!isAdmin) {
     return (
