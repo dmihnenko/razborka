@@ -125,7 +125,12 @@ export default function Login() {
     })
 
     if (error) {
-      toast.error('Неверный email или пароль')
+      const msg = (error.message || '').toLowerCase()
+      if (msg.includes('not confirmed') || msg.includes('confirm')) {
+        toast.error('Email не подтверждён. Откройте письмо и перейдите по ссылке подтверждения.')
+      } else {
+        toast.error('Неверный email или пароль')
+      }
       setLoading(false)
       return
     }
