@@ -21,7 +21,7 @@ const CONTEXTS: Ctx[] = [
 ]
 
 /** Переключатель контекста (лайаута): Админ / СТО / Разборка / Мои авто. */
-export default function ContextSwitcher({ current }: { current: ContextId }) {
+export default function ContextSwitcher({ current, excludeIds = [] }: { current: ContextId; excludeIds?: ContextId[] }) {
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
   const [open, setOpen] = useState(false)
@@ -42,7 +42,7 @@ export default function ContextSwitcher({ current }: { current: ContextId }) {
     if (id === 'parts') return isAdmin || roleNames.includes('parts_owner') || roleNames.includes('parts_worker')
     return isAdmin || roleNames.includes('user')
   }
-  const available = CONTEXTS.filter(c => has(c.id))
+  const available = CONTEXTS.filter(c => has(c.id) && !excludeIds.includes(c.id))
 
   // activeRole для целевого контекста — по фактическим ролям пользователя
   const roleFor = (id: ContextId): string => {
