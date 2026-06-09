@@ -54,6 +54,7 @@ export interface AssignSubscriptionInput {
 export interface SubscriptionUsage {
   appointments: number
   customers: number
+  workers: number
 }
 
 export interface SubscriptionRequest {

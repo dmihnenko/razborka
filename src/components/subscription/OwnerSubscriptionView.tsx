@@ -8,7 +8,7 @@ import {
 import { Spinner } from '@/components/ui/Spinner'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { useCompanySubscription } from '@/hooks/useSubscription'
+import { useCompanySubscription, useSubscriptionLimits } from '@/hooks/useSubscription'
 import {
   getSubscriptionTiers, getMyLatestRequest, createSubscriptionRequest,
 } from '@/services/subscriptionService'
@@ -29,6 +29,7 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
   const [selectedTierId, setSelectedTierId] = useState<string | null>(null)
 
   const { data: companySub, isLoading } = useCompanySubscription()
+  const { usage, limits } = useSubscriptionLimits()
   const { data: tiers = [] } = useQuery({
     queryKey: ['subscription-tiers', companyType],
     queryFn: () => getSubscriptionTiers(companyType),
@@ -119,6 +120,18 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
           )}
         </div>
       </div>
+
+      {/* ── Текущая загрузка ──────────────────────────────────────────── */}
+      {companyType === 'sto' && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
+          <h2 className="text-base font-bold text-gray-900 mb-4">Текущая загрузка</h2>
+          <div className="space-y-3.5">
+            <UsageRow icon={Users}         label="Механики"               used={usage.workers}      max={limits.maxWorkers}      accent={accent} />
+            <UsageRow icon={ClipboardList} label="Заявки в этом месяце"    used={usage.appointments} max={limits.maxAppointments} accent={accent} />
+            <UsageRow icon={Car}           label="Клиенты и авто"          used={usage.customers}    max={limits.maxCustomers}    accent={accent} />
+          </div>
+        </div>
+      )}
 
       {/* ── Выбор тарифа ──────────────────────────────────────────────── */}
       {isLifetime ? (
@@ -244,6 +257,24 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
         <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
         Лимиты тарифа: механики, заявки в месяц и количество клиентов с авто в базе.
       </p>
+    </div>
+  )
+}
+
+function UsageRow({ icon: Icon, label, used, max, accent }: { icon: any; label: string; used: number; max: number | null; accent: string }) {
+  const pct = max ? Math.min(100, Math.round((used / max) * 100)) : 0
+  const over = max != null && used >= max
+  return (
+    <div>
+      <div className="flex items-center justify-between text-sm mb-1.5">
+        <span className="flex items-center gap-1.5 text-gray-600"><Icon className="w-4 h-4 text-gray-400" /> {label}</span>
+        <span className={`font-semibold tabular-nums ${over ? 'text-red-600' : 'text-gray-900'}`}>{used} / {max ?? '∞'}</span>
+      </div>
+      {max != null && (
+        <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: over ? '#DC2626' : accent }} />
+        </div>
+      )}
     </div>
   )
 }

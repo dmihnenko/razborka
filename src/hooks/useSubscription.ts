@@ -80,7 +80,26 @@ export function useSubscriptionUsage() {
     staleTime: 2 * 60 * 1000,
   })
 
-  return { appointments: appointmentCount, customers: customerCount } as SubscriptionUsage
+  const { data: workerCount = 0 } = useQuery({
+    queryKey: ['sub-usage-workers', stoId],
+    queryFn: async () => {
+      const { data: role } = await supabase.from('roles').select('id').eq('name', 'sto_worker').single()
+      if (!role) return 0
+      const { data: profs } = await supabase.from('user_profiles').select('id').eq('sto_company_id', stoId!)
+      const ids = (profs || []).map((p: any) => p.id)
+      if (!ids.length) return 0
+      const { count } = await supabase
+        .from('user_roles')
+        .select('user_id', { count: 'exact', head: true })
+        .eq('role_id', role.id)
+        .in('user_id', ids)
+      return count || 0
+    },
+    enabled: !!stoId,
+    staleTime: 2 * 60 * 1000,
+  })
+
+  return { appointments: appointmentCount, customers: customerCount, workers: workerCount } as SubscriptionUsage
 }
 
 // ─── Combined hook (main) ─────────────────────────────────────────────────────

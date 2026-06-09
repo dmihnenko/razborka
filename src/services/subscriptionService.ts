@@ -246,6 +246,37 @@ export async function getPartsCompanies() {
 // PAID PLAN HELPER
 // ============================================================================
 
+/** Загрузка СТО-компаний (заявки в этом месяце / клиенты / механики) — для мониторинга в админке. Несколько батч-запросов. */
+export async function getStoCompaniesUsage(): Promise<Record<string, { appointments: number; customers: number; workers: number }>> {
+  const startOfMonth = new Date()
+  startOfMonth.setDate(1)
+  startOfMonth.setHours(0, 0, 0, 0)
+
+  const map: Record<string, { appointments: number; customers: number; workers: number }> = {}
+  const bump = (id: string | null, key: 'appointments' | 'customers' | 'workers') => {
+    if (!id) return
+    ;(map[id] ??= { appointments: 0, customers: 0, workers: 0 })[key]++
+  }
+
+  const [appts, custs, workerRole] = await Promise.all([
+    supabase.from('appointments').select('sto_company_id').gte('created_at', startOfMonth.toISOString()),
+    supabase.from('customers').select('sto_company_id'),
+    supabase.from('roles').select('id').eq('name', 'sto_worker').single(),
+  ])
+  ;(appts.data || []).forEach((r: any) => bump(r.sto_company_id, 'appointments'))
+  ;(custs.data || []).forEach((r: any) => bump(r.sto_company_id, 'customers'))
+
+  if (workerRole.data) {
+    const { data: wr } = await supabase.from('user_roles').select('user_id').eq('role_id', workerRole.data.id)
+    const ids = (wr || []).map((x: any) => x.user_id)
+    if (ids.length) {
+      const { data: profs } = await supabase.from('user_profiles').select('sto_company_id').in('id', ids)
+      ;(profs || []).forEach((p: any) => bump(p.sto_company_id, 'workers'))
+    }
+  }
+  return map
+}
+
 /** Тарифы (Стандарт/Про/Макс/Персональный) для типа компании, по порядку. Демо (price=0, не custom) исключается. */
 export async function getSubscriptionTiers(companyType: 'sto' | 'parts') {
   // Сортировку по sort_order делаем на клиенте — колонки может ещё не быть в проде (prod отстаёт от репо)

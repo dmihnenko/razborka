@@ -11,6 +11,7 @@ import {
   deactivateSubscription, deleteCompanySubscription, assignSubscription,
   getStoCompanies, getPartsCompanies,
   getSubscriptionRequests, approveSubscriptionRequest, rejectSubscriptionRequest,
+  getStoCompaniesUsage,
 } from '@/services/subscriptionService'
 import type { CompanySubscription, Subscription } from '@/types/subscription'
 import { durationLabel } from '@/config/subscriptionPlans'
@@ -79,6 +80,7 @@ export default function Subscriptions() {
   const { data: stoCompanies  = [] } = useQuery({ queryKey: ['sto-companies-list'],  queryFn: getStoCompanies,   enabled: assignForm.companyType === 'sto' })
   const { data: partsCompanies = [] } = useQuery({ queryKey: ['parts-companies-list'], queryFn: getPartsCompanies, enabled: assignForm.companyType === 'parts' })
   const { data: requests = [] } = useQuery({ queryKey: ['subscription-requests'], queryFn: () => getSubscriptionRequests('pending') })
+  const { data: usageMap = {} } = useQuery({ queryKey: ['sto-companies-usage'], queryFn: getStoCompaniesUsage, staleTime: 2 * 60 * 1000 })
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['company-subscriptions'] })
@@ -332,6 +334,23 @@ export default function Subscriptions() {
                             </span>
                           )}
                         </div>
+                        {/* Загрузка против лимитов (только СТО) */}
+                        {sub.company_type === 'sto' && usageMap[sub.company_id] && sub.subscription && (
+                          <div className="flex items-center gap-3 mt-1.5 text-[11px] text-gray-500 flex-wrap">
+                            {([
+                              ['Мех', usageMap[sub.company_id].workers, sub.subscription.max_workers],
+                              ['Заявки/мес', usageMap[sub.company_id].appointments, sub.subscription.max_appointments],
+                              ['Клиенты', usageMap[sub.company_id].customers, sub.subscription.max_customers],
+                            ] as const).map(([label, used, max]) => {
+                              const over = max != null && used >= max
+                              return (
+                                <span key={label} className="inline-flex items-center gap-1">
+                                  {label}: <b className={over ? 'text-red-600' : 'text-gray-700'}>{used}/{max ?? '∞'}</b>
+                                </span>
+                              )
+                            })}
+                          </div>
+                        )}
                       </div>
 
                       {/* Price */}
