@@ -48,6 +48,7 @@ export function useCompanySubscription() {
 export function useSubscriptionUsage() {
   const { data: profile } = useUserProfile()
   const stoId = profile?.sto_company_id
+  const partsId = profile?.parts_company_id
 
   const { data: appointmentCount = 0 } = useQuery({
     queryKey: ['sub-usage-appointments', stoId],
@@ -99,7 +100,36 @@ export function useSubscriptionUsage() {
     staleTime: 2 * 60 * 1000,
   })
 
-  return { appointments: appointmentCount, customers: customerCount, workers: workerCount } as SubscriptionUsage
+  const { data: vehicleCount = 0 } = useQuery({
+    queryKey: ['sub-usage-vehicles', partsId],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('parts_vehicles')
+        .select('id', { count: 'exact', head: true })
+        .eq('parts_company_id', partsId!)
+      return count || 0
+    },
+    enabled: !!partsId,
+    staleTime: 2 * 60 * 1000,
+  })
+
+  const { data: partCount = 0 } = useQuery({
+    queryKey: ['sub-usage-parts', partsId],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('parts_inventory')
+        .select('id', { count: 'exact', head: true })
+        .eq('parts_company_id', partsId!)
+      return count || 0
+    },
+    enabled: !!partsId,
+    staleTime: 2 * 60 * 1000,
+  })
+
+  return {
+    appointments: appointmentCount, customers: customerCount, workers: workerCount,
+    vehicles: vehicleCount, parts: partCount,
+  } as SubscriptionUsage
 }
 
 // ─── Combined hook (main) ─────────────────────────────────────────────────────
@@ -119,6 +149,9 @@ export function useSubscriptionLimits() {
   const maxAppointments = hasSubscription ? (plan?.max_appointments ?? null) : FREE_LIMITS.sto.appointments
   const maxCustomers    = hasSubscription ? (plan?.max_customers    ?? null) : FREE_LIMITS.sto.customers
   const maxWorkers      = hasSubscription ? (plan?.max_workers      ?? null) : FREE_LIMITS.sto.workers
+  // Разборка
+  const maxVehicles = hasSubscription ? (plan?.max_vehicles ?? null) : FREE_LIMITS.parts.vehicles
+  const maxParts    = hasSubscription ? (plan?.max_parts    ?? null) : FREE_LIMITS.parts.parts
 
   // Usage percentages (0-100, clamped)
   const usagePct = {
@@ -148,6 +181,8 @@ export function useSubscriptionLimits() {
       maxAppointments,
       maxCustomers,
       maxWorkers,
+      maxVehicles,
+      maxParts,
       sto: hasSubscription && isStoOwner ? null : FREE_LIMITS.sto,
       parts: hasSubscription && isPartsOwner ? null : FREE_LIMITS.parts,
     },
@@ -169,16 +204,16 @@ export function useSubscriptionLimits() {
         if (isPartsOwner) return currentCount < FREE_LIMITS.parts.workers
         return false
       },
-      vehicle: (currentCount: number) => {
-        if (hasSubscription) return true
-        if (isStoOwner) return currentCount < FREE_LIMITS.sto.vehicles
-        if (isPartsOwner) return currentCount < FREE_LIMITS.parts.vehicles
-        return true
-      },
-      part: (currentCount: number) => {
+      vehicle: () => {
+        // Лимит машин — только для разборки
         if (!isPartsOwner) return true
-        if (hasSubscription) return true
-        return currentCount < FREE_LIMITS.parts.parts
+        if (maxVehicles === null) return true
+        return usage.vehicles < maxVehicles
+      },
+      part: () => {
+        if (!isPartsOwner) return true
+        if (maxParts === null) return true
+        return usage.parts < maxParts
       },
     },
   }

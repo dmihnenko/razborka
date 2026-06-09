@@ -277,6 +277,22 @@ export async function getStoCompaniesUsage(): Promise<Record<string, { appointme
   return map
 }
 
+/** Загрузка разборок (машины / запчасти) — для мониторинга в админке. */
+export async function getPartsCompaniesUsage(): Promise<Record<string, { vehicles: number; parts: number }>> {
+  const map: Record<string, { vehicles: number; parts: number }> = {}
+  const bump = (id: string | null, key: 'vehicles' | 'parts') => {
+    if (!id) return
+    ;(map[id] ??= { vehicles: 0, parts: 0 })[key]++
+  }
+  const [veh, prt] = await Promise.all([
+    supabase.from('parts_vehicles').select('parts_company_id'),
+    supabase.from('parts_inventory').select('parts_company_id'),
+  ])
+  ;(veh.data || []).forEach((r: any) => bump(r.parts_company_id, 'vehicles'))
+  ;(prt.data || []).forEach((r: any) => bump(r.parts_company_id, 'parts'))
+  return map
+}
+
 /** Тарифы (Стандарт/Про/Макс/Персональный) для типа компании, по порядку. Демо (price=0, не custom) исключается. */
 export async function getSubscriptionTiers(companyType: 'sto' | 'parts') {
   // Сортировку по sort_order делаем на клиенте — колонки может ещё не быть в проде (prod отстаёт от репо)

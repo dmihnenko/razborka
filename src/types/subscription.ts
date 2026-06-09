@@ -12,6 +12,9 @@ export interface Subscription {
   max_appointments: number | null
   max_customers: number | null
   max_workers: number | null
+  // Лимиты разборки
+  max_vehicles?: number | null
+  max_parts?: number | null
   duration_months: number | null
   sort_order?: number
   /** Персональный тариф — цена/лимиты обсуждаются индивидуально */
@@ -55,6 +58,9 @@ export interface SubscriptionUsage {
   appointments: number
   customers: number
   workers: number
+  // Разборка
+  vehicles: number
+  parts: number
 }
 
 export interface SubscriptionRequest {

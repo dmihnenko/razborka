@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { InventoryCard } from '@/components/parts/InventoryCard'
 import { getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal } from '@/services/partsService'
@@ -88,6 +89,7 @@ export default function PartsInventory() {
   const { rate: usdRate } = usePartsExchangeRate()
   const queryClient = useQueryClient()
   const partsCompanyId = profile?.parts_company_id
+  const { canCreate } = useSubscriptionLimits()
 
   const { data: inventory = [], isLoading } = useQuery({
     queryKey: ['parts-inventory', partsCompanyId],
@@ -204,6 +206,7 @@ export default function PartsInventory() {
       if (editingItem) {
         return updatePartsInventoryItem(editingItem.id, data)
       } else {
+        if (!canCreate.part()) throw new Error('Достигнут лимит запчастей по тарифу. Повысьте тариф в разделе «Тариф разборки».')
         return createPartsInventoryItem(data, partsCompanyId!)
       }
     },

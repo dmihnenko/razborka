@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle, getPartsCategoryTemplates, getPartsInventoryByVehicle } from '@/services/partsService'
@@ -49,6 +50,7 @@ export default function PartsVehicles() {
   const { confirm: showConfirm, dialogProps } = useConfirm()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
+  const { canCreate } = useSubscriptionLimits()
 
   // Fetch vehicles
   const { data: vehicles = [], isLoading } = useQuery({
@@ -63,6 +65,7 @@ export default function PartsVehicles() {
       if (selectedVehicle) {
         return updatePartsVehicle(selectedVehicle.id, data)
       } else {
+        if (!canCreate.vehicle()) throw new Error('Достигнут лимит машин по тарифу. Повысьте тариф в разделе «Тариф разборки».')
         return createPartsVehicle(data, partsCompanyId!)
       }
     },

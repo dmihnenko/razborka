@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import {
   CreditCard, TrendingUp, Plus, Trash2, Calendar, Building2,
-  CheckCircle2, XCircle, Search, X, Infinity, Edit2, RotateCw, Users, ClipboardList, Car,
+  CheckCircle2, XCircle, Search, X, Infinity, Edit2, RotateCw, Users, ClipboardList, Car, Package,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -11,7 +11,7 @@ import {
   deactivateSubscription, deleteCompanySubscription, assignSubscription,
   getStoCompanies, getPartsCompanies,
   getSubscriptionRequests, approveSubscriptionRequest, rejectSubscriptionRequest,
-  getStoCompaniesUsage,
+  getStoCompaniesUsage, getPartsCompaniesUsage,
 } from '@/services/subscriptionService'
 import type { CompanySubscription, Subscription } from '@/types/subscription'
 import { durationLabel } from '@/config/subscriptionPlans'
@@ -81,6 +81,7 @@ export default function Subscriptions() {
   const { data: partsCompanies = [] } = useQuery({ queryKey: ['parts-companies-list'], queryFn: getPartsCompanies, enabled: assignForm.companyType === 'parts' })
   const { data: requests = [] } = useQuery({ queryKey: ['subscription-requests'], queryFn: () => getSubscriptionRequests('pending') })
   const { data: usageMap = {} } = useQuery({ queryKey: ['sto-companies-usage'], queryFn: getStoCompaniesUsage, staleTime: 2 * 60 * 1000 })
+  const { data: partsUsageMap = {} } = useQuery({ queryKey: ['parts-companies-usage'], queryFn: getPartsCompaniesUsage, staleTime: 2 * 60 * 1000 })
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['company-subscriptions'] })
@@ -351,6 +352,22 @@ export default function Subscriptions() {
                             })}
                           </div>
                         )}
+                        {/* Загрузка против лимитов (разборка) */}
+                        {sub.company_type === 'parts' && partsUsageMap[sub.company_id] && sub.subscription && (
+                          <div className="flex items-center gap-3 mt-1.5 text-[11px] text-gray-500 flex-wrap">
+                            {([
+                              ['Машины', partsUsageMap[sub.company_id].vehicles, sub.subscription.max_vehicles],
+                              ['Запчасти', partsUsageMap[sub.company_id].parts, sub.subscription.max_parts],
+                            ] as const).map(([label, used, max]) => {
+                              const over = max != null && used >= max
+                              return (
+                                <span key={label} className="inline-flex items-center gap-1">
+                                  {label}: <b className={over ? 'text-red-600' : 'text-gray-700'}>{used}/{max ?? '∞'}</b>
+                                </span>
+                              )
+                            })}
+                          </div>
+                        )}
                       </div>
 
                       {/* Price */}
@@ -437,6 +454,11 @@ export default function Subscriptions() {
                         <div className="mb-4 space-y-1.5">
                           {plan.is_custom ? (
                             <p className="text-xs font-medium text-gray-500">Индивидуальные условия</p>
+                          ) : isParts ? (
+                            <>
+                              <p className="text-xs text-gray-600 flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-gray-400" /> Машин: <span className="font-semibold">{plan.max_vehicles ?? '∞'}</span></p>
+                              <p className="text-xs text-gray-600 flex items-center gap-1.5"><Package className="w-3.5 h-3.5 text-gray-400" /> Запчастей: <span className="font-semibold">{plan.max_parts ?? '∞'}</span></p>
+                            </>
                           ) : (
                             <>
                               <p className="text-xs text-gray-600 flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-gray-400" /> Механиков: <span className="font-semibold">{plan.max_workers ?? '∞'}</span></p>
@@ -682,6 +704,8 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
     max_workers:      plan.max_workers != null ? String(plan.max_workers) : '',
     max_appointments: plan.max_appointments != null ? String(plan.max_appointments) : '',
     max_customers:    plan.max_customers != null ? String(plan.max_customers) : '',
+    max_vehicles:     plan.max_vehicles != null ? String(plan.max_vehicles) : '',
+    max_parts:        plan.max_parts != null ? String(plan.max_parts) : '',
     sort_order:       plan.sort_order != null ? String(plan.sort_order) : '0',
   })
   const [saving, setSaving] = useState(false)
@@ -698,6 +722,8 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
         max_workers:      numOrNull(form.max_workers),
         max_appointments: numOrNull(form.max_appointments),
         max_customers:    numOrNull(form.max_customers),
+        max_vehicles:     numOrNull(form.max_vehicles),
+        max_parts:        numOrNull(form.max_parts),
         sort_order:       Number(form.sort_order) || 0,
       }).eq('id', plan.id)
       if (error) throw error
@@ -735,11 +761,18 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
           {field('Название', 'name')}
           {field('Описание', 'description')}
           {field('Цена (₴/мес)', 'price', 'number')}
-          <div className="grid grid-cols-3 gap-2">
-            {field('Механики', 'max_workers', 'number')}
-            {field('Заявок/мес', 'max_appointments', 'number')}
-            {field('Клиентов', 'max_customers', 'number')}
-          </div>
+          {plan.company_type === 'parts' ? (
+            <div className="grid grid-cols-2 gap-2">
+              {field('Машины', 'max_vehicles', 'number')}
+              {field('Запчасти', 'max_parts', 'number')}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {field('Механики', 'max_workers', 'number')}
+              {field('Заявок/мес', 'max_appointments', 'number')}
+              {field('Клиентов', 'max_customers', 'number')}
+            </div>
+          )}
           {field('Порядок', 'sort_order', 'number')}
           <p className="text-xs text-gray-400">
             Пустой лимит = без ограничения (например, тариф «Персональный»).

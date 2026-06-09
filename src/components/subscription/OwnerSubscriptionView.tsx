@@ -122,16 +122,23 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
       </div>
 
       {/* ── Текущая загрузка ──────────────────────────────────────────── */}
-      {companyType === 'sto' && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
-          <h2 className="text-base font-bold text-gray-900 mb-4">Текущая загрузка</h2>
-          <div className="space-y-3.5">
-            <UsageRow icon={Users}         label="Механики"               used={usage.workers}      max={limits.maxWorkers}      accent={accent} />
-            <UsageRow icon={ClipboardList} label="Заявки в этом месяце"    used={usage.appointments} max={limits.maxAppointments} accent={accent} />
-            <UsageRow icon={Car}           label="Клиенты и авто"          used={usage.customers}    max={limits.maxCustomers}    accent={accent} />
-          </div>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
+        <h2 className="text-base font-bold text-gray-900 mb-4">Текущая загрузка</h2>
+        <div className="space-y-3.5">
+          {companyType === 'sto' ? (
+            <>
+              <UsageRow icon={Users}         label="Механики"            used={usage.workers}      max={limits.maxWorkers}      accent={accent} />
+              <UsageRow icon={ClipboardList} label="Заявки в этом месяце" used={usage.appointments} max={limits.maxAppointments} accent={accent} />
+              <UsageRow icon={Car}           label="Клиенты и авто"       used={usage.customers}    max={limits.maxCustomers}    accent={accent} />
+            </>
+          ) : (
+            <>
+              <UsageRow icon={Car}     label="Машины"    used={usage.vehicles} max={limits.maxVehicles} accent={accent} />
+              <UsageRow icon={Package} label="Запчасти"  used={usage.parts}    max={limits.maxParts}    accent={accent} />
+            </>
+          )}
         </div>
-      )}
+      </div>
 
       {/* ── Выбор тарифа ──────────────────────────────────────────────── */}
       {isLifetime ? (
@@ -209,9 +216,18 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
                       </p>
                     </div>
                     <ul className="text-xs text-gray-600 space-y-1.5 mt-1">
-                      {t.max_workers != null && <li className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-gray-400" /> до {t.max_workers} механиков</li>}
-                      {t.max_appointments != null && <li className="flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5 text-gray-400" /> до {t.max_appointments} заявок/мес</li>}
-                      {t.max_customers != null && <li className="flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-gray-400" /> до {t.max_customers} клиентов и авто</li>}
+                      {companyType === 'sto' ? (
+                        <>
+                          {t.max_workers != null && <li className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-gray-400" /> до {t.max_workers} механиков</li>}
+                          {t.max_appointments != null && <li className="flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5 text-gray-400" /> до {t.max_appointments} заявок/мес</li>}
+                          {t.max_customers != null && <li className="flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-gray-400" /> до {t.max_customers} клиентов и авто</li>}
+                        </>
+                      ) : (
+                        <>
+                          {t.max_vehicles != null && <li className="flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-gray-400" /> до {t.max_vehicles} машин</li>}
+                          {t.max_parts != null && <li className="flex items-center gap-1.5"><Package className="w-3.5 h-3.5 text-gray-400" /> до {t.max_parts} запчастей</li>}
+                        </>
+                      )}
                     </ul>
                   </button>
                 )
