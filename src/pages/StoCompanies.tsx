@@ -155,9 +155,7 @@ export default function StoCompanies() {
         {companies.map((sto) => (
           <div
             key={sto.id}
-            className={`bg-white rounded-lg shadow-sm border-2 p-6 ${
-              sto.is_active ? 'border-green-200' : 'border-gray-200'
-            }`}
+            className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow"
           >
             <button
               onClick={() => navigate(`/admin/sto/${sto.id}`)}
