@@ -1,20 +1,20 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import { checkUsernameExists, getUserRolesWithNames, getEmailByUsername } from '@/services/userService'
+import { getUserRolesWithNames, getEmailByUsername } from '@/services/userService'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { getDefaultRouteForRoles } from '../config/navigation'
-import { Wrench, User, Mail, Lock, AtSign, Eye, EyeOff } from 'lucide-react'
+import { Wrench, Mail, Lock, AtSign, Eye, EyeOff } from 'lucide-react'
 
 export default function Login() {
   const [emailOrUsername, setEmailOrUsername] = useState('')
-  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [isRegisterMode, setIsRegisterMode] = useState(false)
+  const [isForgotMode, setIsForgotMode] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const navigate = useNavigate()
@@ -28,14 +28,7 @@ export default function Login() {
       return
     }
 
-    // Валидация username
-    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
-    if (!usernameRegex.test(username)) {
-      toast.error('Username должен содержать 3-20 символов (латиница, цифры, подчёркивание)')
-      return
-    }
-
-    // Валидация email (обязательное поле)
+    // Валидация email (обязательное поле — вход по email)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!email.trim()) {
       toast.error('Укажите электронную почту')
@@ -45,17 +38,12 @@ export default function Login() {
       toast.error('Введите корректный адрес электронной почты')
       return
     }
-
-    setLoading(true)
-
-    // Проверяем уникальность username
-    const usernameExists = await checkUsernameExists(username)
-
-    if (usernameExists) {
-      toast.error('Этот username уже занят')
-      setLoading(false)
+    if (password.length < 6) {
+      toast.error('Пароль должен содержать минимум 6 символов')
       return
     }
+
+    setLoading(true)
 
     const authEmail = email.trim()
     const realEmail = email.trim()
@@ -65,7 +53,6 @@ export default function Login() {
       password,
       options: {
         data: {
-          username: username.toLowerCase(),
           real_email: realEmail
         }
       }
@@ -92,7 +79,7 @@ export default function Login() {
             },
             body: JSON.stringify({
               userId: data.user.id,
-              username: username.toLowerCase(),
+              username: null,
               email: authEmail,
               fullName: null,
             }),
@@ -110,7 +97,6 @@ export default function Login() {
         // Email confirmation включён — просим войти вручную
         toast.success('Регистрация успешна! Подтвердите email и войдите в систему')
         setIsRegisterMode(false)
-        setUsername('')
         setEmail('')
         setPassword('')
         setConfirmPassword('')
@@ -124,39 +110,13 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
 
-    let loginEmail = emailOrUsername
+    let loginEmail = emailOrUsername.trim()
 
-    // Проверяем, это email или username
-    if (!emailOrUsername.includes('@')) {
-      // Это username — сначала берём реальный email из профиля,
-      // затем фолбэк на исторические форматы email-заглушек.
-      const storedEmail = await getEmailByUsername(emailOrUsername)
-      const formats = [
-        ...(storedEmail ? [storedEmail] : []),
-        `${emailOrUsername.toLowerCase()}@internal.tsp.local`,
-        `${emailOrUsername.toLowerCase()}@internal.local`,
-        `${emailOrUsername.toLowerCase()}@sto-worker.local`,
-        `${emailOrUsername}@example.com`,
-      ]
-
-      let success = false
-      for (const fmt of formats) {
-        const { error: fmtError } = await supabase.auth.signInWithPassword({
-          email: fmt,
-          password,
-        })
-        if (!fmtError) {
-          await handleSuccessfulLogin()
-          setLoading(false)
-          return
-        }
-      }
-
-      if (!success) {
-        toast.error('Неверный логин или пароль')
-        setLoading(false)
-        return
-      }
+    // Фолбэк для старых аккаунтов, у которых вместо email — логин:
+    // резолвим реальный email из профиля.
+    if (!loginEmail.includes('@')) {
+      const storedEmail = await getEmailByUsername(loginEmail)
+      if (storedEmail) loginEmail = storedEmail
     }
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -165,7 +125,7 @@ export default function Login() {
     })
 
     if (error) {
-      toast.error('Неверный логин или пароль')
+      toast.error('Неверный email или пароль')
       setLoading(false)
       return
     }
@@ -174,10 +134,11 @@ export default function Login() {
     setLoading(false)
   }
 
-  const handleForgotPassword = async () => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
     let target = emailOrUsername.trim()
     if (!target) {
-      toast.error('Введите email или логин, затем нажмите «Забыли пароль?»')
+      toast.error('Введите email')
       return
     }
     if (!target.includes('@')) {
@@ -369,72 +330,56 @@ export default function Login() {
 
             <div className="fu fu-1">
               <h2 style={{ color:'#F1F5F9', fontSize:'22px', fontWeight:'600', marginBottom:'4px' }}>
-                {isRegisterMode ? 'Создать аккаунт' : 'Добро пожаловать'}
+                {isForgotMode ? 'Восстановление пароля' : isRegisterMode ? 'Создать аккаунт' : 'Добро пожаловать'}
               </h2>
               <p style={{ color:'#94A3B8', fontSize:'13px', marginBottom:'28px' }}>
-                {isRegisterMode ? 'Заполните данные для регистрации' : 'Войдите в свой аккаунт'}
+                {isForgotMode
+                  ? 'Введите email — отправим ссылку для сброса пароля'
+                  : isRegisterMode ? 'Заполните данные для регистрации' : 'Войдите в свой аккаунт'}
               </p>
             </div>
 
-            <form onSubmit={isRegisterMode ? handleRegister : handleLogin}>
+            <form onSubmit={isForgotMode ? handleForgotPassword : isRegisterMode ? handleRegister : handleLogin}>
 
               <div className="fu fu-2" style={{ display:'flex', flexDirection:'column', gap:'16px', marginBottom:'16px' }}>
                 {isRegisterMode ? (
-                  <>
-                    <div>
-                      <label htmlFor="username" style={labelStyle}>Логин</label>
-                      <div className="field">
-                        <User size={18} className="field-icon" />
-                        <input
-                          id="username"
-                          type="text"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                          required
-                          autoComplete="username"
-                          className="input-dark rounded-lg text-sm"
-                          placeholder="Придумайте логин"
-                          pattern="[a-zA-Z0-9_]{3,20}"
-                        />
-                      </div>
+                  <div>
+                    <label htmlFor="email" style={labelStyle}>Email</label>
+                    <div className="field">
+                      <Mail size={18} className="field-icon" />
+                      <input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        autoComplete="email"
+                        required
+                        className="input-dark rounded-lg text-sm"
+                        placeholder="email@example.com"
+                      />
                     </div>
-                    <div>
-                      <label htmlFor="email" style={labelStyle}>Email</label>
-                      <div className="field">
-                        <Mail size={18} className="field-icon" />
-                        <input
-                          id="email"
-                          type="email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          autoComplete="email"
-                          required
-                          className="input-dark rounded-lg text-sm"
-                          placeholder="email@example.com"
-                        />
-                      </div>
-                    </div>
-                  </>
+                  </div>
                 ) : (
                   <div>
-                    <label htmlFor="emailOrUsername" style={labelStyle}>Email или логин</label>
+                    <label htmlFor="emailOrUsername" style={labelStyle}>Email</label>
                     <div className="field">
                       <AtSign size={18} className="field-icon" />
                       <input
                         id="emailOrUsername"
-                        type="text"
+                        type="email"
                         value={emailOrUsername}
                         onChange={(e) => setEmailOrUsername(e.target.value)}
                         required
-                        autoComplete="username"
+                        autoComplete="email"
                         className="input-dark rounded-lg text-sm"
-                        placeholder="email@example.com или логин"
+                        placeholder="email@example.com"
                       />
                     </div>
                   </div>
                 )}
               </div>
 
+              {!isForgotMode && (
               <div className="fu fu-3" style={{ display:'flex', flexDirection:'column', gap:'16px', marginBottom:'24px' }}>
                 <div>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
@@ -442,7 +387,7 @@ export default function Login() {
                     {!isRegisterMode && (
                       <button
                         type="button"
-                        onClick={handleForgotPassword}
+                        onClick={() => setIsForgotMode(true)}
                         disabled={loading}
                         style={{ color:'#3B82F6', fontSize:'12px', background:'none', border:'none', cursor:'pointer', padding:0, marginBottom:'7px' }}
                       >
@@ -491,6 +436,7 @@ export default function Login() {
                   </div>
                 )}
               </div>
+              )}
 
               <div className="fu fu-4">
                 <button
@@ -500,25 +446,36 @@ export default function Login() {
                   style={{ letterSpacing:'0.4px' }}
                 >
                   {loading
-                    ? (isRegisterMode ? 'Регистрация...' : 'Вход...')
-                    : (isRegisterMode ? 'Зарегистрироваться' : 'Войти')}
+                    ? (isForgotMode ? 'Отправка...' : isRegisterMode ? 'Регистрация...' : 'Вход...')
+                    : (isForgotMode ? 'Отправить ссылку' : isRegisterMode ? 'Зарегистрироваться' : 'Войти')}
                 </button>
 
                 <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', marginTop:'20px', paddingTop:'16px', textAlign:'center' }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsRegisterMode(!isRegisterMode)
-                      setUsername('')
-                      setEmail('')
-                      setConfirmPassword('')
-                    }}
-                    style={{ color:'#3B82F6', fontSize:'13px', background:'none', border:'none', cursor:'pointer', transition:'color 0.15s' }}
-                    onMouseOver={e => (e.currentTarget.style.color = '#60A5FA')}
-                    onMouseOut={e => (e.currentTarget.style.color = '#3B82F6')}
-                  >
-                    {isRegisterMode ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
-                  </button>
+                  {isForgotMode ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotMode(false)}
+                      style={{ color:'#3B82F6', fontSize:'13px', background:'none', border:'none', cursor:'pointer', transition:'color 0.15s' }}
+                      onMouseOver={e => (e.currentTarget.style.color = '#60A5FA')}
+                      onMouseOut={e => (e.currentTarget.style.color = '#3B82F6')}
+                    >
+                      ← Вернуться ко входу
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsRegisterMode(!isRegisterMode)
+                        setEmail('')
+                        setConfirmPassword('')
+                      }}
+                      style={{ color:'#3B82F6', fontSize:'13px', background:'none', border:'none', cursor:'pointer', transition:'color 0.15s' }}
+                      onMouseOver={e => (e.currentTarget.style.color = '#60A5FA')}
+                      onMouseOut={e => (e.currentTarget.style.color = '#3B82F6')}
+                    >
+                      {isRegisterMode ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
+                    </button>
+                  )}
                 </div>
               </div>
 
