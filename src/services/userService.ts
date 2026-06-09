@@ -286,6 +286,40 @@ export async function getUserByUsername(username: string): Promise<{ id: string 
   return data
 }
 
+/** Разрешает логин в email авторизации: ищет сохранённый email по username. */
+export async function getEmailByUsername(username: string): Promise<string | null> {
+  const { data } = await supabase
+    .from('user_profiles')
+    .select('email')
+    .eq('username', username.toLowerCase())
+    .maybeSingle()
+  return data?.email ?? null
+}
+
+/** Полное редактирование пользователя админом (email/пароль/профиль) через Edge Function. */
+export async function adminUpdateUser(payload: {
+  userId: string
+  email?: string
+  password?: string
+  full_name?: string
+  phone?: string
+  username?: string
+}): Promise<void> {
+  const session = await getAuthSession()
+  if (!session?.access_token) throw new Error('Сессия истекла')
+  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-user`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+      'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify(payload),
+  })
+  const data = await res.json()
+  if (!res.ok || data?.error) throw new Error(data?.error || 'Ошибка обновления пользователя')
+}
+
 export async function getUserRolesWithNames(userId: string): Promise<{
   roleNames: string[]
   primaryRoleName: string | null

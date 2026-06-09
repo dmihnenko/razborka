@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useIsAdmin, useUserProfile } from '@/hooks/useUserProfile'
 import { ROLE_COLORS } from '@/utils/roles'
-import { updateUserProfile, updateUserRoles, fetchUserProfileForEdit, fetchAllActiveRoles } from '@/services/userService'
+import { updateUserProfile, updateUserRoles, fetchUserProfileForEdit, fetchAllActiveRoles, adminUpdateUser } from '@/services/userService'
 
 interface Role { id: string; name: string; display_name: string; description: string | null; is_active: boolean }
 type Step = 1 | 2 | 3
@@ -32,7 +32,7 @@ export default function UserEdit() {
   const [rolesOpen, setRolesOpen] = useState(false)
 
   const [formData, setFormData] = useState({
-    full_name: '', phone: '', username: '',
+    full_name: '', phone: '', username: '', email: '', password: '',
     role_ids: [] as string[], primary_role_id: '',
     sto_company_id: '', parts_company_id: '',
   })
@@ -61,6 +61,8 @@ export default function UserEdit() {
         full_name: userProfile.full_name || '',
         phone: userProfile.phone || '',
         username: userProfile.username || '',
+        email: userProfile.email || '',
+        password: '',
         role_ids: roleIds,
         primary_role_id: primary?.role_id || roleIds[0] || '',
         sto_company_id: userProfile.sto_company_id || '',
@@ -98,6 +100,18 @@ export default function UserEdit() {
           })
           const result = await res.json()
           if (!res.ok || result.error) throw new Error(result.error || 'Ошибка смены логина')
+        }
+      }
+      // Админ может сменить email и/или задать новый пароль (через Edge Function)
+      if (isAdmin) {
+        const emailChanged = !!formData.email.trim() && formData.email.trim() !== (userProfile?.email || '')
+        const wantsPassword = formData.password.trim().length > 0
+        if (emailChanged || wantsPassword) {
+          await adminUpdateUser({
+            userId: id!,
+            email: emailChanged ? formData.email.trim() : undefined,
+            password: wantsPassword ? formData.password : undefined,
+          })
         }
       }
       await updateUserProfile({ userId: id!, full_name: formData.full_name, phone: formData.phone, sto_company_id: formData.sto_company_id || null, parts_company_id: formData.parts_company_id || null })
@@ -238,6 +252,26 @@ export default function UserEdit() {
                     placeholder="username" autoComplete="off"
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
                   <p className="text-xs text-gray-400 mt-1">Только латиница, цифры, _ (3-30 символов)</p>
+                </div>
+              )}
+              {isAdmin && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Email</label>
+                  <input type="email" value={formData.email}
+                    onChange={e => setFormData(p => ({ ...p, email: e.target.value }))}
+                    placeholder="email@example.com" autoComplete="off"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+                  <p className="text-xs text-gray-400 mt-1">Используется для входа и восстановления пароля</p>
+                </div>
+              )}
+              {isAdmin && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Новый пароль</label>
+                  <input type="text" value={formData.password}
+                    onChange={e => setFormData(p => ({ ...p, password: e.target.value }))}
+                    placeholder="Оставьте пустым, чтобы не менять" autoComplete="new-password"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+                  <p className="text-xs text-gray-400 mt-1">Минимум 6 символов. Заполняйте только при смене пароля</p>
                 </div>
               )}
               <div>

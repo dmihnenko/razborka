@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import { checkUsernameExists, getUserRolesWithNames } from '@/services/userService'
+import { checkUsernameExists, getUserRolesWithNames, getEmailByUsername } from '@/services/userService'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { getDefaultRouteForRoles } from '../config/navigation'
@@ -128,8 +128,11 @@ export default function Login() {
 
     // Проверяем, это email или username
     if (!emailOrUsername.includes('@')) {
-      // Это username — пробуем все возможные форматы email последовательно
+      // Это username — сначала берём реальный email из профиля,
+      // затем фолбэк на исторические форматы email-заглушек.
+      const storedEmail = await getEmailByUsername(emailOrUsername)
       const formats = [
+        ...(storedEmail ? [storedEmail] : []),
         `${emailOrUsername.toLowerCase()}@internal.tsp.local`,
         `${emailOrUsername.toLowerCase()}@internal.local`,
         `${emailOrUsername.toLowerCase()}@sto-worker.local`,
@@ -169,6 +172,36 @@ export default function Login() {
 
     await handleSuccessfulLogin()
     setLoading(false)
+  }
+
+  const handleForgotPassword = async () => {
+    let target = emailOrUsername.trim()
+    if (!target) {
+      toast.error('Введите email или логин, затем нажмите «Забыли пароль?»')
+      return
+    }
+    if (!target.includes('@')) {
+      const resolved = await getEmailByUsername(target)
+      if (!resolved) {
+        toast.error('Для этого логина не найден email. Обратитесь к администратору.')
+        return
+      }
+      target = resolved
+    }
+    if (/@internal\.|@sto-worker\.local|@example\.com/.test(target)) {
+      toast.error('У этого пользователя нет реальной почты. Администратор должен задать email.')
+      return
+    }
+    setLoading(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(target, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    setLoading(false)
+    if (error) {
+      toast.error('Не удалось отправить письмо: ' + error.message)
+      return
+    }
+    toast.success(`Письмо для сброса пароля отправлено на ${target}`)
   }
 
   const handleSuccessfulLogin = async () => {
@@ -404,7 +437,19 @@ export default function Login() {
 
               <div className="fu fu-3" style={{ display:'flex', flexDirection:'column', gap:'16px', marginBottom:'24px' }}>
                 <div>
-                  <label htmlFor="password" style={labelStyle}>Пароль</label>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
+                    <label htmlFor="password" style={labelStyle}>Пароль</label>
+                    {!isRegisterMode && (
+                      <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        disabled={loading}
+                        style={{ color:'#3B82F6', fontSize:'12px', background:'none', border:'none', cursor:'pointer', padding:0, marginBottom:'7px' }}
+                      >
+                        Забыли пароль?
+                      </button>
+                    )}
+                  </div>
                   <div className="field">
                     <Lock size={18} className="field-icon" />
                     <input
