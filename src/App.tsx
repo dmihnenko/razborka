@@ -79,6 +79,7 @@ const PartsInventoryItemPage = lazy(() => import('./pages/PartsInventoryItemPage
 const Trash = lazy(() => import('./pages/Trash'))
 const ProfileSettings = lazy(() => import('./pages/ProfileSettings'))
 const DatabasePage = lazy(() => import('./pages/Database'))
+const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'))
 const AdminSettings = lazy(() => import('./pages/AdminSettings'))
 const AdminAccessRequests = lazy(() => import('./pages/AdminAccessRequests'))
 const StoSubscriptionPage = lazy(() => import('./pages/StoSubscriptionPage'))
@@ -256,7 +257,8 @@ function App() {
           <Route path="support" element={<AdminSupport />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="access-requests" element={<AdminAccessRequests />} />
-          <Route path="analytics" element={<DatabasePage />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="database" element={<DatabasePage />} />
         </Route>
       </Routes>
     </Suspense>
