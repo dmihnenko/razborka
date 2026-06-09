@@ -9,6 +9,7 @@ import { useUserProfile, useIsAdmin } from '@/hooks/useUserProfile';
 import { useSubscriptionLimits } from '@/hooks/useSubscription';
 import { useConfirm } from '@/hooks/useConfirm';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import RoleSelector from '@/components/admin/RoleSelector';
 
 interface Role {
   id: string;
@@ -623,15 +624,6 @@ export default function Users() {
         const partsMissing = needsParts && !selectedUser.parts_company_id;
         const canSaveRoles = userRoleIds.length > 0 && !stoMissing && !partsMissing;
 
-        const toggleRole = (role: Role) => {
-          const current = selectedUser.roles || [];
-          const exists = current.some(r => r.id === role.id);
-          const newRoles = exists ? current.filter(r => r.id !== role.id) : [...current, role];
-          // гарантируем, что есть основная роль
-          if (newRoles.length > 0 && !newRoles.some(r => r.is_primary)) newRoles[0].is_primary = true;
-          setSelectedUser({ ...selectedUser, roles: newRoles });
-        };
-
         const closeRoleModal = () => { setIsRoleModalOpen(false); setSelectedUser(null); };
 
         return (
@@ -653,46 +645,22 @@ export default function Users() {
 
             {/* Тело */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-              {/* Роли — крупные тач-строки */}
+              {/* Роли */}
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Роли</label>
-                <div className="space-y-1.5">
-                  {roles.map((role) => {
-                    const checked = userRoleIds.includes(role.id);
-                    return (
-                      <button key={role.id} type="button" onClick={() => toggleRole(role)}
-                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl border-2 text-left transition-all active:scale-[0.99] ${checked ? 'border-purple-300 bg-purple-50' : 'border-gray-100 bg-white hover:bg-gray-50'}`}>
-                        <span className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border-2 transition-colors ${checked ? 'bg-purple-600 border-purple-600' : 'border-gray-300'}`}>
-                          {checked && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-                        </span>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${getRoleBadgeColor(role.name)}`}>
-                          {role.display_name}
-                        </span>
-                        {role.description && <span className="text-xs text-gray-400 truncate flex-1">{role.description}</span>}
-                      </button>
-                    );
-                  })}
-                </div>
+                <RoleSelector
+                  roles={roles}
+                  selectedIds={userRoleIds}
+                  primaryId={selectedUser.roles?.find(r => r.is_primary)?.id || selectedUser.roles?.[0]?.id || ''}
+                  onChange={(ids, pid) => {
+                    const newRoles = ids
+                      .map(id => roles.find(r => r.id === id))
+                      .filter((r): r is Role => !!r)
+                      .map(r => ({ ...r, is_primary: r.id === pid }));
+                    setSelectedUser({ ...selectedUser, roles: newRoles });
+                  }}
+                />
               </div>
-
-              {/* Основная роль */}
-              {selectedUser.roles && selectedUser.roles.length > 1 && (
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Основная роль (вход в систему)</label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {selectedUser.roles.map(role => {
-                      const active = (selectedUser.roles!.find(r => r.is_primary)?.id || selectedUser.roles![0]?.id) === role.id;
-                      return (
-                        <button key={role.id} type="button"
-                          onClick={() => setSelectedUser({ ...selectedUser, roles: selectedUser.roles!.map(r => ({ ...r, is_primary: r.id === role.id })) })}
-                          className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${active ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                          {role.display_name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
 
               {/* СТО */}
               {needsSto && (

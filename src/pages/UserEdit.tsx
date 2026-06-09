@@ -1,12 +1,12 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, User, Shield, ChevronRight, Check, X } from 'lucide-react'
+import { ArrowLeft, User, Shield, ChevronRight, Check } from 'lucide-react'
 import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useIsAdmin, useUserProfile } from '@/hooks/useUserProfile'
-import { ROLE_COLORS } from '@/utils/roles'
+import RoleSelector from '@/components/admin/RoleSelector'
 import { updateUserProfile, updateUserRoles, fetchUserProfileForEdit, fetchAllActiveRoles, adminUpdateUser } from '@/services/userService'
 
 interface Role { id: string; name: string; display_name: string; description: string | null; is_active: boolean }
@@ -23,27 +23,17 @@ export default function UserEdit() {
   const queryClient = useQueryClient()
   const isAdmin = useIsAdmin()
   const { data: currentUserProfile } = useUserProfile()
-  const dropdownRef = useRef<HTMLDivElement>(null)
 
   const isStoOwner = currentUserProfile?.roles?.some((r: any) => r.name === 'sto_owner') || false
   const isPartsOwner = currentUserProfile?.roles?.some((r: any) => r.name === 'parts_owner') || false
 
   const [step, setStep] = useState<Step>(1)
-  const [rolesOpen, setRolesOpen] = useState(false)
 
   const [formData, setFormData] = useState({
     full_name: '', phone: '', username: '', email: '', password: '',
     role_ids: [] as string[], primary_role_id: '',
     sto_company_id: '', parts_company_id: '',
   })
-
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setRolesOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
 
   const { data: userProfile, isLoading } = useQuery({
     queryKey: ['user_profile', id],
@@ -84,9 +74,6 @@ export default function UserEdit() {
     return false
   }), [roles, isAdmin, isStoOwner, isPartsOwner])
 
-  const selectedRoles = useMemo(() => allowedRoles.filter(r => formData.role_ids.includes(r.id)), [allowedRoles, formData.role_ids])
-
-
   const totalSteps: Step = 2
   const updateMutation = useMutation({
     mutationFn: async () => {
@@ -125,18 +112,6 @@ export default function UserEdit() {
     },
     onError: (e: any) => toast.error(e.message || 'Ошибка'),
   })
-
-  const toggleRole = (roleId: string) => {
-    const isSelected = formData.role_ids.includes(roleId)
-    if (isSelected) {
-      const newIds = formData.role_ids.filter(rid => rid !== roleId)
-      setFormData(p => ({ ...p, role_ids: newIds, primary_role_id: p.primary_role_id === roleId ? (newIds[0] || '') : p.primary_role_id }))
-    } else {
-      const newIds = [...formData.role_ids, roleId]
-      setFormData(p => ({ ...p, role_ids: newIds, primary_role_id: p.primary_role_id || roleId }))
-    }
-    // Не закрываем список — даём отметить несколько ролей подряд
-  }
 
   const canGoNext = step === 1 ? true : step === 2 ? formData.role_ids.length > 0 : true
   const canSave = formData.role_ids.length > 0
@@ -298,71 +273,12 @@ export default function UserEdit() {
               </div>
             </div>
             <div className="p-5">
-              {/* Выбранные теги */}
-              {selectedRoles.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {selectedRoles.map(role => {
-                    const c = ROLE_COLORS[role.name] || ROLE_COLORS.user
-                    return (
-                      <span key={role.id} className={`inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-xl text-sm font-semibold ${c.bg} ${c.text}`}>
-                        {role.display_name}
-                        {formData.primary_role_id === role.id && <span className="text-xs bg-white/60 px-1.5 py-0.5 rounded font-bold">осн.</span>}
-                        <button type="button" onClick={() => toggleRole(role.id)} className="p-0.5 rounded hover:bg-black/10">
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </span>
-                    )
-                  })}
-                </div>
-              )}
-
-              {/* Дропдаун */}
-              <div className="relative" ref={dropdownRef}>
-                <button type="button" onClick={() => setRolesOpen(!rolesOpen)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500 hover:bg-white hover:border-indigo-300 transition-all min-h-[44px]">
-                  <span>{selectedRoles.length === 0 ? 'Выберите роль...' : 'Добавить ещё'}</span>
-                  <ChevronRight className={`w-4 h-4 transition-transform ${rolesOpen ? 'rotate-90' : ''}`} strokeWidth={1.5} />
-                </button>
-                {rolesOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50 max-h-72 overflow-y-auto">
-                    {allowedRoles.map(role => {
-                      const c = ROLE_COLORS[role.name] || ROLE_COLORS.user
-                      const isSelected = formData.role_ids.includes(role.id)
-                      return (
-                        <button key={role.id} type="button" onClick={() => toggleRole(role.id)}
-                          className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors border-b border-gray-100 last:border-0 ${isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}>
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${c.bg}`}>
-                            <span className={`w-2 h-2 rounded-full ${c.dot}`} />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold text-gray-800">{role.display_name}</p>
-                            {role.description && <p className="text-xs text-gray-400 mt-0.5">{role.description}</p>}
-                          </div>
-                          {isSelected && <Check className="w-4 h-4 text-indigo-600 flex-shrink-0" strokeWidth={2.5} />}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Выбор основной */}
-              {selectedRoles.length > 1 && (
-                <div className="mt-4">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Основная роль</p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedRoles.map(role => (
-                      <button key={role.id} type="button" onClick={() => setFormData(p => ({ ...p, primary_role_id: role.id }))}
-                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border-2 transition-all ${
-                          formData.primary_role_id === role.id ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300'
-                        }`}>
-                        {formData.primary_role_id === role.id && <Check className="w-3 h-3" strokeWidth={3} />}
-                        {role.display_name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <RoleSelector
+                roles={allowedRoles}
+                selectedIds={formData.role_ids}
+                primaryId={formData.primary_role_id}
+                onChange={(ids, pid) => setFormData(p => ({ ...p, role_ids: ids, primary_role_id: pid }))}
+              />
             </div>
           </div>
         )}

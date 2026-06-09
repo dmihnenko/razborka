@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { getRoles } from '../services/userService'
 import { getStoCompanies, getPartsCompanies } from '../services/companyService'
 import { useIsAdmin, useUserProfile } from '@/hooks/useUserProfile'
+import RoleSelector from '@/components/admin/RoleSelector'
 
 interface UserFormData {
   email: string
@@ -176,25 +177,6 @@ export default function UserCreate() {
       toast.error(error.message || 'Ошибка при создании пользователя')
     }
   })
-
-  const toggleRole = (roleId: string) => {
-    const isSelected = formData.role_ids.includes(roleId)
-    if (isSelected) {
-      const newIds = formData.role_ids.filter(id => id !== roleId)
-      setFormData({
-        ...formData,
-        role_ids: newIds,
-        primary_role_id: formData.primary_role_id === roleId ? (newIds[0] || '') : formData.primary_role_id
-      })
-    } else {
-      const newIds = [...formData.role_ids, roleId]
-      setFormData({
-        ...formData,
-        role_ids: newIds,
-        primary_role_id: formData.primary_role_id || roleId
-      })
-    }
-  }
 
   const needsStoCompany = selectedRoleNames.some(n => ['sto_owner', 'sto_worker'].includes(n))
   const needsPartsCompany = selectedRoleNames.some(n => ['parts_owner', 'parts_worker'].includes(n))
@@ -418,53 +400,15 @@ export default function UserCreate() {
                   <p className="text-xs text-gray-500">Права доступа <span className="text-red-500">*</span></p>
                 </div>
               </div>
-              <div className="p-4 space-y-2">
-                {allowedRoles.map(role => {
-                  const isSelected = formData.role_ids.includes(role.id)
-                  const isPrimary = formData.primary_role_id === role.id
-                  return (
-                    <button
-                      key={role.id}
-                      type="button"
-                      role="checkbox"
-                      aria-checked={isSelected}
-                      className={`w-full text-left rounded-xl border p-3 transition-all cursor-pointer ${
-                        isSelected ? 'border-purple-300 bg-purple-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
-                      onClick={() => toggleRole(role.id)}
-                    >
-                      <div className="flex items-start gap-2.5">
-                        <div className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${
-                          isSelected ? 'bg-purple-600 border-purple-600 text-white' : 'border-gray-300 bg-white'
-                        }`}>
-                          {isSelected && <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${getRoleBadgeColor(role.name)}`}>
-                              {role.display_name}
-                            </span>
-                            {isPrimary && isSelected && (
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-600 text-white">основная</span>
-                            )}
-                          </div>
-                          {role.description && <p className="text-xs text-gray-400 mt-1 leading-relaxed">{role.description}</p>}
-                          {isSelected && !isPrimary && (
-                            <button
-                              type="button"
-                              onClick={e => { e.stopPropagation(); setFormData({ ...formData, primary_role_id: role.id }) }}
-                              className="text-xs text-purple-600 font-medium mt-1.5 hover:underline"
-                            >
-                              Сделать основной
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  )
-                })}
+              <div className="p-4">
+                <RoleSelector
+                  roles={allowedRoles}
+                  selectedIds={formData.role_ids}
+                  primaryId={formData.primary_role_id}
+                  onChange={(ids, pid) => setFormData({ ...formData, role_ids: ids, primary_role_id: pid })}
+                />
                 {formData.role_ids.length === 0 && (
-                  <p className="text-xs text-red-500 text-center py-2">Выберите хотя бы одну роль</p>
+                  <p className="text-xs text-red-500 text-center py-2 mt-1">Выберите хотя бы одну роль</p>
                 )}
               </div>
             </div>
