@@ -2,11 +2,12 @@ import { Link } from 'react-router-dom'
 import {
   Users, Shield, Settings, BarChart2, Building2,
   Store, CreditCard, MessageCircle, TrendingUp,
-  Activity, CheckCircle2, AlertTriangle, ArrowRight
+  Activity, CheckCircle2, AlertTriangle
 } from 'lucide-react'
 import { useUserProfile } from '../hooks/useUserProfile'
 import { useQuery } from '@tanstack/react-query'
 import { getAdminStats } from '../services/adminService'
+import StatCard, { type StatColor } from '../components/admin/StatCard'
 
 export default function AdminPanel() {
   const { data: profile } = useUserProfile()
@@ -94,29 +95,18 @@ export default function AdminPanel() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {statCards.map(card => {
-          const c = colorMap[card.color]
-          const Icon = card.icon
-          return (
-            <Link key={card.href} to={card.href}
-              className="group bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-gray-200 transition-all flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className={`w-9 h-9 rounded-xl ${c.bg} flex items-center justify-center`}>
-                  <Icon className={`w-4.5 h-4.5 ${c.icon}`} strokeWidth={1.5} />
-                </div>
-                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-0.5 transition-all" strokeWidth={1.5} />
-              </div>
-              <div>
-                {isLoading
-                  ? <div className="h-7 w-12 bg-gray-100 rounded-lg animate-pulse mb-1" />
-                  : <p className="text-2xl sm:text-3xl font-bold text-gray-900">{card.value}</p>
-                }
-                <p className="text-xs text-gray-500 mt-0.5">{card.label}</p>
-                {card.sub && <p className={`text-[11px] font-medium mt-1 ${c.text}`}>{card.sub}</p>}
-              </div>
-            </Link>
-          )
-        })}
+        {statCards.map(card => (
+          <StatCard
+            key={card.href}
+            label={card.label}
+            value={card.value}
+            sub={card.sub}
+            icon={card.icon}
+            color={card.color as StatColor}
+            to={card.href}
+            loading={isLoading}
+          />
+        ))}
       </div>
 
       {/* Системные индикаторы */}
