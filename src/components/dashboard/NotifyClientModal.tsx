@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Star, Send } from 'lucide-react'
 import Modal from '@/components/ui/Modal'
+import { useUserProfile } from '@/hooks/useUserProfile'
 import { markAppointmentReminded } from '@/services/stoService'
 
 const CHANNELS = [
@@ -29,15 +30,19 @@ function buildTemplate(appt: any, name: string) {
   const d = new Date(ds)
   const date = isNaN(d.getTime()) ? '' : `${d.getDate()} ${MONTHS[d.getMonth()]}`
   const time = (ds.match(/T(\d{2}:\d{2})/) || [])[1] || ''
-  const veh = appt?.vehicles ? `${appt.vehicles.brand || ''} ${appt.vehicles.model || ''}`.trim() : ''
+  const v = appt?.vehicles
+  const veh = v ? `${v.brand || ''} ${v.model || ''}`.trim() : ''
+  const plateOrVin = v?.license_plate ? v.license_plate : (v?.vin ? `VIN ${v.vin}` : '')
   const works = (appt?.work_items || []).map((w: any) => `• ${w.name}`).join('\n')
   const hours = (Number(appt?.total_norm_hours) || 0) + (Number(appt?.extra_hours) || 0)
+  const comp = appt?.sto_companies
+  const where = [comp?.name && `на ${comp.name}`, comp?.address && `по адресу ${comp.address}`].filter(Boolean).join(' ')
 
-  let t = `Здравствуйте${name ? ', ' + name : ''}!\nНапоминаем о записи${date ? ' ' + date : ''}${time ? ' в ' + time : ''}.`
-  if (veh) t += `\nАвтомобиль: ${veh}`
+  let t = `Здравствуйте${name ? ', ' + name : ''}!\nНапоминаем о записи${date ? ' ' + date : ''}${time ? ' в ' + time : ''}${where ? ' ' + where : ''}.`
+  if (veh) t += `\nАвтомобиль: ${veh}${plateOrVin ? `, ${plateOrVin}` : ''}`
   if (works) t += `\nРаботы:\n${works}`
   if (hours > 0) t += `\nОриентировочное время работ: ${hours} ч.`
-  t += `\nБудем рады видеть вас!`
+  t += `\nБудем Вас ждать!`
   return t
 }
 
@@ -50,6 +55,7 @@ interface Props {
 
 export default function NotifyClientModal({ appointmentId, customerName, phone, onClose }: Props) {
   const qc = useQueryClient()
+  const { data: profile } = useUserProfile()
   const pref = (typeof localStorage !== 'undefined' && localStorage.getItem(PREF_KEY)) as ChannelKey | null
   const [channel, setChannel] = useState<ChannelKey>(pref || 'whatsapp')
   const [text, setText] = useState('')
@@ -60,15 +66,24 @@ export default function NotifyClientModal({ appointmentId, customerName, phone, 
     queryFn: async () => {
       const { data } = await supabase
         .from('appointments')
-        .select('scheduled_date, work_items, total_norm_hours, extra_hours, vehicles(brand, model)')
+        .select('scheduled_date, work_items, total_norm_hours, extra_hours, vehicles(brand, model, license_plate, vin)')
         .eq('id', appointmentId).single()
       return data
     },
   })
 
+  const { data: company } = useQuery({
+    queryKey: ['sto-company-notify', profile?.sto_company_id],
+    queryFn: async () => {
+      const { data } = await supabase.from('sto_companies').select('name, address').eq('id', profile!.sto_company_id!).single()
+      return data
+    },
+    enabled: !!profile?.sto_company_id,
+  })
+
   useEffect(() => {
-    if (appt && !edited) setText(buildTemplate(appt, customerName))
-  }, [appt]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (appt && !edited) setText(buildTemplate({ ...appt, sto_companies: company }, customerName))
+  }, [appt, company]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const sendMutation = useMutation({
     mutationFn: () => markAppointmentReminded(appointmentId),

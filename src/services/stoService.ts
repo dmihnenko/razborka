@@ -265,6 +265,7 @@ export interface TomorrowAlert {
   time: string
   vehicle: string
   remindedAt: string | null
+  dateLabel: string // «Сегодня» | «Завтра»
 }
 
 /** Отметить, что клиенту отправлено напоминание по записи. */
@@ -312,11 +313,13 @@ export async function fetchStoAlerts(stoCompanyId: string): Promise<{
     hasInvoice: invoicedSet.has(a.id),
   }))
 
-  // Записи на завтра (локальные даты YYYY-MM-DD, формат как в scheduled_date)
+  // Записи на сегодня и завтра (локальные даты YYYY-MM-DD, формат как в scheduled_date)
   const pad = (n: number) => String(n).padStart(2, '0')
   const fmtDay = (dt: Date) => `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`
+  const t0 = new Date()
   const t1 = new Date(); t1.setDate(t1.getDate() + 1)
   const t2 = new Date(); t2.setDate(t2.getDate() + 2)
+  const dayToday = fmtDay(t0)
   const dayTomorrow = fmtDay(t1)
   const dayAfter = fmtDay(t2)
 
@@ -324,12 +327,15 @@ export async function fetchStoAlerts(stoCompanyId: string): Promise<{
     .from('appointments')
     .select('id, scheduled_date, customers(name, phone), vehicles(brand, model)')
     .eq('sto_company_id', stoCompanyId)
-    .gte('scheduled_date', `${dayTomorrow}T00:00`)
+    .gte('scheduled_date', `${dayToday}T00:00`)
     .lt('scheduled_date', `${dayAfter}T00:00`)
     .not('status', 'in', '("archived","cancelled","deleted","pending_deletion")')
     .order('scheduled_date', { ascending: true })
 
-  const tomoRows = ((tomo || []) as any[]).filter(a => String(a.scheduled_date || '').startsWith(dayTomorrow))
+  const tomoRows = ((tomo || []) as any[]).filter(a => {
+    const s = String(a.scheduled_date || '')
+    return s.startsWith(dayToday) || s.startsWith(dayTomorrow)
+  })
 
   // reminded_at — отдельным запросом (колонка может отсутствовать до миграции; ошибку игнорируем)
   const remindedMap: Record<string, string> = {}
@@ -348,6 +354,7 @@ export async function fetchStoAlerts(stoCompanyId: string): Promise<{
     time: (a.scheduled_date?.match(/T(\d{2}:\d{2})/) || [])[1] || '',
     vehicle: a.vehicles ? `${a.vehicles.brand || ''} ${a.vehicles.model || ''}`.trim() : '',
     remindedAt: remindedMap[a.id] || null,
+    dateLabel: String(a.scheduled_date || '').startsWith(dayToday) ? 'Сегодня' : 'Завтра',
   }))
 
   return { readyUnpaid, tomorrow }

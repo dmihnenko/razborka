@@ -62,7 +62,7 @@ export default function StoAlerts() {
               <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
                 <CalendarClock className="w-4 h-4 text-blue-600" />
               </div>
-              <h3 className="text-sm font-bold text-gray-900 flex-1">Завтра — напомните клиентам</h3>
+              <h3 className="text-sm font-bold text-gray-900 flex-1">Напомните клиентам</h3>
               <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">{tomorrow.length}</span>
             </div>
             <div className="divide-y divide-gray-50">
@@ -70,7 +70,7 @@ export default function StoAlerts() {
                 <div key={a.id} className="flex items-center gap-2 px-4 py-2.5">
                   <button onClick={() => navigate(`/sto/appointments/${a.id}`)} className="flex-1 min-w-0 text-left">
                     <p className="text-sm font-semibold text-gray-900 truncate">
-                      {a.time && <span className="tabular-nums text-blue-700 mr-1.5">{a.time}</span>}
+                      <span className="text-[11px] font-bold text-blue-700 mr-1.5">{a.dateLabel}{a.time ? ` ${a.time}` : ''}</span>
                       {a.customerName}
                     </p>
                     {a.vehicle && <p className="text-xs text-gray-500 truncate">{a.vehicle}</p>}
