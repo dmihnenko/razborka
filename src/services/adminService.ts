@@ -67,6 +67,33 @@ export async function approveAccessRequest(req: any) {
     companyId = companies[0].id
   }
 
+  // Лимит механиков по тарифу СТО — проверяем при подтверждении работника
+  if (req.request_type === 'sto_worker' && companyId) {
+    const { data: sub } = await supabase
+      .from('company_subscriptions')
+      .select('end_date, subscription:subscriptions(max_workers)')
+      .eq('company_type', 'sto').eq('company_id', companyId).eq('is_active', true)
+      .maybeSingle()
+    const active = sub && (!sub.end_date || new Date(sub.end_date) >= new Date()) ? sub : null
+    // Активный тариф: лимит из плана (null = без ограничения). Без подписки — 1 (бесплатный режим).
+    const maxWorkers = active ? ((active.subscription as any)?.max_workers ?? null) : 1
+    if (maxWorkers != null) {
+      const { data: workerRole } = await supabase.from('roles').select('id').eq('name', 'sto_worker').single()
+      const { data: profs } = await supabase.from('user_profiles').select('id').eq('sto_company_id', companyId)
+      const ids = (profs || []).map((p: any) => p.id)
+      let workerCount = 0
+      if (workerRole && ids.length) {
+        const { count } = await supabase.from('user_roles')
+          .select('user_id', { count: 'exact', head: true })
+          .eq('role_id', workerRole.id).in('user_id', ids)
+        workerCount = count || 0
+      }
+      if (workerCount >= maxWorkers) {
+        throw new Error(`Лимит механиков по тарифу исчерпан (${workerCount}/${maxWorkers}). Владельцу нужно повысить тариф СТО.`)
+      }
+    }
+  }
+
   const roleName = req.request_type
   const { data: role } = await supabase.from('roles').select('id').eq('name', roleName).single()
   if (role) {

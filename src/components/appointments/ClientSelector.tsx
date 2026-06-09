@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Search, Plus, User, Phone, Car } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import { IMaskInput } from 'react-imask'
 
 interface Props {
@@ -19,6 +20,7 @@ export default function ClientSelector({ selectedId, onSelect, onSelectVehicle }
   const [showAddForm, setShowAddForm] = useState(false)
   const [newClientData, setNewClientData] = useState({ name: '', phone: '' })
   const { data: profile } = useUserProfile()
+  const { canCreate } = useSubscriptionLimits()
   const queryClient = useQueryClient()
 
   const { data: customers, isLoading, error: queryError } = useQuery({
@@ -110,6 +112,10 @@ export default function ClientSelector({ selectedId, onSelect, onSelectVehicle }
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!canCreate.customer()) {
+      toast.error('Достигнут лимит клиентов по тарифу. Повысьте тариф в разделе «Тариф СТО».')
+      return
+    }
     createMutation.mutate(newClientData)
   }
 

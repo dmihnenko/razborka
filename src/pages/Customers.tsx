@@ -11,6 +11,8 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import Modal from '@/components/ui/Modal'
 import PageHeader from '@/components/PageHeader'
 import { moveToTrash } from '@/services/trashService'
+import { useSubscriptionLimits } from '@/hooks/useSubscription'
+import SubscriptionUpgradeModal from '@/components/SubscriptionUpgradeModal'
 import {
   fetchCustomers,
   createCustomer,
@@ -33,6 +35,8 @@ export default function Customers() {
   const canDelete = useHasAnyRole(['admin', 'sto_owner'])
   const { confirm: showConfirm, dialogProps } = useConfirm()
   const { data: profile } = useUserProfile()
+  const { canCreate, usage, limits, plan } = useSubscriptionLimits()
+  const [showUpgrade, setShowUpgrade] = useState(false)
 
   const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
   const isStoWorker = profile?.roles?.some((r: any) => r.name === 'sto_worker')
@@ -112,7 +116,10 @@ export default function Customers() {
         subtitle="База клиентов СТО"
         actions={
           <button
-            onClick={() => { setEditingCustomer(null); setIsModalOpen(true) }}
+            onClick={() => {
+              if (!canCreate.customer()) { setShowUpgrade(true); return }
+              setEditingCustomer(null); setIsModalOpen(true)
+            }}
             className="btn-primary btn-sm flex items-center gap-1.5 whitespace-nowrap"
           >
             <Plus className="w-4 h-4 flex-shrink-0" />
@@ -317,6 +324,15 @@ export default function Customers() {
         />
       )}
       <ConfirmDialog {...dialogProps} />
+
+      <SubscriptionUpgradeModal
+        isOpen={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        context="customers"
+        currentPlan={plan?.name}
+        used={usage.customers}
+        limit={limits.maxCustomers ?? 0}
+      />
     </div>
   )
 }
