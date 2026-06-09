@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchUsers, fetchActiveRoles, fetchStoCompanies, fetchPartsCompanies, updateUserRolesFull, toggleUserActive, getAuthSession, softDeleteUserProfile, restoreUserProfile, bulkSetActive, bulkSoftDelete } from '@/services/userService';
-import { Plus, Edit2, Trash2, UserCog, Search, CheckCircle2, KeyRound, RotateCcw, X, CheckSquare, Square } from 'lucide-react';
+import { Plus, Edit2, Trash2, UserCog, Search, CheckCircle2, KeyRound, RotateCcw, X, CheckSquare, Square, LogIn } from 'lucide-react';
+import { startImpersonation } from '@/services/impersonationService';
 import { toast } from 'sonner';
 import { useUserProfile, useIsAdmin } from '@/hooks/useUserProfile';
 import { useSubscriptionLimits } from '@/hooks/useSubscription';
@@ -310,6 +311,21 @@ export default function Users() {
     purgeMutation.mutate(user.id);
   };
 
+  const handleImpersonate = async (user: UserProfile) => {
+    if (user.roles?.some(r => r.name === 'admin')) { toast.error('Нельзя войти под администратором'); return; }
+    const ok = await showConfirm({ message: `Войти под пользователем ${user.full_name || user.email}? Вы сможете вернуться в свой аккаунт.` });
+    if (!ok) return;
+    try {
+      toast.loading('Вход...', { id: 'imp' });
+      await startImpersonation(user.id);
+      toast.dismiss('imp');
+      window.location.href = '/';
+    } catch (e: any) {
+      toast.dismiss('imp');
+      toast.error(e.message || 'Не удалось войти');
+    }
+  };
+
   const handleBulk = async (action: 'activate' | 'deactivate' | 'delete') => {
     if (selectedIds.size === 0) return;
     if (action === 'delete') {
@@ -509,6 +525,7 @@ export default function Users() {
                     { key: 'edit', show: true, title: 'Редактировать', Icon: Edit2, cls: 'text-indigo-600 hover:bg-indigo-50', onClick: () => handleEditUser(user) },
                     { key: 'pwd', show: isAdmin || isStoOwner || isPartsOwner, title: 'Сменить пароль', Icon: KeyRound, cls: 'text-amber-600 hover:bg-amber-50', onClick: () => openPasswordModal(user) },
                     { key: 'roles', show: isAdmin, title: 'Роли', Icon: UserCog, cls: 'text-purple-600 hover:bg-purple-50', onClick: () => handleEditRole(user) },
+                    { key: 'login-as', show: isAdmin && !user.roles?.some(r => r.name === 'admin'), title: 'Войти как', Icon: LogIn, cls: 'text-sky-600 hover:bg-sky-50', onClick: () => handleImpersonate(user) },
                     { key: 'activate', show: isAdmin && !user.is_active, title: 'Активировать', Icon: CheckCircle2, cls: 'text-emerald-600 hover:bg-emerald-50', onClick: () => handleToggleActive(user) },
                     { key: 'delete', show: isAdmin, title: 'В корзину', Icon: Trash2, cls: 'text-red-500 hover:bg-red-50', onClick: () => handleDeleteUser(user) },
                   ].filter(a => a.show)
