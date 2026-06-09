@@ -4,7 +4,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { toast } from 'sonner'
-import { Settings as SettingsIcon, Wrench, Trash2, ChevronRight, Clock } from 'lucide-react'
+import { Settings as SettingsIcon, Wrench, Trash2, ChevronRight, Clock, Phone } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import PageHeader from '@/components/PageHeader'
 import { updateStoLaborRate, updateStoCatalogMode, type CatalogWorkMode } from '@/services/stoService'
@@ -20,7 +20,7 @@ export default function StoSettings() {
       if (!profile?.sto_company_id) return null
       const { data, error } = await supabase
         .from('sto_companies')
-        .select('id, name, services_menu_enabled, labor_rate, catalog_work_mode, work_open, work_close')
+        .select('id, name, phone, address, email, services_menu_enabled, labor_rate, catalog_work_mode, work_open, work_close')
         .eq('id', profile?.sto_company_id)
         .single()
 
@@ -47,6 +47,39 @@ export default function StoSettings() {
     },
     onError: (error: any) => toast.error(error.message || 'Ошибка сохранения ставки'),
   })
+
+  // Контакты СТО
+  const [contacts, setContacts] = useState({ name: '', phone: '', address: '', email: '' })
+  useEffect(() => {
+    if (stoCompany) setContacts({
+      name: stoCompany.name || '',
+      phone: stoCompany.phone || '',
+      address: stoCompany.address || '',
+      email: stoCompany.email || '',
+    })
+  }, [stoCompany])
+  const saveContactsMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('sto_companies')
+        .update({ name: contacts.name.trim(), phone: contacts.phone.trim(), address: contacts.address.trim(), email: contacts.email.trim() })
+        .eq('id', profile?.sto_company_id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sto_company_settings'] })
+      queryClient.invalidateQueries({ queryKey: ['company-contacts-check'] })
+      queryClient.invalidateQueries({ queryKey: ['sto-company-notify'] })
+      toast.success('Контакты сохранены')
+    },
+    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+  })
+  const contactsDirty = !!stoCompany && (
+    contacts.name !== (stoCompany.name || '') ||
+    contacts.phone !== (stoCompany.phone || '') ||
+    contacts.address !== (stoCompany.address || '') ||
+    contacts.email !== (stoCompany.email || '')
+  )
 
   // График работы СТО
   const [workOpen, setWorkOpen] = useState('9')
@@ -132,6 +165,45 @@ export default function StoSettings() {
       <PageHeader title="Настройки СТО" subtitle={stoCompany?.name || undefined} />
 
       <div className="space-y-4">
+
+        {/* Контакты СТО */}
+        <div className="card p-4 sm:p-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-emerald-100 rounded-lg"><Phone className="w-5 h-5 text-emerald-600" /></div>
+            <h2 className="text-mobile-lg font-semibold text-gray-900">Контакты СТО</h2>
+          </div>
+          <p className="text-mobile-sm text-gray-600 mb-4">
+            Название, телефон и адрес подставляются в счета и напоминания клиентам. Заполните их, чтобы клиенты видели ваши контакты.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
+              <label className="form-label">Название</label>
+              <input type="text" value={contacts.name} onChange={e => setContacts(p => ({ ...p, name: e.target.value }))}
+                placeholder="СТО «Название»" className="form-input mt-1" />
+            </div>
+            <div>
+              <label className="form-label">Телефон</label>
+              <input type="tel" value={contacts.phone} onChange={e => setContacts(p => ({ ...p, phone: e.target.value }))}
+                placeholder="+380 XX XXX-XX-XX" className="form-input mt-1" />
+            </div>
+            <div>
+              <label className="form-label">Email</label>
+              <input type="email" value={contacts.email} onChange={e => setContacts(p => ({ ...p, email: e.target.value }))}
+                placeholder="email@example.com" className="form-input mt-1" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="form-label">Адрес</label>
+              <input type="text" value={contacts.address} onChange={e => setContacts(p => ({ ...p, address: e.target.value }))}
+                placeholder="г. Киев, ул. Примерная, 1" className="form-input mt-1" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <button onClick={() => saveContactsMutation.mutate()} disabled={saveContactsMutation.isPending || !contactsDirty}
+              className="btn-primary btn-sm">
+              {saveContactsMutation.isPending ? '…' : 'Сохранить контакты'}
+            </button>
+          </div>
+        </div>
 
         <div className="card p-4 sm:p-6">
           <div className="flex items-start justify-between gap-4">

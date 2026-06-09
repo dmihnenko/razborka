@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 import StoAlerts from '@/components/dashboard/StoAlerts'
+import ContactsReminder from '@/components/dashboard/ContactsReminder'
 import MyVehicles from './MyVehicles'
 import WorkerDashboard from './WorkerDashboard'
 import { useNavigate, Link } from 'react-router-dom'
@@ -225,6 +226,9 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
+
+      {/* Напоминание заполнить контакты СТО */}
+      <ContactsReminder kind="sto" companyId={profile?.sto_company_id} />
 
       {/* Уведомления: готовые без оплаты + записи на завтра */}
       {!isLoading && <StoAlerts />}

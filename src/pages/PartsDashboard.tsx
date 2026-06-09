@@ -6,6 +6,7 @@ import { Car, ShoppingCart, DollarSign, AlertCircle, ArrowRight, Warehouse, Layo
 import { getPartsOrderStatusText } from '@/utils/status'
 import { formatDate } from '@/utils/date'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
+import ContactsReminder from '@/components/dashboard/ContactsReminder'
 
 export default function PartsDashboard() {
   const navigate = useNavigate()
@@ -207,6 +208,9 @@ export default function PartsDashboard() {
           </button>
         </div>
       </div>
+
+      {/* Напоминание заполнить контакты разборки */}
+      <ContactsReminder kind="parts" companyId={partsCompanyId} />
 
       {/* ── Alert: new orders ─────────────────────── */}
       {(ordersStats?.new || 0) > 0 && (

@@ -1,6 +1,8 @@
-import { useState } from 'react'
-import { RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2, Phone } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { formatDate } from '@/utils/date'
@@ -26,6 +28,39 @@ export default function PartsSettings() {
 
   const [manualInput, setManualInput] = useState<string>(String(rate))
   const [imgbbKeyInput, setImgbbKeyInput] = useState<string>(getImgbbKey)
+
+  // Контакты разборки
+  const queryClient = useQueryClient()
+  const { data: company } = useQuery({
+    queryKey: ['parts_company_settings', partsCompanyId],
+    queryFn: async () => {
+      const { data } = await supabase.from('parts_companies').select('name, phone, address, email').eq('id', partsCompanyId).single()
+      return data
+    },
+    enabled: !!partsCompanyId,
+  })
+  const [contacts, setContacts] = useState({ name: '', phone: '', address: '', email: '' })
+  useEffect(() => {
+    if (company) setContacts({ name: company.name || '', phone: company.phone || '', address: company.address || '', email: company.email || '' })
+  }, [company])
+  const saveContactsMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('parts_companies')
+        .update({ name: contacts.name.trim(), phone: contacts.phone.trim(), address: contacts.address.trim(), email: contacts.email.trim() })
+        .eq('id', partsCompanyId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parts_company_settings'] })
+      queryClient.invalidateQueries({ queryKey: ['company-contacts-check'] })
+      toast.success('Контакты сохранены')
+    },
+    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+  })
+  const contactsDirty = !!company && (
+    contacts.name !== (company.name || '') || contacts.phone !== (company.phone || '') ||
+    contacts.address !== (company.address || '') || contacts.email !== (company.email || '')
+  )
 
   const handleSaveImgbbKey = () => {
     const trimmed = imgbbKeyInput.trim()
@@ -71,6 +106,35 @@ export default function PartsSettings() {
 
           {/* Левая колонка */}
           <div className="space-y-4 sm:space-y-6">
+
+            {/* Контакты разборки */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-emerald-100 rounded-lg flex-shrink-0">
+                  <Phone className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-900">Контакты разборки</h2>
+                  <p className="text-xs text-gray-500">Название, телефон и адрес для клиентов и документов</p>
+                </div>
+              </div>
+              <div className="space-y-2.5">
+                <input type="text" value={contacts.name} onChange={e => setContacts(p => ({ ...p, name: e.target.value }))}
+                  placeholder="Название разборки" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <input type="tel" value={contacts.phone} onChange={e => setContacts(p => ({ ...p, phone: e.target.value }))}
+                    placeholder="+380 XX XXX-XX-XX" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm" />
+                  <input type="email" value={contacts.email} onChange={e => setContacts(p => ({ ...p, email: e.target.value }))}
+                    placeholder="email@example.com" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm" />
+                </div>
+                <input type="text" value={contacts.address} onChange={e => setContacts(p => ({ ...p, address: e.target.value }))}
+                  placeholder="Адрес" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm" />
+                <button onClick={() => saveContactsMutation.mutate()} disabled={saveContactsMutation.isPending || !contactsDirty}
+                  className="px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium flex items-center gap-1.5 transition-colors text-sm disabled:opacity-50">
+                  <Save className="w-4 h-4" /> Сохранить контакты
+                </button>
+              </div>
+            </div>
 
             {/* Каталог */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
