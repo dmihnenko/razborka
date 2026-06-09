@@ -8,7 +8,7 @@ import {
   MapPin, Tag, Car, FileText, AlertTriangle,
   CheckCircle, Clock, Share2, Edit2, Copy, Warehouse,
 } from 'lucide-react'
-import { getPartsInventoryItem, deletePartsInventoryItem } from '@/services/partsService'
+import { getPartsInventoryItem, deletePartsInventoryItem, getStorageLocations } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { formatPrice } from '@/utils/currency'
@@ -44,6 +44,27 @@ export default function PartsInventoryItemPage() {
     queryFn: () => getPartsInventoryItem(id!),
     enabled: !!id,
   })
+
+  // Привязанное место хранения (дерево стеллаж → полка → ячейка)
+  const { data: locations = [] } = useQuery({
+    queryKey: ['parts-storage-locations', profile?.parts_company_id],
+    queryFn: () => getStorageLocations(profile!.parts_company_id!),
+    enabled: !!profile?.parts_company_id && !!item?.storage_location_id,
+    staleTime: 60_000,
+  })
+
+  const locationPath: string[] = (() => {
+    if (!item?.storage_location_id || locations.length === 0) return []
+    const byId = new Map(locations.map((l: any) => [l.id, l]))
+    const path: string[] = []
+    let cur: any = byId.get(item.storage_location_id)
+    let guard = 0
+    while (cur && guard++ < 20) {
+      path.unshift(cur.name)
+      cur = cur.parent_id ? byId.get(cur.parent_id) : undefined
+    }
+    return path
+  })()
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -300,11 +321,24 @@ export default function PartsInventoryItemPage() {
             </div>
 
             {/* Расположение на складе — на всю ширину */}
-            {(item.location || item.shelf || item.bin) && (
+            {(locationPath.length > 0 || item.location || item.shelf || item.bin) && (
               <div className="bg-white rounded-xl shadow-sm p-4">
                 <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2.5 flex items-center gap-1.5">
                   <Warehouse className="w-3.5 h-3.5" /> Расположение на складе
                 </h2>
+                {locationPath.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1 mb-2">
+                    {locationPath.map((name, i) => (
+                      <span key={i} className="inline-flex items-center gap-1">
+                        {i > 0 && <span className="text-gray-300">/</span>}
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-semibold ${i === locationPath.length - 1 ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-gray-50 text-gray-600 border border-gray-200'}`}>
+                          {i === locationPath.length - 1 && <MapPin className="w-3.5 h-3.5" />}
+                          {name}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {item.location && (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 text-sm font-semibold">
