@@ -497,6 +497,14 @@ export default function AppointmentsBoard() {
     }
   }, [view, selectedDate])
 
+  // ── Доска (kanban) недоступна на десктопе — переводим на список ──────────
+  useEffect(() => {
+    const check = () => { if (window.innerWidth >= 1024 && view === 'kanban') setView('list') }
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [view])
+
   // ── Kanban / List query ────────────────────────────────────────────────────
   const { data: kanbanAppts = [], isLoading: kanbanLoading } = useQuery({
     queryKey: ['board-kanban', stoId, showArchived],
@@ -758,15 +766,15 @@ export default function AppointmentsBoard() {
             {/* Переключатель вида */}
             <div className="flex items-center bg-gray-100 rounded-lg p-0.5 gap-0.5 flex-shrink-0">
               {([
-                { id: 'list',   icon: List,         label: 'Список'  },
-                { id: 'day',    icon: CalendarDays, label: 'День'    },
-                { id: 'week',   icon: Calendar,     label: 'Неделя'  },
-                { id: 'kanban', icon: LayoutGrid,  label: 'Доска'   },
-              ] as const).map(({ id, icon: Icon, label }) => (
+                { id: 'list',   icon: List,         label: 'Список', mobileOnly: false },
+                { id: 'day',    icon: CalendarDays, label: 'День',   mobileOnly: false },
+                { id: 'week',   icon: Calendar,     label: 'Неделя', mobileOnly: false },
+                { id: 'kanban', icon: LayoutGrid,  label: 'Доска',  mobileOnly: true  },
+              ] as const).map(({ id, icon: Icon, label, mobileOnly }) => (
                 <button
                   key={id}
                   onClick={() => setView(id)}
-                  className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all
+                  className={`${mobileOnly ? 'lg:hidden ' : ''}flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all
                     ${view === id ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
                 >
                   <Icon className="w-3.5 h-3.5" />

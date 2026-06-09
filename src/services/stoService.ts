@@ -322,22 +322,32 @@ export async function fetchStoAlerts(stoCompanyId: string): Promise<{
 
   const { data: tomo } = await supabase
     .from('appointments')
-    .select('id, scheduled_date, reminded_at, customers(name, phone), vehicles(brand, model)')
+    .select('id, scheduled_date, customers(name, phone), vehicles(brand, model)')
     .eq('sto_company_id', stoCompanyId)
     .gte('scheduled_date', `${dayTomorrow}T00:00`)
     .lt('scheduled_date', `${dayAfter}T00:00`)
     .not('status', 'in', '("archived","cancelled","deleted","pending_deletion")')
     .order('scheduled_date', { ascending: true })
 
-  const tomorrow: TomorrowAlert[] = ((tomo || []) as any[])
-    .filter(a => String(a.scheduled_date || '').startsWith(dayTomorrow))
-    .map(a => ({
+  const tomoRows = ((tomo || []) as any[]).filter(a => String(a.scheduled_date || '').startsWith(dayTomorrow))
+
+  // reminded_at — отдельным запросом (колонка может отсутствовать до миграции; ошибку игнорируем)
+  const remindedMap: Record<string, string> = {}
+  if (tomoRows.length) {
+    const { data: rem } = await supabase
+      .from('appointments')
+      .select('id, reminded_at')
+      .in('id', tomoRows.map(a => a.id))
+    for (const r of (rem || []) as any[]) if (r.reminded_at) remindedMap[r.id] = r.reminded_at
+  }
+
+  const tomorrow: TomorrowAlert[] = tomoRows.map(a => ({
     id: a.id,
     customerName: a.customers?.name || 'Без клиента',
     phone: a.customers?.phone || null,
     time: (a.scheduled_date?.match(/T(\d{2}:\d{2})/) || [])[1] || '',
     vehicle: a.vehicles ? `${a.vehicles.brand || ''} ${a.vehicles.model || ''}`.trim() : '',
-    remindedAt: a.reminded_at || null,
+    remindedAt: remindedMap[a.id] || null,
   }))
 
   return { readyUnpaid, tomorrow }
