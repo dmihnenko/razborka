@@ -1,6 +1,8 @@
 import { Zap, CheckCircle2, Lock } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import Modal from '@/components/ui/Modal'
+import { getSubscriptionTiers } from '@/services/subscriptionService'
 
 interface Props {
   isOpen: boolean
@@ -11,50 +13,15 @@ interface Props {
   limit: number
 }
 
-const UPGRADE_PLANS = [
-  {
-    name: 'Старт',
-    subtitle: '1 месяц',
-    price: 499,
-    maxAppointments: 50,
-    maxCustomers: 100,
-    color: '#2563EB',
-    bg: '#EFF6FF',
-  },
-  {
-    name: 'Бизнес',
-    subtitle: '6 месяцев',
-    price: 2499,
-    maxAppointments: 200,
-    maxCustomers: 500,
-    color: '#7C3AED',
-    bg: '#F5F3FF',
-    badge: 'Популярный',
-  },
-  {
-    name: 'Профи',
-    subtitle: '12 месяцев',
-    price: 4499,
-    maxAppointments: null,
-    maxCustomers: null,
-    color: '#059669',
-    bg: '#F0FDF4',
-  },
-  {
-    name: 'Навсегда',
-    subtitle: 'Бессрочно',
-    price: 9999,
-    maxAppointments: null,
-    maxCustomers: null,
-    color: '#D97706',
-    bg: '#FFFBEB',
-    badge: 'Выгодно',
-  },
-]
-
 export default function SubscriptionUpgradeModal({ isOpen, onClose, context, currentPlan, used, limit }: Props) {
   const navigate = useNavigate()
   const label = context === 'appointments' ? 'заявок' : 'клиентов'
+
+  const { data: tiers = [] } = useQuery({
+    queryKey: ['subscription-tiers', 'sto'],
+    queryFn: () => getSubscriptionTiers('sto'),
+    enabled: isOpen,
+  })
 
   return (
     <Modal
@@ -87,39 +54,31 @@ export default function SubscriptionUpgradeModal({ isOpen, onClose, context, cur
             Обновите тариф, чтобы продолжить работу без ограничений:
           </p>
 
-          {UPGRADE_PLANS.map((p) => {
-            const limitValue = context === 'appointments' ? p.maxAppointments : p.maxCustomers
+          {tiers.map((p) => {
+            const limitValue = context === 'appointments' ? p.max_appointments : p.max_customers
             return (
               <div
-                key={p.name}
-                className="relative flex items-center gap-4 p-4 rounded-xl border-2 border-transparent transition-all cursor-pointer hover:border-opacity-50"
-                style={{ backgroundColor: p.bg, borderColor: p.color + '30' }}
+                key={p.id}
+                className="relative flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer hover:border-primary/40 border-gray-100 bg-gray-50"
+                onClick={() => { navigate('/sto/subscription'); onClose() }}
               >
-                {p.badge && (
-                  <span
-                    className="absolute -top-2 right-3 text-xs font-bold px-2 py-0.5 rounded-full text-white"
-                    style={{ backgroundColor: p.color }}
-                  >
-                    {p.badge}
-                  </span>
-                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="font-bold text-gray-900">{p.name}</span>
-                    <span className="text-xs text-gray-500">·</span>
-                    <span className="text-xs text-gray-500">{p.subtitle}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                    <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: p.color }} />
-                    {limitValue === null
-                      ? `Безлимит ${label}`
-                      : `До ${limitValue} ${label}`
-                    }
+                    <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 text-primary" />
+                    {p.is_custom
+                      ? 'Индивидуальные условия'
+                      : limitValue == null
+                        ? `Безлимит ${label}`
+                        : `До ${limitValue} ${label}`}
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="font-bold text-gray-900">₴{p.price.toLocaleString()}</p>
-                  <p className="text-xs text-gray-400">{p.subtitle}</p>
+                  {p.is_custom
+                    ? <p className="font-bold text-gray-900 text-sm">Индивидуально</p>
+                    : <><p className="font-bold text-gray-900">₴{p.price.toLocaleString()}</p><p className="text-xs text-gray-400">в месяц</p></>}
                 </div>
               </div>
             )
