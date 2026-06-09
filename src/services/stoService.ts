@@ -264,6 +264,16 @@ export interface TomorrowAlert {
   phone: string | null
   time: string
   vehicle: string
+  remindedAt: string | null
+}
+
+/** Отметить, что клиенту отправлено напоминание по записи. */
+export async function markAppointmentReminded(appointmentId: string): Promise<void> {
+  const { error } = await supabase
+    .from('appointments')
+    .update({ reminded_at: new Date().toISOString() })
+    .eq('id', appointmentId)
+  if (error) throw error
 }
 
 /** Готовые заявки, требующие оплаты, и записи на завтра (для напоминания клиентам). */
@@ -312,7 +322,7 @@ export async function fetchStoAlerts(stoCompanyId: string): Promise<{
 
   const { data: tomo } = await supabase
     .from('appointments')
-    .select('id, scheduled_date, customers(name, phone), vehicles(brand, model)')
+    .select('id, scheduled_date, reminded_at, customers(name, phone), vehicles(brand, model)')
     .eq('sto_company_id', stoCompanyId)
     .gte('scheduled_date', `${dayTomorrow}T00:00`)
     .lt('scheduled_date', `${dayAfter}T00:00`)
@@ -327,6 +337,7 @@ export async function fetchStoAlerts(stoCompanyId: string): Promise<{
     phone: a.customers?.phone || null,
     time: (a.scheduled_date?.match(/T(\d{2}:\d{2})/) || [])[1] || '',
     vehicle: a.vehicles ? `${a.vehicles.brand || ''} ${a.vehicles.model || ''}`.trim() : '',
+    remindedAt: a.reminded_at || null,
   }))
 
   return { readyUnpaid, tomorrow }

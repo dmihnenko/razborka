@@ -1,14 +1,17 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, FileText, Phone, CalendarClock, ChevronRight, MessageCircle } from 'lucide-react'
+import { AlertTriangle, FileText, CalendarClock, Bell, Check } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { fetchStoAlerts } from '@/services/stoService'
+import { fetchStoAlerts, type TomorrowAlert } from '@/services/stoService'
 import { fmtMoney } from '@/utils/money'
+import NotifyClientModal from './NotifyClientModal'
 
 export default function StoAlerts() {
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
   const stoCompanyId = profile?.sto_company_id
+  const [notify, setNotify] = useState<TomorrowAlert | null>(null)
 
   const { data } = useQuery({
     queryKey: ['sto-alerts', stoCompanyId],
@@ -22,81 +25,92 @@ export default function StoAlerts() {
   if (readyUnpaid.length === 0 && tomorrow.length === 0) return null
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-      {/* Готовые, требующие оплаты */}
-      {readyUnpaid.length > 0 && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="w-4 h-4 text-amber-600" />
-            <h3 className="text-sm font-bold text-amber-900">Готовы, требуют оплаты ({readyUnpaid.length})</h3>
-          </div>
-          <div className="space-y-1.5">
-            {readyUnpaid.map(a => (
-              <div key={a.id} className="flex items-center gap-2 rounded-lg bg-white/70 px-3 py-2">
-                <button
-                  onClick={() => navigate(`/sto/appointments/${a.id}`)}
-                  className="flex-1 min-w-0 text-left"
-                >
-                  <p className="text-sm font-semibold text-gray-900 truncate">{a.customerName}</p>
-                  <p className="text-xs text-gray-500 tabular-nums">{fmtMoney(a.total)}</p>
-                </button>
-                {a.hasInvoice ? (
-                  <span className="text-[11px] font-semibold px-2 py-1 rounded-md bg-blue-100 text-blue-700 whitespace-nowrap">Счёт не оплачен</span>
-                ) : (
-                  <button
-                    onClick={() => navigate(`/invoices/new?appointment=${a.id}`)}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md bg-primary text-white whitespace-nowrap hover:bg-primary/90"
-                  >
-                    <FileText className="w-3 h-3" /> Выставить счёт
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+        {/* Готовы — требуют счёта/оплаты */}
+        {readyUnpaid.length > 0 && (
+          <div className="card p-0 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
+              </div>
+              <h3 className="text-sm font-bold text-gray-900 flex-1">Требуют счёта и оплаты</h3>
+              <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">{readyUnpaid.length}</span>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {readyUnpaid.map(a => (
+                <div key={a.id} className="flex items-center gap-2 px-4 py-2.5">
+                  <button onClick={() => navigate(`/sto/appointments/${a.id}`)} className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{a.customerName}</p>
+                    <p className="text-xs text-gray-500 tabular-nums">{fmtMoney(a.total)}</p>
                   </button>
-                )}
-              </div>
-            ))}
+                  {a.hasInvoice ? (
+                    <span className="text-[11px] font-semibold px-2 py-1 rounded-md bg-blue-50 text-blue-700 whitespace-nowrap">Счёт не оплачен</span>
+                  ) : (
+                    <button
+                      onClick={() => navigate(`/invoices/new?appointment=${a.id}`)}
+                      className="btn-primary btn-sm inline-flex items-center gap-1 whitespace-nowrap"
+                    >
+                      <FileText className="w-3.5 h-3.5" /> Выставить счёт
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Записи на завтра */}
-      {tomorrow.length > 0 && (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <CalendarClock className="w-4 h-4 text-blue-600" />
-            <h3 className="text-sm font-bold text-blue-900">Записи на завтра ({tomorrow.length}) — напомните клиентам</h3>
-          </div>
-          <div className="space-y-1.5">
-            {tomorrow.map(a => (
-              <div key={a.id} className="flex items-center gap-2 rounded-lg bg-white/70 px-3 py-2">
-                <button
-                  onClick={() => navigate(`/sto/appointments/${a.id}`)}
-                  className="flex-1 min-w-0 text-left"
-                >
-                  <p className="text-sm font-semibold text-gray-900 truncate">
-                    {a.time && <span className="tabular-nums text-blue-700 mr-1.5">{a.time}</span>}
-                    {a.customerName}
-                  </p>
-                  {a.vehicle && <p className="text-xs text-gray-500 truncate">{a.vehicle}</p>}
-                </button>
-                {a.phone ? (
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <a href={`tel:${a.phone}`} title="Позвонить"
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-green-100 text-green-700 hover:bg-green-200">
-                      <Phone className="w-3.5 h-3.5" />
-                    </a>
-                    <a
-                      href={`https://wa.me/${a.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Здравствуйте! Напоминаем о записи завтра${a.time ? ' в ' + a.time : ''}${a.vehicle ? ' — ' + a.vehicle : ''}.`)}`}
-                      target="_blank" rel="noreferrer" title="Напомнить в WhatsApp"
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
-                      <MessageCircle className="w-3.5 h-3.5" />
-                    </a>
-                  </div>
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-gray-300" />
-                )}
+        {/* Записи на завтра — напомнить клиентам */}
+        {tomorrow.length > 0 && (
+          <div className="card p-0 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <CalendarClock className="w-4 h-4 text-blue-600" />
               </div>
-            ))}
+              <h3 className="text-sm font-bold text-gray-900 flex-1">Завтра — напомните клиентам</h3>
+              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">{tomorrow.length}</span>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {tomorrow.map(a => (
+                <div key={a.id} className="flex items-center gap-2 px-4 py-2.5">
+                  <button onClick={() => navigate(`/sto/appointments/${a.id}`)} className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {a.time && <span className="tabular-nums text-blue-700 mr-1.5">{a.time}</span>}
+                      {a.customerName}
+                    </p>
+                    {a.vehicle && <p className="text-xs text-gray-500 truncate">{a.vehicle}</p>}
+                  </button>
+                  {a.remindedAt ? (
+                    <button
+                      onClick={() => setNotify(a)}
+                      className="text-[11px] font-semibold px-2 py-1 rounded-md bg-green-50 text-green-700 whitespace-nowrap inline-flex items-center gap-1"
+                      title="Напоминание отправлено — отправить снова"
+                    >
+                      <Check className="w-3.5 h-3.5" /> Отправлено
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setNotify(a)}
+                      className="btn-secondary btn-sm inline-flex items-center gap-1 whitespace-nowrap"
+                    >
+                      <Bell className="w-3.5 h-3.5" /> Оповестить
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+      </div>
+
+      {notify && (
+        <NotifyClientModal
+          appointmentId={notify.id}
+          customerName={notify.customerName}
+          phone={notify.phone}
+          onClose={() => setNotify(null)}
+        />
       )}
-    </div>
+    </>
   )
 }
