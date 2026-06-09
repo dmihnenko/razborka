@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import AppointmentModal from '@/components/appointments/AppointmentModal'
 import StoAlerts from '@/components/dashboard/StoAlerts'
+import { fetchStoAlerts } from '@/services/stoService'
 import ContactsReminder from '@/components/dashboard/ContactsReminder'
 import MyVehicles from './MyVehicles'
 import WorkerDashboard from './WorkerDashboard'
@@ -166,6 +167,14 @@ export default function Dashboard() {
     enabled: !!profile?.sto_company_id && !!isStoOwner,
   })
 
+  // Алерты дашборда — грузим вместе с остальным, чтобы не подгружались с запозданием
+  const { data: alertsData, isLoading: alertsLoading } = useQuery({
+    queryKey: ['sto-alerts', profile?.sto_company_id],
+    queryFn: () => fetchStoAlerts(profile!.sto_company_id!),
+    enabled: !!profile?.sto_company_id && !!isStoOwner,
+    staleTime: 60_000,
+  })
+
   // Ранние возвраты — после всех хуков
   if (activeRole === 'user') return <MyVehicles />
   if (!isStoOwner) return <WorkerDashboard />
@@ -181,7 +190,7 @@ export default function Dashboard() {
   const totalCost = monthlyStats?.total || 0
   const completedCount = monthlyStats?.count || 0
 
-  const isLoading = statsLoading || monthlyLoading
+  const isLoading = statsLoading || monthlyLoading || alertsLoading
 
   // Приветствие + дата
   const hour = new Date().getHours()
@@ -231,7 +240,7 @@ export default function Dashboard() {
       <ContactsReminder kind="sto" companyId={profile?.sto_company_id} />
 
       {/* Уведомления: готовые без оплаты + записи на завтра */}
-      {!isLoading && <StoAlerts />}
+      {!isLoading && <StoAlerts data={alertsData} />}
 
       {isLoading ? (
         <div className="flex justify-center py-12">

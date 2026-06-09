@@ -1,24 +1,15 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, CalendarClock, Bell, Check } from 'lucide-react'
-import { useUserProfile } from '@/hooks/useUserProfile'
-import { fetchStoAlerts, type TomorrowAlert } from '@/services/stoService'
+import type { fetchStoAlerts, TomorrowAlert } from '@/services/stoService'
 import { fmtMoney } from '@/utils/money'
 import NotifyClientModal from './NotifyClientModal'
 
-export default function StoAlerts() {
-  const navigate = useNavigate()
-  const { data: profile } = useUserProfile()
-  const stoCompanyId = profile?.sto_company_id
-  const [notify, setNotify] = useState<TomorrowAlert | null>(null)
+type AlertsData = Awaited<ReturnType<typeof fetchStoAlerts>>
 
-  const { data } = useQuery({
-    queryKey: ['sto-alerts', stoCompanyId],
-    queryFn: () => fetchStoAlerts(stoCompanyId!),
-    enabled: !!stoCompanyId,
-    staleTime: 60_000,
-  })
+export default function StoAlerts({ data }: { data?: AlertsData | null }) {
+  const navigate = useNavigate()
+  const [notify, setNotify] = useState<TomorrowAlert | null>(null)
 
   const readyUnpaid = data?.readyUnpaid ?? []
   const tomorrow = data?.tomorrow ?? []
