@@ -462,7 +462,7 @@ export default function AppointmentsBoard() {
   const [mechanicFilter, setMechanicFilter]     = useState('all')
   const [listStatusFilter, setListStatusFilter] = useState<string>(() => {
     const t = searchParams.get('tab')
-    return (t === 'scheduled' || t === 'in_progress' || t === 'completed' || t === 'all') ? t : 'active'
+    return (t === 'scheduled' || t === 'in_progress' || t === 'completed' || t === 'all') ? t : 'all'
   })
   const [isNewModalOpen, setIsNewModalOpen]     = useState(false)
   const [newModalDate, setNewModalDate]         = useState<string | undefined>()
@@ -877,7 +877,6 @@ export default function AppointmentsBoard() {
           {view === 'list' && (
             <div className="sm:hidden flex flex-wrap gap-1.5 pb-1">
               {([
-                { id: 'active',      label: 'Активные' },
                 { id: 'scheduled',   label: 'Запланировано' },
                 { id: 'in_progress', label: 'В работе' },
                 { id: 'completed',   label: 'Готово' },
@@ -1133,10 +1132,14 @@ export default function AppointmentsBoard() {
         {view === 'list' && (
           kanbanLoading ? <Spinner /> : (
             <div className="space-y-3">
-              {KANBAN_COLS.filter(col => showArchived || col.id !== 'archived').map(col => {
+              {KANBAN_COLS
+                .filter(col => showArchived || col.id !== 'archived')
+                .filter(col => listStatusFilter === 'all' || col.id === listStatusFilter)
+                .map(col => {
                 const appts   = kanbanByStatus[col.id] || []
                 const revenue = columnRevenue[col.id] || 0
-                const isOpen  = listOpenSections.has(col.id)
+                // При выбранном конкретном фильтре секцию держим раскрытой
+                const isOpen  = listStatusFilter !== 'all' ? true : listOpenSections.has(col.id)
 
                 return (
                   <div key={col.id} className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
@@ -1206,6 +1209,7 @@ export default function AppointmentsBoard() {
 
               {/* Пусто совсем */}
               {KANBAN_COLS.filter(col => showArchived || col.id !== 'archived')
+                .filter(col => listStatusFilter === 'all' || col.id === listStatusFilter)
                 .every(col => (kanbanByStatus[col.id] || []).length === 0) && (
                 <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                   <p className="text-sm font-medium mb-3">Нет записей</p>
