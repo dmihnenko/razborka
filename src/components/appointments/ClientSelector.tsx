@@ -3,16 +3,18 @@ import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
-import { Search, Plus, User, Phone } from 'lucide-react'
+import { Search, Plus, User, Phone, Car } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { IMaskInput } from 'react-imask'
 
 interface Props {
   selectedId: string
   onSelect: (id: string, customer: any) => void
+  /** Выбор по авто — подставляет владельца и (если передан) предвыбирает авто */
+  onSelectVehicle?: (vehicleId: string, vehicle: any, customer: any) => void
 }
 
-export default function ClientSelector({ selectedId, onSelect }: Props) {
+export default function ClientSelector({ selectedId, onSelect, onSelectVehicle }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
   const [newClientData, setNewClientData] = useState({ name: '', phone: '' })
@@ -39,6 +41,35 @@ export default function ClientSelector({ selectedId, onSelect }: Props) {
 
   if (queryError) {
     console.error('Query error:', queryError)
+  }
+
+  // Авто компании — для поиска по госномеру/VIN
+  const { data: vehicles } = useQuery({
+    queryKey: ['client-selector-vehicles', profile?.sto_company_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('vehicles')
+        .select('id, customer_id, brand, model, license_plate, vin, customers(id, name, phone)')
+        .eq('sto_company_id', profile?.sto_company_id)
+      return data || []
+    },
+    enabled: !!profile?.sto_company_id,
+  })
+
+  const vehicleMatches = (() => {
+    const q = searchQuery.toLowerCase().trim()
+    if (!q) return []
+    return (vehicles || []).filter((v: any) =>
+      v.license_plate?.toLowerCase().includes(q) ||
+      v.vin?.toLowerCase().includes(q) ||
+      `${v.brand ?? ''} ${v.model ?? ''}`.toLowerCase().includes(q)
+    ).slice(0, 8)
+  })()
+
+  const pickVehicle = (v: any) => {
+    const cust = v.customers || customers?.find((c: any) => c.id === v.customer_id) || { id: v.customer_id }
+    onSelect(v.customer_id, cust)
+    onSelectVehicle?.(v.id, v, cust)
   }
 
   const createMutation = useMutation({
@@ -89,7 +120,7 @@ export default function ClientSelector({ selectedId, onSelect }: Props) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Поиск по имени или телефону..."
+            placeholder="Имя, телефон, госномер или VIN..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors"
@@ -154,6 +185,35 @@ export default function ClientSelector({ selectedId, onSelect }: Props) {
             </button>
           </div>
         </form>
+      )}
+
+      {vehicleMatches.length > 0 && (
+        <div>
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+            <Car className="w-3.5 h-3.5" /> По авто
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {vehicleMatches.map((v: any) => (
+              <button
+                key={v.id}
+                onClick={() => pickVehicle(v)}
+                className="p-3 text-left rounded-lg border-2 border-gray-200 hover:border-primary hover:shadow-md transition-all"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-amber-50 flex-shrink-0"><Car className="w-5 h-5 text-amber-600" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-gray-900 truncate">
+                      {v.brand} {v.model}{v.license_plate ? ` · ${v.license_plate}` : ''}
+                    </div>
+                    <div className="text-sm text-gray-600 truncate">
+                      {v.customers?.name || 'Владелец'}{v.vin ? ` · VIN ${v.vin}` : ''}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {isLoading ? (

@@ -454,6 +454,10 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
             <ClientSelector
               selectedId={formData.customer_id}
               onSelect={(id, customer) => setFormData({ ...formData, customer_id: id, vehicle_id: '', selectedClient: customer })}
+              onSelectVehicle={(vehicleId, vehicle, customer) => {
+                setFormData({ ...formData, customer_id: customer?.id || formData.customer_id, vehicle_id: vehicleId, selectedClient: customer, selectedVehicle: vehicle })
+                setCurrentStep(3)
+              }}
             />
           )}
 

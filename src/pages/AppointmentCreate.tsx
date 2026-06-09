@@ -369,6 +369,10 @@ export default function AppointmentCreate() {
                             setForm(p => ({ ...p, customer_id: id, vehicle_id: '', selectedClient: customer }))
                             if (id) setTimeout(() => goNext('client'), 150)
                           }}
+                          onSelectVehicle={(vehicleId, vehicle, customer) => {
+                            setForm(p => ({ ...p, customer_id: customer?.id || p.customer_id, vehicle_id: vehicleId, selectedClient: customer, selectedVehicle: vehicle }))
+                            setTimeout(() => setOpenSection('parts'), 150)
+                          }}
                         />
                       )}
 
