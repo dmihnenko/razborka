@@ -4,12 +4,10 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { 
-  Plus, 
-  FileText, 
-  Package, 
-  Wrench, 
-  Clock,
-  CheckCircle,
+  Plus,
+  FileText,
+  Package,
+  Wrench,
   TrendingUp,
   Users,
   DollarSign,
@@ -25,7 +23,6 @@ import StoAlerts from '@/components/dashboard/StoAlerts'
 import MyVehicles from './MyVehicles'
 import WorkerDashboard from './WorkerDashboard'
 import { useNavigate, Link } from 'react-router-dom'
-import { fetchStoClientStats } from '@/services/stoService'
 import { fmtMoneyShort } from '@/utils/money'
 
 export default function Dashboard() {
@@ -111,46 +108,6 @@ export default function Dashboard() {
     enabled: !!profile?.sto_company_id,
   })
 
-  // Получаем количество работников
-  const { data: workersCount = 0, isLoading: workersLoading } = useQuery({
-    queryKey: ['dashboard-workers-count', profile?.sto_company_id],
-    queryFn: async () => {
-      const { data: workerRole, error: roleError } = await supabase
-        .from('roles')
-        .select('id')
-        .eq('name', 'sto_worker')
-        .single()
-
-      if (roleError) throw roleError
-      if (!workerRole) return 0
-
-      const { data: userRoles, error: userRolesError } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role_id', workerRole.id)
-
-      if (userRolesError) throw userRolesError
-      if (!userRoles) return 0
-
-      const { count, error: countError } = await supabase
-        .from('user_profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('sto_company_id', profile?.sto_company_id)
-        .eq('is_active', true)
-        .in('id', userRoles.map(ur => ur.user_id))
-
-      if (countError) throw countError
-      return count || 0
-    },
-    enabled: !!profile?.sto_company_id,
-  })
-
-  // Статистика клиентов и автомобилей
-  const { data: clientsStats } = useQuery({
-    queryKey: ['dashboard-clients-stats', profile?.sto_company_id],
-    queryFn: () => fetchStoClientStats(profile!.sto_company_id!),
-    enabled: !!profile?.sto_company_id,
-  })
 
   // Последние заявки для дашборда
   const { data: recentAppointments = [] } = useQuery({
@@ -185,6 +142,29 @@ export default function Dashboard() {
     enabled: !!profile?.sto_company_id && !!isStoOwner,
   })
 
+  // Записи на сегодня
+  const { data: todayAppointments = [] } = useQuery({
+    queryKey: ['dashboard-today', profile?.sto_company_id],
+    queryFn: async () => {
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const d0 = new Date()
+      const today = `${d0.getFullYear()}-${pad(d0.getMonth() + 1)}-${pad(d0.getDate())}`
+      const dN = new Date(); dN.setDate(dN.getDate() + 1)
+      const next = `${dN.getFullYear()}-${pad(dN.getMonth() + 1)}-${pad(dN.getDate())}`
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('id, status, scheduled_date, customers(name), vehicles(brand, model)')
+        .eq('sto_company_id', profile?.sto_company_id)
+        .gte('scheduled_date', `${today}T00:00`)
+        .lt('scheduled_date', `${next}T00:00`)
+        .not('status', 'in', '(archived,deleted,cancelled,pending_deletion)')
+        .order('scheduled_date', { ascending: true })
+      if (error) throw error
+      return (data ?? []).filter((a: any) => String(a.scheduled_date || '').startsWith(today))
+    },
+    enabled: !!profile?.sto_company_id && !!isStoOwner,
+  })
+
   // Ранние возвраты — после всех хуков
   if (activeRole === 'user') return <MyVehicles />
   if (!isStoOwner) return <WorkerDashboard />
@@ -200,16 +180,27 @@ export default function Dashboard() {
   const totalCost = monthlyStats?.total || 0
   const completedCount = monthlyStats?.count || 0
 
-  const isLoading = statsLoading || monthlyLoading || workersLoading
+  const isLoading = statsLoading || monthlyLoading
 
-  // Получаем название текущего месяца
+  // Приветствие + дата
+  const hour = new Date().getHours()
+  const greeting = hour < 6 ? 'Доброй ночи' : hour < 12 ? 'Доброе утро' : hour < 18 ? 'Добрый день' : 'Добрый вечер'
+  const ownerName = (profile?.full_name || '').trim().split(/\s+/)[0] || ''
+  const todayStr = new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })
+  const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
+    scheduled: { label: 'Ожидает', cls: 'bg-violet-100 text-violet-700' },
+    in_progress: { label: 'В работе', cls: 'bg-amber-100 text-amber-700' },
+    ready: { label: 'Готово', cls: 'bg-green-100 text-green-700' },
+    completed: { label: 'Завершена', cls: 'bg-green-100 text-green-700' },
+  }
+
   return (
     <div className="space-y-4 sm:space-y-5">
       {/* Хедер страницы — стиль как в разборке */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="page-title">СТО</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Управление сервисом и заявками</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{greeting}{ownerName ? `, ${ownerName}` : ''}</h1>
+          <p className="text-sm text-gray-500 mt-0.5 capitalize">{todayStr}</p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <button onClick={() => navigate('/customers')}
@@ -244,97 +235,59 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="space-y-4 sm:space-y-6">
-          {/* KPI — стиль как в разборке */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {/* Компактные KPI */}
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+            {[
+              { label: 'Активные', value: activeCount, color: 'text-blue-600', path: '/appointments' },
+              { label: 'Ожидают', value: scheduledCount, color: 'text-violet-600', path: '/appointments?tab=scheduled' },
+              { label: 'В работе', value: inProgressCount, color: 'text-amber-600', path: '/appointments?tab=in_progress' },
+              { label: 'Готовые', value: readyCount, color: 'text-green-600', path: '/appointments?tab=completed' },
+              { label: 'Неоплачено', value: unpaidCount, color: unpaidCount > 0 ? 'text-red-600' : 'text-gray-400', path: '/appointments' },
+              { label: 'Доход/мес', value: fmtMoneyShort(totalCost), color: 'text-blue-700', path: `/monthly-revenue?year=${new Date().getFullYear()}&month=${new Date().getMonth() + 1}` },
+            ].map(k => (
+              <button key={k.label} onClick={() => navigate(k.path)}
+                className="bg-white rounded-xl border border-gray-100 shadow-sm px-3 py-3 text-left hover:shadow-md transition-shadow">
+                <p className="text-[11px] text-gray-500 leading-none mb-1 truncate">{k.label}</p>
+                <p className={`text-lg sm:text-xl font-bold tabular-nums leading-none ${k.color}`}>{k.value}</p>
+              </button>
+            ))}
+          </div>
 
-            {/* Заявки */}
-            <button onClick={() => navigate('/appointments')}
-              className="stat-card cursor-pointer text-left group">
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-5 h-5 text-blue-600" />
-                </div>
-                <ArrowRight className="w-4 h-4 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+          {/* Сегодня */}
+          <div className="card p-0 overflow-hidden">
+            <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #F1F5F9' }}>
+              <div className="flex items-center gap-2">
+                <CalendarDays className="w-4 h-4 text-primary" />
+                <p className="text-sm font-semibold text-gray-800">Сегодня</p>
+                <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-medium">{todayAppointments.length}</span>
               </div>
-              <p className="text-xs font-medium text-gray-500 mb-0.5">Заявки</p>
-              <p className="text-3xl font-bold text-gray-900 tracking-tight">{activeCount}</p>
-              <div className="mt-3 pt-3 space-y-1 border-t border-gray-100">
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400">Ожидают</span>
-                  <span className="font-semibold text-violet-600">{scheduledCount}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400">В работе</span>
-                  <span className="font-semibold text-amber-600">{inProgressCount}</span>
-                </div>
+              <button onClick={() => navigate('/appointments?view=week')} className="text-xs font-medium flex items-center gap-1" style={{ color: '#2563EB' }}>
+                Календарь <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            {todayAppointments.length > 0 ? (
+              <div className="divide-y divide-gray-50">
+                {todayAppointments.map((a: any) => {
+                  const b = STATUS_BADGE[a.status] || { label: a.status, cls: 'bg-gray-100 text-gray-600' }
+                  const time = (String(a.scheduled_date || '').match(/T(\d{2}:\d{2})/) || [])[1] || ''
+                  return (
+                    <button key={a.id} onClick={() => navigate(`/sto/appointments/${a.id}`)}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left">
+                      {time && <span className="text-sm font-bold tabular-nums text-gray-900 w-12 flex-shrink-0">{time}</span>}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{a.customers?.name || 'Клиент'}</p>
+                        {a.vehicles && <p className="text-xs text-gray-500 truncate">{a.vehicles.brand} {a.vehicles.model}</p>}
+                      </div>
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md flex-shrink-0 ${b.cls}`}>{b.label}</span>
+                    </button>
+                  )
+                })}
               </div>
-            </button>
-
-            {/* Готовые */}
-            <button onClick={() => navigate('/appointments?tab=completed')}
-              className="stat-card cursor-pointer text-left group">
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center flex-shrink-0">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                </div>
-                <ArrowRight className="w-4 h-4 text-green-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+            ) : (
+              <div className="py-8 text-center">
+                <p className="text-sm text-gray-400">Сегодня записей нет</p>
               </div>
-              <p className="text-xs font-medium text-gray-500 mb-0.5">Готовые</p>
-              <p className="text-3xl font-bold text-gray-900 tracking-tight">{readyCount}</p>
-              <div className="mt-3 pt-3 space-y-1 border-t border-gray-100">
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400">Неоплачено</span>
-                  <span className={`font-semibold ${unpaidCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>{unpaidCount}</span>
-                </div>
-              </div>
-            </button>
-
-            {/* Клиенты */}
-            <button onClick={() => navigate('/customers')}
-              className="stat-card cursor-pointer text-left group">
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center flex-shrink-0">
-                  <Users className="w-5 h-5 text-indigo-500" />
-                </div>
-                <ArrowRight className="w-4 h-4 text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <p className="text-xs font-medium text-gray-500 mb-0.5">Клиенты</p>
-              <p className="text-3xl font-bold text-gray-900 tracking-tight">{clientsStats?.customers || 0}</p>
-              <div className="mt-3 pt-3 space-y-1 border-t border-gray-100">
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400">Автомобилей</span>
-                  <span className="font-semibold text-gray-700">{clientsStats?.vehicles || 0}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400">Сотрудников</span>
-                  <span className="font-semibold text-gray-700">{workersCount}</span>
-                </div>
-              </div>
-            </button>
-
-            {/* Выручка за месяц */}
-            <button
-              onClick={() => navigate(`/monthly-revenue?year=${new Date().getFullYear()}&month=${new Date().getMonth() + 1}`)}
-              className="stat-card cursor-pointer text-left group border-0 bg-gradient-to-br from-[#1E3A6E] to-[#1E40AF]">
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
-                  <DollarSign className="w-5 h-5 text-white" />
-                </div>
-                <ArrowRight className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <p className="text-xs font-medium text-white/70 mb-0.5">Доход за месяц</p>
-              <p className="text-3xl font-bold text-white tracking-tight">{fmtMoneyShort(totalCost)}</p>
-              <div className="mt-3 pt-3 space-y-1 border-t border-white/15">
-                <div className="flex justify-between text-xs">
-                  <span className="text-white/60">Работы</span>
-                  <span className="font-semibold text-white">{fmtMoneyShort(workCost)}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-white/60">Запчасти</span>
-                  <span className="font-semibold text-white">{fmtMoneyShort(partsCost)}</span>
-                </div>
-              </div>
-            </button>
+            )}
           </div>
 
           {/* Алерты и информация */}
@@ -379,33 +332,6 @@ export default function Dashboard() {
 
             {/* Левая колонка (2/3) */}
             <div className="lg:col-span-2 space-y-4">
-
-              {/* Разбивка заявок по статусам */}
-              <div className="card p-0 overflow-hidden">
-                <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #F1F5F9' }}>
-                  <p className="text-sm font-semibold text-gray-800">Заявки по статусам</p>
-                  <button onClick={() => navigate('/appointments')} className="text-xs font-medium flex items-center gap-1" style={{ color: '#2563EB' }}>
-                    Все <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <div className="grid grid-cols-3 divide-x">
-                  {[
-                    { label: 'Ожидают', value: scheduledCount, color: '#7C3AED', bg: 'rgba(124,58,237,0.1)', icon: Clock, path: '/appointments?tab=scheduled' },
-                    { label: 'В работе', value: inProgressCount, color: '#D97706', bg: 'rgba(217,119,6,0.1)', icon: Wrench, path: '/appointments?tab=in_progress' },
-                    { label: 'Готовые', value: readyCount, color: '#16A34A', bg: 'rgba(22,163,74,0.1)', icon: CheckCircle, path: '/appointments?tab=completed' },
-                  ].map(({ label, value, color, bg, icon: Icon, path }) => (
-                    <button key={label} onClick={() => navigate(path)} className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: bg }}>
-                          <Icon className="w-3.5 h-3.5" style={{ color }} />
-                        </div>
-                        <span className="text-xs font-medium" style={{ color: '#64748B' }}>{label}</span>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>{value}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {/* Финансовая разбивка месяца */}
               <div className="card p-0 overflow-hidden">
