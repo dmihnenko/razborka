@@ -1,5 +1,5 @@
 import { AppointmentFormValues, AppointmentStatus } from '@/types/appointments'
-import { User, Car, Wrench, Package, FileText, UserCog } from 'lucide-react'
+import { User, Car, Wrench, Package, FileText, UserCog, CalendarClock } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
@@ -24,6 +24,20 @@ export default function AppointmentSummary({ formData, onUpdate, isEditing }: Pr
   const totalWork = formData.workItems.reduce((sum, item) => sum + item.price, 0)
   const totalParts = formData.partItems.reduce((sum, item) => sum + item.totalPrice, 0)
   const grandTotal = totalWork + totalParts
+
+  // Время и мастер для сводки
+  const catalogNormHours = formData.workItems.reduce((s, i) => s + ((i as any).normHours || 0), 0)
+  const billableHours = catalogNormHours + (formData.extraHours || 0)
+  const fmtHours = (h: number) => (Number.isInteger(h) ? String(h) : h.toFixed(1))
+  const sdMatch = String(formData.scheduledDate || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/)
+  const dateLabel = sdMatch ? `${sdMatch[3]}.${sdMatch[2]}.${sdMatch[1]}` : ''
+  const startTime = sdMatch ? `${sdMatch[4]}:${sdMatch[5]}` : ''
+  let endTime = ''
+  if (sdMatch && billableHours > 0) {
+    const start = new Date(+sdMatch[1], +sdMatch[2] - 1, +sdMatch[3], +sdMatch[4], +sdMatch[5])
+    const end = new Date(start.getTime() + billableHours * 3600 * 1000)
+    endTime = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`
+  }
 
   // Проверка ролей
   const isStoWorker = profile?.roles?.some((r: any) => r.name === 'sto_worker')
@@ -93,6 +107,34 @@ export default function AppointmentSummary({ formData, onUpdate, isEditing }: Pr
           {formData.selectedVehicle?.year && (
             <div className="text-sm text-gray-500">{formData.selectedVehicle.year} г.</div>
           )}
+        </div>
+      </div>
+
+      {/* Время и мастер */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <CalendarClock className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold text-gray-900">Время и мастер</h3>
+        </div>
+        <div className="ml-7 space-y-1 text-sm">
+          {dateLabel && <div><span className="text-gray-500">Дата:</span> <span className="font-medium text-gray-900">{dateLabel}</span></div>}
+          {startTime && (
+            <div>
+              <span className="text-gray-500">Время:</span>{' '}
+              <span className="font-medium text-gray-900">
+                {startTime}{endTime ? ` – ${endTime}` : ''}{billableHours > 0 ? ` · ${fmtHours(billableHours)} ч` : ''}
+              </span>
+            </div>
+          )}
+          <div>
+            <span className="text-gray-500">Мастер:</span>{' '}
+            <span className="font-medium text-gray-900">
+              {(() => {
+                const w = workers?.find((x: any) => x.id === formData.assigned_to)
+                return w?.full_name || w?.email || (formData.assigned_to ? 'Назначен' : 'Не назначен')
+              })()}
+            </span>
+          </div>
         </div>
       </div>
 
