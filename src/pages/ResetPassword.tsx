@@ -15,15 +15,22 @@ export default function ResetPassword() {
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
   const [ready, setReady] = useState(false)
+  const [email, setEmail] = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
     // Ждём, пока supabase-js обработает recovery-токен из URL.
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' || session) setReady(true)
+      if (event === 'PASSWORD_RECOVERY' || session) {
+        setReady(true)
+        if (session?.user?.email) setEmail(session.user.email)
+      }
     })
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true)
+      if (data.session) {
+        setReady(true)
+        if (data.session.user?.email) setEmail(data.session.user.email)
+      }
     })
     return () => sub.subscription.unsubscribe()
   }, [])
@@ -64,9 +71,14 @@ export default function ResetPassword() {
         </div>
 
         <h2 style={{ color: '#F1F5F9', fontSize: '22px', fontWeight: 600, marginBottom: '4px', textAlign: 'center' }}>Новый пароль</h2>
-        <p style={{ color: '#94A3B8', fontSize: '13px', marginBottom: '24px', textAlign: 'center' }}>
+        <p style={{ color: '#94A3B8', fontSize: '13px', marginBottom: email ? '8px' : '24px', textAlign: 'center' }}>
           Придумайте новый пароль для входа в систему
         </p>
+        {email && (
+          <p style={{ color: '#F1F5F9', fontSize: '14px', fontWeight: 600, marginBottom: '24px', textAlign: 'center', wordBreak: 'break-all' }}>
+            {email}
+          </p>
+        )}
 
         {!ready ? (
           <p style={{ color: '#94A3B8', fontSize: '13px', textAlign: 'center' }}>
