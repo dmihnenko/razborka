@@ -94,20 +94,15 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
   }
 
   const handleSubmitUser = async () => {
+    // Личные автомобили — без подтверждения админом: сразу выдаём роль «user»
     setSubmitting(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error()
-      const { error } = await supabase.from('access_requests').insert({
-        user_id: user.id,
-        request_type: 'user',
-        status: 'pending',
-      })
+      const { error } = await supabase.rpc('claim_personal_user_role')
       if (error) throw error
-      await loadExistingRequest()
+      toast.success('Доступ открыт!')
+      window.location.reload()
     } catch {
-      toast.error('Ошибка при отправке')
-    } finally {
+      toast.error('Не удалось активировать доступ')
       setSubmitting(false)
     }
   }
