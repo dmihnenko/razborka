@@ -2,6 +2,11 @@
 -- Лимиты и цены редактируются админом. Срок выбирается при покупке (месяц / год −15%).
 -- Идемпотентно: апсерт по (company_type, name).
 
+-- Колонки лимитов (в проде могло не быть add_subscription_limits.sql)
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS max_appointments int DEFAULT NULL;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS max_customers    int DEFAULT NULL;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS max_workers      int DEFAULT NULL;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS duration_months  int DEFAULT NULL;
 ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS sort_order int DEFAULT 0;
 ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS is_custom boolean DEFAULT false;
 
