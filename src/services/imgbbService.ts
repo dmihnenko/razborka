@@ -1,5 +1,7 @@
 export interface ImgbbPhoto {
   url: string
+  /** Оптимизированная (resized) версия для превью; full `url` — для полноэкранного просмотра */
+  medium_url?: string
   thumb_url: string
   delete_url: string
 }
@@ -53,6 +55,8 @@ export async function uploadToImgbb(file: File, apiKey: string): Promise<ImgbbPh
 
   return {
     url: json.data.url,
+    // ImgBB отдаёт уменьшенную версию с сохранением пропорций — её и грузим в превью
+    medium_url: json.data.medium?.url || json.data.display_url || undefined,
     thumb_url: json.data.thumb?.url || json.data.url,
     delete_url: json.data.delete_url,
   }

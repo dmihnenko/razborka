@@ -147,7 +147,7 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
         >
           <img
             key={photos[activeIndex].url}
-            src={photos[activeIndex].url}
+            src={photos[activeIndex].medium_url || photos[activeIndex].thumb_url || photos[activeIndex].url}
             alt={`${alt} ${activeIndex + 1}`}
             className={`absolute inset-0 w-full h-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'}`}
             loading="lazy"
