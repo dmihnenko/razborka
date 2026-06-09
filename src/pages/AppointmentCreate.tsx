@@ -168,13 +168,14 @@ export default function AppointmentCreate() {
 
   const canSubmit = form.customer_id && form.vehicle_id && form.scheduledDate
 
-  // Нормо-часы из каталога + доп. время × ставку; ручные работы (без нормо-часов) — по своей цене
+  // Стоимость работ = сумма цен работ (для каталога цена = нормо-часы × ставку) + доп. время × ставку
   const extraHours       = form.extraHours ?? 0
   const catalogNormHours = form.workItems.reduce((s, i) => s + (i.normHours ?? 0), 0)
-  const manualWorkPrice  = form.workItems.reduce((s, i) => s + ((i.normHours ?? 0) > 0 ? 0 : i.price), 0)
   const totalNormHours   = catalogNormHours
   const billableHours    = catalogNormHours + extraHours
-  const totalWork  = Math.round((billableHours * laborRate + manualWorkPrice) * 100) / 100
+  const sumWorkPrices    = form.workItems.reduce((s, i) => s + (i.price || 0), 0)
+  const extraCost        = Math.round(extraHours * laborRate * 100) / 100
+  const totalWork  = Math.round((sumWorkPrices + extraCost) * 100) / 100
   const totalParts = form.partItems.reduce((s, i) => s + i.totalPrice, 0)
   const totalCost  = totalWork + totalParts
 
@@ -442,10 +443,22 @@ export default function AppointmentCreate() {
                               <span className="text-sm font-semibold text-gray-600">Итого</span>
                               <span className="text-sm font-bold text-gray-900 tabular-nums">{fmtHours(billableHours)} н·ч</span>
                             </div>
-                            {laborRate > 0 ? (
-                              <div className="flex items-center justify-between mt-1">
-                                <span className="text-xs text-gray-400">× {laborRate.toLocaleString()} ₴/н·ч</span>
-                                <span className="text-base font-bold text-primary tabular-nums">₴{totalWork.toLocaleString()}</span>
+                            {(laborRate > 0 || sumWorkPrices > 0) ? (
+                              <div className="mt-1 space-y-0.5">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-gray-400">Работы</span>
+                                  <span className="text-gray-700 tabular-nums">₴{sumWorkPrices.toLocaleString()}</span>
+                                </div>
+                                {extraHours > 0 && (
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="text-gray-400">Доп. время · {fmtHours(extraHours)} н·ч × {laborRate.toLocaleString()}</span>
+                                    <span className="text-gray-700 tabular-nums">₴{extraCost.toLocaleString()}</span>
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-gray-100">
+                                  <span className="text-xs font-semibold text-gray-500">Стоимость работ</span>
+                                  <span className="text-base font-bold text-primary tabular-nums">₴{totalWork.toLocaleString()}</span>
+                                </div>
                               </div>
                             ) : (
                               <p className="text-xs text-amber-600 mt-2">

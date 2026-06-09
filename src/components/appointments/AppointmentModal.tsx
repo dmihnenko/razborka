@@ -179,9 +179,9 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
       // Нормо-часы из каталога + доп. время × ставку; ручные работы — по своей цене
       const extraHours = data.extraHours ?? 0
       const catalogNormHours = data.workItems.reduce((s, i) => s + (i.normHours ?? 0), 0)
-      const manualWorkPrice = data.workItems.reduce((s, i) => s + ((i.normHours ?? 0) > 0 ? 0 : i.price), 0)
       const totalNormHours = catalogNormHours
-      const totalWork = Math.round(((catalogNormHours + extraHours) * laborRate + manualWorkPrice) * 100) / 100
+      const sumWorkPrices = data.workItems.reduce((s, i) => s + (i.price || 0), 0)
+      const totalWork = Math.round((sumWorkPrices + extraHours * laborRate) * 100) / 100
       const totalParts = data.partItems.reduce((sum, item) => sum + item.totalPrice, 0)
 
       if (appointmentId) {
@@ -366,12 +366,13 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
   const isLastStep = currentStep === steps.length
   const showBack = currentStep > minStep
 
-  // Нормо-часы для финального шага
-  const extraHoursVal      = formData.extraHours ?? 0
-  const catalogNormHours   = formData.workItems.reduce((s, i) => s + (i.normHours ?? 0), 0)
-  const manualWorkPriceVal = formData.workItems.reduce((s, i) => s + ((i.normHours ?? 0) > 0 ? 0 : i.price), 0)
-  const billableHours      = catalogNormHours + extraHoursVal
-  const totalWorkVal       = Math.round((billableHours * laborRate + manualWorkPriceVal) * 100) / 100
+  // Нормо-часы и стоимость для финального шага
+  const extraHoursVal    = formData.extraHours ?? 0
+  const catalogNormHours = formData.workItems.reduce((s, i) => s + (i.normHours ?? 0), 0)
+  const billableHours    = catalogNormHours + extraHoursVal
+  const sumWorkPricesVal = formData.workItems.reduce((s, i) => s + (i.price || 0), 0)
+  const extraCostVal     = Math.round(extraHoursVal * laborRate * 100) / 100
+  const totalWorkVal     = Math.round((sumWorkPricesVal + extraCostVal) * 100) / 100
 
   return (
     <div className="modal-overlay">
@@ -524,10 +525,22 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
                   <span className="text-sm font-semibold text-gray-600">Итого</span>
                   <span className="text-sm font-bold text-gray-900 tabular-nums">{fmtHours(billableHours)} н·ч</span>
                 </div>
-                {laborRate > 0 ? (
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-xs text-gray-400">× {laborRate.toLocaleString()} ₴/н·ч</span>
-                    <span className="text-base font-bold text-primary tabular-nums">₴{totalWorkVal.toLocaleString()}</span>
+                {(laborRate > 0 || sumWorkPricesVal > 0) ? (
+                  <div className="mt-1 space-y-0.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-400">Работы</span>
+                      <span className="text-gray-700 tabular-nums">₴{sumWorkPricesVal.toLocaleString()}</span>
+                    </div>
+                    {extraHoursVal > 0 && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-400">Доп. время · {fmtHours(extraHoursVal)} н·ч × {laborRate.toLocaleString()}</span>
+                        <span className="text-gray-700 tabular-nums">₴{extraCostVal.toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-gray-100">
+                      <span className="text-xs font-semibold text-gray-500">Стоимость работ</span>
+                      <span className="text-base font-bold text-primary tabular-nums">₴{totalWorkVal.toLocaleString()}</span>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-xs text-amber-600 mt-2">
