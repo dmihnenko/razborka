@@ -132,7 +132,16 @@ export default function StoCompanies() {
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64">Загрузка...</div>;
+    return (
+      <div className="space-y-6">
+        <div className="h-8 w-40 bg-gray-100 rounded-lg animate-pulse" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 h-48 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -150,6 +159,14 @@ export default function StoCompanies() {
           <span>Создать СТО</span>
         </button>
       </div>
+
+      {companies.length === 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-16 flex flex-col items-center text-gray-400">
+          <Building2 className="w-10 h-10 mb-3 opacity-30" />
+          <p className="text-sm font-medium">Нет СТО</p>
+          <button onClick={handleCreate} className="mt-3 text-sm text-purple-600 font-semibold hover:underline">Создать первую</button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {companies.map((sto) => (
