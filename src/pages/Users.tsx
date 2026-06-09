@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchUsers, fetchActiveRoles, fetchStoCompanies, fetchPartsCompanies, updateUserRolesFull, toggleUserActive, getAuthSession, softDeleteUserProfile, restoreUserProfile, bulkSetActive, bulkSoftDelete } from '@/services/userService';
 import { Plus, Edit2, Trash2, UserCog, Search, CheckCircle2, KeyRound, RotateCcw, X, CheckSquare, Square, LogIn } from 'lucide-react';
@@ -51,6 +51,7 @@ export default function Users() {
 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const location = useLocation();
   const { confirm: showConfirm, dialogProps } = useConfirm();
   
   // Получаем информацию о текущем пользователе
@@ -287,12 +288,15 @@ export default function Users() {
     setNewPassword('');
   };
 
+  // Сохраняем текущий контекст: из админки → /admin/users/..., из основного → /users/...
+  const usersBase = location.pathname.startsWith('/admin') ? '/admin/users' : '/users';
+
   const handleEditUser = (user: UserProfile) => {
-    navigate(`/users/${user.id}/edit`);
+    navigate(`${usersBase}/${user.id}/edit`);
   };
 
   const handleCreateUser = () => {
-    navigate('/users/new');
+    navigate(`${usersBase}/new`);
   };
 
   const handleDeleteUser = async (user: UserProfile) => {
