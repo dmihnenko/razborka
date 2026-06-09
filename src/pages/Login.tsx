@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { getUserRolesWithNames, getEmailByUsername } from '@/services/userService'
 import { toast } from 'sonner'
@@ -17,7 +16,6 @@ export default function Login() {
   const [isForgotMode, setIsForgotMode] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -194,11 +192,14 @@ export default function Login() {
       await queryClient.invalidateQueries({ queryKey: ['userProfile'] })
 
       // Определяем куда направить пользователя на основе основной роли
-      const defaultRoute = primaryRoleName 
+      const defaultRoute = primaryRoleName
         ? getDefaultRouteForRoles([primaryRoleName])
         : getDefaultRouteForRoles(roleNames)
-      
-      navigate(defaultRoute)
+
+      // Полная навигация (не SPA): гарантирует, что приложение
+      // перезапустится с уже сохранённой сессией и не отбросит на форму
+      // из-за гонки обновления auth-состояния.
+      window.location.assign(defaultRoute)
     }
   }
 
