@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import {
   CreditCard, TrendingUp, Plus, Trash2, Calendar, Building2,
-  CheckCircle2, XCircle, Search, X, Infinity, Edit2,
+  CheckCircle2, XCircle, Search, X, Infinity, Edit2, RotateCw, Users, ClipboardList, Car,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -59,6 +59,9 @@ export default function Subscriptions() {
   const [activeTab, setActiveTab] = useState<'companies' | 'plans' | 'requests'>('companies')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [companyTypeFilter, setCompanyTypeFilter] = useState<'all' | 'sto' | 'parts'>('all')
+  const [planTypeFilter, setPlanTypeFilter] = useState<'all' | 'sto' | 'parts'>('all')
+  const [renewing, setRenewing] = useState<CompanySubscription | null>(null)
   const [isAssignOpen, setIsAssignOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<Subscription | null>(null)
   const [assignForm, setAssignForm] = useState({
@@ -108,7 +111,21 @@ export default function Subscriptions() {
   const deleteMutation = useMutation({
     mutationFn: deleteCompanySubscription,
     onSuccess: () => { invalidate(); toast.success('Удалено') },
-    onError: () => toast.error('Ошибка видалення'),
+    onError: () => toast.error('Ошибка удаления'),
+  })
+
+  // Продление/активация: продлеваем от даты окончания (если в будущем) или от сегодня
+  const renewMutation = useMutation({
+    mutationFn: ({ sub, months }: { sub: CompanySubscription; months: number }) => {
+      const base = sub.end_date && new Date(sub.end_date) > new Date() ? new Date(sub.end_date) : new Date()
+      base.setMonth(base.getMonth() + months)
+      return assignSubscription({
+        company_type: sub.company_type, company_id: sub.company_id,
+        subscription_id: sub.subscription_id, end_date: base.toISOString(),
+      })
+    },
+    onSuccess: () => { invalidate(); toast.success('Подписка продлена и активирована'); setRenewing(null) },
+    onError: (e: any) => toast.error(e.message || 'Ошибка продления'),
   })
 
   // Filtered company subscriptions
@@ -121,8 +138,11 @@ export default function Subscriptions() {
     if (statusFilter !== 'all') {
       list = list.filter(s => subStatus(s) === statusFilter)
     }
+    if (companyTypeFilter !== 'all') {
+      list = list.filter(s => s.company_type === companyTypeFilter)
+    }
     return list
-  }, [allSubs, search, statusFilter])
+  }, [allSubs, search, statusFilter, companyTypeFilter])
 
   const companies  = assignForm.companyType === 'sto' ? stoCompanies : partsCompanies
   const filteredPlans = plans.filter(p => p.company_type === assignForm.companyType)
@@ -256,6 +276,15 @@ export default function Subscriptions() {
                   className="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
                 {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>}
               </div>
+              {/* Фильтр по типу */}
+              <div className="inline-flex rounded-xl bg-gray-100 p-1">
+                {([['all','Все'],['sto','СТО'],['parts','Разборка']] as const).map(([v, l]) => (
+                  <button key={v} onClick={() => setCompanyTypeFilter(v)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${companyTypeFilter === v ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
               <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white">
                 <option value="all">Все статусы</option>
@@ -312,6 +341,12 @@ export default function Subscriptions() {
 
                       {/* Actions */}
                       <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => setRenewing(sub)}
+                          className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-50 rounded-xl transition-colors"
+                          title={st === 'active' || st === 'expiring' ? 'Продлить' : 'Активировать / продлить'}>
+                          <RotateCw className="w-4 h-4" />
+                        </button>
                         {sub.is_active && !isExpired(sub) && (
                           <button
                             onClick={async () => { if (await showConfirm({ message: `Деактивировать подписку для ${sub.company?.name}?`, danger: true })) deactivateMutation.mutate(sub.id) }}
@@ -336,11 +371,20 @@ export default function Subscriptions() {
         {/* ── Plans tab ── */}
         {activeTab === 'plans' && (
           <div className="p-4 sm:p-5">
+            {/* Фильтр тарифов по типу */}
+            <div className="inline-flex rounded-xl bg-gray-100 p-1 mb-4">
+              {([['all','Все'],['sto','СТО'],['parts','Разборка']] as const).map(([v, l]) => (
+                <button key={v} onClick={() => setPlanTypeFilter(v)}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${planTypeFilter === v ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
             {plansLoading ? (
               <div className="flex justify-center py-12"><Spinner size="lg" /></div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {plans.map(plan => {
+                {plans.filter(p => planTypeFilter === 'all' || p.company_type === planTypeFilter).map(plan => {
                   const isParts = plan.company_type === 'parts'
                   const clr = isParts ? { color: '#16A34A', bg: '#F0FDF4' } : { color: '#2563EB', bg: '#EFF6FF' }
                   const companiesOnPlan = allSubs.filter(s => s.subscription_id === plan.id && s.is_active).length
@@ -370,9 +414,18 @@ export default function Subscriptions() {
                           </span>
                         </div>
 
-                        {plan.description && (
-                          <p className="text-xs text-gray-500 mb-4 leading-relaxed">{plan.description}</p>
-                        )}
+                        {/* Лимиты тарифа */}
+                        <div className="mb-4 space-y-1.5">
+                          {plan.is_custom ? (
+                            <p className="text-xs font-medium text-gray-500">Индивидуальные условия</p>
+                          ) : (
+                            <>
+                              <p className="text-xs text-gray-600 flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-gray-400" /> Механиков: <span className="font-semibold">{plan.max_workers ?? '∞'}</span></p>
+                              <p className="text-xs text-gray-600 flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5 text-gray-400" /> Заявок/мес: <span className="font-semibold">{plan.max_appointments ?? '∞'}</span></p>
+                              <p className="text-xs text-gray-600 flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-gray-400" /> Клиентов: <span className="font-semibold">{plan.max_customers ?? '∞'}</span></p>
+                            </>
+                          )}
+                        </div>
 
                         {/* Companies on plan + edit */}
                         <div className="pt-3 border-t border-black/10 flex items-center justify-between">
@@ -424,7 +477,63 @@ export default function Subscriptions() {
         />
       )}
 
+      {/* ── Renew / Activate Modal ── */}
+      {renewing && (
+        <RenewModal
+          sub={renewing}
+          onClose={() => setRenewing(null)}
+          onConfirm={(months) => renewMutation.mutate({ sub: renewing, months })}
+          isPending={renewMutation.isPending}
+        />
+      )}
+
       <ConfirmDialog {...dialogProps} />
+    </div>
+  )
+}
+
+// ─── Renew / Activate Modal ───────────────────────────────────────────────────
+
+function RenewModal({ sub, onClose, onConfirm, isPending }: { sub: CompanySubscription; onClose: () => void; onConfirm: (months: number) => void; isPending: boolean }) {
+  useBlockScroll(true)
+  const [months, setMonths] = useState(1)
+  const base = sub.end_date && new Date(sub.end_date) > new Date() ? new Date(sub.end_date) : new Date()
+  const preview = new Date(base); preview.setMonth(preview.getMonth() + months)
+  const opts = [{ v: 1, l: '1 месяц' }, { v: 3, l: '3 месяца' }, { v: 6, l: '6 месяцев' }, { v: 12, l: '1 год' }]
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="font-bold text-gray-900">Продление подписки</h2>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="text-sm">
+            <p className="font-semibold text-gray-900">{sub.company?.name}</p>
+            <p className="text-gray-500 text-xs mt-0.5">
+              {sub.subscription?.name} · до {sub.end_date ? new Date(sub.end_date).toLocaleDateString('ru-RU') : '∞'}
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {opts.map(o => (
+              <button key={o.v} onClick={() => setMonths(o.v)}
+                className={`py-2.5 text-sm font-semibold rounded-xl border-2 transition-all ${months === o.v ? 'border-primary bg-primary/5 text-primary' : 'border-gray-100 text-gray-600 hover:border-gray-200'}`}>
+                {o.l}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500">
+            Новая дата окончания: <span className="font-semibold text-gray-700">{preview.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+          </p>
+        </div>
+        <div className="px-5 py-4 border-t border-gray-100 flex gap-2">
+          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl">Отмена</button>
+          <button onClick={() => onConfirm(months)} disabled={isPending}
+            className="flex-1 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl disabled:opacity-50">
+            {isPending ? 'Сохранение…' : 'Продлить'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
