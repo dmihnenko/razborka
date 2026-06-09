@@ -246,6 +246,21 @@ export async function getPartsCompanies() {
 // PAID PLAN HELPER
 // ============================================================================
 
+/** Тарифы (Стандарт/Про/Макс/Персональный) для типа компании, по порядку. Демо (price=0, не custom) исключается. */
+export async function getSubscriptionTiers(companyType: 'sto' | 'parts') {
+  // Сортировку по sort_order делаем на клиенте — колонки может ещё не быть в проде (prod отстаёт от репо)
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('company_type', companyType)
+    .eq('is_active', true)
+    .order('price', { ascending: true })
+  if (error) throw error
+  return (data as Subscription[])
+    .filter(p => p.price > 0 || p.is_custom)
+    .sort((a, b) => (a.sort_order ?? a.price) - (b.sort_order ?? b.price))
+}
+
 /** Активный платный месячный план для типа компании (канонический «Подписка …») */
 export async function getActivePaidPlan(companyType: 'sto' | 'parts') {
   const { data, error } = await supabase

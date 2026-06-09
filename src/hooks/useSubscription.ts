@@ -52,11 +52,15 @@ export function useSubscriptionUsage() {
   const { data: appointmentCount = 0 } = useQuery({
     queryKey: ['sub-usage-appointments', stoId],
     queryFn: async () => {
+      // Лимит «заявок в месяц» — считаем созданные с начала текущего календарного месяца
+      const startOfMonth = new Date()
+      startOfMonth.setDate(1)
+      startOfMonth.setHours(0, 0, 0, 0)
       const { count } = await supabase
         .from('appointments')
         .select('id', { count: 'exact', head: true })
         .eq('sto_company_id', stoId!)
-        .not('status', 'in', '(deleted,archived)')
+        .gte('created_at', startOfMonth.toISOString())
       return count || 0
     },
     enabled: !!stoId,

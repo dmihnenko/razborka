@@ -13,6 +13,9 @@ export interface Subscription {
   max_customers: number | null
   max_workers: number | null
   duration_months: number | null
+  sort_order?: number
+  /** Персональный тариф — цена/лимиты обсуждаются индивидуально */
+  is_custom?: boolean
   created_at: string
   updated_at: string
 }

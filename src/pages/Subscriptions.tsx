@@ -551,8 +551,14 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
     name:             plan.name,
     description:      plan.description || '',
     price:            String(plan.price),
+    max_workers:      plan.max_workers != null ? String(plan.max_workers) : '',
+    max_appointments: plan.max_appointments != null ? String(plan.max_appointments) : '',
+    max_customers:    plan.max_customers != null ? String(plan.max_customers) : '',
+    sort_order:       plan.sort_order != null ? String(plan.sort_order) : '0',
   })
   const [saving, setSaving] = useState(false)
+
+  const numOrNull = (v: string) => (v.trim() === '' ? null : Number(v))
 
   const handleSave = async () => {
     setSaving(true)
@@ -561,6 +567,10 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
         name:             form.name.trim(),
         description:      form.description.trim() || null,
         price:            Number(form.price),
+        max_workers:      numOrNull(form.max_workers),
+        max_appointments: numOrNull(form.max_appointments),
+        max_customers:    numOrNull(form.max_customers),
+        sort_order:       Number(form.sort_order) || 0,
       }).eq('id', plan.id)
       if (error) throw error
       toast.success('План обновлён')
@@ -597,9 +607,15 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
           {field('Название', 'name')}
           {field('Описание', 'description')}
           {field('Цена (₴/мес)', 'price', 'number')}
+          <div className="grid grid-cols-3 gap-2">
+            {field('Механики', 'max_workers', 'number')}
+            {field('Заявок/мес', 'max_appointments', 'number')}
+            {field('Клиентов', 'max_customers', 'number')}
+          </div>
+          {field('Порядок', 'sort_order', 'number')}
           <p className="text-xs text-gray-400">
-            Лимиты по количеству не используются: активная подписка даёт полный доступ.
-            Срок (1/3/6/12 мес) выбирается при назначении.
+            Пустой лимит = без ограничения (например, тариф «Персональный»).
+            Срок (месяц / год −15%) выбирается владельцем при оформлении.
           </p>
         </div>
         <div className="px-5 py-4 border-t border-gray-100 flex gap-2 flex-shrink-0">
