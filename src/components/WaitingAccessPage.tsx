@@ -78,6 +78,19 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
       .maybeSingle()
 
     if (data) {
+      // «Личные автомобили» больше не требуют подтверждения — если осталась
+      // старая заявка типа user, сразу выдаём роль и пускаем в систему.
+      if (data.request_type === 'user') {
+        try {
+          const { error } = await supabase.rpc('claim_personal_user_role')
+          if (error) throw error
+          localStorage.removeItem('tsp_profile_cache')
+          window.location.reload()
+          return
+        } catch {
+          // не вышло — покажем обычный статус заявки ниже
+        }
+      }
       setExistingRequest(data)
       setStep('status')
     }
@@ -100,6 +113,7 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
       const { error } = await supabase.rpc('claim_personal_user_role')
       if (error) throw error
       toast.success('Доступ открыт!')
+      localStorage.removeItem('tsp_profile_cache')
       window.location.reload()
     } catch (e: any) {
       console.error('claim_personal_user_role error:', e)
