@@ -577,14 +577,20 @@ export default function AppointmentsBoard() {
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const payload: any = { status }
       if (status === 'archived') {
-        // Архивировать можно только при полной оплате работ и запчастей
+        // Архивировать можно после оплаты. Источник истины — оплаченный счёт
+        // (флаги work_paid/parts_paid могут рассинхронизироваться после доработки).
         const { data: cur } = await supabase.from('appointments')
           .select('parts_paid, work_paid, parts_cost, total_parts_cost, total_work_cost')
           .eq('id', id).single()
         const pCost = (cur?.parts_cost ?? cur?.total_parts_cost) || 0
         const wCost = cur?.total_work_cost || 0
-        if ((pCost > 0 && !cur?.parts_paid) || (wCost > 0 && !cur?.work_paid)) {
-          throw new Error('В архив можно перенести только после полной оплаты работ и запчастей')
+        const flagsPaid = (pCost === 0 || cur?.parts_paid) && (wCost === 0 || cur?.work_paid)
+        if (!flagsPaid) {
+          const { data: inv } = await supabase.from('sto_invoices')
+            .select('id').eq('appointment_id', id).eq('status', 'paid').limit(1)
+          if (!inv?.length) {
+            throw new Error('В архив можно перенести только после оплаты счёта')
+          }
         }
         payload.closed_date = new Date().toISOString()
       }
@@ -602,12 +608,15 @@ export default function AppointmentsBoard() {
   })
 
   const handleStatusChange = (id: string, toStatus: string, appt: any) => {
-    // В архив — только при полной оплате работ и запчастей
+    // В архив — после оплаты. Оплаченный счёт = можно архивировать (флаги могут
+    // рассинхронизироваться после возврата в работу/доработки).
     if (toStatus === 'archived') {
       const pCost = (appt.parts_cost ?? appt.total_parts_cost) || 0
       const wCost = appt.total_work_cost || 0
-      if ((pCost > 0 && !appt.parts_paid) || (wCost > 0 && !appt.work_paid)) {
-        toast.error('В архив можно перенести только после полной оплаты работ и запчастей')
+      const flagsPaid = (pCost === 0 || appt.parts_paid) && (wCost === 0 || appt.work_paid)
+      const invoicePaid = appt.invoice_status === 'paid'
+      if (!flagsPaid && !invoicePaid) {
+        toast.error('В архив можно перенести только после оплаты счёта')
         return
       }
     }
