@@ -15,7 +15,7 @@ import VehicleSelector from '@/components/appointments/VehicleSelector'
 import DateTimePicker from '@/components/appointments/DateTimePicker'
 import WorkItemsManager from '@/components/appointments/WorkItemsManager'
 import PartItemsManager from '@/components/appointments/PartItemsManager'
-import { fetchStoLaborRate } from '@/services/stoService'
+import { fetchStoCatalogSettings } from '@/services/stoService'
 
 // Нормо-часы в читаемом виде: целое или с одним знаком
 function fmtHours(h: number): string {
@@ -87,13 +87,15 @@ export default function AppointmentCreate() {
     }
   })
 
-  // Ставка нормо-часа компании
-  const { data: laborRate = 0 } = useQuery({
-    queryKey: ['sto-labor-rate', profile?.sto_company_id],
-    queryFn: () => fetchStoLaborRate(profile!.sto_company_id!),
+  // Режим каталога + ставка нормо-часа
+  const { data: catalog = { mode: 'price' as const, rate: 0 } } = useQuery({
+    queryKey: ['sto-catalog-settings', profile?.sto_company_id],
+    queryFn: () => fetchStoCatalogSettings(profile!.sto_company_id!),
     enabled: !!profile?.sto_company_id,
     staleTime: 60_000,
   })
+  const isNormMode = catalog.mode === 'norm_hours'
+  const laborRate = catalog.rate
 
   // ── Загрузка заявки для редактирования ──────────────────────────────────────
   const { data: existing } = useQuery({
@@ -403,7 +405,8 @@ export default function AppointmentCreate() {
 
                       {section.id === 'final' && (
                         <div className="space-y-4">
-                          {/* Нормо-часы */}
+                          {/* Нормо-часы — только в режиме каталога «нормо-часы» */}
+                          {isNormMode && (
                           <div className="rounded-xl border border-gray-200 p-4">
                             <div className="flex items-center gap-2 mb-3">
                               <Clock className="w-4 h-4 text-violet-500" />
@@ -471,16 +474,27 @@ export default function AppointmentCreate() {
                               </p>
                             )}
                           </div>
+                          )}
+
+                          {/* Режим «Цена»: стоимость работ (время мастера — в выборе времени) */}
+                          {!isNormMode && form.workItems.length > 0 && (
+                            <div className="rounded-xl border border-gray-200 p-4 flex items-center justify-between">
+                              <span className="text-sm font-semibold text-gray-600">Стоимость работ</span>
+                              <span className="text-base font-bold text-primary tabular-nums">₴{totalWork.toLocaleString()}</span>
+                            </div>
+                          )}
 
                           {/* Дата/время + мастер */}
                           <DateTimePicker
                             value={form.scheduledDate}
                             onChange={val => setForm(p => ({ ...p, scheduledDate: val }))}
+                            endValue={form.scheduledEndDate}
+                            onEndChange={val => setForm(p => ({ ...p, scheduledEndDate: val }))}
                             stoCompanyId={profile?.sto_company_id}
                             excludeAppointmentId={appointmentId}
                             workerId={form.assigned_to ?? null}
                             onWorkerChange={id => setForm(p => ({ ...p, assigned_to: id ?? undefined }))}
-                            showDuration={false}
+                            showDuration={!isNormMode}
                           />
                         </div>
                       )}

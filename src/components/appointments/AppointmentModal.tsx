@@ -10,7 +10,7 @@ import { useBlockScroll } from '@/hooks/useBlockScroll'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { moveToTrash } from '@/services/trashService'
-import { fetchStoLaborRate } from '@/services/stoService'
+import { fetchStoCatalogSettings } from '@/services/stoService'
 import ClientSelector from './ClientSelector'
 import VehicleSelector from './VehicleSelector'
 import WorkItemsManager from './WorkItemsManager'
@@ -75,12 +75,14 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
   const minStep = (isStoWorker && !isStoOwner && appointmentId) ? 3 : 1
 
   // Ставка нормо-часа компании
-  const { data: laborRate = 0 } = useQuery({
-    queryKey: ['sto-labor-rate', profile?.sto_company_id],
-    queryFn: () => fetchStoLaborRate(profile!.sto_company_id!),
+  const { data: catalog = { mode: 'price' as const, rate: 0 } } = useQuery({
+    queryKey: ['sto-catalog-settings', profile?.sto_company_id],
+    queryFn: () => fetchStoCatalogSettings(profile!.sto_company_id!),
     enabled: !!profile?.sto_company_id && isOpen,
     staleTime: 60_000,
   })
+  const isNormMode = catalog.mode === 'norm_hours'
+  const laborRate = catalog.rate
 
   // Загрузка существующей заявки для редактирования
   const { data: existingAppointment } = useQuery({
@@ -485,7 +487,8 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
 
           {currentStep === 5 && (
             <div className="space-y-4">
-              {/* Нормо-часы */}
+              {/* Нормо-часы — только в режиме каталога «нормо-часы» */}
+              {isNormMode && (
               <div className="rounded-xl border border-gray-200 p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Clock className="w-4 h-4 text-violet-500" />
@@ -553,6 +556,15 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
                   </p>
                 )}
               </div>
+              )}
+
+              {/* Режим «Цена»: стоимость работ (время мастера — в выборе времени) */}
+              {!isNormMode && formData.workItems.length > 0 && (
+                <div className="rounded-xl border border-gray-200 p-4 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-600">Стоимость работ</span>
+                  <span className="text-base font-bold text-primary tabular-nums">₴{totalWorkVal.toLocaleString()}</span>
+                </div>
+              )}
 
               {/* Дата/время + мастер */}
               <div>
@@ -563,11 +575,13 @@ export default function AppointmentModal({ isOpen, onClose, appointmentId, onSuc
                 <DateTimePicker
                   value={formData.scheduledDate}
                   onChange={(val) => setFormData(prev => ({ ...prev, scheduledDate: val }))}
+                  endValue={formData.scheduledEndDate}
+                  onEndChange={(val) => setFormData(prev => ({ ...prev, scheduledEndDate: val }))}
                   stoCompanyId={profile?.sto_company_id}
                   excludeAppointmentId={appointmentId}
                   workerId={formData.assigned_to ?? null}
                   onWorkerChange={(id) => setFormData(prev => ({ ...prev, assigned_to: id ?? undefined }))}
-                  showDuration={false}
+                  showDuration={!isNormMode}
                 />
               </div>
             </div>
