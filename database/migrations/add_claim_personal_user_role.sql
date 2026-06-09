@@ -17,17 +17,22 @@ BEGIN
   END IF;
 
   -- Гарантируем наличие профиля (строка могла не создаться триггером,
-  -- напр. при входе через OAuth) — иначе FK на user_roles даст конфликт.
-  INSERT INTO public.user_profiles (id, full_name, phone, username, email, real_email)
-  SELECT u.id,
-         COALESCE(u.raw_user_meta_data->>'full_name', ''),
-         COALESCE(u.raw_user_meta_data->>'phone', ''),
-         NULLIF(u.raw_user_meta_data->>'username', ''),
-         u.email,
-         COALESCE(u.raw_user_meta_data->>'real_email', u.email)
-  FROM auth.users u
-  WHERE u.id = uid
-  ON CONFLICT (id) DO NOTHING;
+  -- напр. при входе через OAuth). Ошибка (дубль email и т.п.) не должна
+  -- ронять выдачу роли — FK у user_roles на auth.users, не на профиль.
+  BEGIN
+    INSERT INTO public.user_profiles (id, full_name, phone, username, email, real_email)
+    SELECT u.id,
+           COALESCE(u.raw_user_meta_data->>'full_name', u.raw_user_meta_data->>'name', ''),
+           COALESCE(u.raw_user_meta_data->>'phone', ''),
+           NULLIF(u.raw_user_meta_data->>'username', ''),
+           u.email,
+           COALESCE(u.raw_user_meta_data->>'real_email', u.email)
+    FROM auth.users u
+    WHERE u.id = uid
+    ON CONFLICT (id) DO NOTHING;
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
 
   -- Если роли уже есть — ничего не делаем (нельзя выдать себе ничего сверх)
   IF EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = uid) THEN

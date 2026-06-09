@@ -87,7 +87,9 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
           localStorage.removeItem('tsp_profile_cache')
           window.location.reload()
           return
-        } catch {
+        } catch (e: any) {
+          console.error('auto claim_personal_user_role error:', e)
+          toast.error(`Авто-выдача роли: ${e?.code || ''} ${e?.message || ''}`.trim())
           // не вышло — покажем обычный статус заявки ниже
         }
       }
