@@ -1,17 +1,13 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, User, Shield, ChevronRight, Check, Building2 } from 'lucide-react'
+import { ArrowLeft, User, Shield, ChevronRight, Check } from 'lucide-react'
 import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useIsAdmin, useUserProfile } from '@/hooks/useUserProfile'
 import RoleSelector from '@/components/admin/RoleSelector'
 import { updateUserProfile, updateUserRoles, fetchUserProfileForEdit, fetchAllActiveRoles, adminUpdateUser } from '@/services/userService'
-import { getStoCompanies, getPartsCompanies } from '@/services/companyService'
-
-const showStoCompany = (roleNames: string[]) => roleNames.some(n => ['admin', 'sto_owner', 'sto_worker'].includes(n))
-const showPartsCompany = (roleNames: string[]) => roleNames.some(n => ['admin', 'parts_owner', 'parts_worker'].includes(n))
 
 interface Role { id: string; name: string; display_name: string; description: string | null; is_active: boolean }
 type Step = 1 | 2 | 3
@@ -70,17 +66,6 @@ export default function UserEdit() {
     queryFn: () => fetchAllActiveRoles() as Promise<Role[]>
   })
 
-  const { data: stoCompanies = [] } = useQuery({ queryKey: ['sto_companies'], queryFn: () => getStoCompanies() })
-  const { data: partsCompanies = [] } = useQuery({ queryKey: ['parts_companies'], queryFn: () => getPartsCompanies() })
-
-  // Имена выбранных ролей — для показа и валидации привязки к компании
-  const selectedRoleNames = useMemo(
-    () => roles.filter(r => formData.role_ids.includes(r.id)).map(r => r.name),
-    [roles, formData.role_ids],
-  )
-  const needsStoCompany = selectedRoleNames.some(n => ['sto_owner', 'sto_worker'].includes(n))
-  const needsPartsCompany = selectedRoleNames.some(n => ['parts_owner', 'parts_worker'].includes(n))
-
   const allowedRoles = useMemo(() => roles.filter(role => {
     if (role.name === 'user') return false
     if (isAdmin) return true
@@ -128,9 +113,8 @@ export default function UserEdit() {
     onError: (e: any) => toast.error(e.message || 'Ошибка'),
   })
 
-  const companyOk = (!needsStoCompany || !!formData.sto_company_id) && (!needsPartsCompany || !!formData.parts_company_id)
-  const canSave = formData.role_ids.length > 0 && companyOk
-  const canGoNext = step === 1 ? true : step === 2 ? canSave : true
+  const canGoNext = step === 1 ? true : step === 2 ? formData.role_ids.length > 0 : true
+  const canSave = formData.role_ids.length > 0
 
   const handleNext = () => {
     if (step < totalSteps) setStep((step + 1) as Step)
@@ -276,78 +260,26 @@ export default function UserEdit() {
           </div>
         )}
 
-        {/* ─── ШАГ 2: Роли + привязка к компании ─── */}
+        {/* ─── ШАГ 2: Роли ─── */}
         {step === 2 && (
-          <div className="space-y-5">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-visible">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-purple-600" strokeWidth={1.5} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-800">Роль <span className="text-red-400">*</span></p>
-                  <p className="text-xs text-gray-400">Права доступа</p>
-                </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-visible">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
+                <Shield className="w-4 h-4 text-purple-600" strokeWidth={1.5} />
               </div>
-              <div className="p-5">
-                <RoleSelector
-                  roles={allowedRoles}
-                  selectedIds={formData.role_ids}
-                  primaryId={formData.primary_role_id}
-                  onChange={(ids, pid) => setFormData(p => ({ ...p, role_ids: ids, primary_role_id: pid }))}
-                />
+              <div>
+                <p className="text-sm font-bold text-gray-800">Роль <span className="text-red-400">*</span></p>
+                <p className="text-xs text-gray-400">Права доступа</p>
               </div>
             </div>
-
-            {/* Привязка к компании — для владельцев/работников. Админ может назначить любую
-                СТО/разборку; нескольким пользователям можно задать одну компанию (совладельцы). */}
-            {(showStoCompany(selectedRoleNames) || showPartsCompany(selectedRoleNames)) && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-                    <Building2 className="w-4 h-4 text-green-600" strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-800">Привязка к компании</p>
-                    <p className="text-xs text-gray-400">Организация пользователя</p>
-                  </div>
-                </div>
-                <div className="p-5 space-y-4">
-                  {showStoCompany(selectedRoleNames) && (
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                        СТО {needsStoCompany && <span className="text-red-400">*</span>}
-                      </label>
-                      <select
-                        value={formData.sto_company_id}
-                        onChange={e => setFormData(p => ({ ...p, sto_company_id: e.target.value }))}
-                        disabled={isStoOwner && !isAdmin}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all disabled:bg-gray-100 disabled:text-gray-500"
-                      >
-                        <option value="">Не привязан</option>
-                        {stoCompanies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
-                    </div>
-                  )}
-                  {showPartsCompany(selectedRoleNames) && (
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                        Авторазборка {needsPartsCompany && <span className="text-red-400">*</span>}
-                      </label>
-                      <select
-                        value={formData.parts_company_id}
-                        onChange={e => setFormData(p => ({ ...p, parts_company_id: e.target.value }))}
-                        disabled={isPartsOwner && !isAdmin}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all disabled:bg-gray-100 disabled:text-gray-500"
-                      >
-                        <option value="">Не привязан</option>
-                        {partsCompanies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            <div className="p-5">
+              <RoleSelector
+                roles={allowedRoles}
+                selectedIds={formData.role_ids}
+                primaryId={formData.primary_role_id}
+                onChange={(ids, pid) => setFormData(p => ({ ...p, role_ids: ids, primary_role_id: pid }))}
+              />
+            </div>
           </div>
         )}
 
