@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Shield, Wrench, Store, Car, ChevronDown, Check } from 'lucide-react'
+import { Shield, Store, Car, ChevronDown, Check } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useQueryClient } from '@tanstack/react-query'
 
-type ContextId = 'admin' | 'sto' | 'parts' | 'user'
+type ContextId = 'admin' | 'parts' | 'user'
 
 interface Ctx {
   id: ContextId
@@ -16,12 +16,11 @@ interface Ctx {
 
 const CONTEXTS: Ctx[] = [
   { id: 'admin', label: 'Админ',    icon: Shield, path: '/admin',            cls: 'bg-purple-100 text-purple-600' },
-  { id: 'sto',   label: 'СТО',      icon: Wrench, path: '/',                 cls: 'bg-emerald-100 text-emerald-600' },
   { id: 'parts', label: 'Разборка', icon: Store,  path: '/parts/dashboard',  cls: 'bg-orange-100 text-orange-600' },
   { id: 'user',  label: 'Мои авто', icon: Car,    path: '/my-vehicles',      cls: 'bg-blue-100 text-blue-600' },
 ]
 
-/** Переключатель контекста (лайаута): Админ / СТО / Разборка / Мои авто. */
+/** Переключатель контекста (лайаута): Админ / Разборка / Мои авто. */
 export default function ContextSwitcher({ current, excludeIds = [] }: { current: ContextId; excludeIds?: ContextId[] }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -40,7 +39,6 @@ export default function ContextSwitcher({ current, excludeIds = [] }: { current:
 
   const has = (id: ContextId) => {
     if (id === 'admin') return isAdmin
-    if (id === 'sto') return isAdmin || roleNames.includes('sto_owner') || roleNames.includes('sto_worker')
     if (id === 'parts') return isAdmin || roleNames.includes('parts_owner') || roleNames.includes('parts_worker')
     return isAdmin || roleNames.includes('user')
   }
@@ -48,7 +46,6 @@ export default function ContextSwitcher({ current, excludeIds = [] }: { current:
 
   // activeRole для целевого контекста — по фактическим ролям пользователя
   const roleFor = (id: ContextId): string => {
-    if (id === 'sto') return roleNames.includes('sto_worker') && !roleNames.includes('sto_owner') ? 'sto_worker' : 'sto_owner'
     if (id === 'parts') return roleNames.includes('parts_worker') && !roleNames.includes('parts_owner') ? 'parts_worker' : 'parts_owner'
     if (id === 'admin') return 'admin'
     return 'user'

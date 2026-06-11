@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Shield, Users, Settings, BarChart2, LogOut, ClipboardList,
-  Building2, Store, CreditCard, MessageCircle, LayoutGrid, Database,
+  Store, CreditCard, MessageCircle, LayoutGrid, Database,
   MoreHorizontal, X,
 } from 'lucide-react'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
@@ -22,7 +22,6 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     { name: 'Роли',         href: '/admin/roles',           icon: Shield },
   ]},
   { title: 'Компании', items: [
-    { name: 'СТО',      href: '/admin/sto',             icon: Building2 },
     { name: 'Разборки', href: '/admin/parts-companies', icon: Store },
   ]},
   { title: 'Система', items: [
@@ -39,8 +38,8 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
 const BOTTOM_TABS: NavItem[] = [
   { name: 'Обзор',        href: '/admin',                 icon: LayoutGrid },
   { name: 'Польз.',       href: '/admin/users',           icon: Users },
-  { name: 'СТО',          href: '/admin/sto',             icon: Building2 },
   { name: 'Разборки',     href: '/admin/parts-companies', icon: Store },
+  { name: 'Подписки',     href: '/admin/subscriptions',   icon: CreditCard },
 ]
 const BOTTOM_HREFS = BOTTOM_TABS.map(t => t.href)
 const MORE_ITEMS: NavItem[] = NAV_GROUPS.flatMap(g => g.items).filter(i => !BOTTOM_HREFS.includes(i.href))

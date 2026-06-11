@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import {
   LogOut,
   Shield
@@ -35,35 +35,27 @@ export default function Layout() {
   const queryClient = useQueryClient()
   
   // Получаем PRIMARY роль пользователя
-  // Приоритет ролей: admin > sto_owner > parts_owner > store_owner > worker roles > user
+  // Приоритет ролей: admin > parts_owner > parts_worker > user
   const getRoleByPriority = (roles: any[]) => {
-    const rolePriority = ['admin', 'sto_owner', 'parts_owner', 'store_owner', 'sto_worker', 'parts_worker', 'store_worker', 'user']
+    const rolePriority = ['admin', 'parts_owner', 'parts_worker', 'user']
     for (const roleName of rolePriority) {
       const role = roles.find((r: any) => r.name === roleName)
       if (role) return role
     }
     return roles.find((r: any) => r.is_primary) || roles[0]
   }
-  
+
   const primaryRole = profile?.roles?.length ? getRoleByPriority(profile?.roles) : null
-  
-  // Проверяем, является ли пользователь работником СТО
-  const isStoWorker = profile?.roles?.some((r: any) => r.name === 'sto_worker')
-  const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
-  
-  // Загружаем настройки СТО для работников
+
   // Компания владельца — для проверки телефона
-  const ownerCompanyId = profile?.sto_company_id || profile?.parts_company_id
-  const ownerCompanyTable = profile?.sto_company_id ? 'sto_companies' : 'parts_companies'
+  const ownerCompanyId = profile?.parts_company_id
 
   const { data: ownerCompany } = useQuery({
     queryKey: ['owner_company_phone', ownerCompanyId],
-    enabled: !!ownerCompanyId && (
-      !!profile?.roles?.some((r: any) => r.name === 'sto_owner' || r.name === 'parts_owner')
-    ),
+    enabled: !!ownerCompanyId && !!profile?.roles?.some((r: any) => r.name === 'parts_owner'),
     queryFn: async () => {
       const { data } = await supabase
-        .from(ownerCompanyTable)
+        .from('parts_companies')
         .select('id, name, phone')
         .eq('id', ownerCompanyId!)
         .single()
@@ -71,23 +63,6 @@ export default function Layout() {
     },
   })
 
-  const { data: stoCompany } = useQuery({
-    queryKey: ['sto_company', profile?.sto_company_id],
-    queryFn: async () => {
-      if (!profile?.sto_company_id) return null
-      const { data, error } = await supabase
-        .from('sto_companies')
-        .select('services_menu_enabled')
-        .eq('id', profile?.sto_company_id)
-        .single()
-      
-      if (error) throw error
-      return data
-    },
-    enabled: !!profile?.sto_company_id && (isStoWorker || isStoOwner),
-    staleTime: 0,
-  })
-  
   // Управляем activeRole в localStorage
   useEffect(() => {
     const allRoles = profile?.roles?.map((r: any) => r.name).filter((n: string) => n !== 'user') || []
@@ -142,26 +117,12 @@ export default function Layout() {
   const activeRoleName = roleNames[0] || primaryRole?.name || ''
 
   // Текущий контекст для переключателя разделов (Админ исключаем — у него своя кнопка)
-  const currentCtx: 'sto' | 'parts' | 'user' =
-    activeRoleName.startsWith('parts') ? 'parts'
-      : activeRoleName === 'user' ? 'user'
-      : 'sto'
+  const currentCtx: 'parts' | 'user' =
+    activeRoleName.startsWith('parts') ? 'parts' : 'user'
   // «Мои авто»: меню из одного пункта — сайдбар не нужен, выход выносим вверх справа
   const isUserCtx = currentCtx === 'user'
 
-  const navigation = getMenuForRoles(roleNames)
-  
-  // Фильтруем меню для работников СТО
-  const filteredNavigation = useMemo(() => {
-    // Если работник СТО и меню услуг выключено - убираем пункт Услуги
-    if (isStoWorker && !isStoOwner) {
-      const servicesMenuEnabled = stoCompany?.services_menu_enabled ?? true
-      if (!servicesMenuEnabled) {
-        return navigation.filter(item => item.href !== '/services')
-      }
-    }
-    return navigation
-  }, [navigation, isStoWorker, isStoOwner, stoCompany])
+  const filteredNavigation = getMenuForRoles(roleNames)
 
   const handleLogout = async () => {
     // Очищаем весь кэш React Query перед выходом
@@ -190,11 +151,10 @@ export default function Layout() {
     )
   }
 
-  // Владелец СТО/разборки без компании — обязан заполнить данные
-  const isStoOwnerRole = profile?.roles?.some((r: any) => r.name === 'sto_owner')
+  // Владелец разборки без компании — обязан заполнить данные
   const isPartsOwnerRole = profile?.roles?.some((r: any) => r.name === 'parts_owner')
   // Нужна настройка: нет компании ИЛИ есть компания но без телефона (работники не смогут найти)
-  const noCompany = (isStoOwnerRole && !profile?.sto_company_id) || (isPartsOwnerRole && !profile?.parts_company_id)
+  const noCompany = isPartsOwnerRole && !profile?.parts_company_id
   const hasCompanyNoPhone = ownerCompanyId && ownerCompany !== undefined && !ownerCompany?.phone
   const needsSetup = noCompany || !!hasCompanyNoPhone
 
