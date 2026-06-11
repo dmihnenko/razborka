@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom'
 import {
   Users, Shield, Settings, BarChart2,
   Store, CreditCard, MessageCircle, TrendingUp,
-  Activity, CheckCircle2, AlertTriangle
 } from 'lucide-react'
 import { useUserProfile } from '../hooks/useUserProfile'
 import { useQuery } from '@tanstack/react-query'
@@ -71,17 +70,11 @@ export default function AdminPanel() {
     <div className="space-y-6">
 
       {/* Приветствие */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-            {greeting}, {profile?.full_name?.split(' ')[0] || 'Администратор'} 👋
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">Панель управления TSP</p>
-        </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 border border-purple-100 rounded-xl">
-          <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-          <span className="text-xs font-semibold text-purple-700">Система работает</span>
-        </div>
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+          {greeting}, {profile?.full_name?.split(' ')[0] || 'Администратор'} 👋
+        </h1>
+        <p className="text-sm text-gray-500 mt-1">Панель управления TSP</p>
       </div>
 
       {/* Stat cards */}
@@ -98,39 +91,6 @@ export default function AdminPanel() {
             loading={isLoading}
           />
         ))}
-      </div>
-
-      {/* Системные индикаторы */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
-          <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" strokeWidth={1.5} />
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-800">База данных</p>
-            <p className="text-xs text-emerald-600">Supabase · онлайн</p>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
-          <Activity className="w-5 h-5 text-blue-500 flex-shrink-0" strokeWidth={1.5} />
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-800">Edge Functions</p>
-            <p className="text-xs text-blue-600">{stats ? '3 функции активны' : '—'}</p>
-          </div>
-        </div>
-        <Link to="/admin/support"
-          className={`bg-white rounded-2xl border shadow-sm p-4 flex items-center gap-3 hover:shadow-md transition-all ${
-            (stats?.openTickets ?? 0) > 0 ? 'border-amber-200 bg-amber-50' : 'border-gray-100'
-          }`}>
-          {(stats?.openTickets ?? 0) > 0
-            ? <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" strokeWidth={1.5} />
-            : <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" strokeWidth={1.5} />
-          }
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-800">Поддержка</p>
-            <p className={`text-xs ${(stats?.openTickets ?? 0) > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-              {stats?.openTickets ? `${stats.openTickets} требует ответа` : 'Нет открытых'}
-            </p>
-          </div>
-        </Link>
       </div>
 
       {/* Quick links grid */}
