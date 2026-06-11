@@ -19,12 +19,12 @@ export interface CreateCompanyResult {
   type: 'sto' | 'parts'
 }
 
-// Получить список активных СТО
+// Получить список активных СТО (активна, пока не приостановлена явно — см. utils/company)
 export async function getStoCompanies(): Promise<Company[]> {
   const { data, error } = await supabase
     .from('sto_companies')
     .select('id, name')
-    .eq('is_active', true)
+    .or('is_active.is.null,is_active.eq.true')
   if (error) throw error
   return data as Company[]
 }
@@ -34,7 +34,7 @@ export async function getPartsCompanies(): Promise<Company[]> {
   const { data, error } = await supabase
     .from('parts_companies')
     .select('id, name')
-    .eq('is_active', true)
+    .or('is_active.is.null,is_active.eq.true')
   if (error) throw error
   return data as Company[]
 }
