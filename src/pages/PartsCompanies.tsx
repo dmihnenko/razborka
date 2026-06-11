@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { IMaskInput } from 'react-imask';
 import { useConfirm } from '@/hooks/useConfirm';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { isCompanyActive } from '@/utils/company';
 
 interface PartsCompany {
   id: string;
@@ -251,9 +252,9 @@ export default function PartsCompanies() {
                 <div>
                   <h3 className="font-semibold text-gray-900 group-hover:text-orange-700 transition-colors">{company.name}</h3>
                   <span className={`text-xs px-2 py-1 rounded-full ${
-                    company.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    isCompanyActive(company) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                   }`}>
-                    {company.is_active ? 'Активна' : 'Неактивна'}
+                    {isCompanyActive(company) ? 'Активна' : 'Неактивна'}
                   </span>
                 </div>
               </div>
@@ -289,12 +290,12 @@ export default function PartsCompanies() {
 
             <div className="flex justify-between items-center pt-4 border-t">
               <button
-                onClick={() => toggleActiveMutation.mutate({ id: company.id, isActive: company.is_active })}
+                onClick={() => toggleActiveMutation.mutate({ id: company.id, isActive: isCompanyActive(company) })}
                 className={`text-sm font-medium ${
-                  company.is_active ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'
+                  isCompanyActive(company) ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'
                 }`}
               >
-                {company.is_active ? 'Деактивировать' : 'Активировать'}
+                {isCompanyActive(company) ? 'Деактивировать' : 'Активировать'}
               </button>
               <div className="flex space-x-2">
                 <button

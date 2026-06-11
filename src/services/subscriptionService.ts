@@ -224,7 +224,7 @@ export async function getStoCompanies() {
   const { data, error } = await supabase
     .from('sto_companies')
     .select('id, name, is_active')
-    .eq('is_active', true)
+    .or('is_active.is.null,is_active.eq.true')
     .order('name')
   
   if (error) throw error
@@ -235,7 +235,7 @@ export async function getPartsCompanies() {
   const { data, error } = await supabase
     .from('parts_companies')
     .select('id, name, is_active')
-    .eq('is_active', true)
+    .or('is_active.is.null,is_active.eq.true')
     .order('name')
 
   if (error) throw error
