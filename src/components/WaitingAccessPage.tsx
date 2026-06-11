@@ -10,7 +10,7 @@ interface Props {
 }
 
 type Step = 'select' | 'form' | 'status'
-type RequestType = 'sto_owner' | 'sto_worker' | 'parts_owner' | 'parts_worker' | 'user'
+type RequestType = 'parts_owner' | 'parts_worker' | 'user'
 
 interface AccessRequest {
   id: string
@@ -23,8 +23,6 @@ interface AccessRequest {
 }
 
 const roleLabels: Record<string, string> = {
-  sto_owner: 'Владелец СТО',
-  sto_worker: 'Работник СТО',
   parts_owner: 'Владелец авторазборки',
   parts_worker: 'Авторазборка',
   user: 'Личные автомобили',
@@ -47,7 +45,7 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
 
   const [step, setStep] = useState<Step>('select')
   const [selectedType, setSelectedType] = useState<RequestType | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState<'sto' | 'parts' | 'user' | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<'parts' | 'user' | null>(null)
   const [existingRequest, setExistingRequest] = useState<AccessRequest | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -140,8 +138,8 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
   }
 
   const handleSubmitForm = async () => {
-    const isOwner = selectedType === 'sto_owner' || selectedType === 'parts_owner'
-    const isWorker = selectedType === 'sto_worker' || selectedType === 'parts_worker'
+    const isOwner = selectedType === 'parts_owner'
+    const isWorker = selectedType === 'parts_worker'
 
     if (isOwner && !companyName.trim()) return toast.error('Укажите название компании')
     if (isOwner && companyPhone.replace(/\D/g, '').length < 10) return toast.error('Укажите телефон компании — по нему работники найдут вас')
@@ -201,9 +199,8 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
     }
   }
 
-  const isOwnerType = selectedType === 'sto_owner' || selectedType === 'parts_owner'
-  const isWorkerType = selectedType === 'sto_worker' || selectedType === 'parts_worker'
-  const isStoType = selectedType === 'sto_owner' || selectedType === 'sto_worker'
+  const isOwnerType = selectedType === 'parts_owner'
+  const isWorkerType = selectedType === 'parts_worker'
 
   if (loading) return (
     <div className="min-h-dvh bg-[#F4F6FA] flex items-center justify-center">
@@ -256,11 +253,10 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100">
                   <h2 className="text-sm font-bold text-gray-800">Выберите направление</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Вы работаете с СТО, авторазборкой или ведёте личные авто?</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Вы работаете с авторазборкой или ведёте личные авто?</p>
                 </div>
                 <div className="divide-y divide-gray-100">
                   {[
-                    { id: 'sto' as const, icon: Wrench, color: 'text-blue-600 bg-blue-50', label: 'СТО', desc: 'Автосервис, заявки, ремонт автомобилей' },
                     { id: 'parts' as const, icon: Package, color: 'text-orange-600 bg-orange-50', label: 'Авторазборка', desc: 'Склад запчастей, заказы, продажи' },
                     { id: 'user' as const, icon: Car, color: 'text-purple-600 bg-purple-50', label: 'Личные автомобили', desc: 'Учёт своих авто, расходы, история' },
                   ].map(opt => {
@@ -299,11 +295,11 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100">
                   <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${selectedCategory === 'sto' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
-                      {selectedCategory === 'sto' ? <Wrench className="w-4 h-4" strokeWidth={1.5} /> : <Package className="w-4 h-4" strokeWidth={1.5} />}
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-orange-50 text-orange-600">
+                      <Package className="w-4 h-4" strokeWidth={1.5} />
                     </div>
                     <div>
-                      <h2 className="text-sm font-bold text-gray-800">{selectedCategory === 'sto' ? 'СТО' : 'Авторазборка'}</h2>
+                      <h2 className="text-sm font-bold text-gray-800">Авторазборка</h2>
                       <p className="text-xs text-gray-400">Кем вы являетесь?</p>
                     </div>
                   </div>
@@ -311,15 +307,15 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
                 <div className="divide-y divide-gray-100">
                   {[
                     {
-                      type: (selectedCategory + '_owner') as RequestType,
+                      type: 'parts_owner' as RequestType,
                       label: 'Владелец',
-                      desc: selectedCategory === 'sto' ? 'Управляю СТО — клиенты, заявки, сотрудники' : 'Управляю разборкой — запчасти, заказы, склад',
+                      desc: 'Управляю разборкой — запчасти, заказы, склад',
                       icon: Building2,
                     },
                     {
-                      type: (selectedCategory + '_worker') as RequestType,
+                      type: 'parts_worker' as RequestType,
                       label: 'Работник',
-                      desc: selectedCategory === 'sto' ? 'Работаю в СТО — принимаю и обрабатываю заявки' : 'Работаю на разборке — обрабатываю заказы и склад',
+                      desc: 'Работаю на разборке — обрабатываю заказы и склад',
                       icon: Users,
                     },
                   ].map(opt => {
@@ -327,7 +323,7 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
                     return (
                       <button key={opt.type} type="button" onClick={() => handleSelectType(opt.type)}
                         className="w-full flex items-center gap-4 px-5 py-5 hover:bg-gray-50 transition-colors text-left">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${selectedCategory === 'sto' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
+                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-orange-50 text-orange-600">
                           <Icon className="w-6 h-6" strokeWidth={1.5} />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -359,10 +355,10 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
                     <>
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                          Название {isStoType ? 'СТО' : 'авторазборки'} <span className="text-red-400 normal-case font-normal">*</span>
+                          Название авторазборки <span className="text-red-400 normal-case font-normal">*</span>
                         </label>
                         <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)}
-                          placeholder={isStoType ? 'Автосервис "Мастер"' : 'Авторазборка "Запчасти"'}
+                          placeholder='Авторазборка "Запчасти"'
                           className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all" />
                       </div>
                       <div>
@@ -394,7 +390,7 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
                   {isWorkerType && (
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                        Телефон {isStoType ? 'владельца СТО' : 'владельца разборки'} <span className="text-red-400 normal-case font-normal">*</span>
+                        Телефон владельца разборки <span className="text-red-400 normal-case font-normal">*</span>
                       </label>
                       <p className="text-xs text-gray-400 mb-2">
                         Введите номер — система найдёт компанию и отправит запрос владельцу

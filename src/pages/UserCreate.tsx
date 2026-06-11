@@ -6,7 +6,7 @@ import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { getRoles } from '../services/userService'
-import { getStoCompanies, getPartsCompanies } from '../services/companyService'
+import { getPartsCompanies } from '../services/companyService'
 import { useIsAdmin, useUserProfile } from '@/hooks/useUserProfile'
 import RoleSelector from '@/components/admin/RoleSelector'
 
@@ -18,24 +18,17 @@ interface UserFormData {
   phone: string
   role_ids: string[]
   primary_role_id: string
-  sto_company_id: string
   parts_company_id: string
 }
 
 function getRoleBadgeColor(roleName?: string) {
   const colors: Record<string, string> = {
     admin: 'bg-red-100 text-red-700 border-red-200',
-    sto_owner: 'bg-blue-100 text-blue-700 border-blue-200',
-    sto_worker: 'bg-cyan-100 text-cyan-700 border-cyan-200',
     parts_owner: 'bg-orange-100 text-orange-700 border-orange-200',
     parts_worker: 'bg-amber-100 text-amber-700 border-amber-200',
     user: 'bg-gray-100 text-gray-600 border-gray-200',
   }
   return colors[roleName || ''] || 'bg-gray-100 text-gray-600 border-gray-200'
-}
-
-function shouldShowStoCompany(roleNames: string[]) {
-  return roleNames.some(n => ['admin', 'sto_owner', 'sto_worker'].includes(n))
 }
 
 function shouldShowPartsCompany(roleNames: string[]) {
@@ -48,7 +41,6 @@ export default function UserCreate() {
   const isAdmin = useIsAdmin()
   const { data: currentUserProfile } = useUserProfile()
 
-  const isStoOwner = currentUserProfile?.roles?.some((r: any) => r.name === 'sto_owner') || false
   const isPartsOwner = currentUserProfile?.roles?.some((r: any) => r.name === 'parts_owner') || false
 
   const [formData, setFormData] = useState<UserFormData>({
@@ -59,7 +51,6 @@ export default function UserCreate() {
     phone: '',
     role_ids: [],
     primary_role_id: '',
-    sto_company_id: '',
     parts_company_id: '',
   })
 
@@ -76,19 +67,13 @@ export default function UserCreate() {
       const updates: Partial<UserFormData> = {}
 
       // Автоподставляем компанию
-      if (isStoOwner && !isAdmin && currentUserProfile.sto_company_id) {
-        updates.sto_company_id = currentUserProfile.sto_company_id
-      }
       if (isPartsOwner && !isAdmin && currentUserProfile.parts_company_id) {
         updates.parts_company_id = currentUserProfile.parts_company_id
       }
 
       // Автоподставляем роль работника если она ещё не выбрана
       if (prev.role_ids.length === 0) {
-        const workerRole = roles.find(r =>
-          (isStoOwner && r.name === 'sto_worker') ||
-          (isPartsOwner && r.name === 'parts_worker')
-        )
+        const workerRole = roles.find(r => isPartsOwner && r.name === 'parts_worker')
         if (workerRole) {
           updates.role_ids = [workerRole.id]
           updates.primary_role_id = workerRole.id
@@ -97,13 +82,8 @@ export default function UserCreate() {
 
       return { ...prev, ...updates }
     })
-  }, [currentUserProfile, roles, isStoOwner, isPartsOwner, isAdmin])
+  }, [currentUserProfile, roles, isPartsOwner, isAdmin])
   const [showPassword, setShowPassword] = useState(false)
-
-  const { data: stoCompanies = [] } = useQuery({
-    queryKey: ['sto_companies'],
-    queryFn: () => getStoCompanies()
-  })
 
   const { data: partsCompanies = [] } = useQuery({
     queryKey: ['parts_companies'],
@@ -114,11 +94,10 @@ export default function UserCreate() {
     return roles.filter((role) => {
       if (role.name === 'user') return false
       if (isAdmin) return true
-      if (isStoOwner) return role.name === 'sto_worker'
       if (isPartsOwner) return role.name === 'parts_worker'
       return false
     })
-  }, [roles, isAdmin, isStoOwner, isPartsOwner])
+  }, [roles, isAdmin, isPartsOwner])
 
   const selectedRoleNames = useMemo(() => {
     return allowedRoles.filter(r => formData.role_ids.includes(r.id)).map(r => r.name)
@@ -135,7 +114,6 @@ export default function UserCreate() {
           username: data.username.toLowerCase(),
           role_ids: data.role_ids,
           primary_role_id: data.primary_role_id,
-          sto_company_id: data.sto_company_id || null,
           parts_company_id: data.parts_company_id || null,
         }
       })
@@ -178,13 +156,11 @@ export default function UserCreate() {
     }
   })
 
-  const needsStoCompany = selectedRoleNames.some(n => ['sto_owner', 'sto_worker'].includes(n))
   const needsPartsCompany = selectedRoleNames.some(n => ['parts_owner', 'parts_worker'].includes(n))
   const isValid = formData.username.trim().length >= 2
     && formData.password.length >= 6
     && formData.role_ids.length > 0
     && !!formData.primary_role_id
-    && (!needsStoCompany || !!formData.sto_company_id)
     && (!needsPartsCompany || !!formData.parts_company_id)
 
   return (
@@ -339,7 +315,7 @@ export default function UserCreate() {
             </div>
 
             {/* Привязка к компании */}
-            {(shouldShowStoCompany(selectedRoleNames) || shouldShowPartsCompany(selectedRoleNames)) && (
+            {shouldShowPartsCompany(selectedRoleNames) && (
               <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
@@ -351,22 +327,6 @@ export default function UserCreate() {
                   </div>
                 </div>
                 <div className="p-5 space-y-4">
-                  {shouldShowStoCompany(selectedRoleNames) && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        СТО {selectedRoleNames.some(n => ['sto_owner','sto_worker'].includes(n)) ? <span className="text-red-500">*</span> : ''}
-                      </label>
-                      <select
-                        value={formData.sto_company_id}
-                        onChange={e => setFormData({ ...formData, sto_company_id: e.target.value })}
-                        disabled={isStoOwner && !isAdmin}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white disabled:bg-gray-50"
-                      >
-                        <option value="">Выберите СТО</option>
-                        {stoCompanies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
-                    </div>
-                  )}
                   {shouldShowPartsCompany(selectedRoleNames) && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">

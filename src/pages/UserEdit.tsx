@@ -24,7 +24,6 @@ export default function UserEdit() {
   const isAdmin = useIsAdmin()
   const { data: currentUserProfile } = useUserProfile()
 
-  const isStoOwner = currentUserProfile?.roles?.some((r: any) => r.name === 'sto_owner') || false
   const isPartsOwner = currentUserProfile?.roles?.some((r: any) => r.name === 'parts_owner') || false
 
   const [step, setStep] = useState<Step>(1)
@@ -32,7 +31,7 @@ export default function UserEdit() {
   const [formData, setFormData] = useState({
     full_name: '', phone: '', username: '', email: '', password: '',
     role_ids: [] as string[], primary_role_id: '',
-    sto_company_id: '', parts_company_id: '',
+    parts_company_id: '',
   })
 
   const { data: userProfile, isLoading } = useQuery({
@@ -55,7 +54,6 @@ export default function UserEdit() {
         password: '',
         role_ids: roleIds,
         primary_role_id: primary?.role_id || roleIds[0] || '',
-        sto_company_id: userProfile.sto_company_id || '',
         parts_company_id: userProfile.parts_company_id || '',
       })
     }
@@ -69,10 +67,9 @@ export default function UserEdit() {
   const allowedRoles = useMemo(() => roles.filter(role => {
     if (role.name === 'user') return false
     if (isAdmin) return true
-    if (isStoOwner) return role.name === 'sto_worker'
     if (isPartsOwner) return role.name === 'parts_worker'
     return false
-  }), [roles, isAdmin, isStoOwner, isPartsOwner])
+  }), [roles, isAdmin, isPartsOwner])
 
   const totalSteps: Step = 2
   const updateMutation = useMutation({
@@ -101,7 +98,7 @@ export default function UserEdit() {
           })
         }
       }
-      await updateUserProfile({ userId: id!, full_name: formData.full_name, phone: formData.phone, sto_company_id: formData.sto_company_id || null, parts_company_id: formData.parts_company_id || null })
+      await updateUserProfile({ userId: id!, full_name: formData.full_name, phone: formData.phone, parts_company_id: formData.parts_company_id || null })
       await updateUserRoles({ userId: id!, role_ids: formData.role_ids, primary_role_id: formData.primary_role_id })
     },
     onSuccess: () => {

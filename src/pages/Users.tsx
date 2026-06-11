@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchUsers, fetchActiveRoles, fetchStoCompanies, fetchPartsCompanies, updateUserRolesFull, toggleUserActive, getAuthSession, softDeleteUserProfile, restoreUserProfile, bulkSetActive, bulkSoftDelete } from '@/services/userService';
+import { fetchUsers, fetchActiveRoles, fetchPartsCompanies, updateUserRolesFull, toggleUserActive, getAuthSession, softDeleteUserProfile, restoreUserProfile, bulkSetActive, bulkSoftDelete } from '@/services/userService';
 import { Plus, Edit2, Trash2, UserCog, Search, CheckCircle2, KeyRound, RotateCcw, X, CheckSquare, Square, LogIn } from 'lucide-react';
 import { startImpersonation } from '@/services/impersonationService';
 import { toast } from 'sonner';
@@ -28,7 +28,6 @@ interface UserProfile {
   email: string;
   username: string | null;
   role_id: string | null;
-  sto_company_id: string | null;
   parts_company_id: string | null;
   is_active: boolean;
   roles?: Role[]; // Массив ролей
@@ -60,17 +59,14 @@ export default function Users() {
   const { hasSubscription, limits } = useSubscriptionLimits();
   
   // Определяем роль текущего пользователя
-  const isStoOwner = currentUserProfile?.roles?.some((r: Role) => r.name === 'sto_owner');
   const isPartsOwner = currentUserProfile?.roles?.some((r: Role) => r.name === 'parts_owner');
 
   // Загрузка пользователей
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ['users', currentUserProfile?.id, isStoOwner, isPartsOwner, view],
+    queryKey: ['users', currentUserProfile?.id, isPartsOwner, view],
     queryFn: () => fetchUsers({
-      isStoOwner: !!isStoOwner,
       isPartsOwner: !!isPartsOwner,
       isAdmin: !!isAdmin,
-      stoCompanyId: currentUserProfile?.sto_company_id,
       partsCompanyId: currentUserProfile?.parts_company_id,
       onlyDeleted: view === 'trash',
     })
@@ -84,13 +80,6 @@ export default function Users() {
     queryFn: () => fetchActiveRoles()
   });
 
-  // Загрузка СТО
-  const { data: stoCompanies = [] } = useQuery({
-    queryKey: ['sto_companies'],
-    staleTime: 15 * 60 * 1000,
-    queryFn: () => fetchStoCompanies()
-  });
-
   const { data: partsCompanies = [] } = useQuery({
     queryKey: ['parts_companies'],
     staleTime: 15 * 60 * 1000,
@@ -99,11 +88,10 @@ export default function Users() {
 
   // Обновление ролей пользователя
   const updateUserRolesMutation = useMutation({
-    mutationFn: (params: { 
-      userId: string; 
-      roleIds: string[]; 
+    mutationFn: (params: {
+      userId: string;
+      roleIds: string[];
       primaryRoleId?: string;
-      sto_company_id?: string | null;
       parts_company_id?: string | null;
     }) => updateUserRolesFull(params),
     onSuccess: () => {
@@ -134,8 +122,8 @@ export default function Users() {
         if (roleFilter !== 'all' && !(user.roles?.some((r: Role) => r.name === roleFilter))) return false;
         if (companyFilter !== 'all') {
           if (companyFilter === 'none') {
-            if (user.sto_company_id || user.parts_company_id) return false;
-          } else if (user.sto_company_id !== companyFilter && user.parts_company_id !== companyFilter) {
+            if (user.parts_company_id) return false;
+          } else if (user.parts_company_id !== companyFilter) {
             return false;
           }
         }
@@ -347,10 +335,6 @@ export default function Users() {
     switch (roleName) {
       case 'admin':
         return 'bg-red-100 text-red-800';
-      case 'sto_owner':
-        return 'bg-purple-100 text-purple-800';
-      case 'sto_worker':
-        return 'bg-blue-100 text-blue-800';
       case 'parts_owner':
         return 'bg-yellow-100 text-yellow-800';
       case 'parts_worker':
@@ -362,10 +346,6 @@ export default function Users() {
       default:
         return 'bg-gray-100 text-gray-800';
     }
-  };
-
-  const shouldShowStoCompany = (roleNames: string[]) => {
-    return roleNames.some(name => name === 'sto_owner' || name === 'sto_worker');
   };
 
   const shouldShowPartsCompany = (roleNames: string[]) => {
@@ -388,7 +368,7 @@ export default function Users() {
   return (
     <div className="space-y-5">
       {/* Подписка */}
-      {(isStoOwner || isPartsOwner) && !isAdmin && (
+      {isPartsOwner && !isAdmin && (
         <div className={`flex items-center justify-between gap-4 px-4 py-3 rounded-xl text-sm ${hasSubscription ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-amber-50 border border-amber-200 text-amber-700'}`}>
           <div className="flex items-center gap-2">
             {hasSubscription
@@ -399,7 +379,7 @@ export default function Users() {
             {!hasSubscription && <span className="text-xs opacity-80">· Свяжитесь с администратором</span>}
           </div>
           <span className="text-xs opacity-70 flex-shrink-0">
-            Сотрудников: {users.length} / {hasSubscription ? '∞' : (isStoOwner ? limits.sto?.workers : limits.parts?.workers)}
+            Сотрудников: {users.length} / {hasSubscription ? '∞' : limits.parts?.workers}
           </span>
         </div>
       )}
@@ -408,7 +388,7 @@ export default function Users() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-gray-900">
-            {isAdmin ? 'Пользователи' : isStoOwner ? 'Сотрудники СТО' : isPartsOwner ? 'Сотрудники разборки' : 'Пользователи'}
+            {isAdmin ? 'Пользователи' : isPartsOwner ? 'Сотрудники разборки' : 'Пользователи'}
           </h1>
           <p className="text-xs text-gray-400 mt-0.5">{filteredUsers.length} из {users.length}</p>
         </div>
@@ -465,9 +445,6 @@ export default function Users() {
                 className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:border-indigo-400 shadow-sm max-w-[160px]">
                 <option value="all">Все компании</option>
                 <option value="none">Без компании</option>
-                <optgroup label="СТО">
-                  {stoCompanies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </optgroup>
                 <optgroup label="Разборки">
                   {partsCompanies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </optgroup>
@@ -515,7 +492,7 @@ export default function Users() {
         ) : (
           <div className="divide-y divide-gray-100">
             {filteredUsers.map((user) => {
-              const company = user.sto_companies?.name || user.parts_companies?.name || null
+              const company = user.parts_companies?.name || null
               const primaryRole = user.roles && user.roles.length > 0
                 ? (user.roles.find((r: Role) => r.is_primary) || user.roles[0])
                 : null
@@ -528,7 +505,7 @@ export default function Users() {
                   ].filter(a => a.show)
                 : [
                     { key: 'edit', show: true, title: 'Редактировать', Icon: Edit2, cls: 'text-indigo-600 hover:bg-indigo-50', onClick: () => handleEditUser(user) },
-                    { key: 'pwd', show: isAdmin || isStoOwner || isPartsOwner, title: 'Сменить пароль', Icon: KeyRound, cls: 'text-amber-600 hover:bg-amber-50', onClick: () => openPasswordModal(user) },
+                    { key: 'pwd', show: isAdmin || isPartsOwner, title: 'Сменить пароль', Icon: KeyRound, cls: 'text-amber-600 hover:bg-amber-50', onClick: () => openPasswordModal(user) },
                     { key: 'roles', show: isAdmin, title: 'Роли', Icon: UserCog, cls: 'text-purple-600 hover:bg-purple-50', onClick: () => handleEditRole(user) },
                     { key: 'login-as', show: isAdmin && !user.roles?.some(r => r.name === 'admin'), title: 'Войти как', Icon: LogIn, cls: 'text-sky-600 hover:bg-sky-50', onClick: () => handleImpersonate(user) },
                     { key: 'activate', show: isAdmin && !user.is_active, title: 'Активировать', Icon: CheckCircle2, cls: 'text-emerald-600 hover:bg-emerald-50', onClick: () => handleToggleActive(user) },
@@ -622,11 +599,9 @@ export default function Users() {
       {isRoleModalOpen && selectedUser && (() => {
         const userRoleIds = selectedUser.roles?.map(r => r.id) || [];
         const roleNames = selectedUser.roles?.map(r => r.name) || [];
-        const needsSto = shouldShowStoCompany(roleNames);
         const needsParts = shouldShowPartsCompany(roleNames);
-        const stoMissing = needsSto && !selectedUser.sto_company_id;
         const partsMissing = needsParts && !selectedUser.parts_company_id;
-        const canSaveRoles = userRoleIds.length > 0 && !stoMissing && !partsMissing;
+        const canSaveRoles = userRoleIds.length > 0 && !partsMissing;
 
         const closeRoleModal = () => { setIsRoleModalOpen(false); setSelectedUser(null); };
 
@@ -666,23 +641,6 @@ export default function Users() {
                 />
               </div>
 
-              {/* СТО */}
-              {needsSto && (
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">СТО *</label>
-                  <select
-                    value={selectedUser.sto_company_id || ''}
-                    onChange={(e) => setSelectedUser({ ...selectedUser, sto_company_id: e.target.value || null })}
-                    className={`w-full px-3.5 py-3 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-100 ${stoMissing ? 'border-red-300' : 'border-gray-200 focus:border-purple-400'}`}
-                  >
-                    <option value="">Выберите СТО</option>
-                    {stoCompanies.map((company) => (
-                      <option key={company.id} value={company.id}>{company.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
               {/* Разборка */}
               {needsParts && (
                 <div>
@@ -716,7 +674,6 @@ export default function Users() {
                     userId: selectedUser.id,
                     roleIds,
                     primaryRoleId,
-                    sto_company_id: selectedUser.sto_company_id,
                     parts_company_id: selectedUser.parts_company_id
                   });
                 }}

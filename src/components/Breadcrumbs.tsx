@@ -1,8 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
 import { ChevronRight, Home } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
-import { useUserProfile } from '@/hooks/useUserProfile'
 
 interface BreadcrumbItem {
   label: string
@@ -15,64 +12,15 @@ interface BreadcrumbItem {
  */
 export default function Breadcrumbs() {
   const location = useLocation()
-  const { data: profile } = useUserProfile()
-  
-  // Проверяем, является ли пользователь владельцем СТО
-  const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
-  
-  // Определяем, находимся ли мы на странице заявок
-  const isAppointmentsPage = location.pathname.startsWith('/appointments')
-  const showArchived = location.pathname.includes('/archive')
-  
-  // Получаем количество заявок для breadcrumbs
-  const { data: appointmentsCount } = useQuery({
-    queryKey: ['appointments-count', profile?.id, showArchived],
-    queryFn: async () => {
-      let query = supabase
-        .from('appointments')
-        .select('id', { count: 'exact', head: true })
 
-      // Фильтруем по СТО пользователя
-      if (profile?.sto_company_id) {
-        query = query.eq('sto_company_id', profile?.sto_company_id)
-      }
-
-      // Фильтруем по архиву
-      if (showArchived) {
-        query = query.eq('status', 'archived')
-      } else {
-        query = query.neq('status', 'archived')
-      }
-
-      // Если пользователь - работник (не владелец), показываем только его заявки
-      if (!isStoOwner && profile?.id) {
-        query = query.eq('assigned_to', profile.id)
-      }
-
-      const { count, error } = await query
-      
-      if (error) throw error
-      return count || 0
-    },
-    enabled: !!profile?.id && isAppointmentsPage,
-  })
-  
   // Маппинг путей на читаемые названия
   const pathLabels: Record<string, string> = {
     '': 'Главная',
     'dashboard': 'Дашборд',
-    'sto': 'СТО',
-    'customers': 'Клиенты',
-    'vehicles': 'Автомобили',
-    'appointments': 'Записи',
-    'work-orders': 'Заказ-наряды',
-    'services': 'Услуги',
     'parts': 'Запчасти',
-    'invoices': 'Счета',
     'users': 'Пользователи',
     'admin': 'Администрирование',
     'roles': 'Роли',
-    'sto-companies': 'СТО компании',
     'parts-companies': 'Разборки',
     'subscriptions': 'Подписки',
     'employees': 'Сотрудники',
@@ -80,16 +28,10 @@ export default function Breadcrumbs() {
     'my-vehicles': 'Мои авто',
     'archive': 'Архив',
     'analytics': 'Аналитика',
-    'statistics': 'Статистика',
-    'monthly-statistics': 'Месячная статистика',
-    'monthly-details': 'Детали месяца',
-    'activity': 'История действий',
-    'history': 'История',
-    'worker-dashboard': 'Рабочий стол',
+    'vehicles': 'Автомобили',
+    'customers': 'Клиенты',
     'profile': 'Профиль',
     'settings': 'Настройки',
-    'monthly-revenue': 'Доходы',
-    'worker': 'Сотрудник',
     'inventory': 'Склад запчастей',
     'no-price': 'Без цены',
     'orders': 'Заказы',
@@ -113,12 +55,10 @@ export default function Breadcrumbs() {
       
       if (!isUuid) {
         const label = pathLabels[segment] || segment.replace(/-/g, ' ')
-        const count = segment === 'appointments' ? appointmentsCount : undefined
-        
+
         breadcrumbs.push({
           label,
           path: currentPath,
-          count
         })
       }
     })

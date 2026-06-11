@@ -20,7 +20,6 @@ export interface UserProfile {
   email: string | null
   username: string | null
   is_active: boolean
-  sto_company_id: string | null
   parts_company_id: string | null
   user_roles?: UserRole[]
 }
@@ -29,7 +28,6 @@ export interface UpdateUserProfileParams {
   userId: string
   full_name: string
   phone: string
-  sto_company_id: string | null
   parts_company_id: string | null
 }
 
@@ -79,7 +77,6 @@ export async function updateUserProfile(params: UpdateUserProfileParams): Promis
     .update({
       full_name: params.full_name,
       phone: params.phone,
-      sto_company_id: params.sto_company_id,
       parts_company_id: params.parts_company_id,
     })
     .eq('id', params.userId)
@@ -139,10 +136,8 @@ export interface UserProfileWithRoles {
   email: string
   username: string | null
   role_id: string | null
-  sto_company_id: string | null
   parts_company_id: string | null
   is_active: boolean
-  sto_companies?: { id: string; name: string } | null
   parts_companies?: { id: string; name: string } | null
   roles?: Array<{
     id: string
@@ -155,10 +150,8 @@ export interface UserProfileWithRoles {
 }
 
 export interface FetchUsersParams {
-  isStoOwner: boolean
   isPartsOwner: boolean
   isAdmin: boolean
-  stoCompanyId?: string | null
   partsCompanyId?: string | null
 }
 
@@ -166,11 +159,9 @@ export async function fetchUsers(params: FetchUsersParams & { onlyDeleted?: bool
   const buildQuery = (withDeletedFilter: boolean) => {
     let q = supabase.from('user_profiles').select(`
       *,
-      sto_companies:sto_company_id(id, name),
       parts_companies:parts_company_id(id, name)
     `)
-    if (params.isStoOwner && !params.isAdmin) q = q.eq('sto_company_id', params.stoCompanyId)
-    if (params.isPartsOwner && !params.isAdmin && !params.isStoOwner) q = q.eq('parts_company_id', params.partsCompanyId)
+    if (params.isPartsOwner && !params.isAdmin) q = q.eq('parts_company_id', params.partsCompanyId)
     if (withDeletedFilter) {
       q = params.onlyDeleted ? q.not('deleted_at', 'is', null) : q.is('deleted_at', null)
     }
@@ -245,16 +236,6 @@ export async function fetchActiveRoles() {
   return data
 }
 
-export async function fetchStoCompanies() {
-  const { data, error } = await supabase
-    .from('sto_companies')
-    .select('id, name')
-    .eq('is_active', true)
-    .order('name')
-  if (error) throw error
-  return data as Array<{ id: string; name: string }>
-}
-
 export async function fetchPartsCompanies() {
   const { data, error } = await supabase
     .from('parts_companies')
@@ -269,7 +250,6 @@ export async function updateUserRolesFull(params: {
   userId: string
   roleIds: string[]
   primaryRoleId?: string
-  sto_company_id?: string | null
   parts_company_id?: string | null
 }): Promise<void> {
   const { error: deleteError } = await supabase.from('user_roles').delete().eq('user_id', params.userId)
@@ -289,7 +269,6 @@ export async function updateUserRolesFull(params: {
   const { error: updateError } = await supabase
     .from('user_profiles')
     .update({
-      sto_company_id: params.sto_company_id || null,
       parts_company_id: params.parts_company_id || null,
     })
     .eq('id', params.userId)

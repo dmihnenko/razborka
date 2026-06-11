@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Wrench, Package, LogOut, Phone, MapPin, Building2, Check } from 'lucide-react'
+import { Package, LogOut, Phone, MapPin, Building2, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { IMaskInput } from 'react-imask'
@@ -15,7 +15,6 @@ interface Props {
 
 export default function OwnerSetupPage({ profile, onLogout, onComplete, existingCompanyId, existingCompanyName }: Props) {
   const queryClient = useQueryClient()
-  const isStoOwner = profile?.roles?.some((r: any) => r.name === 'sto_owner')
 
   const isUpdate = !!existingCompanyId
 
@@ -29,8 +28,8 @@ export default function OwnerSetupPage({ profile, onLogout, onComplete, existing
       if (digits.length < 10) throw new Error('Введите корректный номер телефона')
       if (!companyName.trim()) throw new Error('Введите название компании')
 
-      const table = isStoOwner ? 'sto_companies' : 'parts_companies'
-      const field = isStoOwner ? 'sto_company_id' : 'parts_company_id'
+      const table = 'parts_companies'
+      const field = 'parts_company_id'
 
       if (isUpdate && existingCompanyId) {
         // Обновляем существующую компанию
@@ -63,11 +62,11 @@ export default function OwnerSetupPage({ profile, onLogout, onComplete, existing
     onError: (e: any) => toast.error(e.message || 'Ошибка'),
   })
 
-  const Icon = isStoOwner ? Wrench : Package
-  const label = isStoOwner ? 'СТО' : 'авторазборки'
+  const Icon = Package
+  const label = 'авторазборки'
   const title = isUpdate ? 'Добавьте телефон ' + label : 'Настройка ' + label
-  const color = isStoOwner ? 'text-blue-600 bg-blue-50' : 'text-orange-600 bg-orange-50'
-  const accentColor = isStoOwner ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-600 hover:bg-orange-700'
+  const color = 'text-orange-600 bg-orange-50'
+  const accentColor = 'bg-orange-600 hover:bg-orange-700'
 
   return (
     <div className="min-h-dvh bg-[#F4F6FA] flex flex-col">
@@ -115,10 +114,10 @@ export default function OwnerSetupPage({ profile, onLogout, onComplete, existing
           <div className="p-5 space-y-4">
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                Название {isStoOwner ? 'СТО' : 'авторазборки'} <span className="text-red-400 normal-case font-normal">*</span>
+                Название авторазборки <span className="text-red-400 normal-case font-normal">*</span>
               </label>
               <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)}
-                placeholder={isStoOwner ? 'Автосервис "Мастер"' : 'Авторазборка "Запчасти"'}
+                placeholder='Авторазборка "Запчасти"'
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all" />
             </div>
 
