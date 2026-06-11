@@ -39,8 +39,8 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
         id: '/',
-        name: 'AutoCRM — Автосервис',
-        short_name: 'AutoCRM',
+        name: 'CRM',
+        short_name: 'CRM СТО',
         description: 'Система управления автосервисом: клиенты, заявки, склад, сотрудники',
         lang: 'ru',
         dir: 'ltr',
