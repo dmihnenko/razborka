@@ -37,7 +37,7 @@ export function PublicBrandHeader({ subtitle }: Props) {
               lineHeight: '1.2',
             }}
           >
-            AutoCRM
+            TSP CRM
           </span>
           {subtitle && (
             <span style={{ color: '#4B5563', fontSize: '11px', fontFamily: 'system-ui, sans-serif' }}>

@@ -77,7 +77,7 @@ export default function LandingPage() {
               <div style={{ width: '32px', height: '32px', background: '#2563EB', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Wrench size={16} color="white" />
               </div>
-              <span className="bf" style={{ color: '#F1F5F9', fontSize: '20px', letterSpacing: '2px' }}>AutoCRM</span>
+              <span className="bf" style={{ color: '#F1F5F9', fontSize: '20px', letterSpacing: '2px' }}>TSP CRM</span>
             </div>
             <button
               onClick={() => navigate('/login')}
@@ -175,7 +175,7 @@ export default function LandingPage() {
         {/* ── HIGHLIGHTS ──────────────────────────────────────── */}
         <section style={{ padding: '20px 20px 80px', maxWidth: '1100px', margin: '0 auto' }}>
           <h2 className="bf" style={{ color: '#F1F5F9', fontSize: '36px', letterSpacing: '1px', marginBottom: '32px', textAlign: 'center' }}>
-            ПОЧЕМУ AutoCRM
+            ПОЧЕМУ TSP CRM
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
             {HIGHLIGHTS.map(({ icon: Icon, title, desc }) => (
@@ -205,7 +205,7 @@ export default function LandingPage() {
               className="lp-btn-primary"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'white', fontWeight: '600', fontSize: '15px', padding: '14px 32px', borderRadius: '10px', border: 'none', cursor: 'pointer', width: 'clamp(200px, 60vw, 280px)', justifyContent: 'center' }}
             >
-              Войти в AutoCRM <ArrowRight size={16} />
+              Войти в TSP CRM <ArrowRight size={16} />
             </button>
           </div>
         </section>
@@ -216,7 +216,7 @@ export default function LandingPage() {
             <div style={{ width: '22px', height: '22px', background: '#1D4ED8', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Wrench size={12} color="white" />
             </div>
-            <span className="bf" style={{ color: '#374151', fontSize: '14px', letterSpacing: '2px' }}>AutoCRM</span>
+            <span className="bf" style={{ color: '#374151', fontSize: '14px', letterSpacing: '2px' }}>TSP CRM</span>
           </div>
           <p style={{ color: '#1F2937', fontSize: '12px' }}>Система управления для СТО и авторазборок</p>
         </footer>

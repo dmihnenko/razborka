@@ -78,7 +78,7 @@ export default function OwnerSetupPage({ profile, onLogout, onComplete, existing
             <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
               <Wrench className="w-4 h-4 text-white" strokeWidth={1.5} />
             </div>
-            <span className="text-sm font-bold text-gray-900">AutoCRM</span>
+            <span className="text-sm font-bold text-gray-900">TSP CRM</span>
           </div>
           <button onClick={onLogout} className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-red-600 transition-colors min-h-[44px]">
             <LogOut className="w-4 h-4" strokeWidth={1.5} />
