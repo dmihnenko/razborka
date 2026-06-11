@@ -2,119 +2,138 @@
 -- TSP V2 — удаление функционала СТО из базы данных (Supabase / Postgres)
 -- ============================================================================
 --
--- ⚠️  ПРИМЕНЯТЬ ВРУЧНУЮ В SUPABASE SQL EDITOR. НЕ запускается автоматически.
--- ⚠️  СНАЧАЛА СДЕЛАЙТЕ БЭКАП (Supabase → Database → Backups, либо pg_dump).
--- ⚠️  prod-схема может отличаться от репозитория (миграции применяются вручную).
---     Поэтому скрипт защищён `IF EXISTS`, но СВЕРЬТЕ имена таблиц с разделом
---     «ШАГ 0 — DISCOVERY» ниже перед выполнением блока DROP.
+-- СТАТУС: ПРИМЕНЕНО 2026-06-12 к проекту tsp.pp.ua (ref hwckvddevjucuzxdoqqh)
+--         через Supabase Management API. Бэкап СТО-данных сохранён локально
+--         (C:\Users\home\tsp_sto_backup_2026-06-12, 14 таблиц + users + общие строки).
 --
--- Контекст: СТО (автосервис) вынесен в отдельный проект. Здесь остаются
--- только Разборка (parts_*) и Мои авто (personal_vehicles). Фронтенд уже
--- очищен от СТО (ветка cleanup/remove-sto). Этот скрипт убирает СТО из БД.
+-- ⚠️  Этот файл — точная запись применённой миграции. Если запускать повторно
+--     на другой среде: СНАЧАЛА БЭКАП, затем выполнять блоками по порядку.
+--     Объекты защищены IF EXISTS, но порядок важен (политики → таблицы → строки
+--     → колонки → триггеры/функции), иначе зависимости заблокируют DROP.
 --
--- Порядок применения:
---   1. ШАГ 0 — выполните отдельно, изучите что реально есть в вашей БД.
---   2. ШАГ 1 (обязательное) — удаление СТО-таблиц и СТО-строк/ролей.
---   3. ШАГ 2 (опциональное) — гибридные таблицы и столбцы. ПРОВЕРЬТЕ перед
---      выполнением: возможно, в них есть данные, которые нужно сохранить.
+-- Контекст: СТО вынесен в отдельный проект. Здесь остаются Разборка (parts_*) и
+-- Мои авто (personal_vehicles). Целевой проект — ТОЛЬКО hwckvddevjucuzxdoqqh.
+-- ⚠️  Проект autocrm (fclmzfoxssbiljpgybpo) — ЧУЖОЙ, трогать нельзя.
 -- ============================================================================
 
+-- ── БЛОК A — RLS-политики на СОХРАНЯЕМЫХ таблицах ───────────────────────────
+-- Комбинированные политники (sto+parts) переписываем на parts-only через ALTER
+-- (сохраняет cmd/roles); чисто-СТО политики удаляем. Делать ДО дропа таблиц,
+-- иначе CASCADE снесёт комбинированные политики целиком.
+begin;
+alter policy "subreq_select" on subscription_requests using (
+  (exists (select 1 from user_roles ur join roles r on r.id=ur.role_id where ur.user_id=auth.uid() and r.name='admin'))
+  or ((company_type)::text='parts' and company_id in (select parts_company_id from user_profiles where id=auth.uid()))
+);
+alter policy "subreq_insert" on subscription_requests with check (
+  ((company_type)::text='parts' and company_id in (select parts_company_id from user_profiles where id=auth.uid()))
+  or (exists (select 1 from user_roles ur join roles r on r.id=ur.role_id where ur.user_id=auth.uid() and r.name='admin'))
+);
+alter policy "Owners update worker requests" on access_requests using (
+  (request_type='parts_worker') and exists (
+    select 1 from user_profiles up join parts_companies pc on pc.id=up.parts_company_id
+    where up.id=auth.uid() and (pc.phone)::text=access_requests.owner_phone)
+);
+drop policy if exists "STO members can view their logs" on activity_logs;
+drop policy if exists "STO owners see worker requests" on access_requests;
+
+-- ── БЛОК B — СТО-таблицы (CASCADE снимет их политики/FK/триггеры) ───────────
+drop table if exists appointment_parts cascade;
+drop table if exists appointment_services cascade;
+drop table if exists appointment_comments cascade;
+drop table if exists work_order_items cascade;
+drop table if exists sto_invoices cascade;
+drop table if exists invoices cascade;
+drop table if exists appointments cascade;
+drop table if exists work_orders cascade;
+drop table if exists services cascade;
+drop table if exists service_categories cascade;
+drop table if exists parts cascade;          -- legacy склад запчастей СТО (НЕ parts_inventory)
+drop table if exists vehicles cascade;        -- авто СТО (у разборки свои parts_vehicles)
+drop table if exists customers cascade;       -- клиенты СТО (у разборки свои parts_customers)
+drop table if exists sto_companies cascade;
+
+-- ── БЛОК C — СТО-строки в общих таблицах + СТО/магазин роли ─────────────────
+delete from company_subscriptions where company_type='sto';
+delete from subscriptions where company_type='sto';
+delete from access_requests where request_type in ('sto_owner','sto_worker','store_owner','store_worker');
+delete from user_roles where role_id in (select id from roles where name in ('sto_owner','sto_worker','store_owner','store_worker'));
+delete from roles where name in ('sto_owner','sto_worker','store_owner','store_worker');
+
+-- ── БЛОК D — снятие СТО-колонок с общих таблиц ─────────────────────────────
+alter table user_profiles drop column if exists sto_company_id;
+alter table trash_bin     drop column if exists sto_company_id;
+alter table activity_logs drop column if exists sto_company_id;
+alter table users         drop column if exists sto_company_id;  -- legacy users-таблица
+commit;
+
+-- ── БЛОК E — СТО-триггеры на сохраняемых таблицах + осиротевшие функции ─────
+-- Триггеры reassign на user_profiles дёргали удалённые appointments — снять
+-- обязательно (иначе любое обновление профиля → ошибка).
+begin;
+drop trigger if exists trigger_reassign_on_worker_deactivation on user_profiles;
+drop trigger if exists trigger_reassign_on_worker_deletion on user_profiles;
+drop function if exists reassign_appointments_on_worker_deactivation();
+drop function if exists reassign_appointments_on_worker_deletion();
+drop function if exists auto_assign_to_single_worker();
+drop function if exists log_appointment_change();
+drop function if exists log_customer_change();
+drop function if exists update_work_order_total();
+drop function if exists generate_invoice_number(uuid);
+drop function if exists get_public_invoice(text);
+
+-- create_user_account: убрать запись в users.sto_company_id (колонки нет),
+-- сигнатуру оставить прежней (parts-создание пользователей не ломаем).
+create or replace function public.create_user_account(
+  p_email text, p_password text, p_full_name text, p_phone text,
+  p_role_ids uuid[], p_primary_role_id uuid,
+  p_sto_company_id uuid default null::uuid,
+  p_parts_company_id uuid default null::uuid,
+  p_username text default null::text)
+returns json language plpgsql security definer as $function$
+declare
+  v_user_id uuid;
+  v_role_id uuid;
+  v_is_admin boolean;
+begin
+  select exists (
+    select 1 from public.user_roles ur join public.roles r on ur.role_id = r.id
+    where ur.user_id = auth.uid() and r.name = 'admin'
+  ) into v_is_admin;
+  if not v_is_admin then
+    return json_build_object('success', false, 'error', 'Access denied');
+  end if;
+  v_user_id := gen_random_uuid();
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, email_change, email_change_token_new, recovery_token
+  ) values (
+    '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated', p_email,
+    crypt(p_password, gen_salt('bf')), now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    jsonb_build_object('full_name', p_full_name, 'phone', p_phone),
+    now(), now(), '', '', '', ''
+  );
+  insert into public.users (
+    id, email, full_name, phone, primary_role_id, parts_company_id, username, plain_password
+  ) values (
+    v_user_id, p_email, p_full_name, p_phone, p_primary_role_id, p_parts_company_id, p_username, p_password
+  );
+  foreach v_role_id in array p_role_ids loop
+    insert into public.user_roles (user_id, role_id) values (v_user_id, v_role_id);
+  end loop;
+  return json_build_object('success', true, 'user_id', v_user_id);
+exception when others then
+  return json_build_object('success', false, 'error', sqlerrm);
+end;
+$function$;
+commit;
 
 -- ============================================================================
--- ШАГ 0 — DISCOVERY (выполнить ОТДЕЛЬНО, ничего не меняет)
--- Посмотрите, какие СТО-объекты реально существуют, прежде чем дропать.
--- ============================================================================
-
--- 0.1 Таблицы, похожие на СТО:
--- SELECT table_name FROM information_schema.tables
---  WHERE table_schema = 'public'
---    AND table_name IN (
---      'appointments','appointment_comments','appointment_services','appointment_parts',
---      'work_orders','work_order_items','sto_invoices','invoices',
---      'services','service_categories','sto_employees','sto_companies','parts'
---    )
---  ORDER BY table_name;
-
--- 0.2 Триггеры/функции, ссылающиеся на appointments/work_orders (удалить вручную при наличии):
--- SELECT p.proname, n.nspname FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
---  WHERE n.nspname = 'public' AND pg_get_functiondef(p.oid) ILIKE ANY (ARRAY['%appointments%','%work_orders%','%sto_company%']);
-
--- 0.3 Сколько СТО-строк в общих таблицах:
--- SELECT 'company_subscriptions sto' AS what, count(*) FROM company_subscriptions WHERE company_type = 'sto'
--- UNION ALL SELECT 'subscriptions sto', count(*) FROM subscriptions WHERE company_type = 'sto'
--- UNION ALL SELECT 'access_requests sto/store', count(*) FROM access_requests WHERE request_type IN ('sto_owner','sto_worker','store_owner','store_worker')
--- UNION ALL SELECT 'roles sto/store', count(*) FROM roles WHERE name IN ('sto_owner','sto_worker','store_owner','store_worker')
--- UNION ALL SELECT 'user_profiles with sto_company_id', count(*) FROM user_profiles WHERE sto_company_id IS NOT NULL;
-
-
--- ============================================================================
--- ШАГ 1 — ОБЯЗАТЕЛЬНОЕ: удаление чисто-СТО объектов
--- ============================================================================
-BEGIN;
-
--- 1.1 — Дочерние СТО-таблицы (FK на appointments/work_orders/services).
-DROP TABLE IF EXISTS appointment_parts      CASCADE;
-DROP TABLE IF EXISTS appointment_services   CASCADE;
-DROP TABLE IF EXISTS appointment_comments   CASCADE;
-DROP TABLE IF EXISTS work_order_items       CASCADE;
-
--- 1.2 — Основные СТО-таблицы.
-DROP TABLE IF EXISTS sto_invoices           CASCADE;
-DROP TABLE IF EXISTS invoices               CASCADE;  -- legacy счета СТО
-DROP TABLE IF EXISTS appointments           CASCADE;
-DROP TABLE IF EXISTS work_orders            CASCADE;
-DROP TABLE IF EXISTS services               CASCADE;
-DROP TABLE IF EXISTS service_categories     CASCADE;
-DROP TABLE IF EXISTS sto_employees          CASCADE;
-
--- 1.3 — Legacy-склад запчастей СТО (НЕ путать с parts_inventory!).
---       Раскомментируйте ТОЛЬКО если таблица `parts` относится к СТО, а не к разборке.
--- DROP TABLE IF EXISTS parts                CASCADE;
-
--- 1.4 — Компании СТО (после всех зависимых таблиц).
-DROP TABLE IF EXISTS sto_companies          CASCADE;
-
--- 1.5 — Очистка СТО-строк в общих таблицах.
-DELETE FROM company_subscriptions WHERE company_type = 'sto';
-DELETE FROM subscriptions         WHERE company_type = 'sto';
-DELETE FROM access_requests
-  WHERE request_type IN ('sto_owner','sto_worker','store_owner','store_worker');
-
--- 1.6 — Удаление СТО/магазин ролей (сначала связи user_roles, потом сами роли).
-DELETE FROM user_roles
-  WHERE role_id IN (SELECT id FROM roles
-                    WHERE name IN ('sto_owner','sto_worker','store_owner','store_worker'));
-DELETE FROM roles
-  WHERE name IN ('sto_owner','sto_worker','store_owner','store_worker');
-
-COMMIT;
-
-
--- ============================================================================
--- ШАГ 2 — ОПЦИОНАЛЬНОЕ: гибридные таблицы и столбцы
--- ⚠️  ПРОВЕРЬТЕ перед выполнением. customers/vehicles в этом проекте
---     использовались только СТО (у разборки свои parts_customers/parts_vehicles),
---     но убедитесь, что там нет нужных данных. Столбцы sto_company_id безопасно
---     удалять — фронтенд их больше не читает.
--- ============================================================================
--- BEGIN;
---
--- -- 2.1 Гибридные таблицы (только если уверены, что это СТО-данные):
--- DROP TABLE IF EXISTS customers  CASCADE;
--- DROP TABLE IF EXISTS vehicles   CASCADE;
---
--- -- 2.2 Снятие СТО-столбцов с общих таблиц:
--- ALTER TABLE user_profiles DROP COLUMN IF EXISTS sto_company_id;
--- ALTER TABLE trash_bin     DROP COLUMN IF EXISTS sto_company_id;
---
--- COMMIT;
-
-
--- ============================================================================
--- ПОСЛЕ ВЫПОЛНЕНИЯ
--- ----------------------------------------------------------------------------
--- 1. Проверьте, что в Supabase больше нет СТО-таблиц (повторите ШАГ 0.1).
--- 2. Просмотрите RLS-политики и функции на остатки ссылок на удалённые таблицы
---    (ШАГ 0.2) — удалите их вручную при наличии.
--- 3. Edge Functions деплоятся вручную; СТО-специфичных среди них нет, менять не нужно.
+-- ПРОВЕРКА ПОСЛЕ ПРИМЕНЕНИЯ (всё должно быть пусто / только parts-роли):
+--   - information_schema.tables: СТО-таблиц нет
+--   - information_schema.columns where column_name='sto_company_id': пусто
+--   - pg_policies: нет ссылок на sto_company/sto_owner/sto_worker
+--   - roles: admin, parts_owner, parts_worker, user
 -- ============================================================================
