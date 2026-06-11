@@ -2,27 +2,21 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchAccessRequests, approveAccessRequest, rejectAccessRequest } from '@/services/adminService'
 import { toast } from 'sonner'
-import { CheckCircle2, XCircle, Clock, Building2, Phone, MapPin, User, Wrench, Package, Car } from 'lucide-react'
+import { CheckCircle2, XCircle, Clock, Building2, Phone, MapPin, User, Package, Car } from 'lucide-react'
 
 const roleLabels: Record<string, string> = {
-  sto_owner: 'Владелец СТО',
-  sto_worker: 'Работник СТО',
   parts_owner: 'Владелец разборки',
   parts_worker: 'Авторазборка',
   user: 'Личные автомобили',
 }
 
 const roleIcons: Record<string, any> = {
-  sto_owner: Building2,
-  sto_worker: Wrench,
   parts_owner: Package,
   parts_worker: Package,
   user: Car,
 }
 
 const roleColors: Record<string, string> = {
-  sto_owner: 'bg-blue-100 text-blue-700',
-  sto_worker: 'bg-cyan-100 text-cyan-700',
   parts_owner: 'bg-orange-100 text-orange-700',
   parts_worker: 'bg-amber-100 text-amber-700',
   user: 'bg-purple-100 text-purple-700',

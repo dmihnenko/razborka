@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
   Clock, CheckCircle2, AlertTriangle, Infinity as InfinityIcon,
-  MessageCircle, Send, Hourglass, Wrench, Package, Users, ClipboardList, Car, Check,
+  MessageCircle, Send, Hourglass, Package, Car, Check,
 } from 'lucide-react'
 import { Spinner } from '@/components/ui/Spinner'
 import { toast } from 'sonner'
@@ -21,9 +21,9 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
   const { data: profile } = useUserProfile()
   const navigate = useNavigate()
   const qc = useQueryClient()
-  const companyId = companyType === 'sto' ? profile?.sto_company_id : profile?.parts_company_id
-  const accent = companyType === 'sto' ? '#2563EB' : '#16A34A'
-  const TypeIcon = companyType === 'sto' ? Wrench : Package
+  const companyId = profile?.parts_company_id
+  const accent = '#16A34A'
+  const TypeIcon = Package
 
   const [months, setMonths] = useState(1)
   const [selectedTierId, setSelectedTierId] = useState<string | null>(null)
@@ -70,7 +70,7 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
 
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-          {companyType === 'sto' ? 'Тариф СТО' : 'Тариф разборки'}
+          Тариф разборки
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">Выберите план и срок действия</p>
       </div>
@@ -125,18 +125,8 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
         <h2 className="text-base font-bold text-gray-900 mb-4">Текущая загрузка</h2>
         <div className="space-y-3.5">
-          {companyType === 'sto' ? (
-            <>
-              <UsageRow icon={Users}         label="Механики"            used={usage.workers}      max={limits.maxWorkers}      accent={accent} />
-              <UsageRow icon={ClipboardList} label="Заявки в этом месяце" used={usage.appointments} max={limits.maxAppointments} accent={accent} />
-              <UsageRow icon={Car}           label="Клиенты и авто"       used={usage.customers}    max={limits.maxCustomers}    accent={accent} />
-            </>
-          ) : (
-            <>
-              <UsageRow icon={Car}     label="Машины"    used={usage.vehicles} max={limits.maxVehicles} accent={accent} />
-              <UsageRow icon={Package} label="Запчасти"  used={usage.parts}    max={limits.maxParts}    accent={accent} />
-            </>
-          )}
+          <UsageRow icon={Car}     label="Машины"    used={usage.vehicles} max={limits.maxVehicles} accent={accent} />
+          <UsageRow icon={Package} label="Запчасти"  used={usage.parts}    max={limits.maxParts}    accent={accent} />
         </div>
       </div>
 
@@ -216,18 +206,8 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
                       </p>
                     </div>
                     <ul className="text-xs text-gray-600 space-y-1.5 mt-1">
-                      {companyType === 'sto' ? (
-                        <>
-                          {t.max_workers != null && <li className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-gray-400" /> до {t.max_workers} механиков</li>}
-                          {t.max_appointments != null && <li className="flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5 text-gray-400" /> до {t.max_appointments} заявок/мес</li>}
-                          {t.max_customers != null && <li className="flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-gray-400" /> до {t.max_customers} клиентов и авто</li>}
-                        </>
-                      ) : (
-                        <>
-                          {t.max_vehicles != null && <li className="flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-gray-400" /> до {t.max_vehicles} машин</li>}
-                          {t.max_parts != null && <li className="flex items-center gap-1.5"><Package className="w-3.5 h-3.5 text-gray-400" /> до {t.max_parts} запчастей</li>}
-                        </>
-                      )}
+                      {t.max_vehicles != null && <li className="flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-gray-400" /> до {t.max_vehicles} машин</li>}
+                      {t.max_parts != null && <li className="flex items-center gap-1.5"><Package className="w-3.5 h-3.5 text-gray-400" /> до {t.max_parts} запчастей</li>}
                     </ul>
                   </button>
                 )
@@ -271,7 +251,7 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
 
       <p className="text-xs text-gray-400 flex items-center gap-1.5">
         <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-        Лимиты тарифа: механики, заявки в месяц и количество клиентов с авто в базе.
+        Лимиты тарифа: количество машин и запчастей в базе разборки.
       </p>
     </div>
   )

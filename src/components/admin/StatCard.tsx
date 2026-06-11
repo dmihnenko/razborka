@@ -23,7 +23,7 @@ interface StatCardProps {
   loading?: boolean
 }
 
-/** Плитка статистики в стиле дашбордов СТО/Разборки. Кликабельна, если задан `to`. */
+/** Плитка статистики в стиле дашборда Разборки. Кликабельна, если задан `to`. */
 export function StatCard({ label, value, sub, icon: Icon, color = 'indigo', to, loading }: StatCardProps) {
   const c = COLOR[color]
   const body = (

@@ -1,12 +1,11 @@
 // ─── Конфигурация тарифов подписки (срок + цена) ──────────────────────────────
-// Один платный тариф на тип (СТО / Разборка), покупается на 1/3/6/12 месяцев.
+// Тариф разборки покупается на 1/3/6/12 месяцев.
 // Цена информативная (оплата офлайн через админа); админ может менять цену плана.
 
-export type CompanyType = 'sto' | 'parts'
+export type CompanyType = 'parts'
 
 // Базовая месячная цена по типу (₴)
 export const BASE_MONTHLY_PRICE: Record<CompanyType, number> = {
-  sto: 499,
   parts: 399,
 }
 
@@ -30,7 +29,6 @@ export function tierTermPerMonth(monthlyPrice: number, months: number): number {
 
 // Бессрочная цена (для админ-вью; владельцу не предлагается)
 export const LIFETIME_PRICE: Record<CompanyType, number> = {
-  sto: 9999,
   parts: 7999,
 }
 

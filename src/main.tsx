@@ -124,7 +124,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         buster: import.meta.env.VITE_BUILD_HASH || 'dev',
         dehydrateOptions: {
           // Главное — мгновенно показать ОФОРМЛЕНИЕ (оболочка, навигация, профиль,
-          // компании, роли), а тяжёлые списки (запчасти, заявки, авто, клиенты)
+          // компании, роли), а тяжёлые списки (запчасти, авто, заказы, клиенты)
           // грузить в фоне. Поэтому персистим только лёгкие запросы, а большие
           // НЕ кладём в localStorage (не раздувают хранилище и не блокируют старт).
           shouldDehydrateQuery: (q) => {
@@ -132,7 +132,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             const key = String(q.queryKey?.[0] ?? '')
             const heavy = [
               'parts-inventory', 'parts-vehicles', 'parts-orders', 'parts-customers',
-              'appointments', 'customers', 'vehicles', 'work-orders', 'work_orders',
             ]
             return !heavy.some(h => key.startsWith(h))
           },

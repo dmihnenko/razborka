@@ -66,23 +66,14 @@ export async function getAllCompanySubscriptions() {
   // Загружаем названия компаний
   const subscriptions = await Promise.all((data || []).map(async (sub) => {
     let companyName = 'Неизвестно'
-    
-    if (sub.company_type === 'sto') {
-      const { data: company } = await supabase
-        .from('sto_companies')
-        .select('name')
-        .eq('id', sub.company_id)
-        .single()
-      companyName = company?.name || 'Неизвестно'
-    } else if (sub.company_type === 'parts') {
-      const { data: company } = await supabase
-        .from('parts_companies')
-        .select('name')
-        .eq('id', sub.company_id)
-        .single()
-      companyName = company?.name || 'Неизвестно'
-    }
-    
+
+    const { data: company } = await supabase
+      .from('parts_companies')
+      .select('name')
+      .eq('id', sub.company_id)
+      .single()
+    companyName = company?.name || 'Неизвестно'
+
     return {
       ...sub,
       company: {
@@ -95,7 +86,7 @@ export async function getAllCompanySubscriptions() {
   return subscriptions as CompanySubscription[]
 }
 
-export async function getCompanySubscription(companyType: 'sto' | 'parts', companyId: string) {
+export async function getCompanySubscription(companyType: 'parts', companyId: string) {
   const { data, error } = await supabase
     .from('company_subscriptions')
     .select(`
@@ -220,17 +211,6 @@ export async function getSubscriptionStats(): Promise<SubscriptionStats> {
 // COMPANIES FOR ASSIGNMENT
 // ============================================================================
 
-export async function getStoCompanies() {
-  const { data, error } = await supabase
-    .from('sto_companies')
-    .select('id, name, is_active')
-    .eq('is_active', true)
-    .order('name')
-  
-  if (error) throw error
-  return data
-}
-
 export async function getPartsCompanies() {
   const { data, error } = await supabase
     .from('parts_companies')
@@ -245,37 +225,6 @@ export async function getPartsCompanies() {
 // ============================================================================
 // PAID PLAN HELPER
 // ============================================================================
-
-/** Загрузка СТО-компаний (заявки в этом месяце / клиенты / механики) — для мониторинга в админке. Несколько батч-запросов. */
-export async function getStoCompaniesUsage(): Promise<Record<string, { appointments: number; customers: number; workers: number }>> {
-  const startOfMonth = new Date()
-  startOfMonth.setDate(1)
-  startOfMonth.setHours(0, 0, 0, 0)
-
-  const map: Record<string, { appointments: number; customers: number; workers: number }> = {}
-  const bump = (id: string | null, key: 'appointments' | 'customers' | 'workers') => {
-    if (!id) return
-    ;(map[id] ??= { appointments: 0, customers: 0, workers: 0 })[key]++
-  }
-
-  const [appts, custs, workerRole] = await Promise.all([
-    supabase.from('appointments').select('sto_company_id').gte('created_at', startOfMonth.toISOString()),
-    supabase.from('customers').select('sto_company_id'),
-    supabase.from('roles').select('id').eq('name', 'sto_worker').single(),
-  ])
-  ;(appts.data || []).forEach((r: any) => bump(r.sto_company_id, 'appointments'))
-  ;(custs.data || []).forEach((r: any) => bump(r.sto_company_id, 'customers'))
-
-  if (workerRole.data) {
-    const { data: wr } = await supabase.from('user_roles').select('user_id').eq('role_id', workerRole.data.id)
-    const ids = (wr || []).map((x: any) => x.user_id)
-    if (ids.length) {
-      const { data: profs } = await supabase.from('user_profiles').select('sto_company_id').in('id', ids)
-      ;(profs || []).forEach((p: any) => bump(p.sto_company_id, 'workers'))
-    }
-  }
-  return map
-}
 
 /** Загрузка разборок (машины / запчасти) — для мониторинга в админке. */
 export async function getPartsCompaniesUsage(): Promise<Record<string, { vehicles: number; parts: number }>> {
@@ -294,7 +243,7 @@ export async function getPartsCompaniesUsage(): Promise<Record<string, { vehicle
 }
 
 /** Тарифы (Стандарт/Про/Макс/Персональный) для типа компании, по порядку. Демо (price=0, не custom) исключается. */
-export async function getSubscriptionTiers(companyType: 'sto' | 'parts') {
+export async function getSubscriptionTiers(companyType: 'parts') {
   // Сортировку по sort_order делаем на клиенте — колонки может ещё не быть в проде (prod отстаёт от репо)
   const { data, error } = await supabase
     .from('subscriptions')
@@ -309,7 +258,7 @@ export async function getSubscriptionTiers(companyType: 'sto' | 'parts') {
 }
 
 /** Активный платный месячный план для типа компании (канонический «Подписка …») */
-export async function getActivePaidPlan(companyType: 'sto' | 'parts') {
+export async function getActivePaidPlan(companyType: 'parts') {
   const { data, error } = await supabase
     .from('subscriptions')
     .select('*')
@@ -328,7 +277,7 @@ export async function getActivePaidPlan(companyType: 'sto' | 'parts') {
 // ============================================================================
 
 export async function createSubscriptionRequest(input: {
-  company_type: 'sto' | 'parts'
+  company_type: 'parts'
   company_id: string
   plan_id: string
   months: number
@@ -348,7 +297,7 @@ export async function createSubscriptionRequest(input: {
 }
 
 /** Последняя заявка компании (для показа статуса владельцу) */
-export async function getMyLatestRequest(companyType: 'sto' | 'parts', companyId: string) {
+export async function getMyLatestRequest(companyType: 'parts', companyId: string) {
   const { data, error } = await supabase
     .from('subscription_requests')
     .select('*')
@@ -372,8 +321,7 @@ export async function getSubscriptionRequests(status: 'pending' | 'approved' | '
   if (error) throw error
 
   const rows = await Promise.all((data || []).map(async (r: any) => {
-    const tbl = r.company_type === 'sto' ? 'sto_companies' : 'parts_companies'
-    const { data: c } = await supabase.from(tbl).select('name').eq('id', r.company_id).single()
+    const { data: c } = await supabase.from('parts_companies').select('name').eq('id', r.company_id).single()
     return { ...r, company_name: c?.name || '—' }
   }))
   return rows as SubscriptionRequest[]

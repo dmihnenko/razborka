@@ -6,7 +6,6 @@ import type { CompanySubscription, SubscriptionUsage } from '../types/subscripti
 // ─── Free tier limits (no active subscription) ────────────────────────────────
 
 export const FREE_LIMITS = {
-  sto: { workers: 1, appointments: 10, customers: 15, vehicles: 30 },
   parts: { workers: 1, vehicles: 1, parts: 10 },
 }
 
@@ -16,16 +15,15 @@ export function useCompanySubscription() {
   const { data: profile } = useUserProfile()
 
   return useQuery({
-    queryKey: ['companySubscription', profile?.sto_company_id, profile?.parts_company_id],
+    queryKey: ['companySubscription', profile?.parts_company_id],
     queryFn: async () => {
-      const companyType = profile?.sto_company_id ? 'sto' : profile?.parts_company_id ? 'parts' : null
-      const companyId   = profile?.sto_company_id || profile?.parts_company_id || null
-      if (!companyType || !companyId) return null
+      const companyId = profile?.parts_company_id || null
+      if (!companyId) return null
 
       const { data, error } = await supabase
         .from('company_subscriptions')
         .select('*, subscription:subscriptions(*)')
-        .eq('company_type', companyType)
+        .eq('company_type', 'parts')
         .eq('company_id', companyId)
         .eq('is_active', true)
         .maybeSingle()
@@ -38,7 +36,7 @@ export function useCompanySubscription() {
 
       return data as CompanySubscription
     },
-    enabled: !!(profile?.sto_company_id || profile?.parts_company_id),
+    enabled: !!profile?.parts_company_id,
     staleTime: 5 * 60 * 1000,
   })
 }
@@ -47,58 +45,7 @@ export function useCompanySubscription() {
 
 export function useSubscriptionUsage() {
   const { data: profile } = useUserProfile()
-  const stoId = profile?.sto_company_id
   const partsId = profile?.parts_company_id
-
-  const { data: appointmentCount = 0 } = useQuery({
-    queryKey: ['sub-usage-appointments', stoId],
-    queryFn: async () => {
-      // Лимит «заявок в месяц» — считаем созданные с начала текущего календарного месяца
-      const startOfMonth = new Date()
-      startOfMonth.setDate(1)
-      startOfMonth.setHours(0, 0, 0, 0)
-      const { count } = await supabase
-        .from('appointments')
-        .select('id', { count: 'exact', head: true })
-        .eq('sto_company_id', stoId!)
-        .gte('created_at', startOfMonth.toISOString())
-      return count || 0
-    },
-    enabled: !!stoId,
-    staleTime: 2 * 60 * 1000,
-  })
-
-  const { data: customerCount = 0 } = useQuery({
-    queryKey: ['sub-usage-customers', stoId],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from('customers')
-        .select('id', { count: 'exact', head: true })
-        .eq('sto_company_id', stoId!)
-      return count || 0
-    },
-    enabled: !!stoId,
-    staleTime: 2 * 60 * 1000,
-  })
-
-  const { data: workerCount = 0 } = useQuery({
-    queryKey: ['sub-usage-workers', stoId],
-    queryFn: async () => {
-      const { data: role } = await supabase.from('roles').select('id').eq('name', 'sto_worker').single()
-      if (!role) return 0
-      const { data: profs } = await supabase.from('user_profiles').select('id').eq('sto_company_id', stoId!)
-      const ids = (profs || []).map((p: any) => p.id)
-      if (!ids.length) return 0
-      const { count } = await supabase
-        .from('user_roles')
-        .select('user_id', { count: 'exact', head: true })
-        .eq('role_id', role.id)
-        .in('user_id', ids)
-      return count || 0
-    },
-    enabled: !!stoId,
-    staleTime: 2 * 60 * 1000,
-  })
 
   const { data: vehicleCount = 0 } = useQuery({
     queryKey: ['sub-usage-vehicles', partsId],
@@ -127,7 +74,7 @@ export function useSubscriptionUsage() {
   })
 
   return {
-    appointments: appointmentCount, customers: customerCount, workers: workerCount,
+    customers: 0, workers: 0,
     vehicles: vehicleCount, parts: partCount,
   } as SubscriptionUsage
 }
@@ -139,23 +86,20 @@ export function useSubscriptionLimits() {
   const { data: subscription } = useCompanySubscription()
   const usage = useSubscriptionUsage()
 
-  const isStoOwner   = profile?.roles?.some((r: any) => r.name === 'sto_owner')
   const isPartsOwner = profile?.roles?.some((r: any) => r.name === 'parts_owner')
   const hasSubscription = !!subscription
 
   const plan = subscription?.subscription
 
   // Effective limits: from plan (null=unlimited) or FREE_LIMITS
-  const maxAppointments = hasSubscription ? (plan?.max_appointments ?? null) : FREE_LIMITS.sto.appointments
-  const maxCustomers    = hasSubscription ? (plan?.max_customers    ?? null) : FREE_LIMITS.sto.customers
-  const maxWorkers      = hasSubscription ? (plan?.max_workers      ?? null) : FREE_LIMITS.sto.workers
+  const maxCustomers    = hasSubscription ? (plan?.max_customers    ?? null) : null
+  const maxWorkers      = hasSubscription ? (plan?.max_workers      ?? null) : FREE_LIMITS.parts.workers
   // Разборка
   const maxVehicles = hasSubscription ? (plan?.max_vehicles ?? null) : FREE_LIMITS.parts.vehicles
   const maxParts    = hasSubscription ? (plan?.max_parts    ?? null) : FREE_LIMITS.parts.parts
 
   // Usage percentages (0-100, clamped)
   const usagePct = {
-    appointments: maxAppointments ? Math.min(100, Math.round((usage.appointments / maxAppointments) * 100)) : 0,
     customers:    maxCustomers    ? Math.min(100, Math.round((usage.customers    / maxCustomers)    * 100)) : 0,
   }
 
@@ -178,29 +122,16 @@ export function useSubscriptionLimits() {
     isExpiringSoon,
 
     limits: {
-      maxAppointments,
       maxCustomers,
       maxWorkers,
       maxVehicles,
       maxParts,
-      sto: hasSubscription && isStoOwner ? null : FREE_LIMITS.sto,
       parts: hasSubscription && isPartsOwner ? null : FREE_LIMITS.parts,
     },
 
     canCreate: {
-      appointment: () => {
-        if (!isStoOwner) return true
-        if (maxAppointments === null) return true
-        return usage.appointments < maxAppointments
-      },
-      customer: () => {
-        if (!isStoOwner) return true
-        if (maxCustomers === null) return true
-        return usage.customers < maxCustomers
-      },
       worker: (currentCount: number) => {
         if (maxWorkers === null) return true
-        if (isStoOwner) return currentCount < maxWorkers
         if (isPartsOwner) return currentCount < FREE_LIMITS.parts.workers
         return false
       },

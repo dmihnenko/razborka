@@ -4,7 +4,7 @@ import { AlertCircle, ChevronRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 interface Props {
-  kind: 'sto' | 'parts'
+  kind?: 'parts'
   companyId?: string | null
 }
 
@@ -12,16 +12,15 @@ interface Props {
  * Напоминание владельцу заполнить контакты компании (телефон/адрес),
  * если они пустые. Контакты используются в счетах и уведомлениях клиентам.
  */
-export default function ContactsReminder({ kind, companyId }: Props) {
-  const table = kind === 'sto' ? 'sto_companies' : 'parts_companies'
-  const settingsPath = kind === 'sto' ? '/sto/settings' : '/parts/settings'
-  const label = kind === 'sto' ? 'СТО' : 'разборки'
+export default function ContactsReminder({ companyId }: Props) {
+  const settingsPath = '/parts/settings'
+  const label = 'разборки'
 
   const { data } = useQuery({
-    queryKey: ['company-contacts-check', table, companyId],
+    queryKey: ['company-contacts-check', 'parts_companies', companyId],
     queryFn: async () => {
       const { data } = await supabase
-        .from(table)
+        .from('parts_companies')
         .select('phone, address')
         .eq('id', companyId)
         .single()

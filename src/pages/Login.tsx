@@ -315,17 +315,17 @@ export default function Login() {
               КОНТРОЛЕМ
             </h1>
             <p style={{ color:'#94A3B8', fontSize:'15px', maxWidth:'300px', lineHeight:'1.7' }}>
-              Система управления для СТО и авторазборок.
-              Клиенты, автомобили, заявки — всё в одном месте.
+              Система управления для авторазборки.
+              Запчасти, заказы, клиенты — всё в одном месте.
             </p>
           </div>
 
           {/* Feature chips */}
           <div className="flex flex-wrap gap-3">
             {[
-              { label:'СТО', sub:'заявки и наряды' },
               { label:'Разборка', sub:'складской учёт' },
-              { label:'Клиенты', sub:'история авто' },
+              { label:'Запчасти', sub:'каталог и цены' },
+              { label:'Клиенты', sub:'история заказов' },
             ].map(({ label, sub }) => (
               <div key={label} style={{ background:'rgba(59,130,246,0.08)', border:'1px solid rgba(59,130,246,0.18)', borderRadius:'8px', padding:'8px 14px' }}>
                 <div style={{ color:'#60A5FA', fontWeight:'600', fontSize:'12px', letterSpacing:'0.5px' }}>{label}</div>

@@ -4,7 +4,6 @@ export interface MonthPoint {
   month: string          // 'YYYY-MM'
   label: string          // 'июн'
   users: number
-  appointments: number
   orders: number
 }
 
@@ -16,7 +15,7 @@ export interface RoleSlice {
 export interface PlatformAnalytics {
   series: MonthPoint[]
   roles: RoleSlice[]
-  totals: { users: number; appointments: number; orders: number }
+  totals: { users: number; orders: number }
 }
 
 const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
@@ -40,9 +39,8 @@ export async function fetchPlatformAnalytics(months: number): Promise<PlatformAn
   const start = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1)
   const sinceISO = start.toISOString()
 
-  const [usersAt, apptsAt, ordersAt, roleRows] = await Promise.all([
+  const [usersAt, ordersAt, roleRows] = await Promise.all([
     fetchCreatedAt('user_profiles', sinceISO),
-    fetchCreatedAt('appointments', sinceISO),
     fetchCreatedAt('parts_orders', sinceISO),
     (async () => {
       try {
@@ -59,15 +57,14 @@ export async function fetchPlatformAnalytics(months: number): Promise<PlatformAn
     const d = new Date(start.getFullYear(), start.getMonth() + i, 1)
     const key = monthKey(d)
     orderedKeys.push(key)
-    buckets[key] = { month: key, label: MONTHS_SHORT[d.getMonth()], users: 0, appointments: 0, orders: 0 }
+    buckets[key] = { month: key, label: MONTHS_SHORT[d.getMonth()], users: 0, orders: 0 }
   }
 
-  const add = (iso: string, field: 'users' | 'appointments' | 'orders') => {
+  const add = (iso: string, field: 'users' | 'orders') => {
     const key = monthKey(new Date(iso))
     if (buckets[key]) buckets[key][field]++
   }
   usersAt.forEach(d => add(d, 'users'))
-  apptsAt.forEach(d => add(d, 'appointments'))
   ordersAt.forEach(d => add(d, 'orders'))
 
   // Распределение по ролям
@@ -83,6 +80,6 @@ export async function fetchPlatformAnalytics(months: number): Promise<PlatformAn
   return {
     series: orderedKeys.map(k => buckets[k]),
     roles,
-    totals: { users: usersAt.length, appointments: apptsAt.length, orders: ordersAt.length },
+    totals: { users: usersAt.length, orders: ordersAt.length },
   }
 }

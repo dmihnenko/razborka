@@ -16,24 +16,20 @@ import { mockSupabase, setFromResponse } from '../test/mocks/supabase'
 function makeTrashItem(override?: Partial<TrashItem>): TrashItem {
   return {
     id: 'trash-1',
-    entity_type: 'customer',
-    entity_id: 'customer-1',
-    entity_data: { customer: { id: 'customer-1', name: 'Test' }, vehicles: [], appointments: [] },
-    entity_label: 'Клиент',
+    entity_type: 'parts_inventory',
+    entity_id: 'inv-1',
+    entity_data: { id: 'inv-1', name: 'Капот' },
+    entity_label: 'Запчасть',
     deleted_at: '2024-01-01T00:00:00Z',
     expires_at: '2024-02-01T00:00:00Z',
-    sto_company_id: 'sto-1',
-    parts_company_id: null,
+    parts_company_id: 'parts-1',
     ...override,
   }
 }
 
 describe('ENTITY_LABELS', () => {
   it('содержит все типы сущностей', () => {
-    expect(ENTITY_LABELS.customer).toBe('Клиент')
-    expect(ENTITY_LABELS.vehicle).toBe('Автомобиль')
-    expect(ENTITY_LABELS.service).toBe('Услуга')
-    expect(ENTITY_LABELS.work_order).toBe('Заказ-наряд')
+    expect(ENTITY_LABELS.parts_order).toBe('Заказ разборки')
     expect(ENTITY_LABELS.parts_vehicle).toBe('Авто на разборку')
     expect(ENTITY_LABELS.parts_inventory).toBe('Запчасть')
     expect(ENTITY_LABELS.parts_category).toBe('Категория')
@@ -49,11 +45,11 @@ describe('moveToTrash', () => {
 
   it('вызывает supabase.from("trash_bin").insert с правильными данными', async () => {
     await moveToTrash({
-      entityType: 'customer',
-      entityId: 'c-1',
-      entityLabel: 'Test Customer',
-      entityData: { name: 'Test' },
-      stoCompanyId: 'sto-1',
+      entityType: 'parts_inventory',
+      entityId: 'inv-1',
+      entityLabel: 'Капот',
+      entityData: { name: 'Капот' },
+      partsCompanyId: 'parts-1',
     })
 
     expect(mockSupabase.from).toHaveBeenCalledWith('trash_bin')
@@ -71,7 +67,7 @@ describe('moveToTrash', () => {
 
     await expect(
       moveToTrash({
-        entityType: 'service',
+        entityType: 'parts_category',
         entityId: 's-1',
         entityLabel: 'Тест',
         entityData: {},
@@ -83,10 +79,10 @@ describe('moveToTrash', () => {
 describe('getTrashItems', () => {
   const mockItems: TrashItem[] = [makeTrashItem()]
 
-  it('возвращает элементы корзины для stoCompanyId', async () => {
+  it('возвращает элементы корзины для partsCompanyId', async () => {
     setFromResponse(mockItems, null)
 
-    const result = await getTrashItems({ stoCompanyId: 'sto-1' })
+    const result = await getTrashItems({ partsCompanyId: 'parts-1' })
     expect(mockSupabase.from).toHaveBeenCalledWith('trash_bin')
     expect(Array.isArray(result)).toBe(true)
   })
@@ -99,7 +95,7 @@ describe('getTrashItems', () => {
 
   it('выбрасывает ошибку при ошибке DB', async () => {
     setFromResponse(null, { message: 'fail' })
-    await expect(getTrashItems({ stoCompanyId: 'sto-1' })).rejects.toBeDefined()
+    await expect(getTrashItems({ partsCompanyId: 'parts-1' })).rejects.toBeDefined()
   })
 })
 
@@ -126,63 +122,6 @@ describe('permanentlyDelete', () => {
 describe('restoreFromTrash', () => {
   beforeEach(() => {
     setFromResponse(null, null)
-  })
-
-  it('восстанавливает клиента с авто и заявками', async () => {
-    const item = makeTrashItem({
-      entity_type: 'customer',
-      entity_data: {
-        customer: { id: 'c-1', name: 'Иванов' },
-        vehicles: [{ id: 'v-1', customer_id: 'c-1' }],
-        appointments: [{ id: 'a-1', customer_id: 'c-1' }],
-      },
-    })
-    await restoreFromTrash(item)
-    expect(mockSupabase.from).toHaveBeenCalledWith('customers')
-    expect(mockSupabase.from).toHaveBeenCalledWith('trash_bin')
-  })
-
-  it('восстанавливает клиента без авто и заявок', async () => {
-    const item = makeTrashItem({
-      entity_type: 'customer',
-      entity_data: {
-        customer: { id: 'c-1', name: 'Петров' },
-        vehicles: [],
-        appointments: [],
-      },
-    })
-    await restoreFromTrash(item)
-    expect(mockSupabase.from).toHaveBeenCalledWith('customers')
-  })
-
-  it('восстанавливает автомобиль с заявками', async () => {
-    const item = makeTrashItem({
-      entity_type: 'vehicle',
-      entity_data: {
-        vehicle: { id: 'v-1', make: 'Toyota' },
-        appointments: [{ id: 'a-1' }],
-      },
-    })
-    await restoreFromTrash(item)
-    expect(mockSupabase.from).toHaveBeenCalledWith('vehicles')
-  })
-
-  it('восстанавливает услугу (service)', async () => {
-    const item = makeTrashItem({
-      entity_type: 'service',
-      entity_data: { id: 'svc-1', name: 'Замена масла' },
-    })
-    await restoreFromTrash(item)
-    expect(mockSupabase.from).toHaveBeenCalledWith('services')
-  })
-
-  it('восстанавливает заказ-наряд (work_order)', async () => {
-    const item = makeTrashItem({
-      entity_type: 'work_order',
-      entity_data: { id: 'wo-1' },
-    })
-    await restoreFromTrash(item)
-    expect(mockSupabase.from).toHaveBeenCalledWith('work_orders')
   })
 
   it('восстанавливает авто разборки с запчастями', async () => {

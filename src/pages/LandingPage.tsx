@@ -1,15 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Wrench, Car, Package, Users, BarChart3, ShieldCheck, Smartphone, ArrowRight, CheckCircle } from 'lucide-react'
 
-const FEATURES_STO = [
-  'Клиенты и автомобили',
-  'Заявки и заказ-наряды',
-  'История обслуживания',
-  'Публичный профиль клиента',
-  'Аналитика и доходы',
-  'Сотрудники и роли',
-]
-
 const FEATURES_PARTS = [
   'Автомобили на разборку',
   'Склад запчастей',
@@ -107,8 +98,8 @@ export default function LandingPage() {
             </h1>
 
             <p className="lp-fu-3" style={{ color: '#64748B', fontSize: 'clamp(15px, 2vw, 17px)', lineHeight: '1.7', maxWidth: '520px', margin: '0 auto 40px' }}>
-              Полная система управления для СТО и авторазборок.
-              Клиенты, автомобили, заявки, склад запчастей — всё в одном месте.
+              Полная система управления для авторазборки.
+              Автомобили на разборку, склад запчастей, заказы клиентов — всё в одном месте.
             </p>
 
             <div className="lp-fu-3" style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', width: '100%' }}>
@@ -126,27 +117,6 @@ export default function LandingPage() {
         {/* ── TWO SYSTEMS ─────────────────────────────────────── */}
         <section style={{ padding: '80px 20px', maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
-
-            {/* СТО */}
-            <div style={{ background: 'linear-gradient(135deg, rgba(30,58,95,0.5) 0%, rgba(15,23,42,0.8) 100%)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '16px', padding: '32px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                <div style={{ width: '44px', height: '44px', background: '#1D4ED8', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Wrench size={22} color="white" />
-                </div>
-                <div>
-                  <div className="bf" style={{ color: '#F1F5F9', fontSize: '24px', letterSpacing: '1px' }}>СТО</div>
-                  <div style={{ color: '#4B5563', fontSize: '13px' }}>Сервисный центр</div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {FEATURES_STO.map(f => (
-                  <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <CheckCircle size={15} className="lp-check" />
-                    <span style={{ color: '#CBD5E1', fontSize: '14px' }}>{f}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
 
             {/* Авторазборка */}
             <div style={{ background: 'linear-gradient(135deg, rgba(20,44,20,0.5) 0%, rgba(15,23,42,0.8) 100%)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '16px', padding: '32px' }}>
@@ -218,7 +188,7 @@ export default function LandingPage() {
             </div>
             <span className="bf" style={{ color: '#374151', fontSize: '14px', letterSpacing: '2px' }}>TSP CRM</span>
           </div>
-          <p style={{ color: '#1F2937', fontSize: '12px' }}>Система управления для СТО и авторазборок</p>
+          <p style={{ color: '#1F2937', fontSize: '12px' }}>Система управления для авторазборки</p>
         </footer>
 
       </div>

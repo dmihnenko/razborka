@@ -12,7 +12,7 @@ interface AdminPageHeaderProps {
 }
 
 /**
- * Шапка раздела админки в стиле СТО/Разборки (как PartsPageHeader):
+ * Шапка раздела админки в стиле Разборки (как PartsPageHeader):
  * белая, sticky, back / заголовок / подзаголовок / действия / footer.
  */
 export default function AdminPageHeader({ title, subtitle, backPath, actions, footer }: AdminPageHeaderProps) {

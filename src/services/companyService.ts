@@ -6,7 +6,7 @@ export interface Company {
 }
 
 export interface CreateCompanyParams {
-  type: 'sto' | 'parts'
+  type: 'parts'
   name: string
   phone: string
   address: string
@@ -16,17 +16,7 @@ export interface CreateCompanyParams {
 export interface CreateCompanyResult {
   id: string
   name: string
-  type: 'sto' | 'parts'
-}
-
-// Получить список активных СТО
-export async function getStoCompanies(): Promise<Company[]> {
-  const { data, error } = await supabase
-    .from('sto_companies')
-    .select('id, name')
-    .eq('is_active', true)
-  if (error) throw error
-  return data as Company[]
+  type: 'parts'
 }
 
 // Получить список активных авторазборок
@@ -88,11 +78,8 @@ export async function updatePartsCompanyContacts(
 
 // Создать компанию и привязать к пользователю
 export async function createCompanyAndAssign(params: CreateCompanyParams): Promise<CreateCompanyResult> {
-  const table = params.type === 'sto' ? 'sto_companies' : 'parts_companies'
-  const profileField = params.type === 'sto' ? 'sto_company_id' : 'parts_company_id'
-
   const { data: company, error: createError } = await supabase
-    .from(table)
+    .from('parts_companies')
     .insert({
       name: params.name.trim(),
       phone: params.phone || null,
@@ -105,7 +92,7 @@ export async function createCompanyAndAssign(params: CreateCompanyParams): Promi
 
   const { error: assignError } = await supabase
     .from('user_profiles')
-    .update({ [profileField]: company.id })
+    .update({ parts_company_id: company.id })
     .eq('id', params.userId)
   if (assignError) throw assignError
 

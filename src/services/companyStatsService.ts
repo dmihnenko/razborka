@@ -45,15 +45,18 @@ export interface CompanyDetail {
 
 async function fetchWorkers(col: string, id: string): Promise<CompanyWorker[]> {
   // Активные (не в корзине) сотрудники компании
-  let q = supabase.from('user_profiles').select('id, full_name, email, is_active').eq(col, id)
-  let { data, error } = await q.is('deleted_at', null)
+  const q = supabase.from('user_profiles').select('id, full_name, email, is_active').eq(col, id)
+  const res = await q.is('deleted_at', null)
+  let data = res.data
+  const error = res.error
   if (error && ((error as any).code === '42703' || /deleted_at/i.test(error.message))) {
-    ;({ data } = await supabase.from('user_profiles').select('id, full_name, email, is_active').eq(col, id))
+    const retry = await supabase.from('user_profiles').select('id, full_name, email, is_active').eq(col, id)
+    data = retry.data
   }
   return (data as CompanyWorker[]) || []
 }
 
-async function fetchSubscription(companyType: 'sto' | 'parts', id: string): Promise<CompanySubscriptionInfo | null> {
+async function fetchSubscription(companyType: 'parts', id: string): Promise<CompanySubscriptionInfo | null> {
   try {
     const { data } = await supabase
       .from('company_subscriptions')
@@ -69,38 +72,9 @@ async function fetchSubscription(companyType: 'sto' | 'parts', id: string): Prom
   }
 }
 
-export async function setCompanyActive(kind: 'sto' | 'parts', id: string, isActive: boolean): Promise<void> {
-  const table = kind === 'sto' ? 'sto_companies' : 'parts_companies'
-  const { error } = await supabase.from(table).update({ is_active: isActive }).eq('id', id)
+export async function setCompanyActive(_kind: 'parts', id: string, isActive: boolean): Promise<void> {
+  const { error } = await supabase.from('parts_companies').update({ is_active: isActive }).eq('id', id)
   if (error) throw error
-}
-
-// ── СТО ──────────────────────────────────────────────────────────────────────
-export async function fetchStoCompanyDetail(companyId: string): Promise<CompanyDetail> {
-  const [companyRes, workersList, subscription, appointments, customers, vehicles, workOrders, services] = await Promise.all([
-    supabase.from('sto_companies').select('id, name, phone, address, email, is_active').eq('id', companyId).single(),
-    fetchWorkers('sto_company_id', companyId),
-    fetchSubscription('sto', companyId),
-    countRows('appointments', 'sto_company_id', companyId),
-    countRows('customers', 'sto_company_id', companyId),
-    countRows('vehicles', 'sto_company_id', companyId),
-    countRows('work_orders', 'sto_company_id', companyId),
-    countRows('services', 'sto_company_id', companyId),
-  ])
-  if (companyRes.error) throw companyRes.error
-  return {
-    company: companyRes.data as CompanyInfo,
-    workers: workersList,
-    subscription,
-    stats: [
-      { key: 'appointments', label: 'Заявки', value: appointments },
-      { key: 'customers', label: 'Клиенты', value: customers },
-      { key: 'vehicles', label: 'Автомобили', value: vehicles },
-      { key: 'workOrders', label: 'Наряды', value: workOrders },
-      { key: 'services', label: 'Услуги', value: services },
-      { key: 'workers', label: 'Сотрудники', value: workersList.length },
-    ],
-  }
 }
 
 // ── Разборка ─────────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import {
-  Users, Shield, Settings, BarChart2, Building2,
+  Users, Shield, Settings, BarChart2,
   Store, CreditCard, MessageCircle, TrendingUp,
   Activity, CheckCircle2, AlertTriangle
 } from 'lucide-react'
@@ -26,14 +26,6 @@ export default function AdminPanel() {
       icon: Users,
       color: 'indigo',
       href: '/admin/users',
-    },
-    {
-      label: 'СТО',
-      value: stats?.stoCompanies ?? '—',
-      sub: 'активных компаний',
-      icon: Building2,
-      color: 'blue',
-      href: '/admin/sto',
     },
     {
       label: 'Разборок',
@@ -65,7 +57,6 @@ export default function AdminPanel() {
   const quickLinks = [
     { name: 'Пользователи',  href: '/admin/users',           icon: Users,         color: 'indigo', desc: 'Управление аккаунтами' },
     { name: 'Роли',          href: '/admin/roles',           icon: Shield,        color: 'purple', desc: 'Права доступа' },
-    { name: 'СТО',           href: '/admin/sto',             icon: Building2,     color: 'blue',   desc: 'Станции техобслуживания' },
     { name: 'Разборки',      href: '/admin/parts-companies', icon: Store,         color: 'orange', desc: 'Авторазборки' },
     { name: 'Подписки',      href: '/admin/subscriptions',   icon: CreditCard,    color: 'emerald',desc: 'Тарифы и оплаты' },
     { name: 'Поддержка',     href: '/admin/support',         icon: MessageCircle, color: 'gray',   desc: `${stats?.openTickets ?? 0} открытых` },
@@ -94,7 +85,7 @@ export default function AdminPanel() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {statCards.map(card => (
           <StatCard
             key={card.href}

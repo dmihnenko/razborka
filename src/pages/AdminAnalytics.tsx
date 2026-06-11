@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   PieChart, Pie, Cell,
 } from 'recharts'
-import { Users, ClipboardList, ShoppingCart } from 'lucide-react'
+import { Users, ShoppingCart } from 'lucide-react'
 import { fetchPlatformAnalytics } from '@/services/adminAnalyticsService'
 import { getAdminStats } from '@/services/adminService'
 import StatCard from '@/components/admin/StatCard'
@@ -51,9 +51,8 @@ export default function AdminAnalytics() {
       </div>
 
       {/* KPI за период */}
-      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <StatCard label="Новых пользователей" value={data?.totals.users ?? '—'} icon={Users} color="indigo" loading={isLoading} />
-        <StatCard label="Заявок создано" value={data?.totals.appointments ?? '—'} icon={ClipboardList} color="blue" loading={isLoading} />
         <StatCard label="Заказов запчастей" value={data?.totals.orders ?? '—'} icon={ShoppingCart} color="orange" loading={isLoading} />
       </div>
 
@@ -71,7 +70,6 @@ export default function AdminAnalytics() {
               <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E2E8F0', fontSize: 12 }} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Line type="monotone" dataKey="users" name="Пользователи" stroke="#6366F1" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="appointments" name="Заявки" stroke="#2563EB" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="orders" name="Заказы" stroke="#F59E0B" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
@@ -102,7 +100,6 @@ export default function AdminAnalytics() {
           <dl className="divide-y divide-gray-100 text-sm">
             <Row label="Всего пользователей" value={stats?.users} />
             <Row label="Активных" value={stats?.activeUsers} />
-            <Row label="Компаний СТО" value={stats?.stoCompanies} />
             <Row label="Разборок" value={stats?.partsCompanies} />
             <Row label="Активных подписок" value={stats?.subscriptions} />
             <Row label="Открытых обращений" value={stats?.openTickets} />

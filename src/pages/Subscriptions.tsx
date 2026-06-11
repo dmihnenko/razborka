@@ -2,16 +2,16 @@ import { useState, useMemo } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import {
   CreditCard, TrendingUp, Plus, Trash2, Calendar, Building2,
-  CheckCircle2, XCircle, Search, X, Infinity, Edit2, RotateCw, Users, ClipboardList, Car, Package,
+  CheckCircle2, XCircle, Search, X, Infinity, Edit2, RotateCw, Car, Package,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   getSubscriptionPlans, getAllCompanySubscriptions, getSubscriptionStats,
   deactivateSubscription, deleteCompanySubscription, assignSubscription,
-  getStoCompanies, getPartsCompanies,
+  getPartsCompanies,
   getSubscriptionRequests, approveSubscriptionRequest, rejectSubscriptionRequest,
-  getStoCompaniesUsage, getPartsCompaniesUsage,
+  getPartsCompaniesUsage,
 } from '@/services/subscriptionService'
 import type { CompanySubscription, Subscription } from '@/types/subscription'
 import { durationLabel } from '@/config/subscriptionPlans'
@@ -60,13 +60,11 @@ export default function Subscriptions() {
   const [activeTab, setActiveTab] = useState<'companies' | 'plans' | 'requests'>('companies')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [companyTypeFilter, setCompanyTypeFilter] = useState<'all' | 'sto' | 'parts'>('all')
-  const [planTypeFilter, setPlanTypeFilter] = useState<'sto' | 'parts'>('sto')
   const [renewing, setRenewing] = useState<CompanySubscription | null>(null)
   const [isAssignOpen, setIsAssignOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<Subscription | null>(null)
   const [assignForm, setAssignForm] = useState({
-    companyType: 'sto' as 'sto' | 'parts',
+    companyType: 'parts' as const,
     companyId: '',
     subscriptionId: '',
     months: 1,
@@ -77,10 +75,8 @@ export default function Subscriptions() {
   const { data: plans = [], isLoading: plansLoading } = useQuery({ queryKey: ['subscription-plans'], queryFn: getSubscriptionPlans })
   const { data: allSubs = [],  isLoading: subsLoading  } = useQuery({ queryKey: ['company-subscriptions'], queryFn: getAllCompanySubscriptions })
   const { data: stats } = useQuery({ queryKey: ['subscription-stats'], queryFn: getSubscriptionStats })
-  const { data: stoCompanies  = [] } = useQuery({ queryKey: ['sto-companies-list'],  queryFn: getStoCompanies,   enabled: assignForm.companyType === 'sto' })
-  const { data: partsCompanies = [] } = useQuery({ queryKey: ['parts-companies-list'], queryFn: getPartsCompanies, enabled: assignForm.companyType === 'parts' })
+  const { data: partsCompanies = [] } = useQuery({ queryKey: ['parts-companies-list'], queryFn: getPartsCompanies })
   const { data: requests = [] } = useQuery({ queryKey: ['subscription-requests'], queryFn: () => getSubscriptionRequests('pending') })
-  const { data: usageMap = {} } = useQuery({ queryKey: ['sto-companies-usage'], queryFn: getStoCompaniesUsage, staleTime: 2 * 60 * 1000 })
   const { data: partsUsageMap = {} } = useQuery({ queryKey: ['parts-companies-usage'], queryFn: getPartsCompaniesUsage, staleTime: 2 * 60 * 1000 })
 
   const invalidate = () => {
@@ -101,7 +97,7 @@ export default function Subscriptions() {
 
   const assignMutation = useMutation({
     mutationFn: assignSubscription,
-    onSuccess: () => { invalidate(); toast.success('Подписка назначена'); setIsAssignOpen(false); setAssignForm({ companyType: 'sto', companyId: '', subscriptionId: '', months: 1 }) },
+    onSuccess: () => { invalidate(); toast.success('Подписка назначена'); setIsAssignOpen(false); setAssignForm({ companyType: 'parts', companyId: '', subscriptionId: '', months: 1 }) },
     onError: (e: any) => toast.error(e.message || 'Ошибка'),
   })
 
@@ -141,13 +137,10 @@ export default function Subscriptions() {
     if (statusFilter !== 'all') {
       list = list.filter(s => subStatus(s) === statusFilter)
     }
-    if (companyTypeFilter !== 'all') {
-      list = list.filter(s => s.company_type === companyTypeFilter)
-    }
     return list
-  }, [allSubs, search, statusFilter, companyTypeFilter])
+  }, [allSubs, search, statusFilter])
 
-  const companies  = assignForm.companyType === 'sto' ? stoCompanies : partsCompanies
+  const companies  = partsCompanies
   const filteredPlans = plans.filter(p => p.company_type === assignForm.companyType)
   const selectedPlan  = plans.find(p => p.id === assignForm.subscriptionId)
 
@@ -170,7 +163,7 @@ export default function Subscriptions() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Подписки</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Управление тарифами СТО и авторазборок</p>
+          <p className="text-sm text-gray-500 mt-0.5">Управление тарифами авторазборок</p>
         </div>
         <button onClick={() => setIsAssignOpen(true)}
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors">
@@ -232,8 +225,8 @@ export default function Subscriptions() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <span className="font-semibold text-gray-900 text-sm truncate">{r.company_name}</span>
-                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${r.company_type === 'sto' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-                          {r.company_type === 'sto' ? 'СТО' : 'Разборка'}
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                          Разборка
                         </span>
                       </div>
                       <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
@@ -279,15 +272,6 @@ export default function Subscriptions() {
                   className="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
                 {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>}
               </div>
-              {/* Фильтр по типу */}
-              <div className="inline-flex rounded-xl bg-gray-100 p-1">
-                {([['all','Все'],['sto','СТО'],['parts','Разборка']] as const).map(([v, l]) => (
-                  <button key={v} onClick={() => setCompanyTypeFilter(v)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${companyTypeFilter === v ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
-                    {l}
-                  </button>
-                ))}
-              </div>
               <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white">
                 <option value="all">Все статусы</option>
@@ -318,8 +302,8 @@ export default function Subscriptions() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
                           <span className="font-semibold text-gray-900 text-sm truncate">{sub.company?.name || '—'}</span>
-                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${sub.company_type === 'sto' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
-                            {sub.company_type === 'sto' ? 'СТО' : 'Разборка'}
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
+                            Разборка
                           </span>
                           <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${stStyle.cls}`}>{stStyle.label}</span>
                         </div>
@@ -335,25 +319,8 @@ export default function Subscriptions() {
                             </span>
                           )}
                         </div>
-                        {/* Загрузка против лимитов (только СТО) */}
-                        {sub.company_type === 'sto' && usageMap[sub.company_id] && sub.subscription && (
-                          <div className="flex items-center gap-3 mt-1.5 text-[11px] text-gray-500 flex-wrap">
-                            {([
-                              ['Мех', usageMap[sub.company_id].workers, sub.subscription.max_workers],
-                              ['Заявки/мес', usageMap[sub.company_id].appointments, sub.subscription.max_appointments],
-                              ['Клиенты', usageMap[sub.company_id].customers, sub.subscription.max_customers],
-                            ] as const).map(([label, used, max]) => {
-                              const over = max != null && used >= max
-                              return (
-                                <span key={label} className="inline-flex items-center gap-1">
-                                  {label}: <b className={over ? 'text-red-600' : 'text-gray-700'}>{used}/{max ?? '∞'}</b>
-                                </span>
-                              )
-                            })}
-                          </div>
-                        )}
                         {/* Загрузка против лимитов (разборка) */}
-                        {sub.company_type === 'parts' && partsUsageMap[sub.company_id] && sub.subscription && (
+                        {partsUsageMap[sub.company_id] && sub.subscription && (
                           <div className="flex items-center gap-3 mt-1.5 text-[11px] text-gray-500 flex-wrap">
                             {([
                               ['Машины', partsUsageMap[sub.company_id].vehicles, sub.subscription.max_vehicles],
@@ -407,22 +374,12 @@ export default function Subscriptions() {
         {/* ── Plans tab ── */}
         {activeTab === 'plans' && (
           <div className="p-4 sm:p-5">
-            {/* Фильтр тарифов по типу */}
-            <div className="inline-flex rounded-xl bg-gray-100 p-1 mb-4">
-              {([['sto','СТО'],['parts','Разборка']] as const).map(([v, l]) => (
-                <button key={v} onClick={() => setPlanTypeFilter(v)}
-                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${planTypeFilter === v ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
-                  {l}
-                </button>
-              ))}
-            </div>
             {plansLoading ? (
               <div className="flex justify-center py-12"><Spinner size="lg" /></div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {plans.filter(p => p.company_type === planTypeFilter).map(plan => {
-                  const isParts = plan.company_type === 'parts'
-                  const clr = isParts ? { color: '#16A34A', bg: '#F0FDF4' } : { color: '#2563EB', bg: '#EFF6FF' }
+                {plans.map(plan => {
+                  const clr = { color: '#16A34A', bg: '#F0FDF4' }
                   const companiesOnPlan = allSubs.filter(s => s.subscription_id === plan.id && s.is_active).length
 
                   return (
@@ -432,7 +389,7 @@ export default function Subscriptions() {
                       <div className="p-5">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-[11px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: clr.color }}>
-                            {isParts ? 'Разборка' : 'СТО'}
+                            Разборка
                           </span>
                           <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
                             {plan.type === 'lifetime' ? 'Бессрочный' : plan.price === 0 ? 'Демо' : 'Месячный'}
@@ -454,16 +411,10 @@ export default function Subscriptions() {
                         <div className="mb-4 space-y-1.5">
                           {plan.is_custom ? (
                             <p className="text-xs font-medium text-gray-500">Индивидуальные условия</p>
-                          ) : isParts ? (
+                          ) : (
                             <>
                               <p className="text-xs text-gray-600 flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-gray-400" /> Машин: <span className="font-semibold">{plan.max_vehicles ?? '∞'}</span></p>
                               <p className="text-xs text-gray-600 flex items-center gap-1.5"><Package className="w-3.5 h-3.5 text-gray-400" /> Запчастей: <span className="font-semibold">{plan.max_parts ?? '∞'}</span></p>
-                            </>
-                          ) : (
-                            <>
-                              <p className="text-xs text-gray-600 flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-gray-400" /> Механиков: <span className="font-semibold">{plan.max_workers ?? '∞'}</span></p>
-                              <p className="text-xs text-gray-600 flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5 text-gray-400" /> Заявок/мес: <span className="font-semibold">{plan.max_appointments ?? '∞'}</span></p>
-                              <p className="text-xs text-gray-600 flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-gray-400" /> Клиентов: <span className="font-semibold">{plan.max_customers ?? '∞'}</span></p>
                             </>
                           )}
                         </div>
@@ -601,20 +552,6 @@ function AssignModal({ plans, allPlans, companies, form, onFormChange, onSubmit,
         </div>
 
         <div className="p-5 space-y-4 overflow-y-auto flex-1">
-          {/* Company type */}
-          <div>
-            <label className="text-sm font-semibold text-gray-700 block mb-2">Тип компании</label>
-            <div className="flex gap-2">
-              {['sto', 'parts'].map(t => (
-                <button key={t} type="button"
-                  onClick={() => onFormChange({ ...form, companyType: t, companyId: '', subscriptionId: '' })}
-                  className={`flex-1 py-2 text-sm font-semibold rounded-xl border-2 transition-all ${form.companyType === t ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-                  {t === 'sto' ? 'СТО' : 'Авторазборка'}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Company */}
           <div>
             <label className="text-sm font-semibold text-gray-700 block mb-2">Компания *</label>
@@ -701,9 +638,6 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
     name:             plan.name,
     description:      plan.description || '',
     price:            String(plan.price),
-    max_workers:      plan.max_workers != null ? String(plan.max_workers) : '',
-    max_appointments: plan.max_appointments != null ? String(plan.max_appointments) : '',
-    max_customers:    plan.max_customers != null ? String(plan.max_customers) : '',
     max_vehicles:     plan.max_vehicles != null ? String(plan.max_vehicles) : '',
     max_parts:        plan.max_parts != null ? String(plan.max_parts) : '',
     sort_order:       plan.sort_order != null ? String(plan.sort_order) : '0',
@@ -719,9 +653,6 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
         name:             form.name.trim(),
         description:      form.description.trim() || null,
         price:            Number(form.price),
-        max_workers:      numOrNull(form.max_workers),
-        max_appointments: numOrNull(form.max_appointments),
-        max_customers:    numOrNull(form.max_customers),
         max_vehicles:     numOrNull(form.max_vehicles),
         max_parts:        numOrNull(form.max_parts),
         sort_order:       Number(form.sort_order) || 0,
@@ -761,18 +692,10 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
           {field('Название', 'name')}
           {field('Описание', 'description')}
           {field('Цена (₴/мес)', 'price', 'number')}
-          {plan.company_type === 'parts' ? (
-            <div className="grid grid-cols-2 gap-2">
-              {field('Машины', 'max_vehicles', 'number')}
-              {field('Запчасти', 'max_parts', 'number')}
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-2">
-              {field('Механики', 'max_workers', 'number')}
-              {field('Заявок/мес', 'max_appointments', 'number')}
-              {field('Клиентов', 'max_customers', 'number')}
-            </div>
-          )}
+          <div className="grid grid-cols-2 gap-2">
+            {field('Машины', 'max_vehicles', 'number')}
+            {field('Запчасти', 'max_parts', 'number')}
+          </div>
           {field('Порядок', 'sort_order', 'number')}
           <p className="text-xs text-gray-400">
             Пустой лимит = без ограничения (например, тариф «Персональный»).

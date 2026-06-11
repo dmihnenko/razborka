@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Spinner } from '@/components/ui/Spinner'
-import { Link, useLocation } from 'react-router-dom'
-import { ArrowLeft, Trash2, RotateCcw, User, Car, Wrench, Package, Tag, Users, Calendar, ShoppingCart } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { ArrowLeft, Trash2, RotateCcw, Car, Package, Tag, Users, ShoppingCart } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatDistanceToNow, differenceInDays } from 'date-fns'
 import { ru } from 'date-fns/locale'
@@ -18,11 +18,6 @@ import {
 } from '@/services/trashService'
 
 const ENTITY_ICONS: Record<TrashEntityType, React.ReactNode> = {
-  customer: <User className="w-5 h-5" />,
-  vehicle: <Car className="w-5 h-5" />,
-  service: <Wrench className="w-5 h-5" />,
-  work_order: <Wrench className="w-5 h-5" />,
-  appointment: <Calendar className="w-5 h-5" />,
   parts_order: <ShoppingCart className="w-5 h-5" />,
   parts_vehicle: <Car className="w-5 h-5" />,
   parts_inventory: <Package className="w-5 h-5" />,
@@ -31,11 +26,6 @@ const ENTITY_ICONS: Record<TrashEntityType, React.ReactNode> = {
 }
 
 const ENTITY_COLORS: Record<TrashEntityType, string> = {
-  customer: 'bg-blue-100 text-blue-600',
-  vehicle: 'bg-purple-100 text-purple-600',
-  service: 'bg-green-100 text-green-600',
-  work_order: 'bg-teal-100 text-teal-600',
-  appointment: 'bg-sky-100 text-sky-600',
   parts_order: 'bg-amber-100 text-amber-600',
   parts_vehicle: 'bg-orange-100 text-orange-600',
   parts_inventory: 'bg-red-100 text-red-600',
@@ -51,28 +41,20 @@ export default function Trash() {
   const { data: profile } = useUserProfile()
   const queryClient = useQueryClient()
   const { confirm: showConfirm, dialogProps } = useConfirm()
-  const location = useLocation()
 
-  const isPartsContext = location.pathname.startsWith('/parts')
-  const stoCompanyId = !isPartsContext ? (profile?.sto_company_id ?? null) : null
-  const partsCompanyId = isPartsContext ? (profile?.parts_company_id ?? null) : null
-  const backPath = isPartsContext ? '/parts/settings' : '/sto/settings'
+  const partsCompanyId = profile?.parts_company_id ?? null
+  const backPath = '/parts/settings'
 
   const { data: items = [], isLoading } = useQuery({
-    queryKey: ['trash', stoCompanyId, partsCompanyId],
-    queryFn: () => getTrashItems({ stoCompanyId, partsCompanyId }),
-    enabled: !!(stoCompanyId || partsCompanyId),
+    queryKey: ['trash', partsCompanyId],
+    queryFn: () => getTrashItems({ partsCompanyId }),
+    enabled: !!partsCompanyId,
   })
 
   const restoreMutation = useMutation({
     mutationFn: (item: TrashItem) => restoreFromTrash(item),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trash'] })
-      queryClient.invalidateQueries({ queryKey: ['customers'] })
-      queryClient.invalidateQueries({ queryKey: ['vehicles'] })
-      queryClient.invalidateQueries({ queryKey: ['services'] })
-      queryClient.invalidateQueries({ queryKey: ['work_orders'] })
-      queryClient.invalidateQueries({ queryKey: ['appointments'] })
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
       queryClient.invalidateQueries({ queryKey: ['parts-vehicles'] })
       queryClient.invalidateQueries({ queryKey: ['parts-customers'] })

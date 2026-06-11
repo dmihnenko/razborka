@@ -2,19 +2,15 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
-  ArrowLeft, Phone, MapPin, Mail, Building2, Store,
-  ClipboardList, Users, Car, Wrench, Tag, Package, ShoppingCart, UserCircle,
-  CreditCard, Power, PowerOff,
+  ArrowLeft, Phone, MapPin, Mail, Store,
+  Users, Car, Package, ShoppingCart, UserCircle,
+  CreditCard, Power, PowerOff, Building2,
 } from 'lucide-react'
 import type { CompanyDetail } from '@/services/companyStatsService'
 import { setCompanyActive } from '@/services/companyStatsService'
 
 const STAT_ICONS: Record<string, { Icon: any; cls: string }> = {
-  appointments: { Icon: ClipboardList, cls: 'bg-violet-50 text-violet-600' },
   customers:    { Icon: UserCircle,    cls: 'bg-blue-50 text-blue-600' },
-  vehicles:     { Icon: Car,           cls: 'bg-emerald-50 text-emerald-600' },
-  workOrders:   { Icon: Wrench,        cls: 'bg-amber-50 text-amber-600' },
-  services:     { Icon: Tag,           cls: 'bg-pink-50 text-pink-600' },
   workers:      { Icon: Users,         cls: 'bg-indigo-50 text-indigo-600' },
   inventory:    { Icon: Package,       cls: 'bg-orange-50 text-orange-600' },
   partsVehicles:{ Icon: Car,           cls: 'bg-emerald-50 text-emerald-600' },
@@ -24,15 +20,15 @@ const STAT_ICONS: Record<string, { Icon: any; cls: string }> = {
 interface Props {
   detail?: CompanyDetail
   isLoading: boolean
-  kind: 'sto' | 'parts'
+  kind: 'parts'
   backPath: string
 }
 
 export function CompanyStatsView({ detail, isLoading, kind, backPath }: Props) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const KindIcon = kind === 'sto' ? Building2 : Store
-  const kindLabel = kind === 'sto' ? 'СТО' : 'Разборка'
+  const KindIcon = Store
+  const kindLabel = 'Разборка'
   const company = detail?.company
   const queryKey = [`${kind}-company-detail`, company?.id]
 
@@ -58,7 +54,7 @@ export function CompanyStatsView({ detail, isLoading, kind, backPath }: Props) {
           <div className="h-16 flex items-center text-gray-400 text-sm">Загрузка…</div>
         ) : (
           <div className="flex items-start gap-3 sm:gap-4">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${kind === 'sto' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-orange-50 text-orange-600">
               <KindIcon className="w-6 h-6" />
             </div>
             <div className="flex-1 min-w-0">

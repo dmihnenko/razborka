@@ -6,10 +6,9 @@ export interface Subscription {
   type: SubscriptionType
   price: number
   description: string | null
-  company_type: 'sto' | 'parts'
+  company_type: 'parts'
   is_active: boolean
   // Limits (null = unlimited)
-  max_appointments: number | null
   max_customers: number | null
   max_workers: number | null
   // Лимиты разборки
@@ -25,7 +24,7 @@ export interface Subscription {
 
 export interface CompanySubscription {
   id: string
-  company_type: 'sto' | 'parts'
+  company_type: 'parts'
   company_id: string
   subscription_id: string
   start_date: string
@@ -47,7 +46,7 @@ export interface SubscriptionStats {
 }
 
 export interface AssignSubscriptionInput {
-  company_type: 'sto' | 'parts'
+  company_type: 'parts'
   company_id: string
   subscription_id: string
   start_date?: string
@@ -55,7 +54,6 @@ export interface AssignSubscriptionInput {
 }
 
 export interface SubscriptionUsage {
-  appointments: number
   customers: number
   workers: number
   // Разборка
@@ -65,7 +63,7 @@ export interface SubscriptionUsage {
 
 export interface SubscriptionRequest {
   id: string
-  company_type: 'sto' | 'parts'
+  company_type: 'parts'
   company_id: string
   requested_by: string | null
   plan_id: string | null
