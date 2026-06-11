@@ -5,7 +5,6 @@ import { Plus, Edit2, Trash2, Building2, Users, CreditCard, BarChart3 } from 'lu
 import { toast } from 'sonner';
 import { useConfirm } from '@/hooks/useConfirm';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
-import { isCompanyActive } from '@/utils/company';
 import {
   fetchStoCompanies,
   createStoCompany,
@@ -187,9 +186,9 @@ export default function StoCompanies() {
                 <div>
                   <h3 className="font-semibold text-gray-900 group-hover:text-purple-700 transition-colors">{sto.name}</h3>
                   <span className={`text-xs px-2 py-1 rounded-full ${
-                    isCompanyActive(sto) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    sto.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                   }`}>
-                    {isCompanyActive(sto) ? 'Активно' : 'Неактивно'}
+                    {sto.is_active ? 'Активно' : 'Неактивно'}
                   </span>
                 </div>
               </div>
@@ -243,12 +242,12 @@ export default function StoCompanies() {
             <div className="flex justify-between items-center pt-4 border-t">
               <div className="flex space-x-2">
                 <button
-                  onClick={() => toggleActiveMutation.mutate({ id: sto.id, isActive: isCompanyActive(sto) })}
+                  onClick={() => toggleActiveMutation.mutate({ id: sto.id, isActive: sto.is_active })}
                   className={`text-sm font-medium ${
-                    isCompanyActive(sto) ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'
+                    sto.is_active ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'
                   }`}
                 >
-                  {isCompanyActive(sto) ? 'Деактивировать' : 'Активировать'}
+                  {sto.is_active ? 'Деактивировать' : 'Активировать'}
                 </button>
               </div>
               <div className="flex space-x-2">

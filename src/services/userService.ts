@@ -249,7 +249,7 @@ export async function fetchStoCompanies() {
   const { data, error } = await supabase
     .from('sto_companies')
     .select('id, name')
-    .or('is_active.is.null,is_active.eq.true')
+    .eq('is_active', true)
     .order('name')
   if (error) throw error
   return data as Array<{ id: string; name: string }>
@@ -259,7 +259,7 @@ export async function fetchPartsCompanies() {
   const { data, error } = await supabase
     .from('parts_companies')
     .select('id, name')
-    .or('is_active.is.null,is_active.eq.true')
+    .eq('is_active', true)
     .order('name')
   if (error) throw error
   return data as Array<{ id: string; name: string }>
