@@ -1,4 +1,4 @@
-# TSP — CRM для СТО и авторазборок
+# AutoCRM — CRM для СТО и авторазборок
 
 React 18 + TypeScript + Vite · TanStack Query · Supabase (Postgres + Auth + Edge Functions + RLS) · Tailwind · PWA · деплой на Netlify по пушу в `master`. UI на русском, mobile-first. Мульти-тенант: данные разделены по `sto_company_id` / `parts_company_id`; роли — `admin`, `sto_owner`, `sto_worker`, `parts_owner`, `parts_worker`, `user`.
 

@@ -573,7 +573,7 @@ export default function PublicPartsItemView() {
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-300 mt-6">
-          Страница сгенерирована автоматически · TSP CRM
+          Страница сгенерирована автоматически · AutoCRM
         </p>
       </div>
 

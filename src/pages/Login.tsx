@@ -303,7 +303,7 @@ export default function Login() {
             <div style={{ width:'42px', height:'42px', background:'#2563EB', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
               <Wrench size={22} color="white" />
             </div>
-            <span className="brand-font text-white" style={{ fontSize:'26px', letterSpacing:'3px' }}>TSP CRM</span>
+            <span className="brand-font text-white" style={{ fontSize:'26px', letterSpacing:'3px' }}>AutoCRM</span>
           </div>
 
           {/* Hero text */}
@@ -344,7 +344,7 @@ export default function Login() {
               <div style={{ width:'36px', height:'36px', background:'#2563EB', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 <Wrench size={18} color="white" />
               </div>
-              <span className="brand-font text-white" style={{ fontSize:'22px', letterSpacing:'3px' }}>TSP CRM</span>
+              <span className="brand-font text-white" style={{ fontSize:'22px', letterSpacing:'3px' }}>AutoCRM</span>
             </div>
 
             <div className="fu fu-1">
