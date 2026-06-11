@@ -70,13 +70,22 @@ export default function LandingPage() {
               </div>
               <span className="bf" style={{ color: '#F1F5F9', fontSize: '20px', letterSpacing: '2px' }}>TSP CRM</span>
             </div>
-            <button
-              onClick={() => navigate('/login')}
-              className="lp-btn-primary"
-              style={{ color: 'white', fontWeight: '600', fontSize: '13px', padding: '8px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
-            >
-              Войти
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                onClick={() => navigate('/market')}
+                className="lp-btn-ghost"
+                style={{ color: '#CBD5E1', fontWeight: '600', fontSize: '13px', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}
+              >
+                Каталог запчастей
+              </button>
+              <button
+                onClick={() => navigate('/login')}
+                className="lp-btn-primary"
+                style={{ color: 'white', fontWeight: '600', fontSize: '13px', padding: '8px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+              >
+                Войти
+              </button>
+            </div>
           </div>
         </nav>
 
@@ -109,6 +118,13 @@ export default function LandingPage() {
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'white', fontWeight: '600', fontSize: '15px', padding: '14px 28px', borderRadius: '10px', border: 'none', cursor: 'pointer', width: 'clamp(200px, 60vw, 280px)', justifyContent: 'center' }}
               >
                 Начать работу <ArrowRight size={16} />
+              </button>
+              <button
+                onClick={() => navigate('/market')}
+                className="lp-btn-ghost"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#CBD5E1', fontWeight: '600', fontSize: '15px', padding: '14px 28px', borderRadius: '10px', cursor: 'pointer', width: 'clamp(200px, 60vw, 280px)', justifyContent: 'center' }}
+              >
+                <Package size={16} /> Каталог запчастей
               </button>
             </div>
           </div>

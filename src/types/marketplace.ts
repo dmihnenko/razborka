@@ -1,0 +1,123 @@
+// ============================================================================
+// Types для публичного маркетплейса запчастей (/market)
+// ============================================================================
+
+export type MarketCondition = 'new' | 'used' | 'damaged'
+export type MarketCurrency = 'UAH' | 'USD'
+export type MarketSort = 'new' | 'price_asc' | 'price_desc'
+export type MarketplaceOrderStatus = 'new' | 'viewed' | 'closed'
+
+/** Фото из jsonb-колонки parts_inventory.photos (imgbb) */
+export interface MarketPhoto {
+  url: string
+  thumb_url?: string
+  display_url?: string
+  medium_url?: string
+}
+
+/** Контакты продавца (разборки) — публичные поля parts_companies */
+export interface MarketCompanyContact {
+  id: string
+  name: string
+  phone?: string | null
+  telegram?: string | null
+  address?: string | null
+  email?: string | null
+  description?: string | null
+}
+
+export interface MarketPartVehicle {
+  make: string
+  model: string
+  year?: number | null
+  vin?: string | null
+}
+
+/** Публичная карточка запчасти (только безопасные поля) */
+export interface MarketPart {
+  id: string
+  name: string
+  partNumber?: string | null
+  description?: string | null
+  condition: MarketCondition | string
+  quantity: number
+  sellingPrice: number
+  priceCurrency: MarketCurrency
+  /** Первое фото для карточки (photo_url либо photos[0]) */
+  photoUrl?: string | null
+  /** Полный массив фото для галереи */
+  photos?: MarketPhoto[]
+  categoryName?: string | null
+  vehicle?: MarketPartVehicle | null
+  company: MarketCompanyContact
+}
+
+/** Разборка в публичном списке поставщиков */
+export interface MarketSupplier {
+  id: string
+  name: string
+  phone?: string | null
+  telegram?: string | null
+  address?: string | null
+  email?: string | null
+  description?: string | null
+  /** Число доступных к продаже товаров */
+  availableParts: number
+}
+
+export interface MarketCategory {
+  id: string
+  name: string
+  count: number
+}
+
+/** Позиция корзины (хранится в localStorage, ключ 'tsp_market_cart') */
+export interface CartItem {
+  inventoryId: string
+  name: string
+  sellingPrice: number
+  priceCurrency: MarketCurrency
+  photoUrl?: string | null
+  quantity: number
+  companyId: string
+  companyName: string
+  condition?: string
+}
+
+export interface MarketplaceOrderItem {
+  id: string
+  name: string
+  sellingPrice?: number | null
+  priceCurrency: MarketCurrency
+  quantity: number
+  photoUrl?: string | null
+}
+
+/** Заявка покупателя (marketplace_orders) — для кабинета разборки */
+export interface MarketplaceOrder {
+  id: string
+  partsCompanyId: string
+  buyerName?: string | null
+  buyerPhone: string
+  comment?: string | null
+  status: MarketplaceOrderStatus
+  totalAmount: number
+  createdAt: string
+  items: MarketplaceOrderItem[]
+}
+
+/** Фильтры каталога */
+export interface MarketFilters {
+  search?: string
+  categoryId?: string
+  condition?: MarketCondition
+  companyId?: string
+  make?: string
+  minPrice?: number
+  maxPrice?: number
+  sort?: MarketSort
+  /** Страница, 1-based (по умолчанию 1) */
+  page?: number
+  /** Размер страницы (по умолчанию 24) */
+  pageSize?: number
+}

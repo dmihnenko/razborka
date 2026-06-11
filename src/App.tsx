@@ -54,8 +54,19 @@ const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'))
 const AdminSettings = lazy(() => import('./pages/AdminSettings'))
 const AdminAccessRequests = lazy(() => import('./pages/AdminAccessRequests'))
 const PartsSubscriptionPage = lazy(() => import('./pages/PartsSubscriptionPage'))
+const PartsMarketOrders = lazy(() => import('./pages/PartsMarketOrders'))
+
+// Публичный маркетплейс запчастей
+const MarketLayout = lazy(() => import('./components/market/MarketLayout'))
+const MarketHome = lazy(() => import('./pages/market/MarketHome'))
+const MarketCatalog = lazy(() => import('./pages/market/MarketCatalog'))
+const MarketProductPage = lazy(() => import('./pages/market/MarketProductPage'))
+const MarketSuppliers = lazy(() => import('./pages/market/MarketSuppliers'))
+const MarketSupplierPage = lazy(() => import('./pages/market/MarketSupplierPage'))
+const MarketCart = lazy(() => import('./pages/market/MarketCart'))
 
 import { useAuth } from './hooks/useAuth'
+import { CartProvider } from './hooks/useCart'
 import { useUserProfile } from './hooks/useUserProfile'
 import { getDefaultRouteForRoles } from './config/navigation'
 import { useQueryClient } from '@tanstack/react-query'
@@ -157,6 +168,7 @@ function App() {
   return (
     <ErrorBoundary>
       <AlertProvider>
+        <CartProvider>
         <VersionChecker />
         <Version />
         <ImpersonationBanner />
@@ -177,6 +189,16 @@ function App() {
 
         {/* Публичная страница запчасти */}
         <Route path="/public/parts-item/:id" element={<PublicPartsItemView />} />
+
+        {/* Публичный маркетплейс запчастей */}
+        <Route path="/market" element={<MarketLayout />}>
+          <Route index element={<MarketHome />} />
+          <Route path="catalog" element={<MarketCatalog />} />
+          <Route path="part/:id" element={<MarketProductPage />} />
+          <Route path="suppliers" element={<MarketSuppliers />} />
+          <Route path="supplier/:id" element={<MarketSupplierPage />} />
+          <Route path="cart" element={<MarketCart />} />
+        </Route>
 
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<HomeRedirect />} />
@@ -200,6 +222,7 @@ function App() {
           <Route path="parts/inventory/no-price" element={<PartsNoPricePage />} />
           <Route path="parts/inventory/:id" element={<PartsInventoryItemPage />} />
           <Route path="parts/orders" element={<PartsOrders />} />
+          <Route path="parts/market-orders" element={<PartsMarketOrders />} />
           <Route path="parts/orders/create" element={<PartsCreateOrder />} />
           <Route path="parts/orders/:id" element={<PartsOrderDetails />} />
           <Route path="parts/customers" element={<PartsCustomers />} />
@@ -231,6 +254,7 @@ function App() {
       </Routes>
     </Suspense>
     </BrowserRouter>
+    </CartProvider>
   </AlertProvider>
 </ErrorBoundary>
   )

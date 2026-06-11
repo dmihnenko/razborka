@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { getUserRolesWithNames, getEmailByUsername } from '@/services/userService'
 import { toast } from 'sonner'
@@ -524,6 +525,17 @@ export default function Login() {
               </div>
 
             </form>
+
+            <div style={{ textAlign:'center', marginTop:'14px' }}>
+              <Link
+                to="/market"
+                style={{ color:'#64748B', fontSize:'13px', textDecoration:'none', transition:'color 0.15s' }}
+                onMouseOver={e => (e.currentTarget.style.color = '#94A3B8')}
+                onMouseOut={e => (e.currentTarget.style.color = '#64748B')}
+              >
+                Смотреть каталог запчастей →
+              </Link>
+            </div>
           </div>
         </div>
       </div>

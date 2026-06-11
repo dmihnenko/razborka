@@ -10,6 +10,7 @@ import {
   CircleUser,
   ShoppingBag,
   CreditCard,
+  Inbox,
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -33,6 +34,7 @@ export const partsOwnerMenu: MenuItem[] = [
   { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package },
   { name: 'Магазин', href: '/parts/inventory?source=shop', icon: ShoppingBag },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart },
+  { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox },
   { name: 'Клиенты', href: '/parts/customers', icon: Users },
   { name: 'Сотрудники', href: '/parts/employees', icon: Users },
   { name: 'Аналитика', href: '/parts/analytics', icon: LineChart },
@@ -49,6 +51,7 @@ export const partsWorkerMenu: MenuItem[] = [
   { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package },
   { name: 'Магазин', href: '/parts/inventory?source=shop', icon: ShoppingBag },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart },
+  { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox },
   { name: 'Клиенты', href: '/parts/customers', icon: Users },
   { name: 'Профиль', href: '/profile', icon: CircleUser },
 ];
