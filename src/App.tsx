@@ -200,8 +200,11 @@ function App() {
           <Route path="cart" element={<MarketCart />} />
         </Route>
 
-        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route index element={<HomeRedirect />} />
+        {/* Корень: гость → публичный маркетплейс, авторизованный → его раздел по роли */}
+        <Route path="/" element={<RootGate />} />
+
+        {/* Приложение — требует вход */}
+        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="dashboard" element={<Navigate to="/" replace />} />
           <Route path="users" element={<Users />} />
           <Route path="users/new" element={<UserCreate />} />
@@ -275,13 +278,26 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-// Стартовая страница «/» — редирект по ролям пользователя.
+// Корень «/»: гость → публичный маркетплейс, авторизованный → его раздел по роли.
 // Админ → /admin, разборка → /parts/dashboard, остальные → /my-vehicles.
-function HomeRedirect() {
-  const { data: profile } = useUserProfile()
+function RootGate() {
+  const { user, loading } = useAuth()
+  const { data: profile, isLoading: profileLoading } = useUserProfile()
+
+  // Пока определяется сессия — скелетон (без «прыжка» на логин)
+  if (loading) {
+    return <LayoutSkeleton />
+  }
+  // Гость → публичный маркетплейс запчастей
+  if (!user) {
+    return <Navigate to="/market" replace />
+  }
+  // Авторизован, профиль ещё грузится
+  if (profileLoading && !profile) {
+    return <LayoutSkeleton />
+  }
   const roleNames: string[] = profile?.roles?.map((r: any) => r.name) || []
-  const target = getDefaultRouteForRoles(roleNames)
-  return <Navigate to={target} replace />
+  return <Navigate to={getDefaultRouteForRoles(roleNames)} replace />
 }
 
 export default App
