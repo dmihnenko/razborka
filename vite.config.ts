@@ -39,9 +39,9 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
         id: '/',
-        name: 'CRM',
-        short_name: 'CRM СТО',
-        description: 'Система управления автосервисом: клиенты, заявки, склад, сотрудники',
+        name: 'Авторазборка',
+        short_name: 'Авторазборка',
+        description: 'Авторазборка — учёт авто и запчастей, маркетплейс запчастей, заказы и клиенты',
         lang: 'ru',
         dir: 'ltr',
         theme_color: '#2563eb',
