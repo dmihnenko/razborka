@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { getUserRolesWithNames, getEmailByUsername } from '@/services/userService'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { getDefaultRouteForRoles } from '../config/navigation'
-import { Mail, Lock, AtSign, Eye, EyeOff, Package, ArrowRight, Cog, ShieldCheck, BarChart3, Users } from 'lucide-react'
+import { Mail, Lock, AtSign, Eye, EyeOff, ShieldCheck, BarChart3, Users } from 'lucide-react'
 import { Logo } from '@/components/brand/Logo'
 
 export default function Login() {
@@ -651,32 +651,6 @@ export default function Login() {
                 </div>
               </motion.form>
             </AnimatePresence>
-
-            {/* Bottom links: catalog + business */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.25, duration: 0.4 }}
-              className="mt-6 pt-5 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-3 border-t border-gray-200"
-            >
-              <Link
-                to="/market"
-                className="inline-flex items-center gap-1.5 min-h-[44px] px-2.5 text-xs font-medium text-gray-500 hover:text-gray-800 transition-colors duration-150 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
-                <Package size={13} strokeWidth={1.5} aria-hidden="true" />
-                Каталог запчастей
-                <ArrowRight size={11} strokeWidth={2} aria-hidden="true" />
-              </Link>
-              <span className="hidden sm:block w-px h-3.5 bg-gray-300" aria-hidden="true" />
-              <Link
-                to="/business"
-                className="inline-flex items-center gap-1.5 min-h-[44px] px-2.5 text-xs font-semibold text-primary hover:text-blue-700 transition-colors duration-150 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
-                <Cog size={13} strokeWidth={1.5} aria-hidden="true" />
-                Открыть авторазборку
-                <ArrowRight size={11} strokeWidth={2} aria-hidden="true" />
-              </Link>
-            </motion.div>
 
           </div>
         </div>
