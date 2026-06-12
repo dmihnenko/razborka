@@ -777,7 +777,9 @@ svg.lucide {
 }
 
 .modal-footer {
-  @apply flex-shrink-0 bg-white border-t border-gray-100 px-5 py-4;
+  /* flex-ряд: кнопки modal-btn-* (flex-1) делятся поровну с отступом.
+     Раньше без flex кнопки «съезжали» влево/стопкой. */
+  @apply flex-shrink-0 flex items-center gap-3 bg-white border-t border-gray-100 px-5 py-4;
   padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
 }
 
