@@ -3,6 +3,8 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { Cog, LayoutDashboard, LogIn, Search, ShoppingCart, Wrench } from 'lucide-react'
 import { CartProvider, useCart } from '@/hooks/useCart'
 import { useAuth } from '@/hooks/useAuth'
+import { useUserProfile } from '@/hooks/useUserProfile'
+import { getDefaultRouteForRoles } from '@/config/navigation'
 
 // ============================================================================
 // Публичный каркас маркетплейса (/market/*) — без сайдбара приложения.
@@ -23,6 +25,9 @@ function MarketLayoutInner() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
+  const { data: profile } = useUserProfile()
+  // Куда ведёт «В кабинет» — реальный раздел пользователя по роли (не «/», иначе петля на маркет)
+  const dashboardHref = getDefaultRouteForRoles((profile?.roles || []).map((r: any) => r.name))
   const { totalCount } = useCart()
   const [search, setSearch] = useState('')
   // На главной маркета поиск живёт в герое — в шапке его прячем, чтобы не дублировать
@@ -89,7 +94,7 @@ function MarketLayoutInner() {
               </Link>
               {user ? (
                 <Link
-                  to="/"
+                  to={dashboardHref}
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold text-gray-700 border border-gray-200 bg-white hover:border-gray-300 hover:text-gray-900 shadow-sm transition-all duration-150 active:scale-[0.97]"
                 >
                   <LayoutDashboard className="w-4 h-4" />

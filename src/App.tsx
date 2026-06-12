@@ -72,7 +72,6 @@ const MarketCart = lazy(() => import('./pages/market/MarketCart'))
 import { useAuth } from './hooks/useAuth'
 import { CartProvider } from './hooks/useCart'
 import { useUserProfile } from './hooks/useUserProfile'
-import { getDefaultRouteForRoles } from './config/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from './lib/supabase'
 
@@ -283,26 +282,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-// Корень «/»: гость → публичный маркетплейс, авторизованный → его раздел по роли.
-// Админ → /admin, разборка → /parts/dashboard, остальные → /my-vehicles.
+// Корень «/» — публичный маркетплейс запчастей для ВСЕХ (гостей и залогиненных).
+// Залогиненные переходят в свой раздел кнопкой «В кабинет» в шапке маркета —
+// без принудительного авто-редиректа (раньше он бросал в админку/разборку).
 function RootGate() {
-  const { user, loading } = useAuth()
-  const { data: profile, isLoading: profileLoading } = useUserProfile()
-
-  // Пока определяется сессия — скелетон (без «прыжка» на логин)
-  if (loading) {
-    return <LayoutSkeleton />
-  }
-  // Гость → публичный маркетплейс запчастей
-  if (!user) {
-    return <Navigate to="/market" replace />
-  }
-  // Авторизован, профиль ещё грузится
-  if (profileLoading && !profile) {
-    return <LayoutSkeleton />
-  }
-  const roleNames: string[] = profile?.roles?.map((r: any) => r.name) || []
-  return <Navigate to={getDefaultRouteForRoles(roleNames)} replace />
+  return <Navigate to="/market" replace />
 }
 
 export default App
