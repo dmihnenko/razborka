@@ -34,19 +34,19 @@ export default function PartsSettings() {
   const { data: company } = useQuery({
     queryKey: ['parts_company_settings', partsCompanyId],
     queryFn: async () => {
-      const { data } = await supabase.from('parts_companies').select('name, phone, address, email').eq('id', partsCompanyId).single()
+      const { data } = await supabase.from('parts_companies').select('name, phone, address, email, telegram, description').eq('id', partsCompanyId).single()
       return data
     },
     enabled: !!partsCompanyId,
   })
-  const [contacts, setContacts] = useState({ name: '', phone: '', address: '', email: '' })
+  const [contacts, setContacts] = useState({ name: '', phone: '', address: '', email: '', telegram: '', description: '' })
   useEffect(() => {
-    if (company) setContacts({ name: company.name || '', phone: company.phone || '', address: company.address || '', email: company.email || '' })
+    if (company) setContacts({ name: company.name || '', phone: company.phone || '', address: company.address || '', email: company.email || '', telegram: (company as any).telegram || '', description: (company as any).description || '' })
   }, [company])
   const saveContactsMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from('parts_companies')
-        .update({ name: contacts.name.trim(), phone: contacts.phone.trim(), address: contacts.address.trim(), email: contacts.email.trim() })
+        .update({ name: contacts.name.trim(), phone: contacts.phone.trim(), address: contacts.address.trim(), email: contacts.email.trim(), telegram: contacts.telegram.trim() || null, description: contacts.description.trim() || null })
         .eq('id', partsCompanyId)
       if (error) throw error
     },
@@ -59,7 +59,8 @@ export default function PartsSettings() {
   })
   const contactsDirty = !!company && (
     contacts.name !== (company.name || '') || contacts.phone !== (company.phone || '') ||
-    contacts.address !== (company.address || '') || contacts.email !== (company.email || '')
+    contacts.address !== (company.address || '') || contacts.email !== (company.email || '') ||
+    contacts.telegram !== ((company as any).telegram || '') || contacts.description !== ((company as any).description || '')
   )
 
   const handleSaveImgbbKey = () => {
@@ -129,6 +130,14 @@ export default function PartsSettings() {
                 </div>
                 <input type="text" value={contacts.address} onChange={e => setContacts(p => ({ ...p, address: e.target.value }))}
                   placeholder="Адрес" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm" />
+                <input type="text" value={contacts.telegram} onChange={e => setContacts(p => ({ ...p, telegram: e.target.value }))}
+                  placeholder="Telegram: @username или ссылка https://t.me/..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm" />
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Описание разборки <span className="text-gray-400">(видят покупатели на маркете)</span></label>
+                  <textarea value={contacts.description} onChange={e => setContacts(p => ({ ...p, description: e.target.value }))}
+                    placeholder="Кратко о вашей разборке: специализация, регион, условия работы..." rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm resize-none" />
+                </div>
                 <button onClick={() => saveContactsMutation.mutate()} disabled={saveContactsMutation.isPending || !contactsDirty}
                   className="px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium flex items-center gap-1.5 transition-colors text-sm disabled:opacity-50">
                   <Save className="w-4 h-4" /> Сохранить контакты

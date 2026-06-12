@@ -1490,6 +1490,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     condition: item?.condition || 'used',
     quantity: item?.quantity || 1,
     selling_price: item?.selling_price || undefined,
+    purchase_price: (item as any)?.purchase_price ?? undefined,
     price_currency: (item?.price_currency as 'UAH' | 'USD') || 'USD',
     location: item?.location || '',
     shelf: item?.shelf || '',
@@ -1963,7 +1964,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     </div>
                   )}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Цена</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Цена продажи</label>
                     <div className="flex gap-2">
                       <input
                         type="number"
@@ -1983,6 +1984,21 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       </button>
                     </div>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Закупочная цена <span className="text-gray-400 font-normal">(для окупаемости)</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.purchase_price ?? ''}
+                    onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value ? Number(e.target.value) : undefined })}
+                    placeholder="Не обязательно"
+                    className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
                 </div>
 
                 {/* Sold toggle button — only when creating */}

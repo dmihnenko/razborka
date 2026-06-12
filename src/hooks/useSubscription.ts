@@ -139,7 +139,7 @@ export function useSubscriptionLimits() {
     canCreate: {
       worker: (currentCount: number) => {
         if (maxWorkers === null) return true
-        if (isPartsOwner) return currentCount < FREE_LIMITS.parts.workers
+        if (isPartsOwner) return currentCount < maxWorkers
         return false
       },
       vehicle: () => {

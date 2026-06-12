@@ -76,7 +76,7 @@ export default function OwnerSetupPage({ profile, onLogout, onComplete, existing
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
-              <Wrench className="w-4 h-4 text-white" strokeWidth={1.5} />
+              <Package className="w-4 h-4 text-white" strokeWidth={1.5} />
             </div>
             <span className="text-sm font-bold text-gray-900">{BRAND.name}</span>
           </div>

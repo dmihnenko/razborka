@@ -333,12 +333,10 @@ export async function getPartsInventoryItem(id: string) {
 }
 
 export async function createPartsInventoryItem(input: CreatePartsInventoryInput, partsCompanyId: string) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { purchase_price, ...rest } = input
   const { data, error } = await supabase
     .from('parts_inventory')
     .insert({
-      ...rest,
+      ...input,
       parts_company_id: partsCompanyId,
       status: input.status || 'available',
       reserved_quantity: 0,
@@ -352,6 +350,7 @@ export async function createPartsInventoryItem(input: CreatePartsInventoryInput,
       part_number: input.part_number || null,
       description: input.description || null,
       notes: input.notes || null,
+      purchase_price: input.purchase_price ?? null,
     })
     .select('*')
     .single()
@@ -362,12 +361,13 @@ export async function createPartsInventoryItem(input: CreatePartsInventoryInput,
 
 export async function updatePartsInventoryItem(id: string, updates: Partial<PartsInventoryItem>) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { purchase_price, category, vehicle, ...rest } = updates as any
+  const { category, vehicle, ...rest } = updates as any
   // Convert empty strings to null for UUID and optional fields to avoid 400 errors
   // Only include UUID fields if explicitly provided — otherwise they'd be set to null,
   // overwriting existing values (e.g. vehicle_id gets wiped when selling a part)
   const safeUpdates = {
     ...rest,
+    ...('purchase_price' in rest ? { purchase_price: rest.purchase_price ?? null } : {}),
     ...('category_id' in rest ? { category_id: rest.category_id || null } : {}),
     ...('vehicle_id' in rest ? { vehicle_id: rest.vehicle_id || null } : {}),
     ...('storage_location_id' in rest ? { storage_location_id: rest.storage_location_id || null } : {}),
@@ -708,57 +708,6 @@ export async function updatePartsOrder(
   if (error) throw error
 }
 
-// ============================================================================
-// LEGACY PARTS (устаревший склад, таблица `parts` — deprecated)
-// ============================================================================
-
-export interface LegacyPart {
-  id: string
-  name: string
-  part_number: string | null
-  description: string | null
-  quantity_in_stock: number
-  min_quantity: number
-  price: number
-  supplier: string | null
-}
-
-export interface LegacyPartFormData {
-  name: string
-  part_number: string
-  description: string
-  quantity_in_stock: number | string
-  min_quantity: number | string
-  price: number | string
-  supplier: string
-}
-
-export async function getLegacyParts(): Promise<LegacyPart[]> {
-  const { data, error } = await supabase.from('parts').select('*').order('name')
-  if (error) throw error
-  return data as LegacyPart[]
-}
-
-export async function deleteLegacyPart(id: string): Promise<void> {
-  const { error } = await supabase.from('parts').delete().eq('id', id)
-  if (error) throw error
-}
-
-export async function saveLegacyPart(data: LegacyPartFormData, partId?: string): Promise<void> {
-  const partData = {
-    ...data,
-    quantity_in_stock: Number(data.quantity_in_stock),
-    min_quantity: Number(data.min_quantity),
-    price: Number(data.price),
-  }
-  if (partId) {
-    const { error } = await supabase.from('parts').update(partData).eq('id', partId)
-    if (error) throw error
-  } else {
-    const { error } = await supabase.from('parts').insert([partData])
-    if (error) throw error
-  }
-}
 
 /** Fetch all inventory items for a parts vehicle */
 export async function getPartsInventoryByVehicle(vehicleId: string): Promise<any[]> {
