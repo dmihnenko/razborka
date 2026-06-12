@@ -319,15 +319,15 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose }:
           )}
         </div>
 
-        {/* Футер */}
+        {/* Футер — кнопка выхода из режима «Конвейер» */}
         <div className="modal-footer">
           <button
             type="button"
             onClick={handleDone}
-            className="modal-btn-cancel w-full sm:w-auto flex items-center gap-2"
+            className="modal-btn-cancel w-full flex items-center justify-center gap-2"
           >
             <X className="w-4 h-4" strokeWidth={1.5} />
-            Готово{addedCount > 0 ? ` (${addedCount})` : ''}
+            Закрыть
           </button>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
@@ -40,7 +41,7 @@ const FEATURES = [
     icon: Car,
     color: 'text-blue-600 bg-blue-50',
     title: 'Учёт автомобилей',
-    desc: 'Добавляйте б/у авто на разборку: VIN, марка, состояние, история ремонтов — всё в одном месте.',
+    desc: 'Добавляйте б/у авто на разборку: VIN, марка, состояние — всё в одном месте.',
   },
   {
     icon: Package,
@@ -178,6 +179,10 @@ function TariffSkeleton() {
 export function BusinessLanding() {
   const navigate = useNavigate()
   const { user } = useAuth()
+
+  // Открывать лендинг всегда сверху (React Router не сбрасывает скролл при переходе
+  // с маркета, иначе попадаешь в середину страницы — на тарифы).
+  useEffect(() => { window.scrollTo(0, 0) }, [])
 
   const { data: tariffs = [], isLoading: tariffsLoading } = useQuery({
     queryKey: ['publicTariffs'],
