@@ -44,14 +44,13 @@
 
   html {
     font-family: 'Manrope Variable', 'Inter', system-ui, -apple-system, sans-serif;
+    /* Базовый размер чуть крупнее для читаемости — масштабирует весь rem-текст.
+       Раньше на десктопе было 15px (мелко); теперь единые 16.5px на всех экранах. */
+    font-size: 16.5px;
     -webkit-text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     scroll-behavior: smooth;
-  }
-
-  @media (min-width: 768px) {
-    html { font-size: 15px; }
   }
 
   body {
