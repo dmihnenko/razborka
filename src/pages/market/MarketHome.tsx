@@ -265,7 +265,7 @@ export function MarketHome() {
         />
 
         {freshLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
@@ -277,7 +277,7 @@ export function MarketHome() {
             description="Разборки ещё не добавили запчасти в каталог — загляните позже"
           />
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 stagger-children">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 stagger-children">
             {fresh!.items.map(part => (
               <MarketProductCard key={part.id} part={part} />
             ))}

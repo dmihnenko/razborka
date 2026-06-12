@@ -296,8 +296,18 @@ export default function MarketProductPage() {
             </div>
           )}
 
-          {/* Контакты продавца + ссылка на страницу разборки */}
-          <SellerContactCard company={part.company} />
+          {/* Контакты продавца + ссылка на страницу разборки.
+              На странице товара: без «Позвонить», с кнопкой «Написать» (шаблон в Telegram). */}
+          <SellerContactCard
+            company={part.company}
+            hideCallButton
+            telegramMessage={
+              `Здравствуйте! Интересует запчасть:\n«${part.name}»` +
+              (part.vehicle ? `\nАвто: ${part.vehicle.make} ${part.vehicle.model}${part.vehicle.year ? ` ${part.vehicle.year}` : ''}` : '') +
+              (part.partNumber ? `\nОриг. номер: ${part.partNumber.toUpperCase()}` : '') +
+              `\n${typeof window !== 'undefined' ? window.location.href : ''}`
+            }
+          />
         </div>
       </div>
 

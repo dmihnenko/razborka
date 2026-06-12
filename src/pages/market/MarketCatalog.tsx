@@ -189,7 +189,7 @@ export function MarketCatalog() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4"
           >
             {Array.from({ length: 8 }).map((_, i) => (
               <SkeletonCard key={i} />
@@ -245,7 +245,7 @@ export function MarketCatalog() {
           >
             {/* Сетка товаров; при фоновой подгрузке слегка гасим прошлую страницу */}
             <div
-              className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 transition-opacity stagger-children ${
+              className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 transition-opacity stagger-children ${
                 isPlaceholderData ? 'opacity-60 pointer-events-none' : ''
               }`}
             >

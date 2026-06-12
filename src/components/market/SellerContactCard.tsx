@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Mail, MapPin, Phone, Store } from 'lucide-react'
+import { toast } from 'sonner'
 import type { MarketCompanyContact } from '@/types/marketplace'
 
 // ============================================================================
@@ -10,6 +11,10 @@ export interface SellerContactCardProps {
   company: MarketCompanyContact
   /** id разборки для ссылки (по умолчанию company.id) */
   supplierId?: string
+  /** Скрыть кнопку «Позвонить» (напр. на странице товара) */
+  hideCallButton?: boolean
+  /** Если задан — кнопка Telegram становится «Написать» и копирует этот шаблон в буфер */
+  telegramMessage?: string
 }
 
 /** Чистый номер для tel: */
@@ -35,10 +40,18 @@ function TelegramIcon({ className }: { className?: string }) {
   )
 }
 
-export function SellerContactCard({ company, supplierId }: SellerContactCardProps) {
+export function SellerContactCard({ company, supplierId, hideCallButton, telegramMessage }: SellerContactCardProps) {
   const phoneRaw = company.phone ? cleanPhone(company.phone) : null
   const tgHref = telegramHref(company.telegram)
   const supplierLink = `/market/supplier/${supplierId ?? company.id}`
+  const showCall = !hideCallButton && !!phoneRaw
+
+  const handleWriteTelegram = () => {
+    if (!telegramMessage) return
+    navigator.clipboard?.writeText(telegramMessage)
+      .then(() => toast.success('Шаблон сообщения скопирован — вставьте в чат с разборкой'))
+      .catch(() => {})
+  }
 
   return (
     <div className="card p-5">
@@ -97,10 +110,10 @@ export function SellerContactCard({ company, supplierId }: SellerContactCardProp
         </p>
       )}
 
-      {(phoneRaw || tgHref) && (
+      {(showCall || tgHref) && (
         <div className="flex flex-wrap gap-2.5">
-          {phoneRaw && (
-            <a href={`tel:${phoneRaw}`} className="btn-primary flex-1 min-w-[140px] min-h-[44px]">
+          {showCall && (
+            <a href={`tel:${phoneRaw}`} className="btn-primary flex-1 sm:flex-none min-w-[140px] min-h-[44px]">
               <Phone className="w-4 h-4" strokeWidth={1.5} /> Позвонить
             </a>
           )}
@@ -109,13 +122,14 @@ export function SellerContactCard({ company, supplierId }: SellerContactCardProp
               href={tgHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn flex-1 min-w-[140px] min-h-[44px] px-4 py-2 text-sm text-white"
+              onClick={telegramMessage ? handleWriteTelegram : undefined}
+              className="btn flex-1 sm:flex-none min-w-[140px] min-h-[44px] px-4 py-2 text-sm text-white"
               style={{
                 backgroundImage: 'linear-gradient(180deg, #2AABEE 0%, #229ED9 100%)',
                 boxShadow: '0 1px 2px rgba(34,158,217,0.35), 0 4px 12px -2px rgba(34,158,217,0.35)',
               }}
             >
-              <TelegramIcon className="w-4 h-4 fill-current" /> Telegram
+              <TelegramIcon className="w-4 h-4 fill-current" /> {telegramMessage ? 'Написать' : 'Telegram'}
             </a>
           )}
         </div>

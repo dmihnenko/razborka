@@ -242,7 +242,7 @@ export function MarketSupplierPage() {
             {phoneRaw && (
               <a
                 href={`tel:${phoneRaw}`}
-                className="flex-1 min-w-[140px] btn-success"
+                className="flex-1 sm:flex-none min-w-[140px] btn-success"
               >
                 <Phone className="w-4 h-4" strokeWidth={1.5} />
                 Позвонить
@@ -253,7 +253,7 @@ export function MarketSupplierPage() {
                 href={tgHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 min-w-[140px] inline-flex items-center justify-center gap-1.5 py-2.5 text-white text-sm font-semibold rounded-xl active:scale-[0.97] transition-all"
+                className="flex-1 sm:flex-none min-w-[140px] inline-flex items-center justify-center gap-1.5 py-2.5 text-white text-sm font-semibold rounded-xl active:scale-[0.97] transition-all"
                 style={{ background: 'linear-gradient(180deg, #33B5E5 0%, #229ED9 100%)' }}
               >
                 <TelegramIcon className="w-4 h-4 fill-current" />
