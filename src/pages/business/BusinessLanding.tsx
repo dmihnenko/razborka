@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { getPublicTariffs } from '@/services/businessService'
 import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/utils/currency'
 import { Logo } from '@/components/brand/Logo'
 import type { Tariff } from '@/types/business'
@@ -192,6 +193,11 @@ export function BusinessLanding() {
     }
   }
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    navigate('/business')
+  }
+
   // Тариф Пакет 3 — рекомендованный (3й по sort_order среди не-custom)
   const recommendedId = tariffs.filter(t => !t.isCustom)[2]?.id
 
@@ -205,19 +211,19 @@ export function BusinessLanding() {
             <Link to="/business">
               <Logo size="md" withText />
             </Link>
-            <nav className="flex items-center gap-2 sm:gap-3">
-              <Link
-                to="/market"
-                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors px-2 py-1 rounded-lg hover:bg-gray-100"
-              >
+            <nav className="flex items-center gap-1.5 sm:gap-2">
+              <Link to="/market" className="btn-secondary btn-sm">
                 Маркет
               </Link>
-              <Link
-                to="/login"
-                className="btn-secondary btn-sm"
-              >
-                Войти
-              </Link>
+              {user ? (
+                <button type="button" onClick={handleLogout} className="btn-secondary btn-sm">
+                  Выход
+                </button>
+              ) : (
+                <Link to="/login" className="btn-primary btn-sm">
+                  Войти
+                </Link>
+              )}
             </nav>
           </div>
         </div>

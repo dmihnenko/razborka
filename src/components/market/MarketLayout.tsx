@@ -11,10 +11,10 @@ import { CartProvider, useCart } from '@/hooks/useCart'
 
 function navLinkCls({ isActive }: { isActive: boolean }) {
   return [
-    'px-3.5 py-1.5 rounded-full text-sm transition-all duration-150 whitespace-nowrap active:scale-[0.97]',
+    'inline-flex items-center justify-center min-w-[104px] px-5 py-1.5 rounded-full text-sm transition-all duration-150 whitespace-nowrap active:scale-[0.97]',
     isActive
-      ? 'bg-gradient-to-b from-blue-500 to-blue-600 text-white font-semibold shadow-glow-blue'
-      : 'text-gray-600 font-medium hover:text-gray-900 hover:bg-gray-100',
+      ? 'bg-white text-gray-900 font-semibold shadow-sm'
+      : 'text-gray-500 font-medium hover:text-gray-800',
   ].join(' ')
 }
 
@@ -112,10 +112,12 @@ function MarketLayoutInner() {
             </div>
           </form>
 
-          {/* Ряд 3: навигация */}
-          <nav className="flex items-center gap-1.5 pb-2.5 -mx-1 px-1 overflow-x-auto scrollbar-hide" aria-label="Разделы маркета">
-            <NavLink to="/market/catalog" className={navLinkCls}>Каталог</NavLink>
-            <NavLink to="/market/suppliers" className={navLinkCls}>Разборки</NavLink>
+          {/* Ряд 3: навигация — центрированный сегмент-контрол */}
+          <nav className="flex items-center justify-center pb-2.5" aria-label="Разделы маркета">
+            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-gray-100/80 border border-gray-200/70">
+              <NavLink to="/market/catalog" className={navLinkCls}>Каталог</NavLink>
+              <NavLink to="/market/suppliers" className={navLinkCls}>Разборки</NavLink>
+            </div>
           </nav>
         </div>
       </header>
