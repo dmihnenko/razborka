@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, PackageSearch } from 'lucide-react'
 import type { MarketCondition, MarketFilters, MarketSort } from '@/types/marketplace'
 import {
@@ -58,6 +59,21 @@ function pluralizeResults(n: number): string {
   if (mod10 === 1 && mod100 !== 11) return `${n} товар`
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} товара`
   return `${n} товаров`
+}
+
+/** Skeleton-карточка для загрузки */
+function SkeletonCard() {
+  return (
+    <div className="card p-0 overflow-hidden">
+      <div className="aspect-[4/3] animate-shimmer rounded-t-2xl" />
+      <div className="p-4 space-y-2.5">
+        <div className="h-3.5 animate-shimmer rounded-lg w-3/4" />
+        <div className="h-3 animate-shimmer rounded-lg w-1/2" />
+        <div className="h-5 animate-shimmer rounded-lg w-2/5 mt-3" />
+        <div className="h-8 animate-shimmer rounded-xl mt-2" />
+      </div>
+    </div>
+  )
 }
 
 export function MarketCatalog() {
@@ -139,10 +155,16 @@ export function MarketCatalog() {
   // ── Рендер ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-4">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      className="space-y-4"
+    >
+      {/* Заголовок */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Каталог запчастей</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h1 className="page-title">Каталог запчастей</h1>
+        <p className="page-subtitle">
           Б/у и новые запчасти от авторазборок — без посредников
         </p>
       </div>
@@ -151,92 +173,150 @@ export function MarketCatalog() {
 
       {/* Счётчик результатов + индикатор фоновой подгрузки */}
       <div className="flex items-center gap-2 min-h-[20px]" aria-live="polite">
-        {!isLoading && !isError && (
-          <p className="text-sm text-gray-500">
-            {total > 0 ? `Найдено ${pluralizeResults(total)}` : ''}
+        {!isLoading && !isError && total > 0 && (
+          <p className="text-sm font-medium text-gray-500">
+            Найдено: <span className="font-bold text-gray-700">{pluralizeResults(total)}</span>
           </p>
         )}
         {isFetching && !isLoading && <Spinner size="sm" className="!h-4 !w-4" />}
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Spinner />
-        </div>
-      ) : isError ? (
-        <EmptyState
-          icon={PackageSearch}
-          title="Не удалось загрузить каталог"
-          description="Проверьте подключение к интернету и попробуйте обновить страницу."
-        />
-      ) : items.length === 0 ? (
-        <EmptyState
-          icon={PackageSearch}
-          title="Ничего не найдено"
-          description={
-            hasActiveFilters
-              ? 'Попробуйте изменить запрос или сбросить фильтры.'
-              : 'В каталоге пока нет доступных запчастей — загляните позже.'
-          }
-          action={
-            hasActiveFilters ? (
-              <button
-                type="button"
-                onClick={() => applyFilters({ sort: filters.sort, page: 1, pageSize })}
-                className="btn-secondary"
-              >
-                Сбросить фильтры
-              </button>
-            ) : undefined
-          }
-        />
-      ) : (
-        <>
-          {/* Сетка товаров; при фоновой подгрузке слегка гасим прошлую страницу */}
-          <div
-            className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 transition-opacity ${
-              isPlaceholderData ? 'opacity-60 pointer-events-none' : ''
-            }`}
+      <AnimatePresence mode="wait">
+        {isLoading ? (
+          <motion.div
+            key="skeleton"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
           >
-            {items.map(part => (
-              <MarketProductCard key={part.id} part={part} />
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonCard key={i} />
             ))}
-          </div>
-
-          {/* Пагинация */}
-          {totalPages > 1 && (
-            <nav
-              className="flex items-center justify-center gap-3 pt-2 pb-4"
-              aria-label="Постраничная навигация"
+          </motion.div>
+        ) : isError ? (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <EmptyState
+              icon={PackageSearch}
+              title="Не удалось загрузить каталог"
+              description="Проверьте подключение к интернету и попробуйте обновить страницу."
+            />
+          </motion.div>
+        ) : items.length === 0 ? (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <EmptyState
+              icon={PackageSearch}
+              title="Ничего не найдено"
+              description={
+                hasActiveFilters
+                  ? 'Попробуйте изменить запрос или сбросить фильтры.'
+                  : 'В каталоге пока нет доступных запчастей — загляните позже.'
+              }
+              action={
+                hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={() => applyFilters({ sort: filters.sort, page: 1, pageSize })}
+                    className="btn-secondary"
+                  >
+                    Сбросить фильтры
+                  </button>
+                ) : undefined
+              }
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="results"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+          >
+            {/* Сетка товаров; при фоновой подгрузке слегка гасим прошлую страницу */}
+            <div
+              className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 transition-opacity stagger-children ${
+                isPlaceholderData ? 'opacity-60 pointer-events-none' : ''
+              }`}
             >
-              <button
-                type="button"
-                onClick={() => setPage(page - 1)}
-                disabled={page <= 1 || isPlaceholderData}
-                className="flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Назад</span>
-              </button>
+              {items.map(part => (
+                <MarketProductCard key={part.id} part={part} />
+              ))}
+            </div>
 
-              <span className="text-sm text-gray-600 tabular-nums">
-                Страница <span className="font-semibold">{page}</span> из {totalPages}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => setPage(page + 1)}
-                disabled={page >= totalPages || isPlaceholderData}
-                className="flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            {/* Пагинация */}
+            {totalPages > 1 && (
+              <nav
+                className="flex items-center justify-center gap-3 pt-6 pb-4"
+                aria-label="Постраничная навигация"
               >
-                <span className="hidden sm:inline">Вперёд</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </nav>
-          )}
-        </>
-      )}
-    </div>
+                <button
+                  type="button"
+                  onClick={() => setPage(page - 1)}
+                  disabled={page <= 1 || isPlaceholderData}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:border-gray-300 hover:shadow-card-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
+                >
+                  <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
+                  <span className="hidden sm:inline">Назад</span>
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {/* Кнопки страниц */}
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    const pageNum = totalPages <= 5
+                      ? i + 1
+                      : page <= 3
+                        ? i + 1
+                        : page >= totalPages - 2
+                          ? totalPages - 4 + i
+                          : page - 2 + i
+                    return (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => setPage(pageNum)}
+                        disabled={isPlaceholderData}
+                        className={`w-9 h-9 rounded-xl text-sm font-bold transition-all active:scale-[0.95] ${
+                          pageNum === page
+                            ? 'text-white shadow-glow-blue'
+                            : 'border border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                        }`}
+                        style={pageNum === page ? {
+                          backgroundImage: 'linear-gradient(180deg, #3B82F6 0%, #2563EB 100%)',
+                        } : undefined}
+                        aria-current={pageNum === page ? 'page' : undefined}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setPage(page + 1)}
+                  disabled={page >= totalPages || isPlaceholderData}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:border-gray-300 hover:shadow-card-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
+                >
+                  <span className="hidden sm:inline">Вперёд</span>
+                  <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
+                </button>
+              </nav>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }
 

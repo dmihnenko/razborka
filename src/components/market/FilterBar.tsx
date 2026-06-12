@@ -70,29 +70,32 @@ export function FilterBar({ value, onChange, categories = [], makes = [] }: Filt
   ].filter(v => v != null && v !== '').length
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4">
+    <form onSubmit={handleSubmit} className="card p-3.5 sm:p-4">
 
       {/* Верхний ряд: поиск + кнопка «Фильтры» (мобила) */}
       <div className="flex gap-2">
         <div className="relative flex-1 min-w-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <Search
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+            strokeWidth={1.5}
+          />
           <input
             type="search"
             value={search}
             onChange={e => setSearch(e.target.value)}
             onBlur={applyText}
             placeholder="Название, артикул, описание…"
-            className="form-input pl-9"
+            className="form-input pl-10 min-h-[44px]"
             aria-label="Поиск по каталогу"
           />
           {search && (
             <button
               type="button"
               onClick={() => { setSearch(''); patch({ search: undefined }) }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:scale-95 transition-all"
               aria-label="Очистить поиск"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4" strokeWidth={1.5} />
             </button>
           )}
         </div>
@@ -100,13 +103,22 @@ export function FilterBar({ value, onChange, categories = [], makes = [] }: Filt
         <button
           type="button"
           onClick={() => setOpen(o => !o)}
-          className="sm:hidden relative flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex-shrink-0"
+          className={[
+            'sm:hidden relative flex items-center gap-1.5 px-3.5 min-h-[44px] rounded-xl border text-sm font-semibold',
+            'transition-all active:scale-[0.97] flex-shrink-0',
+            open || activeCount > 0
+              ? 'border-primary/30 bg-blue-50 text-primary'
+              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50',
+          ].join(' ')}
           aria-expanded={open}
         >
-          <SlidersHorizontal className="w-4 h-4" />
+          <SlidersHorizontal className="w-4 h-4" strokeWidth={1.5} />
           Фильтры
           {activeCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center">
+            <span
+              className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full text-white text-[10px] font-bold flex items-center justify-center shadow-glow-blue"
+              style={{ backgroundImage: 'linear-gradient(180deg, #3B82F6 0%, #2563EB 100%)' }}
+            >
               {activeCount}
             </span>
           )}
@@ -114,8 +126,8 @@ export function FilterBar({ value, onChange, categories = [], makes = [] }: Filt
       </div>
 
       {/* Панель фильтров: на мобиле — по кнопке, на ≥sm — всегда */}
-      <div className={`${open ? 'block' : 'hidden'} sm:block mt-3`}>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+      <div className={`${open ? 'block animate-fade-in' : 'hidden'} sm:block mt-3.5`}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
 
           {categories.length > 0 && (
             <div className="col-span-2 sm:col-span-1 lg:col-span-2">
@@ -215,9 +227,9 @@ export function FilterBar({ value, onChange, categories = [], makes = [] }: Filt
           <button
             type="button"
             onClick={reset}
-            className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-red-600 transition-colors"
+            className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1.5 -mx-2.5 rounded-lg text-xs font-semibold text-gray-500 hover:text-red-600 hover:bg-red-50 active:scale-[0.97] transition-all"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
             Сбросить фильтры ({activeCount})
           </button>
         )}

@@ -21,13 +21,15 @@ export function pluralizeParts(n: number): string {
 }
 
 export function SupplierCard({ supplier }: SupplierCardProps) {
+  const hasParts = supplier.availableParts > 0
+
   return (
     <Link
       to={`/market/supplier/${supplier.id}`}
-      className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-start gap-3 transition-shadow hover:shadow-md group"
+      className="card card-interactive p-4 flex items-start gap-3.5 group"
     >
-      <span className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-        <Store className="w-5 h-5 text-primary" />
+      <span className="icon-tile-lg bg-blue-50 text-blue-600">
+        <Store className="w-6 h-6" strokeWidth={1.5} />
       </span>
 
       <div className="flex-1 min-w-0">
@@ -35,29 +37,37 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
           {supplier.name}
         </h3>
 
-        <p className="flex items-center gap-1 text-xs text-gray-500 mt-1">
-          <Package className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-          {supplier.availableParts > 0
-            ? `${pluralizeParts(supplier.availableParts)} в наличии`
-            : 'Нет товаров в наличии'}
+        <p className="flex items-center gap-1.5 text-xs font-medium mt-1.5">
+          <Package
+            className={`w-3.5 h-3.5 flex-shrink-0 ${hasParts ? 'text-green-600' : 'text-gray-400'}`}
+            strokeWidth={1.5}
+          />
+          <span className={hasParts ? 'text-gray-600' : 'text-gray-400'}>
+            {hasParts
+              ? `${pluralizeParts(supplier.availableParts)} в наличии`
+              : 'Нет товаров в наличии'}
+          </span>
         </p>
 
         {supplier.phone && (
-          <p className="flex items-center gap-1 text-xs text-gray-500 mt-0.5 truncate">
-            <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+          <p className="flex items-center gap-1.5 text-xs text-gray-500 mt-1 truncate">
+            <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
             {supplier.phone}
           </p>
         )}
 
         {supplier.address && (
-          <p className="flex items-center gap-1 text-xs text-gray-400 mt-0.5 truncate">
-            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+          <p className="flex items-center gap-1.5 text-xs text-gray-400 mt-1 truncate">
+            <MapPin className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
             <span className="truncate">{supplier.address}</span>
           </p>
         )}
       </div>
 
-      <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0 mt-1 group-hover:text-primary transition-colors" />
+      <ChevronRight
+        className="w-[18px] h-[18px] text-gray-300 flex-shrink-0 mt-1 transition-all group-hover:text-primary group-hover:translate-x-0.5"
+        strokeWidth={1.5}
+      />
     </Link>
   )
 }

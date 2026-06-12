@@ -41,59 +41,67 @@ export function SellerContactCard({ company, supplierId }: SellerContactCardProp
   const supplierLink = `/market/supplier/${supplierId ?? company.id}`
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">
-        Продавец
-      </p>
-      <Link
-        to={supplierLink}
-        className="inline-flex items-center gap-1.5 text-base font-bold text-gray-900 hover:text-primary transition-colors leading-snug mb-2.5"
-      >
-        <Store className="w-4 h-4 text-gray-400 flex-shrink-0" />
-        {company.name}
+    <div className="card p-5">
+      {/* Шапка: продавец */}
+      <Link to={supplierLink} className="flex items-center gap-3 mb-4 group">
+        <span className="icon-tile bg-blue-50 text-blue-600">
+          <Store className="w-5 h-5" strokeWidth={1.5} />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+            Продавец
+          </span>
+          <span className="block text-base font-extrabold tracking-tight text-gray-900 leading-snug truncate group-hover:text-primary transition-colors">
+            {company.name}
+          </span>
+        </span>
       </Link>
 
-      <div className="space-y-2 text-sm mb-3">
+      {/* Контакты */}
+      <div className="space-y-1 mb-3 -mx-1.5">
         {company.phone && phoneRaw && (
           <a
             href={`tel:${phoneRaw}`}
-            className="flex items-center gap-2 text-gray-700 hover:text-primary transition-colors"
+            className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-xl text-sm text-gray-700 hover:bg-gray-50 hover:text-primary active:scale-[0.99] transition-all"
           >
-            <Phone className="w-4 h-4 text-green-600 flex-shrink-0" />
+            <span className="icon-tile-sm bg-green-50 text-green-600">
+              <Phone className="w-4 h-4" strokeWidth={1.5} />
+            </span>
             <span className="font-semibold">{company.phone}</span>
           </a>
         )}
         {company.address && (
-          <p className="flex items-start gap-2 text-gray-600">
-            <MapPin className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
-            <span className="leading-snug">{company.address}</span>
+          <p className="flex items-start gap-2.5 px-1.5 py-1.5 text-sm text-gray-600">
+            <span className="icon-tile-sm bg-orange-50 text-orange-500">
+              <MapPin className="w-4 h-4" strokeWidth={1.5} />
+            </span>
+            <span className="leading-snug pt-1">{company.address}</span>
           </p>
         )}
         {company.email && (
           <a
             href={`mailto:${company.email}`}
-            className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors min-w-0"
+            className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50 hover:text-primary active:scale-[0.99] transition-all min-w-0"
           >
-            <Mail className="w-4 h-4 text-blue-600 flex-shrink-0" />
+            <span className="icon-tile-sm bg-blue-50 text-blue-600">
+              <Mail className="w-4 h-4" strokeWidth={1.5} />
+            </span>
             <span className="truncate">{company.email}</span>
           </a>
         )}
       </div>
 
       {company.description && (
-        <p className="text-xs text-gray-500 leading-relaxed mb-3 whitespace-pre-wrap">
+        <p className="text-xs text-gray-500 leading-relaxed mb-4 whitespace-pre-wrap">
           {company.description}
         </p>
       )}
 
       {(phoneRaw || tgHref) && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2.5">
           {phoneRaw && (
-            <a
-              href={`tel:${phoneRaw}`}
-              className="flex-1 min-w-[140px] flex items-center justify-center gap-1.5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 active:scale-[0.98] transition-all"
-            >
-              <Phone className="w-4 h-4" /> Позвонить
+            <a href={`tel:${phoneRaw}`} className="btn-primary flex-1 min-w-[140px] min-h-[44px]">
+              <Phone className="w-4 h-4" strokeWidth={1.5} /> Позвонить
             </a>
           )}
           {tgHref && (
@@ -101,7 +109,11 @@ export function SellerContactCard({ company, supplierId }: SellerContactCardProp
               href={tgHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 min-w-[140px] flex items-center justify-center gap-1.5 py-2.5 bg-[#229ED9] text-white text-sm font-semibold rounded-lg hover:bg-[#1c8dc2] active:scale-[0.98] transition-all"
+              className="btn flex-1 min-w-[140px] min-h-[44px] px-4 py-2 text-sm text-white"
+              style={{
+                backgroundImage: 'linear-gradient(180deg, #2AABEE 0%, #229ED9 100%)',
+                boxShadow: '0 1px 2px rgba(34,158,217,0.35), 0 4px 12px -2px rgba(34,158,217,0.35)',
+              }}
             >
               <TelegramIcon className="w-4 h-4 fill-current" /> Telegram
             </a>

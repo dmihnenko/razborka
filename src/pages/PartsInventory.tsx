@@ -564,22 +564,22 @@ export default function PartsInventory() {
   return (
     <div ref={rootRef} className="min-h-dvh bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="w-full">
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-10" style={{ boxShadow: '0 1px 0 #E2E8F0, 0 4px 16px -4px rgba(15,23,42,0.06)' }}>
+        <div className="w-full px-4 sm:px-6">
           {/* Top row */}
           <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <button
                 onClick={() => navigate('/parts')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
+                className="btn-icon flex-shrink-0"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
               </button>
               <div className="min-w-0">
-                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
+                <h1 className="text-lg sm:text-2xl font-extrabold text-gray-900 truncate" style={{ letterSpacing: '-0.025em' }}>
                   {sourceFilter === 'shop' ? 'Магазин' : 'Запчасти'}
                 </h1>
-                <p className="text-xs text-gray-500 hidden sm:block">Всего: {stats.total} позиций</p>
+                <p className="text-xs font-medium text-gray-400 hidden sm:block">Всего: {stats.total} позиций</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -588,15 +588,13 @@ export default function PartsInventory() {
                   setEditingItem(null)
                   setIsModalOpen(true)
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm"
+                className="btn-primary btn-sm flex items-center gap-1.5"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4" strokeWidth={1.5} />
                 <span className="hidden sm:inline">Добавить</span>
               </button>
             </div>
           </div>
-
-
         </div>
       </div>
 
@@ -604,17 +602,19 @@ export default function PartsInventory() {
       <div className="w-full py-4 sm:py-6">
         {/* No-price banner */}
         {stats.noPrice > 0 && (
-          <div className="mb-4 flex items-center justify-between gap-3 bg-amber-50 border border-amber-300 rounded-lg px-4 py-3">
-            <div className="flex items-center gap-2">
-              <Tag className="w-5 h-5 text-amber-600 flex-shrink-0" />
+          <div className="mb-4 flex items-center justify-between gap-3 bg-amber-50 border border-amber-200/60 rounded-2xl px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <div className="icon-tile-sm bg-amber-100 text-amber-600 flex-shrink-0">
+                <Tag className="w-3.5 h-3.5" strokeWidth={1.5} />
+              </div>
               <span className="text-sm text-amber-800">
-                <span className="font-semibold">{stats.noPrice}</span>
+                <span className="font-bold">{stats.noPrice}</span>
                 {' '}запчаст{stats.noPrice === 1 ? 'ь' : stats.noPrice < 5 ? 'и' : 'ей'} без цены
               </span>
             </div>
             <button
               onClick={() => navigate('/parts/inventory/no-price')}
-              className="flex-shrink-0 px-3 py-1.5 text-sm font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+              className="flex-shrink-0 px-3 py-1.5 text-xs font-bold bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition-colors"
             >
               Заполнить
             </button>
@@ -631,41 +631,41 @@ export default function PartsInventory() {
           ].map(({ key, label, value, dot, text, ring }) => (
             <button key={key}
               onClick={() => setStatusFilter(key === 'sold' && statusFilter === 'sold' ? 'all' : key as any)}
-              className={`stat-card cursor-pointer text-left ${statusFilter === key ? `ring-2 ${ring}` : ''}`}>
+              className={`stat-card cursor-pointer text-left transition-all ${statusFilter === key ? `ring-2 ${ring}` : ''}`}>
               <div className="flex items-start justify-between mb-3">
-                <p className="text-xs font-medium" style={{ color: '#64748B' }}>{label}</p>
-                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-0.5 ${dot}`} />
+                <p className="text-xs font-semibold text-gray-500">{label}</p>
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 mt-0.5 ${dot}`} />
               </div>
-              <p className={`text-3xl font-bold ${text}`} style={{ letterSpacing: '-0.03em' }}>{value}</p>
+              <p className={`text-3xl font-extrabold ${text}`} style={{ letterSpacing: '-0.03em' }}>{value}</p>
             </button>
           ))}
 
           <div className="stat-card">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs sm:text-sm text-gray-600">Стоимость</p>
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-400 flex-shrink-0" />
+              <p className="text-xs font-semibold text-gray-500">Стоимость</p>
+              <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
             </div>
             {statusFilter === 'all' ? (
               <>
-                <p className="text-xs text-gray-500 mb-0.5">В наличии</p>
-                <p className="text-base sm:text-lg font-bold text-green-600">
+                <p className="text-xs text-gray-400 mb-0.5">В наличии</p>
+                <p className="text-base sm:text-lg font-extrabold text-green-600" style={{ letterSpacing: '-0.02em' }}>
                   {stats.stockUSD === 0 ? '—' : `$${Math.round(stats.stockUSD).toLocaleString('ru-RU')}`}
                 </p>
-                <p className="text-xs text-gray-500 mt-1.5 mb-0.5">Продано</p>
-                <p className="text-base sm:text-lg font-bold text-blue-600">
+                <p className="text-xs text-gray-400 mt-1.5 mb-0.5">Продано</p>
+                <p className="text-base sm:text-lg font-extrabold text-blue-600" style={{ letterSpacing: '-0.02em' }}>
                   {stats.soldUSD === 0 ? '—' : `$${Math.round(stats.soldUSD).toLocaleString('ru-RU')}`}
                 </p>
               </>
             ) : statusFilter === 'available' || statusFilter === 'reserved' ? (
-              <p className="text-lg sm:text-xl font-bold text-green-600">
+              <p className="text-lg sm:text-xl font-extrabold text-green-600" style={{ letterSpacing: '-0.02em' }}>
                 {stats.stockUSD === 0 ? '—' : `$${Math.round(stats.stockUSD).toLocaleString('ru-RU')}`}
               </p>
             ) : statusFilter === 'sold' ? (
-              <p className="text-lg sm:text-xl font-bold text-blue-600">
+              <p className="text-lg sm:text-xl font-extrabold text-blue-600" style={{ letterSpacing: '-0.02em' }}>
                 {stats.soldUSD === 0 ? '—' : `$${Math.round(stats.soldUSD).toLocaleString('ru-RU')}`}
               </p>
             ) : (
-              <p className="text-lg sm:text-xl font-bold text-blue-600">
+              <p className="text-lg sm:text-xl font-extrabold text-blue-600" style={{ letterSpacing: '-0.02em' }}>
                 {stats.totalUAH === 0 && stats.totalUSD === 0 ? '—' : `$${Math.round(stats.totalUSD + stats.totalUAH / (usdRate || 41)).toLocaleString('ru-RU')}`}
               </p>
             )}
@@ -673,22 +673,22 @@ export default function PartsInventory() {
         </div>
 
         {/* Search & View Controls */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="card p-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" strokeWidth={1.5} />
               <input
                 type="text"
                 placeholder="Поиск по названию, артикулу, описанию..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="form-input pl-10"
               />
             </div>
 
             <div className="flex gap-2">
               {/* Sort controls */}
-              <div className="flex bg-gray-100 rounded-lg p-1 gap-0.5">
+              <div className="flex bg-gray-100 rounded-xl p-1 gap-0.5">
                 {([['name', 'АЯ'], ['status', 'Ст'], ['price', 'Це']] as const).map(([field, label]) => (
                   <button
                     key={field}
@@ -697,46 +697,46 @@ export default function PartsInventory() {
                       else { setSortField(field); setSortDir('asc') }
                     }}
                     title={field === 'name' ? 'По алфавиту' : field === 'status' ? 'По статусу' : 'По цене'}
-                    className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-0.5 ${
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-0.5 ${
                       sortField === field ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
                     {label}
                     {sortField === field && (
-                      <span className="text-primary">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                      <span className="text-blue-600">{sortDir === 'asc' ? '↑' : '↓'}</span>
                     )}
                   </button>
                 ))}
               </div>
 
               {/* View mode */}
-              <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-                title="Список (таблица)"
-              >
-                <List className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-                title="Карточки"
-              >
-                <Grid className="w-5 h-5" />
-              </button>
-            </div>
+              <div className="flex bg-gray-100 rounded-xl p-1 gap-0.5">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                  title="Список (таблица)"
+                >
+                  <List className="w-4 h-4" strokeWidth={1.5} />
+                </button>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                  title="Карточки"
+                >
+                  <Grid className="w-4 h-4" strokeWidth={1.5} />
+                </button>
+              </div>
             </div>
           </div>
 
           {statusFilter !== 'all' && (
             <div className="mt-3 flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                Фильтр: <span className="font-medium">{statusLabels[statusFilter as PartsInventoryStatus]}</span>
+              <span className="text-sm text-gray-600 font-medium">
+                Фильтр: <span className="font-bold">{statusLabels[statusFilter as PartsInventoryStatus]}</span>
               </span>
               <button
                 onClick={() => setStatusFilter('all')}
-                className="ml-2 text-sm text-primary hover:underline"
+                className="ml-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
               >
                 Сбросить
               </button>
@@ -748,11 +748,7 @@ export default function PartsInventory() {
             <div className="mt-3 flex flex-wrap gap-1.5">
               <button
                 onClick={() => setVehicleFilter('all')}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  effectiveVehicleFilter === 'all'
-                    ? 'bg-primary text-white border-primary'
-                    : 'bg-white text-gray-600 border-gray-300 hover:border-primary hover:text-primary'
-                }`}
+                className={`chip ${effectiveVehicleFilter === 'all' ? 'chip-active' : ''}`}
               >
                 Все машины
               </button>
@@ -760,11 +756,7 @@ export default function PartsInventory() {
                 <button
                   key={v.id}
                   onClick={() => setVehicleFilter(vehicleFilter === v.id ? 'all' : v.id)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                    effectiveVehicleFilter === v.id
-                      ? 'bg-primary text-white border-primary'
-                      : 'bg-white text-gray-600 border-gray-300 hover:border-primary hover:text-primary'
-                  }`}
+                  className={`chip ${effectiveVehicleFilter === v.id ? 'chip-active' : ''}`}
                 >
                   {v.make} {v.model} {v.year ? `(${v.year})` : ''}
                 </button>
@@ -775,19 +767,21 @@ export default function PartsInventory() {
 
         {/* Inventory List/Grid */}
         {isLoading ? (
-          <div className="text-center py-12">
-            <Spinner size="md" className="inline-block" />
+          <div className="flex items-center justify-center py-16">
+            <Spinner size="md" />
           </div>
         ) : filteredInventory.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-2">
+          <div className="card p-12 text-center">
+            <div className="icon-tile-lg bg-gray-100 text-gray-300 mx-auto mb-4">
+              <Package className="w-7 h-7" strokeWidth={1.5} />
+            </div>
+            <p className="text-sm font-semibold text-gray-500 mb-1">
               {searchQuery || statusFilter !== 'all' ? 'Запчасти не найдены' : 'Нет запчастей'}
             </p>
             {!searchQuery && statusFilter === 'all' && (
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="mt-4 text-primary hover:underline"
+                className="mt-3 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
               >
                 Добавить первую запчасть
               </button>
@@ -811,36 +805,20 @@ export default function PartsInventory() {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="card p-0 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead>
                   <tr>
-                    <th className={`px-3 py-3 w-8${statusFilter !== 'reserved' ? ' hidden' : ''}`}></th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Запчасть
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                      Категория
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
-                      Артикул
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                      Машина
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                      Статус
-                    </th>
-                    <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell${sourceFilter === 'vehicles' ? ' !hidden' : ''}`}>
-                      Кол-во
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Цена
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Действия
-                    </th>
+                    <th className={`table-header-cell w-8${statusFilter !== 'reserved' ? ' hidden' : ''}`}></th>
+                    <th className="table-header-cell">Запчасть</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200 hidden md:table-cell" style={{ letterSpacing: '0.06em' }}>Категория</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200 hidden xl:table-cell" style={{ letterSpacing: '0.06em' }}>Артикул</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200 hidden lg:table-cell" style={{ letterSpacing: '0.06em' }}>Машина</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200 hidden md:table-cell" style={{ letterSpacing: '0.06em' }}>Статус</th>
+                    <th className={`px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200 hidden sm:table-cell${sourceFilter === 'vehicles' ? ' !hidden' : ''}`} style={{ letterSpacing: '0.06em' }}>Кол-во</th>
+                    <th className="table-header-cell">Цена</th>
+                    <th className="table-header-cell text-right">Действия</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -970,28 +948,29 @@ export default function PartsInventory() {
 
       {/* Status Picker Modal */}
       {statusPickerItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => { setStatusPickerItem(null); setPendingStatus(null) }} />
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-xs p-5 z-10">
+        <div className="modal-overlay">
+          <div className="absolute inset-0" onClick={() => { setStatusPickerItem(null); setPendingStatus(null) }} />
+          <div className="modal-sheet sm:max-w-xs w-full z-10">
+            <div className="modal-handle sm:hidden" />
             {pendingStatus ? (
-              // Confirmation step
               <>
-                <h3 className="text-base font-semibold text-gray-900 mb-1">Подтвердите изменение</h3>
-                <p className="text-sm text-gray-500 mb-4 line-clamp-1">{statusPickerItem.name}</p>
-                <div className="flex items-center gap-3 mb-5 p-3 bg-gray-50 rounded-lg">
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[statusPickerItem.status]}`}>
-                    {statusLabels[statusPickerItem.status]}
-                  </span>
-                  <span className="text-gray-400 text-sm">→</span>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[pendingStatus]}`}>
-                    {statusLabels[pendingStatus]}
-                  </span>
+                <div className="modal-header">
+                  <h3 className="text-base font-bold text-gray-900">Подтвердите изменение</h3>
+                  <p className="text-sm text-gray-500 line-clamp-1 mt-0.5">{statusPickerItem.name}</p>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setPendingStatus(null)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
-                  >
+                <div className="modal-body">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <span className={`badge ${statusColors[statusPickerItem.status]}`}>
+                      {statusLabels[statusPickerItem.status]}
+                    </span>
+                    <span className="text-gray-400 text-sm">→</span>
+                    <span className={`badge ${statusColors[pendingStatus]}`}>
+                      {statusLabels[pendingStatus]}
+                    </span>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button onClick={() => setPendingStatus(null)} className="modal-btn-cancel">
                     Назад
                   </button>
                   <button
@@ -1002,47 +981,50 @@ export default function PartsInventory() {
                         { onSuccess: () => { setStatusPickerItem(null); setPendingStatus(null) } }
                       )
                     }}
-                    className="flex-1 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+                    className="modal-btn-primary disabled:opacity-50"
                   >
                     {statusChangeMutation.isPending ? 'Сохранение...' : 'Подтвердить'}
                   </button>
                 </div>
               </>
             ) : (
-              // Status selection step
               <>
-                <h3 className="text-base font-semibold text-gray-900 mb-1">Изменить статус</h3>
-                <p className="text-sm text-gray-500 mb-4 line-clamp-1">{statusPickerItem.name}</p>
-                <div className="space-y-2">
+                <div className="modal-header">
+                  <h3 className="text-base font-bold text-gray-900">Изменить статус</h3>
+                  <p className="text-sm text-gray-500 line-clamp-1 mt-0.5">{statusPickerItem.name}</p>
+                </div>
+                <div className="modal-body space-y-2">
                   {(Object.keys(statusLabels) as PartsInventoryStatus[]).map(s => (
                     <button
                       key={s}
                       disabled={s === statusPickerItem.status}
                       onClick={() => setPendingStatus(s)}
-                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-colors ${
                         s === statusPickerItem.status
-                          ? `${statusColors[s]} opacity-60 cursor-default`
-                          : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'
+                          ? `${statusColors[s]} opacity-70 cursor-default`
+                          : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700 active:bg-gray-100'
                       }`}
                     >
-                      <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                         s === 'available' ? 'bg-green-500' :
                         s === 'reserved' ? 'bg-yellow-500' :
                         s === 'sold' ? 'bg-gray-400' : 'bg-red-500'
                       }`} />
                       {statusLabels[s]}
                       {s === statusPickerItem.status && (
-                        <span className="ml-auto text-xs text-gray-400">Текущий</span>
+                        <span className="ml-auto text-xs font-normal text-gray-400">Текущий</span>
                       )}
                     </button>
                   ))}
                 </div>
-                <button
-                  onClick={() => setStatusPickerItem(null)}
-                  className="mt-4 w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
-                >
-                  Отмена
-                </button>
+                <div className="modal-footer">
+                  <button
+                    onClick={() => setStatusPickerItem(null)}
+                    className="modal-btn-cancel w-full"
+                  >
+                    Отмена
+                  </button>
+                </div>
               </>
             )}
           </div>
@@ -1051,23 +1033,23 @@ export default function PartsInventory() {
 
       {/* Bulk Selection Bar */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-gray-900 text-white rounded-xl px-5 py-3 shadow-2xl">
-          <span className="text-sm font-medium">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-gray-900 text-white rounded-2xl px-5 py-3 shadow-float animate-slide-up">
+          <span className="text-sm font-semibold">
             Выбрано: {selectedIds.size} запч.
           </span>
           <button
             type="button"
             onClick={() => setSelectedIds(new Set())}
-            className="text-gray-400 hover:text-white transition-colors text-xs underline"
+            className="text-gray-400 hover:text-white transition-colors text-xs font-medium underline"
           >
             Сбросить
           </button>
           <button
             type="button"
             onClick={openBulkSell}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-semibold transition-colors"
+            className="btn-success btn-sm flex items-center gap-1.5"
           >
-            <DollarSign className="w-4 h-4" />
+            <DollarSign className="w-4 h-4" strokeWidth={1.5} />
             Продать
           </button>
         </div>
@@ -1075,125 +1057,130 @@ export default function PartsInventory() {
 
       {/* Sell Modal */}
       {sellingItem && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-dvh items-center justify-center px-4">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setSellingItem(null)} />
-            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm p-6 z-10">
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Продать запчасть</h3>
-              <p className="text-sm text-gray-500 mb-4 line-clamp-2">{sellingItem.name}</p>
-
+        <div className="modal-overlay">
+          <div onClick={() => setSellingItem(null)} className="absolute inset-0" />
+          <div className="modal-sheet sm:max-w-sm w-full z-10">
+            <div className="modal-handle sm:hidden" />
+            <div className="modal-header">
+              <h3 className="text-base font-bold text-gray-900">Продать запчасть</h3>
+              <p className="text-sm text-gray-500 line-clamp-1 mt-0.5">{sellingItem.name}</p>
+            </div>
+            <div className="modal-body space-y-4">
               {/* Price */}
-              <label className="block text-sm font-medium text-gray-700 mb-1">Цена продажи</label>
-              {sellingItem.selling_price && (
-                <p className="text-xs text-gray-400 mb-2">Объявленная: {formatPrice(sellingItem.selling_price, (sellingItem.price_currency as 'UAH' | 'USD') || 'USD')}</p>
-              )}
-              <div className="flex gap-2 mb-4">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={sellPrice}
-                  onChange={(e) => setSellPrice(e.target.value)}
-                  placeholder="0"
-                  autoFocus
-                  className="flex-1 px-3 py-2 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-                <button
-                  type="button"
-                  onClick={() => setSellCurrency(c => c === 'USD' ? 'UAH' : 'USD')}
-                  className="px-3 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-primary/90 w-12 text-center"
-                >
-                  {sellCurrency === 'USD' ? '$' : '₴'}
-                </button>
+              <div>
+                <label className="form-label">Цена продажи</label>
+                {sellingItem.selling_price && (
+                  <p className="text-xs text-gray-400 mb-2">Объявленная: {formatPrice(sellingItem.selling_price, (sellingItem.price_currency as 'UAH' | 'USD') || 'USD')}</p>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={sellPrice}
+                    onChange={(e) => setSellPrice(e.target.value)}
+                    placeholder="0"
+                    autoFocus
+                    className="form-input flex-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSellCurrency(c => c === 'USD' ? 'UAH' : 'USD')}
+                    className="btn-primary w-12 text-center px-0"
+                  >
+                    {sellCurrency === 'USD' ? '$' : '₴'}
+                  </button>
+                </div>
               </div>
 
               {/* Customer selection */}
-              <label className="block text-sm font-medium text-gray-700 mb-1">Клиент <span className="text-gray-400 font-normal">(необязательно)</span></label>
-              {!showNewCustomer ? (
-                <div className="flex gap-2 mb-4">
-                  <div className="relative flex-1">
-                    <select
-                      value={sellCustomerId}
-                      onChange={(e) => setSellCustomerId(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none pr-8"
+              <div>
+                <label className="form-label">Клиент <span className="text-gray-400 font-normal">(необязательно)</span></label>
+                {!showNewCustomer ? (
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <select
+                        value={sellCustomerId}
+                        onChange={(e) => setSellCustomerId(e.target.value)}
+                        className="form-select"
+                      >
+                        <option value="">— Без клиента —</option>
+                        {customers.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.full_name}{c.phone ? ` (${c.phone})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" strokeWidth={1.5} />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowNewCustomer(true)}
+                      className="btn-secondary px-3 flex-shrink-0"
+                      title="Новый клиент"
                     >
-                      <option value="">— Без клиента —</option>
-                      {customers.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.full_name}{c.phone ? ` (${c.phone})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowNewCustomer(true)}
-                    className="flex items-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 flex-shrink-0"
-                    title="Новый клиент"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-gray-700">Новый клиент</span>
-                    <button type="button" onClick={() => setShowNewCustomer(false)} className="text-gray-400 hover:text-gray-600">
-                      <X className="w-4 h-4" />
+                      <UserPlus className="w-4 h-4" strokeWidth={1.5} />
                     </button>
                   </div>
-                  <input
-                    type="text"
-                    value={newCustomerName}
-                    onChange={(e) => setNewCustomerName(e.target.value)}
-                    placeholder="Имя *"
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                  <input
-                    type="text"
-                    value={newCustomerPhone}
-                    onChange={(e) => setNewCustomerPhone(e.target.value)}
-                    placeholder="Телефон"
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setSellingItem(null)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
-                >
-                  Отмена
-                </button>
-                <button
-                  type="button"
-                  disabled={sellMutation.isPending}
-                  onClick={() => {
-                    const price = parseFloat(sellPrice)
-                    if (isNaN(price) || price < 0) {
-                      toast.error('Введите корректную сумму')
-                      return
-                    }
-                    if (showNewCustomer && !newCustomerName.trim()) {
-                      toast.error('Введите имя клиента')
-                      return
-                    }
-                    sellMutation.mutate({
-                      item: sellingItem,
-                      price,
-                      currency: sellCurrency,
-                      customerId: sellCustomerId || undefined,
-                      newCustomer: showNewCustomer ? { name: newCustomerName, phone: newCustomerPhone } : undefined,
-                    })
-                  }}
-                  className="flex-1 px-4 py-2 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50"
-                >
-                  {sellMutation.isPending ? 'Сохранение...' : 'Продать'}
-                </button>
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-700">Новый клиент</span>
+                      <button type="button" onClick={() => setShowNewCustomer(false)} className="btn-icon-sm">
+                        <X className="w-3.5 h-3.5" strokeWidth={1.5} />
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={newCustomerName}
+                      onChange={(e) => setNewCustomerName(e.target.value)}
+                      placeholder="Имя *"
+                      className="form-input"
+                    />
+                    <input
+                      type="text"
+                      value={newCustomerPhone}
+                      onChange={(e) => setNewCustomerPhone(e.target.value)}
+                      placeholder="Телефон"
+                      className="form-input"
+                    />
+                  </div>
+                )}
               </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                onClick={() => setSellingItem(null)}
+                className="modal-btn-cancel"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                disabled={sellMutation.isPending}
+                onClick={() => {
+                  const price = parseFloat(sellPrice)
+                  if (isNaN(price) || price < 0) {
+                    toast.error('Введите корректную сумму')
+                    return
+                  }
+                  if (showNewCustomer && !newCustomerName.trim()) {
+                    toast.error('Введите имя клиента')
+                    return
+                  }
+                  sellMutation.mutate({
+                    item: sellingItem,
+                    price,
+                    currency: sellCurrency,
+                    customerId: sellCustomerId || undefined,
+                    newCustomer: showNewCustomer ? { name: newCustomerName, phone: newCustomerPhone } : undefined,
+                  })
+                }}
+                className="modal-btn-primary disabled:opacity-50"
+              >
+                {sellMutation.isPending ? 'Сохранение...' : 'Продать'}
+              </button>
             </div>
           </div>
         </div>
@@ -1201,17 +1188,20 @@ export default function PartsInventory() {
 
       {/* Bulk Sell Modal */}
       {isBulkSellOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-dvh items-center justify-center px-4 py-8">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setIsBulkSellOpen(false)} />
-            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg p-6 z-10">
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Продать зарезервированные запчасти</h3>
-              <p className="text-sm text-gray-500 mb-4">Укажите количество и цену продажи для каждой позиции</p>
+        <div className="modal-overlay">
+          <div onClick={() => setIsBulkSellOpen(false)} className="absolute inset-0" />
+          <div className="modal-sheet sm:max-w-lg w-full z-10">
+            <div className="modal-handle sm:hidden" />
+            <div className="modal-header">
+              <h3 className="text-base font-bold text-gray-900">Продать зарезервированные запчасти</h3>
+              <p className="text-sm text-gray-500 mt-0.5">Укажите количество и цену продажи для каждой позиции</p>
+            </div>
+            <div className="modal-body">
 
               {/* Items list */}
-              <div className="space-y-3 mb-5 max-h-64 overflow-y-auto pr-1">
+              <div className="space-y-3 mb-5 max-h-60 overflow-y-auto pr-1">
                 {bulkRows.map((row, idx) => (
-                  <div key={row.item.id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                  <div key={row.item.id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{row.item.name}</p>
                       {row.item.part_number && (
@@ -1220,7 +1210,7 @@ export default function PartsInventory() {
                     </div>
                     {/* Quantity */}
                     <div className="flex items-center gap-1">
-                      <span className="text-xs text-gray-500">кол:</span>
+                      <span className="text-xs font-medium text-gray-400">кол:</span>
                       <input
                         type="number"
                         min="1"
@@ -1231,7 +1221,7 @@ export default function PartsInventory() {
                           next[idx] = { ...next[idx], quantity: Math.max(1, Math.min(row.item.quantity, parseInt(e.target.value) || 1)) }
                           setBulkRows(next)
                         }}
-                        className="w-14 px-2 py-1 text-sm border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-14 form-input text-center px-2 py-1.5 text-sm"
                       />
                     </div>
                     {/* Price */}
@@ -1247,7 +1237,7 @@ export default function PartsInventory() {
                           setBulkRows(next)
                         }}
                         placeholder="Цена"
-                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-20 form-input px-2 py-1.5 text-sm"
                       />
                       <button
                         type="button"
@@ -1256,7 +1246,7 @@ export default function PartsInventory() {
                           next[idx] = { ...next[idx], currency: row.currency === 'USD' ? 'UAH' : 'USD' }
                           setBulkRows(next)
                         }}
-                        className="px-2 py-1 text-xs font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 w-9 text-center"
+                        className="btn-primary btn-sm w-9 text-center px-0"
                       >
                         {row.currency === 'USD' ? '$' : '₴'}
                       </button>
@@ -1266,7 +1256,7 @@ export default function PartsInventory() {
               </div>
 
               {/* Customer */}
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="form-label">
                 Клиент <span className="text-gray-400 font-normal">(необязательно)</span>
               </label>
               {!bulkShowNewCustomer ? (
@@ -1275,7 +1265,7 @@ export default function PartsInventory() {
                     <select
                       value={bulkCustomerId}
                       onChange={(e) => setBulkCustomerId(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none pr-8"
+                      className="form-select"
                     >
                       <option value="">— Без клиента —</option>
                       {customers.map((c) => (
@@ -1284,23 +1274,23 @@ export default function PartsInventory() {
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" strokeWidth={1.5} />
                   </div>
                   <button
                     type="button"
                     onClick={() => setBulkShowNewCustomer(true)}
-                    className="flex items-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 flex-shrink-0"
+                    className="btn-secondary px-3 flex-shrink-0"
                     title="Новый клиент"
                   >
-                    <UserPlus className="w-4 h-4" />
+                    <UserPlus className="w-4 h-4" strokeWidth={1.5} />
                   </button>
                 </div>
               ) : (
-                <div className="mb-5 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-gray-700">Новый клиент</span>
-                    <button type="button" onClick={() => setBulkShowNewCustomer(false)} className="text-gray-400 hover:text-gray-600">
-                      <X className="w-4 h-4" />
+                <div className="mb-5 p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-gray-700">Новый клиент</span>
+                    <button type="button" onClick={() => setBulkShowNewCustomer(false)} className="btn-icon-sm">
+                      <X className="w-3.5 h-3.5" strokeWidth={1.5} />
                     </button>
                   </div>
                   <input
@@ -1308,52 +1298,51 @@ export default function PartsInventory() {
                     value={bulkNewCustomerName}
                     onChange={(e) => setBulkNewCustomerName(e.target.value)}
                     placeholder="Имя *"
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="form-input"
                   />
                   <input
                     type="text"
                     value={bulkNewCustomerPhone}
                     onChange={(e) => setBulkNewCustomerPhone(e.target.value)}
                     placeholder="Телефон"
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="form-input"
                   />
                 </div>
               )}
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsBulkSellOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
-                >
-                  Отмена
-                </button>
-                <button
-                  type="button"
-                  disabled={bulkSellMutation.isPending}
-                  onClick={() => {
-                    for (const row of bulkRows) {
-                      const price = parseFloat(row.price)
-                      if (isNaN(price) || price < 0) {
-                        toast.error(`Укажите цену для: ${row.item.name}`)
-                        return
-                      }
-                    }
-                    if (bulkShowNewCustomer && !bulkNewCustomerName.trim()) {
-                      toast.error('Введите имя клиента')
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                onClick={() => setIsBulkSellOpen(false)}
+                className="modal-btn-cancel"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                disabled={bulkSellMutation.isPending}
+                onClick={() => {
+                  for (const row of bulkRows) {
+                    const price = parseFloat(row.price)
+                    if (isNaN(price) || price < 0) {
+                      toast.error(`Укажите цену для: ${row.item.name}`)
                       return
                     }
-                    bulkSellMutation.mutate({
-                      rows: bulkRows,
-                      customerId: bulkCustomerId || undefined,
-                      newCustomer: bulkShowNewCustomer ? { name: bulkNewCustomerName, phone: bulkNewCustomerPhone } : undefined,
-                    })
-                  }}
-                  className="flex-1 px-4 py-2 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50"
-                >
-                  {bulkSellMutation.isPending ? 'Сохранение...' : `Продать (${bulkRows.length})`}
-                </button>
-              </div>
+                  }
+                  if (bulkShowNewCustomer && !bulkNewCustomerName.trim()) {
+                    toast.error('Введите имя клиента')
+                    return
+                  }
+                  bulkSellMutation.mutate({
+                    rows: bulkRows,
+                    customerId: bulkCustomerId || undefined,
+                    newCustomer: bulkShowNewCustomer ? { name: bulkNewCustomerName, phone: bulkNewCustomerPhone } : undefined,
+                  })
+                }}
+                className="modal-btn-primary disabled:opacity-50"
+              >
+                {bulkSellMutation.isPending ? 'Сохранение...' : `Продать (${bulkRows.length})`}
+              </button>
             </div>
           </div>
         </div>
@@ -1567,27 +1556,29 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-dvh items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose} />
-
-        <div className="inline-block align-bottom bg-white rounded-t-2xl sm:rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-          <form onSubmit={handleSubmit}>
-            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 max-h-[80vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {item ? 'Редактировать запчасть' : 'Добавить запчасть'}
-              </h3>
+    <div className="modal-overlay">
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className="modal-sheet sm:max-w-2xl w-full z-10 overflow-y-auto max-h-[95dvh]">
+        <div className="modal-handle sm:hidden" />
+        <form onSubmit={handleSubmit}>
+          <div className="modal-header">
+            <h3 className="text-base font-bold text-gray-900">
+              {item ? 'Редактировать запчасть' : 'Добавить запчасть'}
+            </h3>
+          </div>
+          <div className="modal-body">
+            <div className="overflow-y-auto max-h-[60dvh] space-y-4">
 
               {/* Auto-filled vehicle reminder */}
               {autoFilledVehicle && !autoHintDismissed && (() => {
                 const v = (vehicles as any[]).find(x => x.id === (bulkMode ? bulkShared.vehicle_id : formData.vehicle_id))
                 if (!v) return null
                 return (
-                  <div className="flex items-center justify-between gap-2 mb-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                  <div className="flex items-center justify-between gap-2 px-3 py-2 bg-amber-50 border border-amber-200/60 rounded-xl text-sm text-amber-800">
                     <span>
                       Авто-выбрано последнее: <strong>{v.make} {v.model} {v.year}</strong>
                     </span>
-                    <button type="button" onClick={() => setAutoHintDismissed(true)} className="text-amber-500 hover:text-amber-700 text-xs underline shrink-0">
+                    <button type="button" onClick={() => setAutoHintDismissed(true)} className="text-amber-600 hover:text-amber-700 text-xs font-semibold shrink-0">
                       Ок
                     </button>
                   </div>
@@ -1595,11 +1586,11 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
               })()}
 
               {!item && (
-                <div className="flex mb-5 bg-gray-100 rounded-xl p-1 gap-1">
+                <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
                   <button
                     type="button"
                     onClick={() => setBulkMode(false)}
-                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
                       !bulkMode
                         ? 'bg-white text-gray-900 shadow-sm'
                         : 'text-gray-500 hover:text-gray-700'
@@ -1610,7 +1601,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   <button
                     type="button"
                     onClick={() => setBulkMode(true)}
-                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
                       bulkMode
                         ? 'bg-white text-gray-900 shadow-sm'
                         : 'text-gray-500 hover:text-gray-700'
@@ -2088,28 +2079,28 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
               )}
             </div>
 
-            <div className="bg-gray-50 px-4 py-3 sm:px-6 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="btn-secondary flex-1 sm:flex-none"
-              >
-                Отмена
-              </button>
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="btn-primary flex-1 sm:flex-none disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {isSaving
-                  ? 'Сохранение...'
-                  : bulkMode
-                    ? `Добавить ${bulkItems.filter(r => r.name.trim()).length || ''} запчастей`
-                    : item ? 'Сохранить' : 'Добавить'}
-              </button>
             </div>
-          </form>
-        </div>
+          <div className="modal-footer">
+            <button
+              type="button"
+              onClick={onClose}
+              className="modal-btn-cancel"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="modal-btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isSaving
+                ? 'Сохранение...'
+                : bulkMode
+                  ? `Добавить ${bulkItems.filter(r => r.name.trim()).length || ''} запчастей`
+                  : item ? 'Сохранить' : 'Добавить'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )

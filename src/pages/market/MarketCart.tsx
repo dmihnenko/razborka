@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   CheckCircle2,
   Minus,
@@ -53,11 +54,18 @@ function CartItemRow({ item }: { item: CartItem }) {
     : null
 
   return (
-    <div className="flex gap-3 py-3">
+    <motion.div
+      layout
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 8, height: 0, marginTop: 0, paddingTop: 0, paddingBottom: 0 }}
+      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      className="flex gap-3 py-3.5"
+    >
       {/* Фото */}
       <Link
         to={`/market/part/${item.inventoryId}`}
-        className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center"
+        className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center hover:opacity-90 transition-opacity"
         aria-label={item.name}
       >
         {item.photoUrl && !imgError ? (
@@ -78,40 +86,40 @@ function CartItemRow({ item }: { item: CartItem }) {
       <div className="flex-1 min-w-0 flex flex-col">
         <Link
           to={`/market/part/${item.inventoryId}`}
-          className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 hover:text-primary transition-colors"
+          className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 hover:text-primary transition-colors"
         >
           {item.name}
         </Link>
         {conditionLabel && (
-          <span className="text-[11px] text-gray-400 mt-0.5">{conditionLabel}</span>
+          <span className="text-[11px] font-semibold text-gray-400 mt-0.5">{conditionLabel}</span>
         )}
 
-        <div className="mt-auto pt-1.5 flex items-center justify-between gap-2 flex-wrap">
+        <div className="mt-auto pt-2 flex items-center justify-between gap-2 flex-wrap">
           {/* Количество */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5 bg-gray-50 rounded-xl p-1 border border-gray-100">
             <button
               type="button"
               onClick={() => setQty(item.inventoryId, item.quantity - 1)}
-              className="btn-icon-sm border border-gray-200"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-white hover:text-gray-700 hover:shadow-card transition-all active:scale-90"
               aria-label="Уменьшить количество"
             >
-              <Minus className="w-3.5 h-3.5" />
+              <Minus className="w-3.5 h-3.5" strokeWidth={2} />
             </button>
-            <span className="w-8 text-center text-sm font-semibold text-gray-900 tabular-nums">
+            <span className="w-7 text-center text-sm font-bold text-gray-900 tabular-nums">
               {item.quantity}
             </span>
             <button
               type="button"
               onClick={() => setQty(item.inventoryId, item.quantity + 1)}
-              className="btn-icon-sm border border-gray-200"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-white hover:text-gray-700 hover:shadow-card transition-all active:scale-90"
               aria-label="Увеличить количество"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5" strokeWidth={2} />
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm font-bold text-gray-900 whitespace-nowrap">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-sm font-extrabold text-gray-900 whitespace-nowrap tracking-tight">
               {formatPrice(item.sellingPrice * item.quantity, item.priceCurrency)}
             </span>
             {item.quantity > 1 && (
@@ -130,12 +138,12 @@ function CartItemRow({ item }: { item: CartItem }) {
           removeItem(item.inventoryId)
           toast.success('Удалено из корзины')
         }}
-        className="btn-icon-sm self-start text-gray-300 hover:text-red-600 hover:bg-red-50"
+        className="btn-icon-sm self-start text-gray-300 hover:text-red-500 hover:bg-red-50"
         aria-label={`Удалить «${item.name}» из корзины`}
       >
-        <Trash2 className="w-4 h-4" />
+        <Trash2 className="w-4 h-4" strokeWidth={1.5} />
       </button>
-    </div>
+    </motion.div>
   )
 }
 
@@ -143,26 +151,35 @@ function CartItemRow({ item }: { item: CartItem }) {
 
 function CompanyGroup({ group }: { group: CartGroup }) {
   return (
-    <section className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3">
-      <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-        <Store className="w-4 h-4 text-gray-400 flex-shrink-0" />
+    <section className="card px-5 py-4 space-y-0">
+      {/* Шапка группы */}
+      <div className="flex items-center gap-2.5 pb-3 border-b border-gray-100">
+        <span className="icon-tile-sm bg-blue-50 text-blue-600 flex-shrink-0">
+          <Store className="w-4 h-4" strokeWidth={1.5} />
+        </span>
         <Link
           to={`/market/supplier/${group.companyId}`}
-          className="text-sm font-semibold text-gray-900 truncate hover:text-primary transition-colors"
+          className="text-sm font-bold text-gray-900 truncate hover:text-primary transition-colors flex-1"
         >
           {group.companyName}
         </Link>
       </div>
 
-      <div className="divide-y divide-gray-100">
-        {group.items.map(item => (
-          <CartItemRow key={item.inventoryId} item={item} />
-        ))}
-      </div>
+      {/* Позиции */}
+      <AnimatePresence initial={false}>
+        <div className="divide-y divide-gray-50">
+          {group.items.map(item => (
+            <CartItemRow key={item.inventoryId} item={item} />
+          ))}
+        </div>
+      </AnimatePresence>
 
-      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-        <span className="text-sm text-gray-500">Итого по разборке</span>
-        <span className="text-base font-bold text-gray-900">{totalsLabel(group.items)}</span>
+      {/* Итого по группе */}
+      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+        <span className="text-sm font-semibold text-gray-500">Итого по разборке</span>
+        <span className="text-base font-extrabold text-gray-900 tracking-tight">
+          {totalsLabel(group.items)}
+        </span>
       </div>
     </section>
   )
@@ -214,20 +231,30 @@ export function MarketCart() {
   // ── Экран подтверждения ──
   if (submitted) {
     return (
-      <div className="max-w-md mx-auto">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-12 flex flex-col items-center text-center">
-          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
-            <CheckCircle2 className="w-9 h-9 text-green-600" />
-          </div>
-          <h1 className="text-lg font-bold text-gray-900">Заявка отправлена</h1>
-          <p className="text-sm text-gray-500 mt-2 max-w-xs">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        className="max-w-md mx-auto"
+      >
+        <div className="card px-6 py-12 flex flex-col items-center text-center">
+          <motion.div
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center mb-5 border border-green-100"
+          >
+            <CheckCircle2 className="w-10 h-10 text-green-600" strokeWidth={1.5} />
+          </motion.div>
+          <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">Заявка отправлена!</h1>
+          <p className="text-sm text-gray-500 mt-2 max-w-xs leading-relaxed">
             Разборка свяжется с вами по указанному телефону, чтобы подтвердить наличие и договориться об оплате и доставке.
           </p>
-          <Link to="/market/catalog" className="btn-primary mt-6">
+          <Link to="/market/catalog" className="btn-primary btn-lg mt-6">
             Вернуться в каталог
           </Link>
         </div>
-      </div>
+      </motion.div>
     )
   }
 
@@ -250,11 +277,22 @@ export function MarketCart() {
   }
 
   return (
-    <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-1">Корзина</h1>
-      <p className="text-sm text-gray-500 mb-4">
-        {totalCount} шт. · {groups.length > 1 ? `заявки уйдут в ${groups.length} разборки отдельно` : 'заявка уйдёт разборке'}
-      </p>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+    >
+      {/* Заголовок */}
+      <div className="mb-5">
+        <h1 className="page-title">Корзина</h1>
+        <p className="page-subtitle">
+          {totalCount} шт.
+          {' · '}
+          {groups.length > 1
+            ? `заявки уйдут в ${groups.length} разборки отдельно`
+            : 'заявка уйдёт разборке'}
+        </p>
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
         {/* ── Позиции по разборкам ── */}
@@ -267,9 +305,9 @@ export function MarketCart() {
         {/* ── Форма заявки ── */}
         <form
           onSubmit={handleSubmit}
-          className="lg:w-80 lg:flex-shrink-0 lg:sticky lg:top-32 bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-4 flex flex-col gap-3"
+          className="lg:w-80 lg:flex-shrink-0 lg:sticky lg:top-32 card px-5 py-5 flex flex-col gap-4"
         >
-          <h2 className="text-base font-bold text-gray-900">Оформление заявки</h2>
+          <h2 className="heading-3">Оформление заявки</h2>
 
           <div>
             <label htmlFor="cart-phone" className="form-label">
@@ -320,9 +358,11 @@ export function MarketCart() {
           </div>
 
           {/* Итого */}
-          <div className="border-t border-gray-100 pt-3 flex items-center justify-between">
-            <span className="text-sm text-gray-500">Итого</span>
-            <span className="text-lg font-bold text-gray-900">{totalsLabel(items)}</span>
+          <div className="rounded-2xl bg-primary/5 border border-primary/10 px-4 py-3 flex items-center justify-between">
+            <span className="text-sm font-semibold text-gray-500">Итого</span>
+            <span className="text-xl font-extrabold text-gradient-brand tracking-tight">
+              {totalsLabel(items)}
+            </span>
           </div>
 
           <button
@@ -330,7 +370,7 @@ export function MarketCart() {
             disabled={mutation.isPending}
             className="btn-primary btn-lg w-full disabled:opacity-60 disabled:pointer-events-none"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-4 h-4" strokeWidth={1.5} />
             {mutation.isPending ? 'Отправляем…' : 'Отправить заявку'}
           </button>
 
@@ -340,7 +380,7 @@ export function MarketCart() {
           </p>
         </form>
       </div>
-    </div>
+    </motion.div>
   )
 }
 

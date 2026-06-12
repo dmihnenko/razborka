@@ -166,10 +166,10 @@ export default function PartsDashboard() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
-          <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-7 h-7 text-orange-500" />
+          <div className="icon-tile-lg bg-orange-50 text-orange-500 mx-auto mb-4">
+            <AlertCircle className="w-6 h-6" strokeWidth={1.5} />
           </div>
-          <p className="text-sm font-medium text-gray-700">Нет доступа к разборке</p>
+          <p className="text-sm font-semibold text-gray-700">Нет доступа к разборке</p>
           <p className="text-xs text-gray-400 mt-1">Обратитесь к администратору</p>
         </div>
       </div>
@@ -181,29 +181,27 @@ export default function PartsDashboard() {
   )
 
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className="space-y-4 sm:space-y-5 animate-fade-in">
 
       {/* ── Page header ───────────────────────────── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ letterSpacing: '-0.025em', lineHeight: 1.2 }}>
-            Авторазборка
-          </h1>
-          <p className="text-sm mt-0.5" style={{ color: '#64748B' }}>Управление разборкой и складом</p>
+          <h1 className="page-title">Авторазборка</h1>
+          <p className="page-subtitle mt-0.5">Управление разборкой и складом</p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <button
             onClick={() => navigate('/parts/vehicles')}
             className="btn-secondary btn-sm hidden sm:flex items-center gap-1.5"
           >
-            <Car className="w-4 h-4" />
+            <Car className="w-4 h-4" strokeWidth={1.5} />
             <span>Авто</span>
           </button>
           <button
             onClick={() => navigate('/parts/orders/create')}
             className="btn-primary btn-sm flex items-center gap-1.5"
           >
-            <ShoppingCart className="w-4 h-4" />
+            <ShoppingCart className="w-4 h-4" strokeWidth={1.5} />
             <span>Новый заказ</span>
           </button>
         </div>
@@ -216,47 +214,46 @@ export default function PartsDashboard() {
       {(ordersStats?.new || 0) > 0 && (
         <button
           onClick={() => navigate('/parts/orders')}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all"
-          style={{ backgroundColor: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)' }}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all active:scale-[0.99] border border-yellow-200/60 bg-yellow-50 hover:bg-yellow-100/60"
         >
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(234,179,8,0.15)' }}>
-            <AlertCircle className="w-4 h-4" style={{ color: '#CA8A04' }} />
+          <div className="icon-tile-sm bg-yellow-100 text-yellow-600 flex-shrink-0">
+            <AlertCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold" style={{ color: '#854D0E' }}>
+            <p className="text-sm font-semibold text-yellow-800">
               {ordersStats?.new} новых {ordersStats?.new === 1 ? 'заказ' : (ordersStats?.new ?? 0) < 5 ? 'заказа' : 'заказов'} ожидает обработки
             </p>
           </div>
-          <ArrowRight className="w-4 h-4 flex-shrink-0" style={{ color: '#CA8A04' }} />
+          <ArrowRight className="w-4 h-4 flex-shrink-0 text-yellow-600" strokeWidth={1.5} />
         </button>
       )}
 
       {/* ── Main KPI row ──────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger-children">
 
         {/* Vehicles */}
         <button
           onClick={() => navigate('/parts/vehicles')}
-          className="stat-card cursor-pointer text-left"
+          className="stat-card cursor-pointer text-left group"
         >
           <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
-              <Car className="w-5 h-5" style={{ color: '#2563EB' }} />
+            <div className="icon-tile bg-blue-50 text-blue-600">
+              <Car className="w-5 h-5" strokeWidth={1.5} />
             </div>
-            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#2563EB' }} />
+            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-500" strokeWidth={1.5} />
           </div>
-          <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Автомобили</p>
-          <p className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+          <p className="text-xs font-semibold text-gray-500 mb-0.5">Автомобили</p>
+          <p className="text-3xl font-extrabold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
             {vehiclesStats?.total || 0}
           </p>
-          <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid #F1F5F9' }}>
+          <div className="mt-3 pt-3 space-y-1 border-t border-gray-100">
             <div className="flex justify-between text-xs">
-              <span style={{ color: '#94A3B8' }}>В работе</span>
-              <span className="font-semibold" style={{ color: '#D97706' }}>{vehiclesStats?.in_progress || 0}</span>
+              <span className="text-gray-400">В работе</span>
+              <span className="font-bold text-amber-600">{vehiclesStats?.in_progress || 0}</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span style={{ color: '#94A3B8' }}>Разобрано</span>
-              <span className="font-semibold" style={{ color: '#16A34A' }}>{vehiclesStats?.dismantled || 0}</span>
+              <span className="text-gray-400">Разобрано</span>
+              <span className="font-bold text-green-600">{vehiclesStats?.dismantled || 0}</span>
             </div>
           </div>
         </button>
@@ -264,26 +261,26 @@ export default function PartsDashboard() {
         {/* Inventory */}
         <button
           onClick={() => navigate('/parts/inventory')}
-          className="stat-card cursor-pointer text-left"
+          className="stat-card cursor-pointer text-left group"
         >
           <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(234,88,12,0.1)' }}>
-              <Wrench className="w-5 h-5" style={{ color: '#EA580C' }} />
+            <div className="icon-tile bg-orange-50 text-orange-500">
+              <Wrench className="w-5 h-5" strokeWidth={1.5} />
             </div>
-            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#EA580C' }} />
+            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-orange-500" strokeWidth={1.5} />
           </div>
-          <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Запчасти</p>
-          <p className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+          <p className="text-xs font-semibold text-gray-500 mb-0.5">Запчасти</p>
+          <p className="text-3xl font-extrabold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
             {inventoryStats?.total || 0}
           </p>
-          <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid #F1F5F9' }}>
+          <div className="mt-3 pt-3 space-y-1 border-t border-gray-100">
             <div className="flex justify-between text-xs">
-              <span style={{ color: '#94A3B8' }}>Доступно</span>
-              <span className="font-semibold" style={{ color: '#16A34A' }}>{inventoryStats?.available || 0}</span>
+              <span className="text-gray-400">Доступно</span>
+              <span className="font-bold text-green-600">{inventoryStats?.available || 0}</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span style={{ color: '#94A3B8' }}>Мало на складе</span>
-              <span className="font-semibold" style={{ color: inventoryStats?.lowStock ? '#DC2626' : '#94A3B8' }}>
+              <span className="text-gray-400">Мало на складе</span>
+              <span className={`font-bold ${(inventoryStats?.lowStock ?? 0) > 0 ? 'text-red-600' : 'text-gray-400'}`}>
                 {inventoryStats?.lowStock || 0}
               </span>
             </div>
@@ -293,26 +290,26 @@ export default function PartsDashboard() {
         {/* Orders */}
         <button
           onClick={() => navigate('/parts/orders')}
-          className="stat-card cursor-pointer text-left"
+          className="stat-card cursor-pointer text-left group"
         >
           <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(234,179,8,0.1)' }}>
-              <ShoppingCart className="w-5 h-5" style={{ color: '#CA8A04' }} />
+            <div className="icon-tile bg-amber-50 text-amber-600">
+              <ShoppingCart className="w-5 h-5" strokeWidth={1.5} />
             </div>
-            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#CA8A04' }} />
+            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-amber-500" strokeWidth={1.5} />
           </div>
-          <p className="text-xs font-medium mb-0.5" style={{ color: '#64748B' }}>Заказы</p>
-          <p className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+          <p className="text-xs font-semibold text-gray-500 mb-0.5">Заказы</p>
+          <p className="text-3xl font-extrabold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
             {ordersStats?.total || 0}
           </p>
-          <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid #F1F5F9' }}>
+          <div className="mt-3 pt-3 space-y-1 border-t border-gray-100">
             <div className="flex justify-between text-xs">
-              <span style={{ color: '#94A3B8' }}>Новые</span>
-              <span className="font-semibold" style={{ color: '#2563EB' }}>{ordersStats?.new || 0}</span>
+              <span className="text-gray-400">Новые</span>
+              <span className="font-bold text-blue-600">{ordersStats?.new || 0}</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span style={{ color: '#94A3B8' }}>Завершены</span>
-              <span className="font-semibold" style={{ color: '#16A34A' }}>{ordersStats?.completed || 0}</span>
+              <span className="text-gray-400">Завершены</span>
+              <span className="font-bold text-green-600">{ordersStats?.completed || 0}</span>
             </div>
           </div>
         </button>
@@ -320,27 +317,27 @@ export default function PartsDashboard() {
         {/* Revenue */}
         <button
           onClick={() => navigate('/parts/customers')}
-          className="stat-card cursor-pointer text-left"
+          className="stat-card cursor-pointer text-left group"
           style={{ background: 'linear-gradient(135deg, #1E3A6E 0%, #1E40AF 100%)', border: 'none' }}
         >
           <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
-              <DollarSign className="w-5 h-5 text-white" />
+            <div className="icon-tile flex-shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+              <DollarSign className="w-5 h-5 text-white" strokeWidth={1.5} />
             </div>
-            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-60 transition-opacity text-white" />
+            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-60 transition-opacity text-white" strokeWidth={1.5} />
           </div>
-          <p className="text-xs font-medium mb-0.5" style={{ color: 'rgba(255,255,255,0.65)' }}>Выручка</p>
-          <p className="text-3xl font-bold text-white" style={{ letterSpacing: '-0.03em' }}>
+          <p className="text-xs font-semibold mb-0.5" style={{ color: 'rgba(255,255,255,0.65)' }}>Выручка</p>
+          <p className="text-3xl font-extrabold text-white" style={{ letterSpacing: '-0.03em' }}>
             {revenueUSD > 0 ? `$${Math.round(revenueUSD).toLocaleString('ru-RU')}` : '—'}
           </p>
           <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
             <div className="flex justify-between text-xs">
               <span style={{ color: 'rgba(255,255,255,0.55)' }}>Клиентов</span>
-              <span className="font-semibold text-white">{customersStats?.total || 0}</span>
+              <span className="font-bold text-white">{customersStats?.total || 0}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span style={{ color: 'rgba(255,255,255,0.55)' }}>Склад USD</span>
-              <span className="font-semibold text-white">${totalInventoryValueUSD.toLocaleString('ru-RU')}</span>
+              <span className="font-bold text-white">${totalInventoryValueUSD.toLocaleString('ru-RU')}</span>
             </div>
           </div>
         </button>
@@ -354,88 +351,86 @@ export default function PartsDashboard() {
 
           {/* Inventory breakdown */}
           <div className="card p-0 overflow-hidden">
-            <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #F1F5F9' }}>
-              <p className="text-sm font-semibold text-gray-800">Склад</p>
+            <div className="px-5 py-3.5 flex items-center justify-between border-b border-gray-100">
+              <p className="text-sm font-bold text-gray-800">Склад</p>
               <button
                 onClick={() => navigate('/parts/inventory')}
-                className="text-xs font-medium flex items-center gap-1 transition-colors"
-                style={{ color: '#2563EB' }}
+                className="text-xs font-semibold flex items-center gap-1 text-blue-600 hover:text-blue-700 transition-colors"
               >
-                Открыть <ArrowRight className="w-3.5 h-3.5" />
+                Открыть <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
               </button>
             </div>
-            <div className="grid grid-cols-3 divide-x">
+            <div className="grid grid-cols-3 divide-x divide-gray-100">
               <button
                 onClick={() => navigate('/parts/inventory?source=vehicles')}
-                className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group"
+                className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group active:bg-gray-100"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgba(234,88,12,0.1)' }}>
-                    <Wrench className="w-3.5 h-3.5" style={{ color: '#EA580C' }} />
+                <div className="flex items-center gap-2 mb-2.5">
+                  <div className="icon-tile-sm bg-orange-50 text-orange-500">
+                    <Wrench className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </div>
-                  <span className="text-xs font-medium" style={{ color: '#64748B' }}>С разборки</span>
+                  <span className="text-xs font-semibold text-gray-500">С разборки</span>
                 </div>
-                <p className="text-2xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+                <p className="text-2xl font-extrabold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
                   {inventoryStats?.fromVehicles || 0}
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>позиций</p>
+                <p className="text-xs mt-0.5 text-gray-400">позиций</p>
               </button>
               <button
                 onClick={() => navigate('/parts/inventory?source=shop')}
-                className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group"
+                className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group active:bg-gray-100"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
-                    <Store className="w-3.5 h-3.5" style={{ color: '#16A34A' }} />
+                <div className="flex items-center gap-2 mb-2.5">
+                  <div className="icon-tile-sm bg-green-50 text-green-600">
+                    <Store className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </div>
-                  <span className="text-xs font-medium" style={{ color: '#64748B' }}>Магазин</span>
+                  <span className="text-xs font-semibold text-gray-500">Магазин</span>
                 </div>
-                <p className="text-2xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+                <p className="text-2xl font-extrabold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
                   {inventoryStats?.fromShop || 0}
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>позиций</p>
+                <p className="text-xs mt-0.5 text-gray-400">позиций</p>
               </button>
               <button
                 onClick={() => navigate('/parts/inventory/no-price')}
-                className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group"
+                className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group active:bg-gray-100"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgba(220,38,38,0.08)' }}>
-                    <AlertCircle className="w-3.5 h-3.5" style={{ color: '#DC2626' }} />
+                <div className="flex items-center gap-2 mb-2.5">
+                  <div className="icon-tile-sm bg-red-50 text-red-500">
+                    <AlertCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </div>
-                  <span className="text-xs font-medium" style={{ color: '#64748B' }}>Без цены</span>
+                  <span className="text-xs font-semibold text-gray-500">Без цены</span>
                 </div>
-                <p className="text-2xl font-bold" style={{ letterSpacing: '-0.03em', color: (inventoryStats?.noPrice ?? 0) > 0 ? '#DC2626' : '#111827' }}>
+                <p className={`text-2xl font-extrabold ${(inventoryStats?.noPrice ?? 0) > 0 ? 'text-red-600' : 'text-gray-900'}`} style={{ letterSpacing: '-0.03em' }}>
                   {inventoryStats?.noPrice ?? 0}
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>нужна цена</p>
+                <p className="text-xs mt-0.5 text-gray-400">нужна цена</p>
               </button>
             </div>
           </div>
 
           {/* Navigation tools */}
           <div className="card p-0 overflow-hidden">
-            <div className="px-4 py-3" style={{ borderBottom: '1px solid #F1F5F9' }}>
-              <p className="text-sm font-semibold text-gray-800">Управление</p>
+            <div className="px-5 py-3.5 border-b border-gray-100">
+              <p className="text-sm font-bold text-gray-800">Управление</p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-5">
               {[
-                { label: 'Склад', icon: Warehouse, path: '/parts/warehouse', color: '#D97706', bg: 'rgba(217,119,6,0.09)' },
-                { label: 'Категории', icon: LayoutGrid, path: '/parts/categories', color: '#2563EB', bg: 'rgba(37,99,235,0.09)' },
-                { label: 'Сотрудники', icon: Users, path: '/parts/employees', color: '#16A34A', bg: 'rgba(22,163,74,0.09)' },
-                { label: 'Аналитика', icon: BarChart2, path: '/parts/analytics', color: '#7C3AED', bg: 'rgba(124,58,237,0.09)' },
-                { label: 'Настройки', icon: Settings, path: '/parts/settings', color: '#475569', bg: 'rgba(71,85,105,0.09)' },
-              ].map(({ label, icon: Icon, path, color, bg }) => (
+                { label: 'Склад',      icon: Warehouse,  path: '/parts/warehouse',  iconCls: 'icon-tile bg-amber-50 text-amber-600' },
+                { label: 'Категории',  icon: LayoutGrid, path: '/parts/categories', iconCls: 'icon-tile bg-blue-50 text-blue-600' },
+                { label: 'Сотрудники', icon: Users,       path: '/parts/employees',  iconCls: 'icon-tile bg-green-50 text-green-600' },
+                { label: 'Аналитика',  icon: BarChart2,   path: '/parts/analytics',  iconCls: 'icon-tile bg-purple-50 text-purple-600' },
+                { label: 'Настройки',  icon: Settings,    path: '/parts/settings',   iconCls: 'icon-tile bg-gray-100 text-gray-500' },
+              ].map(({ label, icon: Icon, path, iconCls }) => (
                 <button
                   key={path}
                   onClick={() => navigate(path)}
-                  className="flex flex-col items-center gap-2 py-5 px-3 hover:bg-gray-50 transition-colors group relative"
-                  style={{ borderRight: '1px solid #F1F5F9' }}
+                  className="flex flex-col items-center gap-2 py-5 px-3 hover:bg-gray-50 transition-colors group active:bg-gray-100 border-r border-gray-100 last:border-r-0"
                 >
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105" style={{ backgroundColor: bg }}>
-                    <Icon className="w-5 h-5" style={{ color }} />
+                  <div className={`${iconCls} transition-transform group-hover:scale-105`}>
+                    <Icon className="w-5 h-5" strokeWidth={1.5} />
                   </div>
-                  <span className="text-xs font-medium text-gray-600">{label}</span>
+                  <span className="text-xs font-semibold text-gray-600">{label}</span>
                 </button>
               ))}
             </div>
@@ -444,44 +439,40 @@ export default function PartsDashboard() {
 
         {/* Right col (1/3): recent orders */}
         <div className="card p-0 overflow-hidden flex flex-col">
-          <div className="px-4 py-3 flex items-center justify-between flex-shrink-0" style={{ borderBottom: '1px solid #F1F5F9' }}>
-            <p className="text-sm font-semibold text-gray-800">Последние заказы</p>
+          <div className="px-5 py-3.5 flex items-center justify-between flex-shrink-0 border-b border-gray-100">
+            <p className="text-sm font-bold text-gray-800">Последние заказы</p>
             <button
               onClick={() => navigate('/parts/orders')}
-              className="text-xs font-medium flex items-center gap-1 transition-colors"
-              style={{ color: '#2563EB' }}
+              className="text-xs font-semibold flex items-center gap-1 text-blue-600 hover:text-blue-700 transition-colors"
             >
-              Все <ArrowRight className="w-3.5 h-3.5" />
+              Все <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
             </button>
           </div>
 
           {recentActivity && recentActivity.length > 0 ? (
-            <div className="flex-1 overflow-auto divide-y">
+            <div className="flex-1 overflow-auto divide-y divide-gray-100">
               {recentActivity.map((order: any) => {
                 const usd = computeOrderUSD(order)
                 return (
                   <button
                     key={order.id}
                     onClick={() => navigate(`/parts/orders/${order.id}`)}
-                    className="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left group"
+                    className="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left group active:bg-gray-100"
                   >
                     <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <span className="text-sm font-semibold text-gray-900 truncate">{order.order_number}</span>
-                      <span className="text-sm font-bold flex-shrink-0" style={{ color: '#2563EB' }}>
+                      <span className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors truncate">{order.order_number}</span>
+                      <span className="text-sm font-extrabold flex-shrink-0 text-blue-600" style={{ letterSpacing: '-0.02em' }}>
                         {usd != null ? `$${Math.round(usd).toLocaleString('ru-RU')}` : '—'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-2">
-                      <span
-                        className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold"
-                        style={{ backgroundColor: 'rgba(37,99,235,0.08)', color: '#1D4ED8' }}
-                      >
+                      <span className="badge badge-blue text-xs">
                         {getPartsOrderStatusText(order.status)}
                       </span>
-                      <span className="text-xs" style={{ color: '#94A3B8' }}>{formatDate(order.order_date)}</span>
+                      <span className="text-xs text-gray-400">{formatDate(order.order_date)}</span>
                     </div>
                     {order.customer?.full_name && (
-                      <p className="text-xs mt-1 truncate" style={{ color: '#64748B' }}>{order.customer.full_name}</p>
+                      <p className="text-xs mt-1.5 truncate text-gray-500">{order.customer.full_name}</p>
                     )}
                   </button>
                 )
@@ -489,14 +480,13 @@ export default function PartsDashboard() {
             </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center py-10 px-4 text-center">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ backgroundColor: '#F1F5F9' }}>
-                <ShoppingCart className="w-6 h-6" style={{ color: '#94A3B8' }} />
+              <div className="icon-tile-lg bg-gray-100 text-gray-400 mx-auto mb-3">
+                <ShoppingCart className="w-6 h-6" strokeWidth={1.5} />
               </div>
-              <p className="text-sm font-medium text-gray-600">Нет заказов</p>
+              <p className="text-sm font-semibold text-gray-600">Нет заказов</p>
               <button
                 onClick={() => navigate('/parts/orders/create')}
-                className="mt-3 text-xs font-medium transition-colors"
-                style={{ color: '#2563EB' }}
+                className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
               >
                 Создать первый заказ
               </button>
@@ -504,12 +494,12 @@ export default function PartsDashboard() {
           )}
 
           {/* Quick action */}
-          <div className="flex-shrink-0 p-3" style={{ borderTop: '1px solid #F1F5F9' }}>
+          <div className="flex-shrink-0 p-3 border-t border-gray-100">
             <button
               onClick={() => navigate('/parts/orders/create')}
               className="btn-primary w-full flex items-center justify-center gap-2 btn-sm"
             >
-              <ShoppingCart className="w-4 h-4" />
+              <ShoppingCart className="w-4 h-4" strokeWidth={1.5} />
               Новый заказ
             </button>
           </div>

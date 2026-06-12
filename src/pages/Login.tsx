@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { getUserRolesWithNames, getEmailByUsername } from '@/services/userService'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { getDefaultRouteForRoles } from '../config/navigation'
-import { Wrench, Mail, Lock, AtSign, Eye, EyeOff } from 'lucide-react'
+import { Wrench, Mail, Lock, AtSign, Eye, EyeOff, Package, ArrowRight } from 'lucide-react'
 
 export default function Login() {
   const [emailOrUsername, setEmailOrUsername] = useState('')
@@ -21,7 +22,7 @@ export default function Login() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (password !== confirmPassword) {
       toast.error('Пароли не совпадают')
       return
@@ -185,7 +186,7 @@ export default function Login() {
   const handleSuccessfulLogin = async () => {
     // Получаем профиль пользователя для определения ролей
     const { data: { user } } = await supabase.auth.getUser()
-    
+
     if (user) {
       const { roleNames, primaryRoleName } = await getUserRolesWithNames(user.id)
 
@@ -204,219 +205,245 @@ export default function Login() {
     }
   }
 
-  const labelStyle: React.CSSProperties = {
-    color: '#94A3B8',
-    fontSize: '13px',
-    fontWeight: 500,
-    display: 'block',
-    marginBottom: '7px',
-  }
+  const formTitle = isForgotMode
+    ? 'Восстановление пароля'
+    : isRegisterMode
+    ? 'Создать аккаунт'
+    : 'Добро пожаловать'
+
+  const formSubtitle = isForgotMode
+    ? 'Введите email — отправим ссылку для сброса пароля'
+    : isRegisterMode
+    ? 'Заполните данные для регистрации'
+    : 'Войдите в свой аккаунт'
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
-        .login-root { font-family: 'DM Sans', system-ui, sans-serif; }
-        .brand-font { font-family: 'Bebas Neue', sans-serif; }
-        .grid-bg {
-          background-image:
-            linear-gradient(rgba(59,130,246,0.07) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(59,130,246,0.07) 1px, transparent 1px);
-          background-size: 44px 44px;
-        }
-        .field { position: relative; }
-        .field-icon {
-          position: absolute;
-          left: 14px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #64748B;
-          pointer-events: none;
-          transition: color 0.2s;
-        }
-        .input-dark {
-          background: rgba(255,255,255,0.07);
-          border: 1px solid rgba(148,163,184,0.22);
-          color: #F1F5F9;
-          transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-          width: 100%;
-          height: 48px;
-          padding-left: 44px;
-        }
-        .input-dark::placeholder { color: #64748B; }
-        .input-dark:hover { border-color: rgba(148,163,184,0.35); }
-        .input-dark:focus {
-          outline: none;
-          background: rgba(255,255,255,0.09);
-          border-color: #3B82F6;
-          box-shadow: 0 0 0 3px rgba(59,130,246,0.18);
-        }
-        .field:focus-within .field-icon { color: #3B82F6; }
-        .input-trail {
-          position: absolute;
-          right: 6px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #64748B;
-          background: none;
-          border: none;
-          cursor: pointer;
-          padding: 8px;
-          display: flex;
-          border-radius: 8px;
-          transition: color 0.2s, background 0.2s;
-        }
-        .input-trail:hover { color: #94A3B8; background: rgba(255,255,255,0.05); }
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(14px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .fu { animation: fadeUp 0.5s ease forwards; opacity: 0; }
-        .fu-1 { animation-delay: 0.05s; }
-        .fu-2 { animation-delay: 0.15s; }
-        .fu-3 { animation-delay: 0.25s; }
-        .fu-4 { animation-delay: 0.35s; }
-        @keyframes shimmer {
-          0%   { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-        .btn-primary {
-          background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
-          transition: opacity 0.2s, transform 0.15s;
-        }
-        .btn-primary:not(:disabled):hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-primary:not(:disabled):active { transform: translateY(0); }
-      `}</style>
+    <div
+      className="flex min-h-dvh"
+      style={{ background: '#080C14', fontFamily: "'Manrope Variable', 'Inter', system-ui, sans-serif" }}
+    >
 
-      <div className="login-root flex min-h-dvh" style={{ background: '#080C14' }}>
-
-        {/* ─── Left brand panel ─────────────────────────────── */}
+      {/* ─── Left brand panel ─────────────────────────────── */}
+      <div
+        className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-12 overflow-hidden"
+        style={{
+          borderRight: '1px solid rgba(59,130,246,0.1)',
+          backgroundImage:
+            'linear-gradient(rgba(59,130,246,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.07) 1px,transparent 1px)',
+          backgroundSize: '44px 44px',
+        }}
+      >
+        {/* Glow orbs */}
         <div
-          className="hidden lg:flex lg:w-1/2 grid-bg relative flex-col justify-between p-12 overflow-hidden"
-          style={{ borderRight: '1px solid rgba(59,130,246,0.12)' }}
-        >
-          {/* Glow orbs */}
-          <div style={{ position:'absolute', top:'-120px', right:'-120px', width:'480px', height:'480px', borderRadius:'50%', background:'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 65%)', pointerEvents:'none' }} />
-          <div style={{ position:'absolute', bottom:'-80px', left:'-80px', width:'320px', height:'320px', borderRadius:'50%', background:'radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 65%)', pointerEvents:'none' }} />
+          className="absolute pointer-events-none"
+          style={{ top: '-120px', right: '-120px', width: '480px', height: '480px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(59,130,246,0.12) 0%,transparent 65%)' }}
+        />
+        <div
+          className="absolute pointer-events-none"
+          style={{ bottom: '-80px', left: '-80px', width: '320px', height: '320px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(59,130,246,0.07) 0%,transparent 65%)' }}
+        />
 
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div style={{ width:'42px', height:'42px', background:'#2563EB', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-              <Wrench size={22} color="white" />
-            </div>
-            <span className="brand-font text-white" style={{ fontSize:'26px', letterSpacing:'3px' }}>TSP CRM</span>
+        {/* Logo */}
+        <div className="relative flex items-center gap-3">
+          <div
+            className="w-10 h-10 flex items-center justify-center rounded-xl flex-shrink-0"
+            style={{
+              background: 'linear-gradient(180deg,#3B82F6 0%,#2563EB 100%)',
+              boxShadow: '0 2px 8px -2px rgba(37,99,235,0.55)',
+            }}
+          >
+            <Wrench size={20} color="white" strokeWidth={1.5} />
           </div>
-
-          {/* Hero text */}
-          <div>
-            <h1 className="brand-font text-white" style={{ fontSize:'80px', lineHeight:'0.92', letterSpacing:'1px', marginBottom:'24px' }}>
-              АВТО<br />
-              <span style={{ color:'#3B82F6' }}>БИЗНЕС</span><br />
-              ПОД<br />
-              КОНТРОЛЕМ
-            </h1>
-            <p style={{ color:'#94A3B8', fontSize:'15px', maxWidth:'300px', lineHeight:'1.7' }}>
-              Система управления для авторазборки.
-              Запчасти, заказы, клиенты — всё в одном месте.
-            </p>
-          </div>
-
-          {/* Feature chips */}
-          <div className="flex flex-wrap gap-3">
-            {[
-              { label:'Разборка', sub:'складской учёт' },
-              { label:'Запчасти', sub:'каталог и цены' },
-              { label:'Клиенты', sub:'история заказов' },
-            ].map(({ label, sub }) => (
-              <div key={label} style={{ background:'rgba(59,130,246,0.08)', border:'1px solid rgba(59,130,246,0.18)', borderRadius:'8px', padding:'8px 14px' }}>
-                <div style={{ color:'#60A5FA', fontWeight:'600', fontSize:'12px', letterSpacing:'0.5px' }}>{label}</div>
-                <div style={{ color:'#7AA3C8', fontSize:'11px', marginTop:'1px' }}>{sub}</div>
-              </div>
-            ))}
-          </div>
+          <span
+            className="font-extrabold"
+            style={{ color: '#F1F5F9', fontSize: '20px', letterSpacing: '-0.025em' }}
+          >
+            TSP <span style={{ color: '#3B82F6' }}>CRM</span>
+          </span>
         </div>
 
-        {/* ─── Right form panel ─────────────────────────────── */}
-        <div className="flex-1 flex items-center justify-center" style={{ background:'#0D1117', padding:'clamp(16px, 4vw, 40px) 16px' }}>
-          <div style={{ width:'100%', maxWidth:'360px' }}>
+        {/* Hero text */}
+        <div className="relative">
+          <h1
+            className="font-extrabold mb-6"
+            style={{ color: '#F1F5F9', fontSize: '72px', lineHeight: '0.94', letterSpacing: '-0.04em' }}
+          >
+            Авто<br />
+            <span className="text-gradient-brand">бизнес</span><br />
+            под<br />
+            контролем
+          </h1>
+          <p style={{ color: '#64748B', fontSize: '15px', maxWidth: '300px', lineHeight: '1.7' }}>
+            Система управления для авторазборки.
+            Запчасти, заказы, клиенты — всё в одном месте.
+          </p>
+        </div>
 
-            {/* Mobile logo */}
-            <div className="lg:hidden flex items-center justify-center gap-2 mb-10">
-              <div style={{ width:'36px', height:'36px', background:'#2563EB', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                <Wrench size={18} color="white" />
-              </div>
-              <span className="brand-font text-white" style={{ fontSize:'22px', letterSpacing:'3px' }}>TSP CRM</span>
+        {/* Feature chips */}
+        <div className="relative flex flex-wrap gap-3">
+          {[
+            { label: 'Разборка', sub: 'складской учёт' },
+            { label: 'Запчасти', sub: 'каталог и цены' },
+            { label: 'Клиенты', sub: 'история заказов' },
+          ].map(({ label, sub }) => (
+            <div
+              key={label}
+              className="rounded-xl px-3.5 py-2"
+              style={{
+                background: 'rgba(37,99,235,0.1)',
+                border: '1px solid rgba(59,130,246,0.18)',
+              }}
+            >
+              <div className="font-bold text-xs" style={{ color: '#60A5FA', letterSpacing: '0.01em' }}>{label}</div>
+              <div className="text-xs mt-0.5" style={{ color: '#475569' }}>{sub}</div>
             </div>
+          ))}
+        </div>
+      </div>
 
-            <div className="fu fu-1">
-              <h2 style={{ color:'#F1F5F9', fontSize:'22px', fontWeight:'600', marginBottom:'4px' }}>
-                {isForgotMode ? 'Восстановление пароля' : isRegisterMode ? 'Создать аккаунт' : 'Добро пожаловать'}
+      {/* ─── Right form panel ─────────────────────────────── */}
+      <div
+        className="flex-1 flex items-center justify-center"
+        style={{ background: '#0D1117', padding: 'clamp(16px,4vw,40px) 16px' }}
+      >
+        <div className="w-full" style={{ maxWidth: '360px' }}>
+
+          {/* Mobile logo */}
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="lg:hidden flex items-center justify-center gap-2.5 mb-10"
+          >
+            <div
+              className="w-9 h-9 flex items-center justify-center rounded-xl"
+              style={{
+                background: 'linear-gradient(180deg,#3B82F6 0%,#2563EB 100%)',
+                boxShadow: '0 2px 8px -2px rgba(37,99,235,0.5)',
+              }}
+            >
+              <Wrench size={17} color="white" strokeWidth={1.5} />
+            </div>
+            <span
+              className="font-extrabold"
+              style={{ color: '#F1F5F9', fontSize: '18px', letterSpacing: '-0.025em' }}
+            >
+              TSP <span style={{ color: '#3B82F6' }}>CRM</span>
+            </span>
+          </motion.div>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`${isForgotMode}-${isRegisterMode}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <h2
+                className="font-extrabold mb-1"
+                style={{ color: '#F1F5F9', fontSize: '22px', letterSpacing: '-0.025em' }}
+              >
+                {formTitle}
               </h2>
-              <p style={{ color:'#94A3B8', fontSize:'13px', marginBottom:'28px' }}>
-                {isForgotMode
-                  ? 'Введите email — отправим ссылку для сброса пароля'
-                  : isRegisterMode ? 'Заполните данные для регистрации' : 'Войдите в свой аккаунт'}
+              <p className="text-sm mb-7" style={{ color: '#64748B' }}>
+                {formSubtitle}
               </p>
+            </motion.div>
+          </AnimatePresence>
+
+          <form onSubmit={isForgotMode ? handleForgotPassword : isRegisterMode ? handleRegister : handleLogin}>
+
+            <div className="flex flex-col gap-4 mb-4">
+              {isRegisterMode ? (
+                <div>
+                  <label htmlFor="email" className="form-label" style={{ color: '#94A3B8' }}>Email</label>
+                  <div className="relative">
+                    <Mail
+                      size={16}
+                      strokeWidth={1.5}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                      style={{ color: '#475569' }}
+                    />
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      autoComplete="email"
+                      required
+                      placeholder="email@example.com"
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl text-sm transition-all duration-200"
+                      style={{
+                        background: 'rgba(255,255,255,0.07)',
+                        border: '1px solid rgba(148,163,184,0.2)',
+                        color: '#F1F5F9',
+                        outline: 'none',
+                      }}
+                      onFocus={e => { e.target.style.borderColor = '#3B82F6'; e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,0.14)' }}
+                      onBlur={e => { e.target.style.borderColor = 'rgba(148,163,184,0.2)'; e.target.style.boxShadow = 'none' }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="emailOrUsername" className="form-label" style={{ color: '#94A3B8' }}>Email</label>
+                  <div className="relative">
+                    <AtSign
+                      size={16}
+                      strokeWidth={1.5}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                      style={{ color: '#475569' }}
+                    />
+                    <input
+                      id="emailOrUsername"
+                      type="email"
+                      value={emailOrUsername}
+                      onChange={(e) => setEmailOrUsername(e.target.value)}
+                      required
+                      autoComplete="email"
+                      placeholder="email@example.com"
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl text-sm transition-all duration-200"
+                      style={{
+                        background: 'rgba(255,255,255,0.07)',
+                        border: '1px solid rgba(148,163,184,0.2)',
+                        color: '#F1F5F9',
+                        outline: 'none',
+                      }}
+                      onFocus={e => { e.target.style.borderColor = '#3B82F6'; e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,0.14)' }}
+                      onBlur={e => { e.target.style.borderColor = 'rgba(148,163,184,0.2)'; e.target.style.boxShadow = 'none' }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
-            <form onSubmit={isForgotMode ? handleForgotPassword : isRegisterMode ? handleRegister : handleLogin}>
-
-              <div className="fu fu-2" style={{ display:'flex', flexDirection:'column', gap:'16px', marginBottom:'16px' }}>
-                {isRegisterMode ? (
-                  <div>
-                    <label htmlFor="email" style={labelStyle}>Email</label>
-                    <div className="field">
-                      <Mail size={18} className="field-icon" />
-                      <input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        autoComplete="email"
-                        required
-                        className="input-dark rounded-lg text-sm"
-                        placeholder="email@example.com"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <label htmlFor="emailOrUsername" style={labelStyle}>Email</label>
-                    <div className="field">
-                      <AtSign size={18} className="field-icon" />
-                      <input
-                        id="emailOrUsername"
-                        type="email"
-                        value={emailOrUsername}
-                        onChange={(e) => setEmailOrUsername(e.target.value)}
-                        required
-                        autoComplete="email"
-                        className="input-dark rounded-lg text-sm"
-                        placeholder="email@example.com"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {!isForgotMode && (
-              <div className="fu fu-3" style={{ display:'flex', flexDirection:'column', gap:'16px', marginBottom:'24px' }}>
+            {!isForgotMode && (
+              <div className="flex flex-col gap-4 mb-6">
                 <div>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
-                    <label htmlFor="password" style={labelStyle}>Пароль</label>
+                  <div className="flex justify-between items-baseline mb-1.5">
+                    <label htmlFor="password" className="form-label mb-0" style={{ color: '#94A3B8' }}>Пароль</label>
                     {!isRegisterMode && (
                       <button
                         type="button"
                         onClick={() => setIsForgotMode(true)}
                         disabled={loading}
-                        style={{ color:'#3B82F6', fontSize:'12px', background:'none', border:'none', cursor:'pointer', padding:0, marginBottom:'7px' }}
+                        className="text-xs font-medium transition-colors duration-150"
+                        style={{ color: '#3B82F6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        onMouseOver={e => (e.currentTarget.style.color = '#60A5FA')}
+                        onMouseOut={e => (e.currentTarget.style.color = '#3B82F6')}
                       >
                         Забыли пароль?
                       </button>
                     )}
                   </div>
-                  <div className="field">
-                    <Lock size={18} className="field-icon" />
+                  <div className="relative">
+                    <Lock
+                      size={16}
+                      strokeWidth={1.5}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                      style={{ color: '#475569' }}
+                    />
                     <input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
@@ -424,20 +451,42 @@ export default function Login() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
-                      className="input-dark rounded-lg text-sm"
-                      style={{ paddingRight: '44px' }}
                       placeholder={isRegisterMode ? 'Минимум 6 символов' : 'Введите пароль'}
+                      className="w-full pl-10 pr-11 py-2.5 rounded-xl text-sm transition-all duration-200"
+                      style={{
+                        background: 'rgba(255,255,255,0.07)',
+                        border: '1px solid rgba(148,163,184,0.2)',
+                        color: '#F1F5F9',
+                        outline: 'none',
+                      }}
+                      onFocus={e => { e.target.style.borderColor = '#3B82F6'; e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,0.14)' }}
+                      onBlur={e => { e.target.style.borderColor = 'rgba(148,163,184,0.2)'; e.target.style.boxShadow = 'none' }}
                     />
-                    <button type="button" className="input-trail" onClick={() => setShowPassword(v => !v)} tabIndex={-1} aria-label="Показать пароль">
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(v => !v)}
+                      tabIndex={-1}
+                      aria-label="Показать пароль"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all duration-150"
+                      style={{ color: '#475569', background: 'none', border: 'none', cursor: 'pointer' }}
+                      onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.color = '#94A3B8'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)' }}
+                      onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.color = '#475569'; (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
+                    >
+                      {showPassword ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
                     </button>
                   </div>
                 </div>
+
                 {isRegisterMode && (
                   <div>
-                    <label htmlFor="confirmPassword" style={labelStyle}>Повторите пароль</label>
-                    <div className="field">
-                      <Lock size={18} className="field-icon" />
+                    <label htmlFor="confirmPassword" className="form-label" style={{ color: '#94A3B8' }}>Повторите пароль</label>
+                    <div className="relative">
+                      <Lock
+                        size={16}
+                        strokeWidth={1.5}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                        style={{ color: '#475569' }}
+                      />
                       <input
                         id="confirmPassword"
                         type={showConfirm ? 'text' : 'password'}
@@ -445,100 +494,133 @@ export default function Login() {
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
                         autoComplete="new-password"
-                        className="input-dark rounded-lg text-sm"
-                        style={{ paddingRight: '44px' }}
                         placeholder="Ещё раз тот же пароль"
+                        className="w-full pl-10 pr-11 py-2.5 rounded-xl text-sm transition-all duration-200"
+                        style={{
+                          background: 'rgba(255,255,255,0.07)',
+                          border: '1px solid rgba(148,163,184,0.2)',
+                          color: '#F1F5F9',
+                          outline: 'none',
+                        }}
+                        onFocus={e => { e.target.style.borderColor = '#3B82F6'; e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,0.14)' }}
+                        onBlur={e => { e.target.style.borderColor = 'rgba(148,163,184,0.2)'; e.target.style.boxShadow = 'none' }}
                       />
-                      <button type="button" className="input-trail" onClick={() => setShowConfirm(v => !v)} tabIndex={-1} aria-label="Показать пароль">
-                        {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirm(v => !v)}
+                        tabIndex={-1}
+                        aria-label="Показать пароль"
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all duration-150"
+                        style={{ color: '#475569', background: 'none', border: 'none', cursor: 'pointer' }}
+                        onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.color = '#94A3B8'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)' }}
+                        onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.color = '#475569'; (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
+                      >
+                        {showConfirm ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
                       </button>
                     </div>
                   </div>
                 )}
               </div>
-              )}
+            )}
 
-              <div className="fu fu-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-primary w-full py-3 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
-                  style={{ letterSpacing:'0.4px' }}
-                >
-                  {loading
-                    ? (isForgotMode ? 'Отправка...' : isRegisterMode ? 'Регистрация...' : 'Вход...')
-                    : (isForgotMode ? 'Отправить ссылку' : isRegisterMode ? 'Зарегистрироваться' : 'Войти')}
-                </button>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 active:scale-[0.97] disabled:opacity-55"
+              style={{
+                background: 'linear-gradient(180deg,#3B82F6 0%,#2563EB 100%)',
+                boxShadow: '0 1px 2px rgba(37,99,235,0.35),0 4px 12px -2px rgba(37,99,235,0.4)',
+                border: 'none',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              {loading
+                ? (isForgotMode ? 'Отправка...' : isRegisterMode ? 'Регистрация...' : 'Вход...')
+                : (isForgotMode ? 'Отправить ссылку' : isRegisterMode ? 'Зарегистрироваться' : 'Войти')}
+            </button>
 
-                {!isForgotMode && !isRegisterMode && (
-                  <>
-                    <div style={{ display:'flex', alignItems:'center', gap:'12px', margin:'18px 0' }}>
-                      <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.08)' }} />
-                      <span style={{ color:'#64748B', fontSize:'12px' }}>или</span>
-                      <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.08)' }} />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleGoogleLogin}
-                      disabled={loading}
-                      className="w-full py-3 rounded-lg text-sm font-semibold disabled:opacity-50"
-                      style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', background:'#FFFFFF', color:'#1F2937', transition:'opacity 0.2s' }}
-                    >
-                      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
-                        <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
-                        <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/>
-                        <path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.05l3.01-2.33z"/>
-                        <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/>
-                      </svg>
-                      Войти через Google
-                    </button>
-                  </>
-                )}
-
-                <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', marginTop:'20px', paddingTop:'16px', textAlign:'center' }}>
-                  {isForgotMode ? (
-                    <button
-                      type="button"
-                      onClick={() => setIsForgotMode(false)}
-                      style={{ color:'#3B82F6', fontSize:'13px', background:'none', border:'none', cursor:'pointer', transition:'color 0.15s' }}
-                      onMouseOver={e => (e.currentTarget.style.color = '#60A5FA')}
-                      onMouseOut={e => (e.currentTarget.style.color = '#3B82F6')}
-                    >
-                      ← Вернуться ко входу
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsRegisterMode(!isRegisterMode)
-                        setEmail('')
-                        setConfirmPassword('')
-                      }}
-                      style={{ color:'#3B82F6', fontSize:'13px', background:'none', border:'none', cursor:'pointer', transition:'color 0.15s' }}
-                      onMouseOver={e => (e.currentTarget.style.color = '#60A5FA')}
-                      onMouseOut={e => (e.currentTarget.style.color = '#3B82F6')}
-                    >
-                      {isRegisterMode ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
-                    </button>
-                  )}
+            {/* Google + divider */}
+            {!isForgotMode && !isRegisterMode && (
+              <>
+                <div className="flex items-center gap-3 my-5">
+                  <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                  <span className="text-xs font-medium" style={{ color: '#475569' }}>или</span>
+                  <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
                 </div>
-              </div>
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading}
+                  className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2.5 transition-all duration-200 active:scale-[0.97] disabled:opacity-55"
+                  style={{ background: '#FFFFFF', color: '#1F2937', border: 'none' }}
+                  onMouseOver={e => (e.currentTarget.style.opacity = '0.92')}
+                  onMouseOut={e => (e.currentTarget.style.opacity = '1')}
+                >
+                  <svg width="17" height="17" viewBox="0 0 18 18" aria-hidden="true">
+                    <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
+                    <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/>
+                    <path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.05l3.01-2.33z"/>
+                    <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/>
+                  </svg>
+                  Войти через Google
+                </button>
+              </>
+            )}
 
-            </form>
-
-            <div style={{ textAlign:'center', marginTop:'14px' }}>
-              <Link
-                to="/market"
-                style={{ color:'#64748B', fontSize:'13px', textDecoration:'none', transition:'color 0.15s' }}
-                onMouseOver={e => (e.currentTarget.style.color = '#94A3B8')}
-                onMouseOut={e => (e.currentTarget.style.color = '#64748B')}
-              >
-                Смотреть каталог запчастей →
-              </Link>
+            {/* Mode switcher */}
+            <div
+              className="mt-5 pt-4 text-center"
+              style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
+            >
+              {isForgotMode ? (
+                <button
+                  type="button"
+                  onClick={() => setIsForgotMode(false)}
+                  className="text-sm font-medium transition-colors duration-150"
+                  style={{ color: '#3B82F6', background: 'none', border: 'none', cursor: 'pointer' }}
+                  onMouseOver={e => (e.currentTarget.style.color = '#60A5FA')}
+                  onMouseOut={e => (e.currentTarget.style.color = '#3B82F6')}
+                >
+                  ← Вернуться ко входу
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRegisterMode(!isRegisterMode)
+                    setEmail('')
+                    setConfirmPassword('')
+                  }}
+                  className="text-sm font-medium transition-colors duration-150"
+                  style={{ color: '#3B82F6', background: 'none', border: 'none', cursor: 'pointer' }}
+                  onMouseOver={e => (e.currentTarget.style.color = '#60A5FA')}
+                  onMouseOut={e => (e.currentTarget.style.color = '#3B82F6')}
+                >
+                  {isRegisterMode ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
+                </button>
+              )}
             </div>
+
+          </form>
+
+          {/* Catalog link */}
+          <div className="text-center mt-4">
+            <Link
+              to="/market"
+              className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors duration-150"
+              style={{ color: '#475569', textDecoration: 'none' }}
+              onMouseOver={e => (e.currentTarget.style.color = '#94A3B8')}
+              onMouseOut={e => (e.currentTarget.style.color = '#475569')}
+            >
+              <Package size={13} strokeWidth={1.5} />
+              Смотреть каталог запчастей
+              <ArrowRight size={12} strokeWidth={2} />
+            </Link>
           </div>
+
         </div>
       </div>
-    </>
+    </div>
   )
 }

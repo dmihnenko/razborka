@@ -1,5 +1,9 @@
 import { useNavigate } from 'react-router-dom'
-import { Wrench, Car, Package, Users, BarChart3, ShieldCheck, Smartphone, ArrowRight, CheckCircle } from 'lucide-react'
+import { motion } from 'framer-motion'
+import {
+  Wrench, Car, Package, Users, BarChart3, ShieldCheck,
+  Smartphone, ArrowRight, CheckCircle, Zap,
+} from 'lucide-react'
 
 const FEATURES_PARTS = [
   'Автомобили на разборку',
@@ -11,203 +15,414 @@ const FEATURES_PARTS = [
 ]
 
 const HIGHLIGHTS = [
-  { icon: ShieldCheck, title: 'Безопасно', desc: 'Supabase RLS — каждая компания видит только свои данные' },
-  { icon: Smartphone, title: 'Мобильный', desc: 'PWA — работает как приложение на iOS и Android' },
-  { icon: BarChart3, title: 'Аналитика', desc: 'Графики доходов, статистика по клиентам и услугам' },
-  { icon: Users, title: 'Мультироль', desc: 'Администратор, менеджер, механик — у каждого свой доступ' },
+  { icon: ShieldCheck, title: 'Безопасно',   desc: 'Supabase RLS — каждая компания видит только свои данные', color: 'bg-blue-50 text-blue-600' },
+  { icon: Smartphone,  title: 'Мобильный',   desc: 'PWA — работает как приложение на iOS и Android',          color: 'bg-green-50 text-green-600' },
+  { icon: BarChart3,   title: 'Аналитика',   desc: 'Графики доходов, статистика по клиентам и услугам',       color: 'bg-purple-50 text-purple-600' },
+  { icon: Users,       title: 'Мультироль',  desc: 'Администратор, менеджер, механик — у каждого свой доступ', color: 'bg-orange-50 text-orange-600' },
 ]
+
+const fadeUp = {
+  hidden:  { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
+}
+const stagger = {
+  visible: { transition: { staggerChildren: 0.07 } },
+}
 
 export default function LandingPage() {
   const navigate = useNavigate()
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
-        .lp { font-family: 'DM Sans', system-ui, sans-serif; }
-        .lp .bf { font-family: 'Bebas Neue', sans-serif; }
-        .lp-grid-bg {
-          background-image:
-            linear-gradient(rgba(59,130,246,0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(59,130,246,0.06) 1px, transparent 1px);
-          background-size: 48px 48px;
-        }
-        @keyframes lp-fade-up {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .lp-fu-1 { animation: lp-fade-up 0.6s ease forwards; animation-delay: 0.1s; opacity: 0; }
-        .lp-fu-2 { animation: lp-fade-up 0.6s ease forwards; animation-delay: 0.25s; opacity: 0; }
-        .lp-fu-3 { animation: lp-fade-up 0.6s ease forwards; animation-delay: 0.4s; opacity: 0; }
-        .lp-btn-primary {
-          background: linear-gradient(135deg, #2563EB, #1D4ED8);
-          transition: opacity 0.2s, transform 0.15s;
-        }
-        .lp-btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-        .lp-btn-ghost {
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.1);
-          transition: background 0.2s, border-color 0.2s;
-        }
-        .lp-btn-ghost:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.2); }
-        .lp-card {
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.07);
-          transition: border-color 0.2s, background 0.2s;
-        }
-        .lp-card:hover { background: rgba(59,130,246,0.05); border-color: rgba(59,130,246,0.2); }
-        .lp-check { color: #34D399; flex-shrink: 0; }
-      `}</style>
+    <div
+      className="min-h-dvh flex flex-col"
+      style={{ background: '#080C14', fontFamily: "'Manrope Variable', 'Inter', system-ui, sans-serif" }}
+    >
 
-      <div className="lp" style={{ background: '#080C14', minHeight: '100vh' }}>
-
-        {/* ── NAV ─────────────────────────────────────────────── */}
-        <nav style={{ borderBottom: '1px solid rgba(59,130,246,0.1)', background: 'rgba(8,12,20,0.9)', backdropFilter: 'blur(12px)' }}>
-          <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '56px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '32px', height: '32px', background: '#2563EB', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Wrench size={16} color="white" />
-              </div>
-              <span className="bf" style={{ color: '#F1F5F9', fontSize: '20px', letterSpacing: '2px' }}>TSP CRM</span>
+      {/* ── NAV ─────────────────────────────────────────────── */}
+      <nav
+        className="sticky top-0 z-40"
+        style={{
+          borderBottom: '1px solid rgba(59,130,246,0.1)',
+          background: 'rgba(8,12,20,0.88)',
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
+        }}
+      >
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 flex items-center justify-between h-14">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5">
+            <div
+              className="w-8 h-8 flex items-center justify-center flex-shrink-0 rounded-xl"
+              style={{ background: 'linear-gradient(180deg,#3B82F6 0%,#2563EB 100%)', boxShadow: '0 2px 8px -2px rgba(37,99,235,0.55)' }}
+            >
+              <Wrench size={15} color="white" strokeWidth={2} />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <button
-                onClick={() => navigate('/market')}
-                className="lp-btn-ghost"
-                style={{ color: '#CBD5E1', fontWeight: '600', fontSize: '13px', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}
-              >
-                Каталог запчастей
-              </button>
-              <button
-                onClick={() => navigate('/login')}
-                className="lp-btn-primary"
-                style={{ color: 'white', fontWeight: '600', fontSize: '13px', padding: '8px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
-              >
-                Войти
-              </button>
-            </div>
+            <span
+              className="font-extrabold tracking-tight"
+              style={{ color: '#F1F5F9', fontSize: '17px', letterSpacing: '-0.02em' }}
+            >
+              TSP <span style={{ color: '#3B82F6' }}>CRM</span>
+            </span>
           </div>
-        </nav>
 
-        {/* ── HERO ────────────────────────────────────────────── */}
-        <section className="lp-grid-bg" style={{ position: 'relative', overflow: 'hidden', padding: 'clamp(60px, 10vw, 100px) 20px clamp(48px, 8vw, 80px)' }}>
-          {/* Glow */}
-          <div style={{ position: 'absolute', top: '-200px', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 65%)', pointerEvents: 'none' }} />
-
-          <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center', position: 'relative' }}>
-            <div className="lp-fu-1" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.25)', borderRadius: '20px', padding: '6px 16px', marginBottom: '32px' }}>
-              <span style={{ width: '6px', height: '6px', background: '#3B82F6', borderRadius: '50%', display: 'inline-block' }} />
-              <span style={{ color: '#93C5FD', fontSize: '13px', fontWeight: '500' }}>CRM для автобизнеса</span>
-            </div>
-
-            <h1 className="bf lp-fu-2" style={{ fontSize: 'clamp(52px, 8vw, 88px)', lineHeight: '0.95', color: '#F1F5F9', letterSpacing: '1px', marginBottom: '24px' }}>
-              УПРАВЛЯЙ<br />
-              <span style={{ color: '#3B82F6' }}>АВТО</span>БИЗНЕСОМ<br />
-              УМНО
-            </h1>
-
-            <p className="lp-fu-3" style={{ color: '#64748B', fontSize: 'clamp(15px, 2vw, 17px)', lineHeight: '1.7', maxWidth: '520px', margin: '0 auto 40px' }}>
-              Полная система управления для авторазборки.
-              Автомобили на разборку, склад запчастей, заказы клиентов — всё в одном месте.
-            </p>
-
-            <div className="lp-fu-3" style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', width: '100%' }}>
-              <button
-                onClick={() => navigate('/login')}
-                className="lp-btn-primary"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'white', fontWeight: '600', fontSize: '15px', padding: '14px 28px', borderRadius: '10px', border: 'none', cursor: 'pointer', width: 'clamp(200px, 60vw, 280px)', justifyContent: 'center' }}
-              >
-                Начать работу <ArrowRight size={16} />
-              </button>
-              <button
-                onClick={() => navigate('/market')}
-                className="lp-btn-ghost"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#CBD5E1', fontWeight: '600', fontSize: '15px', padding: '14px 28px', borderRadius: '10px', cursor: 'pointer', width: 'clamp(200px, 60vw, 280px)', justifyContent: 'center' }}
-              >
-                <Package size={16} /> Каталог запчастей
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* ── TWO SYSTEMS ─────────────────────────────────────── */}
-        <section style={{ padding: '80px 20px', maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
-
-            {/* Авторазборка */}
-            <div style={{ background: 'linear-gradient(135deg, rgba(20,44,20,0.5) 0%, rgba(15,23,42,0.8) 100%)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '16px', padding: '32px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                <div style={{ width: '44px', height: '44px', background: '#15803D', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Package size={22} color="white" />
-                </div>
-                <div>
-                  <div className="bf" style={{ color: '#F1F5F9', fontSize: '24px', letterSpacing: '1px' }}>АВТОРАЗБОРКА</div>
-                  <div style={{ color: '#4B5563', fontSize: '13px' }}>Учёт запчастей и продаж</div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {FEATURES_PARTS.map(f => (
-                  <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <CheckCircle size={15} style={{ color: '#34D399', flexShrink: 0 }} />
-                    <span style={{ color: '#CBD5E1', fontSize: '14px' }}>{f}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        {/* ── HIGHLIGHTS ──────────────────────────────────────── */}
-        <section style={{ padding: '20px 20px 80px', maxWidth: '1100px', margin: '0 auto' }}>
-          <h2 className="bf" style={{ color: '#F1F5F9', fontSize: '36px', letterSpacing: '1px', marginBottom: '32px', textAlign: 'center' }}>
-            ПОЧЕМУ TSP CRM
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
-            {HIGHLIGHTS.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="lp-card" style={{ borderRadius: '12px', padding: '24px' }}>
-                <div style={{ width: '40px', height: '40px', background: 'rgba(37,99,235,0.15)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
-                  <Icon size={20} color="#60A5FA" />
-                </div>
-                <div style={{ color: '#F1F5F9', fontWeight: '600', fontSize: '15px', marginBottom: '6px' }}>{title}</div>
-                <div style={{ color: '#4B5563', fontSize: '13px', lineHeight: '1.6' }}>{desc}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── CTA ─────────────────────────────────────────────── */}
-        <section style={{ padding: '60px 20px 80px' }}>
-          <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center', background: 'linear-gradient(135deg, rgba(30,58,95,0.4) 0%, rgba(15,23,42,0.6) 100%)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '20px', padding: 'clamp(32px, 5vw, 52px) clamp(20px, 4vw, 32px)' }}>
-            <div style={{ width: '52px', height: '52px', background: '#1D4ED8', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-              <Car size={26} color="white" />
-            </div>
-            <h2 className="bf" style={{ color: '#F1F5F9', fontSize: '36px', letterSpacing: '1px', marginBottom: '12px' }}>ГОТОВЫ НАЧАТЬ?</h2>
-            <p style={{ color: '#64748B', fontSize: '15px', lineHeight: '1.6', marginBottom: '32px' }}>
-              Войдите в систему и начните управлять своим автобизнесом прямо сейчас.
-            </p>
+          {/* Nav actions */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/market')}
+              className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.97]"
+              style={{ color: '#94A3B8', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+              onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.color = '#E2E8F0'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.15)' }}
+              onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.color = '#94A3B8'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.08)' }}
+            >
+              <Package size={14} strokeWidth={1.5} /> Каталог
+            </button>
             <button
               onClick={() => navigate('/login')}
-              className="lp-btn-primary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'white', fontWeight: '600', fontSize: '15px', padding: '14px 32px', borderRadius: '10px', border: 'none', cursor: 'pointer', width: 'clamp(200px, 60vw, 280px)', justifyContent: 'center' }}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl text-white transition-all duration-200 active:scale-[0.97]"
+              style={{
+                background: 'linear-gradient(180deg,#3B82F6 0%,#2563EB 100%)',
+                boxShadow: '0 1px 2px rgba(37,99,235,0.35), 0 4px 12px -2px rgba(37,99,235,0.35)',
+                border: 'none',
+              }}
             >
-              Войти в TSP CRM <ArrowRight size={16} />
+              Войти
             </button>
           </div>
-        </section>
+        </div>
+      </nav>
 
-        {/* ── FOOTER ──────────────────────────────────────────── */}
-        <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '24px 20px', textAlign: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', marginBottom: '8px' }}>
-            <div style={{ width: '22px', height: '22px', background: '#1D4ED8', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Wrench size={12} color="white" />
+      {/* ── HERO ────────────────────────────────────────────── */}
+      <section
+        className="relative overflow-hidden flex-shrink-0"
+        style={{ padding: 'clamp(72px,10vw,112px) 16px clamp(60px,8vw,88px)' }}
+      >
+        {/* Grid pattern */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(59,130,246,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.07) 1px,transparent 1px)',
+            backgroundSize: '48px 48px',
+          }}
+        />
+        {/* Glow orb */}
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            top: '-220px', left: '50%', transform: 'translateX(-50%)',
+            width: '860px', height: '640px', borderRadius: '50%',
+            background: 'radial-gradient(circle,rgba(37,99,235,0.15) 0%,transparent 65%)',
+          }}
+        />
+        {/* Bottom fade */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom,transparent,#080C14)' }}
+        />
+
+        <motion.div
+          className="relative mx-auto max-w-3xl text-center"
+          variants={stagger}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Pill badge */}
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 mb-8">
+            <span
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold"
+              style={{
+                background: 'rgba(37,99,235,0.13)',
+                border: '1px solid rgba(37,99,235,0.28)',
+                color: '#93C5FD',
+                letterSpacing: '0.02em',
+              }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                style={{ background: '#3B82F6', boxShadow: '0 0 6px #3B82F6' }}
+              />
+              CRM для автобизнеса
+            </span>
+          </motion.div>
+
+          {/* Headline */}
+          <motion.h1
+            variants={fadeUp}
+            className="font-extrabold mb-6"
+            style={{
+              fontSize: 'clamp(42px,7.5vw,84px)',
+              lineHeight: '1.0',
+              letterSpacing: '-0.035em',
+              color: '#F1F5F9',
+            }}
+          >
+            Управляй<br />
+            <span className="text-gradient-brand">авто</span>бизнесом<br />
+            умно
+          </motion.h1>
+
+          {/* Subtitle */}
+          <motion.p
+            variants={fadeUp}
+            className="mx-auto mb-10 leading-relaxed"
+            style={{ color: '#64748B', fontSize: 'clamp(15px,2vw,17px)', maxWidth: '520px' }}
+          >
+            Полная система управления для авторазборки.
+            Автомобили на разборку, склад запчастей, заказы клиентов — всё в одном месте.
+          </motion.p>
+
+          {/* CTA buttons */}
+          <motion.div
+            variants={fadeUp}
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 flex-wrap"
+          >
+            <button
+              onClick={() => navigate('/login')}
+              className="inline-flex items-center justify-center gap-2 font-semibold text-white text-sm rounded-xl px-7 py-3.5 active:scale-[0.97] transition-all duration-200"
+              style={{
+                background: 'linear-gradient(135deg,#3B82F6 0%,#2563EB 55%,#1D4ED8 100%)',
+                boxShadow: '0 2px 4px rgba(37,99,235,0.35),0 8px 20px -4px rgba(37,99,235,0.5)',
+                minWidth: 'min(240px,80vw)',
+                border: 'none',
+              }}
+            >
+              Начать работу <ArrowRight size={16} strokeWidth={2} />
+            </button>
+            <button
+              onClick={() => navigate('/market')}
+              className="inline-flex items-center justify-center gap-2 font-semibold text-sm rounded-xl px-7 py-3.5 active:scale-[0.97] transition-all duration-200"
+              style={{
+                color: '#CBD5E1',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                minWidth: 'min(240px,80vw)',
+              }}
+              onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.09)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.2)' }}
+              onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)' }}
+            >
+              <Package size={16} strokeWidth={1.5} /> Каталог запчастей
+            </button>
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* ── TWO SYSTEMS ─────────────────────────────────────── */}
+      <section className="px-4 sm:px-6 pb-16 mx-auto w-full max-w-6xl">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
+          {/* Авторазборка */}
+          <div
+            className="sm:col-span-2 lg:col-span-1 rounded-2xl p-6 flex flex-col gap-5"
+            style={{
+              background: 'linear-gradient(135deg,rgba(21,128,61,0.12) 0%,rgba(15,23,42,0.7) 100%)',
+              border: '1px solid rgba(34,197,94,0.18)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(21,128,61,0.2)', border: '1px solid rgba(34,197,94,0.25)' }}
+              >
+                <Package size={20} color="#4ADE80" strokeWidth={1.5} />
+              </div>
+              <div>
+                <div className="font-extrabold text-base" style={{ color: '#F1F5F9', letterSpacing: '-0.02em' }}>Авторазборка</div>
+                <div className="text-xs" style={{ color: '#475569' }}>Учёт запчастей и продаж</div>
+              </div>
             </div>
-            <span className="bf" style={{ color: '#374151', fontSize: '14px', letterSpacing: '2px' }}>TSP CRM</span>
+            <div className="flex flex-col gap-2.5">
+              {FEATURES_PARTS.map(f => (
+                <div key={f} className="flex items-center gap-2.5">
+                  <CheckCircle size={14} strokeWidth={2} style={{ color: '#4ADE80', flexShrink: 0 }} />
+                  <span className="text-sm font-medium" style={{ color: '#CBD5E1' }}>{f}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <p style={{ color: '#1F2937', fontSize: '12px' }}>Система управления для авторазборки</p>
-        </footer>
 
-      </div>
-    </>
+          {/* Личные авто */}
+          <div
+            className="rounded-2xl p-6 flex flex-col gap-4"
+            style={{
+              background: 'linear-gradient(135deg,rgba(30,64,175,0.15) 0%,rgba(15,23,42,0.7) 100%)',
+              border: '1px solid rgba(59,130,246,0.18)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(37,99,235,0.18)', border: '1px solid rgba(59,130,246,0.25)' }}
+              >
+                <Car size={20} color="#60A5FA" strokeWidth={1.5} />
+              </div>
+              <div>
+                <div className="font-extrabold text-base" style={{ color: '#F1F5F9', letterSpacing: '-0.02em' }}>Личные авто</div>
+                <div className="text-xs" style={{ color: '#475569' }}>Учёт автомобилей владельцев</div>
+              </div>
+            </div>
+            <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
+              Ведите историю ТО, ремонтов и расходов по каждому автомобилю. Клиент видит свой
+              профиль через публичную ссылку.
+            </p>
+          </div>
+
+          {/* Маркетплейс */}
+          <div
+            className="rounded-2xl p-6 flex flex-col gap-4"
+            style={{
+              background: 'linear-gradient(135deg,rgba(88,28,135,0.15) 0%,rgba(15,23,42,0.7) 100%)',
+              border: '1px solid rgba(139,92,246,0.18)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(139,92,246,0.18)', border: '1px solid rgba(139,92,246,0.25)' }}
+              >
+                <Zap size={20} color="#C084FC" strokeWidth={1.5} />
+              </div>
+              <div>
+                <div className="font-extrabold text-base" style={{ color: '#F1F5F9', letterSpacing: '-0.02em' }}>Маркетплейс</div>
+                <div className="text-xs" style={{ color: '#475569' }}>Публичный каталог</div>
+              </div>
+            </div>
+            <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
+              Публикуйте запчасти в общем каталоге — покупатели найдут нужную деталь без регистрации.
+            </p>
+            <button
+              onClick={() => navigate('/market')}
+              className="mt-auto inline-flex items-center gap-1.5 text-xs font-bold transition-colors duration-150"
+              style={{ color: '#C084FC', background: 'none', border: 'none', cursor: 'pointer', padding: 0, width: 'fit-content' }}
+            >
+              Открыть каталог <ArrowRight size={13} strokeWidth={2} />
+            </button>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ── HIGHLIGHTS ──────────────────────────────────────── */}
+      <section className="px-4 sm:px-6 pb-20 mx-auto w-full max-w-6xl">
+        <motion.h2
+          initial={{ opacity: 0, y: 14 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="font-extrabold text-center mb-8"
+          style={{ color: '#F1F5F9', fontSize: 'clamp(22px,4vw,32px)', letterSpacing: '-0.03em' }}
+        >
+          Почему <span className="text-gradient-brand">TSP CRM</span>
+        </motion.h2>
+
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+          variants={stagger}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-60px' }}
+        >
+          {HIGHLIGHTS.map(({ icon: Icon, title, desc, color }) => (
+            <motion.div
+              key={title}
+              variants={fadeUp}
+              className="rounded-2xl p-5 flex flex-col gap-3 transition-all duration-200 hover:-translate-y-1"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.07)',
+              }}
+              onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(59,130,246,0.05)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(59,130,246,0.18)' }}
+              onMouseOut={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.07)' }}
+            >
+              <div className={`icon-tile ${color}`}>
+                <Icon size={18} strokeWidth={1.5} />
+              </div>
+              <div>
+                <div className="font-bold text-sm mb-1" style={{ color: '#F1F5F9' }}>{title}</div>
+                <div className="text-xs leading-relaxed" style={{ color: '#475569' }}>{desc}</div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </section>
+
+      {/* ── CTA ─────────────────────────────────────────────── */}
+      <section className="px-4 sm:px-6 pb-20">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-40px' }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          className="mx-auto max-w-xl text-center rounded-3xl p-10 sm:p-14 relative overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg,rgba(30,58,95,0.45) 0%,rgba(15,23,42,0.7) 100%)',
+            border: '1px solid rgba(59,130,246,0.2)',
+          }}
+        >
+          {/* Subtle glow behind card */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: 'radial-gradient(circle at 50% 0%,rgba(37,99,235,0.1) 0%,transparent 70%)' }}
+          />
+
+          <div className="relative">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5"
+              style={{
+                background: 'linear-gradient(180deg,#3B82F6 0%,#2563EB 100%)',
+                boxShadow: '0 4px 16px -4px rgba(37,99,235,0.6)',
+              }}
+            >
+              <Car size={26} color="white" strokeWidth={1.5} />
+            </div>
+
+            <h2
+              className="font-extrabold mb-3"
+              style={{ color: '#F1F5F9', fontSize: 'clamp(22px,4vw,30px)', letterSpacing: '-0.03em' }}
+            >
+              Готовы начать?
+            </h2>
+            <p className="mb-8 leading-relaxed" style={{ color: '#64748B', fontSize: '15px' }}>
+              Войдите в систему и начните управлять своим автобизнесом прямо сейчас.
+            </p>
+
+            <button
+              onClick={() => navigate('/login')}
+              className="inline-flex items-center justify-center gap-2 text-white font-semibold rounded-xl px-8 py-3.5 active:scale-[0.97] transition-all duration-200"
+              style={{
+                background: 'linear-gradient(135deg,#3B82F6 0%,#2563EB 55%,#1D4ED8 100%)',
+                boxShadow: '0 2px 4px rgba(37,99,235,0.35),0 8px 24px -4px rgba(37,99,235,0.55)',
+                border: 'none',
+                minWidth: 'min(220px,80vw)',
+                fontSize: '15px',
+              }}
+            >
+              Войти в TSP CRM <ArrowRight size={16} strokeWidth={2} />
+            </button>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ── FOOTER ──────────────────────────────────────────── */}
+      <footer
+        className="mt-auto py-6 px-4 text-center"
+        style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+      >
+        <div className="inline-flex items-center gap-2 mb-2">
+          <div
+            className="w-5 h-5 rounded-md flex items-center justify-center"
+            style={{ background: 'linear-gradient(180deg,#3B82F6 0%,#2563EB 100%)' }}
+          >
+            <Wrench size={11} color="white" strokeWidth={2} />
+          </div>
+          <span className="font-extrabold text-xs tracking-tight" style={{ color: '#334155', letterSpacing: '-0.01em' }}>TSP CRM</span>
+        </div>
+        <p className="text-xs" style={{ color: '#1E293B' }}>Система управления для авторазборки</p>
+      </footer>
+
+    </div>
   )
 }

@@ -110,9 +110,9 @@ export default function PartsOrders() {
         actions={
           <button
             onClick={() => navigate('/parts/orders/create')}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            className="btn-primary flex items-center gap-2"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" strokeWidth={1.5} />
             <span className="hidden sm:inline">Создать заказ</span>
           </button>
         }
@@ -129,61 +129,61 @@ export default function PartsOrders() {
             { key: 'completed',  label: 'Завершены',value: stats.completed,   dot: 'bg-emerald-500',text: 'text-emerald-600',ring: 'ring-emerald-500' },
           ].map(({ key, label, value, dot, text, ring }) => (
             <button key={key} onClick={() => setStatusFilter(key as any)}
-              className={`stat-card cursor-pointer text-left ${statusFilter === key ? `ring-2 ${ring}` : ''}`}>
+              className={`stat-card cursor-pointer text-left transition-all ${statusFilter === key ? `ring-2 ${ring}` : ''}`}>
               <div className="flex items-start justify-between mb-3">
-                <p className="text-xs font-medium" style={{ color: '#64748B' }}>{label}</p>
-                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-0.5 ${dot}`} />
+                <p className="text-xs font-semibold text-gray-500">{label}</p>
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 mt-0.5 ${dot}`} />
               </div>
-              <p className={`text-3xl font-bold ${text}`} style={{ letterSpacing: '-0.03em' }}>{value}</p>
+              <p className={`text-3xl font-extrabold ${text}`} style={{ letterSpacing: '-0.03em' }}>{value}</p>
             </button>
           ))}
           <div className="stat-card">
             <div className="flex items-start justify-between mb-3">
-              <p className="text-xs font-medium" style={{ color: '#64748B' }}>Выручка</p>
-              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-0.5 bg-purple-400" />
+              <p className="text-xs font-semibold text-gray-500">Выручка</p>
+              <span className="w-2 h-2 rounded-full flex-shrink-0 mt-0.5 bg-purple-400" />
             </div>
-            <p className="text-2xl font-bold text-purple-600" style={{ letterSpacing: '-0.03em' }}>{formatUSD(stats.totalRevenue)}</p>
+            <p className="text-2xl font-extrabold text-purple-600" style={{ letterSpacing: '-0.03em' }}>{formatUSD(stats.totalRevenue)}</p>
           </div>
         </div>
 
         {/* Search & View Controls */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="card p-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" strokeWidth={1.5} />
               <input
                 type="text"
                 placeholder="Поиск по номеру, клиенту, телефону..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="form-input pl-10"
               />
             </div>
 
-            <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
+            <div className="flex bg-gray-100 rounded-xl p-1 gap-0.5">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                <Grid className="w-5 h-5" />
+                <Grid className="w-4 h-4" strokeWidth={1.5} />
               </button>
               <button
                 onClick={() => setViewMode('list')}
                 className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                <List className="w-5 h-5" />
+                <List className="w-4 h-4" strokeWidth={1.5} />
               </button>
             </div>
           </div>
 
           {statusFilter !== 'all' && (
             <div className="mt-3 flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                Фильтр: <span className="font-medium capitalize">{statusFilter === 'new' ? 'Новые' : statusFilter === 'in_progress' ? 'В работе' : statusFilter === 'completed' ? 'Завершенные' : 'Отмененные'}</span>
+              <span className="text-sm font-medium text-gray-600">
+                Фильтр: <span className="font-bold">{statusFilter === 'new' ? 'Новые' : statusFilter === 'in_progress' ? 'В работе' : statusFilter === 'completed' ? 'Завершенные' : 'Отмененные'}</span>
               </span>
               <button
                 onClick={() => setStatusFilter('all')}
-                className="ml-2 text-sm text-primary hover:underline"
+                className="ml-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
               >
                 Сбросить
               </button>
@@ -193,85 +193,74 @@ export default function PartsOrders() {
 
         {/* Orders List/Grid */}
         {isLoading ? (
-          <div className="text-center py-12">
-            <Spinner size="md" className="inline-block" />
+          <div className="flex items-center justify-center py-16">
+            <Spinner size="md" />
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-2">
+          <div className="card p-12 text-center">
+            <div className="icon-tile-lg bg-gray-100 text-gray-300 mx-auto mb-4">
+              <ShoppingCart className="w-7 h-7" strokeWidth={1.5} />
+            </div>
+            <p className="text-sm font-semibold text-gray-500 mb-1">
               {searchQuery || statusFilter !== 'all' ? 'Заказы не найдены' : 'Нет заказов'}
             </p>
             {!searchQuery && statusFilter === 'all' && (
               <button
                 onClick={() => navigate('/parts/orders/create')}
-                className="mt-4 text-primary hover:underline"
+                className="mt-3 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
               >
                 Создать первый заказ
               </button>
             )}
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
             {filteredOrders.map((order) => (
               <div
                 key={order.id}
                 onClick={() => navigate(`/parts/orders/${order.id}`)}
-                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden group"
+                className="card card-interactive p-0 overflow-hidden group"
               >
-                <div className="p-3 sm:p-4">
-                  {/* Header: names of parts as title */}
-                  <div className="flex items-start justify-between mb-2 gap-2">
-                    <h3 className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors leading-snug line-clamp-2 flex-1">
+                <div className="p-4">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-3 gap-2">
+                    <h3 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2 flex-1">
                       {order.items && order.items.length > 0
                         ? order.items.map((i: any) => i.inventory_item?.name).filter(Boolean).join(', ')
                         : '—'}
                     </h3>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium border flex-shrink-0 ${getPartsOrderStatusColor(order.status)} border-current`}>
+                    <span className={`badge flex-shrink-0 ${getPartsOrderStatusColor(order.status)}`}>
                       {getPartsOrderStatusText(order.status)}
                     </span>
                   </div>
 
-
-
                   {/* Customer Info */}
                   {order.customer && (
-                    <div className="mb-4">
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Клиент:</span> {order.customer.full_name}
-                      </p>
+                    <div className="mb-3">
+                      <p className="text-sm font-semibold text-gray-700">{order.customer.full_name}</p>
                       {order.customer.phone && (
-                        <p className="text-xs text-gray-500">{order.customer.phone}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{order.customer.phone}</p>
                       )}
                     </div>
                   )}
 
                   {/* Order Details */}
-                  <div className="space-y-2 text-sm mb-4">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Дата:</span>
-                      <span className="font-medium">{formatDate(order.order_date)}</span>
-                    </div>
+                  <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+                    <span>{formatDate(order.order_date)}</span>
                     {order.items && order.items.length > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Позиций:</span>
-                        <span className="font-medium">{order.items.length}</span>
-                      </div>
+                      <span className="font-medium">{order.items.length} поз.</span>
                     )}
                   </div>
 
                   {/* Total Amount */}
-                  <div className="pt-3 border-t border-gray-100">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Сумма:</span>
-                      <span className="text-xl font-bold text-primary">{formatUSD(computeOrderUSD(order))}</span>
-                    </div>
+                  <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
+                    <span className="text-xs text-gray-400">Сумма</span>
+                    <span className="text-lg font-extrabold text-blue-600" style={{ letterSpacing: '-0.02em' }}>{formatUSD(computeOrderUSD(order))}</span>
                   </div>
 
                   {order.notes && (
                     <div className="mt-3 pt-3 border-t border-gray-100">
-                      <p className="text-xs text-gray-500 mb-1">Примечание:</p>
-                      <p className="text-sm text-gray-600 line-clamp-2">{order.notes}</p>
+                      <p className="text-xs text-gray-500 line-clamp-2">{order.notes}</p>
                     </div>
                   )}
                 </div>
@@ -279,67 +268,54 @@ export default function PartsOrders() {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="card p-0 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead>
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Запчасти
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                      Клиент
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                      Дата
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                      Статус
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Сумма
-                    </th>
+                    <th className="table-header-cell">Запчасти</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200 hidden md:table-cell" style={{ letterSpacing: '0.06em' }}>Клиент</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200 hidden lg:table-cell" style={{ letterSpacing: '0.06em' }}>Дата</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200 hidden sm:table-cell" style={{ letterSpacing: '0.06em' }}>Статус</th>
+                    <th className="table-header-cell text-right">Сумма</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-100">
                   {filteredOrders.map((order) => (
                     <tr
                       key={order.id}
                       onClick={() => navigate(`/parts/orders/${order.id}`)}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="table-row cursor-pointer group/row"
                     >
-                      <td className="px-4 py-4">
-                        <div>
-                          <div className="font-medium text-gray-900 line-clamp-2 max-w-xs">
-                            {order.items && order.items.length > 0
-                              ? order.items.map((i: any) => i.inventory_item?.name).filter(Boolean).join(', ')
-                              : '—'}
-                          </div>
-
+                      <td className="px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
+                        <div className="font-semibold text-gray-900 group-hover/row:text-blue-600 transition-colors line-clamp-2 max-w-xs">
+                          {order.items && order.items.length > 0
+                            ? order.items.map((i: any) => i.inventory_item?.name).filter(Boolean).join(', ')
+                            : '—'}
                         </div>
                       </td>
-                      <td className="px-4 py-4 hidden md:table-cell">
+                      <td className="px-4 py-3 text-sm text-gray-700 border-b border-gray-100 hidden md:table-cell">
                         {order.customer ? (
                           <div>
-                            <div className="text-sm text-gray-900">{order.customer.full_name}</div>
+                            <div className="font-semibold text-gray-800">{order.customer.full_name}</div>
                             {order.customer.phone && (
-                              <div className="text-xs text-gray-500">{order.customer.phone}</div>
+                              <div className="text-xs text-gray-400 mt-0.5">{order.customer.phone}</div>
                             )}
                           </div>
                         ) : (
-                          <span className="text-sm text-gray-400">—</span>
+                          <span className="text-gray-400">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 hidden lg:table-cell">
+                      <td className="px-4 py-3 text-sm text-gray-700 border-b border-gray-100 whitespace-nowrap hidden lg:table-cell">
                         {formatDate(order.order_date)}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap hidden sm:table-cell">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getPartsOrderStatusColor(order.status)} border-current`}>
+                      <td className="px-4 py-3 text-sm text-gray-700 border-b border-gray-100 whitespace-nowrap hidden sm:table-cell">
+                        <span className={`badge ${getPartsOrderStatusColor(order.status)}`}>
                           {getPartsOrderStatusText(order.status)}
                         </span>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-right">
-                        <div className="text-lg font-bold text-primary">{formatUSD(computeOrderUSD(order))}</div>
+                      <td className="px-4 py-3 text-sm text-gray-700 border-b border-gray-100 whitespace-nowrap text-right">
+                        <span className="text-base font-extrabold text-blue-600" style={{ letterSpacing: '-0.02em' }}>{formatUSD(computeOrderUSD(order))}</span>
                       </td>
                     </tr>
                   ))}
