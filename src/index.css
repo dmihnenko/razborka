@@ -33,6 +33,27 @@
     --accent-foreground: 222 47% 11%;
     --popover:       0 0% 100%;
     --popover-foreground: 222 47% 11%;
+
+    /* ═══ ЕДИНЫЙ ИСТОЧНИК — менять цвета/размеры ТОЛЬКО здесь ═══════════════
+       Правило проекта: НЕ хардкодить hex/px в компонентах. Бренд-цвет,
+       градиент и базовый размер шрифта берём из этих переменных
+       (inline style background var(--brand-gradient), color var(--brand-600)
+        и т.п.). Tailwind-утилиты на rem (text-, p- и пр.) масштабируются
+       от --app-font-size автоматически. */
+
+    /* Бренд — синий рамп (electric blue) */
+    --brand-50:   #EFF6FF;
+    --brand-100:  #DBEAFE;
+    --brand-200:  #BFDBFE;
+    --brand-400:  #60A5FA;
+    --brand-500:  #3B82F6;
+    --brand-600:  #2563EB;   /* основной primary */
+    --brand-700:  #1D4ED8;
+    --brand-800:  #1E40AF;
+    --brand-gradient: linear-gradient(135deg, var(--brand-800) 0%, var(--brand-600) 55%, var(--brand-500) 100%);
+
+    /* Типографика — базовый размер (масштабирует весь rem-текст) */
+    --app-font-size: 16.5px;
   }
 
   /* ── Base resets ───────────────────────────────────────── */
@@ -44,9 +65,9 @@
 
   html {
     font-family: 'Manrope Variable', 'Inter', system-ui, -apple-system, sans-serif;
-    /* Базовый размер чуть крупнее для читаемости — масштабирует весь rem-текст.
-       Раньше на десктопе было 15px (мелко); теперь единые 16.5px на всех экранах. */
-    font-size: 16.5px;
+    /* Базовый размер из токена --app-font-size (единый источник, см. :root).
+       Масштабирует весь rem-текст; меняется в одном месте. */
+    font-size: var(--app-font-size);
     -webkit-text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

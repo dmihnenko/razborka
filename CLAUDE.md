@@ -33,7 +33,8 @@ React 18 + TypeScript + Vite · TanStack Query · Supabase (Postgres + Auth + Ed
 
 - Бизнес-запросы — через `src/services/*`, типы — из `src/types/*`, не дёргать `supabase` из компонентов напрямую.
 - Серверное состояние — только react-query; в `onSuccess` мутаций инвалидировать ВСЕ затронутые ключи.
-- UI-классы/токены — из `src/index.css` (`btn-*`, `card`, `badge-*`, `form-*`, модалки `modal-*`); primary `#2563EB`; иконки `lucide-react`.
+- UI-классы/токены — из `src/index.css` (`btn-*`, `card`, `badge-*`, `form-*`, модалки `modal-*`); иконки `lucide-react`.
+- **Дизайн-токены (единый источник в `:root` `src/index.css`) — НЕ хардкодить hex/px в компонентах.** Бренд-цвет и градиент — переменные `--brand-50…--brand-800` / `--brand-gradient` (inline `style={{ background: 'var(--brand-gradient)' }}`, `color: 'var(--brand-600)'`); базовый размер шрифта — `--app-font-size` (весь rem-текст и Tailwind `text-*`/`p-*` масштабируются от него). Семантические цвета — HSL-токены shadcn (`--primary`/`--background`/…) через классы Tailwind. Менять цвет/размер — в одном месте (`:root`), а не по файлам.
 - Edge Functions с `SERVICE_ROLE_KEY` ОБЯЗАНЫ проверять права вызывающего (паттерн в `supabase/functions/create-user`).
 - Перед пушем: `build:check` + `lint` + `test` зелёные.
 

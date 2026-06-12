@@ -42,7 +42,7 @@ export function Logo({ size = 'md', withText = true, className = '' }: LogoProps
       <span
         className={`${s.tile} flex items-center justify-center flex-shrink-0`}
         style={{
-          background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 55%, #3B82F6 100%)',
+          background: 'var(--brand-gradient)',
           boxShadow: '0 2px 8px -2px rgba(37,99,235,0.55), inset 0 1px 0 rgba(255,255,255,0.18)',
         }}
       >
