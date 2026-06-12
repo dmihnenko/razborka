@@ -261,7 +261,8 @@ export default function Login() {
               <Logo size="md" withText />
             </motion.div>
 
-            {/* Form heading */}
+            {/* Form heading — только для регистрации/восстановления (для входа лишнее) */}
+            {(isForgotMode || isRegisterMode) && (
             <AnimatePresence mode="wait">
               <motion.div
                 key={`heading-${isForgotMode}-${isRegisterMode}`}
@@ -282,6 +283,7 @@ export default function Login() {
                 </p>
               </motion.div>
             </AnimatePresence>
+            )}
 
             {/* Form */}
             <AnimatePresence mode="wait">
