@@ -177,7 +177,7 @@ export function MarketHome() {
                 key={hint}
                 type="button"
                 onClick={() => navigate(`/market/catalog?search=${encodeURIComponent(hint)}`)}
-                className="px-3 py-1 rounded-full bg-white/15 text-white/80 text-xs font-medium hover:bg-white/25 active:scale-[0.96] transition-all backdrop-blur-sm"
+                className="px-3 py-1 rounded-lg bg-white/15 text-white/80 text-xs font-medium hover:bg-white/25 active:scale-[0.96] transition-all backdrop-blur-sm text-center"
               >
                 {hint}
               </button>

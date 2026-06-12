@@ -362,7 +362,7 @@
 
   /* ── Chip-фильтр (горизонтальные скролл-фильтры списков) ── */
   .chip {
-    @apply inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold
+    @apply inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold
            border border-gray-200 bg-white text-gray-600 whitespace-nowrap
            transition-all duration-150 cursor-pointer hover:border-gray-300 hover:text-gray-900;
   }
