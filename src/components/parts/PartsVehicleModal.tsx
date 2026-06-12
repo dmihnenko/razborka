@@ -1,10 +1,13 @@
 import { useState } from 'react'
-import { X, Plus, Trash2 } from 'lucide-react'
+import { X, Plus, Trash2, ScanLine } from 'lucide-react'
 import { IMaskInput } from 'react-imask'
+import { toast } from 'sonner'
 import type { PartsVehicle, CreatePartsVehicleInput } from '@/types/parts'
 import { formatCurrency } from '@/utils/currency'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
+import { decodeVin } from '@/services/vinService'
+import { Spinner } from '@/components/ui/Spinner'
 
 interface PriceRow {
   id: number
@@ -69,11 +72,36 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
 
   const [exchangeRate, setExchangeRate] = useState<number>(vehicle?.exchange_rate || globalRate || 41)
   const [loading, setLoading] = useState(false)
+  const [vinLoading, setVinLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const { totalUSD, totalUAH } = calcTotals(priceRows, exchangeRate)
 
   if (!isOpen) return null
+
+  const handleDecodeVin = async () => {
+    const vin = (formData.vin || '').trim()
+    if (!vin) return
+    setVinLoading(true)
+    try {
+      const result = await decodeVin(vin)
+      if (!result.make && !result.model && !result.year && !result.engine) {
+        toast.info('Не удалось распознать VIN')
+        return
+      }
+      setFormData(prev => ({
+        ...prev,
+        make: prev.make || result.make || prev.make,
+        model: prev.model || result.model || prev.model,
+        year: prev.year || result.year || prev.year,
+      }))
+      toast.success('Данные по VIN подставлены')
+    } catch {
+      toast.error('Сервис VIN недоступен')
+    } finally {
+      setVinLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -194,19 +222,35 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
               <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 VIN номер
               </label>
-              <IMaskInput
-                mask={/^[A-HJ-NPR-Z0-9]{0,17}$/i}
-                prepare={(str: string) => str.toUpperCase()}
-                value={formData.vin || ''}
-                onAccept={(value: string) => setFormData(prev => ({ ...prev, vin: value }))}
-                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-mono tracking-widest"
-                placeholder="17 символов"
-              />
+              <div className="flex gap-2">
+                <IMaskInput
+                  mask={/^[A-HJ-NPR-Z0-9]{0,17}$/i}
+                  prepare={(str: string) => str.toUpperCase()}
+                  value={formData.vin || ''}
+                  onAccept={(value: string) => setFormData(prev => ({ ...prev, vin: value }))}
+                  className="min-w-0 flex-1 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-mono tracking-widest"
+                  placeholder="17 символов"
+                />
+                <button
+                  type="button"
+                  onClick={handleDecodeVin}
+                  disabled={!formData.vin?.trim() || vinLoading}
+                  title="Распознать по VIN"
+                  className="flex-shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 min-w-[44px] min-h-[44px] bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-gray-700 text-sm font-medium"
+                >
+                  {vinLoading
+                    ? <Spinner size="sm" className="w-5 h-5" />
+                    : <ScanLine className="w-5 h-5" strokeWidth={1.5} />
+                  }
+                  <span className="hidden sm:inline">Распознать</span>
+                </button>
+              </div>
               {formData.vin && (
                 <p className={`text-xs mt-1 ${formData.vin.length === 17 ? 'text-green-600' : 'text-gray-400'}`}>
                   {formData.vin.length}/17 символов
                 </p>
               )}
+              <p className="text-xs text-gray-400 mt-1">Авто и европейские VIN распознаются не всегда</p>
             </div>
 
 

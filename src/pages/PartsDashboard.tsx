@@ -8,6 +8,7 @@ import { formatDate } from '@/utils/date'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import ContactsReminder from '@/components/dashboard/ContactsReminder'
 import { useSubscriptionLimits } from '@/hooks/useSubscription'
+import OnboardingChecklist from '@/components/parts/OnboardingChecklist'
 
 export default function PartsDashboard() {
   const navigate = useNavigate()
@@ -228,6 +229,9 @@ export default function PartsDashboard() {
 
       {/* Напоминание заполнить контакты разборки */}
       <ContactsReminder kind="parts" companyId={partsCompanyId} />
+
+      {/* ── Онбординг-чек-лист (только для владельца, пока не всё настроено) ── */}
+      <OnboardingChecklist partsCompanyId={partsCompanyId} />
 
       {/* ── Marketplace upsell banner ─────────────── */}
       {isDemo && marketOrdersCount > 0 && (

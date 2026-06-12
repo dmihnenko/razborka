@@ -1,6 +1,6 @@
 import { useState, useEffect, useDeferredValue, useRef } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
-import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, Copy, Download, Zap } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -9,7 +9,7 @@ import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { InventoryCard } from '@/components/parts/InventoryCard'
-import { getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal } from '@/services/partsService'
+import { getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, duplicatePartsInventoryItem } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { uploadToImgbb, deletePhotosFromImgbb } from '@/services/imgbbService'
@@ -20,6 +20,9 @@ import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { moveToTrash } from '@/services/trashService'
+import { buildCsv, downloadCsv } from '@/utils/csv'
+import type { CsvRow } from '@/utils/csv'
+import { ConveyorModal } from '@/components/parts/ConveyorModal'
 
 type ViewMode = 'grid' | 'list'
 
@@ -84,6 +87,7 @@ export default function PartsInventory() {
   const [pendingStatus, setPendingStatus] = useState<PartsInventoryStatus | null>(null)
   const [sortField, setSortField] = useState<'name' | 'status' | 'price'>('name')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [isConveyorOpen, setIsConveyorOpen] = useState(false)
 
   const { data: profile } = useUserProfile()
   const { rate: usdRate } = usePartsExchangeRate()
@@ -184,7 +188,7 @@ export default function PartsInventory() {
       if (error) throw error
       return data
     },
-    enabled: !!partsCompanyId && isModalOpen
+    enabled: !!partsCompanyId && (isModalOpen || isConveyorOpen)
   })
 
   // Get storage locations for dropdown in modal
@@ -542,6 +546,41 @@ export default function PartsInventory() {
     onError: () => toast.error('Ошибка при изменении статуса'),
   })
 
+  const duplicateMutation = useMutation({
+    mutationFn: (item: PartsInventoryItem) =>
+      duplicatePartsInventoryItem(item.id, partsCompanyId!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      toast.success('Позиция продублирована')
+    },
+    onError: () => toast.error('Ошибка при дублировании'),
+  })
+
+  const handleDuplicate = (item: PartsInventoryItem, e: React.MouseEvent) => {
+    e.stopPropagation()
+    duplicateMutation.mutate(item)
+  }
+
+  const handleExportCsv = () => {
+    const rows: CsvRow[] = filteredAndSorted.map((item: PartsInventoryItem) => ({
+      name: item.name,
+      part_number: item.part_number,
+      category: item.category?.name,
+      vehicle: item.vehicle ? `${item.vehicle.make} ${item.vehicle.model}${item.vehicle.year ? ` ${item.vehicle.year}` : ''}` : null,
+      condition: item.condition,
+      quantity: item.quantity,
+      selling_price: item.selling_price,
+      price_currency: item.price_currency,
+      purchase_price: (item as any).purchase_price,
+      location: item.location,
+      status: item.status,
+    }))
+    const csv = buildCsv(rows)
+    const date = new Date().toISOString().slice(0, 10)
+    downloadCsv(csv, `sklad_${date}.csv`)
+    toast.success(`Экспортировано ${rows.length} позиций`)
+  }
+
   const handleStatusClick = (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
     setStatusPickerItem(item)
@@ -583,6 +622,26 @@ export default function PartsInventory() {
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
+              {/* Экспорт CSV */}
+              <button
+                onClick={handleExportCsv}
+                className="btn-ghost btn-sm flex items-center gap-1.5"
+                title="Экспорт текущего списка в CSV"
+              >
+                <Download className="w-4 h-4" strokeWidth={1.5} />
+                <span className="hidden md:inline">CSV</span>
+              </button>
+              {/* Конвейер — только в режиме Разборки */}
+              {sourceFilter !== 'shop' && (
+                <button
+                  onClick={() => setIsConveyorOpen(true)}
+                  className="btn-secondary btn-sm flex items-center gap-1.5"
+                  title="Быстрый ввод запчастей к авто"
+                >
+                  <Zap className="w-4 h-4" strokeWidth={1.5} />
+                  <span className="hidden sm:inline">Конвейер</span>
+                </button>
+              )}
               <button
                 onClick={() => {
                   setEditingItem(null)
@@ -811,6 +870,7 @@ export default function PartsInventory() {
                 onEdit={handleEdit}
                 onSell={handleSell}
                 onDelete={handleDelete}
+                onDuplicate={handleDuplicate}
                 onNavigate={goToItem}
                 onToggleSelect={(id, e) => toggleSelect(id, e as React.MouseEvent)}
               />
@@ -930,6 +990,14 @@ export default function PartsInventory() {
                             title="Редактировать"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                          </button>
+                          <button
+                            onClick={(e) => handleDuplicate(item, e)}
+                            disabled={duplicateMutation.isPending}
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-40"
+                            title="Дублировать"
+                          >
+                            <Copy className="w-4 h-4" strokeWidth={1.5} />
                           </button>
                           {item.status !== 'sold' && (
                             <button
@@ -1385,6 +1453,19 @@ export default function PartsInventory() {
           }}
         />
       )}
+      {/* Конвейер */}
+      {isConveyorOpen && (
+        <ConveyorModal
+          partsCompanyId={partsCompanyId}
+          vehicles={vehicles as { id: string; make: string; model: string; year?: number }[]}
+          categories={categories as { id: string; name: string; brand?: string }[]}
+          onClose={() => {
+            setIsConveyorOpen(false)
+            queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+          }}
+        />
+      )}
+
       <ConfirmDialog {...dialogProps} />
     </div>
   )

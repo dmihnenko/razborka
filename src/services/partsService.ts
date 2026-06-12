@@ -709,6 +709,46 @@ export async function updatePartsOrder(
 }
 
 
+/**
+ * Дублирует позицию склада:
+ * копирует все поля, кроме id/created_at/updated_at,
+ * name → "<name> (копия)", status='available', reserved_quantity=0, sold_* обнуляется.
+ */
+export async function duplicatePartsInventoryItem(
+  id: string,
+  partsCompanyId: string
+): Promise<PartsInventoryItem> {
+  const { data: src, error: fetchErr } = await supabase
+    .from('parts_inventory')
+    .select('*')
+    .eq('id', id)
+    .single()
+  if (fetchErr) throw fetchErr
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { id: _id, created_at: _ca, updated_at: _ua, sold_price: _sp, sold_to_customer_id: _stc, reserved_quantity: _rq, ...rest } = src as any
+
+  const copy: CreatePartsInventoryInput & Record<string, unknown> = {
+    ...rest,
+    name: `${src.name} (копия)`,
+    status: 'available',
+    parts_company_id: partsCompanyId,
+    reserved_quantity: 0,
+    category_id: src.category_id || null,
+    vehicle_id: src.vehicle_id || null,
+    storage_location_id: src.storage_location_id || null,
+    location: src.location || null,
+    shelf: src.shelf || null,
+    bin: src.bin || null,
+    part_number: src.part_number || null,
+    description: src.description || null,
+    notes: src.notes || null,
+    purchase_price: src.purchase_price ?? null,
+  }
+
+  return createPartsInventoryItem(copy as CreatePartsInventoryInput, partsCompanyId)
+}
+
 /** Fetch all inventory items for a parts vehicle */
 export async function getPartsInventoryByVehicle(vehicleId: string): Promise<any[]> {
   const { data, error } = await supabase
