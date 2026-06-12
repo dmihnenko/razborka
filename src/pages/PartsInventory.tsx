@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
+import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { InventoryCard } from '@/components/parts/InventoryCard'
 import { getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer } from '@/types/parts'
@@ -19,7 +20,6 @@ import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { moveToTrash } from '@/services/trashService'
-import { PARTS_CONDITION_LABELS } from '@/utils/status'
 
 type ViewMode = 'grid' | 'list'
 
@@ -89,7 +89,7 @@ export default function PartsInventory() {
   const { rate: usdRate } = usePartsExchangeRate()
   const queryClient = useQueryClient()
   const partsCompanyId = profile?.parts_company_id
-  const { canCreate } = useSubscriptionLimits()
+  const { canCreate, usage, limits } = useSubscriptionLimits()
 
   const { data: inventory = [], isLoading } = useQuery({
     queryKey: ['parts-inventory', partsCompanyId],
@@ -600,6 +600,18 @@ export default function PartsInventory() {
 
       {/* Content */}
       <div className="w-full py-4 sm:py-6">
+        {/* Limit reached banner */}
+        {!canCreate.part() && limits.maxParts !== null && (
+          <div className="mb-4">
+            <LimitReachedBanner
+              used={usage.parts}
+              max={limits.maxParts}
+              label="Запчасти"
+              ctaHref="/parts/subscription"
+            />
+          </div>
+        )}
+
         {/* No-price banner */}
         {stats.noPrice > 0 && (
           <div className="mb-4 flex items-center justify-between gap-3 bg-amber-50 border border-amber-200/60 rounded-2xl px-4 py-3">

@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
+import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle, getPartsCategoryTemplates, getPartsInventoryByVehicle } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
@@ -50,7 +51,7 @@ export default function PartsVehicles() {
   const { confirm: showConfirm, dialogProps } = useConfirm()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
-  const { canCreate } = useSubscriptionLimits()
+  const { canCreate, usage, limits } = useSubscriptionLimits()
 
   // Fetch vehicles
   const { data: vehicles = [], isLoading } = useQuery({
@@ -184,6 +185,18 @@ export default function PartsVehicles() {
 
       {/* Content */}
       <div className="w-full py-4 sm:py-6">
+        {/* Limit reached banner */}
+        {!canCreate.vehicle() && limits.maxVehicles !== null && (
+          <div className="mb-4">
+            <LimitReachedBanner
+              used={usage.vehicles}
+              max={limits.maxVehicles}
+              label="Автомобили"
+              ctaHref="/parts/subscription"
+            />
+          </div>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 sm:mb-6">
           {[

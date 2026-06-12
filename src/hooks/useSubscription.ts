@@ -5,8 +5,9 @@ import type { CompanySubscription, SubscriptionUsage } from '../types/subscripti
 
 // ─── Free tier limits (no active subscription) ────────────────────────────────
 
+// Демо-гейт: совпадает с лимитами плана «Демо-доступ разборки» в БД
 export const FREE_LIMITS = {
-  parts: { workers: 2, vehicles: 2, parts: 10 },
+  parts: { workers: 2, vehicles: 3, parts: 50 },
 }
 
 /** Alias для обратной совместимости и публичного контракта */

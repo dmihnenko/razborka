@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
   Clock, CheckCircle2, AlertTriangle, Infinity as InfinityIcon,
-  MessageCircle, Send, Hourglass, Package, Car, Check,
+  MessageCircle, Send, Hourglass, Package, Car, Check, Users,
 } from 'lucide-react'
 import { Spinner } from '@/components/ui/Spinner'
 import { toast } from 'sonner'
@@ -12,6 +12,7 @@ import { useCompanySubscription, useSubscriptionLimits } from '@/hooks/useSubscr
 import {
   getSubscriptionTiers, getMyLatestRequest, createSubscriptionRequest,
 } from '@/services/subscriptionService'
+import UsageMeter from './UsageMeter'
 import {
   DURATIONS, tierTermPrice, tierTermPerMonth, durationLabel, discountPct, fmtPrice,
   type CompanyType,
@@ -39,6 +40,8 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
     queryFn: () => getMyLatestRequest(companyType, companyId!),
     enabled: !!companyId,
   })
+
+  const { isExpiringSoon, daysLeft: subDaysLeft } = useSubscriptionLimits()
 
   const hasActive  = !!companySub
   const isLifetime = !!companySub && !companySub.end_date
@@ -121,12 +124,28 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
         </div>
       </div>
 
+      {/* ── Предупреждение: подписка истекает ───────────────────────── */}
+      {isExpiringSoon && subDaysLeft !== null && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-2xl">
+          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" strokeWidth={1.5} />
+          <p className="text-sm font-semibold text-amber-800">
+            Подписка заканчивается через{' '}
+            <span className="font-extrabold">
+              {subDaysLeft} {subDaysLeft === 1 ? 'день' : subDaysLeft < 5 ? 'дня' : 'дней'}
+            </span>. Продлите заранее, чтобы не потерять доступ.
+          </p>
+        </div>
+      )}
+
       {/* ── Текущая загрузка ──────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
         <h2 className="text-base font-bold text-gray-900 mb-4">Текущая загрузка</h2>
-        <div className="space-y-3.5">
-          <UsageRow icon={Car}     label="Машины"    used={usage.vehicles} max={limits.maxVehicles} accent={accent} />
-          <UsageRow icon={Package} label="Запчасти"  used={usage.parts}    max={limits.maxParts}    accent={accent} />
+        <div className="space-y-4">
+          <UsageMeter icon={Car}     label="Машины"      used={usage.vehicles} max={limits.maxVehicles} />
+          <UsageMeter icon={Package} label="Запчасти"    used={usage.parts}    max={limits.maxParts} />
+          {limits.maxWorkers !== undefined && (
+            <UsageMeter icon={Users} label="Сотрудники" used={usage.workers} max={limits.maxWorkers} />
+          )}
         </div>
       </div>
 
@@ -257,20 +276,3 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
   )
 }
 
-function UsageRow({ icon: Icon, label, used, max, accent }: { icon: any; label: string; used: number; max: number | null; accent: string }) {
-  const pct = max ? Math.min(100, Math.round((used / max) * 100)) : 0
-  const over = max != null && used >= max
-  return (
-    <div>
-      <div className="flex items-center justify-between text-sm mb-1.5">
-        <span className="flex items-center gap-1.5 text-gray-600"><Icon className="w-4 h-4 text-gray-400" /> {label}</span>
-        <span className={`font-semibold tabular-nums ${over ? 'text-red-600' : 'text-gray-900'}`}>{used} / {max ?? '∞'}</span>
-      </div>
-      {max != null && (
-        <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: over ? '#DC2626' : accent }} />
-        </div>
-      )}
-    </div>
-  )
-}

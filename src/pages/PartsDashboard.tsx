@@ -1,18 +1,37 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { Car, ShoppingCart, DollarSign, AlertCircle, ArrowRight, Warehouse, LayoutGrid, Users, BarChart2, Settings, Wrench, Store } from 'lucide-react'
+import { Car, ShoppingCart, DollarSign, AlertCircle, ArrowRight, Warehouse, LayoutGrid, Users, BarChart2, Settings, Wrench, Store, Sparkles } from 'lucide-react'
 import { getPartsOrderStatusText } from '@/utils/status'
 import { formatDate } from '@/utils/date'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import ContactsReminder from '@/components/dashboard/ContactsReminder'
+import { useSubscriptionLimits } from '@/hooks/useSubscription'
 
 export default function PartsDashboard() {
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
   const { rate: usdRate } = usePartsExchangeRate()
+  const { hasSubscription, plan } = useSubscriptionLimits()
+
+  // Кол-во заявок с маркетплейса (для upsell-баннера)
+  const { data: marketOrdersCount = 0 } = useQuery({
+    queryKey: ['marketplace-orders-count', partsCompanyId],
+    queryFn: async () => {
+      if (!partsCompanyId) return 0
+      const { count } = await supabase
+        .from('marketplace_orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('parts_company_id', partsCompanyId)
+      return count || 0
+    },
+    enabled: !!partsCompanyId && (!hasSubscription || plan?.price === 0),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const isDemo = !hasSubscription || plan?.price === 0
 
   // Статистика автомобилей
   const { data: vehiclesStats } = useQuery({
@@ -209,6 +228,27 @@ export default function PartsDashboard() {
 
       {/* Напоминание заполнить контакты разборки */}
       <ContactsReminder kind="parts" companyId={partsCompanyId} />
+
+      {/* ── Marketplace upsell banner ─────────────── */}
+      {isDemo && marketOrdersCount > 0 && (
+        <Link
+          to="/parts/subscription"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all active:scale-[0.99] border border-primary/20 bg-primary/5 hover:bg-primary/10 animate-fade-in"
+        >
+          <div className="icon-tile-sm bg-primary/15 text-primary flex-shrink-0">
+            <Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-primary">
+              Покупатели интересуются вашими запчастями
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {marketOrdersCount} {marketOrdersCount === 1 ? 'заявка' : marketOrdersCount < 5 ? 'заявки' : 'заявок'} с маркетплейса — откройте полный доступ
+            </p>
+          </div>
+          <ArrowRight className="w-4 h-4 flex-shrink-0 text-primary" strokeWidth={1.5} />
+        </Link>
+      )}
 
       {/* ── Alert: new orders ─────────────────────── */}
       {(ordersStats?.new || 0) > 0 && (

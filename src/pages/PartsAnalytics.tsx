@@ -6,19 +6,22 @@ import { formatPrice } from '@/utils/currency'
 import {
   BarChart3,
   TrendingUp,
-  DollarSign,
   Package,
   ShoppingCart,
   Car,
-  Calendar
+  Calendar,
+  Lock,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
+import { useSubscriptionLimits } from '@/hooks/useSubscription'
 
 export default function PartsAnalytics() {
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
   const { rate: globalRate } = usePartsExchangeRate()
+  const { hasAnalytics } = useSubscriptionLimits()
 
   // Общая статистика
   const { data: overallStats } = useQuery({
@@ -182,7 +185,35 @@ export default function PartsAnalytics() {
       />
 
       {/* Content */}
-      <div className="w-full py-6">
+      <div className={`w-full py-6 relative ${!hasAnalytics ? 'select-none' : ''}`}>
+        {/* Paywall overlay */}
+        {!hasAnalytics && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center px-6 py-20 pointer-events-none">
+            <div
+              className="pointer-events-auto max-w-sm w-full bg-white rounded-3xl border border-gray-100 shadow-2xl p-8 flex flex-col items-center text-center gap-5 animate-fade-in"
+            >
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Lock className="w-8 h-8 text-primary" strokeWidth={1.5} />
+              </div>
+              <div>
+                <p className="text-lg font-extrabold text-gray-900 leading-tight">
+                  Аналитика и окупаемость
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Подробная статистика, топ запчастей и история выручки доступны в тарифе <span className="font-semibold text-gray-700">Профи</span> и выше.
+                </p>
+              </div>
+              <Link
+                to="/parts/subscription"
+                className="btn-primary w-full text-center justify-center"
+              >
+                Открыть аналитику
+              </Link>
+            </div>
+          </div>
+        )}
+        {/* Analytics content (blurred preview when !hasAnalytics) */}
+        <div className={!hasAnalytics ? 'blur-sm pointer-events-none' : ''}>
         {/* Main Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 sm:mb-6">
           <div className="stat-card">
@@ -367,6 +398,7 @@ export default function PartsAnalytics() {
             </p>
           </div>
         </div>
+        </div>{/* /analytics content blur wrapper */}
       </div>
     </div>
   )
