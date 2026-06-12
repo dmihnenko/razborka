@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchAccessRequests, approveAccessRequest, rejectAccessRequest } from '@/services/adminService'
 import { toast } from 'sonner'
-import { CheckCircle2, XCircle, Clock, Building2, Phone, MapPin, User, Package, Car } from 'lucide-react'
+import { CheckCircle2, XCircle, Clock, Building2, Phone, MapPin, User, Package, Car, Wrench } from 'lucide-react'
 
 const roleLabels: Record<string, string> = {
   parts_owner: 'Владелец разборки',
@@ -111,8 +111,14 @@ export default function AdminAccessRequests() {
                 </div>
 
                 {/* Детали */}
-                {(req.company_name || req.owner_phone || req.company_address) && (
+                {(req.company_name || req.owner_phone || req.company_address || req.owner_name || req.vehicle_makes) && (
                   <div className="px-5 pb-3 space-y-1.5 border-t border-gray-100 pt-3">
+                    {req.owner_name && (
+                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                        <User className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                        <span className="font-medium">{req.owner_name}</span>
+                      </div>
+                    )}
                     {req.company_name && (
                       <div className="flex items-center gap-2 text-xs text-gray-600">
                         <Building2 className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
@@ -129,6 +135,18 @@ export default function AdminAccessRequests() {
                       <div className="flex items-center gap-2 text-xs text-gray-500">
                         <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
                         <span className="font-mono">{req.company_phone || req.owner_phone}</span>
+                      </div>
+                    )}
+                    {req.vehicle_makes && req.vehicle_makes.trim() && (
+                      <div className="flex items-start gap-2 text-xs text-gray-500 mt-1">
+                        <Wrench className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                        <div className="flex flex-wrap gap-1">
+                          {req.vehicle_makes.split(',').map((make: string) => make.trim()).filter(Boolean).map((make: string) => (
+                            <span key={make} className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[11px] font-semibold">
+                              {make}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
                     {req.rejection_reason && (

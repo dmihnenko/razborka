@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { getUserRolesWithNames, getEmailByUsername } from '@/services/userService'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { getDefaultRouteForRoles } from '../config/navigation'
-import { Wrench, Mail, Lock, AtSign, Eye, EyeOff, Package, ArrowRight } from 'lucide-react'
+import { Wrench, Mail, Lock, AtSign, Eye, EyeOff, Package, ArrowRight, Cog } from 'lucide-react'
 
 export default function Login() {
   const [emailOrUsername, setEmailOrUsername] = useState('')
@@ -19,6 +19,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -192,6 +193,13 @@ export default function Login() {
 
       // КРИТИЧНО: Инвалидируем кэш профиля
       await queryClient.invalidateQueries({ queryKey: ['userProfile'] })
+
+      // Если в URL есть ?next= и путь начинается с '/' — редиректим туда
+      const nextParam = searchParams.get('next')
+      if (nextParam && nextParam.startsWith('/')) {
+        window.location.assign(nextParam)
+        return
+      }
 
       // Определяем куда направить пользователя на основе основной роли
       const defaultRoute = primaryRoleName
@@ -605,7 +613,7 @@ export default function Login() {
           </form>
 
           {/* Catalog link */}
-          <div className="text-center mt-4">
+          <div className="text-center mt-4 flex flex-col items-center gap-2">
             <Link
               to="/market"
               className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors duration-150"
@@ -615,6 +623,17 @@ export default function Login() {
             >
               <Package size={13} strokeWidth={1.5} />
               Смотреть каталог запчастей
+              <ArrowRight size={12} strokeWidth={2} />
+            </Link>
+            <Link
+              to="/business"
+              className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors duration-150"
+              style={{ color: '#3B82F6', textDecoration: 'none' }}
+              onMouseOver={e => (e.currentTarget.style.color = '#60A5FA')}
+              onMouseOut={e => (e.currentTarget.style.color = '#3B82F6')}
+            >
+              <Cog size={13} strokeWidth={1.5} />
+              Открыть авторазборку
               <ArrowRight size={12} strokeWidth={2} />
             </Link>
           </div>

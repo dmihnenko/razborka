@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Cog, LogIn, Search, ShoppingCart } from 'lucide-react'
+import { Cog, LogIn, Search, ShoppingCart, Wrench } from 'lucide-react'
 import { CartProvider, useCart } from '@/hooks/useCart'
 
 // ============================================================================
@@ -79,6 +79,13 @@ function MarketLayoutInner() {
                     {totalCount > 99 ? '99+' : totalCount}
                   </span>
                 )}
+              </Link>
+              <Link
+                to="/business"
+                className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-b from-blue-500 to-blue-600 shadow-glow-blue hover:opacity-90 transition-all duration-150 active:scale-[0.97]"
+              >
+                <Wrench className="w-4 h-4" />
+                <span>Открыть разборку</span>
               </Link>
               <Link
                 to="/login"

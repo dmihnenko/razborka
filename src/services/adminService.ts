@@ -86,6 +86,21 @@ export async function approveAccessRequest(req: any) {
   }
 
   await supabase.from('access_requests').update({ status: 'approved', company_id: companyId, reviewed_at: new Date().toISOString() }).eq('id', req.id)
+
+  // Уведомить владельца об одобрении (только для parts_owner)
+  if (isOwner) {
+    try {
+      await supabase.from('notifications').insert({
+        user_id: req.user_id,
+        type: 'success',
+        title: 'Авторазборка создана',
+        body: `Ваша заявка одобрена — авторазборка «${req.company_name}» готова к работе.`,
+        link: '/parts/dashboard',
+      })
+    } catch (e) {
+      console.error('approveAccessRequest: не удалось вставить уведомление', e)
+    }
+  }
 }
 
 export async function rejectAccessRequest(id: string, reason: string) {

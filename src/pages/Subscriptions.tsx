@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import {
   CreditCard, TrendingUp, Plus, Trash2, Calendar, Building2,
-  CheckCircle2, XCircle, Search, X, Infinity, Edit2, RotateCw, Car, Package,
+  CheckCircle2, XCircle, Search, X, Infinity, Edit2, RotateCw, Car, Package, User,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -415,7 +415,13 @@ export default function Subscriptions() {
                             <>
                               <p className="text-xs text-gray-600 flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-gray-400" /> Машин: <span className="font-semibold">{plan.max_vehicles ?? '∞'}</span></p>
                               <p className="text-xs text-gray-600 flex items-center gap-1.5"><Package className="w-3.5 h-3.5 text-gray-400" /> Запчастей: <span className="font-semibold">{plan.max_parts ?? '∞'}</span></p>
+                              <p className="text-xs text-gray-600 flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-gray-400" /> Сотрудников: <span className="font-semibold">{plan.max_workers ?? '∞'}</span></p>
                             </>
+                          )}
+                          {plan.has_analytics && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                              <TrendingUp className="w-3 h-3" /> Аналитика
+                            </span>
                           )}
                         </div>
 
@@ -640,7 +646,9 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
     price:            String(plan.price),
     max_vehicles:     plan.max_vehicles != null ? String(plan.max_vehicles) : '',
     max_parts:        plan.max_parts != null ? String(plan.max_parts) : '',
+    max_workers:      plan.max_workers != null ? String(plan.max_workers) : '',
     sort_order:       plan.sort_order != null ? String(plan.sort_order) : '0',
+    has_analytics:    plan.has_analytics ?? false,
   })
   const [saving, setSaving] = useState(false)
 
@@ -655,7 +663,9 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
         price:            Number(form.price),
         max_vehicles:     numOrNull(form.max_vehicles),
         max_parts:        numOrNull(form.max_parts),
+        max_workers:      numOrNull(form.max_workers),
         sort_order:       Number(form.sort_order) || 0,
+        has_analytics:    form.has_analytics,
       }).eq('id', plan.id)
       if (error) throw error
       toast.success('План обновлён')
@@ -668,7 +678,8 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
     }
   }
 
-  const field = (label: string, key: keyof typeof form, type = 'text', hint?: string) => (
+  type StringFormKey = { [K in keyof typeof form]: (typeof form)[K] extends string ? K : never }[keyof typeof form]
+  const field = (label: string, key: StringFormKey, type = 'text', hint?: string) => (
     <div>
       <label className="text-sm font-semibold text-gray-700 block mb-1">{label}</label>
       {hint && <p className="text-xs text-gray-400 mb-1">{hint}</p>}
@@ -696,7 +707,26 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
             {field('Машины', 'max_vehicles', 'number')}
             {field('Запчасти', 'max_parts', 'number')}
           </div>
+          {field('Сотрудников (max_workers)', 'max_workers', 'number', 'Пусто = без лимита')}
           {field('Порядок', 'sort_order', 'number')}
+          {/* Аналитика тоггл */}
+          <div className="flex items-center justify-between py-2">
+            <div>
+              <p className="text-sm font-semibold text-gray-700">Аналитика и окупаемость</p>
+              <p className="text-xs text-gray-400 mt-0.5">Включить модуль аналитики для этого тарифа</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setForm(f => ({ ...f, has_analytics: !f.has_analytics }))}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
+                form.has_analytics ? 'bg-primary' : 'bg-gray-200'
+              }`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                form.has_analytics ? 'translate-x-6' : 'translate-x-1'
+              }`} />
+            </button>
+          </div>
           <p className="text-xs text-gray-400">
             Пустой лимит = без ограничения (например, тариф «Персональный»).
             Срок (месяц / год −15%) выбирается владельцем при оформлении.

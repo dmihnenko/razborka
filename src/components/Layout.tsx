@@ -16,10 +16,13 @@ import { getMenuForRoles } from '../config/navigation'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
 import Breadcrumbs from './Breadcrumbs'
 import { useAdminNotifications } from '../hooks/useAdminNotifications'
+import { useSubscriptionLimits } from '../hooks/useSubscription'
+import NotificationBanner from './NotificationBanner'
 
 export default function Layout() {
   useAdminNotifications()
   const location = useLocation()
+  const { hasAnalytics } = useSubscriptionLimits()
   const scrollRef = useRef<HTMLDivElement>(null)
   const isAdmin = useIsAdmin()
 
@@ -122,7 +125,10 @@ export default function Layout() {
   // «Мои авто»: меню из одного пункта — сайдбар не нужен, выход выносим вверх справа
   const isUserCtx = currentCtx === 'user'
 
-  const filteredNavigation = getMenuForRoles(roleNames)
+  const filteredNavigation = getMenuForRoles(roleNames).filter((item) => {
+    if (item.href === '/parts/analytics') return hasAnalytics
+    return true
+  })
 
   const handleLogout = async () => {
     // Очищаем весь кэш React Query перед выходом
@@ -315,6 +321,7 @@ export default function Layout() {
         {/* ── MAIN CONTENT ── */}
         <div className="flex-1 bg-gray-50">
           <div className="mx-auto max-w-[1440px] w-full px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
+            <NotificationBanner userId={profile?.id} />
             <Breadcrumbs />
             <Outlet />
           </div>

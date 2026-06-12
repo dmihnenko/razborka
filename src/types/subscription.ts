@@ -18,6 +18,8 @@ export interface Subscription {
   sort_order?: number
   /** Персональный тариф — цена/лимиты обсуждаются индивидуально */
   is_custom?: boolean
+  /** Есть ли модуль аналитики в этом тарифе */
+  has_analytics?: boolean
   created_at: string
   updated_at: string
 }

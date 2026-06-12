@@ -56,6 +56,10 @@ const AdminAccessRequests = lazy(() => import('./pages/AdminAccessRequests'))
 const PartsSubscriptionPage = lazy(() => import('./pages/PartsSubscriptionPage'))
 const PartsMarketOrders = lazy(() => import('./pages/PartsMarketOrders'))
 
+// Публичный лендинг авторазборок
+const BusinessLanding = lazy(() => import('./pages/business/BusinessLanding'))
+const PartsApplication = lazy(() => import('./pages/business/PartsApplication'))
+
 // Публичный маркетплейс запчастей
 const MarketLayout = lazy(() => import('./components/market/MarketLayout'))
 const MarketHome = lazy(() => import('./pages/market/MarketHome'))
@@ -189,6 +193,10 @@ function App() {
 
         {/* Публичная страница запчасти */}
         <Route path="/public/parts-item/:id" element={<PublicPartsItemView />} />
+
+        {/* Публичный лендинг авторазборок */}
+        <Route path="/business" element={<BusinessLanding />} />
+        <Route path="/business/apply" element={<PartsApplication />} />
 
         {/* Публичный маркетплейс запчастей */}
         <Route path="/market" element={<MarketLayout />}>

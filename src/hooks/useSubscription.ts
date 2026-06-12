@@ -6,8 +6,11 @@ import type { CompanySubscription, SubscriptionUsage } from '../types/subscripti
 // ─── Free tier limits (no active subscription) ────────────────────────────────
 
 export const FREE_LIMITS = {
-  parts: { workers: 1, vehicles: 1, parts: 10 },
+  parts: { workers: 2, vehicles: 2, parts: 10 },
 }
+
+/** Alias для обратной совместимости и публичного контракта */
+export const FREE_PARTS = FREE_LIMITS.parts
 
 // ─── Fetch current subscription ───────────────────────────────────────────────
 
@@ -91,6 +94,9 @@ export function useSubscriptionLimits() {
 
   const plan = subscription?.subscription
 
+  // Признак аналитики: только если есть активный платный план с has_analytics
+  const hasAnalytics: boolean = hasSubscription ? (plan?.has_analytics ?? false) : false
+
   // Effective limits: from plan (null=unlimited) or FREE_LIMITS
   const maxCustomers    = hasSubscription ? (plan?.max_customers    ?? null) : null
   const maxWorkers      = hasSubscription ? (plan?.max_workers      ?? null) : FREE_LIMITS.parts.workers
@@ -120,6 +126,7 @@ export function useSubscriptionLimits() {
     usagePct,
     daysLeft,
     isExpiringSoon,
+    hasAnalytics,
 
     limits: {
       maxCustomers,

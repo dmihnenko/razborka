@@ -88,6 +88,12 @@ create policy notif_insert on public.notifications for insert to authenticated
   with check (exists (select 1 from public.user_roles ur join public.roles r on r.id=ur.role_id
                       where ur.user_id=auth.uid() and r.name='admin'));
 
+-- 5) Публичное чтение активных parts-тарифов (лендинг /business доступен анониму) ─
+drop policy if exists "Public read active parts plans" on public.subscriptions;
+create policy "Public read active parts plans" on public.subscriptions
+  for select to anon, authenticated
+  using (is_active = true and company_type = 'parts');
+
 commit;
 
 select 'parts_landing applied' as status;
