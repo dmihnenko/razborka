@@ -6,7 +6,7 @@ import { getUserRolesWithNames, getEmailByUsername } from '@/services/userServic
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { getDefaultRouteForRoles } from '../config/navigation'
-import { Mail, Lock, AtSign, Eye, EyeOff, ShieldCheck, BarChart3, Users } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, ShieldCheck, BarChart3, Users } from 'lucide-react'
 import { Logo } from '@/components/brand/Logo'
 
 export default function Login() {
@@ -466,10 +466,10 @@ export default function Login() {
                         htmlFor="emailOrUsername"
                         className="form-label"
                       >
-                        Email или логин
+                        Email
                       </label>
                       <div className="relative">
-                        <AtSign
+                        <Mail
                           size={15}
                           strokeWidth={1.5}
                           className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"
@@ -477,13 +477,13 @@ export default function Login() {
                         />
                         <input
                           id="emailOrUsername"
-                          type="text"
+                          type="email"
                           inputMode="email"
                           value={emailOrUsername}
                           onChange={(e) => setEmailOrUsername(e.target.value)}
                           required
-                          autoComplete="username"
-                          placeholder="email@example.com или логин"
+                          autoComplete="email"
+                          placeholder="email@example.com"
                           className="form-input w-full pl-10 pr-3.5"
                         />
                       </div>
