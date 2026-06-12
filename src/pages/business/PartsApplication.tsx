@@ -1,6 +1,6 @@
 import { useState, KeyboardEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
@@ -8,25 +8,21 @@ import {
   ArrowLeft,
   Building2,
   Car,
-  CheckCircle2,
-  Clock,
-  ExternalLink,
   LogIn,
   MapPin,
   Phone,
   Plus,
   User,
   X,
-  XCircle,
 } from 'lucide-react'
-import { submitPartsApplication, getMyPartsApplication } from '@/services/businessService'
+import { selfProvisionPartsCompany } from '@/services/businessService'
 import { useAuth } from '@/hooks/useAuth'
+import { useUserProfile } from '@/hooks/useUserProfile'
 import { Logo } from '@/components/brand/Logo'
-import type { PartsApplicationInput } from '@/types/business'
 
 // ============================================================================
-// PartsApplication — форма заявки на авторазборку (/business/apply)
-// Требует авторизации.
+// PartsApplication — форма само-онбординга авторазборки (/business/apply)
+// Требует авторизации. Мгновенно создаёт разборку с демо-доступом.
 // ============================================================================
 
 const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number]
@@ -45,9 +41,9 @@ function LoginRequired() {
         <span className="icon-tile-lg bg-blue-50 text-blue-600 mx-auto mb-4">
           <LogIn className="w-6 h-6" strokeWidth={1.5} />
         </span>
-        <h1 className="heading-3 mb-2">Войдите, чтобы подать заявку</h1>
+        <h1 className="heading-3 mb-2">Войдите, чтобы создать разборку</h1>
         <p className="text-sm text-gray-500 mb-5">
-          Для подачи заявки на подключение авторазборки необходима авторизация.
+          Для создания авторазборки необходима авторизация.
         </p>
         <Link
           to="/login?next=/business/apply"
@@ -67,127 +63,12 @@ function LoginRequired() {
   )
 }
 
-// ── Экран «заявка на рассмотрении» ───────────────────────────────────────────
-function PendingScreen({ companyName }: { companyName: string }) {
-  return (
-    <div className="min-h-dvh bg-gray-50 flex flex-col items-center justify-center px-4">
-      <motion.div {...FADE_UP} className="card max-w-sm w-full text-center">
-        <span className="icon-tile-lg bg-yellow-50 text-yellow-600 mx-auto mb-4">
-          <Clock className="w-6 h-6" strokeWidth={1.5} />
-        </span>
-        <h1 className="heading-3 mb-2">Заявка на рассмотрении</h1>
-        {companyName && (
-          <p className="text-sm font-semibold text-gray-900 mb-1">«{companyName}»</p>
-        )}
-        <p className="text-sm text-gray-500 mb-5">
-          Ваша заявка отправлена и ожидает одобрения администратора.
-          Мы уведомим вас, когда всё будет готово.
-        </p>
-        <div className="alert alert-info mb-4">
-          <Clock className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-          <span>Обычно рассмотрение занимает до 24 часов</span>
-        </div>
-        <Link to="/business" className="btn-secondary w-full">
-          <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
-          На главную
-        </Link>
-      </motion.div>
-    </div>
-  )
-}
-
-// ── Экран «авторазборка уже создана» ─────────────────────────────────────────
-function ApprovedScreen({ companyName }: { companyName: string }) {
-  return (
-    <div className="min-h-dvh bg-gray-50 flex flex-col items-center justify-center px-4">
-      <motion.div {...FADE_UP} className="card max-w-sm w-full text-center">
-        <span className="icon-tile-lg bg-green-50 text-green-600 mx-auto mb-4">
-          <CheckCircle2 className="w-6 h-6" strokeWidth={1.5} />
-        </span>
-        <h1 className="heading-3 mb-2">Авторазборка создана!</h1>
-        {companyName && (
-          <p className="text-sm font-semibold text-gray-900 mb-1">«{companyName}»</p>
-        )}
-        <p className="text-sm text-gray-500 mb-5">
-          Ваша заявка одобрена — авторазборка готова к работе. Перейдите в панель управления.
-        </p>
-        <Link to="/parts/dashboard" className="btn-primary w-full">
-          Открыть панель
-          <ExternalLink className="w-4 h-4" strokeWidth={1.5} />
-        </Link>
-      </motion.div>
-    </div>
-  )
-}
-
-// ── Экран «отклонена» + кнопка подать заново ─────────────────────────────────
-function RejectedScreen({
-  reason,
-  onReapply,
-}: {
-  reason?: string
-  onReapply: () => void
-}) {
-  return (
-    <div className="min-h-dvh bg-gray-50 flex flex-col items-center justify-center px-4">
-      <motion.div {...FADE_UP} className="card max-w-sm w-full text-center">
-        <span className="icon-tile-lg bg-red-50 text-red-600 mx-auto mb-4">
-          <XCircle className="w-6 h-6" strokeWidth={1.5} />
-        </span>
-        <h1 className="heading-3 mb-2">Заявка отклонена</h1>
-        {reason && (
-          <div className="alert alert-danger mb-4 text-left">
-            <XCircle className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-            <span>{reason}</span>
-          </div>
-        )}
-        <p className="text-sm text-gray-500 mb-5">
-          Вы можете исправить данные и подать заявку заново.
-        </p>
-        <button type="button" onClick={onReapply} className="btn-primary w-full">
-          Подать повторно
-        </button>
-        <Link to="/business" className="btn-ghost w-full mt-2">
-          <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
-          На главную
-        </Link>
-      </motion.div>
-    </div>
-  )
-}
-
-// ── Экран успеха ──────────────────────────────────────────────────────────────
-function SuccessScreen() {
-  return (
-    <div className="min-h-dvh bg-gray-50 flex flex-col items-center justify-center px-4">
-      <motion.div {...FADE_UP} className="card max-w-sm w-full text-center">
-        <span className="icon-tile-lg bg-green-50 text-green-600 mx-auto mb-4">
-          <CheckCircle2 className="w-6 h-6" strokeWidth={1.5} />
-        </span>
-        <h1 className="heading-3 mb-2">Заявка отправлена!</h1>
-        <p className="text-sm text-gray-500 mb-5">
-          Ожидайте одобрения администратора. Как только заявка будет рассмотрена, вы получите уведомление.
-        </p>
-        <div className="alert alert-success mb-4">
-          <CheckCircle2 className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-          <span>Обычно рассмотрение занимает до 24 часов</span>
-        </div>
-        <Link to="/business" className="btn-secondary w-full">
-          <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
-          На главную
-        </Link>
-      </motion.div>
-    </div>
-  )
-}
-
 // ── Основная форма ─────────────────────────────────────────────────────────────
 export function PartsApplication() {
   const navigate = useNavigate()
   const { user, loading: authLoading } = useAuth()
-
-  const [showForm, setShowForm] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
+  const { data: profile, isLoading: profileLoading } = useUserProfile()
+  const queryClient = useQueryClient()
 
   // Поля формы
   const [companyName, setCompanyName] = useState('')
@@ -200,6 +81,29 @@ export function PartsApplication() {
 
   // Ошибки
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      selfProvisionPartsCompany({
+        companyName: companyName.trim(),
+        address: address.trim() || undefined,
+        phone: phone || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] })
+      toast.success('Авторазборка создана — демо-доступ активен')
+      navigate('/parts/dashboard')
+    },
+    onError: (err: any) => {
+      const msg: string = err?.message ?? ''
+      if (msg.includes('COMPANY_ALREADY_EXISTS')) {
+        toast.info('Разборка уже создана')
+        navigate('/parts/dashboard')
+      } else {
+        toast.error(err?.message || 'Ошибка при создании разборки')
+      }
+    },
+  })
 
   // Загрузка авторизации
   if (authLoading) {
@@ -215,101 +119,8 @@ export function PartsApplication() {
     return <LoginRequired />
   }
 
-  return (
-    <PartsApplicationInner
-      userId={user.id}
-      showForm={showForm}
-      setShowForm={setShowForm}
-      submitted={submitted}
-      setSubmitted={setSubmitted}
-      companyName={companyName}
-      setCompanyName={setCompanyName}
-      ownerFirstName={ownerFirstName}
-      setOwnerFirstName={setOwnerFirstName}
-      ownerLastName={ownerLastName}
-      setOwnerLastName={setOwnerLastName}
-      phone={phone}
-      setPhone={setPhone}
-      address={address}
-      setAddress={setAddress}
-      vehicleMakes={vehicleMakes}
-      setVehicleMakes={setVehicleMakes}
-      makeInput={makeInput}
-      setMakeInput={setMakeInput}
-      errors={errors}
-      setErrors={setErrors}
-      navigate={navigate}
-    />
-  )
-}
-
-// ── Inner (нужен чтобы хуки вызывались только при наличии user) ───────────────
-function PartsApplicationInner({
-  userId,
-  showForm,
-  setShowForm,
-  submitted,
-  setSubmitted,
-  companyName,
-  setCompanyName,
-  ownerFirstName,
-  setOwnerFirstName,
-  ownerLastName,
-  setOwnerLastName,
-  phone,
-  setPhone,
-  address,
-  setAddress,
-  vehicleMakes,
-  setVehicleMakes,
-  makeInput,
-  setMakeInput,
-  errors,
-  setErrors,
-  navigate,
-}: {
-  userId: string
-  showForm: boolean
-  setShowForm: (v: boolean) => void
-  submitted: boolean
-  setSubmitted: (v: boolean) => void
-  companyName: string
-  setCompanyName: (v: string) => void
-  ownerFirstName: string
-  setOwnerFirstName: (v: string) => void
-  ownerLastName: string
-  setOwnerLastName: (v: string) => void
-  phone: string
-  setPhone: (v: string) => void
-  address: string
-  setAddress: (v: string) => void
-  vehicleMakes: string[]
-  setVehicleMakes: (v: string[]) => void
-  makeInput: string
-  setMakeInput: (v: string) => void
-  errors: Record<string, string>
-  setErrors: (v: Record<string, string>) => void
-  navigate: ReturnType<typeof useNavigate>
-}) {
-  const { data: application, isLoading: appLoading } = useQuery({
-    queryKey: ['myPartsApplication', userId],
-    queryFn: () => getMyPartsApplication(userId),
-    enabled: !showForm && !submitted,
-    staleTime: 60_000,
-  })
-
-  const mutation = useMutation({
-    mutationFn: (input: PartsApplicationInput) => submitPartsApplication(userId, input),
-    onSuccess: () => {
-      toast.success('Заявка отправлена!')
-      setSubmitted(true)
-    },
-    onError: (err: any) => {
-      toast.error(err?.message || 'Ошибка при отправке заявки')
-    },
-  })
-
-  if (appLoading) {
+  // Профиль грузится
+  if (profileLoading) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
         <span className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
@@ -317,27 +128,9 @@ function PartsApplicationInner({
     )
   }
 
-  // Заявка успешно отправлена только что
-  if (submitted) {
-    return <SuccessScreen />
-  }
-
-  // Уже есть заявка — показываем статус (pending/approved), или форму (rejected/null)
-  if (application && !showForm) {
-    if (application.status === 'pending') {
-      return <PendingScreen companyName={application.companyName} />
-    }
-    if (application.status === 'approved') {
-      return <ApprovedScreen companyName={application.companyName} />
-    }
-    if (application.status === 'rejected') {
-      return (
-        <RejectedScreen
-          reason={application.rejectionReason}
-          onReapply={() => setShowForm(true)}
-        />
-      )
-    }
+  // Разборка уже есть — редирект
+  if (profile?.parts_company_id) {
+    return <Navigate to="/parts/dashboard" replace />
   }
 
   // ── Добавление марки авто ──────────────────────────────────────────────────
@@ -376,14 +169,7 @@ function PartsApplicationInner({
 
   function handleSubmit() {
     if (!validate()) return
-    mutation.mutate({
-      companyName: companyName.trim(),
-      ownerFirstName: ownerFirstName.trim(),
-      ownerLastName: ownerLastName.trim(),
-      phone,
-      address: address.trim(),
-      vehicleMakes,
-    })
+    mutation.mutate()
   }
 
   // ── Форма ──────────────────────────────────────────────────────────────────
@@ -416,9 +202,9 @@ function PartsApplicationInner({
             <span className="icon-tile-lg bg-blue-50 text-blue-600 mx-auto mb-3">
               <Building2 className="w-6 h-6" strokeWidth={1.5} />
             </span>
-            <h1 className="heading-2">Заявка на авторазборку</h1>
+            <h1 className="heading-2">Создать авторазборку</h1>
             <p className="page-subtitle mt-2">
-              Заполните форму — администратор рассмотрит и создаст вашу компанию
+              Заполните форму — разборка создастся сразу, демо-доступ активируется автоматически. Изучайте интерфейс уже сегодня.
             </p>
           </div>
 
@@ -580,15 +366,15 @@ function PartsApplicationInner({
             {mutation.isPending ? (
               <>
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Отправка…
+                Создание…
               </>
             ) : (
-              'Отправить заявку'
+              'Создать разборку'
             )}
           </button>
 
           <p className="text-xs text-gray-400 text-center mt-3">
-            Нажимая «Отправить заявку», вы соглашаетесь с условиями использования платформы.
+            Нажимая «Создать разборку», вы соглашаетесь с условиями использования платформы.
           </p>
         </motion.div>
       </div>

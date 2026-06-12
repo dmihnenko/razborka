@@ -385,15 +385,14 @@ export function BusinessLanding() {
         >
           <h2 className="heading-2">Готовы начать?</h2>
           <p className="page-subtitle mt-3 max-w-lg mx-auto">
-            Подайте заявку — администратор рассмотрит её и создаст вашу авторазборку.
-            Начните работу уже сегодня.
+            Создайте авторазборку за минуту — демо-доступ активируется сразу, без ожидания одобрения. Изучите интерфейс уже сегодня.
           </p>
           <button
             type="button"
             onClick={handleApply}
             className="btn-primary btn-lg mt-7"
           >
-            Подать заявку бесплатно
+            Создать разборку бесплатно
             <ArrowRight className="w-5 h-5" strokeWidth={1.5} />
           </button>
         </motion.section>

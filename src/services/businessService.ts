@@ -52,6 +52,20 @@ export async function submitPartsApplication(
   if (error) throw error
 }
 
+export async function selfProvisionPartsCompany(input: {
+  companyName: string
+  address?: string
+  phone?: string
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('self_provision_parts_company', {
+    p_company_name: input.companyName,
+    p_address: input.address ?? null,
+    p_phone: input.phone ? normalizePhone(input.phone) : null,
+  })
+  if (error) throw error
+  return data as string
+}
+
 export async function getMyPartsApplication(
   userId: string,
 ): Promise<PartsApplication | null> {
