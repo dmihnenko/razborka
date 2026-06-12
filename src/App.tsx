@@ -262,6 +262,9 @@ function App() {
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="database" element={<DatabasePage />} />
         </Route>
+
+        {/* Неизвестный путь — на главную (вместо пустой страницы) */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
     </BrowserRouter>

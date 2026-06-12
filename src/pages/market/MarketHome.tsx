@@ -334,7 +334,7 @@ export function MarketHome() {
             </p>
           </div>
           <Link
-            to="/register"
+            to="/business"
             className="btn-primary btn-lg flex-shrink-0 whitespace-nowrap"
           >
             Зарегистрироваться
