@@ -380,12 +380,12 @@ export default function Login() {
         style={{ minWidth: 0 }}
       >
         <div
-          className="flex-1 flex flex-col items-center justify-start sm:justify-center w-full"
+          className="m-auto w-full"
           style={{
-            padding: 'clamp(20px, 5vw, 48px) clamp(16px, 4vw, 40px)',
+            maxWidth: '400px',
+            padding: 'clamp(24px, 5vw, 48px) clamp(16px, 4vw, 40px)',
           }}
         >
-          <div className="w-full" style={{ maxWidth: '400px' }}>
 
             {/* Mobile logo (hidden on lg+) */}
             <motion.div
@@ -652,7 +652,6 @@ export default function Login() {
               </motion.form>
             </AnimatePresence>
 
-          </div>
         </div>
       </div>
     </div>
