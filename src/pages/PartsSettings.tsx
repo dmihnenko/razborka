@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2, Phone } from 'lucide-react'
+import { RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2, Phone, Send } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -10,6 +10,7 @@ import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getImgbbKey, setImgbbKey } from '@/utils/imgbbKey'
 import { toast } from 'sonner'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import { TELEGRAM_BOT_USERNAME, telegramConnectLink } from '@/config/telegram'
 export default function PartsSettings() {
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
@@ -34,7 +35,7 @@ export default function PartsSettings() {
   const { data: company } = useQuery({
     queryKey: ['parts_company_settings', partsCompanyId],
     queryFn: async () => {
-      const { data } = await supabase.from('parts_companies').select('name, phone, address, email, telegram, description').eq('id', partsCompanyId).single()
+      const { data } = await supabase.from('parts_companies').select('name, phone, address, email, telegram, description, telegram_chat_id').eq('id', partsCompanyId).single()
       return data
     },
     enabled: !!partsCompanyId,
@@ -144,6 +145,35 @@ export default function PartsSettings() {
                 </button>
               </div>
             </div>
+
+            {/* Уведомления в Telegram */}
+            {TELEGRAM_BOT_USERNAME && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-sky-100 rounded-lg flex-shrink-0">
+                    <Send className="w-4 h-4 text-sky-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-gray-900">Уведомления в Telegram</h2>
+                    <p className="text-xs text-gray-500">Новые заявки с маркета и напоминания о подписке — прямо в Telegram</p>
+                  </div>
+                </div>
+                {(company as any)?.telegram_chat_id ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm text-green-600 flex items-center gap-1.5">
+                      <CheckCircle className="w-4 h-4" /> Уведомления подключены
+                    </p>
+                    <a href={partsCompanyId ? telegramConnectLink(partsCompanyId) : '#'} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-sky-600 hover:underline">Переподключить</a>
+                  </div>
+                ) : (
+                  <a href={partsCompanyId ? telegramConnectLink(partsCompanyId) : '#'} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 font-medium transition-colors text-sm min-h-[44px]">
+                    <Send className="w-4 h-4" /> Подключить уведомления
+                  </a>
+                )}
+              </div>
+            )}
 
             {/* Каталог */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
