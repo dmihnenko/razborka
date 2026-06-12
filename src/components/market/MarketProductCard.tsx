@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Car, MapPin, Package, ShoppingCart, Store } from 'lucide-react'
+import { Car, MapPin, Package, ShoppingCart } from 'lucide-react'
 import { toast } from 'sonner'
 import type { MarketPart } from '@/types/marketplace'
 import { useCart } from '@/hooks/useCart'
@@ -100,10 +100,6 @@ export function MarketProductCard({ part }: MarketProductCardProps) {
             </p>
           )}
 
-          <p className="flex items-center gap-1.5 text-[11px] text-gray-400 min-w-0">
-            <Store className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
-            <span className="truncate">{part.company.name}</span>
-          </p>
           {part.company.address && (
             <p className="flex items-center gap-1.5 text-[11px] text-gray-400 min-w-0">
               <MapPin className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />

@@ -6,6 +6,7 @@ import { getPersonalVehicles } from '@/services/personalVehicles'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import PersonalVehicleModal from '@/components/personal-vehicles/PersonalVehicleModal'
 import ShareLinkModal from '@/components/personal-vehicles/ShareLinkModal'
+import EmptyState from '@/components/ui/EmptyState'
 
 const NO_IMAGE_URL = '/noimage_final.png'
 
@@ -144,80 +145,83 @@ export default function MyVehicles() {
 
   if (!profile) {
     return (
-      <div className="flex items-center justify-center min-h-dvh">
-        <p className="text-gray-500">Загрузка...</p>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex items-center gap-3 text-gray-400">
+          <span className="w-5 h-5 border-2 border-gray-200 border-t-primary rounded-full animate-spin" />
+          <span className="text-sm font-medium">Загрузка…</span>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50">
-      <div className="w-full py-4 sm:py-6">
-        {/* Заголовок с мягким оформлением */}
-        <div className="mb-6 bg-white border border-gray-200 rounded-xl shadow-sm p-4 sm:p-6">
-          <div className="flex flex-col gap-4">
-            {/* Заголовок с иконкой */}
-            <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-3 bg-blue-50 rounded-lg">
-                <Car className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-blue-600" />
+    <div className="py-1 sm:py-2">
+      {/* Центрированный контейнер для десктопа */}
+      <div className="mx-auto w-full max-w-6xl space-y-5 sm:space-y-6">
+
+        {/* ── Шапка ─────────────────────────────────────────── */}
+        <header className="card p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+              <div className="icon-tile-lg bg-blue-50 text-blue-600 shrink-0">
+                <Car className="w-6 h-6" strokeWidth={1.5} />
               </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900">
-                  Личные автомобили с аукционов США
-                </h1>
-                <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">
-                  Отслеживайте расходы и историю ваших автомобилей
+              <div className="min-w-0">
+                <h1 className="page-title">Мои автомобили</h1>
+                <p className="page-subtitle">
+                  Авто с аукционов США · расходы и история
+                  {vehicles.length > 0 && ` · ${vehicles.length}`}
                 </p>
               </div>
             </div>
-            
-            {/* Кнопки */}
+
             <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={() => navigate('/my-vehicles/archive')}
-                className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 text-sm sm:text-base border border-gray-300 shadow-sm flex-1 sm:flex-none"
+                className="btn-secondary flex-1 sm:flex-none"
               >
-                <Archive className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="sm:inline">Архив</span>
+                <Archive className="w-4 h-4" strokeWidth={1.5} />
+                <span>Архив</span>
               </button>
-              
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition-all duration-200 text-sm sm:text-base shadow-sm hover:shadow-md font-medium flex-1 sm:flex-none"
+                className="btn-primary flex-1 sm:flex-none"
               >
-                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Plus className="w-4 h-4" strokeWidth={1.5} />
                 <span>Добавить</span>
               </button>
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Список автомобилей */}
+        {/* ── Список автомобилей ────────────────────────────── */}
         {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">
-              Загрузка автомобилей...
-            </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="card p-0 overflow-hidden">
+                <div className="aspect-[16/10] bg-gray-100 animate-shimmer" />
+                <div className="p-4 space-y-3">
+                  <div className="h-5 w-2/3 rounded-lg bg-gray-100 animate-shimmer" />
+                  <div className="h-4 w-1/2 rounded-lg bg-gray-100 animate-shimmer" />
+                  <div className="h-9 rounded-xl bg-gray-100 animate-shimmer" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : vehicles.length === 0 ? (
-          <div className="rounded-lg shadow-sm border p-6 sm:p-8 md:p-12 text-center bg-white border-gray-200">
-            <Car className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-gray-400" />
-            <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-900">
-              У вас пока нет автомобилей
-            </h3>
-            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
-              Добавьте ваш первый автомобиль с аукциона
-            </p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm sm:text-base"
-            >
-              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-              Добавить автомобиль
-            </button>
-          </div>
+          <EmptyState
+            icon={Car}
+            title="У вас пока нет автомобилей"
+            description="Добавьте ваш первый автомобиль с аукциона — и отслеживайте расходы и историю."
+            action={
+              <button onClick={() => setShowCreateModal(true)} className="btn-primary">
+                <Plus className="w-4 h-4" strokeWidth={1.5} />
+                Добавить автомобиль
+              </button>
+            }
+          />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {vehicles.map((vehicle) => renderClassicCard(vehicle))}
           </div>
         )}
