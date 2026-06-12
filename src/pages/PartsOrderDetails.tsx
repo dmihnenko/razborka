@@ -87,9 +87,17 @@ export default function PartsOrderDetails() {
       await deletePartsOrder(id, inventoryIds)
     },
     onSuccess: () => {
+      // Сразу убираем заказ из всех кэшей списка (чтобы не «висел» до рефетча)
+      queryClient.setQueriesData({ queryKey: ['parts-orders'] }, (old: any) =>
+        Array.isArray(old) ? old.filter((o: any) => o?.id !== id) : old
+      )
+      queryClient.removeQueries({ queryKey: ['parts-order', id] })
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-recent-activity'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-orders-stats'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       queryClient.invalidateQueries({ queryKey: ['trash'] })
+      toast.success('Заказ перемещён в корзину')
       navigate('/parts/orders')
     },
   })
