@@ -19,6 +19,11 @@ export interface PartsCustomer {
   full_name: string
   phone?: string
   email?: string
+  address?: string
+  /** Город доставки */
+  city?: string
+  /** Отделение Новой почты */
+  np_office?: string
   notes?: string
   discount_percent: number
   total_orders: number
@@ -139,6 +144,9 @@ export interface CreatePartsCustomerInput {
   full_name: string
   phone?: string
   email?: string
+  address?: string
+  city?: string
+  np_office?: string
   notes?: string
   discount_percent?: number
 }

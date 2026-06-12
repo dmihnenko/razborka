@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useUserProfile, useHasRole, useIsAdmin } from '@/hooks/useUserProfile'
@@ -7,11 +7,11 @@ import { formatDate } from '@/utils/date'
 import { PartsOrder, CreatePartsOrderItemInput } from '@/types/parts'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Plus, Trash2, Edit2, Search, CheckCircle } from 'lucide-react'
+import { Plus, Trash2, Edit2, Search, CheckCircle, MapPin, Truck } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { formatCurrency, formatPrice } from '@/utils/currency'
 import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
-import { updatePartsOrderTotal, getAvailablePartsInventory, getPartsCustomersDropdown, updatePartsOrder, updatePartsOrderStatus, deletePartsOrder, deletePartsOrderItem, createPartsOrderItem } from '@/services/partsService'
+import { updatePartsOrderTotal, getAvailablePartsInventory, getPartsCustomersDropdown, updatePartsOrder, updatePartsOrderStatus, deletePartsOrder, deletePartsOrderItem, createPartsOrderItem, createPartsCustomer, updatePartsCustomer } from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -30,6 +30,12 @@ export default function PartsOrderDetails() {
   const { confirm: showConfirm, dialogProps } = useConfirm()
 
   const { rate: exchangeRate } = usePartsExchangeRate()
+
+  // Поля «Клиент и доставка»
+  const [customerFullName, setCustomerFullName] = useState('')
+  const [customerPhone, setCustomerPhone] = useState('')
+  const [customerCity, setCustomerCity] = useState('')
+  const [customerNpOffice, setCustomerNpOffice] = useState('')
 
   // Получить заказ с деталями
   const { data: order, isLoading } = useQuery({
@@ -57,6 +63,10 @@ export default function PartsOrderDetails() {
   // Изменить статус заказа
   const updateStatusMutation = useMutation({
     mutationFn: async (status: string) => {
+      // При переходе в in_progress или completed: если клиента ещё нет, но есть данные — создаём и привязываем
+      if ((status === 'in_progress' || status === 'completed') && !order?.customer_id) {
+        await createAndAttachCustomer(id!)
+      }
       const inventoryIds = (order?.items ?? []).map((i: any) => i.inventory_item_id).filter(Boolean)
       await updatePartsOrderStatus(id!, status, inventoryIds, exchangeRate)
     },
@@ -107,6 +117,62 @@ export default function PartsOrderDetails() {
   const isOwner = useHasRole('parts_owner') || isAdmin
   // Owner can always manage the order; workers only when new/in_progress
   const canManage = Boolean(order) && (!!canEdit || isOwner)
+
+  // Префилл полей клиента при загрузке/изменении заказа
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (order?.customer) {
+      setCustomerFullName(order.customer.full_name || '')
+      setCustomerPhone(order.customer.phone || '')
+      setCustomerCity((order.customer as any).city || '')
+      setCustomerNpOffice((order.customer as any).np_office || '')
+    }
+  }, [order?.customer?.id])
+
+  // Вспомогательная функция: создать клиента и привязать к заказу
+  const createAndAttachCustomer = async (orderId: string) => {
+    if (!partsCompanyId) return null
+    if (!customerFullName.trim() && !customerPhone.trim()) return null
+    const created = await createPartsCustomer(
+      {
+        full_name: customerFullName.trim() || 'Клиент',
+        phone: customerPhone.trim() || undefined,
+        city: customerCity.trim() || undefined,
+        np_office: customerNpOffice.trim() || undefined,
+      },
+      partsCompanyId
+    )
+    await updatePartsOrder(orderId, { customer_id: created.id })
+    return created
+  }
+
+  // Мутация сохранения данных клиента
+  const saveCustomerMutation = useMutation({
+    mutationFn: async () => {
+      if (!order) throw new Error('Нет заказа')
+      if (order.customer_id) {
+        // Обновляем существующего клиента
+        const phoneUpdate = customerPhone.trim() ? { phone: customerPhone.trim() } : {}
+        await updatePartsCustomer(order.customer_id, {
+          full_name: customerFullName.trim() || undefined,
+          city: customerCity.trim() || undefined,
+          np_office: customerNpOffice.trim() || undefined,
+          ...phoneUpdate,
+        })
+      } else {
+        // Создаём нового и привязываем
+        await createAndAttachCustomer(order.id)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parts-order', id] })
+      queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-customers-dropdown'] })
+      toast.success('Данные клиента сохранены')
+    },
+    onError: (err: any) => toast.error(err?.message || 'Ошибка сохранения данных клиента'),
+  })
 
   // Compute total client-side so it's always correct regardless of DB stored value
   // Use price_at_sale_currency from order item; fall back to inventory item's price_currency
@@ -243,6 +309,24 @@ export default function PartsOrderDetails() {
                     <p className="text-base font-medium text-gray-900">{order.customer.phone}</p>
                   </div>
                 )}
+                {(order.customer as any).city && (
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm text-gray-500">Город</p>
+                      <p className="text-base font-medium text-gray-900">{(order.customer as any).city}</p>
+                    </div>
+                  </div>
+                )}
+                {(order.customer as any).np_office && (
+                  <div className="flex items-center gap-1.5">
+                    <Truck className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm text-gray-500">Отделение НП</p>
+                      <p className="text-base font-medium text-gray-900">{(order.customer as any).np_office}</p>
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
@@ -262,6 +346,76 @@ export default function PartsOrderDetails() {
             </div>
           )}
         </div>
+
+        {/* Клиент и доставка */}
+        {canManage && (
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Клиент и доставка</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="form-label">ФИО клиента</label>
+                <input
+                  type="text"
+                  value={customerFullName}
+                  onChange={(e) => setCustomerFullName(e.target.value)}
+                  placeholder="Иванов Иван Иванович"
+                  className="form-input"
+                />
+              </div>
+              <div>
+                <label className="form-label">Телефон</label>
+                {order.customer?.phone && !customerPhone ? (
+                  <input
+                    type="tel"
+                    value={order.customer.phone}
+                    readOnly
+                    className="form-input bg-gray-50 text-gray-500 cursor-not-allowed"
+                  />
+                ) : (
+                  <input
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="+38 (067) 000-00-00"
+                    className="form-input"
+                  />
+                )}
+              </div>
+              <div>
+                <label className="form-label">Город</label>
+                <input
+                  type="text"
+                  value={customerCity}
+                  onChange={(e) => setCustomerCity(e.target.value)}
+                  placeholder="Киев"
+                  className="form-input"
+                />
+              </div>
+              <div>
+                <label className="form-label">Отделение Новой почты</label>
+                <input
+                  type="text"
+                  value={customerNpOffice}
+                  onChange={(e) => setCustomerNpOffice(e.target.value)}
+                  placeholder="Відділення №1"
+                  className="form-input"
+                />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => saveCustomerMutation.mutate()}
+                disabled={
+                  saveCustomerMutation.isPending ||
+                  (!customerFullName.trim() && !customerPhone.trim() && !customerCity.trim() && !customerNpOffice.trim())
+                }
+                className="btn-primary w-full sm:w-auto disabled:opacity-50"
+              >
+                {saveCustomerMutation.isPending ? 'Сохранение...' : 'Сохранить данные клиента'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Order Items */}
         <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-6">

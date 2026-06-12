@@ -3,7 +3,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Package, Phone, Mail, Link2, ShoppingCart, Plus, Minus, X, Trash2, Search, ChevronRight, Car } from 'lucide-react'
+import { ArrowLeft, Package, Phone, Mail, Link2, ShoppingCart, Plus, Minus, X, Trash2, Search, ChevronRight, Car, MapPin, Truck } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { toast } from 'sonner'
@@ -275,11 +275,25 @@ export default function PartsCustomerProfile() {
               <span>{customer.phone}</span>
             </div>
           )}
-          
+
           {customer.email && (
             <div className="flex items-center text-gray-600">
               <Mail className="w-5 h-5 mr-3 text-gray-400" />
               <span>{customer.email}</span>
+            </div>
+          )}
+
+          {customer.city && (
+            <div className="flex items-center text-gray-600">
+              <MapPin className="w-5 h-5 mr-3 text-gray-400 flex-shrink-0" />
+              <span>{customer.city}</span>
+            </div>
+          )}
+
+          {customer.np_office && (
+            <div className="flex items-center text-gray-600">
+              <Truck className="w-5 h-5 mr-3 text-gray-400 flex-shrink-0" />
+              <span>{customer.np_office}</span>
             </div>
           )}
         </div>
