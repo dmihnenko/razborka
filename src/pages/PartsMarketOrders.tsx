@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Phone, Inbox, Eye, CheckCircle2, MessageSquare, User, Store } from 'lucide-react'
+import { Phone, Inbox, Eye, CheckCircle2, MessageSquare, User, Store, ClipboardCheck, ArrowRight } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { Spinner } from '@/components/ui/Spinner'
@@ -12,6 +14,7 @@ import { formatDateTime } from '@/utils/date'
 import {
   getMarketplaceOrders,
   updateMarketplaceOrderStatus,
+  convertMarketplaceOrderToPartsOrder,
 } from '@/services/marketplaceService'
 import type { MarketplaceOrder, MarketplaceOrderStatus } from '@/types/marketplace'
 
@@ -40,10 +43,16 @@ function MarketOrderCard({
   order,
   onSetStatus,
   isUpdating,
+  onConvert,
+  onOpenOrder,
+  isConverting,
 }: {
   order: MarketplaceOrder
   onSetStatus: (id: string, status: MarketplaceOrderStatus) => void
   isUpdating: boolean
+  onConvert: (order: MarketplaceOrder) => void
+  onOpenOrder: (orderId: string) => void
+  isConverting: boolean
 }) {
   const telHref = `tel:${order.buyerPhone.replace(/[^\d+]/g, '')}`
 
@@ -129,6 +138,31 @@ function MarketOrderCard({
           <span className="text-lg font-extrabold text-blue-600" style={{ letterSpacing: '-0.02em' }}>{formatOrderTotal(order)}</span>
         </div>
 
+        {/* Оформление заказа из заявки */}
+        {order.convertedOrderId ? (
+          <button
+            onClick={() => onOpenOrder(order.convertedOrderId!)}
+            className="btn-secondary w-full justify-center"
+          >
+            <ClipboardCheck className="w-4 h-4 text-green-600" strokeWidth={1.5} />
+            Заказ оформлен — открыть
+            <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+          </button>
+        ) : (
+          <button
+            onClick={() => onConvert(order)}
+            disabled={isConverting}
+            className="btn-primary w-full justify-center disabled:opacity-50"
+          >
+            {isConverting ? (
+              <Spinner size="sm" />
+            ) : (
+              <ClipboardCheck className="w-4 h-4" strokeWidth={1.5} />
+            )}
+            Оформить заказ
+          </button>
+        )}
+
         {/* Статусные действия */}
         {(order.status === 'new' || order.status !== 'closed') && (
           <div className="flex flex-wrap gap-2 pt-1">
@@ -163,6 +197,8 @@ export default function PartsMarketOrders() {
   const { data: profile } = useUserProfile()
   const partsCompanyId: string | undefined = profile?.parts_company_id
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const { rate } = usePartsExchangeRate()
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('new')
 
@@ -180,6 +216,21 @@ export default function PartsMarketOrders() {
     },
     onError: () => {
       toast.error('Не удалось обновить статус заявки')
+    },
+  })
+
+  const convertMutation = useMutation({
+    mutationFn: (order: MarketplaceOrder) =>
+      convertMarketplaceOrderToPartsOrder(order, partsCompanyId!, rate),
+    onSuccess: ({ orderId }) => {
+      queryClient.invalidateQueries({ queryKey: ['marketplace-orders', partsCompanyId] })
+      queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      toast.success('Заказ создан из заявки')
+      navigate(`/parts/orders/${orderId}`)
+    },
+    onError: () => {
+      toast.error('Не удалось оформить заказ из заявки')
     },
   })
 
@@ -253,6 +304,11 @@ export default function PartsMarketOrders() {
                 onSetStatus={(id, status) => statusMutation.mutate({ id, status })}
                 isUpdating={
                   statusMutation.isPending && statusMutation.variables?.id === order.id
+                }
+                onConvert={(o) => convertMutation.mutate(o)}
+                onOpenOrder={(orderId) => navigate(`/parts/orders/${orderId}`)}
+                isConverting={
+                  convertMutation.isPending && convertMutation.variables?.id === order.id
                 }
               />
             ))}

@@ -91,6 +91,8 @@ export interface MarketplaceOrderItem {
   priceCurrency: MarketCurrency
   quantity: number
   photoUrl?: string | null
+  /** Ссылка на позицию склада (для конвертации заявки в заказ) */
+  inventoryId?: string | null
 }
 
 /** Заявка покупателя (marketplace_orders) — для кабинета разборки */
@@ -104,6 +106,8 @@ export interface MarketplaceOrder {
   totalAmount: number
   createdAt: string
   items: MarketplaceOrderItem[]
+  /** id заказа разборки, созданного из этой заявки (null — ещё не оформлен) */
+  convertedOrderId?: string | null
 }
 
 /** Фильтры каталога */

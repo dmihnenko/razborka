@@ -9,6 +9,11 @@ import type {
   MarketplaceOrderStatus,
   CartItem,
 } from '@/types/marketplace'
+import {
+  createPartsOrder,
+  createPartsOrderItem,
+  updatePartsOrderTotal,
+} from '@/services/partsService'
 
 // ============================================================================
 // ПУБЛИЧНЫЙ МАРКЕТПЛЕЙС — каталог читается анонимно (anon key)
@@ -318,6 +323,7 @@ function mapOrderRow(row: any): MarketplaceOrder {
     status: row.status as MarketplaceOrderStatus,
     totalAmount: row.total_amount ?? 0,
     createdAt: row.created_at,
+    convertedOrderId: row.converted_order_id ?? null,
     items: ((row.items || []) as any[]).map(it => ({
       id: it.id,
       name: it.name,
@@ -325,6 +331,7 @@ function mapOrderRow(row: any): MarketplaceOrder {
       priceCurrency: it.price_currency === 'USD' ? 'USD' : 'UAH',
       quantity: it.quantity ?? 1,
       photoUrl: it.photo_url ?? null,
+      inventoryId: it.inventory_id ?? null,
     })),
   }
 }
@@ -334,8 +341,8 @@ export async function getMarketplaceOrders(companyId: string): Promise<Marketpla
   const { data, error } = await supabase
     .from('marketplace_orders')
     .select(
-      `id, parts_company_id, buyer_name, buyer_phone, comment, status, total_amount, created_at,
-       items:marketplace_order_items(id, name, selling_price, price_currency, quantity, photo_url)`
+      `id, parts_company_id, buyer_name, buyer_phone, comment, status, total_amount, created_at, converted_order_id,
+       items:marketplace_order_items(id, name, selling_price, price_currency, quantity, photo_url, inventory_id)`
     )
     .eq('parts_company_id', companyId)
     .order('created_at', { ascending: false })
@@ -354,4 +361,89 @@ export async function updateMarketplaceOrderStatus(
     .eq('id', id)
 
   if (error) throw error
+}
+
+/**
+ * Конвертирует заявку покупателя с маркета в полноценный заказ разборки за 1 клик:
+ * 1) находит клиента по телефону (или заводит нового),
+ * 2) создаёт parts_order с позициями из заявки,
+ * 3) резервирует склад (available → reserved),
+ * 4) пересчитывает сумму заказа,
+ * 5) связывает заявку с заказом (converted_order_id) и закрывает её.
+ * Повторная конвертация защищена: если заявка уже оформлена — возвращает существующий заказ.
+ */
+export async function convertMarketplaceOrderToPartsOrder(
+  order: MarketplaceOrder,
+  partsCompanyId: string,
+  exchangeRate: number
+): Promise<{ orderId: string }> {
+  if (order.convertedOrderId) return { orderId: order.convertedOrderId }
+
+  // 1. Клиент по телефону (в рамках компании) или новый
+  let customerId: string | null = null
+  const phone = (order.buyerPhone || '').trim()
+  if (phone) {
+    const { data: existing } = await supabase
+      .from('parts_customers')
+      .select('id')
+      .eq('parts_company_id', partsCompanyId)
+      .eq('phone', phone)
+      .limit(1)
+      .maybeSingle()
+    if (existing) {
+      customerId = existing.id
+    } else {
+      const { data: created, error: cErr } = await supabase
+        .from('parts_customers')
+        .insert({
+          parts_company_id: partsCompanyId,
+          full_name: order.buyerName?.trim() || 'Покупатель с маркета',
+          phone,
+        })
+        .select('id')
+        .single()
+      if (cErr) throw cErr
+      customerId = created.id
+    }
+  }
+
+  // 2. Заказ
+  const newOrder = await createPartsOrder(partsCompanyId, {
+    customer_id: customerId,
+    notes: order.comment?.trim()
+      ? `Заявка с маркета: ${order.comment.trim()}`
+      : 'Заявка с маркета',
+  })
+
+  // 3. Позиции + резерв склада
+  const inventoryIds: string[] = []
+  for (const it of order.items) {
+    if (!it.inventoryId) continue // позиция без привязки к складу — пропускаем
+    await createPartsOrderItem(newOrder.id, {
+      inventory_item_id: it.inventoryId,
+      quantity: it.quantity || 1,
+      price_at_sale: it.sellingPrice ?? 0,
+      price_at_sale_currency: it.priceCurrency,
+    })
+    inventoryIds.push(it.inventoryId)
+  }
+  if (inventoryIds.length) {
+    await supabase
+      .from('parts_inventory')
+      .update({ status: 'reserved' })
+      .in('id', inventoryIds)
+      .eq('status', 'available')
+  }
+
+  // 4. Сумма заказа
+  await updatePartsOrderTotal(newOrder.id, exchangeRate)
+
+  // 5. Связать заявку с заказом и закрыть
+  const { error: uErr } = await supabase
+    .from('marketplace_orders')
+    .update({ converted_order_id: newOrder.id, status: 'closed' })
+    .eq('id', order.id)
+  if (uErr) throw uErr
+
+  return { orderId: newOrder.id }
 }
