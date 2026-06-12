@@ -351,7 +351,7 @@ export default function PartsOrderDetails() {
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 sm:static sm:bg-transparent sm:border-0 sm:shadow-none sm:p-0">
             <button
               onClick={() => setShowCompleteModal(true)}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors font-medium"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors font-medium"
             >
               <CheckCircle className="w-5 h-5" />
               Завершить заказ
