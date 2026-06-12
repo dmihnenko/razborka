@@ -6,7 +6,7 @@ import { getUserRolesWithNames, getEmailByUsername } from '@/services/userServic
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { getDefaultRouteForRoles } from '../config/navigation'
-import { Mail, Lock, Eye, EyeOff, ShieldCheck, BarChart3, Users } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, ShieldCheck, BarChart3, Users, Zap } from 'lucide-react'
 import { Logo } from '@/components/brand/Logo'
 
 export default function Login() {
@@ -256,12 +256,12 @@ export default function Login() {
       }}
     >
 
-      {/* ─── Left brand panel (lg+) ──────────────────────────── */}
+      {/* ─── Left brand panel (lg+) — единый стиль «Steel & Electric Blue» ── */}
       <div
         className="hidden lg:flex lg:w-[48%] xl:w-5/12 relative flex-col justify-between overflow-hidden flex-shrink-0"
         style={{
-          background: 'linear-gradient(160deg, #0A0F1E 0%, #0D1525 55%, #0A1229 100%)',
-          borderRight: '1px solid rgba(59,130,246,0.12)',
+          background: 'linear-gradient(150deg, #16306A 0%, #1E40AF 42%, #2563EB 78%, #3B82F6 100%)',
+          borderRight: '1px solid rgba(255,255,255,0.10)',
         }}
         aria-hidden="true"
       >
@@ -270,102 +270,108 @@ export default function Login() {
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundImage:
-              'linear-gradient(rgba(59,130,246,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.06) 1px,transparent 1px)',
+              'linear-gradient(rgba(255,255,255,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.05) 1px,transparent 1px)',
             backgroundSize: '48px 48px',
           }}
         />
-        {/* Glow orbs */}
+        {/* Glow orbs — как в герое маркета */}
         <div
           className="absolute pointer-events-none"
           style={{
-            top: '-140px', right: '-100px',
-            width: '520px', height: '520px',
+            top: '-130px', right: '-90px',
+            width: '420px', height: '420px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(59,130,246,0.14) 0%, transparent 65%)',
+            background: 'radial-gradient(circle, rgba(147,197,253,0.28) 0%, transparent 68%)',
           }}
         />
         <div
           className="absolute pointer-events-none"
           style={{
-            bottom: '-80px', left: '-60px',
-            width: '340px', height: '340px',
+            bottom: '-70px', left: '-60px',
+            width: '320px', height: '320px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(37,99,235,0.09) 0%, transparent 65%)',
+            background: 'radial-gradient(circle, rgba(96,165,250,0.20) 0%, transparent 68%)',
           }}
         />
 
         {/* Top: Logo */}
         <div className="relative p-10 xl:p-12">
-          <Logo size="md" withText className="[&_span]:text-white [&_.text-gray-900]:!text-white [&_.text-gray-400]:!text-slate-500" />
+          <Logo size="md" withText className="[&_span]:text-white [&_.text-gray-900]:!text-white [&_.text-gray-400]:!text-blue-200" />
         </div>
 
         {/* Center: Hero */}
-        <div className="relative px-10 xl:px-12 flex-1 flex flex-col justify-center">
-          <p
-            className="text-xs font-semibold uppercase tracking-widest mb-5"
-            style={{ color: '#3B82F6', letterSpacing: '0.12em' }}
-          >
+        <motion.div
+          className="relative px-10 xl:px-12 flex-1 flex flex-col justify-center"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs font-semibold mb-6 w-fit">
+            <Zap className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" />
             CRM для авторазборки
-          </p>
+          </div>
           <h1
-            className="font-extrabold mb-6 leading-none"
+            className="font-extrabold mb-6 leading-none text-white"
             style={{
-              color: '#F1F5F9',
               fontSize: 'clamp(40px, 5vw, 68px)',
               letterSpacing: '-0.04em',
             }}
           >
             Авто<wbr />бизнес<br />
-            <span className="text-gradient-brand">под контролем</span>
+            <span className="text-blue-200">под контролем</span>
           </h1>
           <p
             className="text-sm xl:text-base mb-10"
-            style={{ color: '#64748B', maxWidth: '320px', lineHeight: '1.75' }}
+            style={{ color: 'rgba(219,234,254,0.85)', maxWidth: '340px', lineHeight: '1.75' }}
           >
             Система управления для авторазборки.
             Запчасти, заказы, клиенты — всё в одном месте.
           </p>
 
-          {/* Feature list */}
-          <ul className="flex flex-col gap-4" role="list">
+          {/* Feature cards — стеклянные, в стиле маркета */}
+          <ul className="flex flex-col gap-3" role="list">
             {brandFeatures.map(({ icon, title, desc }) => (
-              <li key={title} className="flex items-start gap-3.5">
+              <li
+                key={title}
+                className="flex items-start gap-3.5 rounded-2xl px-4 py-3.5"
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  backdropFilter: 'blur(6px)',
+                }}
+              >
                 <span
-                  className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl mt-0.5"
+                  className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl mt-0.5 text-white"
                   style={{
-                    background: 'rgba(37,99,235,0.14)',
-                    border: '1px solid rgba(59,130,246,0.22)',
-                    color: '#60A5FA',
+                    background: 'rgba(255,255,255,0.16)',
+                    border: '1px solid rgba(255,255,255,0.22)',
                   }}
                 >
                   {icon}
                 </span>
                 <div>
-                  <div
-                    className="text-sm font-semibold"
-                    style={{ color: '#CBD5E1', letterSpacing: '-0.01em' }}
-                  >
+                  <div className="text-sm font-semibold text-white" style={{ letterSpacing: '-0.01em' }}>
                     {title}
                   </div>
-                  <div className="text-xs mt-0.5 leading-relaxed" style={{ color: '#475569' }}>
+                  <div className="text-xs mt-0.5 leading-relaxed" style={{ color: 'rgba(191,219,254,0.78)' }}>
                     {desc}
                   </div>
                 </div>
               </li>
             ))}
           </ul>
-        </div>
+        </motion.div>
 
         {/* Bottom: chips */}
         <div className="relative px-10 xl:px-12 pb-10 xl:pb-12 flex flex-wrap gap-2.5">
           {['Разборка', 'Каталог', 'Клиенты', 'Аналитика'].map(label => (
             <span
               key={label}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg"
+              className="text-xs font-medium px-3 py-1.5 rounded-lg text-white"
               style={{
-                background: 'rgba(37,99,235,0.1)',
-                border: '1px solid rgba(59,130,246,0.18)',
-                color: '#60A5FA',
+                background: 'rgba(255,255,255,0.13)',
+                border: '1px solid rgba(255,255,255,0.20)',
+                backdropFilter: 'blur(6px)',
               }}
             >
               {label}
