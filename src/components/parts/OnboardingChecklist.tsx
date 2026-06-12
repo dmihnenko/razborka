@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { createPartsCategoriesBulk } from '@/services/partsService'
+import { getImgbbKey } from '@/utils/imgbbKey'
 
 const DEFAULT_CATEGORIES = [
   'Двигатель',
@@ -85,12 +86,12 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
     staleTime: 2 * 60 * 1000,
   })
 
-  // 5. Заявки с маркета
-  const { data: marketOrdersCount = null } = useQuery({
-    queryKey: ['onboarding-market-orders', partsCompanyId],
+  // 5. Места хранения (стеллажи/полки)
+  const { data: storageCount = null } = useQuery({
+    queryKey: ['onboarding-storage', partsCompanyId],
     queryFn: async () => {
       const { count } = await supabase
-        .from('marketplace_orders')
+        .from('parts_storage_locations')
         .select('id', { count: 'exact', head: true })
         .eq('parts_company_id', partsCompanyId)
       return count ?? 0
@@ -98,6 +99,9 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
     enabled: !!partsCompanyId,
     staleTime: 2 * 60 * 1000,
   })
+
+  // 6. Хранилище фото (ImgBB API-ключ хранится в localStorage)
+  const hasImgbb = !!getImgbbKey()
 
   const addCategoriesMutation = useMutation({
     mutationFn: () => createPartsCategoriesBulk(DEFAULT_CATEGORIES, partsCompanyId),
@@ -118,18 +122,18 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
     vehiclesCount === null ||
     inventoryCount === null ||
     companyContacts === null ||
-    marketOrdersCount === null
+    storageCount === null
 
   const hasCats = (categoriesCount ?? 0) >= 1
+  const hasStorage = (storageCount ?? 0) >= 1
   const hasVehicles = (vehiclesCount ?? 0) >= 1
   const hasInventory = (inventoryCount ?? 0) >= 1
   const hasContacts =
     !!companyContacts?.phone &&
     !!(companyContacts?.telegram || companyContacts?.address)
-  const hasMarketOrder = (marketOrdersCount ?? 0) >= 1
 
-  const doneCount = [hasCats, hasVehicles, hasInventory, hasContacts, hasMarketOrder].filter(Boolean).length
-  const total = 5
+  const doneCount = [hasCats, hasStorage, hasImgbb, hasVehicles, hasInventory, hasContacts].filter(Boolean).length
+  const total = 6
   const allDone = doneCount === total
   const progressPct = Math.round((doneCount / total) * 100)
 
@@ -279,22 +283,48 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
             </div>
           </li>
 
-          {/* 5. Маркет */}
+          {/* 5. Места хранения */}
           <li className="flex items-start gap-3 px-4 py-3">
-            {hasMarketOrder
+            {hasStorage
               ? <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" strokeWidth={1.5} aria-hidden="true" />
               : <Circle className="w-5 h-5 text-gray-300 flex-shrink-0 mt-0.5" strokeWidth={1.5} aria-hidden="true" />
             }
             <div className="flex-1 min-w-0">
-              <p className={`text-sm font-semibold ${hasMarketOrder ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                Получите первую заявку с маркета
+              <p className={`text-sm font-semibold ${hasStorage ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+                Настройте места хранения
               </p>
-              {!hasMarketOrder && (
-                <div className="mt-2">
-                  <Link to="/market" className="btn-secondary btn-sm">
-                    Открыть маркет
-                  </Link>
-                </div>
+              {!hasStorage && (
+                <>
+                  <p className="text-xs text-gray-500 mt-0.5">Стеллажи, полки, ячейки — чтобы знать, где лежит запчасть</p>
+                  <div className="mt-2">
+                    <Link to="/parts/warehouse" className="btn-secondary btn-sm">
+                      Открыть склад
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
+          </li>
+
+          {/* 6. Хранилище фото (ImgBB) */}
+          <li className="flex items-start gap-3 px-4 py-3">
+            {hasImgbb
+              ? <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" strokeWidth={1.5} aria-hidden="true" />
+              : <Circle className="w-5 h-5 text-gray-300 flex-shrink-0 mt-0.5" strokeWidth={1.5} aria-hidden="true" />
+            }
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-semibold ${hasImgbb ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+                Подключите хранилище фото
+              </p>
+              {!hasImgbb && (
+                <>
+                  <p className="text-xs text-gray-500 mt-0.5">Бесплатный ключ ImgBB — чтобы загружать фото запчастей</p>
+                  <div className="mt-2">
+                    <Link to="/parts/settings" className="btn-secondary btn-sm">
+                      Настроить API
+                    </Link>
+                  </div>
+                </>
               )}
             </div>
           </li>
