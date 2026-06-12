@@ -17,7 +17,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Manrope Variable', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['var(--font-sans)', 'Manrope Variable', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['var(--font-mono)', 'IBM Plex Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       colors: {
         // Нейтральные = slate (сталисто-синие). Весь существующий код на
@@ -69,14 +70,19 @@ export default {
           DEFAULT:    "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Sidebar palette
+        // Sidebar palette (navy dark surface)
         sidebar: {
-          DEFAULT: '#0C1220',
-          hover:   '#162035',
-          active:  '#1E3A6E',
-          border:  'rgba(255,255,255,0.07)',
-          text:    '#94A3B8',
+          DEFAULT:     '#0C1220',
+          hover:       '#162035',
+          active:      '#2563EB',   /* = brand-600 */
+          border:      'rgba(255,255,255,0.07)',
+          text:        '#94A3B8',
           'text-active': '#FFFFFF',
+        },
+        // Navy surfaces
+        navy: {
+          DEFAULT: '#0E1C3D',
+          deep:    '#0A1530',
         },
         // Brand
         brand: {
@@ -87,22 +93,23 @@ export default {
         },
       },
       borderRadius: {
-        sm:  '6px',
-        DEFAULT: '10px',
-        md:  '10px',
-        lg:  '12px',
-        xl:  '16px',
-        '2xl': '20px',
-        '3xl': '24px',
-        full: '9999px',
+        sm:      '4px',
+        DEFAULT: '8px',
+        md:      '8px',
+        lg:      '10px',
+        xl:      '14px',
+        '2xl':   '18px',
+        '3xl':   '24px',
+        full:    '9999px',
       },
       boxShadow: {
-        // Многоуровневые мягкие тени (slate-tinted)
-        card:        '0 1px 2px rgba(15,23,42,0.04), 0 2px 8px -2px rgba(15,23,42,0.05)',
-        'card-hover': '0 2px 4px rgba(15,23,42,0.05), 0 12px 24px -8px rgba(15,23,42,0.12)',
-        float:       '0 4px 12px -2px rgba(15,23,42,0.08), 0 16px 32px -12px rgba(15,23,42,0.14)',
-        dialog:      '0 8px 24px -4px rgba(15,23,42,0.12), 0 24px 64px -12px rgba(15,23,42,0.25)',
-        'glow-blue': '0 1px 2px rgba(37,99,235,0.35), 0 4px 12px -2px rgba(37,99,235,0.35)',
+        // AutoCRM-aligned card shadows (lighter, border-first philosophy)
+        card:           '0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04)',
+        'card-hover':   '0 4px 12px rgba(0,0,0,.10), 0 2px 4px rgba(0,0,0,.06)',
+        dialog:         '0 20px 60px rgba(0,0,0,.15)',
+        // Keep existing project-specific shadows
+        float:          '0 4px 12px -2px rgba(15,23,42,0.08), 0 16px 32px -12px rgba(15,23,42,0.14)',
+        'glow-blue':    '0 1px 2px rgba(37,99,235,0.35), 0 4px 12px -2px rgba(37,99,235,0.35)',
         'glow-blue-lg': '0 2px 4px rgba(37,99,235,0.35), 0 8px 20px -4px rgba(37,99,235,0.45)',
       },
       keyframes: {

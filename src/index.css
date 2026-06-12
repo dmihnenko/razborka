@@ -52,8 +52,12 @@
     --brand-800:  #1E40AF;
     --brand-gradient: linear-gradient(135deg, var(--brand-800) 0%, var(--brand-600) 55%, var(--brand-500) 100%);
 
-    /* Типографика — базовый размер (масштабирует весь rem-текст) */
-    --app-font-size: 16.5px;
+    /* Типографика — базовый размер (fluid, масштабирует весь rem-текст) */
+    --app-font-size: clamp(1rem, 0.875rem + 0.26vw, 1.125rem);
+
+    /* Шрифты — единый источник (tailwind fontFamily читает эти переменные) */
+    --font-sans: 'Manrope', 'Manrope Variable', 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 
   /* ── Base resets ───────────────────────────────────────── */
@@ -64,8 +68,8 @@
   }
 
   html {
-    font-family: 'Manrope Variable', 'Inter', system-ui, -apple-system, sans-serif;
-    /* Базовый размер из токена --app-font-size (единый источник, см. :root).
+    font-family: var(--font-sans);
+    /* Базовый размер из токена --app-font-size (fluid clamp, единый источник, см. :root).
        Масштабирует весь rem-текст; меняется в одном месте. */
     font-size: var(--app-font-size);
     -webkit-text-size-adjust: 100%;
@@ -76,15 +80,15 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Manrope Variable', 'Inter', system-ui, -apple-system, sans-serif;
-    letter-spacing: -0.011em;
+    font-family: var(--font-sans);
+    letter-spacing: -0.01em;
     font-feature-settings: 'tnum' 0;
   }
 
-  /* Focus ring */
+  /* Focus ring — brand-600 inner + soft halo */
   *:focus-visible {
     @apply outline-none;
-    box-shadow: 0 0 0 2px #2563EB, 0 0 0 5px rgba(37,99,235,0.18);
+    box-shadow: 0 0 0 2px var(--brand-600, #2563EB), 0 0 0 4px rgba(37,99,235,0.15);
   }
 
   /* Touch targets */
@@ -120,15 +124,15 @@
 
   /* ── Buttons ───────────────────────────────────────────── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-xl
-           transition-all duration-200 select-none cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-md
+           transition-all duration-150 select-none cursor-pointer;
     letter-spacing: -0.01em;
   }
   .btn:active { transform: scale(0.97); }
   .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
   .btn-primary {
-    @apply btn text-white px-4 py-2 text-sm min-h-[40px];
+    @apply btn text-white px-4 py-2 text-sm min-h-[38px];
     background-image: linear-gradient(180deg, #3B82F6 0%, #2563EB 100%);
     box-shadow: 0 1px 2px rgba(37,99,235,0.35),
                 0 4px 12px -2px rgba(37,99,235,0.35),
@@ -143,7 +147,7 @@
 
   .btn-secondary {
     @apply btn bg-white text-gray-700 border border-gray-200
-           px-4 py-2 text-sm min-h-[40px];
+           px-4 py-2 text-sm min-h-[38px];
     box-shadow: 0 1px 2px rgba(15,23,42,0.05);
   }
   .btn-secondary:hover {
@@ -152,7 +156,7 @@
   }
 
   .btn-danger {
-    @apply btn text-white px-4 py-2 text-sm min-h-[40px];
+    @apply btn text-white px-4 py-2 text-sm min-h-[38px];
     background-image: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
     box-shadow: 0 1px 2px rgba(220,38,38,0.3), 0 4px 12px -2px rgba(220,38,38,0.3);
   }
@@ -165,15 +169,15 @@
            px-3 py-2 text-sm min-h-[38px];
   }
   .btn-sm {
-    @apply px-3 py-1.5 text-xs min-h-[32px] rounded-lg;
+    @apply px-3 py-1.5 text-xs min-h-[30px] rounded;
   }
   .btn-lg {
-    @apply px-5 py-2.5 text-base min-h-[46px] rounded-xl;
+    @apply px-5 py-2.5 text-base min-h-[44px] rounded-lg;
   }
 
   /* Icon-only button (square ghost) */
   .btn-icon {
-    @apply inline-flex items-center justify-center p-2 rounded-xl text-gray-500
+    @apply inline-flex items-center justify-center p-2 rounded-lg text-gray-500
            hover:bg-gray-100 hover:text-gray-700 transition-all duration-150 cursor-pointer;
     min-width: 36px;
     min-height: 36px;
@@ -182,7 +186,7 @@
 
   /* Small icon-only variant */
   .btn-icon-sm {
-    @apply inline-flex items-center justify-center p-1.5 rounded-lg text-gray-400
+    @apply inline-flex items-center justify-center p-1.5 rounded text-gray-400
            hover:text-gray-700 hover:bg-gray-100 transition-all duration-150 cursor-pointer;
     min-width: 30px;
     min-height: 30px;
@@ -190,7 +194,7 @@
 
   /* Success / green action (sell, complete) */
   .btn-success {
-    @apply btn text-white px-4 py-2 text-sm min-h-[40px];
+    @apply btn text-white px-4 py-2 text-sm min-h-[38px];
     background-image: linear-gradient(180deg, #16A34A 0%, #15803D 100%);
     box-shadow: 0 1px 2px rgba(21,128,61,0.3), 0 4px 12px -2px rgba(21,128,61,0.3);
   }
@@ -199,17 +203,17 @@
   }
 
   /* Touch-friendly (mobile) */
-  .btn-touch    { @apply btn min-h-[44px] px-4 py-2.5 text-sm font-semibold rounded-xl; }
-  .btn-touch-sm { @apply btn min-h-[36px] px-3 py-1.5 text-sm rounded-lg; }
+  .btn-touch    { @apply btn min-h-[44px] px-4 py-2.5 text-sm font-semibold rounded-lg; }
+  .btn-touch-sm { @apply btn min-h-[36px] px-3 py-1.5 text-sm rounded; }
 
   /* ── Cards ─────────────────────────────────────────────── */
   .card {
-    @apply bg-white rounded-2xl border border-gray-100 p-5;
-    box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 2px 8px -2px rgba(15,23,42,0.05);
+    @apply bg-white rounded-xl border border-gray-100 p-5;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
     transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
   }
   .card:hover {
-    box-shadow: 0 2px 4px rgba(15,23,42,0.05), 0 12px 24px -8px rgba(15,23,42,0.12);
+    box-shadow: 0 4px 12px rgba(0,0,0,.10), 0 2px 4px rgba(0,0,0,.06);
   }
 
   /* Кликабельная карточка — лифт при наведении (вешать вместе с .card) */
@@ -224,12 +228,12 @@
 
   /* ── Stat card (dashboard tiles) — иконка справа, число снизу ─── */
   .stat-card {
-    @apply bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 flex flex-col justify-between min-h-[100px];
-    box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 2px 8px -2px rgba(15,23,42,0.05);
+    @apply bg-white rounded-xl border border-gray-100 p-4 sm:p-5 flex flex-col justify-between min-h-[100px];
+    box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
     transition: box-shadow 0.2s ease, transform 0.2s ease;
   }
   .stat-card:hover {
-    box-shadow: 0 2px 4px rgba(15,23,42,0.05), 0 14px 28px -10px rgba(15,23,42,0.14);
+    box-shadow: 0 4px 12px rgba(0,0,0,.10), 0 2px 4px rgba(0,0,0,.06);
     transform: translateY(-2px);
   }
 
@@ -300,7 +304,7 @@
     letter-spacing: -0.01em;
   }
   .form-input {
-    @apply w-full px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-xl
+    @apply w-full px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-lg
            text-gray-900 placeholder-gray-400
            focus:outline-none focus:border-primary
            transition-all duration-200;
@@ -308,7 +312,7 @@
   }
   .form-input:hover { @apply border-gray-300; }
   .form-input:focus {
-    box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 0 0 4px rgba(37,99,235,0.12);
+    box-shadow: 0 0 0 2px var(--brand-600, #2563EB), 0 0 0 4px rgba(37,99,235,0.15);
   }
   .form-select {
     @apply form-input appearance-none bg-white;
@@ -319,20 +323,20 @@
 
   /* ── Sidebar nav link ───────────────────────────────────── */
   .sidebar-link {
-    @apply flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
            transition-all duration-150 cursor-pointer;
     color: #94A3B8;
   }
   .sidebar-link:hover {
     background-color: rgba(255,255,255,0.07);
-    color: #E2E8F0;
+    color: #FFFFFF;
   }
   .sidebar-link.active {
-    background-color: #1E3A6E;
+    background-color: #2563EB;   /* brand-600 = sidebar active */
     color: #FFFFFF;
-    box-shadow: inset 0 0 0 1px rgba(37,99,235,0.3);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
   }
-  .sidebar-link.active svg { color: #60A5FA; }
+  .sidebar-link.active svg { color: #FFFFFF; }
 
   /* ── Page header ────────────────────────────────────────── */
   .page-header {
@@ -365,7 +369,7 @@
 
   /* ── Alert / notice ─────────────────────────────────────── */
   .alert {
-    @apply flex gap-3 p-4 rounded-xl border text-sm;
+    @apply flex gap-3 p-4 rounded-lg border text-sm;
   }
   .alert-info    { @apply bg-blue-50   border-blue-200/60   text-blue-800; }
   .alert-success { @apply bg-green-50  border-green-200/60  text-green-800; }
@@ -391,6 +395,36 @@
     background-image: linear-gradient(180deg, #3B82F6 0%, #2563EB 100%);
     box-shadow: 0 2px 8px -2px rgba(37,99,235,0.4);
   }
+
+  /* ── Kicker — IBM Plex Mono метки (цифры/лейблы над заголовками) ── */
+  .kicker {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    @apply text-gray-500;
+  }
+
+  /* ── Navy surface — тёмная поверхность сайдбара/CTA ─────── */
+  .surface-navy {
+    background-color: #0E1C3D;
+    color: #FFFFFF;
+  }
+  .surface-navy-deep { background-color: #0A1530; color: #FFFFFF; }
+
+  /* ── Grid hairline — сетка с волосяными 1px разделителями ── */
+  .grid-hairline {
+    @apply divide-y divide-gray-100;
+  }
+
+  /* ── Panel divided — блок с горизонтальными 1px разделителями внутри ── */
+  .panel-divided > * + * {
+    @apply border-t border-gray-100;
+  }
+
+  /* ── Tabular-nums helper ─────────────────────────────────── */
+  .tabular { font-variant-numeric: tabular-nums; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -716,6 +750,16 @@
 .dark nav[style*="color: #94A3B8"] { color: #4B5563 !important; }
 .dark nav span[style*="color: #374151"] { color: #CBD5E1 !important; }
 
+/* ── Dark: new kit classes ── */
+.dark .kicker { color: #475569 !important; }
+.dark .grid-hairline { --tw-divide-opacity: 1; }
+.dark .grid-hairline > * { border-color: rgba(255,255,255,0.06) !important; }
+.dark .panel-divided > * + * { border-color: rgba(255,255,255,0.06) !important; }
+.dark .sidebar-link.active {
+  background-color: #2563EB !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15) !important;
+}
+
 /* ── Spinner ── */
 .spinner {
   display: inline-block;
@@ -759,8 +803,8 @@ svg.lucide {
 }
 
 .modal-sheet {
-  @apply bg-white rounded-t-[28px] sm:rounded-3xl w-full max-h-[92dvh] sm:max-w-lg overflow-hidden flex flex-col;
-  box-shadow: 0 -8px 40px rgba(15,23,42,0.16), 0 24px 64px -12px rgba(15,23,42,0.25);
+  @apply bg-white rounded-t-2xl sm:rounded-2xl w-full max-h-[92dvh] sm:max-w-lg overflow-hidden flex flex-col;
+  box-shadow: 0 -4px 32px rgba(0,0,0,.12), 0 20px 60px rgba(0,0,0,.15);
 }
 
 /* Handle — полоска сверху на мобиле */
@@ -785,18 +829,21 @@ svg.lucide {
 
 /* Поля форм в модалках — одинаковый стиль */
 .modal-input {
-  @apply w-full px-3.5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900
-         placeholder-gray-400 focus:outline-none focus:bg-white focus:border-primary focus:ring-2
-         focus:ring-primary/10 transition-all;
+  @apply w-full px-3.5 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900
+         placeholder-gray-400 focus:outline-none focus:bg-white focus:border-primary
+         transition-all;
+}
+.modal-input:focus {
+  box-shadow: 0 0 0 2px var(--brand-600, #2563EB), 0 0 0 4px rgba(37,99,235,0.15);
 }
 
 /* Кнопки в модалках */
 .modal-btn-cancel {
-  @apply flex-1 py-3 text-sm font-semibold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors;
+  @apply flex-1 py-3 text-sm font-semibold text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors;
 }
 
 .modal-btn-primary {
-  @apply flex-1 py-3 text-sm font-semibold text-white rounded-xl disabled:opacity-50 transition-all;
+  @apply flex-1 py-3 text-sm font-semibold text-white rounded-lg disabled:opacity-50 transition-all;
   background-image: linear-gradient(180deg, #3B82F6 0%, #2563EB 100%);
   box-shadow: 0 1px 2px rgba(37,99,235,0.35), 0 4px 12px -2px rgba(37,99,235,0.35);
 }
