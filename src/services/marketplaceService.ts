@@ -99,6 +99,7 @@ export async function getMarketParts(
     .eq('status', 'available')
     .gt('selling_price', 0)
     .eq('company.is_active', true)
+    .eq('company.market_published', true)
 
   if (f.search?.trim()) {
     const s = sanitizeSearch(f.search)
@@ -135,6 +136,7 @@ export async function getMarketPart(id: string): Promise<MarketPart | null> {
     .select(`${PART_FIELDS}, ${COMPANY_JOIN}, ${CATEGORY_JOIN}, ${vehicleJoin(false)}`)
     .eq('id', id)
     .eq('company.is_active', true)
+    .eq('company.market_published', true)
     .maybeSingle()
 
   if (error) throw error
@@ -153,6 +155,7 @@ export async function getRelatedParts(
     .eq('status', 'available')
     .gt('selling_price', 0)
     .eq('company.is_active', true)
+    .eq('company.market_published', true)
     .neq('id', excludeId)
     .order('created_at', { ascending: false })
     .limit(limit)
@@ -183,6 +186,7 @@ export async function getMarketSuppliers(): Promise<MarketSupplier[]> {
     .from('parts_companies')
     .select(SUPPLIER_FIELDS)
     .eq('is_active', true)
+    .eq('market_published', true)
     .order('name')
 
   if (error) throw error
@@ -210,6 +214,7 @@ export async function getMarketSupplier(id: string): Promise<MarketSupplier | nu
     .select(SUPPLIER_FIELDS)
     .eq('id', id)
     .eq('is_active', true)
+    .eq('market_published', true)
     .maybeSingle()
 
   if (error) throw error
@@ -237,6 +242,7 @@ export async function getMarketCategories(): Promise<MarketCategory[]> {
       .eq('status', 'available')
       .gt('selling_price', 0)
       .eq('company.is_active', true)
+      .eq('company.market_published', true)
       .not('category_id', 'is', null)
       .limit(5000)
 
@@ -266,6 +272,7 @@ export async function getMarketMakes(): Promise<string[]> {
       .eq('status', 'available')
       .gt('selling_price', 0)
       .eq('company.is_active', true)
+      .eq('company.market_published', true)
       .limit(5000)
 
     if (error) throw error
