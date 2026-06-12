@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { BRAND } from '@/config/brand'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Wrench, Lock, Eye, EyeOff } from 'lucide-react'
@@ -67,7 +68,7 @@ export default function ResetPassword() {
           <div style={{ width: '36px', height: '36px', background: '#2563EB', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Wrench size={18} color="white" />
           </div>
-          <span className="brand-font text-white" style={{ fontSize: '22px', letterSpacing: '3px' }}>TSP CRM</span>
+          <span className="brand-font text-white" style={{ fontSize: '22px', letterSpacing: '3px' }}>{BRAND.name}</span>
         </div>
 
         <h2 style={{ color: '#F1F5F9', fontSize: '22px', fontWeight: 600, marginBottom: '4px', textAlign: 'center' }}>Новый пароль</h2>

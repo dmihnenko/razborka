@@ -138,7 +138,7 @@ function MarketLayoutInner() {
               Маркет запчастей · б/у и новые запчасти от авторазборок
             </p>
           </div>
-          <p className="text-xs text-gray-300">TSP CRM · {new Date().getFullYear()}</p>
+          <p className="text-xs text-gray-300">© {new Date().getFullYear()}</p>
         </div>
       </footer>
     </div>

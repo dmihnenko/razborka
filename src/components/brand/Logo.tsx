@@ -1,7 +1,8 @@
 import { Car } from 'lucide-react'
+import { BRAND } from '@/config/brand'
 
 // ============================================================================
-// Logo — бренд «AutoRozborka»
+// Logo — бренд из src/config/brand.ts (имя берётся из BRAND — менять там).
 // squircle с брендовым градиентом + иконка Car + текст
 // ============================================================================
 
@@ -51,16 +52,12 @@ export function Logo({ size = 'md', withText = true, className = '' }: LogoProps
       {withText && (
         <span className="flex flex-col leading-none min-w-0">
           <span className={`${s.brand} tracking-tight text-gray-900`}>
-            Auto
-            <span
-              className="text-gradient-brand"
-            >
-              Rozborka
-            </span>
+            {BRAND.wordmark.lead}
+            <span className="text-gradient-brand">{BRAND.wordmark.accent}</span>
           </span>
           {size !== 'sm' && (
             <span className={`${s.sub} font-medium text-gray-400 mt-0.5`}>
-              CRM для авторазборок
+              {BRAND.tagline}
             </span>
           )}
         </span>

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { BRAND } from '@/config/brand'
 import {
   Wrench, Car, Package, Users, BarChart3, ShieldCheck,
   Smartphone, ArrowRight, CheckCircle, Zap,
@@ -61,7 +62,7 @@ export default function LandingPage() {
               className="font-extrabold tracking-tight"
               style={{ color: '#F1F5F9', fontSize: '17px', letterSpacing: '-0.02em' }}
             >
-              TSP <span style={{ color: '#3B82F6' }}>CRM</span>
+              {BRAND.wordmark.lead}<span style={{ color: '#3B82F6' }}>{BRAND.wordmark.accent}</span>
             </span>
           </div>
 
@@ -315,7 +316,7 @@ export default function LandingPage() {
           className="font-extrabold text-center mb-8"
           style={{ color: '#F1F5F9', fontSize: 'clamp(22px,4vw,32px)', letterSpacing: '-0.03em' }}
         >
-          Почему <span className="text-gradient-brand">TSP CRM</span>
+          Почему <span className="text-gradient-brand">{BRAND.name}</span>
         </motion.h2>
 
         <motion.div
@@ -400,7 +401,7 @@ export default function LandingPage() {
                 fontSize: '15px',
               }}
             >
-              Войти в TSP CRM <ArrowRight size={16} strokeWidth={2} />
+              Войти в {BRAND.name} <ArrowRight size={16} strokeWidth={2} />
             </button>
           </div>
         </motion.div>
@@ -418,7 +419,7 @@ export default function LandingPage() {
           >
             <Wrench size={11} color="white" strokeWidth={2} />
           </div>
-          <span className="font-extrabold text-xs tracking-tight" style={{ color: '#334155', letterSpacing: '-0.01em' }}>TSP CRM</span>
+          <span className="font-extrabold text-xs tracking-tight" style={{ color: '#334155', letterSpacing: '-0.01em' }}>{BRAND.name}</span>
         </div>
         <p className="text-xs" style={{ color: '#1E293B' }}>Система управления для авторазборки</p>
       </footer>

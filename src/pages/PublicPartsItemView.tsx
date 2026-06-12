@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
+import { BRAND } from '@/config/brand'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -573,7 +574,7 @@ export default function PublicPartsItemView() {
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-300 mt-6">
-          Страница сгенерирована автоматически · TSP CRM
+          Страница сгенерирована автоматически · {BRAND.name}
         </p>
       </div>
 

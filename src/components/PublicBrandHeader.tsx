@@ -1,4 +1,5 @@
 import { Wrench } from 'lucide-react'
+import { BRAND } from '@/config/brand'
 
 interface Props {
   subtitle?: string
@@ -37,7 +38,7 @@ export function PublicBrandHeader({ subtitle }: Props) {
               lineHeight: '1.2',
             }}
           >
-            TSP CRM
+            {BRAND.name}
           </span>
           {subtitle && (
             <span style={{ color: '#4B5563', fontSize: '11px', fontFamily: 'system-ui, sans-serif' }}>

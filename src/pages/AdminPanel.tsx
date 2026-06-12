@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { BRAND } from '@/config/brand'
 import {
   Users, Shield, Settings, BarChart2,
   Store, CreditCard, MessageCircle, TrendingUp,
@@ -74,7 +75,7 @@ export default function AdminPanel() {
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
           {greeting}, {profile?.full_name?.split(' ')[0] || 'Администратор'} 👋
         </h1>
-        <p className="text-sm text-gray-500 mt-1">Панель управления TSP</p>
+        <p className="text-sm text-gray-500 mt-1">Панель управления · {BRAND.name}</p>
       </div>
 
       {/* Stat cards */}
@@ -119,7 +120,7 @@ export default function AdminPanel() {
       {/* Footer info */}
       <div className="flex items-center gap-2 text-xs text-gray-400 pb-2">
         <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.5} />
-        <span>TSP-V2 · Supabase</span>
+        <span>{BRAND.name} · Supabase</span>
         <span className="mx-1">·</span>
         <span>{new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
       </div>
