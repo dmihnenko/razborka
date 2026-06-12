@@ -137,12 +137,8 @@ export function MarketHome() {
             Б/у запчасти напрямую от разборок
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-white leading-tight tracking-tight">
-            Запчасти от{' '}
-            <span className="text-blue-200">авторазборок</span>
-          </h1>
-          <p className="mt-2.5 text-sm sm:text-base text-blue-100/80 max-w-md mx-auto leading-relaxed">
-            Б/у и новые запчасти с фото и ценами — без посредников
+          <p className="text-base sm:text-lg font-semibold text-white max-w-md mx-auto leading-relaxed">
+            Б/у и новые запчасти с фото и ценами — напрямую от разборок, без посредников
           </p>
 
           <form onSubmit={handleSearch} className="mt-6 sm:mt-7 max-w-xl mx-auto">
@@ -327,17 +323,17 @@ export function MarketHome() {
           </span>
           <div className="flex-1 text-center sm:text-left">
             <p className="text-base font-bold text-white leading-snug">
-              Вы авторазборка? Добавьте свои товары
+              Вы авторазборка? Разместите витрину на маркете
             </p>
             <p className="text-sm text-gray-400 mt-0.5">
-              Регистрация бесплатна — ваши запчасти увидят тысячи покупателей
+              Ознакомьтесь с нашим предложением и тарифами для разборок
             </p>
           </div>
           <Link
             to="/business"
             className="btn-primary btn-lg flex-shrink-0 whitespace-nowrap"
           >
-            Зарегистрироваться
+            Наше предложение
           </Link>
         </div>
       </motion.section>
