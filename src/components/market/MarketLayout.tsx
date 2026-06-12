@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Cog, LogIn, Search, ShoppingCart, Wrench } from 'lucide-react'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Cog, LayoutDashboard, LogIn, Search, ShoppingCart, Wrench } from 'lucide-react'
 import { CartProvider, useCart } from '@/hooks/useCart'
+import { useAuth } from '@/hooks/useAuth'
 
 // ============================================================================
 // Публичный каркас маркетплейса (/market/*) — без сайдбара приложения.
@@ -20,8 +21,12 @@ function navLinkCls({ isActive }: { isActive: boolean }) {
 
 function MarketLayoutInner() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { user } = useAuth()
   const { totalCount } = useCart()
   const [search, setSearch] = useState('')
+  // На главной маркета поиск живёт в герое — в шапке его прячем, чтобы не дублировать
+  const isHome = location.pathname === '/market' || location.pathname === '/market/'
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault()
@@ -52,20 +57,22 @@ function MarketLayoutInner() {
               </span>
             </Link>
 
-            {/* Поиск — на десктопе в шапке */}
-            <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-auto">
-              <div className="relative w-full">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                <input
-                  type="search"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Поиск запчасти, артикула…"
-                  className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-200 rounded-full bg-gray-100/80 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200"
-                  aria-label="Поиск по каталогу"
-                />
-              </div>
-            </form>
+            {/* Поиск — на десктопе в шапке (кроме главной, где он в герое) */}
+            {!isHome && (
+              <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-auto">
+                <div className="relative w-full">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <input
+                    type="search"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Поиск запчасти, артикула…"
+                    className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-200 rounded-full bg-gray-100/80 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200"
+                    aria-label="Поиск по каталогу"
+                  />
+                </div>
+              </form>
+            )}
 
             <div className="flex items-center gap-1.5 sm:gap-2 ml-auto flex-shrink-0">
               <Link
@@ -80,30 +87,42 @@ function MarketLayoutInner() {
                   </span>
                 )}
               </Link>
-              <Link
-                to="/login"
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold text-gray-700 border border-gray-200 bg-white hover:border-gray-300 hover:text-gray-900 shadow-sm transition-all duration-150 active:scale-[0.97]"
-              >
-                <LogIn className="w-4 h-4" />
-                <span className="hidden sm:inline">Войти</span>
-              </Link>
+              {user ? (
+                <Link
+                  to="/"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold text-gray-700 border border-gray-200 bg-white hover:border-gray-300 hover:text-gray-900 shadow-sm transition-all duration-150 active:scale-[0.97]"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span className="hidden sm:inline">В кабинет</span>
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold text-gray-700 border border-gray-200 bg-white hover:border-gray-300 hover:text-gray-900 shadow-sm transition-all duration-150 active:scale-[0.97]"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span className="hidden sm:inline">Войти</span>
+                </Link>
+              )}
             </div>
           </div>
 
-          {/* Ряд 2 (мобила): поиск */}
-          <form onSubmit={handleSearch} className="md:hidden pb-2">
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              <input
-                type="search"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Поиск запчасти, артикула…"
-                className="w-full pl-10 pr-3 py-2 text-sm border border-gray-200 rounded-full bg-gray-100/80 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200"
-                aria-label="Поиск по каталогу"
-              />
-            </div>
-          </form>
+          {/* Ряд 2 (мобила): поиск — кроме главной, где он в герое */}
+          {!isHome && (
+            <form onSubmit={handleSearch} className="md:hidden pb-2">
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Поиск запчасти, артикула…"
+                  className="w-full pl-10 pr-3 py-2 text-sm border border-gray-200 rounded-full bg-gray-100/80 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200"
+                  aria-label="Поиск по каталогу"
+                />
+              </div>
+            </form>
+          )}
 
           {/* Ряд 3: навигация — центрированный сегмент-контрол */}
           <nav className="flex items-center justify-center pb-2.5" aria-label="Разделы маркета">

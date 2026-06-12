@@ -150,22 +150,16 @@ function App() {
       }
     })
 
-    // Перехватываем ошибки рефреша токена — разлогиниваем пользователя
-    const handleAuthError = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        queryClient.clear()
-        localStorage.removeItem('tsp_profile_cache')
-        localStorage.removeItem('activeRole')
-        await supabase.auth.signOut()
-      }
-    }
-    window.addEventListener('focus', handleAuthError)
+    // Реальный выход/протухание токена ловится выше через onAuthStateChange
+    // (SIGNED_OUT / TOKEN_REFRESHED без сессии). Раньше тут был обработчик на
+    // 'focus', который при транзиентном getSession()===null (во время рефреша
+    // токена или сразу после перезагрузки) делал принудительный signOut и
+    // затирал валидную сессию — это вызывало случайные разлогины (в т.ч. при
+    // переходе в маркет). supabase сам обновляет токен на фокусе, ручной выход не нужен.
 
     return () => {
       mounted = false
       subscription.unsubscribe()
-      window.removeEventListener('focus', handleAuthError)
     }
   }, [queryClient])
 
