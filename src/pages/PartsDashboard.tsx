@@ -1,7 +1,7 @@
 import { useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { Car, ShoppingCart, DollarSign, AlertCircle, ArrowRight, Warehouse, LayoutGrid, Users, BarChart2, Settings, Wrench, Store, Sparkles } from 'lucide-react'
+import { Car, ShoppingCart, DollarSign, AlertCircle, ArrowRight, Wrench, Store, Sparkles } from 'lucide-react'
 import { getPartsOrderStatusText } from '@/utils/status'
 import { formatDate } from '@/utils/date'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
@@ -117,28 +117,7 @@ export default function PartsDashboard() {
       {/* ── Онбординг-чек-лист (только для владельца, пока не всё настроено) ── */}
       <OnboardingChecklist partsCompanyId={partsCompanyId} />
 
-      {/* ── Marketplace upsell banner ─────────────── */}
-      {isDemo && (stats?.marketOrders ?? 0) > 0 && (
-        <Link
-          to="/parts/subscription"
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all active:scale-[0.99] border border-primary/20 bg-primary/5 hover:bg-primary/10 animate-fade-in"
-        >
-          <div className="icon-tile-sm bg-primary/15 text-primary flex-shrink-0">
-            <Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-primary">
-              Покупатели интересуются вашими запчастями
-            </p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              {stats.marketOrders} {stats.marketOrders === 1 ? 'заявка' : stats.marketOrders < 5 ? 'заявки' : 'заявок'} с маркетплейса — откройте полный доступ
-            </p>
-          </div>
-          <ArrowRight className="w-4 h-4 flex-shrink-0 text-primary" strokeWidth={1.5} />
-        </Link>
-      )}
-
-      {/* ── Alert: new orders ─────────────────────── */}
+      {/* ── Приоритетный баннер: новые заказы или upsell (только один) ── */}
       {(stats?.orders?.new ?? 0) > 0 && (
         <button
           onClick={() => navigate('/parts/orders')}
@@ -154,6 +133,27 @@ export default function PartsDashboard() {
           </div>
           <ArrowRight className="w-4 h-4 flex-shrink-0 text-yellow-600" strokeWidth={1.5} />
         </button>
+      )}
+
+      {/* ── Upsell: маркетплейс (показывается только если нет alert о заказах) ── */}
+      {isDemo && (stats?.marketOrders ?? 0) > 0 && (stats?.orders?.new ?? 0) === 0 && (
+        <Link
+          to="/parts/subscription"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all active:scale-[0.99] border border-primary/20 bg-primary/5 hover:bg-primary/10 animate-fade-in"
+        >
+          <div className="icon-tile-sm bg-primary/15 text-primary flex-shrink-0">
+            <Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-primary">
+              Покупатели интересуются вашими запчастями
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {stats!.marketOrders} {stats!.marketOrders === 1 ? 'заявка' : stats!.marketOrders < 5 ? 'заявки' : 'заявок'} с маркетплейса — откройте полный доступ
+            </p>
+          </div>
+          <ArrowRight className="w-4 h-4 flex-shrink-0 text-primary" strokeWidth={1.5} />
+        </Link>
       )}
 
       {/* ── Main KPI row ──────────────────────────── */}
@@ -274,8 +274,8 @@ export default function PartsDashboard() {
       {/* ── Bottom layout: left column + right column ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-        {/* Left col (2/3): inventory breakdown + nav tools */}
-        <div className="lg:col-span-2 space-y-4">
+        {/* Left col (2/3): inventory breakdown */}
+        <div className="lg:col-span-2">
 
           {/* Inventory breakdown */}
           <div className="card p-0 overflow-hidden">
@@ -334,33 +334,6 @@ export default function PartsDashboard() {
                 </p>
                 <p className="text-xs mt-0.5 text-gray-400">нужна цена</p>
               </button>
-            </div>
-          </div>
-
-          {/* Navigation tools */}
-          <div className="card p-0 overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-gray-100">
-              <p className="kicker">Управление</p>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3">
-              {[
-                { label: 'Склад',      icon: Warehouse,  path: '/parts/warehouse',  iconCls: 'icon-tile bg-amber-50 text-amber-600' },
-                { label: 'Категории',  icon: LayoutGrid, path: '/parts/categories', iconCls: 'icon-tile bg-blue-50 text-blue-600' },
-                { label: 'Сотрудники', icon: Users,       path: '/parts/employees',  iconCls: 'icon-tile bg-green-50 text-green-600' },
-                { label: 'Аналитика',  icon: BarChart2,   path: '/parts/analytics',  iconCls: 'icon-tile bg-purple-50 text-purple-600' },
-                { label: 'Настройки',  icon: Settings,    path: '/parts/settings',   iconCls: 'icon-tile bg-gray-100 text-gray-500' },
-              ].map(({ label, icon: Icon, path, iconCls }) => (
-                <button
-                  key={path}
-                  onClick={() => navigate(path)}
-                  className="flex flex-col items-center gap-2 py-5 px-3 hover:bg-gray-50 transition-colors group active:bg-gray-100 border-r border-gray-100 last:border-r-0 min-h-[44px]"
-                >
-                  <div className={`${iconCls} transition-transform group-hover:scale-105`}>
-                    <Icon className="w-5 h-5" strokeWidth={1.5} />
-                  </div>
-                  <span className="text-xs font-semibold text-gray-600">{label}</span>
-                </button>
-              ))}
             </div>
           </div>
         </div>

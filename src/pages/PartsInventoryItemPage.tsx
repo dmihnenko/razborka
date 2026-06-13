@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import {
   ArrowLeft, Trash2, Package,
   MapPin, Tag, Car, FileText, AlertTriangle,
-  Share2, Edit2, Copy, Warehouse, CheckCircle2, QrCode, TrendingUp,
+  Share2, Edit2, Copy, Warehouse, CheckCircle2, QrCode, TrendingUp, ChevronDown,
 } from 'lucide-react'
 import { getPartsInventoryItem, deletePartsInventoryItem, getStorageLocations } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
@@ -34,6 +34,47 @@ const STATUS_CLS: Record<PartsInventoryStatus, string> = {
   reserved:  'badge badge-yellow',
   sold:      'badge badge-gray',
   damaged:   'badge badge-red',
+}
+
+/* ── Margin row with expand ─────────────────────────────────────── */
+function MarginRow({
+  pp, sp, margin, markup, isPositive, currency,
+}: {
+  pp: number; sp: number; margin: number; markup: number; isPositive: boolean; currency: 'UAH' | 'USD'
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="border-t border-gray-100">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-2.5 hover:bg-gray-50 transition-colors text-left group"
+      >
+        <span className="flex items-center gap-1.5 text-sm text-gray-500">
+          <TrendingUp className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+          Маржа
+        </span>
+        <span className="flex items-center gap-2">
+          <span className={`text-sm font-bold tabular-nums ${isPositive ? 'text-green-700' : 'text-red-600'}`}>
+            {isPositive ? '+' : ''}{formatPrice(margin, currency)}&ensp;({isPositive ? '+' : ''}{markup.toFixed(1)}%)
+          </span>
+          <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
+        </span>
+      </button>
+      {open && (
+        <div className="px-4 sm:px-5 pb-3 grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-gray-50 p-2.5">
+            <p className="kicker mb-0.5">Закупка</p>
+            <p className="text-sm font-bold text-gray-700 tabular-nums">{formatPrice(pp, currency)}</p>
+          </div>
+          <div className="rounded-xl bg-primary/5 border border-primary/10 p-2.5">
+            <p className="kicker mb-0.5">Цена продажи</p>
+            <p className="text-sm font-bold text-primary tabular-nums">{formatPrice(sp, currency)}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 /* ── Component ──────────────────────────────────────────────────── */
@@ -288,17 +329,45 @@ export default function PartsInventoryItemPage() {
             </div>
           </div>
 
-          {/* ── Характеристики ──────────────────────────────────── */}
-          <div className="border-t border-gray-100 px-4 sm:px-5 panel-divided">
+          {/* ── Характеристики + Расположение ───────────────────── */}
+          <div className="border-t border-gray-100 px-4 sm:px-5">
             <dl className="divide-y divide-gray-100 text-sm">
 
               {item.category && (
-                <div className="flex items-center justify-between gap-3 py-2.5">
-                  <dt className="text-gray-500 flex items-center gap-1.5 min-w-0">
+                <div className="flex items-start justify-between gap-3 py-2.5">
+                  <dt className="text-gray-500 flex items-center gap-1.5 min-w-0 flex-shrink-0">
                     <Tag className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                     Категория
                   </dt>
-                  <dd className="font-semibold text-gray-900 text-right truncate">{item.category.name}</dd>
+                  <dd className="font-semibold text-gray-900 text-right flex flex-wrap items-center justify-end gap-1.5">
+                    <span className="truncate">{item.category.name}</span>
+                    {/* Локация строкой рядом с категорией */}
+                    {(locationPath.length > 0 || item.location || item.shelf || item.bin) && (
+                      <span className="flex flex-wrap items-center gap-1">
+                        {locationPath.length > 0 && locationPath.map((name, i) => (
+                          <span key={i} className="inline-flex items-center gap-0.5">
+                            {i > 0 && <span className="text-gray-300 text-xs">/</span>}
+                            <span className={`badge badge-sm ${i === locationPath.length - 1 ? 'badge-blue' : 'badge-gray'}`}>
+                              {i === locationPath.length - 1 && <MapPin className="w-2.5 h-2.5" />}
+                              {name}
+                            </span>
+                          </span>
+                        ))}
+                        {!locationPath.length && item.location && (
+                          <span className="badge badge-sm badge-blue">
+                            <Warehouse className="w-2.5 h-2.5" />
+                            {item.location}
+                          </span>
+                        )}
+                        {item.shelf && (
+                          <span className="badge badge-sm badge-gray">П{item.shelf}</span>
+                        )}
+                        {item.bin && (
+                          <span className="badge badge-sm badge-gray">Я{item.bin}</span>
+                        )}
+                      </span>
+                    )}
+                  </dd>
                 </div>
               )}
 
@@ -330,7 +399,7 @@ export default function PartsInventoryItemPage() {
             </dl>
           </div>
 
-          {/* ── Окупаемость ────────────────────────────────────── */}
+          {/* ── Окупаемость (компактная строка с раскрытием) ──── */}
           {(() => {
             const sp = item.selling_price
             const pp = item.purchase_price
@@ -340,38 +409,14 @@ export default function PartsInventoryItemPage() {
             const markup = ((sp - pp) / pp) * 100
             const isPositive = margin > 0
             return (
-              <div className="border-t border-gray-100 p-4 sm:p-5">
-                <p className="kicker flex items-center gap-1.5 mb-3">
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  Окупаемость
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <div className="rounded-xl bg-gray-50 p-3">
-                    <p className="kicker mb-1">Закупка</p>
-                    <p className="text-sm font-bold text-gray-700 tabular-nums">
-                      {formatPrice(pp, currency)}
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-primary/5 border border-primary/10 p-3">
-                    <p className="kicker mb-1">Цена продажи</p>
-                    <p className="text-sm font-bold text-primary tabular-nums">
-                      {formatPrice(sp, currency)}
-                    </p>
-                  </div>
-                  <div className={`rounded-xl p-3 ${isPositive ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
-                    <p className="kicker mb-1">Маржа</p>
-                    <p className={`text-sm font-bold tabular-nums ${isPositive ? 'text-green-700' : 'text-red-600'}`}>
-                      {isPositive ? '+' : ''}{formatPrice(margin, currency)}
-                    </p>
-                  </div>
-                  <div className={`rounded-xl p-3 ${isPositive ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
-                    <p className="kicker mb-1">Наценка</p>
-                    <p className={`text-sm font-bold tabular-nums ${isPositive ? 'text-green-700' : 'text-red-600'}`}>
-                      {isPositive ? '+' : ''}{markup.toFixed(1)}%
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <MarginRow
+                pp={pp}
+                sp={sp}
+                margin={margin}
+                markup={markup}
+                isPositive={isPositive}
+                currency={currency}
+              />
             )
           })()}
 
@@ -397,71 +442,28 @@ export default function PartsInventoryItemPage() {
             </button>
           )}
 
-          {/* ── Расположение на складе ─────────────────────────── */}
-          {(locationPath.length > 0 || item.location || item.shelf || item.bin) && (
-            <div className="border-t border-gray-100 p-4 sm:p-5">
-              <p className="kicker flex items-center gap-1.5 mb-3">
-                <Warehouse className="w-3.5 h-3.5" />
-                Расположение на складе
-              </p>
-
-              {locationPath.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1 mb-2.5">
-                  {locationPath.map((name, i) => (
-                    <span key={i} className="inline-flex items-center gap-1">
-                      {i > 0 && <span className="text-gray-300 text-xs">/</span>}
-                      <span className={`badge ${i === locationPath.length - 1 ? 'badge-blue' : 'badge-gray'}`}>
-                        {i === locationPath.length - 1 && <MapPin className="w-3 h-3" />}
-                        {name}
-                      </span>
-                    </span>
-                  ))}
+          {/* ── Описание + Заметки (один блок) ─────────────────── */}
+          {(item.description || item.notes) && (
+            <div className="border-t border-gray-100 p-4 sm:p-5 space-y-3">
+              {item.description && (
+                <div>
+                  <p className="kicker flex items-center gap-1.5 mb-1.5">
+                    <FileText className="w-3.5 h-3.5" />
+                    Описание
+                  </p>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    {item.description}
+                  </p>
                 </div>
               )}
-
-              {(item.location || item.shelf || item.bin) && (
-                <div className="flex flex-wrap gap-2">
-                  {item.location && (
-                    <span className="badge badge-blue">
-                      <MapPin className="w-3 h-3" />
-                      {item.location}
-                    </span>
-                  )}
-                  {item.shelf && (
-                    <span className="badge badge-gray">
-                      Полка&nbsp;<span className="font-bold">{item.shelf}</span>
-                    </span>
-                  )}
-                  {item.bin && (
-                    <span className="badge badge-gray">
-                      Ячейка&nbsp;<span className="font-bold">{item.bin}</span>
-                    </span>
-                  )}
+              {item.notes && (
+                <div className={item.description ? 'pt-3 border-t border-gray-50' : ''}>
+                  <p className="kicker mb-1.5">Заметки</p>
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed italic">
+                    {item.notes}
+                  </p>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* ── Описание ───────────────────────────────────────── */}
-          {item.description && (
-            <div className="border-t border-gray-100 p-4 sm:p-5">
-              <p className="kicker flex items-center gap-1.5 mb-2">
-                <FileText className="w-3.5 h-3.5" />
-                Описание
-              </p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                {item.description}
-              </p>
-            </div>
-          )}
-
-          {/* ── Заметки ────────────────────────────────────────── */}
-          {item.notes && (
-            <div className="border-t border-gray-100 p-4 sm:p-5">
-              <p className="kicker mb-2">Заметки</p>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed italic">
-                {item.notes}
-              </p>
             </div>
           )}
 

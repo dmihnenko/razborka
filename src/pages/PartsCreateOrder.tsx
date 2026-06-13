@@ -67,67 +67,46 @@ export default function PartsCreateOrder() {
       <div className="max-w-3xl mx-auto px-3 sm:px-5 lg:px-8 py-5 sm:py-7">
         <form onSubmit={handleSubmit} className="space-y-4">
 
-          {/* Клиент */}
-          <div className="card p-5 sm:p-6">
-            <p className="kicker mb-1">клиент</p>
-            <h2 className="text-base font-bold text-gray-900 dark:text-slate-100 mb-4">
-              Информация о клиенте
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="customer_id" className="form-label">
-                  Выберите клиента
-                </label>
-                {customersLoading ? (
-                  <p className="text-sm text-gray-500 py-2">Загрузка клиентов…</p>
-                ) : (
-                  <select
-                    id="customer_id"
-                    value={formData.customer_id || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, customer_id: e.target.value || undefined })
-                    }
-                    className="form-select"
-                  >
-                    <option value="">Без клиента (розничная продажа)</option>
-                    {customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.full_name}
-                        {customer.phone && ` • ${customer.phone}`}
-                        {customer.email && ` • ${customer.email}`}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                <p className="mt-1.5 text-xs text-gray-500">
-                  Клиент необязателен. Можно создать заказ без привязки к клиенту.
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-white/5">
-                <span className="text-sm text-gray-600 dark:text-slate-400">
-                  Нужного клиента нет в списке?
-                </span>
+          {/* Клиент + Примечание — единый card */}
+          <div className="card p-5 sm:p-6 space-y-4">
+            <div>
+              <label htmlFor="customer_id" className="form-label">
+                Клиент
+              </label>
+              {customersLoading ? (
+                <p className="text-sm text-gray-500 py-2">Загрузка клиентов…</p>
+              ) : (
+                <select
+                  id="customer_id"
+                  value={formData.customer_id || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, customer_id: e.target.value || undefined })
+                  }
+                  className="form-select"
+                >
+                  <option value="">Без клиента (розничная продажа)</option>
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.full_name}
+                      {customer.phone && ` • ${customer.phone}`}
+                      {customer.email && ` • ${customer.email}`}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <div className="flex items-center justify-between mt-1.5">
+                <p className="text-xs text-gray-400">Необязательно</p>
                 <button
                   type="button"
                   onClick={() => navigate('/parts/customers')}
-                  className="btn-ghost text-sm text-primary font-medium"
+                  className="btn-ghost text-xs text-primary font-medium"
                 >
-                  Добавить клиента
+                  + Добавить клиента
                 </button>
               </div>
             </div>
-          </div>
 
-          {/* Дополнительная информация */}
-          <div className="card p-5 sm:p-6">
-            <p className="kicker mb-1">примечание</p>
-            <h2 className="text-base font-bold text-gray-900 dark:text-slate-100 mb-4">
-              Дополнительная информация
-            </h2>
-
-            <div>
+            <div className="border-t border-gray-100 dark:border-white/5 pt-4">
               <label htmlFor="notes" className="form-label">
                 Примечание к заказу
               </label>
@@ -135,25 +114,10 @@ export default function PartsCreateOrder() {
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows={4}
+                rows={3}
                 className="form-input resize-none"
-                placeholder="Дополнительная информация о заказе, особые пожелания клиента…"
+                placeholder="Особые пожелания, детали доставки…"
               />
-              <p className="mt-1.5 text-xs text-gray-500">
-                Необязательное поле. Можно добавить любую полезную информацию.
-              </p>
-            </div>
-          </div>
-
-          {/* Подсказка */}
-          <div className="alert alert-info">
-            <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold mb-0.5">Что дальше?</p>
-              <p>
-                После создания заказа вы перейдёте на страницу заказа, где сможете добавить
-                запчасти из склада, указать количество и цены.
-              </p>
             </div>
           </div>
 

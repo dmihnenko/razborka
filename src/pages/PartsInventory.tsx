@@ -756,53 +756,61 @@ export default function PartsInventory() {
           </div>
         )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4 sm:mb-6">
-          {[
-            { key: 'all',       label: 'Всего',          value: sourceFilter === 'vehicles' ? stats.total : stats.totalQuantity, dot: 'bg-gray-400',   text: 'text-gray-900',   ring: 'ring-primary' },
-            { key: 'available', label: 'В наличии',      value: stats.available, dot: 'bg-emerald-500', text: 'text-emerald-600', ring: 'ring-emerald-500' },
-            { key: 'reserved',  label: 'Зарезервировано',value: stats.reserved,  dot: 'bg-amber-400',  text: 'text-amber-600',  ring: 'ring-amber-400' },
-            { key: 'sold',      label: 'Продано',        value: stats.sold,      dot: 'bg-blue-500',   text: 'text-blue-600',   ring: 'ring-blue-500' },
-          ].map(({ key, label, value, dot, text, ring }) => (
-            <button key={key}
-              onClick={() => setStatusFilter(key === 'sold' && statusFilter === 'sold' ? 'all' : key as any)}
-              className={`stat-card cursor-pointer text-left transition-all ${statusFilter === key ? `ring-2 ${ring}` : ''}`}>
-              <div className="flex items-start justify-between mb-3">
-                <p className="text-xs font-semibold text-gray-500">{label}</p>
-                <span className={`w-2 h-2 rounded-full flex-shrink-0 mt-0.5 ${dot}`} />
-              </div>
-              <p className={`text-3xl font-extrabold ${text}`} style={{ letterSpacing: '-0.03em' }}>{value}</p>
+        {/* Status chips + cost line */}
+        <div className="flex items-center justify-between gap-3 mb-4">
+          {/* Chip-фильтры по статусу */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 flex-1 min-w-0 scrollbar-hide">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`chip flex-shrink-0 ${statusFilter === 'all' ? 'chip-active' : ''}`}
+            >
+              Всего ({sourceFilter === 'vehicles' ? stats.total : stats.totalQuantity})
             </button>
-          ))}
-
-          <div className="stat-card">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-gray-500">Стоимость</p>
-              <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
-            </div>
+            <button
+              onClick={() => setStatusFilter('available')}
+              className={`chip flex-shrink-0 ${statusFilter === 'available' ? 'chip-active' : ''}`}
+            >
+              В наличии ({stats.available})
+            </button>
+            <button
+              onClick={() => setStatusFilter('reserved')}
+              className={`chip flex-shrink-0 ${statusFilter === 'reserved' ? 'chip-active' : ''}`}
+            >
+              Зарезервировано ({stats.reserved})
+            </button>
+            <button
+              onClick={() => setStatusFilter(statusFilter === 'sold' ? 'all' : 'sold')}
+              className={`chip flex-shrink-0 ${statusFilter === 'sold' ? 'chip-active' : ''}`}
+            >
+              Продано ({stats.sold})
+            </button>
+          </div>
+          {/* Стоимость */}
+          <div className="flex-shrink-0 text-right">
             {statusFilter === 'all' ? (
-              <>
-                <p className="text-xs text-gray-400 mb-0.5">В наличии</p>
-                <p className="text-base sm:text-lg font-extrabold text-green-600" style={{ letterSpacing: '-0.02em' }}>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400 hidden sm:inline">склад</span>
+                <span className="text-sm font-bold text-green-600">
                   {stats.stockUSD === 0 ? '—' : `$${Math.round(stats.stockUSD).toLocaleString('ru-RU')}`}
-                </p>
-                <p className="text-xs text-gray-400 mt-1.5 mb-0.5">Продано</p>
-                <p className="text-base sm:text-lg font-extrabold text-blue-600" style={{ letterSpacing: '-0.02em' }}>
+                </span>
+                <span className="text-xs text-gray-300">·</span>
+                <span className="text-xs text-gray-400 hidden sm:inline">продано</span>
+                <span className="text-sm font-bold text-blue-600">
                   {stats.soldUSD === 0 ? '—' : `$${Math.round(stats.soldUSD).toLocaleString('ru-RU')}`}
-                </p>
-              </>
+                </span>
+              </div>
             ) : statusFilter === 'available' || statusFilter === 'reserved' ? (
-              <p className="text-lg sm:text-xl font-extrabold text-green-600" style={{ letterSpacing: '-0.02em' }}>
+              <span className="text-sm font-bold text-green-600">
                 {stats.stockUSD === 0 ? '—' : `$${Math.round(stats.stockUSD).toLocaleString('ru-RU')}`}
-              </p>
+              </span>
             ) : statusFilter === 'sold' ? (
-              <p className="text-lg sm:text-xl font-extrabold text-blue-600" style={{ letterSpacing: '-0.02em' }}>
+              <span className="text-sm font-bold text-blue-600">
                 {stats.soldUSD === 0 ? '—' : `$${Math.round(stats.soldUSD).toLocaleString('ru-RU')}`}
-              </p>
+              </span>
             ) : (
-              <p className="text-lg sm:text-xl font-extrabold text-blue-600" style={{ letterSpacing: '-0.02em' }}>
+              <span className="text-sm font-bold text-blue-600">
                 {stats.totalUAH === 0 && stats.totalUSD === 0 ? '—' : `$${Math.round(stats.totalUSD + stats.totalUAH / (usdRate || 41)).toLocaleString('ru-RU')}`}
-              </p>
+              </span>
             )}
           </div>
         </div>
@@ -863,20 +871,6 @@ export default function PartsInventory() {
               </div>
             </div>
           </div>
-
-          {statusFilter !== 'all' && (
-            <div className="mt-3 flex items-center gap-2">
-              <span className="text-sm text-gray-600 font-medium">
-                Фильтр: <span className="font-bold">{statusLabels[statusFilter as PartsInventoryStatus]}</span>
-              </span>
-              <button
-                onClick={() => setStatusFilter('all')}
-                className="ml-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-              >
-                Сбросить
-              </button>
-            </div>
-          )}
 
           {/* Vehicle filter — only in Разборка mode with 2+ vehicles */}
           {showVehicleButtons && (

@@ -335,82 +335,66 @@ export default function PartsCustomerProfile() {
           </div>
         </div>
 
-        {/* Контактные данные */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+        {/* Контактные данные — icon-tile + значение, без kicker */}
+        <div className="flex flex-wrap gap-x-4 gap-y-2 mb-3">
           {customer.phone && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <span className="icon-tile-sm bg-blue-50 text-blue-600 flex-shrink-0">
                 <Phone className="w-3.5 h-3.5" />
               </span>
-              <div>
-                <p className="kicker">Телефон</p>
-                <p className="text-sm font-medium text-gray-900">{customer.phone}</p>
-              </div>
+              <span className="text-sm font-medium text-gray-900">{customer.phone}</span>
             </div>
           )}
           {customer.email && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <span className="icon-tile-sm bg-blue-50 text-blue-600 flex-shrink-0">
                 <Mail className="w-3.5 h-3.5" />
               </span>
-              <div>
-                <p className="kicker">Email</p>
-                <p className="text-sm font-medium text-gray-900">{customer.email}</p>
-              </div>
+              <span className="text-sm font-medium text-gray-900">{customer.email}</span>
             </div>
           )}
           {customer.city && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <span className="icon-tile-sm bg-slate-50 text-slate-500 flex-shrink-0">
                 <MapPin className="w-3.5 h-3.5" />
               </span>
-              <div>
-                <p className="kicker">Город</p>
-                <p className="text-sm font-medium text-gray-900">{customer.city}</p>
-              </div>
+              <span className="text-sm font-medium text-gray-900">{customer.city}</span>
             </div>
           )}
           {customer.np_office && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <span className="icon-tile-sm bg-slate-50 text-slate-500 flex-shrink-0">
                 <Truck className="w-3.5 h-3.5" />
               </span>
-              <div>
-                <p className="kicker">Відділення НП</p>
-                <p className="text-sm font-medium text-gray-900">{customer.np_office}</p>
-              </div>
+              <span className="text-sm font-medium text-gray-900">{customer.np_office}</span>
             </div>
           )}
         </div>
 
         {customer.notes && (
-          <div className="alert alert-info text-xs mb-4">{customer.notes}</div>
+          <div className="alert alert-info text-xs mb-3">{customer.notes}</div>
         )}
 
-        {/* Статистика */}
+        {/* Статистика — inline строка */}
         <div className="section-divider" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <div>
-            <p className="kicker mb-1">Всего заказов</p>
-            <p className="text-2xl font-extrabold text-gray-900 tabular-nums">
-              {customer.total_orders || 0}
-            </p>
-          </div>
-          <div>
-            <p className="kicker mb-1">Общая сумма</p>
-            <p className="text-2xl font-extrabold text-primary tabular-nums">
-              {formatCurrency(customer.total_spent || 0)}
-            </p>
-          </div>
-          {(customer.total_orders || 0) > 0 && (
-            <div>
-              <p className="kicker mb-1">Средний заказ</p>
-              <p className="text-2xl font-extrabold text-gray-900 tabular-nums">
-                {formatCurrency((customer.total_spent || 0) / customer.total_orders)}
-              </p>
-            </div>
+        <p className="text-sm text-gray-600 tabular-nums">
+          <span className="font-bold text-gray-900">{customer.total_orders || 0}</span>
+          {' '}{(customer.total_orders || 0) === 1 ? 'заказ' : (customer.total_orders || 0) < 5 ? 'заказа' : 'заказов'}
+          {(customer.total_spent || 0) > 0 && (
+            <>
+              {' · '}
+              <span className="font-bold text-primary">{formatCurrency(customer.total_spent || 0)}</span>
+            </>
           )}
-        </div>
+          {(customer.total_orders || 0) > 0 && (customer.total_spent || 0) > 0 && (
+            <>
+              {' · ср. '}
+              <span className="font-bold text-gray-900">
+                {formatCurrency((customer.total_spent || 0) / customer.total_orders)}
+              </span>
+            </>
+          )}
+        </p>
       </div>
 
       {/* ── Секция заказов ─────────────────────────────────────────────── */}

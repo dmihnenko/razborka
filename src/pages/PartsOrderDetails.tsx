@@ -9,7 +9,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowLeft, Plus, Trash2, Edit2, Search,
-  CheckCircle, MapPin, Truck, User, Package, X, Copy, ExternalLink,
+  CheckCircle, MapPin, Truck, Package, X, Copy, ExternalLink,
 } from 'lucide-react'
 import { getNpApiKey } from '@/utils/npApiKey'
 import { searchCities, searchWarehouses, NpCity, NpWarehouse, createTtn } from '@/services/npService'
@@ -260,8 +260,6 @@ export default function PartsOrderDetails() {
     const amount = (item.price_at_sale || 0) * (item.quantity || 1)
     return sum + (getItemCurrency(item) === 'USD' ? amount * (exchangeRate || 41) : amount)
   }, 0)
-  const hasUSD = (order?.items ?? []).some((i: any) => getItemCurrency(i) === 'USD')
-  const hasUAH = (order?.items ?? []).some((i: any) => getItemCurrency(i) === 'UAH')
 
   /* ── guard: нет компании ────────────────────────────────────── */
   if (!partsCompanyId) return <PartsAccessDenied />
@@ -318,11 +316,45 @@ export default function PartsOrderDetails() {
               </div>
             </div>
 
-            {/* статус-бейдж + действия */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+            {/* статус-бейдж + кнопки статуса + действия */}
+            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
               <span className={statusBadgeCls}>
                 {getPartsOrderStatusText(order.status)}
               </span>
+
+              {canManage && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => updateStatusMutation.mutate('new')}
+                    disabled={order.status === 'new' || updateStatusMutation.isPending}
+                    className={`btn btn-xs ${
+                      order.status === 'new'
+                        ? 'btn-primary opacity-60 cursor-not-allowed'
+                        : 'btn-secondary'
+                    }`}
+                  >
+                    Новый
+                  </button>
+                  <button
+                    onClick={() => updateStatusMutation.mutate('in_progress')}
+                    disabled={order.status === 'in_progress' || updateStatusMutation.isPending}
+                    className={`btn btn-xs ${
+                      order.status === 'in_progress'
+                        ? 'bg-yellow-500 text-white opacity-60 cursor-not-allowed rounded-md px-2 py-1 text-xs font-semibold inline-flex items-center justify-center'
+                        : 'btn-secondary'
+                    }`}
+                  >
+                    В работе
+                  </button>
+                  <button
+                    onClick={() => updateStatusMutation.mutate('cancelled')}
+                    disabled={updateStatusMutation.isPending}
+                    className="btn btn-xs btn-ghost"
+                  >
+                    Отменить
+                  </button>
+                </div>
+              )}
 
               {canManage && (
                 <button
@@ -359,122 +391,13 @@ export default function PartsOrderDetails() {
       {/* ── основной контент ─────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-5">
 
-        {/* ── hero-карточка: инфо + клиент + итог ─────────────────── */}
-        <div className="card overflow-hidden">
-
-          {/* блок: дата + примечание */}
-          <div className="flex flex-wrap gap-x-8 gap-y-3 pb-4 border-b border-gray-100">
-            <div>
-              <p className="kicker mb-1">Дата заказа</p>
-              <p className="text-sm font-semibold text-gray-900">{formatDate(order.order_date)}</p>
-            </div>
-            {order.notes && (
-              <div className="flex-1 min-w-0">
-                <p className="kicker mb-1">Примечание</p>
-                <p className="text-sm text-gray-700 line-clamp-2">{order.notes}</p>
-              </div>
-            )}
-          </div>
-
-          {/* блок: клиент/доставка + сумма */}
-          <div className="pt-4 flex flex-col sm:flex-row gap-4 sm:gap-0 sm:divide-x sm:divide-gray-100">
-
-            {/* клиент */}
-            <div className="flex-1 sm:pr-6">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="icon-tile-sm bg-blue-50 text-blue-600">
-                  <User className="w-4 h-4" />
-                </span>
-                <span className="kicker">Клиент</span>
-              </div>
-
-              {order.customer ? (
-                <dl className="space-y-1.5 text-sm">
-                  <div className="flex gap-2">
-                    <dt className="text-gray-400 w-20 flex-shrink-0">ФИО</dt>
-                    <dd className="font-semibold text-gray-900">{order.customer.full_name}</dd>
-                  </div>
-                  {order.customer.phone && (
-                    <div className="flex gap-2">
-                      <dt className="text-gray-400 w-20 flex-shrink-0">Телефон</dt>
-                      <dd className="font-medium text-gray-700">{order.customer.phone}</dd>
-                    </div>
-                  )}
-                  {(order.customer as any).city && (
-                    <div className="flex gap-2 items-start">
-                      <dt className="text-gray-400 w-20 flex-shrink-0 flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5" />Город
-                      </dt>
-                      <dd className="font-medium text-gray-700">{(order.customer as any).city}</dd>
-                    </div>
-                  )}
-                  {(order.customer as any).np_office && (
-                    <div className="flex gap-2 items-start">
-                      <dt className="text-gray-400 w-20 flex-shrink-0 flex items-center gap-1">
-                        <Truck className="w-3.5 h-3.5" />НП
-                      </dt>
-                      <dd className="font-medium text-gray-700">{(order.customer as any).np_office}</dd>
-                    </div>
-                  )}
-                </dl>
-              ) : (
-                <p className="text-sm text-gray-400 italic">Клиент не указан</p>
-              )}
-            </div>
-
-            {/* итого */}
-            <div className="sm:pl-6 flex flex-col justify-center">
-              <p className="kicker mb-1">Итого</p>
-              <p className="text-3xl font-extrabold text-primary tabular tracking-tight">
-                {formatCurrency(computedTotalUAH)}
-              </p>
-              {hasUSD && hasUAH && (
-                <p className="text-xs text-gray-400 mt-1">курс {exchangeRate || 41}&nbsp;₴/$</p>
-              )}
-              <p className="text-xs text-gray-400 mt-0.5">
-                {order.items?.length || 0} поз.
-              </p>
-            </div>
-          </div>
+        {/* ── дата + примечание ────────────────────────────────────── */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 px-1 text-sm">
+          <span className="text-gray-400">{formatDate(order.order_date)}</span>
+          {order.notes && (
+            <span className="text-gray-600 line-clamp-1">{order.notes}</span>
+          )}
         </div>
-
-        {/* ── смена статуса ─────────────────────────────────────────── */}
-        {canManage && (
-          <div className="card">
-            <p className="kicker mb-3">Статус заказа</p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => updateStatusMutation.mutate('new')}
-                disabled={order.status === 'new' || updateStatusMutation.isPending}
-                className={`btn btn-sm ${
-                  order.status === 'new'
-                    ? 'btn-primary opacity-60 cursor-not-allowed'
-                    : 'btn-secondary'
-                }`}
-              >
-                Новый
-              </button>
-              <button
-                onClick={() => updateStatusMutation.mutate('in_progress')}
-                disabled={order.status === 'in_progress' || updateStatusMutation.isPending}
-                className={`btn btn-sm ${
-                  order.status === 'in_progress'
-                    ? 'bg-yellow-500 text-white opacity-60 cursor-not-allowed rounded-md px-3 py-1.5 text-xs font-semibold inline-flex items-center justify-center'
-                    : 'btn-secondary'
-                }`}
-              >
-                В работе
-              </button>
-              <button
-                onClick={() => updateStatusMutation.mutate('cancelled')}
-                disabled={updateStatusMutation.isPending}
-                className="btn btn-sm btn-ghost"
-              >
-                Отменить
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* ── блок «Клиент и доставка» (редактирование) ─────────────── */}
         {canManage && (

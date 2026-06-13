@@ -627,94 +627,10 @@ export default function PartsVehicleDetails() {
           {/* ── Sidebar ──────────────────────────────────────────────────── */}
           <div className="space-y-4">
 
-            {/* Profitability card */}
+            {/* Объединённая карточка: Статистика + Окупаемость */}
             <div className="card space-y-4">
-              <h2 className="heading-3 text-base">Окупаемость</h2>
 
-              {/* Stale rate warning */}
-              {!vehicle?.exchange_rate && rateIsStale && (
-                <div className="alert alert-warning py-2 text-xs">
-                  <span className="flex-1">Курс не обновлён сегодня</span>
-                  <button
-                    onClick={() => navigate('/parts/settings')}
-                    className="flex items-center gap-1 font-semibold hover:underline flex-shrink-0"
-                  >
-                    <Settings className="w-3 h-3" />
-                    Обновить
-                  </button>
-                </div>
-              )}
-
-              <div className="panel-divided">
-                {/* Purchase */}
-                <div className="flex items-center justify-between gap-3 pb-3">
-                  <span className="text-sm text-gray-500">Цена покупки</span>
-                  <div className="text-right">
-                    <div className="tabular font-semibold text-red-600 text-sm">
-                      ${purchasePriceUSD.toLocaleString('ru-RU', { maximumFractionDigits: 0 })}
-                    </div>
-                    {purchasePrice > 0 && (
-                      <div className="text-xs text-gray-400 tabular">
-                        {purchasePrice.toLocaleString('ru-RU')} ₴ · курс {exchangeRate}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Revenue */}
-                <div className="flex items-center justify-between gap-3 py-3">
-                  <span className="text-sm text-gray-500">Доход от продаж</span>
-                  <div className="text-right">
-                    <div className="tabular font-semibold text-green-600 text-sm">
-                      ${totalRevenueUSD.toLocaleString('ru-RU', { maximumFractionDigits: 0 })}
-                    </div>
-                    {totalRevenue > 0 && (
-                      <div className="text-xs text-gray-400 tabular">
-                        {totalRevenue.toLocaleString('ru-RU')} ₴
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Total profit */}
-                <div className="pt-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-sm text-gray-700">Итого</span>
-                    <div className="flex items-center gap-2">
-                      {isProfitable
-                        ? <TrendingUp className="w-4 h-4 text-green-600 flex-shrink-0" />
-                        : <TrendingDown className="w-4 h-4 text-red-600 flex-shrink-0" />}
-                      <div className="text-right">
-                        <div
-                          className={`text-xl font-extrabold tabular leading-none ${
-                            isProfitable ? 'text-green-600' : 'text-red-600'
-                          }`}
-                        >
-                          {profitUSD > 0 ? '+' : ''}$
-                          {Math.abs(profitUSD).toLocaleString('ru-RU', { maximumFractionDigits: 0 })}
-                        </div>
-                        <div
-                          className={`text-xs tabular font-medium mt-0.5 ${
-                            isProfitable ? 'text-green-500' : 'text-red-400'
-                          }`}
-                        >
-                          {profit > 0 ? '+' : ''}{profit.toLocaleString('ru-RU')} ₴
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  {recoveryPct && (
-                    <p className="text-xs text-gray-400 text-right mt-1 tabular">
-                      {recoveryPct}% окупаемости
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Stats card */}
-            <div className="card">
-              <h2 className="heading-3 text-base mb-4">Статистика</h2>
+              {/* 3 мини-плитки */}
               <dl className="grid grid-cols-3 gap-2">
                 {[
                   { label: 'Всего', value: parts.length, cls: 'text-gray-900' },
@@ -730,6 +646,83 @@ export default function PartsVehicleDetails() {
                   </div>
                 ))}
               </dl>
+
+              {/* Stale rate warning */}
+              {!vehicle?.exchange_rate && rateIsStale && (
+                <div className="alert alert-warning py-2 text-xs">
+                  <span className="flex-1">Курс не обновлён сегодня</span>
+                  <button
+                    onClick={() => navigate('/parts/settings')}
+                    className="flex items-center gap-1 font-semibold hover:underline flex-shrink-0"
+                  >
+                    <Settings className="w-3 h-3" />
+                    Обновить
+                  </button>
+                </div>
+              )}
+
+              {/* Финансовые строки */}
+              <div className="panel-divided border-t border-gray-100 pt-4">
+                {/* Purchase */}
+                <div className="flex items-center justify-between gap-3 pb-2.5">
+                  <span className="text-sm text-gray-500">Покупка</span>
+                  <div className="text-right">
+                    <div className="tabular font-semibold text-red-600 text-sm">
+                      ${purchasePriceUSD.toLocaleString('ru-RU', { maximumFractionDigits: 0 })}
+                    </div>
+                    {purchasePrice > 0 && (
+                      <div className="text-xs text-gray-400 tabular">
+                        {purchasePrice.toLocaleString('ru-RU')} ₴
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Revenue */}
+                <div className="flex items-center justify-between gap-3 py-2.5">
+                  <span className="text-sm text-gray-500">Доход</span>
+                  <div className="text-right">
+                    <div className="tabular font-semibold text-green-600 text-sm">
+                      ${totalRevenueUSD.toLocaleString('ru-RU', { maximumFractionDigits: 0 })}
+                    </div>
+                    {totalRevenue > 0 && (
+                      <div className="text-xs text-gray-400 tabular">
+                        {totalRevenue.toLocaleString('ru-RU')} ₴
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Total profit */}
+                <div className="pt-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      {isProfitable
+                        ? <TrendingUp className="w-4 h-4 text-green-600 flex-shrink-0" />
+                        : <TrendingDown className="w-4 h-4 text-red-600 flex-shrink-0" />}
+                      <span className="font-semibold text-sm text-gray-700">Итого</span>
+                    </div>
+                    <div className="text-right">
+                      <div
+                        className={`text-xl font-extrabold tabular leading-none ${
+                          isProfitable ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        {profitUSD > 0 ? '+' : ''}$
+                        {Math.abs(profitUSD).toLocaleString('ru-RU', { maximumFractionDigits: 0 })}
+                      </div>
+                      <div
+                        className={`text-xs tabular font-medium mt-0.5 ${
+                          isProfitable ? 'text-green-500' : 'text-red-400'
+                        }`}
+                      >
+                        {profit > 0 ? '+' : ''}{profit.toLocaleString('ru-RU')} ₴
+                        {recoveryPct && <span className="ml-1 text-gray-400">· {recoveryPct}%</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Brand template suggestion */}
