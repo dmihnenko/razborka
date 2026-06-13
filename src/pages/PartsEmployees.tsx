@@ -4,10 +4,42 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
-import { Search, Users, Grid, List, UserCheck, UserX, Mail, Phone } from 'lucide-react'
+import { Search, Users, UserCheck, Phone, Mail } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 
 type ViewMode = 'grid' | 'list'
+
+/** Инициалы для аватара */
+function getInitials(name?: string | null): string {
+  if (!name) return '??'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return name.slice(0, 2).toUpperCase()
+}
+
+const AVATAR_COLORS = [
+  'bg-blue-100 text-blue-700',
+  'bg-violet-100 text-violet-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-amber-100 text-amber-700',
+  'bg-rose-100 text-rose-700',
+  'bg-cyan-100 text-cyan-700',
+]
+function avatarColor(name?: string | null): string {
+  if (!name) return AVATAR_COLORS[0]
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+}
+
+function roleBadge(role?: string | null) {
+  switch (role) {
+    case 'parts_owner':  return <span className="badge badge-blue">Владелец</span>
+    case 'parts_worker': return <span className="badge badge-gray">Сотрудник</span>
+    case 'admin':        return <span className="badge badge-purple">Админ</span>
+    default:             return <span className="badge badge-gray">{role ?? 'Пользователь'}</span>
+  }
+}
 
 export default function PartsEmployees() {
   const { data: profile } = useUserProfile()
@@ -31,7 +63,8 @@ export default function PartsEmployees() {
       if (error) throw error
       return data || []
     },
-    enabled: !!partsCompanyId })
+    enabled: !!partsCompanyId,
+  })
 
   // Фильтрация по поиску
   const filteredEmployees = employees.filter(emp => {
@@ -45,11 +78,11 @@ export default function PartsEmployees() {
     )
   })
 
-
   const stats = {
     total: employees.length,
     active: employees.filter(e => e.email).length,
-    withPhone: employees.filter(e => e.phone).length }
+    withPhone: employees.filter(e => e.phone).length,
+  }
 
   if (!partsCompanyId) {
     return <PartsAccessDenied />
@@ -62,174 +95,227 @@ export default function PartsEmployees() {
         title="Сотрудники"
         subtitle={`Всего: ${stats.total}`}
         backPath="/parts/dashboard"
-
       />
 
       {/* Content */}
       <div className="w-full py-4 sm:py-6">
-        {/* Stats Cards */}
+
+        {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4 sm:mb-6">
           <div className="stat-card">
             <div className="flex items-start justify-between mb-3">
-              <p className="text-xs sm:text-sm text-gray-600">Всего сотрудников</p>
-              <Users className="w-4 h-4 text-gray-400" />
+              <p className="kicker">Всего</p>
+              <Users className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.total}</p>
+            <p className="text-3xl font-extrabold text-gray-900 tabular" style={{ letterSpacing: '-0.03em' }}>
+              {stats.total}
+            </p>
           </div>
 
           <div className="stat-card">
             <div className="flex items-start justify-between mb-3">
-              <p className="text-xs sm:text-sm text-gray-600">С email</p>
-              <UserCheck className="w-4 h-4 text-green-500" />
+              <p className="kicker">С email</p>
+              <UserCheck className="w-4 h-4 text-emerald-500" strokeWidth={1.5} />
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.active}</p>
+            <p className="text-3xl font-extrabold text-emerald-600 tabular" style={{ letterSpacing: '-0.03em' }}>
+              {stats.active}
+            </p>
           </div>
 
           <div className="stat-card">
             <div className="flex items-start justify-between mb-3">
-              <p className="text-xs sm:text-sm text-gray-600">С телефоном</p>
-              <Phone className="w-4 h-4 text-blue-500" />
+              <p className="kicker">С телефоном</p>
+              <Phone className="w-4 h-4 text-primary" strokeWidth={1.5} />
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.withPhone}</p>
+            <p className="text-3xl font-extrabold text-primary tabular" style={{ letterSpacing: '-0.03em' }}>
+              {stats.withPhone}
+            </p>
           </div>
         </div>
 
-        {/* Search & View Controls */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+        {/* Search & View toggle */}
+        <div className="card p-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search */}
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+                strokeWidth={1.5}
+              />
               <input
                 type="text"
                 placeholder="Поиск по имени, email, телефону..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                onChange={e => setSearchQuery(e.target.value)}
+                className="form-input pl-10"
               />
             </div>
 
-            <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
+            {/* View mode toggle */}
+            <div className="flex gap-1 bg-gray-100 rounded-lg p-1 self-start sm:self-auto">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded ${
-                  viewMode === 'grid' ? 'bg-white shadow-sm' : 'text-gray-600'
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <Grid className="w-5 h-5" />
+                Карточки
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded ${
-                  viewMode === 'list' ? 'bg-white shadow-sm' : 'text-gray-600'
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  viewMode === 'list'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <List className="w-5 h-5" />
+                Таблица
               </button>
             </div>
           </div>
         </div>
 
-        {/* Employees List/Grid */}
+        {/* List */}
         {isLoading ? (
-          <div className="text-center py-12">
-            <Spinner size="md" className="inline-block" />
+          <div className="flex items-center justify-center py-16">
+            <Spinner size="md" />
           </div>
         ) : filteredEmployees.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-2">
-              {searchQuery ? 'Сотрудники не найдены' : 'Нет сотрудников'}
-            </p>
-            {!searchQuery && (
-              <p className="text-sm text-gray-400">Работники найдут вас при регистрации, введя номер телефона вашей разборки</p>
-            )}
+          <div className="card">
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <Users className="w-7 h-7 text-gray-400" strokeWidth={1.5} />
+              </div>
+              <p className="empty-state-title">
+                {searchQuery ? 'Сотрудники не найдены' : 'Нет сотрудников'}
+              </p>
+              {!searchQuery && (
+                <p className="empty-state-text">
+                  Работники найдут вас при регистрации, введя номер телефона вашей разборки
+                </p>
+              )}
+            </div>
           </div>
+
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredEmployees.map((employee) => (
-              <div
-                key={employee.id}
-                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all p-3 sm:p-4"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-bold text-gray-900 mb-1">
+          /* ── Мобайл/grid: плоские карточки ─────────────────── */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
+            {filteredEmployees.map(employee => (
+              <div key={employee.id} className="card flex items-start gap-4">
+                {/* Аватар */}
+                <span className={`avatar-lg flex-shrink-0 ${avatarColor(employee.full_name)}`}>
+                  {getInitials(employee.full_name)}
+                </span>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <p className="text-sm font-bold text-gray-900 truncate">
                       {employee.full_name || 'Без имени'}
-                    </h3>
-                    {employee.username && (
-                      <p className="text-sm text-gray-500">@{employee.username}</p>
+                    </p>
+                    {roleBadge(employee.role)}
+                  </div>
+
+                  {employee.username && (
+                    <p className="text-xs text-gray-400 mb-1.5">@{employee.username}</p>
+                  )}
+
+                  <div className="space-y-1">
+                    {employee.email && (
+                      <a
+                        href={`mailto:${employee.email}`}
+                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-primary transition-colors"
+                      >
+                        <Mail className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
+                        <span className="truncate">{employee.email}</span>
+                      </a>
+                    )}
+                    {employee.phone && (
+                      <a
+                        href={`tel:${employee.phone}`}
+                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-primary transition-colors"
+                      >
+                        <Phone className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
+                        {employee.phone}
+                      </a>
+                    )}
+                    {!employee.email && !employee.phone && (
+                      <p className="text-xs text-gray-400">Нет контактной информации</p>
                     )}
                   </div>
-                  {employee.email ? (
-                    <UserCheck className="w-5 h-5 text-green-500" />
-                  ) : (
-                    <UserX className="w-5 h-5 text-gray-400" />
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  {employee.email && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Mail className="w-4 h-4 text-gray-400" />
-                      <span className="truncate">{employee.email}</span>
-                    </div>
-                  )}
-                  {employee.phone && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Phone className="w-4 h-4 text-gray-400" />
-                      <span>{employee.phone}</span>
-                    </div>
-                  )}
-                  {!employee.email && !employee.phone && (
-                    <p className="text-sm text-gray-400">Нет контактной информации</p>
-                  )}
                 </div>
               </div>
             ))}
           </div>
+
         ) : (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          /* ── Десктоп: таблица ───────────────────────────────── */
+          <div className="card p-0 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead>
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Имя
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                      Username
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                      Email
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                      Телефон
-                    </th>
+                    <th className="table-header-cell">Сотрудник</th>
+                    <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Роль</th>
+                    <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Email</th>
+                    <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Телефон</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredEmployees.map((employee) => (
-                    <tr key={employee.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          {employee.email ? (
-                            <UserCheck className="w-4 h-4 text-green-500" />
-                          ) : (
-                            <UserX className="w-4 h-4 text-gray-400" />
-                          )}
-                          <span className="font-medium text-gray-900">
-                            {employee.full_name || 'Без имени'}
+                <tbody>
+                  {filteredEmployees.map(employee => (
+                    <tr key={employee.id} className="table-row">
+                      {/* Имя + аватар */}
+                      <td className="table-cell">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className={`avatar-md flex-shrink-0 ${avatarColor(employee.full_name)}`}>
+                            {getInitials(employee.full_name)}
                           </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">
+                              {employee.full_name || 'Без имени'}
+                            </p>
+                            {employee.username && (
+                              <p className="text-xs text-gray-400">@{employee.username}</p>
+                            )}
+                          </div>
                         </div>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 hidden md:table-cell">
-                        {employee.username ? `@${employee.username}` : '—'}
+
+                      {/* Роль */}
+                      <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
+                        {roleBadge(employee.role)}
                       </td>
-                      <td className="px-4 py-4 text-sm text-gray-600 hidden lg:table-cell">
-                        <div className="max-w-xs truncate">{employee.email || '—'}</div>
+
+                      {/* Email */}
+                      <td className="hidden lg:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
+                        {employee.email ? (
+                          <a
+                            href={`mailto:${employee.email}`}
+                            className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-primary transition-colors max-w-xs"
+                          >
+                            <Mail className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
+                            <span className="truncate">{employee.email}</span>
+                          </a>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 hidden sm:table-cell">
-                        {employee.phone || '—'}
+
+                      {/* Телефон */}
+                      <td className="hidden sm:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
+                        {employee.phone ? (
+                          <a
+                            href={`tel:${employee.phone}`}
+                            className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-primary transition-colors"
+                          >
+                            <Phone className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
+                            {employee.phone}
+                          </a>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -239,7 +325,6 @@ export default function PartsEmployees() {
           </div>
         )}
       </div>
-
     </div>
   )
 }

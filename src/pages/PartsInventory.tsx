@@ -41,10 +41,10 @@ const statusLabels: Record<PartsInventoryStatus, string> = {
 }
 
 const statusColors: Record<PartsInventoryStatus, string> = {
-  available: 'bg-green-100 text-green-800 border-green-200',
-  reserved: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  sold: 'bg-gray-100 text-gray-800 border-gray-200',
-  damaged: 'bg-red-100 text-red-800 border-red-200'
+  available: 'badge badge-green',
+  reserved: 'badge badge-yellow',
+  sold: 'badge badge-gray',
+  damaged: 'badge badge-red'
 }
 
 export default function PartsInventory() {
@@ -842,21 +842,23 @@ export default function PartsInventory() {
             <Spinner size="md" />
           </div>
         ) : filteredInventory.length === 0 ? (
-          <div className="card p-12 text-center">
-            <div className="icon-tile-lg bg-gray-100 text-gray-300 mx-auto mb-4">
-              <Package className="w-7 h-7" strokeWidth={1.5} />
+          <div className="card">
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <Package className="w-7 h-7 text-gray-400" strokeWidth={1.5} />
+              </div>
+              <p className="empty-state-title">
+                {searchQuery || statusFilter !== 'all' ? 'Запчасти не найдены' : 'Нет запчастей'}
+              </p>
+              {!searchQuery && statusFilter === 'all' && (
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="mt-3 btn-ghost btn-sm text-primary"
+                >
+                  Добавить первую запчасть
+                </button>
+              )}
             </div>
-            <p className="text-sm font-semibold text-gray-500 mb-1">
-              {searchQuery || statusFilter !== 'all' ? 'Запчасти не найдены' : 'Нет запчастей'}
-            </p>
-            {!searchQuery && statusFilter === 'all' && (
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="mt-3 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-              >
-                Добавить первую запчасть
-              </button>
-            )}
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -884,11 +886,11 @@ export default function PartsInventory() {
                   <tr>
                     <th className={`table-header-cell w-8${statusFilter !== 'reserved' ? ' hidden' : ''}`}></th>
                     <th className="table-header-cell">Запчасть</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200 hidden md:table-cell" style={{ letterSpacing: '0.06em' }}>Категория</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200 hidden xl:table-cell" style={{ letterSpacing: '0.06em' }}>Артикул</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200 hidden lg:table-cell" style={{ letterSpacing: '0.06em' }}>Машина</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200 hidden md:table-cell" style={{ letterSpacing: '0.06em' }}>Статус</th>
-                    <th className={`px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200 hidden sm:table-cell${sourceFilter === 'vehicles' ? ' !hidden' : ''}`} style={{ letterSpacing: '0.06em' }}>Кол-во</th>
+                    <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Категория</th>
+                    <th className="hidden xl:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Артикул</th>
+                    <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Машина</th>
+                    <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Статус</th>
+                    <th className={`hidden sm:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200${sourceFilter === 'vehicles' ? ' !hidden' : ''}`} style={{ letterSpacing: '0.06em' }}>Кол-во</th>
                     <th className="table-header-cell">Цена</th>
                     <th className="table-header-cell text-right">Действия</th>
                   </tr>
@@ -914,9 +916,9 @@ export default function PartsInventory() {
                           />
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="table-cell">
                         <div>
-                          <div className="font-medium text-gray-900 group-hover/row:text-primary transition-colors leading-tight">
+                          <div className="font-semibold text-gray-900 group-hover/row:text-primary transition-colors leading-tight">
                             {item.name}
                           </div>
                           {item.category && (
@@ -927,17 +929,17 @@ export default function PartsInventory() {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 hidden md:table-cell">
+                      <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
                         {item.category ? (
                           <span className="text-sm text-gray-600">{item.category.name}</span>
                         ) : (
                           <span className="text-gray-300 text-sm">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500 font-mono hidden xl:table-cell">
+                      <td className="hidden xl:table-cell px-4 py-3 text-sm text-gray-500 font-mono border-b border-gray-100">
                         {item.part_number || <span className="text-gray-300">—</span>}
                       </td>
-                      <td className="px-4 py-3 hidden lg:table-cell">
+                      <td className="hidden lg:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
                         {item.vehicle ? (
                           <div>
                             <div className="text-sm font-medium text-gray-700">{item.vehicle.make} {item.vehicle.model}</div>
@@ -947,10 +949,10 @@ export default function PartsInventory() {
                           <span className="text-xs text-gray-400">Магазин</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell">
+                      <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100 whitespace-nowrap">
                         <button
                           onClick={(e) => handleStatusClick(item, e)}
-                          className={`px-2.5 py-1 rounded-full text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity ${statusColors[item.status]}`}
+                          className={`${statusColors[item.status]} cursor-pointer hover:opacity-80 transition-opacity`}
                         >
                           {statusLabels[item.status]}
                         </button>
@@ -960,12 +962,12 @@ export default function PartsInventory() {
                           </div>
                         )}
                       </td>
-                      <td className={`px-4 py-3 whitespace-nowrap hidden sm:table-cell${sourceFilter === 'vehicles' ? ' !hidden' : ''}`}>
+                      <td className={`hidden sm:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100 whitespace-nowrap tabular${sourceFilter === 'vehicles' ? ' !hidden' : ''}`}>
                         {item.vehicle_id ? (
                           <span className="text-sm text-gray-300">—</span>
                         ) : (
                           <div className="flex items-center gap-1.5">
-                            <span className={`text-sm font-bold ${item.quantity <= 2 ? 'text-red-600' : 'text-gray-900'}`}>
+                            <span className={`text-sm font-bold tabular ${item.quantity <= 2 ? 'text-red-600' : 'text-gray-900'}`}>
                               {item.quantity}
                             </span>
                             {item.reserved_quantity > 0 && (
@@ -977,8 +979,8 @@ export default function PartsInventory() {
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-primary">
+                      <td className="table-cell whitespace-nowrap tabular">
+                        <span className="text-sm font-semibold text-primary tabular">
                           {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
                         </span>
                       </td>
@@ -1710,14 +1712,14 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Автомобиль-источник</label>
+                      <label className="form-label">Автомобиль-источник</label>
                       <select
                         value={bulkShared.vehicle_id}
                         onChange={(e) => {
                         setBulkShared({ ...bulkShared, vehicle_id: e.target.value, category_id: '' })
                         onVehicleChange?.(e.target.value)
                       }}
-                        className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="form-select"
                       >
                         <option value="">Не привязано</option>
                         {(vehicles as any[]).map((vehicle) => (
@@ -1728,11 +1730,11 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Категория</label>
+                      <label className="form-label">Категория</label>
                       <select
                         value={bulkShared.category_id}
                         onChange={(e) => setBulkShared({ ...bulkShared, category_id: e.target.value })}
-                        className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="form-select"
                       >
                         <option value="">Без категории</option>
                         {(bulkShared.vehicle_id
@@ -1746,11 +1748,11 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Состояние</label>
+                      <label className="form-label">Состояние</label>
                       <select
                         value={bulkShared.condition}
                         onChange={(e) => setBulkShared({ ...bulkShared, condition: e.target.value })}
-                        className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="form-select"
                       >
                         <option value="new">Новая</option>
                         <option value="used">Б/У хорошее</option>
@@ -1758,12 +1760,12 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Место хранения</label>
+                      <label className="form-label">Место хранения</label>
                       {storageLocations.length > 0 ? (
                         <select
                           value={bulkShared.storage_location_id}
                           onChange={(e) => setBulkShared({ ...bulkShared, storage_location_id: e.target.value })}
-                          className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="form-select"
                         >
                           <option value="">Не указано</option>
                           {buildLocationOptions(storageLocations).map(opt => (
@@ -1774,7 +1776,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         <input
                           type="text"
                           placeholder="Например: Бокс 1, Полка 3..."
-                          className="w-full px-3 py-2 text-base border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
+                          className="form-input bg-gray-50 cursor-not-allowed"
                           disabled
                         />
                       )}
@@ -1784,7 +1786,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   {/* Bulk items table */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="form-label">
                         Список запчастей
                       </label>
                       <div className="flex items-center gap-2">
@@ -1794,20 +1796,20 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                             setShowPasteArea(v => !v)
                             setPasteText('')
                           }}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                          className={`flex items-center gap-1.5 btn-sm border transition-colors ${
                             showPasteArea
-                              ? 'bg-primary text-white border-primary'
-                              : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                              ? 'btn-primary'
+                              : 'btn-secondary'
                           }`}
                         >
                           <ClipboardList className="w-3.5 h-3.5" />
                           Вставить списком
                         </button>
-                        <span className="text-xs text-gray-500">Валюта:</span>
+                        <span className="kicker">Валюта:</span>
                         <button
                           type="button"
                           onClick={() => setBulkShared(prev => ({ ...prev, price_currency: prev.price_currency === 'USD' ? 'UAH' : 'USD' }))}
-                          className="px-3 py-1 rounded text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition-colors"
+                          className="btn-primary btn-sm w-9 text-center px-0"
                           title="Сменить валюту"
                         >
                           {bulkShared.price_currency === 'USD' ? '$' : '₴'}
@@ -1827,7 +1829,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                           onChange={(e) => setPasteText(e.target.value)}
                           rows={6}
                           placeholder={'Капот\t800\t\t\nКрыло\t650\t1234567-00-A\nПанорама\t750\t\tБронь\nДверь передняя\t\t\tПродано'}
-                          className="w-full px-3 py-2 text-sm border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono resize-none bg-white"
+                          className="form-input font-mono resize-none border-blue-300"
                         />
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-xs text-blue-600">
@@ -1844,7 +1846,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                                 setPasteText('')
                               }
                             }}
-                            className="px-3 py-1.5 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-40"
+                            className="btn-primary btn-sm disabled:opacity-40"
                           >
                             Применить
                           </button>
@@ -1932,7 +1934,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     <button
                       type="button"
                       onClick={() => setBulkItems(prev => [...prev, { name: '', selling_price: '', part_number: '', status: 'available' }])}
-                      className="mt-2 flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+                      className="mt-2 btn-ghost btn-sm flex items-center gap-1.5 text-primary"
                     >
                       <Plus className="w-4 h-4" />
                       Добавить строку
@@ -1943,7 +1945,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="form-label">
                       Автомобиль-источник
                     </label>
                     <select
@@ -1954,7 +1956,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         if (newVehicleId) onVehicleChange?.(newVehicleId)
                         else onVehicleChange?.('')
                       }}
-                      className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="form-select"
                     >
                       <option value="">Не привязано к автомобилю</option>
                       {(vehicles as any[]).map((vehicle) => (
@@ -1969,13 +1971,13 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="form-label">
                       Категория
                     </label>
                     <select
                       value={formData.category_id}
                       onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                      className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="form-select"
                     >
                       <option value="">Без категории</option>
                       {(formData.vehicle_id
@@ -1989,7 +1991,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     Название *
                   </label>
                   <input
@@ -1997,32 +1999,32 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="form-input"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="form-label">
                       Артикул
                     </label>
                     <input
                       type="text"
                       value={formData.part_number}
                       onChange={(e) => setFormData({ ...formData, part_number: e.target.value })}
-                      className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="form-input"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="form-label">
                       Состояние *
                     </label>
                     <select
                       required
                       value={formData.condition}
                       onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-                      className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="form-select"
                     >
                       <option value="new">Новая</option>
                       <option value="used">Б/У хорошее</option>
@@ -2032,32 +2034,32 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     Описание
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={2}
-                    className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                    className="form-input resize-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   {!formData.vehicle_id && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Количество</label>
+                      <label className="form-label">Количество</label>
                       <input
                         type="number"
                         min="1"
                         value={formData.quantity}
                         onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
-                        className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="form-input tabular"
                       />
                     </div>
                   )}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Цена продажи</label>
+                    <label className="form-label">Цена продажи</label>
                     <div className="flex gap-2">
                       <input
                         type="number"
@@ -2065,12 +2067,12 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         step="0.01"
                         value={formData.selling_price || ''}
                         onChange={(e) => setFormData({ ...formData, selling_price: e.target.value ? Number(e.target.value) : undefined })}
-                        className="flex-1 min-w-0 px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="form-input flex-1 min-w-0 tabular"
                       />
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, price_currency: formData.price_currency === 'USD' ? 'UAH' : 'USD' })}
-                        className="px-3 py-2 rounded-md text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition-colors flex-shrink-0 w-10 text-center"
+                        className="btn-primary flex-shrink-0 w-10 text-center px-0"
                         title="Сменить валюту"
                       >
                         {formData.price_currency === 'USD' ? '$' : '₴'}
@@ -2080,7 +2082,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     Закупочная цена <span className="text-gray-400 font-normal">(для окупаемости)</span>
                   </label>
                   <input
@@ -2090,7 +2092,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     value={formData.purchase_price ?? ''}
                     onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value ? Number(e.target.value) : undefined })}
                     placeholder="Не обязательно"
-                    className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="form-input tabular"
                   />
                 </div>
 
@@ -2099,10 +2101,10 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, status: formData.status === 'sold' ? 'available' : 'sold' })}
-                    className={`w-full py-2.5 rounded-lg text-sm font-semibold border-2 transition-colors ${
+                    className={`w-full py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
                       formData.status === 'sold'
                         ? 'bg-gray-800 border-gray-800 text-white'
-                        : 'bg-white border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700'
+                        : 'btn-secondary border-2 text-gray-500 hover:border-gray-400 hover:text-gray-700'
                     }`}
                   >
                     {formData.status === 'sold' ? '✓ Продано' : 'Отметить как продано'}
@@ -2110,12 +2112,12 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Место хранения</label>
+                  <label className="form-label">Место хранения</label>
                   {storageLocations.length > 0 ? (
                     <select
                       value={formData.storage_location_id || ''}
                       onChange={(e) => setFormData({ ...formData, storage_location_id: e.target.value || undefined })}
-                      className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="form-select"
                     >
                       <option value="">Не указано</option>
                       {buildLocationOptions(storageLocations).map(opt => (
@@ -2123,22 +2125,20 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       ))}
                     </select>
                   ) : (
-                    <div className="flex gap-2 items-center">
-                      <input
-                        type="text"
-                        value={formData.location || ''}
-                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                        placeholder="Например: Бокс 1, Полка 3..."
-                        className="flex-1 px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
+                    <input
+                      type="text"
+                      value={formData.location || ''}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      placeholder="Например: Бокс 1, Полка 3..."
+                      className="form-input"
+                    />
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Фотографии</label>
-                  <label className={`flex items-center justify-center gap-2 w-full h-11 border-2 border-dashed rounded-md cursor-pointer transition-colors ${
-                    uploading ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300 hover:border-primary hover:bg-primary/5'
+                  <label className="form-label">Фотографии</label>
+                  <label className={`flex items-center justify-center gap-2 w-full h-11 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+                    uploading ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-200 hover:border-primary hover:bg-primary/5'
                   }`}>
                     <input
                       type="file"
@@ -2148,8 +2148,8 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       onChange={handlePhotoSelect}
                       className="sr-only"
                     />
-                    <Camera className={`w-4 h-4 ${uploading ? 'text-gray-300' : 'text-gray-500'}`} />
-                    <span className={`text-sm ${uploading ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <Camera className={`w-4 h-4 ${uploading ? 'text-gray-300' : 'text-gray-400'}`} />
+                    <span className={`text-sm font-medium ${uploading ? 'text-gray-400' : 'text-gray-500'}`}>
                       {uploading ? 'Загрузка...' : 'Добавить фото'}
                     </span>
                   </label>
@@ -2160,7 +2160,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                           <img
                             src={photo.thumb_url || photo.url}
                             alt={`Фото ${i + 1}`}
-                            className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                            className="w-16 h-16 object-cover rounded-xl border border-gray-200"
                           />
                           <button
                             type="button"
@@ -2176,12 +2176,12 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Примечания</label>
+                  <label className="form-label">Примечания</label>
                   <textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     rows={2}
-                    className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                    className="form-input resize-none"
                   />
                 </div>
               </div>

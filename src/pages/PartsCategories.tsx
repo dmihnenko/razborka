@@ -205,21 +205,23 @@ export default function PartsCategories() {
           tab === 'my' ? (
             <button
               onClick={() => { setIsAddOpen(v => !v); setAddMode('single') }}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
+              className="btn-primary btn-sm flex items-center gap-1.5"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Добавить</span>
             </button>
           ) : undefined
         }
         footer={
-          <div className="flex border-t">
+          <div className="flex border-t border-gray-100 overflow-x-auto scrollbar-hide">
             {(['my', 'templates'] as Tab[]).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  tab === t ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
+                className={`px-5 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                  tab === t
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
                 {t === 'my' ? 'Мои категории' : 'Стандартные'}
@@ -231,53 +233,92 @@ export default function PartsCategories() {
 
       <div className="w-full py-4 sm:py-6">
 
+        {/* ── Вкладка: Мои категории ─────────────────────────── */}
         {tab === 'my' && (
           <>
             {isAddOpen && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
-                <div className="flex gap-2 mb-3">
-                  <button type="button" onClick={() => setAddMode('single')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${addMode === 'single' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              <div className="card mb-4 animate-slide-up">
+                {/* Переключатель режима */}
+                <div className="flex gap-2 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setAddMode('single')}
+                    className={addMode === 'single' ? 'chip chip-active' : 'chip'}
+                  >
                     <Plus className="w-3.5 h-3.5" />По одной
                   </button>
-                  <button type="button" onClick={() => setAddMode('list')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${addMode === 'list' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                  <button
+                    type="button"
+                    onClick={() => setAddMode('list')}
+                    className={addMode === 'list' ? 'chip chip-active' : 'chip'}
+                  >
                     <List className="w-3.5 h-3.5" />Списком
                   </button>
                 </div>
 
                 {addMode === 'single' ? (
                   <form onSubmit={handleAdd} className="flex gap-2">
-                    <input type="text" autoFocus value={newName} onChange={e => setNewName(e.target.value)}
-                      placeholder="Название категории..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base" />
-                    <button type="submit" disabled={!newName.trim() || createMutation.isPending}
-                      className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50">
-                      <Check className="w-5 h-5" />
+                    <input
+                      type="text"
+                      autoFocus
+                      value={newName}
+                      onChange={e => setNewName(e.target.value)}
+                      placeholder="Название категории…"
+                      className="form-input flex-1"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newName.trim() || createMutation.isPending}
+                      className="btn-primary"
+                    >
+                      <Check className="w-4 h-4" />
                     </button>
-                    <button type="button" onClick={() => { setIsAddOpen(false); setNewName('') }}
-                      className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">
-                      <X className="w-5 h-5" />
+                    <button
+                      type="button"
+                      onClick={() => { setIsAddOpen(false); setNewName('') }}
+                      className="btn-secondary"
+                    >
+                      <X className="w-4 h-4" />
                     </button>
                   </form>
                 ) : (
                   <form onSubmit={handleBulkAdd} className="space-y-3">
-                    <textarea autoFocus value={bulkText} onChange={e => setBulkText(e.target.value)}
-                      placeholder={'Двигатель\nКоробка передач\nПодвеска\nОптика\n...'}
+                    <textarea
+                      autoFocus
+                      value={bulkText}
+                      onChange={e => setBulkText(e.target.value)}
+                      placeholder={'Двигатель\nКоробка передач\nПодвеска\nОптика\n…'}
                       rows={7}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm font-mono resize-none" />
+                      className="form-input font-mono resize-none"
+                    />
                     {bulkPreview.length > 0 && (
                       <div className="flex gap-3 text-xs">
-                        {bulkNew.length > 0 && <span className="text-green-600 font-medium">+ {bulkNew.length} новых</span>}
-                        {bulkDuplicate.length > 0 && <span className="text-gray-400">{bulkDuplicate.length} уже есть — пропустятся</span>}
+                        {bulkNew.length > 0 && (
+                          <span className="badge badge-green tabular-nums">
+                            + {bulkNew.length} новых
+                          </span>
+                        )}
+                        {bulkDuplicate.length > 0 && (
+                          <span className="badge badge-gray tabular-nums">
+                            {bulkDuplicate.length} уже есть — пропустятся
+                          </span>
+                        )}
                       </div>
                     )}
                     <div className="flex gap-2 justify-end">
-                      <button type="button" onClick={() => { setIsAddOpen(false); setBulkText('') }}
-                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium">Отмена</button>
-                      <button type="submit" disabled={!bulkNew.length || bulkMutation.isPending}
-                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 text-sm font-medium">
-                        {bulkMutation.isPending ? 'Добавляем...' : `Добавить ${bulkNew.length || ''}`}
+                      <button
+                        type="button"
+                        onClick={() => { setIsAddOpen(false); setBulkText('') }}
+                        className="btn-secondary btn-sm"
+                      >
+                        Отмена
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={!bulkNew.length || bulkMutation.isPending}
+                        className="btn-primary btn-sm"
+                      >
+                        {bulkMutation.isPending ? 'Добавляем…' : `Добавить ${bulkNew.length || ''}`}
                       </button>
                     </div>
                   </form>
@@ -286,56 +327,105 @@ export default function PartsCategories() {
             )}
 
             {isLoading ? (
-              <div className="flex justify-center py-12">
+              <div className="flex justify-center py-16">
                 <Spinner size="xl" />
               </div>
             ) : categories.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-                <Tag className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 mb-1">Категорий пока нет</p>
-                <p className="text-xs text-gray-400 mb-4">Добавьте вручную или импортируйте стандартные</p>
-                <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                  <button onClick={() => { setIsAddOpen(true); setAddMode('single') }}
-                    className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">Добавить</button>
-                  <button onClick={() => setTab('templates')}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium">Импортировать стандартные</button>
+              <div className="card">
+                <div className="empty-state">
+                  <div className="empty-state-icon">
+                    <Tag className="w-7 h-7 text-gray-400" />
+                  </div>
+                  <p className="empty-state-title">Категорий пока нет</p>
+                  <p className="empty-state-text">Добавьте вручную или импортируйте стандартные</p>
+                  <div className="flex flex-col sm:flex-row gap-2 mt-6">
+                    <button
+                      onClick={() => { setIsAddOpen(true); setAddMode('single') }}
+                      className="btn-primary btn-sm"
+                    >
+                      Добавить
+                    </button>
+                    <button
+                      onClick={() => setTab('templates')}
+                      className="btn-secondary btn-sm"
+                    >
+                      Импортировать стандартные
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="divide-y divide-gray-100">
+              <div className="card p-0 overflow-hidden">
+                <div className="panel-divided">
                   {categories.map((cat) => {
                     const usage = usageMap[cat.id] || 0
                     const isEditing = editingId === cat.id
                     return (
-                      <div key={cat.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
-                        <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <div
+                        key={cat.id}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="icon-tile-sm bg-primary/10 flex-shrink-0">
                           <Tag className="w-4 h-4 text-primary" />
                         </div>
+
                         {isEditing ? (
-                          <input type="text" autoFocus value={editingName} onChange={e => setEditingName(e.target.value)}
-                            onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(cat.id); if (e.key === 'Escape') setEditingId(null) }}
-                            className="flex-1 px-3 py-1.5 border border-primary rounded-lg focus:ring-2 focus:ring-primary text-base" />
+                          <input
+                            type="text"
+                            autoFocus
+                            value={editingName}
+                            onChange={e => setEditingName(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleSaveEdit(cat.id)
+                              if (e.key === 'Escape') setEditingId(null)
+                            }}
+                            className="form-input flex-1"
+                          />
                         ) : (
                           <div className="flex-1 min-w-0">
-                            <span className="font-medium text-gray-900">{cat.name}</span>
-                            {usage > 0 && <span className="ml-2 text-xs text-gray-400">{usage} запч.</span>}
+                            <span className="text-sm font-semibold text-gray-900 truncate">{cat.name}</span>
+                            {usage > 0 && (
+                              <span className="ml-2 kicker tabular-nums">{usage} запч.</span>
+                            )}
                           </div>
                         )}
-                        <div className="flex items-center gap-1 flex-shrink-0">
+
+                        <div className="flex items-center gap-0.5 flex-shrink-0">
                           {isEditing ? (
                             <>
-                              <button onClick={() => handleSaveEdit(cat.id)} disabled={updateMutation.isPending}
-                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"><Check className="w-4 h-4" /></button>
-                              <button onClick={() => setEditingId(null)}
-                                className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors"><X className="w-4 h-4" /></button>
+                              <button
+                                onClick={() => handleSaveEdit(cat.id)}
+                                disabled={updateMutation.isPending}
+                                className="btn-icon text-green-600 hover:text-green-700 hover:bg-green-50"
+                                title="Сохранить"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                className="btn-icon"
+                                title="Отмена"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
                             </>
                           ) : (
                             <>
-                              <button onClick={() => { setEditingId(cat.id); setEditingName(cat.name) }}
-                                className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors"><Pencil className="w-4 h-4" /></button>
-                              <button onClick={() => handleDelete(cat)} disabled={deleteMutation.isPending}
-                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                              <button
+                                onClick={() => { setEditingId(cat.id); setEditingName(cat.name) }}
+                                className="btn-icon"
+                                title="Переименовать"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(cat)}
+                                disabled={deleteMutation.isPending}
+                                className="btn-icon hover:text-red-600 hover:bg-red-50"
+                                title="Удалить"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </>
                           )}
                         </div>
@@ -348,74 +438,144 @@ export default function PartsCategories() {
           </>
         )}
 
+        {/* ── Вкладка: Стандартные шаблоны ──────────────────── */}
         {tab === 'templates' && (
           <>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
-              <p className="text-sm text-gray-500 mb-3">Стандартные категории от администратора по марке авто. Выберите нужные и импортируйте в свой список.</p>
+            {/* Поиск по марке */}
+            <div className="card mb-4">
+              <p className="text-sm text-gray-500 mb-3">
+                Стандартные категории от администратора по марке авто. Выберите нужные и импортируйте в свой список.
+              </p>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                <input type="text" value={templateBrand} onChange={e => setTemplateBrand(e.target.value)}
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={templateBrand}
+                  onChange={e => setTemplateBrand(e.target.value)}
                   placeholder="Марка (Toyota, BMW, Ford…)"
-                  className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base" />
+                  className="form-input pl-10"
+                />
               </div>
             </div>
 
+            {/* Sticky-панель выбранных */}
             {selectedTemplateIds.size > 0 && (
-              <div className="sticky top-16 z-10 bg-primary text-white rounded-xl px-4 py-3 mb-4 flex items-center justify-between shadow-lg">
-                <span className="text-sm font-medium">Выбрано: {selectedTemplateIds.size}</span>
-                <div className="flex gap-2">
-                  <button onClick={() => setSelectedTemplateIds(new Set())}
-                    className="px-3 py-1.5 bg-white/20 rounded-lg text-sm hover:bg-white/30 transition-colors">Сбросить</button>
-                  <button onClick={() => copyMutation.mutate(Array.from(selectedTemplateIds))} disabled={copyMutation.isPending}
-                    className="px-3 py-1.5 bg-white text-primary rounded-lg text-sm font-semibold hover:bg-white/90 disabled:opacity-50 flex items-center gap-1.5">
-                    <Download className="w-3.5 h-3.5" />
-                    {copyMutation.isPending ? 'Импорт...' : 'Импортировать'}
-                  </button>
+              <div className="sticky top-16 z-20 mb-4 animate-slide-up">
+                <div
+                  className="rounded-xl px-4 py-3 flex items-center justify-between shadow-lg"
+                  style={{ background: 'var(--brand-gradient)' }}
+                >
+                  <span className="text-sm font-semibold text-white tabular-nums">
+                    Выбрано: {selectedTemplateIds.size}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSelectedTemplateIds(new Set())}
+                      className="btn-sm rounded-lg bg-white/20 text-white hover:bg-white/30 transition-colors font-medium"
+                    >
+                      Сбросить
+                    </button>
+                    <button
+                      onClick={() => copyMutation.mutate(Array.from(selectedTemplateIds))}
+                      disabled={copyMutation.isPending}
+                      className="btn-sm rounded-lg bg-white text-primary font-semibold hover:bg-white/90 disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      {copyMutation.isPending ? 'Импорт…' : 'Импортировать'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
             {loadingTemplates ? (
-              <div className="flex justify-center py-12">
+              <div className="flex justify-center py-16">
                 <Spinner size="xl" />
               </div>
             ) : templates.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-                <Tag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">Стандартных категорий не найдено</p>
-                {templateBrand && (
-                  <button onClick={() => setTemplateBrand('')}
-                    className="mt-2 text-primary hover:underline text-sm">Показать все</button>
-                )}
+              <div className="card">
+                <div className="empty-state">
+                  <div className="empty-state-icon">
+                    <Tag className="w-7 h-7 text-gray-400" />
+                  </div>
+                  <p className="empty-state-title">Стандартных категорий не найдено</p>
+                  {templateBrand && (
+                    <button
+                      onClick={() => setTemplateBrand('')}
+                      className="mt-3 text-sm font-medium text-primary hover:underline"
+                    >
+                      Показать все
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="card p-0 overflow-hidden">
+                {/* Шапка таблицы */}
                 <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-                  <span className="text-xs text-gray-500">
+                  <span className="kicker tabular-nums">
                     {templates.length} категорий
                     {templates.filter(t => existingNames.has(t.name.toLowerCase())).length > 0 &&
                       ` · ${templates.filter(t => existingNames.has(t.name.toLowerCase())).length} уже у вас`}
                   </span>
-                  <button onClick={selectAllTemplates} className="text-xs text-primary hover:underline font-medium">Выбрать все новые</button>
+                  <button
+                    onClick={selectAllTemplates}
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    Выбрать все новые
+                  </button>
                 </div>
-                <div className="divide-y divide-gray-100">
+
+                <div className="panel-divided">
                   {templates.map(t => {
                     const alreadyHave = existingNames.has(t.name.toLowerCase())
                     const isSelected = selectedTemplateIds.has(t.id)
                     return (
-                      <button key={t.id} type="button" disabled={alreadyHave}
+                      <button
+                        key={t.id}
+                        type="button"
+                        disabled={alreadyHave}
                         onClick={() => !alreadyHave && toggleTemplateSelect(t.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${alreadyHave ? 'opacity-40 cursor-not-allowed bg-gray-50' : isSelected ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-gray-50'}`}>
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${alreadyHave ? 'border-gray-300 bg-gray-100' : isSelected ? 'border-primary bg-primary' : 'border-gray-300'}`}>
-                          {(isSelected || alreadyHave) && <Check className={`w-3 h-3 ${alreadyHave ? 'text-gray-400' : 'text-white'}`} />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm font-medium text-gray-900">{t.name}</span>
-                          {t.template_type && t.template_type !== 'global' && (
-                            <span className="ml-2 text-xs text-gray-400">{t.brand}{t.model ? ` · ${t.model}` : ''}</span>
+                        className={[
+                          'w-full flex items-center gap-3 px-4 py-3 text-left transition-colors',
+                          alreadyHave
+                            ? 'opacity-40 cursor-not-allowed bg-gray-50'
+                            : isSelected
+                              ? 'bg-primary/5 hover:bg-primary/10'
+                              : 'hover:bg-gray-50',
+                        ].join(' ')}
+                      >
+                        {/* Чекбокс */}
+                        <div
+                          className={[
+                            'w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors',
+                            alreadyHave
+                              ? 'border-gray-300 bg-gray-100'
+                              : isSelected
+                                ? 'border-primary bg-primary'
+                                : 'border-gray-300',
+                          ].join(' ')}
+                        >
+                          {(isSelected || alreadyHave) && (
+                            <Check className={`w-3 h-3 ${alreadyHave ? 'text-gray-400' : 'text-white'}`} />
                           )}
                         </div>
-                        {alreadyHave && <span className="text-xs text-gray-400 flex-shrink-0">есть</span>}
+
+                        {/* Название */}
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-semibold text-gray-900 truncate">
+                            {t.name}
+                          </span>
+                          {t.template_type && t.template_type !== 'global' && (
+                            <span className="ml-2 kicker">
+                              {t.brand}{t.model ? ` · ${t.model}` : ''}
+                            </span>
+                          )}
+                        </div>
+
+                        {alreadyHave && (
+                          <span className="badge badge-gray flex-shrink-0">есть</span>
+                        )}
                       </button>
                     )
                   })}
@@ -425,6 +585,7 @@ export default function PartsCategories() {
           </>
         )}
       </div>
+
       <ConfirmDialog {...dialogProps} />
     </div>
   )

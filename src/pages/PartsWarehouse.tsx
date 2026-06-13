@@ -75,7 +75,7 @@ export default function PartsWarehouse() {
         .eq('parts_company_id', partsCompanyId!)
         .not('storage_location_id', 'is', null)
       const map: Record<string, number> = {}
-      ;(data || []).forEach((row: any) => {
+      ;(data || []).forEach((row: { storage_location_id: string | null }) => {
         if (row.storage_location_id)
           map[row.storage_location_id] = (map[row.storage_location_id] || 0) + 1
       })
@@ -160,7 +160,7 @@ export default function PartsWarehouse() {
   if (!partsCompanyId) {
     return (
       <div className="min-h-dvh bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Нет доступа к разборке</p>
+        <p className="text-gray-500">Нет доступа к разборке</p>
       </div>
     )
   }
@@ -178,19 +178,21 @@ export default function PartsWarehouse() {
         actions={
           <button
             onClick={() => { setAddingParentId(null); setAddingName('') }}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
+            className="btn-primary btn-sm flex items-center gap-1.5"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Добавить</span>
           </button>
         }
       />
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5 space-y-4">
+
         {/* Add root form */}
         {addingParentId === null && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
-            <p className="text-sm text-gray-500 mb-2">Место верхнего уровня (бокс, зона, секция…)</p>
+          <div className="card p-4 animate-slide-up">
+            <p className="kicker mb-2">Место верхнего уровня</p>
+            <p className="text-xs text-gray-500 mb-3">Бокс, зона, секция…</p>
             <form onSubmit={handleAdd} className="flex gap-2">
               <input
                 type="text"
@@ -198,200 +200,255 @@ export default function PartsWarehouse() {
                 value={addingName}
                 onChange={e => setAddingName(e.target.value)}
                 placeholder="Например: Бокс 1"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-base"
+                className="form-input flex-1"
               />
-              <button type="submit" disabled={!addingName.trim() || createMutation.isPending}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50">
-                <Check className="w-5 h-5" />
+              <button
+                type="submit"
+                disabled={!addingName.trim() || createMutation.isPending}
+                className="btn-primary px-3 min-h-[40px]"
+              >
+                <Check className="w-4 h-4" />
               </button>
-              <button type="button" onClick={cancelAdd}
-                className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">
-                <X className="w-5 h-5" />
+              <button
+                type="button"
+                onClick={cancelAdd}
+                className="btn-secondary px-3 min-h-[40px]"
+              >
+                <X className="w-4 h-4" />
               </button>
             </form>
           </div>
         )}
 
+        {/* Main content */}
         {isLoading ? (
-          <div className="flex justify-center py-12">
+          <div className="flex justify-center py-16">
             <Spinner size="xl" />
           </div>
         ) : locations.length === 0 && addingParentId === undefined ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <Warehouse className="w-14 h-14 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-700 font-semibold mb-1">Нет мест хранения</p>
-            <p className="text-sm text-gray-400 mb-5">
-              Создайте иерархию вашего склада.<br />
-              Например: <span className="text-gray-600">Бокс 1 → Стеллаж 2 → Полка 3 → Ячейка 4</span>
-            </p>
-            <button
-              onClick={() => { setAddingParentId(null); setAddingName('') }}
-              className="px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium"
-            >
-              Создать первое место
-            </button>
-          </div>
-        ) : locations.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="divide-y divide-gray-100">
-              {flatList.map((node) => {
-                const usage = usageMap[node.id] || 0
-                const hasChildren = node.children.length > 0
-                const isExpanded = expanded.has(node.id)
-                const isEditing = editingId === node.id
-                const isAddingChild = addingParentId === node.id
-
-                return (
-                  <div key={node.id}>
-                    {/* Node row */}
-                    <div
-                      className="flex items-center gap-2 py-2.5 pr-3 hover:bg-gray-50 transition-colors"
-                      style={{ paddingLeft: `${12 + node.depth * 24}px` }}
-                    >
-                      {/* Expand toggle */}
-                      <button
-                        type="button"
-                        onClick={() => hasChildren && toggleExpand(node.id)}
-                        className={`w-6 h-6 flex items-center justify-center flex-shrink-0 rounded transition-colors ${
-                          hasChildren ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-100' : ''
-                        }`}
-                      >
-                        {hasChildren
-                          ? isExpanded
-                            ? <ChevronDown className="w-4 h-4" />
-                            : <ChevronRight className="w-4 h-4" />
-                          : <span className="w-4 h-4" />
-                        }
-                      </button>
-
-                      {/* Folder / pin icon */}
-                      <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
-                        {hasChildren
-                          ? isExpanded
-                            ? <FolderOpen className="w-4 h-4 text-amber-500" />
-                            : <Folder className="w-4 h-4 text-amber-500" />
-                          : <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                        }
-                      </div>
-
-                      {/* Name or edit input */}
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          autoFocus
-                          value={editingName}
-                          onChange={e => setEditingName(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' && editingName.trim())
-                              updateMutation.mutate({ id: node.id, name: editingName.trim() })
-                            if (e.key === 'Escape') setEditingId(null)
-                          }}
-                          className="flex-1 px-2 py-1 border border-primary rounded-lg focus:ring-2 focus:ring-primary text-sm"
-                        />
-                      ) : (
-                        <div className="flex-1 min-w-0">
-                          <span className="font-medium text-gray-900 text-sm">{node.name}</span>
-                          {usage > 0 && (
-                            <span className="ml-2 text-xs text-gray-400">{usage} запч.</span>
-                          )}
-                          {hasChildren && !isExpanded && (
-                            <span className="ml-1 text-xs text-gray-400">({node.children.length})</span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Action buttons */}
-                      <div className="flex items-center gap-0.5 flex-shrink-0">
-                        {isEditing ? (
-                          <>
-                            <button
-                              onClick={() => editingName.trim() && updateMutation.mutate({ id: node.id, name: editingName.trim() })}
-                              disabled={updateMutation.isPending}
-                              className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            ><Check className="w-4 h-4" /></button>
-                            <button
-                              onClick={() => setEditingId(null)}
-                              className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors"
-                            ><X className="w-4 h-4" /></button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => startAddChild(node.id)}
-                              title="Добавить вложенное место"
-                              className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
-                            ><Plus className="w-4 h-4" /></button>
-                            <button
-                              onClick={() => { setEditingId(node.id); setEditingName(node.name) }}
-                              className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors"
-                            ><Pencil className="w-4 h-4" /></button>
-                            <button
-                              onClick={() => handleDelete(node)}
-                              disabled={deleteMutation.isPending}
-                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            ><Trash2 className="w-4 h-4" /></button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Inline add-child form */}
-                    {isAddingChild && (
-                      <div
-                        className="bg-indigo-50 border-t border-indigo-100 px-3 py-3"
-                        style={{ paddingLeft: `${12 + (node.depth + 1) * 24 + 12 + 6}px` }}
-                      >
-                        <p className="text-xs text-indigo-600 mb-2">Вложенное в «{node.name}»</p>
-                        <form onSubmit={handleAdd} className="flex gap-2">
-                          <input
-                            type="text"
-                            autoFocus
-                            value={addingName}
-                            onChange={e => setAddingName(e.target.value)}
-                            placeholder="Название..."
-                            className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm"
-                          />
-                          <button type="submit" disabled={!addingName.trim() || createMutation.isPending}
-                            className="px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50">
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button type="button" onClick={cancelAdd}
-                            className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">
-                            <X className="w-4 h-4" />
-                          </button>
-                        </form>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Footer add button */}
-            <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+          /* Empty state */
+          <div className="card">
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <Warehouse className="w-7 h-7 text-gray-400" />
+              </div>
+              <p className="empty-state-title">Нет мест хранения</p>
+              <p className="empty-state-text">
+                Создайте иерархию склада.<br />
+                Например:{' '}
+                <span className="text-gray-700 font-medium">
+                  Бокс 1 → Стеллаж 2 → Полка 3 → Ячейка 4
+                </span>
+              </p>
               <button
                 onClick={() => { setAddingParentId(null); setAddingName('') }}
-                className="flex items-center gap-2 text-sm text-primary hover:underline font-medium"
+                className="btn-primary mt-5"
               >
                 <Plus className="w-4 h-4" />
-                Добавить место верхнего уровня
+                Создать первое место
               </button>
             </div>
           </div>
-        )}
+        ) : locations.length > 0 ? (
+          <>
+            {/* Tree card */}
+            <div className="card p-0 overflow-hidden">
+              <div className="grid-hairline">
+                {flatList.map((node) => {
+                  const usage = usageMap[node.id] || 0
+                  const hasChildren = node.children.length > 0
+                  const isExpanded = expanded.has(node.id)
+                  const isEditing = editingId === node.id
+                  const isAddingChild = addingParentId === node.id
 
-        {/* Help hint */}
-        {locations.length > 0 && (
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700">
-            <p className="font-medium mb-1">Как пользоваться</p>
-            <ul className="text-xs space-y-0.5 text-blue-600 list-disc list-inside">
-              <li>Нажмите <strong>+</strong> у любого места, чтобы добавить вложенное</li>
-              <li>При добавлении запчасти выберите место из списка</li>
-              <li>Пример: <strong>Бокс 1 → Стеллаж 3 → Полка 2 → Ячейка 5</strong></li>
-            </ul>
-          </div>
-        )}
+                  return (
+                    <div key={node.id}>
+                      {/* Node row */}
+                      <div
+                        className="flex items-center gap-2 py-2.5 pr-3 hover:bg-gray-50 transition-colors"
+                        style={{ paddingLeft: `${12 + node.depth * 24}px` }}
+                      >
+                        {/* Expand toggle */}
+                        <button
+                          type="button"
+                          onClick={() => hasChildren && toggleExpand(node.id)}
+                          className={[
+                            'w-7 h-7 flex items-center justify-center flex-shrink-0 rounded transition-colors',
+                            hasChildren
+                              ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 cursor-pointer'
+                              : 'cursor-default',
+                          ].join(' ')}
+                        >
+                          {hasChildren ? (
+                            isExpanded
+                              ? <ChevronDown className="w-4 h-4" />
+                              : <ChevronRight className="w-4 h-4" />
+                          ) : (
+                            <span className="w-4 h-4" />
+                          )}
+                        </button>
+
+                        {/* Folder / pin icon */}
+                        <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                          {hasChildren ? (
+                            isExpanded
+                              ? <FolderOpen className="w-4 h-4 text-amber-500" />
+                              : <Folder className="w-4 h-4 text-amber-500" />
+                          ) : (
+                            <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                          )}
+                        </div>
+
+                        {/* Name or inline edit */}
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            autoFocus
+                            value={editingName}
+                            onChange={e => setEditingName(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' && editingName.trim())
+                                updateMutation.mutate({ id: node.id, name: editingName.trim() })
+                              if (e.key === 'Escape') setEditingId(null)
+                            }}
+                            className="form-input flex-1 py-1.5 text-sm"
+                          />
+                        ) : (
+                          <div className="flex-1 min-w-0 flex items-baseline gap-2">
+                            <span className="font-semibold text-gray-900 text-sm truncate">
+                              {node.name}
+                            </span>
+                            {usage > 0 && (
+                              <span className="badge badge-blue tabular shrink-0">
+                                {usage} запч.
+                              </span>
+                            )}
+                            {hasChildren && !isExpanded && (
+                              <span className="text-xs text-gray-400 shrink-0">
+                                ({node.children.length})
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                          {isEditing ? (
+                            <>
+                              <button
+                                onClick={() =>
+                                  editingName.trim() &&
+                                  updateMutation.mutate({ id: node.id, name: editingName.trim() })
+                                }
+                                disabled={updateMutation.isPending}
+                                className="btn-icon-sm text-green-600 hover:bg-green-50"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                className="btn-icon-sm"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => startAddChild(node.id)}
+                                title="Добавить вложенное место"
+                                className="btn-icon-sm hover:text-primary hover:bg-primary/5"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => { setEditingId(node.id); setEditingName(node.name) }}
+                                className="btn-icon-sm hover:text-primary"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(node)}
+                                disabled={deleteMutation.isPending}
+                                className="btn-icon-sm hover:text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Inline add-child form */}
+                      {isAddingChild && (
+                        <div
+                          className="bg-blue-50 border-t border-blue-100 px-3 py-3 animate-slide-up"
+                          style={{ paddingLeft: `${12 + (node.depth + 1) * 24 + 18}px` }}
+                        >
+                          <p className="kicker text-blue-600 mb-2">
+                            Вложенное в «{node.name}»
+                          </p>
+                          <form onSubmit={handleAdd} className="flex gap-2">
+                            <input
+                              type="text"
+                              autoFocus
+                              value={addingName}
+                              onChange={e => setAddingName(e.target.value)}
+                              placeholder="Название…"
+                              className="form-input flex-1 py-1.5 text-sm"
+                            />
+                            <button
+                              type="submit"
+                              disabled={!addingName.trim() || createMutation.isPending}
+                              className="btn-primary px-3 min-h-[40px]"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={cancelAdd}
+                              className="btn-secondary px-3 min-h-[40px]"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </form>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Footer add button */}
+              <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/60">
+                <button
+                  onClick={() => { setAddingParentId(null); setAddingName('') }}
+                  className="btn-ghost btn-sm flex items-center gap-1.5 text-primary hover:bg-primary/5"
+                >
+                  <Plus className="w-4 h-4" />
+                  Добавить место верхнего уровня
+                </button>
+              </div>
+            </div>
+
+            {/* Help hint */}
+            <div className="alert alert-info">
+              <div className="icon-tile-sm bg-blue-100 text-blue-600 flex-shrink-0">
+                <Warehouse className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm mb-1">Как пользоваться</p>
+                <ul className="text-xs space-y-0.5 list-disc list-inside">
+                  <li>Нажмите <strong>+</strong> у любого места, чтобы добавить вложенное</li>
+                  <li>При добавлении запчасти выберите место из списка</li>
+                  <li>Пример: <strong>Бокс 1 → Стеллаж 3 → Полка 2 → Ячейка 5</strong></li>
+                </ul>
+              </div>
+            </div>
+          </>
+        ) : null}
       </div>
+
       <ConfirmDialog {...dialogProps} />
     </div>
   )
