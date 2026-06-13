@@ -7,15 +7,30 @@ import { formatDate } from '@/utils/date'
 import { PartsOrder, CreatePartsOrderItemInput } from '@/types/parts'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Plus, Trash2, Edit2, Search, CheckCircle, MapPin, Truck } from 'lucide-react'
-import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import {
+  ArrowLeft, Plus, Trash2, Edit2, Search,
+  CheckCircle, MapPin, Truck, User, Package,
+} from 'lucide-react'
 import { formatCurrency, formatPrice } from '@/utils/currency'
-import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
-import { updatePartsOrderTotal, getAvailablePartsInventory, getPartsCustomersDropdown, updatePartsOrder, updatePartsOrderStatus, deletePartsOrder, deletePartsOrderItem, createPartsOrderItem, createPartsCustomer, updatePartsCustomer } from '@/services/partsService'
+import { getPartsOrderStatusText } from '@/utils/status'
+import {
+  updatePartsOrderTotal, getAvailablePartsInventory,
+  getPartsCustomersDropdown, updatePartsOrder, updatePartsOrderStatus,
+  deletePartsOrder, deletePartsOrderItem, createPartsOrderItem,
+  createPartsCustomer, updatePartsCustomer,
+} from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { moveToTrash } from '@/services/trashService'
+
+/* ── локальная карта статус → badge-класс ────────────────────── */
+const STATUS_BADGE: Record<string, string> = {
+  new:         'badge badge-blue',
+  in_progress: 'badge badge-yellow',
+  completed:   'badge badge-green',
+  cancelled:   'badge badge-gray',
+}
 
 export default function PartsOrderDetails() {
   const { id } = useParams<{ id: string }>()
@@ -31,13 +46,13 @@ export default function PartsOrderDetails() {
 
   const { rate: exchangeRate } = usePartsExchangeRate()
 
-  // Поля «Клиент и доставка»
+  /* ── поля «Клиент и доставка» ───────────────────────────────── */
   const [customerFullName, setCustomerFullName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerCity, setCustomerCity] = useState('')
   const [customerNpOffice, setCustomerNpOffice] = useState('')
 
-  // Получить заказ с деталями
+  /* ── запрос заказа ──────────────────────────────────────────── */
   const { data: order, isLoading } = useQuery({
     queryKey: ['parts-order', id],
     queryFn: async () => {
@@ -47,7 +62,7 @@ export default function PartsOrderDetails() {
     enabled: !!id,
   })
 
-  // Удалить позицию из заказа
+  /* ── удалить позицию ────────────────────────────────────────── */
   const deleteItemMutation = useMutation({
     mutationFn: ({ itemId, inventoryItemId }: { itemId: string; inventoryItemId: string }) =>
       deletePartsOrderItem(itemId, inventoryItemId),
@@ -60,10 +75,9 @@ export default function PartsOrderDetails() {
     onError: () => toast.error('Ошибка при удалении позиции'),
   })
 
-  // Изменить статус заказа
+  /* ── изменить статус ────────────────────────────────────────── */
   const updateStatusMutation = useMutation({
     mutationFn: async (status: string) => {
-      // При переходе в in_progress или completed: если клиента ещё нет, но есть данные — создаём и привязываем
       if ((status === 'in_progress' || status === 'completed') && !order?.customer_id) {
         await createAndAttachCustomer(id!)
       }
@@ -82,7 +96,7 @@ export default function PartsOrderDetails() {
     },
   })
 
-  // Удалить заказ целиком (только владелец)
+  /* ── удалить заказ целиком (только владелец) ────────────────── */
   const deleteOrderMutation = useMutation({
     mutationFn: async () => {
       if (!id) return
@@ -97,7 +111,6 @@ export default function PartsOrderDetails() {
       await deletePartsOrder(id, inventoryIds)
     },
     onSuccess: () => {
-      // Сразу убираем заказ из всех кэшей списка (чтобы не «висел» до рефетча)
       queryClient.setQueriesData({ queryKey: ['parts-orders'] }, (old: any) =>
         Array.isArray(old) ? old.filter((o: any) => o?.id !== id) : old
       )
@@ -112,13 +125,11 @@ export default function PartsOrderDetails() {
     },
   })
 
-  const canEdit = order && (order.status === 'new' || order.status === 'in_progress')
-  const isAdmin = useIsAdmin()
-  const isOwner = useHasRole('parts_owner') || isAdmin
-  // Owner can always manage the order; workers only when new/in_progress
+  const canEdit   = order && (order.status === 'new' || order.status === 'in_progress')
+  const isAdmin   = useIsAdmin()
+  const isOwner   = useHasRole('parts_owner') || isAdmin
   const canManage = Boolean(order) && (!!canEdit || isOwner)
 
-  // Префилл полей клиента при загрузке/изменении заказа
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (order?.customer) {
@@ -129,7 +140,7 @@ export default function PartsOrderDetails() {
     }
   }, [order?.customer?.id])
 
-  // Вспомогательная функция: создать клиента и привязать к заказу
+  /* ── вспомогательная: создать клиента и привязать ───────────── */
   const createAndAttachCustomer = async (orderId: string) => {
     if (!partsCompanyId) return null
     if (!customerFullName.trim() && !customerPhone.trim()) return null
@@ -146,12 +157,11 @@ export default function PartsOrderDetails() {
     return created
   }
 
-  // Мутация сохранения данных клиента
+  /* ── сохранение данных клиента ──────────────────────────────── */
   const saveCustomerMutation = useMutation({
     mutationFn: async () => {
       if (!order) throw new Error('Нет заказа')
       if (order.customer_id) {
-        // Обновляем существующего клиента
         const phoneUpdate = customerPhone.trim() ? { phone: customerPhone.trim() } : {}
         await updatePartsCustomer(order.customer_id, {
           full_name: customerFullName.trim() || undefined,
@@ -160,7 +170,6 @@ export default function PartsOrderDetails() {
           ...phoneUpdate,
         })
       } else {
-        // Создаём нового и привязываем
         await createAndAttachCustomer(order.id)
       }
     },
@@ -174,8 +183,7 @@ export default function PartsOrderDetails() {
     onError: (err: any) => toast.error(err?.message || 'Ошибка сохранения данных клиента'),
   })
 
-  // Compute total client-side so it's always correct regardless of DB stored value
-  // Use price_at_sale_currency from order item; fall back to inventory item's price_currency
+  /* ── вычисляем итог на клиенте ──────────────────────────────── */
   const getItemCurrency = (item: any): 'UAH' | 'USD' =>
     item.price_at_sale_currency || item.inventory_item?.price_currency || 'USD'
 
@@ -186,90 +194,212 @@ export default function PartsOrderDetails() {
   const hasUSD = (order?.items ?? []).some((i: any) => getItemCurrency(i) === 'USD')
   const hasUAH = (order?.items ?? []).some((i: any) => getItemCurrency(i) === 'UAH')
 
-  if (!partsCompanyId) {
-    return <PartsAccessDenied />
-  }
+  /* ── guard: нет компании ────────────────────────────────────── */
+  if (!partsCompanyId) return <PartsAccessDenied />
 
+  /* ── loading ────────────────────────────────────────────────── */
   if (isLoading) {
     return (
       <div className="min-h-dvh bg-gray-50 flex items-center justify-center">
-        <Spinner size="md" className="inline-block" />
+        <Spinner size="md" />
       </div>
     )
   }
 
+  /* ── not found ──────────────────────────────────────────────── */
   if (!order) {
     return (
-      <div className="min-h-dvh bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-gray-600">Заказ не найден</p>
-        </div>
+      <div className="min-h-dvh bg-gray-50 flex flex-col items-center justify-center gap-3 p-4">
+        <Package className="w-12 h-12 text-gray-300" />
+        <p className="text-gray-500">Заказ не найден</p>
+        <button
+          onClick={() => navigate('/parts/orders')}
+          className="text-primary text-sm hover:underline"
+        >
+          Вернуться к заказам
+        </button>
       </div>
     )
   }
 
-  return (
-    <div className="min-h-dvh bg-gray-50 pb-20">
-      <PartsPageHeader
-        title={order.order_number}
-        backPath="/parts/orders"
-        actions={
-          <>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPartsOrderStatusColor(order.status)}`}>
-              {getPartsOrderStatusText(order.status)}
-            </span>
-            {isOwner && (
-              <button
-                onClick={async () => {
-                  const ok = await showConfirm({ message: `Удалить заказ ${order.order_number}? Забронированные запчасти вернутся в статус "В наличии".`, danger: true })
-                  if (!ok) return
-                  deleteOrderMutation.mutate()
-                }}
-                disabled={deleteOrderMutation.isPending}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-sm font-medium"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Удалить</span>
-              </button>
-            )}
-          </>
-        }
-      />
+  const statusBadgeCls = STATUS_BADGE[order.status] ?? 'badge badge-gray'
 
-      {/* Content */}
-      <div className="w-full py-4 sm:py-8 space-y-6">
-        {/* Status Actions */}
+  return (
+    <div className="min-h-dvh bg-gray-50 pb-24">
+
+      {/* ── sticky шапка ────────────────────────────────────────── */}
+      <div className="bg-white border-b sticky top-0 z-20 glass">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="h-14 sm:h-16 flex items-center justify-between gap-3">
+
+            {/* back + заголовок */}
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <button
+                onClick={() => navigate('/parts/orders')}
+                className="btn-icon flex-shrink-0"
+                aria-label="Назад"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="min-w-0">
+                <h1 className="page-title truncate">{order.order_number}</h1>
+                <p className="text-xs text-gray-400 hidden sm:block">
+                  {formatDate(order.order_date)}
+                </p>
+              </div>
+            </div>
+
+            {/* статус-бейдж + действия */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className={statusBadgeCls}>
+                {getPartsOrderStatusText(order.status)}
+              </span>
+
+              {canManage && (
+                <button
+                  onClick={() => setShowEditModal(true)}
+                  className="btn-icon"
+                  aria-label="Редактировать"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              )}
+
+              {isOwner && (
+                <button
+                  onClick={async () => {
+                    const ok = await showConfirm({
+                      message: `Удалить заказ ${order.order_number}? Забронированные запчасти вернутся в статус «В наличии».`,
+                      danger: true,
+                    })
+                    if (!ok) return
+                    deleteOrderMutation.mutate()
+                  }}
+                  disabled={deleteOrderMutation.isPending}
+                  className="btn-icon text-red-500 hover:bg-red-50"
+                  aria-label="Удалить заказ"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── основной контент ─────────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-5">
+
+        {/* ── hero-карточка: инфо + клиент + итог ─────────────────── */}
+        <div className="card overflow-hidden">
+
+          {/* блок: дата + примечание */}
+          <div className="flex flex-wrap gap-x-8 gap-y-3 pb-4 border-b border-gray-100">
+            <div>
+              <p className="kicker mb-1">Дата заказа</p>
+              <p className="text-sm font-semibold text-gray-900">{formatDate(order.order_date)}</p>
+            </div>
+            {order.notes && (
+              <div className="flex-1 min-w-0">
+                <p className="kicker mb-1">Примечание</p>
+                <p className="text-sm text-gray-700 line-clamp-2">{order.notes}</p>
+              </div>
+            )}
+          </div>
+
+          {/* блок: клиент/доставка + сумма */}
+          <div className="pt-4 flex flex-col sm:flex-row gap-4 sm:gap-0 sm:divide-x sm:divide-gray-100">
+
+            {/* клиент */}
+            <div className="flex-1 sm:pr-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="icon-tile-sm bg-blue-50 text-blue-600">
+                  <User className="w-4 h-4" />
+                </span>
+                <span className="kicker">Клиент</span>
+              </div>
+
+              {order.customer ? (
+                <dl className="space-y-1.5 text-sm">
+                  <div className="flex gap-2">
+                    <dt className="text-gray-400 w-20 flex-shrink-0">ФИО</dt>
+                    <dd className="font-semibold text-gray-900">{order.customer.full_name}</dd>
+                  </div>
+                  {order.customer.phone && (
+                    <div className="flex gap-2">
+                      <dt className="text-gray-400 w-20 flex-shrink-0">Телефон</dt>
+                      <dd className="font-medium text-gray-700">{order.customer.phone}</dd>
+                    </div>
+                  )}
+                  {(order.customer as any).city && (
+                    <div className="flex gap-2 items-start">
+                      <dt className="text-gray-400 w-20 flex-shrink-0 flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5" />Город
+                      </dt>
+                      <dd className="font-medium text-gray-700">{(order.customer as any).city}</dd>
+                    </div>
+                  )}
+                  {(order.customer as any).np_office && (
+                    <div className="flex gap-2 items-start">
+                      <dt className="text-gray-400 w-20 flex-shrink-0 flex items-center gap-1">
+                        <Truck className="w-3.5 h-3.5" />НП
+                      </dt>
+                      <dd className="font-medium text-gray-700">{(order.customer as any).np_office}</dd>
+                    </div>
+                  )}
+                </dl>
+              ) : (
+                <p className="text-sm text-gray-400 italic">Клиент не указан</p>
+              )}
+            </div>
+
+            {/* итого */}
+            <div className="sm:pl-6 flex flex-col justify-center">
+              <p className="kicker mb-1">Итого</p>
+              <p className="text-3xl font-extrabold text-primary tabular tracking-tight">
+                {formatCurrency(computedTotalUAH)}
+              </p>
+              {hasUSD && hasUAH && (
+                <p className="text-xs text-gray-400 mt-1">курс {exchangeRate || 41}&nbsp;₴/$</p>
+              )}
+              <p className="text-xs text-gray-400 mt-0.5">
+                {order.items?.length || 0} поз.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── смена статуса ─────────────────────────────────────────── */}
         {canManage && (
-          <div className="stat-card">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Статус заказа:
-            </label>
+          <div className="card">
+            <p className="kicker mb-3">Статус заказа</p>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => updateStatusMutation.mutate('new')}
-                disabled={order.status === 'new'}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed ${
+                disabled={order.status === 'new' || updateStatusMutation.isPending}
+                className={`btn btn-sm ${
                   order.status === 'new'
-                    ? 'bg-blue-600 text-white opacity-60'
-                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                    ? 'btn-primary opacity-60 cursor-not-allowed'
+                    : 'btn-secondary'
                 }`}
               >
                 Новый
               </button>
               <button
                 onClick={() => updateStatusMutation.mutate('in_progress')}
-                disabled={order.status === 'in_progress'}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed ${
+                disabled={order.status === 'in_progress' || updateStatusMutation.isPending}
+                className={`btn btn-sm ${
                   order.status === 'in_progress'
-                    ? 'bg-yellow-500 text-white opacity-60'
-                    : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+                    ? 'bg-yellow-500 text-white opacity-60 cursor-not-allowed rounded-md px-3 py-1.5 text-xs font-semibold inline-flex items-center justify-center'
+                    : 'btn-secondary'
                 }`}
               >
                 В работе
               </button>
               <button
                 onClick={() => updateStatusMutation.mutate('cancelled')}
-                className="px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={updateStatusMutation.isPending}
+                className="btn btn-sm btn-ghost"
               >
                 Отменить
               </button>
@@ -277,80 +407,16 @@ export default function PartsOrderDetails() {
           </div>
         )}
 
-        {/* Order Information */}
-        <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Информация о заказе</h2>
-            {canManage && (
-              <button
-                onClick={() => setShowEditModal(true)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <Edit2 className="w-5 h-5 text-gray-600" />
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Дата заказа</p>
-              <p className="text-base font-medium text-gray-900">{formatDate(order.order_date)}</p>
-            </div>
-
-            {order.customer && (
-              <>
-                <div>
-                  <p className="text-sm text-gray-500">Клиент</p>
-                  <p className="text-base font-medium text-gray-900">{order.customer.full_name}</p>
-                </div>
-                {order.customer.phone && (
-                  <div>
-                    <p className="text-sm text-gray-500">Телефон</p>
-                    <p className="text-base font-medium text-gray-900">{order.customer.phone}</p>
-                  </div>
-                )}
-                {(order.customer as any).city && (
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm text-gray-500">Город</p>
-                      <p className="text-base font-medium text-gray-900">{(order.customer as any).city}</p>
-                    </div>
-                  </div>
-                )}
-                {(order.customer as any).np_office && (
-                  <div className="flex items-center gap-1.5">
-                    <Truck className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm text-gray-500">Отделение НП</p>
-                      <p className="text-base font-medium text-gray-900">{(order.customer as any).np_office}</p>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            <div>
-              <p className="text-sm text-gray-500">Общая сумма</p>
-              <p className="text-2xl font-bold text-primary">{formatCurrency(computedTotalUAH)}</p>
-              {hasUSD && hasUAH && (
-                <p className="text-xs text-gray-400 mt-0.5">С курсом {exchangeRate || 41} ₴/$</p>
-              )}
-            </div>
-          </div>
-
-          {order.notes && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-sm text-gray-500 mb-1">Примечание</p>
-              <p className="text-base text-gray-900">{order.notes}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Клиент и доставка */}
+        {/* ── блок «Клиент и доставка» (редактирование) ─────────────── */}
         {canManage && (
-          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Клиент и доставка</h2>
+          <div className="card">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="icon-tile-sm bg-blue-50 text-blue-600">
+                <Truck className="w-4 h-4" />
+              </span>
+              <h2 className="heading-3">Клиент и доставка</h2>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="form-label">ФИО клиента</label>
@@ -369,7 +435,7 @@ export default function PartsOrderDetails() {
                     type="tel"
                     value={order.customer.phone}
                     readOnly
-                    className="form-input bg-gray-50 text-gray-500 cursor-not-allowed"
+                    className="form-input opacity-60 cursor-not-allowed"
                   />
                 ) : (
                   <input
@@ -402,6 +468,7 @@ export default function PartsOrderDetails() {
                 />
               </div>
             </div>
+
             <div className="mt-4 flex justify-end">
               <button
                 onClick={() => saveCustomerMutation.mutate()}
@@ -409,111 +476,133 @@ export default function PartsOrderDetails() {
                   saveCustomerMutation.isPending ||
                   (!customerFullName.trim() && !customerPhone.trim() && !customerCity.trim() && !customerNpOffice.trim())
                 }
-                className="btn-primary w-full sm:w-auto disabled:opacity-50"
+                className="btn-primary disabled:opacity-50"
               >
-                {saveCustomerMutation.isPending ? 'Сохранение...' : 'Сохранить данные клиента'}
+                {saveCustomerMutation.isPending ? 'Сохранение…' : 'Сохранить данные клиента'}
               </button>
             </div>
           </div>
         )}
 
-        {/* Order Items */}
-        <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-6">
+        {/* ── позиции заказа ─────────────────────────────────────────── */}
+        <div className="card">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Позиции заказа ({order.items?.length || 0})
-            </h2>
+            <div className="flex items-center gap-2">
+              <span className="icon-tile-sm bg-slate-100 text-slate-600">
+                <Package className="w-4 h-4" />
+              </span>
+              <h2 className="heading-3">
+                Позиции
+                <span className="ml-1.5 text-gray-400 font-normal text-base">
+                  ({order.items?.length || 0})
+                </span>
+              </h2>
+            </div>
             {canManage && (
               <button
                 onClick={() => setShowAddItemModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm"
+                className="btn-primary btn-sm gap-1.5"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Добавить</span>
               </button>
             )}
           </div>
 
           {!order.items || order.items.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <p>Нет позиций в заказе</p>
+            <div className="empty-state py-10">
+              <div className="empty-state-icon">
+                <Package className="w-7 h-7 text-gray-400" />
+              </div>
+              <p className="empty-state-title">Нет позиций</p>
+              <p className="empty-state-text">Добавьте первую позицию в заказ</p>
               {canManage && (
                 <button
                   onClick={() => setShowAddItemModal(true)}
-                  className="mt-2 text-primary hover:underline"
+                  className="mt-3 btn-primary btn-sm"
                 >
-                  Добавить первую позицию
+                  <Plus className="w-3.5 h-3.5" />
+                  Добавить позицию
                 </button>
               )}
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="grid-hairline rounded-lg overflow-hidden border border-gray-100">
               {order.items.map((item) => (
                 <div
                   key={item.id}
-                  className={`border rounded-lg p-4 transition-colors ${
-                    item.inventory_item_id == null
-                      ? 'border-gray-100 bg-gray-50 opacity-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                  className={`flex items-start justify-between gap-4 px-4 py-3.5 bg-white hover:bg-gray-50 transition-colors ${
+                    item.inventory_item_id == null ? 'opacity-50' : ''
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 mb-1">
-                        {item.inventory_item?.name ?? <span className="italic text-gray-400">Запчасть удалена</span>}
-                      </h3>
-                      <div className="text-sm text-gray-600 space-y-1">
-                        {item.inventory_item?.part_number && (
-                          <p>Артикул: {item.inventory_item.part_number}</p>
-                        )}
-                        {item.inventory_item?.category && (
-                          <p>Категория: {item.inventory_item.category.name}</p>
-                        )}
-                        <p>Количество: {item.quantity} шт.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <div className="text-right">
-                        <p className="text-base font-semibold text-gray-500">
-                          {formatPrice(item.price_at_sale, getItemCurrency(item))}
-                        </p>
-                        <p className="text-lg font-bold text-gray-900">
-                          {formatPrice(
-                            (item.price_at_sale || 0) * (item.quantity || 1),
-                            getItemCurrency(item)
-                          )}
-                        </p>
-                      </div>
-                      {canManage && (
-                        <button
-                          onClick={async () => {
-                            const ok = await showConfirm({ message: 'Удалить позицию из заказа?', danger: true })
-                            if (!ok) return
-                            deleteItemMutation.mutate({
-                              itemId: item.id,
-                              inventoryItemId: item.inventory_item_id,
-                            })
-                          }}
-                          className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </button>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 leading-snug">
+                      {item.inventory_item?.name ?? (
+                        <span className="italic text-gray-400">Запчасть удалена</span>
                       )}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {item.inventory_item?.part_number && (
+                        <span>{item.inventory_item.part_number} · </span>
+                      )}
+                      {item.inventory_item?.category && (
+                        <span>{item.inventory_item.category.name} · </span>
+                      )}
+                      <span>{item.quantity} шт.</span>
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400 tabular">
+                        {formatPrice(item.price_at_sale, getItemCurrency(item))} / шт.
+                      </p>
+                      <p className="text-sm font-bold text-gray-900 tabular">
+                        {formatPrice(
+                          (item.price_at_sale || 0) * (item.quantity || 1),
+                          getItemCurrency(item)
+                        )}
+                      </p>
                     </div>
+                    {canManage && (
+                      <button
+                        onClick={async () => {
+                          const ok = await showConfirm({ message: 'Удалить позицию из заказа?', danger: true })
+                          if (!ok) return
+                          deleteItemMutation.mutate({
+                            itemId: item.id,
+                            inventoryItemId: item.inventory_item_id,
+                          })
+                        }}
+                        className="btn-icon-sm text-red-400 hover:text-red-600 hover:bg-red-50"
+                        aria-label="Удалить позицию"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
+
+              {/* строка итого */}
+              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-100">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Итого</span>
+                <span className="text-base font-extrabold text-primary tabular">
+                  {formatCurrency(computedTotalUAH)}
+                </span>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Complete Order Button */}
+        {/* ── кнопка «Завершить» ────────────────────────────────────── */}
         {canManage && order.status !== 'completed' && order.items && order.items.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 sm:static sm:bg-transparent sm:border-0 sm:shadow-none sm:p-0">
+          <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-sm border-t border-gray-100 px-4 py-3 sm:static sm:bg-transparent sm:border-0 sm:backdrop-blur-none sm:px-0 sm:py-0"
+               style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
+          >
             <button
               onClick={() => setShowCompleteModal(true)}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors font-medium"
+              className="btn-success btn-lg gap-2 w-full sm:w-auto"
             >
               <CheckCircle className="w-5 h-5" />
               Завершить заказ
@@ -522,7 +611,7 @@ export default function PartsOrderDetails() {
         )}
       </div>
 
-      {/* Modals */}
+      {/* ── модалки ─────────────────────────────────────────────────── */}
       {showAddItemModal && (
         <AddItemModal
           orderId={order.id}
@@ -546,12 +635,15 @@ export default function PartsOrderDetails() {
           isLoading={updateStatusMutation.isPending}
         />
       )}
+
       <ConfirmDialog {...dialogProps} />
     </div>
   )
 }
 
-// Add Item Modal Component
+/* ══════════════════════════════════════════════════════════════════
+   AddItemModal
+══════════════════════════════════════════════════════════════════ */
 interface AddItemModalProps {
   orderId: string
   partsCompanyId: string
@@ -567,7 +659,6 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
   const [price, setPrice] = useState(0)
   const [currency, setCurrency] = useState<'UAH' | 'USD'>('UAH')
 
-  // Получить доступный инвентарь
   const { data: inventory = [] } = useQuery({
     queryKey: ['parts-inventory-for-order', partsCompanyId],
     queryFn: () => getAvailablePartsInventory(partsCompanyId),
@@ -575,11 +666,8 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
 
   const filteredInventory = inventory.filter(item => {
     if (!searchQuery) return true
-    const query = searchQuery.toLowerCase()
-    return (
-      item.name.toLowerCase().includes(query) ||
-      item.part_number?.toLowerCase().includes(query)
-    )
+    const q = searchQuery.toLowerCase()
+    return item.name.toLowerCase().includes(q) || item.part_number?.toLowerCase().includes(q)
   })
 
   const addItemMutation = useMutation({
@@ -607,10 +695,9 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
   const handleAdd = () => {
     if (!selectedItem || quantity <= 0 || price <= 0) return
     if (quantity > selectedItem.quantity) {
-      alert(`Недостаточно запчастей на складе. Доступно: ${selectedItem.quantity}`)
+      toast.error(`Недостаточно запчастей. Доступно: ${selectedItem.quantity}`)
       return
     }
-
     addItemMutation.mutate({
       inventory_item_id: selectedItem.id,
       quantity,
@@ -620,152 +707,143 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-dvh items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose} />
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal-sheet sm:max-w-2xl animate-slide-up"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-handle" />
 
-        <div className="inline-block align-bottom bg-white rounded-t-2xl sm:rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Добавить позицию
-            </h3>
+        <div className="modal-header">
+          <h3 className="heading-3">Добавить позицию</h3>
+          <button onClick={onClose} className="btn-icon-sm">✕</button>
+        </div>
 
-            {/* Search */}
-            <div className="mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Поиск запчасти..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
+        <div className="modal-body space-y-4">
+          {/* поиск */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Поиск запчасти…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="modal-input pl-9"
+            />
+          </div>
 
-            {/* Inventory List */}
-            <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg mb-4">
-              {filteredInventory.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">
-                  Запчасти не найдены
-                </div>
-              ) : (
-                <div className="divide-y">
-                  {filteredInventory.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => handleSelectItem(item)}
-                      className={`w-full p-3 text-left hover:bg-gray-50 transition-colors ${
-                        selectedItem?.id === item.id ? 'bg-blue-50' : ''
-                      }`}
-                    >
-                      <div className="font-medium text-gray-900">{item.name}</div>
-                      <div className="text-sm text-gray-600">
-                        {item.part_number && <span>Артикул: {item.part_number} • </span>}
-                        {(item.category as any)?.name && <span>{(item.category as any).name} • </span>}
-                        <span>В наличии: {item.quantity} шт. • </span>
-                        <span className="font-medium">{formatPrice(item.selling_price || 0, (item.price_currency || 'USD') as 'UAH' | 'USD')}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Selected Item Details */}
-            {selectedItem && (
-              <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">
-                    Выбрано: {selectedItem.name}
+          {/* список инвентаря */}
+          <div className="max-h-56 overflow-y-auto rounded-lg border border-gray-100 grid-hairline">
+            {filteredInventory.length === 0 ? (
+              <div className="py-6 text-center text-sm text-gray-500">Запчасти не найдены</div>
+            ) : (
+              filteredInventory.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleSelectItem(item)}
+                  className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
+                    selectedItem?.id === item.id ? 'bg-blue-50' : 'bg-white'
+                  }`}
+                >
+                  <p className="text-sm font-semibold text-gray-900">{item.name}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {item.part_number && <span>{item.part_number} · </span>}
+                    {(item.category as any)?.name && <span>{(item.category as any).name} · </span>}
+                    <span>В наличии: {item.quantity} шт. · </span>
+                    <span className="font-semibold text-gray-700">
+                      {formatPrice(item.selling_price || 0, (item.price_currency || 'USD') as 'UAH' | 'USD')}
+                    </span>
                   </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Количество *
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max={selectedItem.quantity}
-                      value={quantity}
-                      onChange={(e) => setQuantity(Number(e.target.value))}
-                      className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      Макс: {selectedItem.quantity}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Цена продажи *
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={price}
-                        onChange={(e) => setPrice(Number(e.target.value))}
-                        className="flex-1 min-w-0 px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                      <div className="flex gap-1 flex-shrink-0">
-                        {(['UAH', 'USD'] as const).map(c => (
-                          <button
-                            type="button"
-                            key={c}
-                            onClick={() => setCurrency(c)}
-                            className={`px-2.5 py-2 rounded-md text-sm font-semibold transition-colors ${
-                              currency === c
-                                ? 'bg-primary text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
-                          >
-                            {c === 'UAH' ? '₴' : '$'}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <p className="mt-1 text-xs text-gray-500">Заполнено из прайса, можно изменить</p>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-gray-200">
-                  <p className="text-lg font-semibold text-gray-900">
-                    Итого: {formatPrice(quantity * price, currency)}
-                  </p>
-                </div>
-              </div>
+                </button>
+              ))
             )}
           </div>
 
-          <div className="bg-gray-50 px-4 py-3 sm:px-6 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-secondary flex-1 sm:flex-none"
-            >
-              Отмена
-            </button>
-            <button
-              onClick={handleAdd}
-              disabled={!selectedItem || addItemMutation.isPending || quantity <= 0 || price <= 0}
-              className="btn-primary flex-1 sm:flex-none disabled:opacity-50"
-            >
-              {addItemMutation.isPending ? 'Добавление...' : 'Добавить'}
-            </button>
-          </div>
+          {/* выбранный товар: кол-во + цена */}
+          {selectedItem && (
+            <div className="rounded-xl bg-blue-50/60 border border-blue-100 p-4 space-y-4">
+              <p className="text-sm font-semibold text-gray-800">
+                Выбрано: {selectedItem.name}
+              </p>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="form-label">Количество *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={selectedItem.quantity}
+                    value={quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    className="form-input"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Макс: {selectedItem.quantity}</p>
+                </div>
+
+                <div>
+                  <label className="form-label">Цена продажи *</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={price}
+                      onChange={(e) => setPrice(Number(e.target.value))}
+                      className="form-input flex-1 min-w-0"
+                    />
+                    <div className="flex gap-1 flex-shrink-0">
+                      {(['UAH', 'USD'] as const).map(c => (
+                        <button
+                          type="button"
+                          key={c}
+                          onClick={() => setCurrency(c)}
+                          className={`px-2.5 rounded-md text-sm font-bold transition-colors min-h-[38px] ${
+                            currency === c
+                              ? 'btn-primary px-2.5'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {c === 'UAH' ? '₴' : '$'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Из прайса, можно изменить</p>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-blue-100">
+                <p className="text-sm text-gray-500">
+                  Итого:{' '}
+                  <span className="text-base font-bold text-gray-900 tabular">
+                    {formatPrice(quantity * price, currency)}
+                  </span>
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="modal-footer">
+          <button type="button" onClick={onClose} className="modal-btn-cancel">
+            Отмена
+          </button>
+          <button
+            onClick={handleAdd}
+            disabled={!selectedItem || addItemMutation.isPending || quantity <= 0 || price <= 0}
+            className="modal-btn-primary disabled:opacity-50"
+          >
+            {addItemMutation.isPending ? 'Добавление…' : 'Добавить'}
+          </button>
         </div>
       </div>
     </div>
   )
 }
 
-// Edit Order Modal
+/* ══════════════════════════════════════════════════════════════════
+   EditOrderModal
+══════════════════════════════════════════════════════════════════ */
 interface EditOrderModalProps {
   order: PartsOrder
   partsCompanyId: string
@@ -792,72 +870,67 @@ function EditOrderModal({ order, partsCompanyId, onClose }: EditOrderModalProps)
   })
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-dvh items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose} />
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal-sheet animate-slide-up"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-handle" />
 
-        <div className="inline-block align-bottom bg-white rounded-t-2xl sm:rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Редактировать заказ
-            </h3>
+        <div className="modal-header">
+          <h3 className="heading-3">Редактировать заказ</h3>
+          <button onClick={onClose} className="btn-icon-sm">✕</button>
+        </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Клиент
-                </label>
-                <select
-                  value={customerId}
-                  onChange={(e) => setCustomerId(e.target.value)}
-                  className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="">Без клиента</option>
-                  {customers.map((customer) => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.full_name}
-                      {customer.phone && ` (${customer.phone})`}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Примечание
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                />
-              </div>
-            </div>
+        <div className="modal-body space-y-4">
+          <div>
+            <label className="form-label">Клиент</label>
+            <select
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+              className="form-select"
+            >
+              <option value="">Без клиента</option>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.full_name}
+                  {customer.phone && ` (${customer.phone})`}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="bg-gray-50 px-4 py-3 sm:px-6 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
-            <button
-              onClick={onClose}
-              className="btn-secondary flex-1 sm:flex-none"
-            >
-              Отмена
-            </button>
-            <button
-              onClick={() => updateMutation.mutate()}
-              disabled={updateMutation.isPending}
-              className="btn-primary flex-1 sm:flex-none disabled:opacity-50"
-            >
-              {updateMutation.isPending ? 'Сохранение...' : 'Сохранить'}
-            </button>
+          <div>
+            <label className="form-label">Примечание</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              className="form-input resize-none"
+            />
           </div>
+        </div>
+
+        <div className="modal-footer">
+          <button onClick={onClose} className="modal-btn-cancel">
+            Отмена
+          </button>
+          <button
+            onClick={() => updateMutation.mutate()}
+            disabled={updateMutation.isPending}
+            className="modal-btn-primary disabled:opacity-50"
+          >
+            {updateMutation.isPending ? 'Сохранение…' : 'Сохранить'}
+          </button>
         </div>
       </div>
     </div>
   )
 }
 
-// Confirm Complete Modal
+/* ══════════════════════════════════════════════════════════════════
+   ConfirmCompleteModal
+══════════════════════════════════════════════════════════════════ */
 interface ConfirmCompleteModalProps {
   onConfirm: () => void
   onClose: () => void
@@ -866,45 +939,43 @@ interface ConfirmCompleteModalProps {
 
 function ConfirmCompleteModal({ onConfirm, onClose, isLoading }: ConfirmCompleteModalProps) {
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-dvh items-center justify-center px-4 text-center sm:p-0">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose} />
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal-sheet animate-slide-up"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-handle" />
 
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6">
-            <div className="sm:flex sm:items-start">
-              <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  Завершить заказ?
-                </h3>
-                <div className="mt-2">
-                  <p className="text-sm text-gray-500">
-                    При завершении заказа количество запчастей в инвентаре будет автоматически уменьшено. 
-                    Это действие нельзя будет отменить.
-                  </p>
-                </div>
-              </div>
-            </div>
+        <div className="modal-header">
+          <div className="flex items-center gap-3">
+            <span className="icon-tile bg-green-100 text-green-700">
+              <CheckCircle className="w-5 h-5" />
+            </span>
+            <h3 className="heading-3">Завершить заказ?</h3>
           </div>
+        </div>
 
-          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
-            <button
-              onClick={onConfirm}
-              disabled={isLoading}
-              className="btn-success sm:ml-3 w-full sm:w-auto disabled:opacity-50"
-            >
-              {isLoading ? 'Завершение...' : 'Да, завершить'}
-            </button>
-            <button
-              onClick={onClose}
-              className="mt-3 sm:mt-0 btn-secondary w-full sm:w-auto"
-            >
-              Отмена
-            </button>
+        <div className="modal-body">
+          <div className="alert alert-warning">
+            <p>
+              При завершении заказа количество запчастей в инвентаре будет автоматически уменьшено.
+              Это действие нельзя отменить.
+            </p>
           </div>
+        </div>
+
+        <div className="modal-footer">
+          <button onClick={onClose} className="modal-btn-cancel">
+            Отмена
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="flex-1 py-3 text-sm font-semibold text-white rounded-lg disabled:opacity-50 transition-all btn-success"
+            style={{ backgroundImage: 'linear-gradient(180deg, #16A34A 0%, #15803D 100%)' }}
+          >
+            {isLoading ? 'Завершение…' : 'Да, завершить'}
+          </button>
         </div>
       </div>
     </div>

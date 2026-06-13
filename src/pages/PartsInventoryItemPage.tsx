@@ -4,9 +4,9 @@ import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
-  ArrowLeft, Trash2, DollarSign, Package,
+  ArrowLeft, Trash2, Package,
   MapPin, Tag, Car, FileText, AlertTriangle,
-  Share2, Edit2, Copy, Warehouse,
+  Share2, Edit2, Copy, Warehouse, CheckCircle2,
 } from 'lucide-react'
 import { getPartsInventoryItem, deletePartsInventoryItem, getStorageLocations } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
@@ -20,17 +20,22 @@ import ShareModal from '@/components/ui/ShareModal'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
+/* ── Status config ──────────────────────────────────────────────── */
 const STATUS_LABEL: Record<PartsInventoryStatus, string> = {
-  available: 'В наличии', reserved: 'Резерв',
-  sold: 'Продано', damaged: 'Повреждено',
-}
-const STATUS_CLS: Record<PartsInventoryStatus, string> = {
-  available: 'bg-green-100 text-green-800 border-green-200',
-  reserved: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  sold: 'bg-gray-100 text-gray-600 border-gray-200',
-  damaged: 'bg-red-100 text-red-800 border-red-200',
+  available: 'В наличии',
+  reserved: 'Резерв',
+  sold: 'Продано',
+  damaged: 'Повреждено',
 }
 
+const STATUS_CLS: Record<PartsInventoryStatus, string> = {
+  available: 'badge badge-green',
+  reserved:  'badge badge-yellow',
+  sold:      'badge badge-gray',
+  damaged:   'badge badge-red',
+}
+
+/* ── Component ──────────────────────────────────────────────────── */
 export default function PartsInventoryItemPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -45,7 +50,7 @@ export default function PartsInventoryItemPage() {
     enabled: !!id,
   })
 
-  // Привязанное место хранения (дерево стеллаж → полка → ячейка)
+  /* Storage location breadcrumb */
   const { data: locations = [] } = useQuery({
     queryKey: ['parts-storage-locations', profile?.parts_company_id],
     queryFn: () => getStorageLocations(profile!.parts_company_id!),
@@ -66,6 +71,7 @@ export default function PartsInventoryItemPage() {
     return path
   })()
 
+  /* Delete mutation */
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (item) {
@@ -87,25 +93,40 @@ export default function PartsInventoryItemPage() {
   })
 
   const handleDelete = async () => {
-    const ok = await showConfirm({ message: `Удалить "${item?.name}"? Это действие нельзя отменить.`, danger: true })
+    const ok = await showConfirm({
+      message: `Удалить "${item?.name}"? Это действие нельзя отменить.`,
+      danger: true,
+    })
     if (!ok) return
     deleteMutation.mutate()
   }
 
   const photos = item?.photos || []
   const isSold = item?.status === 'sold'
-  const lowStock = !item?.vehicle_id && item?.quantity! <= 2 && item?.status === 'available'
+  const lowStock = !item?.vehicle_id && (item?.quantity ?? 0) <= 2 && item?.status === 'available'
 
+  /* ── Loading ── */
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-dvh"><Spinner size="xl" /></div>
+    return (
+      <div className="flex items-center justify-center min-h-dvh">
+        <Spinner size="xl" />
+      </div>
+    )
   }
 
+  /* ── Not found ── */
   if (error || !item) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-dvh gap-4">
-        <Package className="w-12 h-12 text-gray-300" />
-        <p className="text-gray-500">Запчасть не найдена</p>
-        <button onClick={() => navigate('/parts/inventory')} className="text-primary hover:underline">
+      <div className="empty-state min-h-dvh">
+        <div className="empty-state-icon">
+          <Package className="w-8 h-8 text-gray-400" />
+        </div>
+        <p className="empty-state-title">Запчасть не найдена</p>
+        <p className="empty-state-text">Возможно, она была удалена или перемещена</p>
+        <button
+          onClick={() => navigate('/parts/inventory')}
+          className="btn btn-secondary btn-sm mt-4"
+        >
           Вернуться к инвентарю
         </button>
       </div>
@@ -113,33 +134,39 @@ export default function PartsInventoryItemPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50">
-      {/* Sticky header */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+    <div className="min-h-dvh bg-background">
+
+      {/* ── Sticky header ────────────────────────────────────────── */}
+      <div className="sticky top-0 z-20 bg-white border-b border-gray-100"
+           style={{ boxShadow: '0 1px 3px rgba(0,0,0,.06)' }}>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
+
+          {/* Back */}
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900"
+            className="btn-icon flex-shrink-0"
+            aria-label="Назад"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline text-sm font-medium">Назад</span>
           </button>
 
-          <h1 className="text-sm sm:text-base font-bold text-gray-900 truncate flex-1">
+          {/* Title */}
+          <h1 className="page-title flex-1 truncate text-sm sm:text-base">
             {item.name}
           </h1>
 
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          {/* Actions */}
+          <div className="flex items-center gap-1 flex-shrink-0">
             <button
               onClick={() => setShareOpen(true)}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="btn-icon"
               title="Поделиться"
             >
               <Share2 className="w-4 h-4" />
             </button>
             <button
               onClick={() => navigate('/parts/inventory', { state: { editItemId: id } })}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="btn-icon"
               title="Редактировать"
             >
               <Edit2 className="w-4 h-4" />
@@ -147,7 +174,7 @@ export default function PartsInventoryItemPage() {
             <button
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
-              className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              className="btn-icon text-red-500 hover:bg-red-50 hover:text-red-600"
               title="Удалить"
             >
               <Trash2 className="w-4 h-4" />
@@ -156,11 +183,11 @@ export default function PartsInventoryItemPage() {
         </div>
       </div>
 
-      {/* ══ ЕДИНОЕ ДОСЬЕ ══════════════════════════════════════════════ */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-5">
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+      {/* ── Content ──────────────────────────────────────────────── */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-5 animate-fade-in">
+        <div className="card p-0 overflow-hidden">
 
-          {/* Фото */}
+          {/* Photo gallery */}
           {photos.length > 0 ? (
             <PhotoGallery
               photos={photos as any[]}
@@ -169,29 +196,37 @@ export default function PartsInventoryItemPage() {
               objectFit="cover"
             />
           ) : (
-            <div className="aspect-[16/10] bg-gray-50 flex items-center justify-center text-gray-300">
-              <Package className="w-16 h-16" />
+            <div className="aspect-[16/10] bg-gray-50 flex flex-col items-center justify-center gap-2 text-gray-300 border-b border-gray-100">
+              <Package className="w-14 h-14" />
+              <span className="kicker text-gray-400">Фото отсутствуют</span>
             </div>
           )}
 
-          {/* Шапка: статус, название, номер, цена, продать */}
+          {/* ── Hero: статус · название · артикул · цена · продать ── */}
           <div className="p-4 sm:p-5">
+
+            {/* Status badges */}
             <div className="flex flex-wrap gap-1.5 mb-3">
-              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold border ${STATUS_CLS[item.status]}`}>
+              <span className={STATUS_CLS[item.status]}>
+                {item.status === 'available' && <span className="status-dot status-dot-pulse bg-green-500" />}
+                {item.status === 'sold'      && <CheckCircle2 className="w-3 h-3" />}
                 {STATUS_LABEL[item.status]}
               </span>
               {lowStock && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-red-100 text-red-700 border border-red-200">
-                  <AlertTriangle className="w-3 h-3" /> Мало
+                <span className="badge badge-red">
+                  <AlertTriangle className="w-3 h-3" />
+                  Мало на складе
                 </span>
               )}
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">{item.name}</h1>
+            {/* Name */}
+            <h2 className="heading-2 leading-tight mb-3">{item.name}</h2>
 
+            {/* Part number */}
             {item.part_number && (
-              <div className="mt-3">
-                <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mb-1">Оригинальный номер</p>
+              <div className="mb-4">
+                <p className="kicker mb-1.5">Оригинальный номер</p>
                 <button
                   type="button"
                   onClick={() => {
@@ -199,9 +234,9 @@ export default function PartsInventoryItemPage() {
                     toast.success('Номер скопирован')
                   }}
                   title="Нажмите, чтобы скопировать"
-                  className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border-2 border-primary/25 shadow-md hover:border-primary/50 hover:shadow-lg active:scale-95 transition-all"
+                  className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border-2 border-primary/25 shadow-sm hover:border-primary/50 hover:shadow-md active:scale-95 transition-all"
                 >
-                  <span className="font-mono font-bold tracking-wider text-gray-800 uppercase">
+                  <span className="font-mono font-bold tracking-wider text-gray-800 uppercase tabular">
                     {item.part_number.toUpperCase()}
                   </span>
                   <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-primary transition-colors" />
@@ -209,118 +244,143 @@ export default function PartsInventoryItemPage() {
               </div>
             )}
 
-            {/* Цена + Продать */}
-            <div className="mt-4 flex flex-col sm:flex-row gap-3">
+            {/* Price + sell */}
+            <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 p-3.5 rounded-xl bg-primary/5 border border-primary/15 flex flex-col justify-center">
                 {isSold ? (
                   <>
-                    <p className="text-[10px] uppercase tracking-wide text-gray-400 font-medium mb-0.5">Продано за</p>
-                    <p className="text-2xl font-bold text-gray-500">
-                      {item.sold_price ? formatPrice(item.sold_price, (item.price_currency as 'UAH' | 'USD') || 'USD') : '—'}
+                    <p className="kicker mb-1">Продано за</p>
+                    <p className="text-2xl font-bold text-gray-500 tabular">
+                      {item.sold_price
+                        ? formatPrice(item.sold_price, (item.price_currency as 'UAH' | 'USD') || 'USD')
+                        : '—'}
                     </p>
                   </>
                 ) : item.selling_price ? (
                   <>
-                    <p className="text-[10px] uppercase tracking-wide text-gray-400 font-medium mb-0.5">Цена</p>
-                    <p className="text-3xl font-bold text-primary leading-none">
+                    <p className="kicker mb-1">Цена продажи</p>
+                    <p className="text-3xl font-bold text-primary leading-none tabular">
                       {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
                     </p>
                   </>
                 ) : (
-                  <p className="text-sm text-amber-600 font-medium">Цена не указана</p>
+                  <p className="text-sm text-amber-600 font-semibold">Цена не указана</p>
                 )}
               </div>
+
               {!isSold && (
                 <button
                   onClick={() => setIsSellOpen(true)}
-                  className="sm:w-44 flex items-center justify-center gap-2 py-3 bg-green-600 text-white text-sm font-semibold rounded-xl shadow-sm hover:bg-green-700 active:scale-[0.99] transition-all"
+                  className="btn btn-success btn-lg sm:w-44 justify-center"
                 >
-                  <DollarSign className="w-4 h-4" /> Продать
+                  Продать
                 </button>
               )}
             </div>
           </div>
 
-          {/* Характеристики — строки */}
-          <div className="border-t border-gray-100 px-4 sm:px-5">
+          {/* ── Характеристики ──────────────────────────────────── */}
+          <div className="border-t border-gray-100 px-4 sm:px-5 panel-divided">
             <dl className="divide-y divide-gray-100 text-sm">
+
               {item.category && (
                 <div className="flex items-center justify-between gap-3 py-2.5">
-                  <dt className="text-gray-500 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-gray-400" /> Категория</dt>
-                  <dd className="font-semibold text-gray-900 text-right">{item.category.name}</dd>
+                  <dt className="text-gray-500 flex items-center gap-1.5 min-w-0">
+                    <Tag className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    Категория
+                  </dt>
+                  <dd className="font-semibold text-gray-900 text-right truncate">{item.category.name}</dd>
                 </div>
               )}
+
               {item.condition && (
                 <div className="flex items-center justify-between gap-3 py-2.5">
                   <dt className="text-gray-500">Состояние</dt>
-                  <dd className="font-semibold text-gray-900 text-right">{PARTS_CONDITION_LABELS[item.condition] || item.condition}</dd>
+                  <dd className="font-semibold text-gray-900 text-right">
+                    {PARTS_CONDITION_LABELS[item.condition] || item.condition}
+                  </dd>
                 </div>
               )}
+
               {!item.vehicle_id && (
                 <div className="flex items-center justify-between gap-3 py-2.5">
                   <dt className="text-gray-500">Количество</dt>
-                  <dd className={`font-semibold text-right ${lowStock ? 'text-red-600' : 'text-gray-900'}`}>{item.quantity} шт</dd>
+                  <dd className={`font-semibold text-right tabular ${lowStock ? 'text-red-600' : 'text-gray-900'}`}>
+                    {item.quantity} шт
+                  </dd>
                 </div>
               )}
+
               <div className="flex items-center justify-between gap-3 py-2.5">
                 <dt className="text-gray-500">Добавлена</dt>
-                <dd className="font-medium text-gray-900 text-right">{new Date(item.created_at).toLocaleDateString('ru-RU')}</dd>
+                <dd className="font-medium text-gray-900 text-right tabular">
+                  {new Date(item.created_at).toLocaleDateString('ru-RU')}
+                </dd>
               </div>
+
             </dl>
           </div>
 
-          {/* Снята с авто */}
+          {/* ── Снята с авто ───────────────────────────────────── */}
           {item.vehicle && (
             <button
               onClick={() => navigate(`/parts/vehicles/${item.vehicle_id}`)}
-              className="w-full border-t border-gray-100 p-4 sm:p-5 text-left hover:bg-gray-50 transition-colors"
+              className="w-full border-t border-gray-100 p-4 sm:p-5 text-left hover:bg-gray-50 transition-colors group"
             >
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                <Car className="w-3.5 h-3.5" /> Снята с авто
-              </h2>
-              <p className="text-sm font-semibold text-gray-900">
-                {item.vehicle.make} {item.vehicle.model}{(item.vehicle as any).year ? ` (${(item.vehicle as any).year})` : ''}
+              <p className="kicker flex items-center gap-1.5 mb-2">
+                <Car className="w-3.5 h-3.5" />
+                Снята с авто
+              </p>
+              <p className="text-sm font-semibold text-gray-900 group-hover:text-primary transition-colors">
+                {item.vehicle.make} {item.vehicle.model}
+                {(item.vehicle as any).year ? ` (${(item.vehicle as any).year})` : ''}
               </p>
               {(item.vehicle as any).vin && (
-                <p className="text-xs text-gray-400 font-mono mt-0.5">VIN: {(item.vehicle as any).vin}</p>
+                <p className="text-xs text-gray-400 font-mono mt-0.5 tabular">
+                  VIN: {(item.vehicle as any).vin}
+                </p>
               )}
             </button>
           )}
 
-          {/* Расположение на складе */}
+          {/* ── Расположение на складе ─────────────────────────── */}
           {(locationPath.length > 0 || item.location || item.shelf || item.bin) && (
             <div className="border-t border-gray-100 p-4 sm:p-5">
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2.5 flex items-center gap-1.5">
-                <Warehouse className="w-3.5 h-3.5" /> Расположение на складе
-              </h2>
+              <p className="kicker flex items-center gap-1.5 mb-3">
+                <Warehouse className="w-3.5 h-3.5" />
+                Расположение на складе
+              </p>
+
               {locationPath.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1 mb-2">
+                <div className="flex flex-wrap items-center gap-1 mb-2.5">
                   {locationPath.map((name, i) => (
                     <span key={i} className="inline-flex items-center gap-1">
-                      {i > 0 && <span className="text-gray-300">/</span>}
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-semibold ${i === locationPath.length - 1 ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-gray-50 text-gray-600 border border-gray-200'}`}>
-                        {i === locationPath.length - 1 && <MapPin className="w-3.5 h-3.5" />}
+                      {i > 0 && <span className="text-gray-300 text-xs">/</span>}
+                      <span className={`badge ${i === locationPath.length - 1 ? 'badge-blue' : 'badge-gray'}`}>
+                        {i === locationPath.length - 1 && <MapPin className="w-3 h-3" />}
                         {name}
                       </span>
                     </span>
                   ))}
                 </div>
               )}
+
               {(item.location || item.shelf || item.bin) && (
                 <div className="flex flex-wrap gap-2">
                   {item.location && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 text-sm font-semibold">
-                      <MapPin className="w-3.5 h-3.5" /> {item.location}
+                    <span className="badge badge-blue">
+                      <MapPin className="w-3 h-3" />
+                      {item.location}
                     </span>
                   )}
                   {item.shelf && (
-                    <span className="inline-flex items-center px-2.5 py-1.5 rounded-lg bg-gray-50 text-gray-700 border border-gray-200 text-sm">
-                      Полка <span className="font-semibold ml-1">{item.shelf}</span>
+                    <span className="badge badge-gray">
+                      Полка&nbsp;<span className="font-bold">{item.shelf}</span>
                     </span>
                   )}
                   {item.bin && (
-                    <span className="inline-flex items-center px-2.5 py-1.5 rounded-lg bg-gray-50 text-gray-700 border border-gray-200 text-sm">
-                      Ячейка <span className="font-semibold ml-1">{item.bin}</span>
+                    <span className="badge badge-gray">
+                      Ячейка&nbsp;<span className="font-bold">{item.bin}</span>
                     </span>
                   )}
                 </div>
@@ -328,27 +388,33 @@ export default function PartsInventoryItemPage() {
             </div>
           )}
 
-          {/* Описание */}
+          {/* ── Описание ───────────────────────────────────────── */}
           {item.description && (
             <div className="border-t border-gray-100 p-4 sm:p-5">
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5" /> Описание
-              </h2>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{item.description}</p>
+              <p className="kicker flex items-center gap-1.5 mb-2">
+                <FileText className="w-3.5 h-3.5" />
+                Описание
+              </p>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                {item.description}
+              </p>
             </div>
           )}
 
-          {/* Заметки */}
+          {/* ── Заметки ────────────────────────────────────────── */}
           {item.notes && (
             <div className="border-t border-gray-100 p-4 sm:p-5">
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Заметки</h2>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed italic">{item.notes}</p>
+              <p className="kicker mb-2">Заметки</p>
+              <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed italic">
+                {item.notes}
+              </p>
             </div>
           )}
 
         </div>
       </div>
 
+      {/* ── Modals ───────────────────────────────────────────────── */}
       <ConfirmDialog {...dialogProps} />
 
       {isSellOpen && profile?.parts_company_id && (
@@ -367,7 +433,13 @@ export default function PartsInventoryItemPage() {
           title="Поделиться запчастью"
           subtitle="Ссылка открывает карточку запчасти"
           shareTitle={item.name}
-          shareText={[item.name, item.vehicle ? `${item.vehicle.make} ${item.vehicle.model}` : '', item.selling_price ? formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD') : ''].filter(Boolean).join(' · ')}
+          shareText={[
+            item.name,
+            item.vehicle ? `${item.vehicle.make} ${item.vehicle.model}` : '',
+            item.selling_price
+              ? formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')
+              : '',
+          ].filter(Boolean).join(' · ')}
         />
       )}
     </div>

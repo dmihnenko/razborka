@@ -6,7 +6,7 @@ import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { CreatePartsOrderInput } from '@/types/parts'
 import { createPartsOrder } from '@/services/partsService'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Users as UsersIcon } from 'lucide-react'
+import { Plus, Info } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 
 export default function PartsCreateOrder() {
@@ -61,31 +61,34 @@ export default function PartsCreateOrder() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50">
+    <div className="min-h-dvh bg-gray-50 dark:bg-gray-950">
       <PartsPageHeader title="Создание заказа" backPath="/parts/orders" maxWidth="3xl" />
 
-      {/* Content */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-          {/* Customer Selection */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-6">
-            <div className="flex items-center gap-3 mb-4">
-              
-              <h2 className="text-lg font-semibold text-gray-900">Информация о клиенте</h2>
-            </div>
+      <div className="max-w-3xl mx-auto px-3 sm:px-5 lg:px-8 py-5 sm:py-7">
+        <form onSubmit={handleSubmit} className="space-y-4">
+
+          {/* Клиент */}
+          <div className="card p-5 sm:p-6">
+            <p className="kicker mb-1">клиент</p>
+            <h2 className="text-base font-bold text-gray-900 dark:text-slate-100 mb-4">
+              Информация о клиенте
+            </h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="customer_id" className="form-label">
                   Выберите клиента
                 </label>
                 {customersLoading ? (
-                  <div className="text-sm text-gray-500">Загрузка клиентов...</div>
+                  <p className="text-sm text-gray-500 py-2">Загрузка клиентов…</p>
                 ) : (
                   <select
+                    id="customer_id"
                     value={formData.customer_id || ''}
-                    onChange={(e) => setFormData({ ...formData, customer_id: e.target.value || undefined })}
-                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    onChange={(e) =>
+                      setFormData({ ...formData, customer_id: e.target.value || undefined })
+                    }
+                    className="form-select"
                   >
                     <option value="">Без клиента (розничная продажа)</option>
                     {customers.map((customer) => (
@@ -97,17 +100,19 @@ export default function PartsCreateOrder() {
                     ))}
                   </select>
                 )}
-                <p className="mt-2 text-sm text-gray-500">
+                <p className="mt-1.5 text-xs text-gray-500">
                   Клиент необязателен. Можно создать заказ без привязки к клиенту.
                 </p>
               </div>
 
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-sm text-gray-600">Нужного клиента нет в списке?</span>
+              <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-white/5">
+                <span className="text-sm text-gray-600 dark:text-slate-400">
+                  Нужного клиента нет в списке?
+                </span>
                 <button
                   type="button"
                   onClick={() => navigate('/parts/customers')}
-                  className="text-sm text-primary hover:text-primary/80 font-medium"
+                  className="btn-ghost text-sm text-primary font-medium"
                 >
                   Добавить клиента
                 </button>
@@ -115,82 +120,86 @@ export default function PartsCreateOrder() {
             </div>
           </div>
 
-          {/* Order Details */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Дополнительная информация</h2>
+          {/* Дополнительная информация */}
+          <div className="card p-5 sm:p-6">
+            <p className="kicker mb-1">примечание</p>
+            <h2 className="text-base font-bold text-gray-900 dark:text-slate-100 mb-4">
+              Дополнительная информация
+            </h2>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="notes" className="form-label">
                 Примечание к заказу
               </label>
               <textarea
+                id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={4}
-                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
-                placeholder="Дополнительная информация о заказе, особые пожелания клиента..."
+                className="form-input resize-none"
+                placeholder="Дополнительная информация о заказе, особые пожелания клиента…"
               />
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-1.5 text-xs text-gray-500">
                 Необязательное поле. Можно добавить любую полезную информацию.
               </p>
             </div>
           </div>
 
-          {/* Info Card */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex gap-3">
-              <div className="flex-shrink-0">
-                <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-blue-900 mb-1">Что дальше?</h3>
-                <p className="text-sm text-blue-800">
-                  После создания заказа вы перейдете на страницу заказа, где сможете добавить запчасти из склада, указать количество и цены.
-                </p>
-              </div>
+          {/* Подсказка */}
+          <div className="alert alert-info">
+            <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold mb-0.5">Что дальше?</p>
+              <p>
+                После создания заказа вы перейдёте на страницу заказа, где сможете добавить
+                запчасти из склада, указать количество и цены.
+              </p>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+          {/* Ошибка мутации */}
+          {createMutation.isError && (
+            <div className="alert alert-danger">
+              <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold">Ошибка при создании заказа. Попробуйте ещё раз.</p>
+                {(createMutation.error as Error)?.message && (
+                  <p className="text-xs mt-0.5 opacity-80">
+                    {(createMutation.error as Error).message}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Действия */}
+          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-1">
             <button
               type="button"
               onClick={() => navigate('/parts/orders')}
-              className="flex-1 sm:flex-none px-6 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              className="btn-secondary sm:w-auto w-full"
             >
               Отмена
             </button>
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="flex-1 sm:flex-auto px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="btn-primary sm:w-auto w-full flex items-center justify-center gap-2"
             >
               {createMutation.isPending ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Создание...
+                  <span className="inline-block w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  Создание…
                 </>
               ) : (
                 <>
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-4 h-4" />
                   Создать заказ
                 </>
               )}
             </button>
           </div>
 
-          {createMutation.isError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-800">
-                Ошибка при создании заказа. Попробуйте еще раз.
-              </p>
-              {(createMutation.error as any)?.message && (
-                <p className="text-xs text-red-600 mt-1">{(createMutation.error as any).message}</p>
-              )}
-            </div>
-          )}
         </form>
       </div>
     </div>
