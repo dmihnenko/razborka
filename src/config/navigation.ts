@@ -27,15 +27,17 @@ export const adminMenu: MenuItem[] = [
   { name: 'Поддержка', href: '/admin/support', icon: MessageCircle },
 ];
 
-// Меню для владельца разборки
+// Меню для владельца разборки.
+// Порядок = и для сайдбара, и для мобильного нижнего меню (первые 4 — табы):
+// Дашборд / Заказы / Запчасти / Клиенты — самые частые.
 export const partsOwnerMenu: MenuItem[] = [
   { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutGrid },
-  { name: 'Автомобили', href: '/parts/vehicles', icon: Car },
-  { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package },
-  { name: 'Магазин', href: '/parts/inventory?source=shop', icon: ShoppingBag },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart },
-  { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox },
+  { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package },
   { name: 'Клиенты', href: '/parts/customers', icon: Users },
+  { name: 'Автомобили', href: '/parts/vehicles', icon: Car },
+  { name: 'Магазин', href: '/parts/inventory?source=shop', icon: ShoppingBag },
+  { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox },
   { name: 'Сотрудники', href: '/parts/employees', icon: Users },
   { name: 'Аналитика', href: '/parts/analytics', icon: LineChart },
   { name: 'Подписка', href: '/parts/subscription', icon: CreditCard },
@@ -44,15 +46,15 @@ export const partsOwnerMenu: MenuItem[] = [
   { name: 'Профиль', href: '/profile', icon: CircleUser },
 ];
 
-// Меню для работника разборки
+// Меню для работника разборки (первые 4 — мобильные табы)
 export const partsWorkerMenu: MenuItem[] = [
   { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutGrid },
-  { name: 'Автомобили', href: '/parts/vehicles', icon: Car },
-  { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package },
-  { name: 'Магазин', href: '/parts/inventory?source=shop', icon: ShoppingBag },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart },
-  { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox },
+  { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package },
   { name: 'Клиенты', href: '/parts/customers', icon: Users },
+  { name: 'Автомобили', href: '/parts/vehicles', icon: Car },
+  { name: 'Магазин', href: '/parts/inventory?source=shop', icon: ShoppingBag },
+  { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox },
   { name: 'Профиль', href: '/profile', icon: CircleUser },
 ];
 

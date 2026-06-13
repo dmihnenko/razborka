@@ -98,7 +98,7 @@ export default function PartsEmployees() {
       />
 
       {/* Content */}
-      <div className="w-full py-4 sm:py-6">
+      <div className="page-container">
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4 sm:mb-6">

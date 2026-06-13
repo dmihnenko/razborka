@@ -310,15 +310,87 @@ const INVENTORY_SELECT = `
   sold_to_customer:parts_customers!sold_to_customer_id(id, full_name, phone)
 `
 
+export interface PartsDashboardStats {
+  vehicles: { total: number; awaiting: number; in_progress: number; dismantled: number }
+  inventory: { total: number; available: number; lowStock: number; noPrice: number; valueUSD: number; valueUAH: number; fromVehicles: number; fromShop: number }
+  orders: { total: number; new: number; in_progress: number; completed: number }
+  revenueUSD: number
+  customers: { total: number; withOrders: number }
+  marketOrders: number
+}
+
+/** Агрегаты дашборда одним RPC (вместо ~6 запросов с клиентской агрегацией полных таблиц). */
+export async function getPartsDashboardStats(partsCompanyId: string, rate = 41): Promise<PartsDashboardStats> {
+  const { data, error } = await supabase.rpc('get_parts_dashboard_stats', {
+    p_company: partsCompanyId,
+    p_rate: rate,
+  })
+  if (error) throw error
+  return data as PartsDashboardStats
+}
+
 export async function getPartsInventory(partsCompanyId: string) {
   const { data, error } = await supabase
     .from('parts_inventory')
     .select(INVENTORY_SELECT)
     .eq('parts_company_id', partsCompanyId)
     .order('created_at', { ascending: false })
-  
+
   if (error) throw error
   return data as PartsInventoryItem[]
+}
+
+/** Экранируем значение для PostgREST or()-фильтра (запятые/скобки ломают синтаксис) */
+function sanitizeInventorySearch(s: string): string {
+  return s.trim().replace(/[,()]/g, ' ').replace(/\s+/g, ' ')
+}
+
+export interface PartsInventoryPagedOpts {
+  page?: number
+  pageSize?: number
+  status?: string
+  vehicleId?: string
+  source?: 'vehicles' | 'shop'
+  search?: string
+}
+
+/** Серверная пагинация инвентаря (не заменяет getPartsInventory — для PartsInventory.tsx) */
+export async function getPartsInventoryPaged(
+  partsCompanyId: string,
+  opts: PartsInventoryPagedOpts = {}
+): Promise<{ items: PartsInventoryItem[]; total: number }> {
+  const { page = 1, pageSize = 50, status, vehicleId, source, search } = opts
+
+  let query = supabase
+    .from('parts_inventory')
+    .select(INVENTORY_SELECT, { count: 'exact' })
+    .eq('parts_company_id', partsCompanyId)
+
+  if (status && status !== 'all') {
+    query = query.eq('status', status)
+  }
+  if (vehicleId && vehicleId !== 'all') {
+    query = query.eq('vehicle_id', vehicleId)
+  }
+  if (source === 'vehicles') {
+    query = query.not('vehicle_id', 'is', null)
+  } else if (source === 'shop') {
+    query = query.is('vehicle_id', null)
+  }
+  if (search?.trim()) {
+    const s = sanitizeInventorySearch(search)
+    query = query.or(`name.ilike.%${s}%,part_number.ilike.%${s}%`)
+  }
+
+  const from = (page - 1) * pageSize
+  const to = page * pageSize - 1
+
+  const { data, error, count } = await query
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (error) throw error
+  return { items: (data ?? []) as PartsInventoryItem[], total: count ?? 0 }
 }
 
 export async function getPartsInventoryItem(id: string) {

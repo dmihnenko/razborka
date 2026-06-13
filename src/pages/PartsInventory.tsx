@@ -1,7 +1,7 @@
-import { useState, useEffect, useDeferredValue, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, Copy, Download, Zap } from 'lucide-react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
@@ -9,7 +9,7 @@ import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { InventoryCard } from '@/components/parts/InventoryCard'
-import { getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, duplicatePartsInventoryItem } from '@/services/partsService'
+import { getPartsInventoryPaged, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, duplicatePartsInventoryItem } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { uploadToImgbb, deletePhotosFromImgbb } from '@/services/imgbbService'
@@ -61,6 +61,7 @@ export default function PartsInventory() {
   const sourceFilter = searchParams.get('source') ?? 'vehicles' // 'vehicles' | 'shop'
   const { confirm: showConfirm, dialogProps } = useConfirm()
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('available')
   const [vehicleFilter, setVehicleFilter] = useState<string>('all') // vehicle_id or 'all'
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -95,11 +96,42 @@ export default function PartsInventory() {
   const partsCompanyId = profile?.parts_company_id
   const { canCreate, usage, limits } = useSubscriptionLimits()
 
-  const { data: inventory = [], isLoading } = useQuery({
-    queryKey: ['parts-inventory', partsCompanyId],
-    queryFn: () => getPartsInventory(partsCompanyId!),
-    enabled: !!partsCompanyId
+  // Debounce поиска ~300мс
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  const PAGE_SIZE = 50
+
+  const {
+    data: pagedData,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['parts-inventory', 'paged', partsCompanyId, debouncedSearch, statusFilter, vehicleFilter, sourceFilter],
+    queryFn: ({ pageParam = 1 }) =>
+      getPartsInventoryPaged(partsCompanyId!, {
+        page: pageParam as number,
+        pageSize: PAGE_SIZE,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        vehicleId: vehicleFilter !== 'all' ? vehicleFilter : undefined,
+        source: sourceFilter as 'vehicles' | 'shop',
+        search: debouncedSearch || undefined,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((s, p) => s + p.items.length, 0)
+      return loaded < lastPage.total ? allPages.length + 1 : undefined
+    },
+    enabled: !!partsCompanyId,
   })
+
+  // Суммарный массив загруженных элементов
+  const inventory: PartsInventoryItem[] = pagedData?.pages.flatMap(p => p.items) ?? []
+  const totalCount = pagedData?.pages[0]?.total ?? 0
 
   // Восстановление позиции прокрутки при возврате со страницы запчасти
   useEffect(() => {
@@ -111,45 +143,44 @@ export default function PartsInventory() {
       const el = scrollEl()
       if (el) el.scrollTop = Number(saved)
     })
-  }, [isLoading, inventory.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLoading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-open edit modal when navigated back with editItemId in state
   useEffect(() => {
     const editItemId = location.state?.editItemId
-    if (editItemId && inventory.length > 0) {
-      const found = inventory.find((i: PartsInventoryItem) => i.id === editItemId)
-      if (found) {
-        setEditingItem(found)
-        setIsModalOpen(true)
-      }
-      // Чистим состояние через роутер, иначе после сохранения refetch
-      // снова триггерит эффект и модалка открывается повторно
-      navigate(location.pathname + location.search, { replace: true, state: null })
+    if (!editItemId || inventory.length === 0) return
+    const found = inventory.find((i: PartsInventoryItem) => i.id === editItemId)
+    if (found) {
+      setEditingItem(found)
+      setIsModalOpen(true)
     }
-  }, [location.state, inventory]) // eslint-disable-line react-hooks/exhaustive-deps
+    // Чистим состояние через роутер, иначе после сохранения refetch
+    // снова триггерит эффект и модалка открывается повторно
+    navigate(location.pathname + location.search, { replace: true, state: null })
+  }, [location.state?.editItemId, inventory.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-open sell modal when navigated with sellItemId in state (from item page)
   useEffect(() => {
     const sellItemId = location.state?.sellItemId
-    if (sellItemId && inventory.length > 0) {
-      const found = inventory.find((i: PartsInventoryItem) => i.id === sellItemId)
-      if (found && found.status !== 'sold') {
-        setSellingItem(found)
-        setSellPrice(found.selling_price ? String(found.selling_price) : '')
-        setSellCurrency((found.price_currency as 'UAH' | 'USD') || 'USD')
-        setSellCustomerId('')
-        setShowNewCustomer(false)
-        setNewCustomerName('')
-        setNewCustomerPhone('')
-      }
-      navigate(location.pathname + location.search, { replace: true, state: null })
+    if (!sellItemId || inventory.length === 0) return
+    const found = inventory.find((i: PartsInventoryItem) => i.id === sellItemId)
+    if (found && found.status !== 'sold') {
+      setSellingItem(found)
+      setSellPrice(found.selling_price ? String(found.selling_price) : '')
+      setSellCurrency((found.price_currency as 'UAH' | 'USD') || 'USD')
+      setSellCustomerId('')
+      setShowNewCustomer(false)
+      setNewCustomerName('')
+      setNewCustomerPhone('')
     }
-  }, [location.state, inventory]) // eslint-disable-line react-hooks/exhaustive-deps
+    navigate(location.pathname + location.search, { replace: true, state: null })
+  }, [location.state?.sellItemId, inventory.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reset status filter when switching between Разборка / Магазин
+  // Reset filters when switching between Разборка / Магазин
   useEffect(() => {
     setStatusFilter('available')
     setSearchQuery('')
+    setDebouncedSearch('')
     setVehicleFilter('all')
     setSelectedIds(new Set())
   }, [sourceFilter])
@@ -269,18 +300,11 @@ export default function PartsInventory() {
     }
   })
 
-  // Filter by source first (for stats and list)
-  const inventoryBySource = inventory.filter((item: PartsInventoryItem) =>
-    sourceFilter === 'all' ||
-    (sourceFilter === 'vehicles' && !!item.vehicle_id) ||
-    (sourceFilter === 'shop' && !item.vehicle_id)
-  )
-
-  // Unique vehicles from current source for filter buttons
+  // Unique vehicles from loaded items for vehicle filter buttons (только в режиме Разборки)
   const uniqueVehicles = sourceFilter === 'vehicles'
     ? Array.from(
         new Map(
-          inventoryBySource
+          inventory
             .filter((i: PartsInventoryItem) => i.vehicle_id && i.vehicle)
             .map((i: PartsInventoryItem) => [i.vehicle_id, i.vehicle])
         ).entries()
@@ -292,23 +316,12 @@ export default function PartsInventory() {
   const effectiveVehicleFilter = singleVehicle ? singleVehicle.id : vehicleFilter
   const showVehicleButtons = uniqueVehicles.length > 1
 
-  // Filter inventory
-  // Бордер активного фильтра обновляется мгновенно (statusFilter), а тяжёлая
-  // перефильтрация списка идёт через deferred — клик по фильтру отзывчивый.
-  const deferredStatusFilter = useDeferredValue(statusFilter)
-  const filteredInventory = inventoryBySource.filter((item: PartsInventoryItem) => {
-    const matchesSearch = searchQuery === '' ||
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.part_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  // Фильтрация по авто на клиенте (только если vehicleFilter выбран и мы не передали его на сервер через singleVehicle)
+  const filteredInventory = singleVehicle
+    ? inventory.filter((i: PartsInventoryItem) => i.vehicle_id === singleVehicle.id)
+    : inventory
 
-    const matchesStatus = deferredStatusFilter === 'all' || item.status === deferredStatusFilter
-    const matchesVehicle = effectiveVehicleFilter === 'all' || item.vehicle_id === effectiveVehicleFilter
-    
-    return matchesSearch && matchesStatus && matchesVehicle
-  })
-
-  // Sort
+  // Сортировка загруженных элементов на клиенте
   const statusOrder: Record<PartsInventoryStatus, number> = { available: 0, reserved: 1, damaged: 2, sold: 3 }
   const filteredAndSorted = [...filteredInventory].sort((a: PartsInventoryItem, b: PartsInventoryItem) => {
     // Фильтр «Продано» — по давности продажи: свежие продажи сверху
@@ -330,36 +343,36 @@ export default function PartsInventory() {
     return sortDir === 'asc' ? cmp : -cmp
   })
 
-  // Statistics — scoped to current source section
+  // Статистика — по загруженным элементам текущего среза
   const stats = {
-    total: inventoryBySource.length,
-    totalQuantity: inventoryBySource.reduce((sum: number, item: PartsInventoryItem) => sum + item.quantity, 0),
-    available: inventoryBySource.filter((i: PartsInventoryItem) => i.status === 'available').length,
-    reserved: inventoryBySource.filter((i: PartsInventoryItem) => i.status === 'reserved').length,
-    sold: inventoryBySource.filter((i: PartsInventoryItem) => i.status === 'sold').length,
-    lowStock: inventoryBySource.filter((i: PartsInventoryItem) => !i.vehicle_id && i.quantity <= 2 && i.status === 'available').length,
-    noPrice: inventoryBySource.filter((i: PartsInventoryItem) => !i.selling_price).length,
-    totalUAH: inventoryBySource.reduce((sum: number, item: PartsInventoryItem) => {
+    total: totalCount,
+    totalQuantity: inventory.reduce((sum: number, item: PartsInventoryItem) => sum + item.quantity, 0),
+    available: inventory.filter((i: PartsInventoryItem) => i.status === 'available').length,
+    reserved: inventory.filter((i: PartsInventoryItem) => i.status === 'reserved').length,
+    sold: inventory.filter((i: PartsInventoryItem) => i.status === 'sold').length,
+    lowStock: inventory.filter((i: PartsInventoryItem) => !i.vehicle_id && i.quantity <= 2 && i.status === 'available').length,
+    noPrice: inventory.filter((i: PartsInventoryItem) => !i.selling_price).length,
+    totalUAH: inventory.reduce((sum: number, item: PartsInventoryItem) => {
       const price = item.status === 'sold' ? (item.sold_price ?? item.selling_price ?? 0) : (item.selling_price || 0)
       return item.price_currency === 'UAH' ? sum + price * item.quantity : sum
     }, 0),
-    totalUSD: inventoryBySource.reduce((sum: number, item: PartsInventoryItem) => {
+    totalUSD: inventory.reduce((sum: number, item: PartsInventoryItem) => {
       const price = item.status === 'sold' ? (item.sold_price ?? item.selling_price ?? 0) : (item.selling_price || 0)
       return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum
     }, 0),
-    availableUSD: inventoryBySource.filter((i: PartsInventoryItem) => i.status === 'available').reduce((sum: number, item: PartsInventoryItem) => {
+    availableUSD: inventory.filter((i: PartsInventoryItem) => i.status === 'available').reduce((sum: number, item: PartsInventoryItem) => {
       const price = item.selling_price || 0
       return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum + price * item.quantity / (usdRate || 41)
     }, 0),
-    reservedUSD: inventoryBySource.filter((i: PartsInventoryItem) => i.status === 'reserved').reduce((sum: number, item: PartsInventoryItem) => {
+    reservedUSD: inventory.filter((i: PartsInventoryItem) => i.status === 'reserved').reduce((sum: number, item: PartsInventoryItem) => {
       const price = item.selling_price || 0
       return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum + price * item.quantity / (usdRate || 41)
     }, 0),
-    stockUSD: inventoryBySource.filter((i: PartsInventoryItem) => i.status === 'available' || i.status === 'reserved').reduce((sum: number, item: PartsInventoryItem) => {
+    stockUSD: inventory.filter((i: PartsInventoryItem) => i.status === 'available' || i.status === 'reserved').reduce((sum: number, item: PartsInventoryItem) => {
       const price = item.selling_price || 0
       return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum + price * item.quantity / (usdRate || 41)
     }, 0),
-    soldUSD: inventoryBySource.filter((i: PartsInventoryItem) => i.status === 'sold').reduce((sum: number, item: PartsInventoryItem) => {
+    soldUSD: inventory.filter((i: PartsInventoryItem) => i.status === 'sold').reduce((sum: number, item: PartsInventoryItem) => {
       const price = item.sold_price ?? item.selling_price ?? 0
       return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum + price * item.quantity / (usdRate || 41)
     }, 0),
@@ -504,8 +517,8 @@ export default function PartsInventory() {
     })
   }
 
-  const openBulkSell = () => {
-    const items = filteredInventory.filter((i: PartsInventoryItem) => selectedIds.has(i.id))
+  const openBulkSell = useCallback(() => {
+    const items = inventory.filter((i: PartsInventoryItem) => selectedIds.has(i.id))
     setBulkRows(items.map((item: PartsInventoryItem) => ({
       item,
       quantity: 1,
@@ -517,7 +530,7 @@ export default function PartsInventory() {
     setBulkNewCustomerName('')
     setBulkNewCustomerPhone('')
     setIsBulkSellOpen(true)
-  }
+  }, [inventory, selectedIds]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleEdit = (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -578,7 +591,8 @@ export default function PartsInventory() {
     const csv = buildCsv(rows)
     const date = new Date().toISOString().slice(0, 10)
     downloadCsv(csv, `sklad_${date}.csv`)
-    toast.success(`Экспортировано ${rows.length} позиций`)
+    const note = totalCount > rows.length ? ` (загружено ${rows.length} из ${totalCount} — для полного экспорта загрузите все)` : ''
+    toast.success(`Экспортировано ${rows.length} позиций${note}`)
   }
 
   const handleStatusClick = (item: PartsInventoryItem, e: React.MouseEvent) => {
@@ -618,7 +632,9 @@ export default function PartsInventory() {
                 <h1 className="text-lg sm:text-2xl font-extrabold text-gray-900 truncate" style={{ letterSpacing: '-0.025em' }}>
                   {sourceFilter === 'shop' ? 'Магазин' : 'Запчасти'}
                 </h1>
-                <p className="text-xs font-medium text-gray-400 hidden sm:block">Всего: {stats.total} позиций</p>
+                <p className="text-xs font-medium text-gray-400 hidden sm:block">
+                  Загружено: {inventory.length}{totalCount > inventory.length ? ` из ${totalCount}` : ` (всего ${totalCount})`}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -658,7 +674,7 @@ export default function PartsInventory() {
       </div>
 
       {/* Content */}
-      <div className="w-full py-4 sm:py-6">
+      <div className="page-container">
         {/* Limit reached banner */}
         {!canCreate.part() && limits.maxParts !== null && (
           <div className="mb-4">
@@ -841,16 +857,16 @@ export default function PartsInventory() {
           <div className="flex items-center justify-center py-16">
             <Spinner size="md" />
           </div>
-        ) : filteredInventory.length === 0 ? (
+        ) : filteredAndSorted.length === 0 ? (
           <div className="card">
             <div className="empty-state">
               <div className="empty-state-icon">
                 <Package className="w-7 h-7 text-gray-400" strokeWidth={1.5} />
               </div>
               <p className="empty-state-title">
-                {searchQuery || statusFilter !== 'all' ? 'Запчасти не найдены' : 'Нет запчастей'}
+                {debouncedSearch || statusFilter !== 'all' ? 'Запчасти не найдены' : 'Нет запчастей'}
               </p>
-              {!searchQuery && statusFilter === 'all' && (
+              {!debouncedSearch && statusFilter === 'all' && (
                 <button
                   onClick={() => setIsModalOpen(true)}
                   className="mt-3 btn-ghost btn-sm text-primary"
@@ -985,7 +1001,7 @@ export default function PartsInventory() {
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover/row:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity">
                           <button
                             onClick={(e) => handleEdit(item, e)}
                             className="p-1.5 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
@@ -1024,6 +1040,23 @@ export default function PartsInventory() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* Load more */}
+        {hasNextPage && (
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <span className="text-sm text-gray-400">
+              Загружено {inventory.length} из {totalCount}
+            </span>
+            <button
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {isFetchingNextPage ? <Spinner size="sm" /> : null}
+              {isFetchingNextPage ? 'Загрузка...' : 'Загрузить ещё'}
+            </button>
           </div>
         )}
       </div>
@@ -1115,7 +1148,7 @@ export default function PartsInventory() {
 
       {/* Bulk Selection Bar */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-gray-900 text-white rounded-2xl px-5 py-3 shadow-float animate-slide-up">
+        <div className="fixed bottom-[calc(1rem+64px+env(safe-area-inset-bottom,0px))] md:bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-gray-900 text-white rounded-2xl px-5 py-3 shadow-lg animate-slide-up">
           <span className="text-sm font-semibold">
             Выбрано: {selectedIds.size} запч.
           </span>

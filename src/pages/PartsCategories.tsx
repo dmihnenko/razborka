@@ -231,7 +231,7 @@ export default function PartsCategories() {
         }
       />
 
-      <div className="w-full py-4 sm:py-6">
+      <div className="page-container">
 
         {/* ── Вкладка: Мои категории ─────────────────────────── */}
         {tab === 'my' && (

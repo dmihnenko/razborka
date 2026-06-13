@@ -174,7 +174,7 @@ export default function PartsCustomers() {
       />
 
       {/* Content */}
-      <div className="w-full py-4 sm:py-6">
+      <div className="page-container">
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 sm:mb-6">

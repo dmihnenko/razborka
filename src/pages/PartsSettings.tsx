@@ -103,7 +103,7 @@ export default function PartsSettings() {
         height="sm"
       />
 
-      <div className="w-full py-4 sm:py-6">
+      <div className="page-container">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 
           {/* ── Левая колонка ── */}

@@ -1,6 +1,5 @@
 import { useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { Car, ShoppingCart, DollarSign, AlertCircle, ArrowRight, Warehouse, LayoutGrid, Users, BarChart2, Settings, Wrench, Store, Sparkles } from 'lucide-react'
 import { getPartsOrderStatusText } from '@/utils/status'
@@ -9,6 +8,8 @@ import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import ContactsReminder from '@/components/dashboard/ContactsReminder'
 import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import OnboardingChecklist from '@/components/parts/OnboardingChecklist'
+import { getPartsDashboardStats } from '@/services/partsService'
+import { supabase } from '@/lib/supabase'
 
 export default function PartsDashboard() {
   const navigate = useNavigate()
@@ -17,130 +18,17 @@ export default function PartsDashboard() {
   const { rate: usdRate } = usePartsExchangeRate()
   const { hasSubscription, plan } = useSubscriptionLimits()
 
-  // Кол-во заявок с маркетплейса (для upsell-баннера)
-  const { data: marketOrdersCount = 0 } = useQuery({
-    queryKey: ['marketplace-orders-count', partsCompanyId],
-    queryFn: async () => {
-      if (!partsCompanyId) return 0
-      const { count } = await supabase
-        .from('marketplace_orders')
-        .select('id', { count: 'exact', head: true })
-        .eq('parts_company_id', partsCompanyId)
-      return count || 0
-    },
-    enabled: !!partsCompanyId && (!hasSubscription || plan?.price === 0),
+  const isDemo = !hasSubscription || plan?.price === 0
+
+  // Единый запрос статистики дашборда через RPC
+  const { data: stats } = useQuery({
+    queryKey: ['parts-dashboard-stats', partsCompanyId],
+    queryFn: () => getPartsDashboardStats(partsCompanyId!, usdRate || 41),
+    enabled: !!partsCompanyId,
     staleTime: 5 * 60 * 1000,
   })
 
-  const isDemo = !hasSubscription || plan?.price === 0
-
-  // Статистика автомобилей
-  const { data: vehiclesStats } = useQuery({
-    queryKey: ['parts-vehicles-stats', partsCompanyId],
-    queryFn: async () => {
-      if (!partsCompanyId) return { total: 0, awaiting: 0, in_progress: 0, dismantled: 0 }
-
-      const { data } = await supabase
-        .from('parts_vehicles')
-        .select('status')
-        .eq('parts_company_id', partsCompanyId)
-
-      return {
-        total: data?.length || 0,
-        awaiting: data?.filter(v => v.status === 'awaiting').length || 0,
-        in_progress: data?.filter(v => v.status === 'in_progress').length || 0,
-        dismantled: data?.filter(v => v.status === 'dismantled').length || 0,
-      }
-    },
-    enabled: !!partsCompanyId,
-  })
-
-  // Статистика склада
-  const { data: inventoryStats } = useQuery({
-    queryKey: ['parts-inventory-stats', partsCompanyId],
-    queryFn: async () => {
-      if (!partsCompanyId) return { total: 0, available: 0, lowStock: 0, valueUSD: 0, valueUAH: 0, fromVehicles: 0, fromShop: 0 }
-
-      const { data } = await supabase
-        .from('parts_inventory')
-        .select('quantity, reserved_quantity, selling_price, price_currency, min_stock_level, status, vehicle_id')
-        .eq('parts_company_id', partsCompanyId)
-
-      const available_items = data?.filter(item => item.status !== 'sold') || []
-      const total = available_items.reduce((sum, item) => sum + item.quantity, 0)
-      const available = available_items.reduce((sum, item) => sum + (item.quantity - item.reserved_quantity), 0)
-      const lowStock = available_items.filter(item => item.quantity <= item.min_stock_level).length
-      const noPrice = available_items.filter(item => !item.selling_price).length
-      // value будет в USD
-      const valueUSD = available_items.reduce((sum, item: any) => {
-        const price = item.selling_price || 0
-        const qty = item.quantity || 0
-        // NULL price_currency = USD (системный дефолт)
-        const isUSD = item.price_currency === 'USD' || !item.price_currency
-        return sum + (isUSD ? price * qty : 0)
-      }, 0)
-      const valueUAH = available_items.reduce((sum, item: any) => {
-        const price = item.selling_price || 0
-        const qty = item.quantity || 0
-        const isUAH = item.price_currency === 'UAH'
-        return sum + (isUAH ? price * qty : 0)
-      }, 0)
-      const fromVehicles = available_items.reduce((sum, item) => sum + (item.vehicle_id ? item.quantity : 0), 0)
-      const fromShop = available_items.reduce((sum, item) => sum + (!item.vehicle_id ? item.quantity : 0), 0)
-
-      return { total, available, lowStock, noPrice, valueUSD, valueUAH, fromVehicles, fromShop }
-    },
-    enabled: !!partsCompanyId,
-  })
-
-  // Статистика заказов
-  const { data: ordersStats } = useQuery({
-    queryKey: ['parts-orders-stats', partsCompanyId],
-    queryFn: async () => {
-      if (!partsCompanyId) return { total: 0, new: 0, in_progress: 0, completed: 0, completedOrders: [] }
-
-      const { data } = await supabase
-        .from('parts_orders')
-        .select(`
-          id, status, total_amount, exchange_rate_at_sale,
-          items:parts_order_items(price_at_sale, quantity, price_at_sale_currency)
-        `)
-        .eq('parts_company_id', partsCompanyId)
-
-      return {
-        total: data?.length || 0,
-        new: data?.filter(o => o.status === 'new').length || 0,
-        in_progress: data?.filter(o => o.status === 'in_progress').length || 0,
-        completed: data?.filter(o => o.status === 'completed').length || 0,
-        completedOrders: data?.filter(o => o.status === 'completed') || [],
-      }
-    },
-    enabled: !!partsCompanyId,
-  })
-
-  // Статистика клиентов
-  const { data: customersStats } = useQuery({
-    queryKey: ['parts-customers-stats', partsCompanyId],
-    queryFn: async () => {
-      if (!partsCompanyId) return { total: 0, withOrders: 0 }
-
-      const { data } = await supabase
-        .from('parts_customers')
-        .select(`
-          id,
-          orders:parts_orders(id)
-        `)
-        .eq('parts_company_id', partsCompanyId)
-
-      return {
-        total: data?.length || 0,
-        withOrders: data?.filter(c => c.orders && c.orders.length > 0).length || 0,
-      }
-    },
-    enabled: !!partsCompanyId,
-  })
-
-  // Последняя активность
+  // Последняя активность (последние 5 заказов) — отдельный запрос
   const { data: recentActivity } = useQuery({
     queryKey: ['parts-recent-activity', partsCompanyId],
     queryFn: async () => {
@@ -177,11 +65,6 @@ export default function PartsDashboard() {
     }, 0)
   }
 
-  // Выручка в USD — считаем по каждой позиции с учётом валюты
-  const revenueUSD = (ordersStats?.completedOrders || []).reduce((sum: number, order: any) => {
-    return sum + (computeOrderUSD(order) ?? 0)
-  }, 0)
-
   if (!partsCompanyId) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -197,7 +80,7 @@ export default function PartsDashboard() {
   }
 
   const totalInventoryValueUSD = Math.round(
-    (inventoryStats?.valueUSD || 0) + (inventoryStats?.valueUAH || 0) / (usdRate || 41)
+    (stats?.inventory?.valueUSD ?? 0) + (stats?.inventory?.valueUAH ?? 0) / (usdRate || 41)
   )
 
   return (
@@ -235,7 +118,7 @@ export default function PartsDashboard() {
       <OnboardingChecklist partsCompanyId={partsCompanyId} />
 
       {/* ── Marketplace upsell banner ─────────────── */}
-      {isDemo && marketOrdersCount > 0 && (
+      {isDemo && (stats?.marketOrders ?? 0) > 0 && (
         <Link
           to="/parts/subscription"
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all active:scale-[0.99] border border-primary/20 bg-primary/5 hover:bg-primary/10 animate-fade-in"
@@ -248,7 +131,7 @@ export default function PartsDashboard() {
               Покупатели интересуются вашими запчастями
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
-              {marketOrdersCount} {marketOrdersCount === 1 ? 'заявка' : marketOrdersCount < 5 ? 'заявки' : 'заявок'} с маркетплейса — откройте полный доступ
+              {stats.marketOrders} {stats.marketOrders === 1 ? 'заявка' : stats.marketOrders < 5 ? 'заявки' : 'заявок'} с маркетплейса — откройте полный доступ
             </p>
           </div>
           <ArrowRight className="w-4 h-4 flex-shrink-0 text-primary" strokeWidth={1.5} />
@@ -256,7 +139,7 @@ export default function PartsDashboard() {
       )}
 
       {/* ── Alert: new orders ─────────────────────── */}
-      {(ordersStats?.new || 0) > 0 && (
+      {(stats?.orders?.new ?? 0) > 0 && (
         <button
           onClick={() => navigate('/parts/orders')}
           className="alert alert-warning w-full text-left transition-all active:scale-[0.99] hover:bg-yellow-100/60 rounded-xl"
@@ -266,7 +149,7 @@ export default function PartsDashboard() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-yellow-800">
-              {ordersStats?.new} новых {ordersStats?.new === 1 ? 'заказ' : (ordersStats?.new ?? 0) < 5 ? 'заказа' : 'заказов'} ожидает обработки
+              {stats?.orders?.new} новых {stats?.orders?.new === 1 ? 'заказ' : (stats?.orders?.new ?? 0) < 5 ? 'заказа' : 'заказов'} ожидает обработки
             </p>
           </div>
           <ArrowRight className="w-4 h-4 flex-shrink-0 text-yellow-600" strokeWidth={1.5} />
@@ -289,16 +172,16 @@ export default function PartsDashboard() {
           </div>
           <p className="kicker mb-1">Автомобілі</p>
           <p className="heading-2 tabular">
-            {vehiclesStats?.total || 0}
+            {stats?.vehicles?.total ?? 0}
           </p>
           <div className="mt-3 pt-3 space-y-1 border-t border-gray-100">
             <div className="flex justify-between text-xs">
               <span className="text-gray-400">В работе</span>
-              <span className="font-bold text-amber-600 tabular">{vehiclesStats?.in_progress || 0}</span>
+              <span className="font-bold text-amber-600 tabular">{stats?.vehicles?.in_progress ?? 0}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-gray-400">Розібрано</span>
-              <span className="font-bold text-green-600 tabular">{vehiclesStats?.dismantled || 0}</span>
+              <span className="font-bold text-green-600 tabular">{stats?.vehicles?.dismantled ?? 0}</span>
             </div>
           </div>
         </button>
@@ -316,17 +199,17 @@ export default function PartsDashboard() {
           </div>
           <p className="kicker mb-1">Запчасти</p>
           <p className="heading-2 tabular">
-            {inventoryStats?.total || 0}
+            {stats?.inventory?.total ?? 0}
           </p>
           <div className="mt-3 pt-3 space-y-1 border-t border-gray-100">
             <div className="flex justify-between text-xs">
               <span className="text-gray-400">Доступно</span>
-              <span className="font-bold text-green-600 tabular">{inventoryStats?.available || 0}</span>
+              <span className="font-bold text-green-600 tabular">{stats?.inventory?.available ?? 0}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-gray-400">Мало на складе</span>
-              <span className={`font-bold tabular ${(inventoryStats?.lowStock ?? 0) > 0 ? 'text-red-600' : 'text-gray-400'}`}>
-                {inventoryStats?.lowStock || 0}
+              <span className={`font-bold tabular ${(stats?.inventory?.lowStock ?? 0) > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                {stats?.inventory?.lowStock ?? 0}
               </span>
             </div>
           </div>
@@ -345,16 +228,16 @@ export default function PartsDashboard() {
           </div>
           <p className="kicker mb-1">Заказы</p>
           <p className="heading-2 tabular">
-            {ordersStats?.total || 0}
+            {stats?.orders?.total ?? 0}
           </p>
           <div className="mt-3 pt-3 space-y-1 border-t border-gray-100">
             <div className="flex justify-between text-xs">
               <span className="text-gray-400">Новые</span>
-              <span className="font-bold text-blue-600 tabular">{ordersStats?.new || 0}</span>
+              <span className="font-bold text-blue-600 tabular">{stats?.orders?.new ?? 0}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-gray-400">Завершены</span>
-              <span className="font-bold text-green-600 tabular">{ordersStats?.completed || 0}</span>
+              <span className="font-bold text-green-600 tabular">{stats?.orders?.completed ?? 0}</span>
             </div>
           </div>
         </button>
@@ -373,12 +256,12 @@ export default function PartsDashboard() {
           </div>
           <p className="kicker mb-1" style={{ color: 'rgba(255,255,255,0.65)' }}>Выручка</p>
           <p className="heading-2 tabular text-white">
-            {revenueUSD > 0 ? `$${Math.round(revenueUSD).toLocaleString('ru-RU')}` : '—'}
+            {(stats?.revenueUSD ?? 0) > 0 ? `$${Math.round(stats!.revenueUSD).toLocaleString('ru-RU')}` : '—'}
           </p>
           <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
             <div className="flex justify-between text-xs">
               <span style={{ color: 'rgba(255,255,255,0.55)' }}>Клиентов</span>
-              <span className="font-bold text-white tabular">{customersStats?.total || 0}</span>
+              <span className="font-bold text-white tabular">{stats?.customers?.total ?? 0}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span style={{ color: 'rgba(255,255,255,0.55)' }}>Склад USD</span>
@@ -417,7 +300,7 @@ export default function PartsDashboard() {
                   <span className="kicker">С разборки</span>
                 </div>
                 <p className="heading-3 tabular">
-                  {inventoryStats?.fromVehicles || 0}
+                  {stats?.inventory?.fromVehicles ?? 0}
                 </p>
                 <p className="text-xs mt-0.5 text-gray-400">позиций</p>
               </button>
@@ -432,7 +315,7 @@ export default function PartsDashboard() {
                   <span className="kicker">Магазин</span>
                 </div>
                 <p className="heading-3 tabular">
-                  {inventoryStats?.fromShop || 0}
+                  {stats?.inventory?.fromShop ?? 0}
                 </p>
                 <p className="text-xs mt-0.5 text-gray-400">позиций</p>
               </button>
@@ -446,8 +329,8 @@ export default function PartsDashboard() {
                   </div>
                   <span className="kicker">Без цены</span>
                 </div>
-                <p className={`heading-3 tabular ${(inventoryStats?.noPrice ?? 0) > 0 ? 'text-red-600' : ''}`}>
-                  {inventoryStats?.noPrice ?? 0}
+                <p className={`heading-3 tabular ${(stats?.inventory?.noPrice ?? 0) > 0 ? 'text-red-600' : ''}`}>
+                  {stats?.inventory?.noPrice ?? 0}
                 </p>
                 <p className="text-xs mt-0.5 text-gray-400">нужна цена</p>
               </button>
@@ -459,7 +342,7 @@ export default function PartsDashboard() {
             <div className="px-5 py-3.5 border-b border-gray-100">
               <p className="kicker">Управление</p>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3">
               {[
                 { label: 'Склад',      icon: Warehouse,  path: '/parts/warehouse',  iconCls: 'icon-tile bg-amber-50 text-amber-600' },
                 { label: 'Категории',  icon: LayoutGrid, path: '/parts/categories', iconCls: 'icon-tile bg-blue-50 text-blue-600' },

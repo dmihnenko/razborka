@@ -9,7 +9,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowLeft, Plus, Trash2, Edit2, Search,
-  CheckCircle, MapPin, Truck, User, Package,
+  CheckCircle, MapPin, Truck, User, Package, X,
 } from 'lucide-react'
 import { formatCurrency, formatPrice } from '@/utils/currency'
 import { getPartsOrderStatusText } from '@/utils/status'
@@ -225,7 +225,7 @@ export default function PartsOrderDetails() {
   const statusBadgeCls = STATUS_BADGE[order.status] ?? 'badge badge-gray'
 
   return (
-    <div className="min-h-dvh bg-gray-50 pb-24">
+    <div className="min-h-dvh bg-gray-50 pb-[calc(64px+env(safe-area-inset-bottom,0px))] sm:pb-6">
 
       {/* ── sticky шапка ────────────────────────────────────────── */}
       <div className="bg-white border-b sticky top-0 z-20 glass">
@@ -597,7 +597,7 @@ export default function PartsOrderDetails() {
 
         {/* ── кнопка «Завершить» ────────────────────────────────────── */}
         {canManage && order.status !== 'completed' && order.items && order.items.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-sm border-t border-gray-100 px-4 py-3 sm:static sm:bg-transparent sm:border-0 sm:backdrop-blur-none sm:px-0 sm:py-0"
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-t border-gray-100 px-4 py-3 sm:static sm:bg-transparent sm:border-0 sm:backdrop-blur-none sm:px-0 sm:py-0"
                style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
           >
             <button
@@ -716,7 +716,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
 
         <div className="modal-header">
           <h3 className="heading-3">Добавить позицию</h3>
-          <button onClick={onClose} className="btn-icon-sm">✕</button>
+          <button onClick={onClose} className="btn-icon-sm" aria-label="Закрыть"><X className="w-4 h-4" /></button>
         </div>
 
         <div className="modal-body space-y-4">
@@ -879,7 +879,7 @@ function EditOrderModal({ order, partsCompanyId, onClose }: EditOrderModalProps)
 
         <div className="modal-header">
           <h3 className="heading-3">Редактировать заказ</h3>
-          <button onClick={onClose} className="btn-icon-sm">✕</button>
+          <button onClick={onClose} className="btn-icon-sm" aria-label="Закрыть"><X className="w-4 h-4" /></button>
         </div>
 
         <div className="modal-body space-y-4">
