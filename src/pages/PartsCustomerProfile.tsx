@@ -545,12 +545,15 @@ export default function PartsCustomerProfile() {
 
       {/* ── Модалка: новый заказ из склада ─────────────────────────────── */}
       {isOrderModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center px-3 py-3 sm:p-4"
+          style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}
+        >
           <div
             className="fixed inset-0 bg-black/40 backdrop-blur-[2px]"
             onClick={() => setIsOrderModalOpen(false)}
           />
-          <div className="relative w-full sm:max-w-4xl h-[96dvh] sm:h-[88vh] bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-slide-up">
+          <div className="relative w-full sm:max-w-4xl h-[calc(100dvh-1.5rem)] sm:h-[88vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-slide-down">
 
             {/* Modal header */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white flex-shrink-0">

@@ -499,7 +499,7 @@ function RenewModal({ sub, onClose, onConfirm, isPending }: { sub: CompanySubscr
   const preview = new Date(base); preview.setMonth(preview.getMonth() + months)
   const opts = [{ v: 1, l: '1 месяц' }, { v: 3, l: '3 месяца' }, { v: 6, l: '6 месяцев' }, { v: 12, l: '1 год' }]
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 px-3 py-3 sm:p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-bold text-gray-900">Продление подписки</h2>
@@ -550,7 +550,7 @@ function AssignModal({ plans, allPlans, companies, form, onFormChange, onSubmit,
   })()
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 px-3 py-3 sm:p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
           <h2 className="font-bold text-gray-900">Назначить подписку</h2>
@@ -693,7 +693,7 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
   )
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 px-3 py-3 sm:p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
           <h2 className="font-bold text-gray-900">Редактировать план: {plan.name}</h2>

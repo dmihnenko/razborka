@@ -46,7 +46,8 @@ export default function QrLabelModal({ title, subtitle, value, onClose }: Props)
   return (
     /* Оверлей */
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-[2px] p-0 sm:p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/40 backdrop-blur-[2px] px-3 py-3 sm:p-4 animate-fade-in"
+      style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}
       onClick={onClose}
     >
       {/* Панель */}
@@ -55,12 +56,9 @@ export default function QrLabelModal({ title, subtitle, value, onClose }: Props)
         aria-modal="true"
         aria-label="Печать QR-этикетки"
         onClick={e => e.stopPropagation()}
-        className="relative bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl shadow-2xl
-          max-h-[92dvh] flex flex-col overflow-hidden animate-slide-up sm:animate-modal-pop"
+        className="relative bg-white w-full sm:max-w-sm rounded-2xl shadow-2xl
+          max-h-[calc(100dvh-1.5rem)] sm:max-h-[92dvh] flex flex-col overflow-hidden animate-slide-down sm:animate-modal-pop"
       >
-        {/* Ручка — мобиль */}
-        <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-3 mb-1 sm:hidden flex-shrink-0" />
-
         {/* Шапка */}
         <div className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-100 flex-shrink-0 no-print">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">

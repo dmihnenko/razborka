@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react'
+import { ReactNode, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
 
@@ -34,16 +34,18 @@ const SIZE: Record<ModalSize, string> = {
 }
 
 /**
- * Единая модалка проекта.
- * Мобайл — bottom-sheet (выезжает снизу, есть «ручка», свайп-зона),
+ * Единая модалка проекта (СТАНДАРТ, spec 4.3).
+ * Мобайл — top-sheet (выезжает сверху, отступ + safe-area-top, без «ручки»),
  * десктоп — карточка по центру с лёгким pop-in.
- * Блокирует скролл фона, закрывается по Escape и клику на фон.
+ * При открытии ставит фокус на диалог. Блокирует скролл фона,
+ * закрывается по Escape и клику на фон.
  */
 export default function Modal({
   isOpen, onClose, title, subtitle, icon, size = 'md', footer, children,
   closeOnOverlay = true, closeOnEsc = true, hideClose = false, bare = false, className = '',
 }: ModalProps) {
   useBlockScroll(isOpen)
+  const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!isOpen || !closeOnEsc) return
@@ -52,25 +54,29 @@ export default function Modal({
     return () => window.removeEventListener('keydown', onKey)
   }, [isOpen, closeOnEsc, onClose])
 
+  useEffect(() => {
+    if (isOpen) dialogRef.current?.focus()
+  }, [isOpen])
+
   if (!isOpen) return null
 
   const hasHeader = title || subtitle || icon || !hideClose
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-[2px] p-0 sm:p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/40 backdrop-blur-[2px] px-3 py-3 sm:p-4 animate-fade-in"
+      style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}
       onClick={closeOnOverlay ? onClose : undefined}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
         onClick={e => e.stopPropagation()}
-        className={`relative bg-white w-full ${SIZE[size]} rounded-t-3xl sm:rounded-2xl shadow-2xl
-          max-h-[92dvh] flex flex-col overflow-hidden animate-slide-up sm:animate-modal-pop ${className}`}
+        className={`relative bg-white w-full ${SIZE[size]} rounded-2xl shadow-2xl outline-none
+          max-h-[calc(100dvh-1.5rem)] sm:max-h-[92dvh] flex flex-col overflow-hidden animate-slide-down sm:animate-modal-pop ${className}`}
       >
-        {/* Ручка — только мобиль */}
-        <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-3 mb-1 sm:hidden flex-shrink-0" />
-
         {/* Шапка */}
         {hasHeader && (
           <div className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-100 flex-shrink-0">

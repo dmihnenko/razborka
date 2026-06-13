@@ -492,18 +492,14 @@ export default function PartsCompanies() {
         </div>
       )}
 
-      {/* ── Modal (bottom-sheet mobile / center desktop) ─────────────────── */}
+      {/* ── Modal (top-sheet mobile / center desktop) ─────────────────── */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+          className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-start sm:items-center justify-center z-50 px-3 py-3 sm:p-4"
+          style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}
           onClick={e => { if (e.target === e.currentTarget) { setIsModalOpen(false); setSelectedCompany(null); resetForm(); } }}
         >
-          <div className="w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl animate-slide-up sm:animate-modal-pop">
-            {/* Handle */}
-            <div className="flex justify-center pt-3 pb-1 sm:hidden">
-              <div className="w-9 h-1 rounded-full bg-gray-200" />
-            </div>
-
+          <div className="w-full sm:max-w-md bg-white rounded-2xl shadow-2xl animate-slide-down sm:animate-modal-pop">
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-4 pb-4 border-b border-gray-100">
               <div>
