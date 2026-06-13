@@ -5,7 +5,9 @@ import {
   Shield,
   Menu,
   X,
+  Search,
 } from 'lucide-react'
+import GlobalSearch from './GlobalSearch'
 import { LayoutSkeleton } from './LayoutSkeleton'
 import WaitingAccessPage from './WaitingAccessPage'
 import OwnerSetupPage from './OwnerSetupPage'
@@ -41,6 +43,19 @@ export default function Layout() {
 
   // Шторка мобильного «Меню» (доп. пункты)
   const [sheetOpen, setSheetOpen] = useState(false)
+
+  // Глобальный поиск (Cmd/Ctrl+K)
+  const [searchOpen, setSearchOpen] = useState(false)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(prev => !prev)
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
 
   // Получаем PRIMARY роль пользователя
   // Приоритет ролей: admin > parts_owner > parts_worker > user
@@ -259,6 +274,25 @@ export default function Layout() {
 
         {/* Footer */}
         <div className="px-2 py-3 space-y-0.5" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
+          {/* Кнопка поиска */}
+          <button
+            onClick={() => setSearchOpen(true)}
+            title="Поиск (Ctrl+K)"
+            className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm rounded-lg transition-colors active:scale-[0.98]"
+            style={{ color: '#94A3B8' }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'
+              ;(e.currentTarget as HTMLElement).style.color = '#E2E8F0'
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.background = ''
+              ;(e.currentTarget as HTMLElement).style.color = '#94A3B8'
+            }}
+          >
+            <Search className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} />
+            <span className="hidden lg:block">Поиск</span>
+          </button>
+
           {/* Админ-кнопка — только на md (на lg она в ContextSwitcher) */}
           {isAdmin && (
             <Link
@@ -321,6 +355,13 @@ export default function Layout() {
             <div className="flex-1 min-w-0">
               <ContextSwitcher current={currentCtx} />
             </div>
+            <button
+              onClick={() => setSearchOpen(true)}
+              aria-label="Поиск"
+              className="flex-shrink-0 flex items-center justify-center w-9 h-9 text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all active:scale-[0.97]"
+            >
+              <Search className="w-4 h-4" strokeWidth={1.5} />
+            </button>
             <button onClick={handleLogout}
               className="flex-shrink-0 flex items-center gap-1.5 h-9 px-3 text-xs font-semibold text-gray-500 bg-gray-100 rounded-xl hover:bg-red-50 hover:text-red-600 transition-all active:scale-[0.97]"
             >
@@ -454,6 +495,9 @@ export default function Layout() {
           </div>
         </div>
       )}
+
+      {/* Глобальный поиск */}
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
 
     </div>
   )

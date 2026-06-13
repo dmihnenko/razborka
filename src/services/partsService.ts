@@ -830,3 +830,64 @@ export async function getPartsInventoryByVehicle(vehicleId: string): Promise<any
   if (error) throw error
   return data || []
 }
+
+// ============================================================================
+// GLOBAL CABINET SEARCH
+// ============================================================================
+
+/** Экранируем строку для PostgREST or()-фильтра */
+function sanitizeSearchQuery(s: string): string {
+  return s.trim().replace(/[,()%]/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+export interface CabinetSearchResult {
+  parts: any[]
+  vehicles: any[]
+  orders: any[]
+  customers: any[]
+}
+
+export async function searchCabinet(
+  partsCompanyId: string,
+  q: string
+): Promise<CabinetSearchResult> {
+  if (q.trim().length < 2) {
+    return { parts: [], vehicles: [], orders: [], customers: [] }
+  }
+
+  const s = sanitizeSearchQuery(q)
+
+  const [partsRes, vehiclesRes, ordersRes, customersRes] = await Promise.all([
+    supabase
+      .from('parts_inventory')
+      .select('id,name,part_number,selling_price,price_currency,status')
+      .eq('parts_company_id', partsCompanyId)
+      .or(`name.ilike.%${s}%,part_number.ilike.%${s}%`)
+      .limit(5),
+    supabase
+      .from('parts_vehicles')
+      .select('id,make,model,year,vin')
+      .eq('parts_company_id', partsCompanyId)
+      .or(`make.ilike.%${s}%,model.ilike.%${s}%,vin.ilike.%${s}%`)
+      .limit(5),
+    supabase
+      .from('parts_orders')
+      .select('id,order_number,status,total_amount')
+      .eq('parts_company_id', partsCompanyId)
+      .ilike('order_number', `%${s}%`)
+      .limit(5),
+    supabase
+      .from('parts_customers')
+      .select('id,full_name,phone')
+      .eq('parts_company_id', partsCompanyId)
+      .or(`full_name.ilike.%${s}%,phone.ilike.%${s}%`)
+      .limit(5),
+  ])
+
+  return {
+    parts: partsRes.data ?? [],
+    vehicles: vehiclesRes.data ?? [],
+    orders: ordersRes.data ?? [],
+    customers: customersRes.data ?? [],
+  }
+}

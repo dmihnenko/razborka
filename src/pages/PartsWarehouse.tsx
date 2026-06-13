@@ -5,9 +5,10 @@ import { toast } from 'sonner'
 import {
   Plus, ChevronRight, ChevronDown,
   Pencil, Trash2, Warehouse, Check, X,
-  FolderOpen, Folder, MapPin,
+  FolderOpen, Folder, MapPin, QrCode,
 } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import QrLabelModal from '@/components/parts/QrLabelModal'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { supabase } from '@/lib/supabase'
 import {
@@ -53,6 +54,9 @@ export default function PartsWarehouse() {
   const partsCompanyId = profile?.parts_company_id
   const { confirm: showConfirm, dialogProps } = useConfirm()
 
+  // QR-этикетка: { id, name, path }
+  const [qrNode, setQrNode] = useState<{ id: string; name: string; path: string } | null>(null)
+
   // undefined = not adding; null = adding at root; string = adding as child of that id
   const [addingParentId, setAddingParentId] = useState<string | null | undefined>(undefined)
   const [addingName, setAddingName] = useState('')
@@ -86,6 +90,19 @@ export default function PartsWarehouse() {
 
   const tree = useMemo(() => buildTree(locations as StorageLocation[]), [locations])
   const flatList = useMemo(() => flattenTree(tree, expanded), [tree, expanded])
+
+  /* Полный путь узла (Бокс 1 / Стеллаж 2 / Полка 3) */
+  const getNodePath = (nodeId: string): string => {
+    const byId = new Map((locations as StorageLocation[]).map(l => [l.id, l]))
+    const parts: string[] = []
+    let cur: StorageLocation | undefined = byId.get(nodeId)
+    let guard = 0
+    while (cur && guard++ < 20) {
+      parts.unshift(cur.name)
+      cur = cur.parent_id ? byId.get(cur.parent_id) : undefined
+    }
+    return parts.join(' / ')
+  }
 
   const createMutation = useMutation({
     mutationFn: ({ name, parentId }: { name: string; parentId: string | null }) =>
@@ -362,6 +379,13 @@ export default function PartsWarehouse() {
                                 <Plus className="w-4 h-4" />
                               </button>
                               <button
+                                onClick={() => setQrNode({ id: node.id, name: node.name, path: getNodePath(node.id) })}
+                                title="QR / Этикетка"
+                                className="btn-icon-sm hover:text-primary hover:bg-primary/5"
+                              >
+                                <QrCode className="w-4 h-4" />
+                              </button>
+                              <button
                                 onClick={() => { setEditingId(node.id); setEditingName(node.name) }}
                                 className="btn-icon-sm hover:text-primary"
                               >
@@ -450,6 +474,15 @@ export default function PartsWarehouse() {
       </div>
 
       <ConfirmDialog {...dialogProps} />
+
+      {qrNode && (
+        <QrLabelModal
+          title={qrNode.name}
+          subtitle={qrNode.path !== qrNode.name ? qrNode.path : undefined}
+          value={qrNode.id}
+          onClose={() => setQrNode(null)}
+        />
+      )}
     </div>
   )
 }

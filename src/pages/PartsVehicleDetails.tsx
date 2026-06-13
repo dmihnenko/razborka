@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Edit, TrendingUp, TrendingDown, Plus, Settings, Trash2, Tag, Sparkles, X, Car } from 'lucide-react'
+import { ArrowLeft, Edit, TrendingUp, TrendingDown, Plus, Settings, Trash2, Tag, Sparkles, X, Car, Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsCategoryTemplates, createPartsInventoryItem, getStorageLocations, updateVehicleStatus } from '@/services/partsService'
@@ -12,6 +12,7 @@ import type { PartsVehicle, PartsVehicleStatus, CreatePartsInventoryInput, Stora
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { deletePhotosFromImgbb } from '@/services/imgbbService'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
+import { ConveyorModal } from '@/components/parts/ConveyorModal'
 import { formatPrice } from '@/utils/currency'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -68,6 +69,7 @@ export default function PartsVehicleDetails() {
   const { confirm: showConfirm, dialogProps } = useConfirm()
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isAddPartOpen, setIsAddPartOpen] = useState(false)
+  const [isConveyorOpen, setIsConveyorOpen] = useState(false)
   const [suggestionDismissed, setSuggestionDismissed] = useState(false)
   const { rate: globalRate, isStale: rateIsStale } = usePartsExchangeRate()
 
@@ -101,7 +103,7 @@ export default function PartsVehicleDetails() {
       if (error) throw error
       return data
     },
-    enabled: !!partsCompanyId && isAddPartOpen,
+    enabled: !!partsCompanyId && (isAddPartOpen || isConveyorOpen),
   })
 
   const { data: storageLocations = [] } = useQuery({
@@ -321,13 +323,23 @@ export default function PartsVehicleDetails() {
           </div>
 
           {/* Actions */}
-          <button
-            onClick={() => setIsEditModalOpen(true)}
-            className="btn-secondary btn-sm flex-shrink-0"
-          >
-            <Edit className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Редактировать</span>
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setIsConveyorOpen(true)}
+              className="btn-primary btn-sm"
+              title="Быстрый ввод запчастей (Конвейер)"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Конвейер</span>
+            </button>
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="btn-secondary btn-sm"
+            >
+              <Edit className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Редактировать</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -806,6 +818,20 @@ export default function PartsVehicleDetails() {
           onSaveBulk={items => addBulkMutation.mutate(items)}
           isSaving={addPartMutation.isPending || addBulkMutation.isPending}
           initialVehicleId={id}
+        />
+      )}
+
+      {isConveyorOpen && partsCompanyId && (
+        <ConveyorModal
+          partsCompanyId={partsCompanyId}
+          vehicles={[{ id: vehicle.id, make: vehicle.make, model: vehicle.model, year: vehicle.year ?? undefined }]}
+          categories={categories}
+          initialVehicleId={vehicle.id}
+          onClose={() => {
+            queryClient.invalidateQueries({ queryKey: ['vehicle-parts', id] })
+            queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+            setIsConveyorOpen(false)
+          }}
         />
       )}
 

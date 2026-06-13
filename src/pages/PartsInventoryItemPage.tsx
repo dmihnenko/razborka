@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import {
   ArrowLeft, Trash2, Package,
   MapPin, Tag, Car, FileText, AlertTriangle,
-  Share2, Edit2, Copy, Warehouse, CheckCircle2,
+  Share2, Edit2, Copy, Warehouse, CheckCircle2, QrCode,
 } from 'lucide-react'
 import { getPartsInventoryItem, deletePartsInventoryItem, getStorageLocations } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
@@ -17,6 +17,7 @@ import type { PartsInventoryStatus } from '@/types/parts'
 import PhotoGallery from '@/components/parts/PhotoGallery'
 import SellPartModal from '@/components/parts/SellPartModal'
 import ShareModal from '@/components/ui/ShareModal'
+import QrLabelModal from '@/components/parts/QrLabelModal'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
@@ -43,6 +44,7 @@ export default function PartsInventoryItemPage() {
   const { data: profile } = useUserProfile()
   const [isSellOpen, setIsSellOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
+  const [qrOpen, setQrOpen] = useState(false)
 
   const { data: item, isLoading, error } = useQuery({
     queryKey: ['parts-inventory-item', id],
@@ -163,6 +165,13 @@ export default function PartsInventoryItemPage() {
               title="Поделиться"
             >
               <Share2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setQrOpen(true)}
+              className="btn-icon"
+              title="QR / Этикетка"
+            >
+              <QrCode className="w-4 h-4" />
             </button>
             <button
               onClick={() => navigate('/parts/inventory', { state: { editItemId: id } })}
@@ -440,6 +449,15 @@ export default function PartsInventoryItemPage() {
               ? formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')
               : '',
           ].filter(Boolean).join(' · ')}
+        />
+      )}
+
+      {qrOpen && (
+        <QrLabelModal
+          title={item.name}
+          subtitle={item.part_number ? item.part_number.toUpperCase() : undefined}
+          value={`${window.location.origin}/public/parts-item/${id}`}
+          onClose={() => setQrOpen(false)}
         />
       )}
     </div>

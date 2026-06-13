@@ -35,6 +35,7 @@ interface ConveyorModalProps {
   vehicles: Vehicle[]
   categories: Category[]
   onClose: () => void
+  initialVehicleId?: string
 }
 
 interface ConveyorForm {
@@ -55,11 +56,11 @@ const EMPTY_FORM: ConveyorForm = {
   quantity: '1',
 }
 
-export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose }: ConveyorModalProps) {
+export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, initialVehicleId }: ConveyorModalProps) {
   const queryClient = useQueryClient()
   const nameRef = useRef<HTMLInputElement>(null)
 
-  const [vehicleId, setVehicleId] = useState<string>(vehicles[0]?.id ?? '')
+  const [vehicleId, setVehicleId] = useState<string>(initialVehicleId ?? vehicles[0]?.id ?? '')
   const [form, setForm] = useState<ConveyorForm>(EMPTY_FORM)
   const [recentItems, setRecentItems] = useState<RecentItem[]>([])
   const [addedCount, setAddedCount] = useState(0)
