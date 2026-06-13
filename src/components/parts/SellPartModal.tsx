@@ -96,9 +96,10 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
       onSold?.()
       onClose()
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       console.error('Sell error:', err)
-      const msg = err?.message || err?.error_description || JSON.stringify(err)
+      const e = err as { message?: string; error_description?: string }
+      const msg = e?.message || e?.error_description || JSON.stringify(err)
       toast.error(`Ошибка при сохранении: ${msg}`)
     },
   })
@@ -122,109 +123,137 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-dvh items-end sm:items-center justify-center p-0 sm:px-4">
-        <div className="fixed inset-0 bg-gray-500/75 backdrop-blur-[2px]" onClick={onClose} />
-        <div className="relative bg-white rounded-t-3xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm p-5 sm:p-6 z-10">
-          <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4 sm:hidden" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Продать запчасть</h3>
-          <p className="text-sm text-gray-500 mb-4 line-clamp-2">{item.name}</p>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-sheet sm:max-w-sm" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-handle" />
 
+        <div className="modal-header">
+          <div className="min-w-0">
+            <h3 className="text-base font-semibold text-gray-900 leading-tight">Продать запчасть</h3>
+            <p className="text-xs text-gray-500 mt-0.5 truncate">{item.name}</p>
+          </div>
+          <button type="button" onClick={onClose} className="btn-icon btn-icon-sm ml-3 flex-shrink-0">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="modal-body space-y-4">
           {/* Цена */}
-          <label className="block text-sm font-medium text-gray-700 mb-1">Цена продажи</label>
-          {item.selling_price && (
-            <p className="text-xs text-gray-400 mb-2">Объявленная: {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}</p>
-          )}
-          <div className="flex gap-2 mb-4">
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={sellPrice}
-              onChange={(e) => setSellPrice(e.target.value)}
-              placeholder="0"
-              autoFocus
-              className="flex-1 px-3 py-2 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            <button
-              type="button"
-              onClick={() => setSellCurrency(c => c === 'USD' ? 'UAH' : 'USD')}
-              className="px-3 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-primary/90 w-12 text-center"
-            >
-              {sellCurrency === 'USD' ? '$' : '₴'}
-            </button>
+          <div>
+            <label className="form-label">Цена продажи</label>
+            {item.selling_price && (
+              <p className="text-xs text-gray-400 mb-2">
+                Объявленная:{' '}
+                <span className="tabular-nums">
+                  {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
+                </span>
+              </p>
+            )}
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={sellPrice}
+                onChange={(e) => setSellPrice(e.target.value)}
+                placeholder="0"
+                autoFocus
+                className="form-input flex-1 tabular-nums"
+              />
+              <button
+                type="button"
+                onClick={() => setSellCurrency(c => c === 'USD' ? 'UAH' : 'USD')}
+                className="btn-primary px-3 w-12 text-center font-semibold tabular-nums"
+              >
+                {sellCurrency === 'USD' ? '$' : '₴'}
+              </button>
+            </div>
           </div>
 
           {/* Клиент */}
-          <label className="block text-sm font-medium text-gray-700 mb-1">Клиент <span className="text-gray-400 font-normal">(необязательно)</span></label>
-          {!showNewCustomer ? (
-            <div className="flex gap-2 mb-4">
-              <div className="relative flex-1">
-                <select
-                  value={sellCustomerId}
-                  onChange={(e) => setSellCustomerId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none pr-8"
+          <div>
+            <label className="form-label">
+              Клиент <span className="text-gray-400 font-normal">(необязательно)</span>
+            </label>
+            {!showNewCustomer ? (
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <select
+                    value={sellCustomerId}
+                    onChange={(e) => setSellCustomerId(e.target.value)}
+                    className="form-select pr-8"
+                  >
+                    <option value="">— Без клиента —</option>
+                    {customers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.full_name}{c.phone ? ` (${c.phone})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowNewCustomer(true)}
+                  className="btn-secondary flex items-center gap-1 px-3 flex-shrink-0"
+                  title="Новый клиент"
                 >
-                  <option value="">— Без клиента —</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.full_name}{c.phone ? ` (${c.phone})` : ''}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowNewCustomer(true)}
-                className="flex items-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 flex-shrink-0"
-                title="Новый клиент"
-              >
-                <UserPlus className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-gray-700">Новый клиент</span>
-                <button type="button" onClick={() => setShowNewCustomer(false)} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-4 h-4" />
+                  <UserPlus className="w-4 h-4" />
                 </button>
               </div>
-              <input
-                type="text"
-                value={newCustomerName}
-                onChange={(e) => setNewCustomerName(e.target.value)}
-                placeholder="Имя *"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <input
-                type="text"
-                value={newCustomerPhone}
-                onChange={(e) => setNewCustomerPhone(e.target.value)}
-                placeholder="Телефон"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-          )}
-
-          <div className="flex gap-3" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
-            >
-              Отмена
-            </button>
-            <button
-              type="button"
-              disabled={sellMutation.isPending}
-              onClick={handleSell}
-              className="flex-1 px-4 py-2.5 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50"
-            >
-              {sellMutation.isPending ? 'Сохранение...' : 'Продать'}
-            </button>
+            ) : (
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-xs font-semibold text-gray-700">Новый клиент</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewCustomer(false)}
+                    className="btn-icon btn-icon-sm"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={newCustomerName}
+                    onChange={(e) => setNewCustomerName(e.target.value)}
+                    placeholder="Имя *"
+                    className="form-input"
+                  />
+                  <input
+                    type="text"
+                    value={newCustomerPhone}
+                    onChange={(e) => setNewCustomerPhone(e.target.value)}
+                    placeholder="Телефон"
+                    className="form-input"
+                  />
+                </div>
+              </div>
+            )}
           </div>
+        </div>
+
+        <div className="modal-footer" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="modal-btn-cancel"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            disabled={sellMutation.isPending}
+            onClick={handleSell}
+            className="modal-btn-primary"
+            style={{
+              backgroundImage: 'linear-gradient(180deg, #16A34A 0%, #15803D 100%)',
+              boxShadow: '0 1px 2px rgba(21,128,61,0.35), 0 4px 12px -2px rgba(21,128,61,0.35)',
+            }}
+          >
+            {sellMutation.isPending ? 'Сохранение...' : 'Продать'}
+          </button>
         </div>
       </div>
     </div>

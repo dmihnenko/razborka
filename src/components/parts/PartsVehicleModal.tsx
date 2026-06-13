@@ -120,7 +120,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
         exchange_rate: exchangeRate,
         ...(formData.notes && { notes: formData.notes })
       }
-      
+
       await onSubmit(cleanData)
       onClose()
     } catch (err: any) {
@@ -136,7 +136,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: (name === 'year' || name === 'mileage') 
+      [name]: (name === 'year' || name === 'mileage')
                ? (value ? parseFloat(value) : undefined)
                : value
     }))
@@ -144,9 +144,11 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
 
   return (
     <div className="modal-overlay">
-      <div className="bg-white rounded-t-2xl sm:rounded-lg max-w-3xl w-full max-h-[95dvh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
-          <h2 className="text-lg sm:text-xl font-semibold pr-2">
+      <div className="modal-sheet sm:max-w-2xl">
+        <div className="modal-handle" />
+
+        <div className="modal-header">
+          <h2 className="heading-3">
             {vehicle ? 'Редактировать' : 'Добавить авто'}
           </h2>
           <button
@@ -155,23 +157,23 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
               e.stopPropagation();
               onClose();
             }}
-            className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 active:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+            className="btn-icon"
             aria-label="Закрыть"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+        <form id="parts-vehicle-form" onSubmit={handleSubmit} className="modal-body">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            <div className="alert alert-danger mb-4">
               {error}
             </div>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
             {/* Марка */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+              <label className="form-label">
                 Марка <span className="text-red-500">*</span>
               </label>
               <input
@@ -180,14 +182,14 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                 value={formData.make}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="form-input"
                 placeholder="Toyota, BMW..."
               />
             </div>
 
             {/* Модель */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+              <label className="form-label">
                 Модель <span className="text-red-500">*</span>
               </label>
               <input
@@ -196,14 +198,14 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                 value={formData.model}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="form-input"
                 placeholder="Camry, X5..."
               />
             </div>
 
             {/* Год */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+              <label className="form-label">
                 Год выпуска
               </label>
               <IMaskInput
@@ -212,14 +214,14 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                 max={new Date().getFullYear() + 1}
                 value={String(formData.year || '')}
                 onAccept={(value: string) => setFormData(prev => ({ ...prev, year: value ? Number(value) : undefined }))}
-                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="form-input"
                 placeholder="2020"
               />
             </div>
 
             {/* VIN */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+              <label className="form-label">
                 VIN номер
               </label>
               <div className="flex gap-2">
@@ -228,7 +230,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                   prepare={(str: string) => str.toUpperCase()}
                   value={formData.vin || ''}
                   onAccept={(value: string) => setFormData(prev => ({ ...prev, vin: value }))}
-                  className="min-w-0 flex-1 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-mono tracking-widest"
+                  className="form-input min-w-0 flex-1 font-mono tracking-widest"
                   placeholder="17 символов"
                 />
                 <button
@@ -236,7 +238,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                   onClick={handleDecodeVin}
                   disabled={!formData.vin?.trim() || vinLoading}
                   title="Распознать по VIN"
-                  className="flex-shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 min-w-[44px] min-h-[44px] bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-gray-700 text-sm font-medium"
+                  className="btn-secondary flex-shrink-0 flex items-center gap-1.5 px-3"
                 >
                   {vinLoading
                     ? <Spinner size="sm" className="w-5 h-5" />
@@ -253,11 +255,9 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
               <p className="text-xs text-gray-400 mt-1">Авто и европейские VIN распознаются не всегда</p>
             </div>
 
-
-
             {/* Цвет */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+              <label className="form-label">
                 Цвет
               </label>
               <input
@@ -265,13 +265,13 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                 name="color"
                 value={formData.color || ''}
                 onChange={handleChange}
-                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="form-input"
               />
             </div>
 
             {/* Пробег */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+              <label className="form-label">
                 Пробег (км)
               </label>
               <input
@@ -280,7 +280,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                 value={formData.mileage || ''}
                 onChange={handleChange}
                 min="0"
-                className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="form-input"
               />
             </div>
 
@@ -288,7 +288,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
             {vehicle && (
               <div className="sm:col-span-2">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-gray-700">Цена покупки</label>
+                  <label className="form-label mb-0">Цена покупки</label>
                   <div className="flex items-center gap-1.5 text-sm text-gray-500">
                     <span>Курс:</span>
                     <input
@@ -296,20 +296,20 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                       value={exchangeRate}
                       onChange={e => setExchangeRate(Number(e.target.value) || 41)}
                       min="1"
-                      className="w-16 px-2 py-1 border border-gray-300 rounded-md text-sm text-center focus:ring-2 focus:ring-primary focus:border-transparent"
+                      className="form-input w-16 px-2 py-1 text-sm text-center"
                     />
                     <span>₴/$</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  {priceRows.map((row, _idx) => (
+                  {priceRows.map((row) => (
                     <div key={row.id} className="flex items-center gap-2">
                       <input
                         type="text"
                         value={row.label}
                         onChange={e => setPriceRows(rows => rows.map(r => r.id === row.id ? { ...r, label: e.target.value } : r))}
-                        className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                        className="form-input flex-1 min-w-0 text-sm py-2"
                         placeholder="Описание (необязательно)"
                       />
                       <input
@@ -317,10 +317,10 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                         value={row.amount}
                         onChange={e => setPriceRows(rows => rows.map(r => r.id === row.id ? { ...r, amount: e.target.value } : r))}
                         min="0"
-                        className="w-32 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                        className="form-input w-32 text-sm py-2"
                         placeholder="0"
                       />
-                      <div className="flex rounded-lg border border-gray-300 overflow-hidden shrink-0">
+                      <div className="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
                         <button
                           type="button"
                           onClick={() => setPriceRows(rows => rows.map(r => r.id === row.id ? { ...r, currency: 'USD' } : r))}
@@ -340,7 +340,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                         <button
                           type="button"
                           onClick={() => setPriceRows(rows => rows.filter(r => r.id !== row.id))}
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                          className="btn-icon text-gray-400 hover:text-red-500 hover:bg-red-50 shrink-0"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -370,8 +370,8 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
           </div>
 
           {/* Примечания */}
-          <div className="mt-4 sm:mt-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+          <div className="mt-4 sm:mt-5">
+            <label className="form-label">
               Примечания
             </label>
             <textarea
@@ -379,30 +379,30 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
               value={formData.notes || ''}
               onChange={handleChange}
               rows={3}
-              className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="form-input"
               placeholder="Дополнительная информация..."
             />
           </div>
-
-          {/* Buttons */}
-          <div className="mt-6 flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 sm:flex-none px-4 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 active:bg-gray-300 font-medium"
-              disabled={loading}
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              className="flex-1 sm:flex-none px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 active:bg-primary/80 disabled:opacity-50 font-medium"
-              disabled={loading}
-            >
-              {loading ? 'Сохранение...' : vehicle ? 'Сохранить' : 'Добавить'}
-            </button>
-          </div>
         </form>
+
+        <div className="modal-footer">
+          <button
+            type="button"
+            onClick={onClose}
+            className="modal-btn-cancel"
+            disabled={loading}
+          >
+            Отмена
+          </button>
+          <button
+            type="submit"
+            form="parts-vehicle-form"
+            className="modal-btn-primary"
+            disabled={loading}
+          >
+            {loading ? 'Сохранение...' : vehicle ? 'Сохранить' : 'Добавить'}
+          </button>
+        </div>
       </div>
     </div>
   )

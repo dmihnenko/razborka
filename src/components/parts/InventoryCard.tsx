@@ -8,10 +8,10 @@ import { PARTS_CONDITION_LABELS } from '@/utils/status'
 // ── Status config ────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<PartsInventoryStatus, { label: string; className: string }> = {
-  available: { label: 'В наличии', className: 'bg-green-500 text-white' },
-  reserved:  { label: 'Резерв',    className: 'bg-yellow-500 text-white' },
-  sold:      { label: 'Продано',   className: 'bg-gray-500 text-white' },
-  damaged:   { label: 'Брак',      className: 'bg-red-500 text-white' },
+  available: { label: 'В наличии', className: 'badge badge-green' },
+  reserved:  { label: 'Резерв',    className: 'badge badge-yellow' },
+  sold:      { label: 'Продано',   className: 'badge badge-gray' },
+  damaged:   { label: 'Брак',      className: 'badge badge-red' },
 }
 
 // ── Props ────────────────────────────────────────────────────────────────────
@@ -56,7 +56,7 @@ export function InventoryCard({
   // Status
   const statusCfg = STATUS_CONFIG[item.status] ?? {
     label: item.status,
-    className: 'bg-gray-400 text-white',
+    className: 'badge badge-gray',
   }
 
   // Condition
@@ -94,8 +94,9 @@ export function InventoryCard({
   return (
     <div
       className={[
-        'rounded-xl bg-white shadow-md border flex flex-col overflow-hidden transition-shadow hover:shadow-lg',
-        isSelected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-100',
+        'card flex flex-col overflow-hidden p-0',
+        isSelected ? 'border-blue-500 ring-2 ring-blue-300' : '',
+        'card-interactive',
       ].join(' ')}
     >
       {/* ── ФОТО БЛОК ───────────────────────────────────────────────────── */}
@@ -135,7 +136,7 @@ export function InventoryCard({
         <button
           onClick={(e) => { e.stopPropagation(); onStatusClick(item, e) }}
           className={[
-            'absolute top-2 left-2 px-2 py-0.5 text-[10px] font-semibold rounded-md shadow-sm leading-tight backdrop-blur-sm hover:opacity-85 transition-opacity',
+            'absolute top-2 left-2 shadow-sm backdrop-blur-sm hover:opacity-85 transition-opacity',
             statusCfg.className,
           ].join(' ')}
         >
@@ -152,7 +153,7 @@ export function InventoryCard({
 
         {/* Мало в наличии — absolute bottom-left */}
         {lowStock && (
-          <span className="absolute bottom-2 left-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md pointer-events-none">
+          <span className="absolute bottom-2 left-2 badge badge-red pointer-events-none">
             Мало
           </span>
         )}
@@ -161,7 +162,7 @@ export function InventoryCard({
         <div className="absolute top-2 right-2 flex items-center gap-1">
           <button
             onClick={handleShare}
-            className="p-1.5 rounded-md bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 transition-colors"
+            className="btn-icon-sm bg-black/40 text-white backdrop-blur-sm hover:bg-black/60"
             aria-label="Поделиться"
             title="Поделиться"
           >
@@ -189,7 +190,7 @@ export function InventoryCard({
       >
         {/* Категория */}
         {item.category?.name && (
-          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide leading-none">
+          <span className="kicker text-gray-400">
             {item.category.name}
           </span>
         )}
@@ -202,7 +203,7 @@ export function InventoryCard({
         {/* Артикул + Состояние */}
         <div className="flex items-center gap-2 flex-wrap">
           {item.part_number && (
-            <span className="font-mono text-[10px] text-gray-400 uppercase">
+            <span className="kicker text-gray-400">
               {item.part_number}
             </span>
           )}
@@ -225,8 +226,8 @@ export function InventoryCard({
         <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
           <span
             className={[
-              'text-[10px] font-semibold px-1.5 py-0.5 rounded-md',
-              lowStock ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600',
+              'kicker px-1.5 py-0.5 rounded-md tabular',
+              lowStock ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-600',
             ].join(' ')}
           >
             {item.quantity ?? 1} шт.
@@ -243,10 +244,10 @@ export function InventoryCard({
           {isSold && item.sold_price != null ? (
             <div>
               <p className="text-[10px] text-gray-400 leading-none mb-0.5">Продано за</p>
-              <p className="text-base font-bold text-gray-500">{priceDisplay}</p>
+              <p className="text-base font-bold text-gray-500 tabular">{priceDisplay}</p>
             </div>
           ) : priceDisplay ? (
-            <p className="text-lg font-bold text-primary leading-tight">{priceDisplay}</p>
+            <p className="text-lg font-bold text-primary leading-tight tabular">{priceDisplay}</p>
           ) : (
             <p className="text-xs text-amber-600 font-medium">Цена не указана</p>
           )}
@@ -261,7 +262,7 @@ export function InventoryCard({
         {/* Изменить */}
         <button
           onClick={(e) => onEdit(item, e)}
-          className="flex items-center justify-center gap-1 flex-1 text-xs font-medium py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
+          className="btn btn-secondary btn-sm flex-1 gap-1"
         >
           <Edit2 className="w-3.5 h-3.5" />
           Изменить
@@ -271,7 +272,7 @@ export function InventoryCard({
         <button
           onClick={(e) => onSell(item, e)}
           disabled={isSold}
-          className="flex items-center justify-center gap-1 flex-1 text-xs font-medium py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="btn btn-success btn-sm flex-1 gap-1"
         >
           <ShoppingCart className="w-3.5 h-3.5" />
           Продать
@@ -283,7 +284,7 @@ export function InventoryCard({
             onClick={(e) => onDuplicate(item, e)}
             aria-label="Дублировать"
             title="Дублировать"
-            className="px-2.5 py-1.5 rounded-lg border border-blue-100 text-blue-400 hover:bg-blue-50 transition-colors flex-shrink-0"
+            className="btn-icon-sm text-blue-400 hover:text-blue-600 hover:bg-blue-50 flex-shrink-0"
           >
             <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />
           </button>
@@ -293,7 +294,7 @@ export function InventoryCard({
         <button
           onClick={(e) => onDelete(item, e)}
           aria-label="Удалить"
-          className="px-2.5 py-1.5 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 transition-colors flex-shrink-0"
+          className="btn-icon-sm text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
