@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2, Phone, Send, Info } from 'lucide-react'
+import { RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2, Phone, Send, Info, Truck } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -8,6 +8,7 @@ import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { formatDate } from '@/utils/date'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getImgbbKey, setImgbbKey } from '@/utils/imgbbKey'
+import { getNpApiKey, setNpApiKey } from '@/utils/npApiKey'
 import { toast } from 'sonner'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { TELEGRAM_BOT_USERNAME, telegramConnectLink } from '@/config/telegram'
@@ -30,6 +31,7 @@ export default function PartsSettings() {
 
   const [manualInput, setManualInput] = useState<string>(String(rate))
   const [imgbbKeyInput, setImgbbKeyInput] = useState<string>(getImgbbKey)
+  const [npKeyInput, setNpKeyInput] = useState<string>(getNpApiKey)
 
   // Контакты разборки
   const queryClient = useQueryClient()
@@ -69,6 +71,12 @@ export default function PartsSettings() {
     const trimmed = imgbbKeyInput.trim()
     setImgbbKey(trimmed)
     toast.success(trimmed ? 'API ключ ImgBB сохранён' : 'API ключ удалён')
+  }
+
+  const handleSaveNpKey = () => {
+    const trimmed = npKeyInput.trim()
+    setNpApiKey(trimmed)
+    toast.success(trimmed ? 'API ключ Новой почты сохранён' : 'API ключ Новой почты удалён')
   }
 
   const handleFetchPrivatBank = async () => {
@@ -323,6 +331,50 @@ export default function PartsSettings() {
               >
                 <ExternalLink className="w-3.5 h-3.5" />
                 Получить бесплатный ключ на imgbb.com
+              </a>
+            </div>
+
+            {/* Новая почта API ключ */}
+            <div className="card">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="icon-tile bg-red-100 dark:bg-red-900/40">
+                  <Truck className="w-5 h-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h2 className="heading-3">Новая почта</h2>
+                  <p className="kicker mt-0.5">Автокомплит міст і відділень при доставці</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  value={npKeyInput}
+                  onChange={e => setNpKeyInput(e.target.value)}
+                  className="form-input flex-1 font-mono"
+                  placeholder="Вставьте API-ключ Новой почты..."
+                />
+                <button onClick={handleSaveNpKey} className="btn-primary flex-shrink-0">
+                  <Save className="w-4 h-4" />
+                  Сохранить
+                </button>
+              </div>
+
+              {npKeyInput && (
+                <p className="text-xs text-green-600 dark:text-green-400 mb-2">
+                  <CheckCircle className="w-3.5 h-3.5 inline mr-1" />
+                  Ключ установлен
+                </p>
+              )}
+
+              <a
+                href="https://new.novaposhta.ua/dashboard/settings/developers"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Получить API-ключ в кабинете Новой почты
               </a>
             </div>
 

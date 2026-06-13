@@ -55,6 +55,7 @@ const AdminSettings = lazy(() => import('./pages/AdminSettings'))
 const AdminAccessRequests = lazy(() => import('./pages/AdminAccessRequests'))
 const PartsSubscriptionPage = lazy(() => import('./pages/PartsSubscriptionPage'))
 const PartsMarketOrders = lazy(() => import('./pages/PartsMarketOrders'))
+const PartsActivityLog = lazy(() => import('./pages/PartsActivityLog'))
 
 // Публичный лендинг авторазборок
 const BusinessLanding = lazy(() => import('./pages/business/BusinessLanding'))
@@ -233,6 +234,7 @@ function App() {
           <Route path="parts/customers/:id" element={<PartsCustomerProfile />} />
           <Route path="parts/employees" element={<PartsEmployees />} />
           <Route path="parts/analytics" element={<PartsAnalytics />} />
+          <Route path="parts/activity" element={<PartsActivityLog />} />
           <Route path="parts/categories" element={<PartsCategories />} />
           <Route path="parts/settings" element={<PartsSettings />} />
           <Route path="parts/warehouse" element={<PartsWarehouse />} />

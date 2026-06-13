@@ -11,6 +11,7 @@ import {
   ShoppingBag,
   CreditCard,
   Inbox,
+  History,
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -42,6 +43,7 @@ export const partsOwnerMenu: MenuItem[] = [
   { name: 'Аналитика', href: '/parts/analytics', icon: LineChart },
   { name: 'Подписка', href: '/parts/subscription', icon: CreditCard },
   { name: 'Настройки', href: '/parts/settings', icon: SlidersHorizontal },
+  { name: 'История', href: '/parts/activity', icon: History },
   { name: 'Поддержка', href: '/support', icon: MessageCircle },
   { name: 'Профиль', href: '/profile', icon: CircleUser },
 ];

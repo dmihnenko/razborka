@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useUserProfile, useHasRole, useIsAdmin } from '@/hooks/useUserProfile'
@@ -11,6 +11,8 @@ import {
   ArrowLeft, Plus, Trash2, Edit2, Search,
   CheckCircle, MapPin, Truck, User, Package, X,
 } from 'lucide-react'
+import { getNpApiKey } from '@/utils/npApiKey'
+import { searchCities, searchWarehouses, NpCity, NpWarehouse } from '@/services/npService'
 import { formatCurrency, formatPrice } from '@/utils/currency'
 import { getPartsOrderStatusText } from '@/utils/status'
 import {
@@ -51,6 +53,16 @@ export default function PartsOrderDetails() {
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerCity, setCustomerCity] = useState('')
   const [customerNpOffice, setCustomerNpOffice] = useState('')
+
+  /* ── Новая почта автокомплит ─────────────────────────────────── */
+  const npApiKeySet = Boolean(getNpApiKey())
+  const [cityInputValue, setCityInputValue] = useState('')
+  const [cityRef, setCityRef] = useState('')
+  const [cityDebounced, setCityDebounced] = useState('')
+  const [warehouseInputValue, setWarehouseInputValue] = useState('')
+  const [warehouseDebounced, setWarehouseDebounced] = useState('')
+  const [showCityList, setShowCityList] = useState(false)
+  const [showWarehouseList, setShowWarehouseList] = useState(false)
 
   /* ── запрос заказа ──────────────────────────────────────────── */
   const { data: order, isLoading } = useQuery({
@@ -135,10 +147,43 @@ export default function PartsOrderDetails() {
     if (order?.customer) {
       setCustomerFullName(order.customer.full_name || '')
       setCustomerPhone(order.customer.phone || '')
-      setCustomerCity((order.customer as any).city || '')
-      setCustomerNpOffice((order.customer as any).np_office || '')
+      const city = (order.customer as any).city || ''
+      const npOffice = (order.customer as any).np_office || ''
+      setCustomerCity(city)
+      setCustomerNpOffice(npOffice)
+      if (npApiKeySet) {
+        setCityInputValue(city)
+        setWarehouseInputValue(npOffice)
+      }
     }
-  }, [order?.customer?.id])
+  }, [order?.customer?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── debounce для НП-поиска ─────────────────────────────────── */
+  useEffect(() => {
+    const t = setTimeout(() => setCityDebounced(cityInputValue), 350)
+    return () => clearTimeout(t)
+  }, [cityInputValue])
+
+  useEffect(() => {
+    const t = setTimeout(() => setWarehouseDebounced(warehouseInputValue), 350)
+    return () => clearTimeout(t)
+  }, [warehouseInputValue])
+
+  /* ── НП: города ─────────────────────────────────────────────── */
+  const { data: npCities = [] } = useQuery<NpCity[]>({
+    queryKey: ['np-cities', cityDebounced],
+    queryFn: () => searchCities(cityDebounced),
+    enabled: npApiKeySet && cityDebounced.length >= 2,
+    staleTime: 60_000,
+  })
+
+  /* ── НП: отделения ──────────────────────────────────────────── */
+  const { data: npWarehouses = [] } = useQuery<NpWarehouse[]>({
+    queryKey: ['np-warehouses', cityRef, warehouseDebounced],
+    queryFn: () => searchWarehouses(cityRef, warehouseDebounced),
+    enabled: npApiKeySet && Boolean(cityRef),
+    staleTime: 60_000,
+  })
 
   /* ── вспомогательная: создать клиента и привязать ───────────── */
   const createAndAttachCustomer = async (orderId: string) => {
@@ -449,23 +494,62 @@ export default function PartsOrderDetails() {
               </div>
               <div>
                 <label className="form-label">Город</label>
-                <input
-                  type="text"
-                  value={customerCity}
-                  onChange={(e) => setCustomerCity(e.target.value)}
-                  placeholder="Киев"
-                  className="form-input"
-                />
+                {npApiKeySet ? (
+                  <NpCombobox
+                    value={cityInputValue}
+                    onChange={setCityInputValue}
+                    placeholder="Введите город..."
+                    items={npCities.map(c => ({ value: c.ref, label: c.name }))}
+                    open={showCityList}
+                    onOpen={() => setShowCityList(true)}
+                    onClose={() => setShowCityList(false)}
+                    onSelect={(item) => {
+                      setCityInputValue(item.label)
+                      setCustomerCity(item.label)
+                      setCityRef(item.value)
+                      setShowCityList(false)
+                      setWarehouseInputValue('')
+                      setCustomerNpOffice('')
+                      setCityDebounced('')
+                    }}
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={customerCity}
+                    onChange={(e) => setCustomerCity(e.target.value)}
+                    placeholder="Киев"
+                    className="form-input"
+                  />
+                )}
               </div>
               <div>
                 <label className="form-label">Отделение Новой почты</label>
-                <input
-                  type="text"
-                  value={customerNpOffice}
-                  onChange={(e) => setCustomerNpOffice(e.target.value)}
-                  placeholder="Відділення №1"
-                  className="form-input"
-                />
+                {npApiKeySet ? (
+                  <NpCombobox
+                    value={warehouseInputValue}
+                    onChange={setWarehouseInputValue}
+                    placeholder={cityRef ? 'Введите отделение...' : 'Сначала выберите город'}
+                    disabled={!cityRef}
+                    items={npWarehouses.map(w => ({ value: w.ref, label: w.description }))}
+                    open={showWarehouseList}
+                    onOpen={() => { if (cityRef) setShowWarehouseList(true) }}
+                    onClose={() => setShowWarehouseList(false)}
+                    onSelect={(item) => {
+                      setWarehouseInputValue(item.label)
+                      setCustomerNpOffice(item.label)
+                      setShowWarehouseList(false)
+                    }}
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={customerNpOffice}
+                    onChange={(e) => setCustomerNpOffice(e.target.value)}
+                    placeholder="Відділення №1"
+                    className="form-input"
+                  />
+                )}
               </div>
             </div>
 
@@ -637,6 +721,74 @@ export default function PartsOrderDetails() {
       )}
 
       <ConfirmDialog {...dialogProps} />
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   NpCombobox — инлайн-комбобокс для поиска городов/отделений НП
+══════════════════════════════════════════════════════════════════ */
+interface NpComboboxItem {
+  value: string
+  label: string
+}
+
+interface NpComboboxProps {
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+  disabled?: boolean
+  items: NpComboboxItem[]
+  open: boolean
+  onOpen: () => void
+  onClose: () => void
+  onSelect: (item: NpComboboxItem) => void
+}
+
+function NpCombobox({
+  value, onChange, placeholder, disabled,
+  items, open, onOpen, onClose, onSelect,
+}: NpComboboxProps) {
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        onClose()
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open, onClose])
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <input
+        type="text"
+        value={value}
+        disabled={disabled}
+        placeholder={placeholder}
+        className="form-input w-full disabled:opacity-50 disabled:cursor-not-allowed"
+        onChange={e => { onChange(e.target.value); onOpen() }}
+        onFocus={onOpen}
+        onKeyDown={e => { if (e.key === 'Escape') onClose() }}
+      />
+      {open && items.length > 0 && (
+        <ul className="absolute z-50 left-0 right-0 top-full mt-1 max-h-56 overflow-y-auto rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
+          {items.map(item => (
+            <li key={item.value}>
+              <button
+                type="button"
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-800 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
+                onMouseDown={e => { e.preventDefault(); onSelect(item) }}
+              >
+                {item.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

@@ -1,18 +1,40 @@
-import { useState } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { formatDate } from '@/utils/date'
-import { PartsOrder } from '@/types/parts'
+import { PartsOrder, PartsOrderStatus } from '@/types/parts'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, ShoppingCart } from 'lucide-react'
+import { Plus, Search, ShoppingCart, LayoutList, Columns3 } from 'lucide-react'
 import { getPartsOrderStatusText } from '@/utils/status'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import { updatePartsOrderStatus } from '@/services/partsService'
+import { toast } from 'sonner'
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
+import { useSortable } from '@dnd-kit/sortable'
+import { useDroppable } from '@dnd-kit/core'
 
-// Map parts order status → badge-* token (badge component palette)
+// ─── Статусы для канбана ─────────────────────────────────────────────────────
+const BOARD_COLUMNS: { status: PartsOrderStatus; label: string; dot: string; ring: string }[] = [
+  { status: 'new',         label: 'Новый',    dot: 'bg-blue-500',    ring: 'ring-blue-400'   },
+  { status: 'in_progress', label: 'В работе', dot: 'bg-amber-400',   ring: 'ring-amber-400'  },
+  { status: 'completed',   label: 'Завершён', dot: 'bg-emerald-500', ring: 'ring-emerald-500'},
+]
+
+// ─── Бейджи ──────────────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
   new:         'badge badge-blue',
   in_progress: 'badge badge-yellow',
@@ -24,8 +46,106 @@ function statusBadge(status: string) {
   return STATUS_BADGE[status] ?? 'badge badge-gray'
 }
 
+// ─── Draggable карточка на доске ─────────────────────────────────────────────
+interface BoardCardProps {
+  order: PartsOrder
+  formatUSD: (v?: number | null) => string
+  computeOrderUSD: (o: PartsOrder) => number | null
+  onClick: () => void
+  isDragging?: boolean
+}
+
+function BoardCard({ order, formatUSD, computeOrderUSD, onClick, isDragging }: BoardCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging: isCurrentlyDragging } =
+    useSortable({ id: order.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isCurrentlyDragging ? 0.4 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      onClick={onClick}
+      className={`card p-3 cursor-grab active:cursor-grabbing select-none ${isDragging ? 'shadow-xl ring-2 ring-primary' : 'hover:shadow-md'} transition-shadow`}
+    >
+      <div className="flex items-start justify-between gap-2 mb-1.5">
+        <span className="kicker text-gray-400 truncate">{order.order_number}</span>
+        <span className="text-sm font-extrabold tabular text-primary flex-shrink-0" style={{ letterSpacing: '-0.02em' }}>
+          {formatUSD(computeOrderUSD(order))}
+        </span>
+      </div>
+      <p className="text-sm font-semibold text-gray-800 truncate mb-1">
+        {order.customer?.full_name ?? '—'}
+      </p>
+      <p className="text-xs text-gray-400">{formatDate(order.order_date)}</p>
+    </div>
+  )
+}
+
+// ─── Droppable колонка ────────────────────────────────────────────────────────
+interface BoardColumnProps {
+  status: PartsOrderStatus
+  label: string
+  dot: string
+  ring: string
+  orders: PartsOrder[]
+  formatUSD: (v?: number | null) => string
+  computeOrderUSD: (o: PartsOrder) => number | null
+  onCardClick: (id: string) => void
+  activeId: string | null
+}
+
+function BoardColumn({ status, label, dot, ring, orders, formatUSD, computeOrderUSD, onCardClick, activeId }: BoardColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: status })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex flex-col min-h-[200px] rounded-xl p-3 transition-colors ${
+        isOver ? 'bg-blue-50 ring-2 ring-primary/30' : 'bg-gray-100/70'
+      }`}
+    >
+      {/* Заголовок колонки */}
+      <div className="flex items-center gap-2 mb-3 px-1">
+        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
+        <span className="text-sm font-bold text-gray-700">{label}</span>
+        <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ring-1 ${ring} text-gray-600 bg-white`}>
+          {orders.length}
+        </span>
+      </div>
+
+      {/* Карточки */}
+      <div className="flex flex-col gap-2 flex-1">
+        {orders.map(order => (
+          <BoardCard
+            key={order.id}
+            order={order}
+            formatUSD={formatUSD}
+            computeOrderUSD={computeOrderUSD}
+            onClick={() => onCardClick(order.id)}
+            isDragging={activeId === order.id}
+          />
+        ))}
+        {orders.length === 0 && (
+          <div className="flex-1 flex items-center justify-center py-8 text-xs text-gray-400 border-2 border-dashed border-gray-200 rounded-lg">
+            Нет заказов
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Главный компонент ────────────────────────────────────────────────────────
 export default function PartsOrders() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
 
@@ -36,22 +156,30 @@ export default function PartsOrders() {
     return `$${Math.round(amount).toLocaleString('ru-RU')}`
   }
 
-  // Считаем сумму заказа в USD: USD-позиции напрямую, UAH-позиции делим на курс
-  const computeOrderUSD = (order: any): number | null => {
+  const computeOrderUSD = useCallback((order: PartsOrder): number | null => {
     if (!order.items || order.items.length === 0) return null
-    // Используем курс, зафиксированный при закрытии заказа, или текущий глобальный
-    const rate = order.exchange_rate_at_sale || usdRate
+    const rate = (order as any).exchange_rate_at_sale || usdRate
     if (!rate) return null
-    return order.items.reduce((sum: number, item: any) => {
+    return order.items.reduce((sum, item) => {
       const amount = (item.price_at_sale ?? 0) * (item.quantity ?? 1)
       return sum + (item.price_at_sale_currency === 'USD' ? amount : amount / rate)
     }, 0)
-  }
+  }, [usdRate])
 
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [viewMode, setViewMode] = useState<'list' | 'board'>('list')
 
-  // Получить список заказов
+  // DnD state
+  const [activeId, setActiveId] = useState<string | null>(null)
+  // Оптимистичный список: id → status
+  const [optimisticOverrides, setOptimisticOverrides] = useState<Record<string, PartsOrderStatus>>({})
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  )
+
+  // ─── Запрос заказов ──────────────────────────────────────────────────────
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['parts-orders', partsCompanyId, statusFilter],
     queryFn: async () => {
@@ -62,7 +190,7 @@ export default function PartsOrders() {
         .select(`
           *,
           customer:parts_customers(id, full_name, phone),
-          items:parts_order_items(id, quantity, subtotal, price_at_sale, price_at_sale_currency, inventory_item:parts_inventory(name))
+          items:parts_order_items(id, quantity, subtotal, price_at_sale, price_at_sale_currency, inventory_item_id, inventory_item:parts_inventory(name))
         `)
         .eq('parts_company_id', partsCompanyId)
         .order('order_date', { ascending: false })
@@ -72,15 +200,71 @@ export default function PartsOrders() {
       }
 
       const { data, error } = await query
-
       if (error) throw error
       return data as PartsOrder[]
     },
     enabled: !!partsCompanyId,
   })
 
-  // Фильтрация по поиску
-  const filteredOrders = orders.filter(order => {
+  // ─── Мутация смены статуса ────────────────────────────────────────────────
+  const statusMutation = useMutation({
+    mutationFn: ({ orderId, newStatus, inventoryIds }: {
+      orderId: string
+      newStatus: PartsOrderStatus
+      inventoryIds: string[]
+    }) => updatePartsOrderStatus(orderId, newStatus, inventoryIds, usdRate),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+    },
+    onError: (_, variables) => {
+      // Откат оптимистичного
+      setOptimisticOverrides(prev => {
+        const next = { ...prev }
+        delete next[variables.orderId]
+        return next
+      })
+      toast.error('Не удалось обновить статус заказа')
+    },
+  })
+
+  // ─── DnD handlers ─────────────────────────────────────────────────────────
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string)
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null)
+    const { active, over } = event
+    if (!over) return
+
+    const orderId = active.id as string
+    const newStatus = over.id as PartsOrderStatus
+
+    // Находим заказ
+    const order = orders.find(o => o.id === orderId)
+    if (!order) return
+
+    const currentStatus = optimisticOverrides[orderId] ?? order.status
+    if (currentStatus === newStatus) return
+
+    // Допустимые целевые статусы (только колонки доски)
+    const validStatuses: PartsOrderStatus[] = ['new', 'in_progress', 'completed']
+    if (!validStatuses.includes(newStatus)) return
+
+    // Собираем inventory_item_id из items
+    const inventoryIds = (order.items ?? [])
+      .map(i => (i as any).inventory_item_id as string | undefined)
+      .filter((id): id is string => !!id)
+
+    // Оптимистичный апдейт
+    setOptimisticOverrides(prev => ({ ...prev, [orderId]: newStatus }))
+
+    statusMutation.mutate({ orderId, newStatus, inventoryIds })
+  }
+
+  // ─── Фильтрация ───────────────────────────────────────────────────────────
+  const filteredOrders = useMemo(() => orders.filter(order => {
     if (!searchQuery) return true
     const query = searchQuery.toLowerCase()
     return (
@@ -88,10 +272,17 @@ export default function PartsOrders() {
       order.customer?.full_name?.toLowerCase().includes(query) ||
       order.customer?.phone?.toLowerCase().includes(query)
     )
-  })
+  }), [orders, searchQuery])
 
-  // Statistics
-  const stats = {
+  // Применяем оптимистичные статусы
+  const ordersWithOptimistic = useMemo(() =>
+    filteredOrders.map(o =>
+      optimisticOverrides[o.id] ? { ...o, status: optimisticOverrides[o.id] } : o
+    ),
+  [filteredOrders, optimisticOverrides])
+
+  // ─── Статистика ───────────────────────────────────────────────────────────
+  const stats = useMemo(() => ({
     total: orders.length,
     new: orders.filter(o => o.status === 'new').length,
     in_progress: orders.filter(o => o.status === 'in_progress').length,
@@ -103,7 +294,10 @@ export default function PartsOrders() {
         .filter(o => o.status === 'completed')
         .reduce((sum, o) => sum + (computeOrderUSD(o) ?? 0), 0)
     })(),
-  }
+  }), [orders, usdRate, computeOrderUSD])
+
+  // Активный заказ для DragOverlay
+  const activeOrder = activeId ? orders.find(o => o.id === activeId) : null
 
   if (!partsCompanyId) {
     return <PartsAccessDenied />
@@ -165,7 +359,7 @@ export default function PartsOrders() {
           </div>
         </div>
 
-        {/* Поиск + фильтр-чипы */}
+        {/* Поиск + фильтры + переключатель вида */}
         <div className="card p-4 mb-4">
           {/* Поиск */}
           <div className="relative mb-3">
@@ -179,23 +373,43 @@ export default function PartsOrders() {
             />
           </div>
 
-          {/* Чипы статуса */}
-          <div className="flex flex-wrap gap-2">
-            {[
-              { key: 'all',         label: 'Все' },
-              { key: 'new',         label: 'Новые' },
-              { key: 'in_progress', label: 'В работе' },
-              { key: 'completed',   label: 'Завершены' },
-              { key: 'cancelled',   label: 'Отменены' },
-            ].map(({ key, label }) => (
+          {/* Чипы статуса + переключатель вида */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex flex-wrap gap-2 flex-1">
+              {[
+                { key: 'all',         label: 'Все' },
+                { key: 'new',         label: 'Новые' },
+                { key: 'in_progress', label: 'В работе' },
+                { key: 'completed',   label: 'Завершены' },
+                { key: 'cancelled',   label: 'Отменены' },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setStatusFilter(key)}
+                  className={`chip ${statusFilter === key ? 'chip-active' : ''}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Переключатель вида (только на десктопе) */}
+            <div className="hidden md:flex items-center gap-1 border border-gray-200 rounded-lg p-0.5 flex-shrink-0">
               <button
-                key={key}
-                onClick={() => setStatusFilter(key)}
-                className={`chip ${statusFilter === key ? 'chip-active' : ''}`}
+                onClick={() => setViewMode('list')}
+                title="Список"
+                className={`btn-icon-sm rounded-md ${viewMode === 'list' ? 'bg-primary text-white hover:bg-primary hover:text-white' : ''}`}
               >
-                {label}
+                <LayoutList className="w-4 h-4" />
               </button>
-            ))}
+              <button
+                onClick={() => setViewMode('board')}
+                title="Доска"
+                className={`btn-icon-sm rounded-md ${viewMode === 'board' ? 'bg-primary text-white hover:bg-primary hover:text-white' : ''}`}
+              >
+                <Columns3 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -227,77 +441,129 @@ export default function PartsOrders() {
           </div>
         ) : (
           <>
-            {/* Desktop — таблица (md+) */}
-            <div className="card p-0 overflow-hidden hidden md:block">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr>
-                      <th className="table-header-cell">№ заказа</th>
-                      <th className="table-header-cell">Запчасти</th>
-                      <th className="table-header-cell">Клиент</th>
-                      <th className="table-header-cell">Дата</th>
-                      <th className="table-header-cell">Статус</th>
-                      <th className="table-header-cell text-right">Сумма</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {filteredOrders.map((order) => (
-                      <tr
-                        key={order.id}
-                        onClick={() => navigate(`/parts/orders/${order.id}`)}
-                        className="table-row cursor-pointer group/row"
-                      >
-                        <td className="table-cell">
-                          <span className="kicker text-gray-400">{order.order_number}</span>
-                        </td>
-                        <td className="table-cell">
-                          <div className="font-semibold text-gray-900 group-hover/row:text-primary transition-colors line-clamp-2 max-w-xs">
-                            {order.items && order.items.length > 0
-                              ? order.items.map((i: any) => i.inventory_item?.name).filter(Boolean).join(', ')
-                              : '—'}
-                          </div>
-                          {order.items && order.items.length > 0 && (
-                            <span className="text-xs text-gray-400 mt-0.5 block">{order.items.length} поз.</span>
-                          )}
-                        </td>
-                        <td className="table-cell">
-                          {order.customer ? (
-                            <div>
-                              <div className="font-semibold text-gray-800">{order.customer.full_name}</div>
-                              {order.customer.phone && (
-                                <div className="text-xs text-gray-400 mt-0.5">{order.customer.phone}</div>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-gray-400">—</span>
-                          )}
-                        </td>
-                        <td className="table-cell whitespace-nowrap text-gray-500">
-                          {formatDate(order.order_date)}
-                        </td>
-                        <td className="table-cell whitespace-nowrap">
-                          <span className={statusBadge(order.status)}>
-                            {getPartsOrderStatusText(order.status)}
-                          </span>
-                        </td>
-                        <td className="table-cell whitespace-nowrap text-right">
-                          <span className="text-base font-extrabold tabular text-primary" style={{ letterSpacing: '-0.02em' }}>
-                            {formatUSD(computeOrderUSD(order))}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            {/* ── Канбан-доска (только md+, только viewMode=board) ── */}
+            {viewMode === 'board' && (
+              <div className="hidden md:block mb-4">
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className="grid grid-cols-3 gap-4">
+                    {BOARD_COLUMNS.map(col => {
+                      const colOrders = ordersWithOptimistic.filter(o => o.status === col.status)
+                      return (
+                        <BoardColumn
+                          key={col.status}
+                          status={col.status}
+                          label={col.label}
+                          dot={col.dot}
+                          ring={col.ring}
+                          orders={colOrders}
+                          formatUSD={formatUSD}
+                          computeOrderUSD={computeOrderUSD}
+                          onCardClick={(id) => navigate(`/parts/orders/${id}`)}
+                          activeId={activeId}
+                        />
+                      )
+                    })}
+                  </div>
 
-            {/* Mobile — плоские карточки (<md) */}
+                  {/* DragOverlay — «призрак» при перетаскивании */}
+                  <DragOverlay>
+                    {activeOrder ? (
+                      <div className="card p-3 shadow-2xl rotate-2 opacity-95 w-64">
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <span className="kicker text-gray-400 truncate">{activeOrder.order_number}</span>
+                          <span className="text-sm font-extrabold tabular text-primary flex-shrink-0" style={{ letterSpacing: '-0.02em' }}>
+                            {formatUSD(computeOrderUSD(activeOrder))}
+                          </span>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-800 truncate mb-1">
+                          {activeOrder.customer?.full_name ?? '—'}
+                        </p>
+                        <p className="text-xs text-gray-400">{formatDate(activeOrder.order_date)}</p>
+                      </div>
+                    ) : null}
+                  </DragOverlay>
+                </DndContext>
+              </div>
+            )}
+
+            {/* ── Таблица (md+, viewMode=list) — скрыта в режиме доски ── */}
+            {(viewMode === 'list') && (
+              <div className="card p-0 overflow-hidden hidden md:block">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr>
+                        <th className="table-header-cell">№ заказа</th>
+                        <th className="table-header-cell">Запчасти</th>
+                        <th className="table-header-cell">Клиент</th>
+                        <th className="table-header-cell">Дата</th>
+                        <th className="table-header-cell">Статус</th>
+                        <th className="table-header-cell text-right">Сумма</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filteredOrders.map((order) => (
+                        <tr
+                          key={order.id}
+                          onClick={() => navigate(`/parts/orders/${order.id}`)}
+                          className="table-row cursor-pointer group/row"
+                        >
+                          <td className="table-cell">
+                            <span className="kicker text-gray-400">{order.order_number}</span>
+                          </td>
+                          <td className="table-cell">
+                            <div className="font-semibold text-gray-900 group-hover/row:text-primary transition-colors line-clamp-2 max-w-xs">
+                              {order.items && order.items.length > 0
+                                ? order.items.map((i) => i.inventory_item?.name).filter(Boolean).join(', ')
+                                : '—'}
+                            </div>
+                            {order.items && order.items.length > 0 && (
+                              <span className="text-xs text-gray-400 mt-0.5 block">{order.items.length} поз.</span>
+                            )}
+                          </td>
+                          <td className="table-cell">
+                            {order.customer ? (
+                              <div>
+                                <div className="font-semibold text-gray-800">{order.customer.full_name}</div>
+                                {order.customer.phone && (
+                                  <div className="text-xs text-gray-400 mt-0.5">{order.customer.phone}</div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">—</span>
+                            )}
+                          </td>
+                          <td className="table-cell whitespace-nowrap text-gray-500">
+                            {formatDate(order.order_date)}
+                          </td>
+                          <td className="table-cell whitespace-nowrap">
+                            <span className={statusBadge(order.status)}>
+                              {getPartsOrderStatusText(order.status)}
+                            </span>
+                          </td>
+                          <td className="table-cell whitespace-nowrap text-right">
+                            <span className="text-base font-extrabold tabular text-primary" style={{ letterSpacing: '-0.02em' }}>
+                              {formatUSD(computeOrderUSD(order))}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Mobile — плоские карточки (<md, всегда список) */}
             <div className="flex flex-col gap-2 md:hidden stagger-children">
               {filteredOrders.map((order) => {
                 const itemNames = order.items && order.items.length > 0
-                  ? order.items.map((i: any) => i.inventory_item?.name).filter(Boolean).join(', ')
+                  ? order.items.map((i) => i.inventory_item?.name).filter(Boolean).join(', ')
                   : '—'
                 return (
                   <div
