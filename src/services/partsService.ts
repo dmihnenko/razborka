@@ -831,6 +831,33 @@ export async function getPartsInventoryByVehicle(vehicleId: string): Promise<any
   return data || []
 }
 
+/**
+ * Массово обновляет поля позиций склада (место хранения, категория).
+ * Принимает ids и объект обновлений; бросает ошибку при неудаче.
+ */
+export async function bulkUpdateInventory(
+  ids: string[],
+  updates: { storage_location_id?: string | null; category_id?: string | null }
+): Promise<void> {
+  const { error } = await supabase
+    .from('parts_inventory')
+    .update(updates)
+    .in('id', ids)
+  if (error) throw error
+}
+
+/**
+ * Массово удаляет позиции склада по ids.
+ * Использует прямое удаление (без корзины) — вызывать только после подтверждения.
+ */
+export async function bulkDeleteInventory(ids: string[]): Promise<void> {
+  const { error } = await supabase
+    .from('parts_inventory')
+    .delete()
+    .in('id', ids)
+  if (error) throw error
+}
+
 // ============================================================================
 // GLOBAL CABINET SEARCH
 // ============================================================================

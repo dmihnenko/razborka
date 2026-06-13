@@ -13,6 +13,7 @@ import WaitingAccessPage from './WaitingAccessPage'
 import OwnerSetupPage from './OwnerSetupPage'
 import ContextSwitcher from './ContextSwitcher'
 import NotificationsBell from './NotificationsBell'
+import CreateFab from './parts/CreateFab'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
@@ -505,6 +506,9 @@ export default function Layout() {
           </div>
         </div>
       )}
+
+      {/* FAB «+Создать» — только для контекста разборки, только на мобиле */}
+      {currentCtx === 'parts' && <CreateFab />}
 
       {/* Глобальный поиск */}
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />

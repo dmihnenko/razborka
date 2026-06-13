@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
-import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, Copy, Download, Zap } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, Copy, Download, Zap, MapPin, FolderOpen } from 'lucide-react'
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -9,7 +9,7 @@ import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { InventoryCard } from '@/components/parts/InventoryCard'
-import { getPartsInventoryPaged, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, duplicatePartsInventoryItem } from '@/services/partsService'
+import { getPartsInventoryPaged, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, duplicatePartsInventoryItem, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { uploadToImgbb, deletePhotosFromImgbb } from '@/services/imgbbService'
@@ -89,6 +89,10 @@ export default function PartsInventory() {
   const [sortField, setSortField] = useState<'name' | 'status' | 'price'>('name')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [isConveyorOpen, setIsConveyorOpen] = useState(false)
+  const [isBulkLocationOpen, setIsBulkLocationOpen] = useState(false)
+  const [isBulkCategoryOpen, setIsBulkCategoryOpen] = useState(false)
+  const [bulkLocationId, setBulkLocationId] = useState<string>('')
+  const [bulkCategoryId, setBulkCategoryId] = useState<string>('')
 
   const { data: profile } = useUserProfile()
   const { rate: usdRate } = usePartsExchangeRate()
@@ -185,11 +189,9 @@ export default function PartsInventory() {
     setSelectedIds(new Set())
   }, [sourceFilter])
 
-  // Clear selection when leaving reserved filter
+  // Clear selection when changing status filter
   useEffect(() => {
-    if (statusFilter !== 'reserved') {
-      setSelectedIds(new Set())
-    }
+    setSelectedIds(new Set())
   }, [statusFilter])
 
   // Get categories for dropdown
@@ -222,11 +224,11 @@ export default function PartsInventory() {
     enabled: !!partsCompanyId && (isModalOpen || isConveyorOpen)
   })
 
-  // Get storage locations for dropdown in modal
+  // Get storage locations for dropdown in modal and bulk operations
   const { data: storageLocations = [] } = useQuery({
     queryKey: ['parts-storage-locations', partsCompanyId],
     queryFn: () => getStorageLocations(partsCompanyId!),
-    enabled: !!partsCompanyId && isModalOpen,
+    enabled: !!partsCompanyId && (isModalOpen || isBulkLocationOpen),
   })
 
   // Get customers for sell modal
@@ -600,6 +602,52 @@ export default function PartsInventory() {
     setStatusPickerItem(item)
   }
 
+  const bulkLocationMutation = useMutation({
+    mutationFn: ({ ids, locationId }: { ids: string[]; locationId: string | null }) =>
+      bulkUpdateInventory(ids, { storage_location_id: locationId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      toast.success(`Место хранения обновлено для ${selectedIds.size} позиций`)
+      setSelectedIds(new Set())
+      setIsBulkLocationOpen(false)
+      setBulkLocationId('')
+    },
+    onError: () => toast.error('Ошибка при обновлении места хранения'),
+  })
+
+  const bulkCategoryMutation = useMutation({
+    mutationFn: ({ ids, categoryId }: { ids: string[]; categoryId: string | null }) =>
+      bulkUpdateInventory(ids, { category_id: categoryId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      toast.success(`Категория обновлена для ${selectedIds.size} позиций`)
+      setSelectedIds(new Set())
+      setIsBulkCategoryOpen(false)
+      setBulkCategoryId('')
+    },
+    onError: () => toast.error('Ошибка при обновлении категории'),
+  })
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: string[]) => bulkDeleteInventory(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      toast.success(`Удалено ${selectedIds.size} позиций`)
+      setSelectedIds(new Set())
+    },
+    onError: () => toast.error('Ошибка при удалении'),
+  })
+
+  const handleBulkDelete = async () => {
+    const count = selectedIds.size
+    const ok = await showConfirm({
+      message: `Удалить ${count} позиц${count === 1 ? 'ию' : count < 5 ? 'ии' : 'ий'} со склада? Это действие нельзя отменить.`,
+      danger: true,
+    })
+    if (!ok) return
+    bulkDeleteMutation.mutate(Array.from(selectedIds))
+  }
+
   const handleDelete = async (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
     const message = item.status === 'sold'
@@ -900,7 +948,7 @@ export default function PartsInventory() {
               <table className="w-full">
                 <thead>
                   <tr>
-                    <th className={`table-header-cell w-8${statusFilter !== 'reserved' ? ' hidden' : ''}`}></th>
+                    <th className="table-header-cell w-8"></th>
                     <th className="table-header-cell">Запчасть</th>
                     <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Категория</th>
                     <th className="hidden xl:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Артикул</th>
@@ -919,18 +967,16 @@ export default function PartsInventory() {
                       onClick={() => goToItem(item.id)}
                     >
                       <td
-                        className={`px-3 py-3 w-8${statusFilter !== 'reserved' ? ' hidden' : ''}`}
+                        className="px-3 py-3 w-8"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {statusFilter === 'reserved' && (
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(item.id)}
-                            onChange={(e) => { e.stopPropagation(); toggleSelect(item.id, e) }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-4 h-4 accent-yellow-500 cursor-pointer"
-                          />
-                        )}
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(item.id)}
+                          onChange={(e) => { e.stopPropagation(); toggleSelect(item.id, e) }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 accent-blue-600 cursor-pointer"
+                        />
                       </td>
                       <td className="table-cell">
                         <div>
@@ -1148,25 +1194,52 @@ export default function PartsInventory() {
 
       {/* Bulk Selection Bar */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-[calc(1rem+64px+env(safe-area-inset-bottom,0px))] md:bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-gray-900 text-white rounded-2xl px-5 py-3 shadow-lg animate-slide-up">
-          <span className="text-sm font-semibold">
-            Выбрано: {selectedIds.size} запч.
+        <div className="fixed bottom-[calc(1rem+64px+env(safe-area-inset-bottom,0px))] md:bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center gap-2 bg-gray-900 text-white rounded-2xl px-4 py-3 shadow-lg animate-slide-up max-w-[calc(100vw-2rem)]">
+          <span className="text-sm font-semibold whitespace-nowrap">
+            Выбрано: {selectedIds.size}
           </span>
           <button
             type="button"
             onClick={() => setSelectedIds(new Set())}
-            className="text-gray-400 hover:text-white transition-colors text-xs font-medium underline"
+            className="text-gray-400 hover:text-white transition-colors text-xs font-medium underline whitespace-nowrap"
           >
             Сбросить
           </button>
-          <button
-            type="button"
-            onClick={openBulkSell}
-            className="btn-success btn-sm flex items-center gap-1.5"
-          >
-            <DollarSign className="w-4 h-4" strokeWidth={1.5} />
-            Продать
-          </button>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={openBulkSell}
+              className="btn-success btn-sm flex items-center gap-1.5"
+            >
+              <DollarSign className="w-4 h-4" strokeWidth={1.5} />
+              <span className="hidden sm:inline">Продать</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setBulkLocationId(''); setIsBulkLocationOpen(true) }}
+              className="bg-blue-600 hover:bg-blue-700 text-white btn-sm flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors"
+            >
+              <MapPin className="w-4 h-4" strokeWidth={1.5} />
+              <span className="hidden sm:inline">Место</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setBulkCategoryId(''); setIsBulkCategoryOpen(true) }}
+              className="bg-violet-600 hover:bg-violet-700 text-white btn-sm flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors"
+            >
+              <FolderOpen className="w-4 h-4" strokeWidth={1.5} />
+              <span className="hidden sm:inline">Категория</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white btn-sm flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors disabled:opacity-50"
+            >
+              <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+              <span className="hidden sm:inline">Удалить</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -1457,6 +1530,104 @@ export default function PartsInventory() {
                 className="modal-btn-primary disabled:opacity-50"
               >
                 {bulkSellMutation.isPending ? 'Сохранение...' : `Продать (${bulkRows.length})`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Location Modal */}
+      {isBulkLocationOpen && (
+        <div className="modal-overlay">
+          <div onClick={() => setIsBulkLocationOpen(false)} className="absolute inset-0" />
+          <div className="modal-sheet sm:max-w-xs w-full z-10">
+            <div className="modal-handle sm:hidden" />
+            <div className="modal-header">
+              <h3 className="text-base font-bold text-gray-900">Сменить место хранения</h3>
+              <p className="text-sm text-gray-500 mt-0.5">Для {selectedIds.size} позиций</p>
+            </div>
+            <div className="modal-body">
+              <label className="form-label">Место хранения</label>
+              {storageLocations.length > 0 ? (
+                <div className="relative">
+                  <select
+                    value={bulkLocationId}
+                    onChange={(e) => setBulkLocationId(e.target.value)}
+                    className="form-select"
+                    autoFocus
+                  >
+                    <option value="">— Не указано —</option>
+                    {buildLocationOptions(storageLocations as StorageLocation[]).map(opt => (
+                      <option key={opt.id} value={opt.id}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" strokeWidth={1.5} />
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 py-2">Места хранения не настроены. Настройте их в разделе Склад.</p>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button type="button" onClick={() => setIsBulkLocationOpen(false)} className="modal-btn-cancel">
+                Отмена
+              </button>
+              <button
+                type="button"
+                disabled={bulkLocationMutation.isPending}
+                onClick={() => bulkLocationMutation.mutate({
+                  ids: Array.from(selectedIds),
+                  locationId: bulkLocationId || null,
+                })}
+                className="modal-btn-primary disabled:opacity-50"
+              >
+                {bulkLocationMutation.isPending ? 'Сохранение...' : 'Применить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Category Modal */}
+      {isBulkCategoryOpen && (
+        <div className="modal-overlay">
+          <div onClick={() => setIsBulkCategoryOpen(false)} className="absolute inset-0" />
+          <div className="modal-sheet sm:max-w-xs w-full z-10">
+            <div className="modal-handle sm:hidden" />
+            <div className="modal-header">
+              <h3 className="text-base font-bold text-gray-900">Сменить категорию</h3>
+              <p className="text-sm text-gray-500 mt-0.5">Для {selectedIds.size} позиций</p>
+            </div>
+            <div className="modal-body">
+              <label className="form-label">Категория</label>
+              <div className="relative">
+                <select
+                  value={bulkCategoryId}
+                  onChange={(e) => setBulkCategoryId(e.target.value)}
+                  className="form-select"
+                  autoFocus
+                >
+                  <option value="">— Без категории —</option>
+                  {categories.map((cat: any) => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" strokeWidth={1.5} />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" onClick={() => setIsBulkCategoryOpen(false)} className="modal-btn-cancel">
+                Отмена
+              </button>
+              <button
+                type="button"
+                disabled={bulkCategoryMutation.isPending}
+                onClick={() => bulkCategoryMutation.mutate({
+                  ids: Array.from(selectedIds),
+                  categoryId: bulkCategoryId || null,
+                })}
+                className="modal-btn-primary disabled:opacity-50"
+              >
+                {bulkCategoryMutation.isPending ? 'Сохранение...' : 'Применить'}
               </button>
             </div>
           </div>

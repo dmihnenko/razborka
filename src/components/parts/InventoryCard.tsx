@@ -33,7 +33,7 @@ interface InventoryCardProps {
 
 export function InventoryCard({
   item,
-  statusFilter,
+  statusFilter: _statusFilter,
   selectedIds,
   onStatusClick,
   onEdit,
@@ -168,7 +168,7 @@ export function InventoryCard({
           >
             <Share2 className="w-3.5 h-3.5 drop-shadow" />
           </button>
-          {selectable && (statusFilter === 'reserved' || isSelected) && (
+          {selectable && (
             <button
               onClick={(e) => { e.stopPropagation(); onToggleSelect!(item.id, e) }}
               className="p-0.5 rounded transition-opacity hover:opacity-90"
