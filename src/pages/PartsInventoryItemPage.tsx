@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import {
   ArrowLeft, Trash2, Package,
   MapPin, Tag, Car, FileText, AlertTriangle,
-  Share2, Edit2, Copy, Warehouse, CheckCircle2, QrCode,
+  Share2, Edit2, Copy, Warehouse, CheckCircle2, QrCode, TrendingUp,
 } from 'lucide-react'
 import { getPartsInventoryItem, deletePartsInventoryItem, getStorageLocations } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
@@ -329,6 +329,51 @@ export default function PartsInventoryItemPage() {
 
             </dl>
           </div>
+
+          {/* ── Окупаемость ────────────────────────────────────── */}
+          {(() => {
+            const sp = item.selling_price
+            const pp = item.purchase_price
+            if (!sp || !pp || pp <= 0 || sp <= 0) return null
+            const currency = (item.price_currency as 'UAH' | 'USD') || 'USD'
+            const margin = sp - pp
+            const markup = ((sp - pp) / pp) * 100
+            const isPositive = margin > 0
+            return (
+              <div className="border-t border-gray-100 p-4 sm:p-5">
+                <p className="kicker flex items-center gap-1.5 mb-3">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  Окупаемость
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="rounded-xl bg-gray-50 p-3">
+                    <p className="kicker mb-1">Закупка</p>
+                    <p className="text-sm font-bold text-gray-700 tabular-nums">
+                      {formatPrice(pp, currency)}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-primary/5 border border-primary/10 p-3">
+                    <p className="kicker mb-1">Цена продажи</p>
+                    <p className="text-sm font-bold text-primary tabular-nums">
+                      {formatPrice(sp, currency)}
+                    </p>
+                  </div>
+                  <div className={`rounded-xl p-3 ${isPositive ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
+                    <p className="kicker mb-1">Маржа</p>
+                    <p className={`text-sm font-bold tabular-nums ${isPositive ? 'text-green-700' : 'text-red-600'}`}>
+                      {isPositive ? '+' : ''}{formatPrice(margin, currency)}
+                    </p>
+                  </div>
+                  <div className={`rounded-xl p-3 ${isPositive ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
+                    <p className="kicker mb-1">Наценка</p>
+                    <p className={`text-sm font-bold tabular-nums ${isPositive ? 'text-green-700' : 'text-red-600'}`}>
+                      {isPositive ? '+' : ''}{markup.toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
 
           {/* ── Снята с авто ───────────────────────────────────── */}
           {item.vehicle && (

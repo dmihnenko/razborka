@@ -37,7 +37,7 @@ export default function PartsAnalytics() {
           .eq('parts_company_id', partsCompanyId),
         supabase
           .from('parts_inventory')
-          .select('quantity, selling_price, sold_price, status, price_currency, vehicle_id')
+          .select('quantity, selling_price, sold_price, purchase_price, status, price_currency, vehicle_id')
           .eq('parts_company_id', partsCompanyId),
         supabase
           .from('parts_vehicles')
@@ -81,6 +81,15 @@ export default function PartsAnalytics() {
         .filter(i => i.status !== 'sold')
         .reduce((sum, i) => sum + toUSD(i.quantity * (i.selling_price || 0), i.price_currency, i.vehicle_id), 0)
 
+      // Потенциальная маржа склада: позиции в наличии, у которых есть и selling_price, и purchase_price > 0
+      const potentialMargin = inventory
+        .filter(i => i.status !== 'sold' && (i.selling_price ?? 0) > 0 && (i.purchase_price ?? 0) > 0)
+        .reduce((sum, i) => {
+          const qty = i.quantity || 1
+          const marginPerUnit = (i.selling_price! - i.purchase_price!) * qty
+          return sum + toUSD(marginPerUnit, i.price_currency, i.vehicle_id)
+        }, 0)
+
       // Данные по месяцам — суммируем позиции заказов с конвертацией
       const monthlyData: Record<string, { revenue: number; orders: number }> = {}
       completedOrders.forEach((order: any) => {
@@ -111,6 +120,7 @@ export default function PartsAnalytics() {
         totalSoldParts,
         avgCheck,
         inventoryValue,
+        potentialMargin,
         totalVehicles: vehicles.length,
         dismantledVehicles: vehicles.filter((v: any) => v.status === 'dismantled').length,
         monthlyRevenue,
@@ -268,6 +278,25 @@ export default function PartsAnalytics() {
               </p>
             </div>
           </div>
+
+          {/* ── Маржа склада ─────────────────────────────────── */}
+          {(overallStats?.potentialMargin ?? 0) !== 0 && (
+            <div className="stat-card mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="icon-tile bg-emerald-50 text-emerald-600 flex-shrink-0">
+                <TrendingUp className="w-5 h-5" strokeWidth={1.5} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="kicker mb-0.5">Потенциальная маржа склада</p>
+                <p className="text-mobile-sm text-gray-500">
+                  По позициям, у которых указана закупочная цена
+                </p>
+              </div>
+              <p className={`heading-2 tabular flex-shrink-0 ${(overallStats?.potentialMargin ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {(overallStats?.potentialMargin ?? 0) >= 0 ? '+' : ''}
+                {formatPrice(overallStats?.potentialMargin || 0, 'USD')}
+              </p>
+            </div>
+          )}
 
           {/* ── Charts row ────────────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">

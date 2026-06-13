@@ -12,6 +12,7 @@ import { LayoutSkeleton } from './LayoutSkeleton'
 import WaitingAccessPage from './WaitingAccessPage'
 import OwnerSetupPage from './OwnerSetupPage'
 import ContextSwitcher from './ContextSwitcher'
+import NotificationsBell from './NotificationsBell'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
@@ -293,6 +294,11 @@ export default function Layout() {
             <span className="hidden lg:block">Поиск</span>
           </button>
 
+          {/* Колокол уведомлений (desktop sidebar) */}
+          <div className="flex items-center justify-center lg:justify-start w-full px-1 lg:px-2 py-1">
+            <NotificationsBell userId={profile?.id} />
+          </div>
+
           {/* Админ-кнопка — только на md (на lg она в ContextSwitcher) */}
           {isAdmin && (
             <Link
@@ -341,11 +347,14 @@ export default function Layout() {
         {isUserCtx && (
           <div className="hidden md:flex items-center justify-between h-14 px-6 bg-white border-b border-gray-200">
             <ContextSwitcher current={currentCtx} />
-            <button onClick={handleLogout}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-500 bg-gray-100 rounded-xl hover:bg-red-50 hover:text-red-600 transition-all active:scale-[0.97]"
-            >
-              <LogOut className="w-4 h-4" strokeWidth={1.5} /> Выход
-            </button>
+            <div className="flex items-center gap-2">
+              <NotificationsBell userId={profile?.id} />
+              <button onClick={handleLogout}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-500 bg-gray-100 rounded-xl hover:bg-red-50 hover:text-red-600 transition-all active:scale-[0.97]"
+              >
+                <LogOut className="w-4 h-4" strokeWidth={1.5} /> Выход
+              </button>
+            </div>
           </div>
         )}
 
@@ -362,6 +371,7 @@ export default function Layout() {
             >
               <Search className="w-4 h-4" strokeWidth={1.5} />
             </button>
+            <NotificationsBell userId={profile?.id} />
             <button onClick={handleLogout}
               className="flex-shrink-0 flex items-center gap-1.5 h-9 px-3 text-xs font-semibold text-gray-500 bg-gray-100 rounded-xl hover:bg-red-50 hover:text-red-600 transition-all active:scale-[0.97]"
             >
