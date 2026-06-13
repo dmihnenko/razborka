@@ -185,12 +185,12 @@ export default function PartsDashboard() {
   if (!partsCompanyId) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="icon-tile-lg bg-orange-50 text-orange-500 mx-auto mb-4">
-            <AlertCircle className="w-6 h-6" strokeWidth={1.5} />
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <AlertCircle className="w-7 h-7 text-orange-500" strokeWidth={1.5} />
           </div>
-          <p className="text-sm font-semibold text-gray-700">Нет доступа к разборке</p>
-          <p className="text-xs text-gray-400 mt-1">Обратитесь к администратору</p>
+          <p className="empty-state-title">Нет доступа к разборке</p>
+          <p className="empty-state-text">Обратитесь к администратору</p>
         </div>
       </div>
     )
@@ -204,10 +204,11 @@ export default function PartsDashboard() {
     <div className="space-y-4 sm:space-y-5 animate-fade-in">
 
       {/* ── Page header ───────────────────────────── */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="page-header">
         <div>
-          <h1 className="page-title">Авторазборка</h1>
-          <p className="page-subtitle mt-0.5">Управление разборкой и складом</p>
+          <p className="kicker mb-1">Авторозборка</p>
+          <h1 className="page-title">Дашборд</h1>
+          <p className="page-subtitle">Управление разборкой и складом</p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <button
@@ -237,7 +238,7 @@ export default function PartsDashboard() {
       {isDemo && marketOrdersCount > 0 && (
         <Link
           to="/parts/subscription"
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all active:scale-[0.99] border border-primary/20 bg-primary/5 hover:bg-primary/10 animate-fade-in"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all active:scale-[0.99] border border-primary/20 bg-primary/5 hover:bg-primary/10 animate-fade-in"
         >
           <div className="icon-tile-sm bg-primary/15 text-primary flex-shrink-0">
             <Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -258,7 +259,7 @@ export default function PartsDashboard() {
       {(ordersStats?.new || 0) > 0 && (
         <button
           onClick={() => navigate('/parts/orders')}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all active:scale-[0.99] border border-yellow-200/60 bg-yellow-50 hover:bg-yellow-100/60"
+          className="alert alert-warning w-full text-left transition-all active:scale-[0.99] hover:bg-yellow-100/60 rounded-xl"
         >
           <div className="icon-tile-sm bg-yellow-100 text-yellow-600 flex-shrink-0">
             <AlertCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -286,18 +287,18 @@ export default function PartsDashboard() {
             </div>
             <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-500" strokeWidth={1.5} />
           </div>
-          <p className="text-xs font-semibold text-gray-500 mb-0.5">Автомобили</p>
-          <p className="text-3xl font-extrabold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+          <p className="kicker mb-1">Автомобілі</p>
+          <p className="heading-2 tabular">
             {vehiclesStats?.total || 0}
           </p>
           <div className="mt-3 pt-3 space-y-1 border-t border-gray-100">
             <div className="flex justify-between text-xs">
               <span className="text-gray-400">В работе</span>
-              <span className="font-bold text-amber-600">{vehiclesStats?.in_progress || 0}</span>
+              <span className="font-bold text-amber-600 tabular">{vehiclesStats?.in_progress || 0}</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-gray-400">Разобрано</span>
-              <span className="font-bold text-green-600">{vehiclesStats?.dismantled || 0}</span>
+              <span className="text-gray-400">Розібрано</span>
+              <span className="font-bold text-green-600 tabular">{vehiclesStats?.dismantled || 0}</span>
             </div>
           </div>
         </button>
@@ -313,18 +314,18 @@ export default function PartsDashboard() {
             </div>
             <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-orange-500" strokeWidth={1.5} />
           </div>
-          <p className="text-xs font-semibold text-gray-500 mb-0.5">Запчасти</p>
-          <p className="text-3xl font-extrabold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+          <p className="kicker mb-1">Запчасти</p>
+          <p className="heading-2 tabular">
             {inventoryStats?.total || 0}
           </p>
           <div className="mt-3 pt-3 space-y-1 border-t border-gray-100">
             <div className="flex justify-between text-xs">
               <span className="text-gray-400">Доступно</span>
-              <span className="font-bold text-green-600">{inventoryStats?.available || 0}</span>
+              <span className="font-bold text-green-600 tabular">{inventoryStats?.available || 0}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-gray-400">Мало на складе</span>
-              <span className={`font-bold ${(inventoryStats?.lowStock ?? 0) > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+              <span className={`font-bold tabular ${(inventoryStats?.lowStock ?? 0) > 0 ? 'text-red-600' : 'text-gray-400'}`}>
                 {inventoryStats?.lowStock || 0}
               </span>
             </div>
@@ -342,18 +343,18 @@ export default function PartsDashboard() {
             </div>
             <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-amber-500" strokeWidth={1.5} />
           </div>
-          <p className="text-xs font-semibold text-gray-500 mb-0.5">Заказы</p>
-          <p className="text-3xl font-extrabold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+          <p className="kicker mb-1">Заказы</p>
+          <p className="heading-2 tabular">
             {ordersStats?.total || 0}
           </p>
           <div className="mt-3 pt-3 space-y-1 border-t border-gray-100">
             <div className="flex justify-between text-xs">
               <span className="text-gray-400">Новые</span>
-              <span className="font-bold text-blue-600">{ordersStats?.new || 0}</span>
+              <span className="font-bold text-blue-600 tabular">{ordersStats?.new || 0}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-gray-400">Завершены</span>
-              <span className="font-bold text-green-600">{ordersStats?.completed || 0}</span>
+              <span className="font-bold text-green-600 tabular">{ordersStats?.completed || 0}</span>
             </div>
           </div>
         </button>
@@ -362,7 +363,7 @@ export default function PartsDashboard() {
         <button
           onClick={() => navigate('/parts/customers')}
           className="stat-card cursor-pointer text-left group"
-          style={{ background: 'linear-gradient(135deg, #1E3A6E 0%, #1E40AF 100%)', border: 'none' }}
+          style={{ background: 'var(--brand-gradient)', border: 'none' }}
         >
           <div className="flex items-start justify-between mb-3">
             <div className="icon-tile flex-shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
@@ -370,18 +371,18 @@ export default function PartsDashboard() {
             </div>
             <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-60 transition-opacity text-white" strokeWidth={1.5} />
           </div>
-          <p className="text-xs font-semibold mb-0.5" style={{ color: 'rgba(255,255,255,0.65)' }}>Выручка</p>
-          <p className="text-3xl font-extrabold text-white" style={{ letterSpacing: '-0.03em' }}>
+          <p className="kicker mb-1" style={{ color: 'rgba(255,255,255,0.65)' }}>Выручка</p>
+          <p className="heading-2 tabular text-white">
             {revenueUSD > 0 ? `$${Math.round(revenueUSD).toLocaleString('ru-RU')}` : '—'}
           </p>
           <div className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
             <div className="flex justify-between text-xs">
               <span style={{ color: 'rgba(255,255,255,0.55)' }}>Клиентов</span>
-              <span className="font-bold text-white">{customersStats?.total || 0}</span>
+              <span className="font-bold text-white tabular">{customersStats?.total || 0}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span style={{ color: 'rgba(255,255,255,0.55)' }}>Склад USD</span>
-              <span className="font-bold text-white">${totalInventoryValueUSD.toLocaleString('ru-RU')}</span>
+              <span className="font-bold text-white tabular">${totalInventoryValueUSD.toLocaleString('ru-RU')}</span>
             </div>
           </div>
         </button>
@@ -396,10 +397,10 @@ export default function PartsDashboard() {
           {/* Inventory breakdown */}
           <div className="card p-0 overflow-hidden">
             <div className="px-5 py-3.5 flex items-center justify-between border-b border-gray-100">
-              <p className="text-sm font-bold text-gray-800">Склад</p>
+              <p className="kicker">Склад</p>
               <button
                 onClick={() => navigate('/parts/inventory')}
-                className="text-xs font-semibold flex items-center gap-1 text-blue-600 hover:text-blue-700 transition-colors"
+                className="text-xs font-semibold flex items-center gap-1 text-primary hover:text-blue-700 transition-colors"
               >
                 Открыть <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
               </button>
@@ -407,45 +408,45 @@ export default function PartsDashboard() {
             <div className="grid grid-cols-3 divide-x divide-gray-100">
               <button
                 onClick={() => navigate('/parts/inventory?source=vehicles')}
-                className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group active:bg-gray-100"
+                className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group active:bg-gray-100 min-h-[44px]"
               >
                 <div className="flex items-center gap-2 mb-2.5">
                   <div className="icon-tile-sm bg-orange-50 text-orange-500">
                     <Wrench className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </div>
-                  <span className="text-xs font-semibold text-gray-500">С разборки</span>
+                  <span className="kicker">С разборки</span>
                 </div>
-                <p className="text-2xl font-extrabold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+                <p className="heading-3 tabular">
                   {inventoryStats?.fromVehicles || 0}
                 </p>
                 <p className="text-xs mt-0.5 text-gray-400">позиций</p>
               </button>
               <button
                 onClick={() => navigate('/parts/inventory?source=shop')}
-                className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group active:bg-gray-100"
+                className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group active:bg-gray-100 min-h-[44px]"
               >
                 <div className="flex items-center gap-2 mb-2.5">
                   <div className="icon-tile-sm bg-green-50 text-green-600">
                     <Store className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </div>
-                  <span className="text-xs font-semibold text-gray-500">Магазин</span>
+                  <span className="kicker">Магазин</span>
                 </div>
-                <p className="text-2xl font-extrabold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
+                <p className="heading-3 tabular">
                   {inventoryStats?.fromShop || 0}
                 </p>
                 <p className="text-xs mt-0.5 text-gray-400">позиций</p>
               </button>
               <button
                 onClick={() => navigate('/parts/inventory/no-price')}
-                className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group active:bg-gray-100"
+                className="px-4 py-4 text-left hover:bg-gray-50 transition-colors group active:bg-gray-100 min-h-[44px]"
               >
                 <div className="flex items-center gap-2 mb-2.5">
                   <div className="icon-tile-sm bg-red-50 text-red-500">
                     <AlertCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </div>
-                  <span className="text-xs font-semibold text-gray-500">Без цены</span>
+                  <span className="kicker">Без цены</span>
                 </div>
-                <p className={`text-2xl font-extrabold ${(inventoryStats?.noPrice ?? 0) > 0 ? 'text-red-600' : 'text-gray-900'}`} style={{ letterSpacing: '-0.03em' }}>
+                <p className={`heading-3 tabular ${(inventoryStats?.noPrice ?? 0) > 0 ? 'text-red-600' : ''}`}>
                   {inventoryStats?.noPrice ?? 0}
                 </p>
                 <p className="text-xs mt-0.5 text-gray-400">нужна цена</p>
@@ -456,7 +457,7 @@ export default function PartsDashboard() {
           {/* Navigation tools */}
           <div className="card p-0 overflow-hidden">
             <div className="px-5 py-3.5 border-b border-gray-100">
-              <p className="text-sm font-bold text-gray-800">Управление</p>
+              <p className="kicker">Управление</p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-5">
               {[
@@ -469,7 +470,7 @@ export default function PartsDashboard() {
                 <button
                   key={path}
                   onClick={() => navigate(path)}
-                  className="flex flex-col items-center gap-2 py-5 px-3 hover:bg-gray-50 transition-colors group active:bg-gray-100 border-r border-gray-100 last:border-r-0"
+                  className="flex flex-col items-center gap-2 py-5 px-3 hover:bg-gray-50 transition-colors group active:bg-gray-100 border-r border-gray-100 last:border-r-0 min-h-[44px]"
                 >
                   <div className={`${iconCls} transition-transform group-hover:scale-105`}>
                     <Icon className="w-5 h-5" strokeWidth={1.5} />
@@ -484,36 +485,36 @@ export default function PartsDashboard() {
         {/* Right col (1/3): recent orders */}
         <div className="card p-0 overflow-hidden flex flex-col">
           <div className="px-5 py-3.5 flex items-center justify-between flex-shrink-0 border-b border-gray-100">
-            <p className="text-sm font-bold text-gray-800">Последние заказы</p>
+            <p className="kicker">Последние заказы</p>
             <button
               onClick={() => navigate('/parts/orders')}
-              className="text-xs font-semibold flex items-center gap-1 text-blue-600 hover:text-blue-700 transition-colors"
+              className="text-xs font-semibold flex items-center gap-1 text-primary hover:text-blue-700 transition-colors"
             >
               Все <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
             </button>
           </div>
 
           {recentActivity && recentActivity.length > 0 ? (
-            <div className="flex-1 overflow-auto divide-y divide-gray-100">
+            <div className="flex-1 overflow-auto grid-hairline">
               {recentActivity.map((order: any) => {
                 const usd = computeOrderUSD(order)
                 return (
                   <button
                     key={order.id}
                     onClick={() => navigate(`/parts/orders/${order.id}`)}
-                    className="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left group active:bg-gray-100"
+                    className="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left group active:bg-gray-100 min-h-[44px]"
                   >
                     <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <span className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors truncate">{order.order_number}</span>
-                      <span className="text-sm font-extrabold flex-shrink-0 text-blue-600" style={{ letterSpacing: '-0.02em' }}>
+                      <span className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors truncate">{order.order_number}</span>
+                      <span className="text-sm font-extrabold flex-shrink-0 text-primary tabular">
                         {usd != null ? `$${Math.round(usd).toLocaleString('ru-RU')}` : '—'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="badge badge-blue text-xs">
+                      <span className="badge badge-blue">
                         {getPartsOrderStatusText(order.status)}
                       </span>
-                      <span className="text-xs text-gray-400">{formatDate(order.order_date)}</span>
+                      <span className="text-xs text-gray-400 tabular">{formatDate(order.order_date)}</span>
                     </div>
                     {order.customer?.full_name && (
                       <p className="text-xs mt-1.5 truncate text-gray-500">{order.customer.full_name}</p>
@@ -523,14 +524,14 @@ export default function PartsDashboard() {
               })}
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center py-10 px-4 text-center">
-              <div className="icon-tile-lg bg-gray-100 text-gray-400 mx-auto mb-3">
-                <ShoppingCart className="w-6 h-6" strokeWidth={1.5} />
+            <div className="flex-1 flex flex-col items-center justify-center py-10 px-4">
+              <div className="empty-state-icon">
+                <ShoppingCart className="w-6 h-6 text-gray-400" strokeWidth={1.5} />
               </div>
-              <p className="text-sm font-semibold text-gray-600">Нет заказов</p>
+              <p className="empty-state-title">Нет заказов</p>
               <button
                 onClick={() => navigate('/parts/orders/create')}
-                className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                className="mt-3 text-xs font-semibold text-primary hover:text-blue-700 transition-colors"
               >
                 Создать первый заказ
               </button>

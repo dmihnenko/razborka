@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
-import { Plus, Search, Users, Grid, List, Phone, Mail, TrendingUp, DollarSign, Link2 } from 'lucide-react'
+import { Plus, Search, Users, Phone, TrendingUp, DollarSign, Link2 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -16,15 +16,34 @@ import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import type { PartsCustomer, CreatePartsCustomerInput } from '@/types/parts'
 
-type ViewMode = 'grid' | 'list'
+/** Инициалы для аватара */
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return name.slice(0, 2).toUpperCase()
+}
+
+/** Цвет аватара по имени (детерминированный) */
+const AVATAR_COLORS = [
+  'bg-blue-100 text-blue-700',
+  'bg-violet-100 text-violet-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-amber-100 text-amber-700',
+  'bg-rose-100 text-rose-700',
+  'bg-cyan-100 text-cyan-700',
+]
+function avatarColor(name: string): string {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+}
 
 export default function PartsCustomers() {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<PartsCustomer | null>(null)
-  
+
   const queryClient = useQueryClient()
   const { confirm: showConfirm, dialogProps } = useConfirm()
   const { data: profile } = useUserProfile()
@@ -33,7 +52,7 @@ export default function PartsCustomers() {
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ['parts-customers', partsCompanyId],
     queryFn: () => getPartsCustomers(partsCompanyId!),
-    enabled: !!partsCompanyId
+    enabled: !!partsCompanyId,
   })
 
   const saveMutation = useMutation({
@@ -52,7 +71,7 @@ export default function PartsCustomers() {
     },
     onError: () => {
       toast.error('Ошибка при сохранении')
-    }
+    },
   })
 
   const deleteMutation = useMutation({
@@ -76,7 +95,7 @@ export default function PartsCustomers() {
     onError: (error: any) => {
       console.error('Delete parts customer mutation error:', error)
       toast.error('Ошибка при удалении: ' + (error.message || 'Недостаточно прав'))
-    }
+    },
   })
 
   const filteredCustomers = customers.filter(customer => {
@@ -94,10 +113,11 @@ export default function PartsCustomers() {
     total: customers.length,
     withOrders: customers.filter(c => c.total_orders > 0).length,
     totalSpent: customers.reduce((sum, c) => sum + c.total_spent, 0),
-    avgSpent: customers.length > 0 ? customers.reduce((sum, c) => sum + c.total_spent, 0) / customers.length : 0,
+    avgSpent:
+      customers.length > 0
+        ? customers.reduce((sum, c) => sum + c.total_spent, 0) / customers.length
+        : 0,
   }
-
-
 
   const handleEdit = (customer: PartsCustomer, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -118,7 +138,7 @@ export default function PartsCustomers() {
     try {
       await navigator.clipboard.writeText(publicUrl)
       toast.success('Публичная ссылка скопирована в буфер обмена', { duration: 2000 })
-    } catch (err) {
+    } catch {
       toast.error('Не удалось скопировать ссылку')
     }
   }
@@ -145,9 +165,9 @@ export default function PartsCustomers() {
               setSelectedCustomer(null)
               setIsModalOpen(true)
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            className="btn-primary"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" strokeWidth={1.5} />
             <span className="hidden sm:inline">Добавить</span>
           </button>
         }
@@ -155,274 +175,274 @@ export default function PartsCustomers() {
 
       {/* Content */}
       <div className="w-full py-4 sm:py-6">
+
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 sm:mb-6">
           <div className="stat-card">
             <div className="flex items-start justify-between mb-3">
-              <p className="text-xs sm:text-sm text-gray-600">Всего клиентов</p>
-              <Users className="w-4 h-4 text-gray-400" />
+              <p className="kicker">Клиентов</p>
+              <Users className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.total}</p>
+            <p className="text-3xl font-extrabold text-gray-900 tabular" style={{ letterSpacing: '-0.03em' }}>
+              {stats.total}
+            </p>
           </div>
 
           <div className="stat-card">
             <div className="flex items-start justify-between mb-3">
-              <p className="text-xs sm:text-sm text-gray-600">С заказами</p>
-              <TrendingUp className="w-4 h-4 text-green-500" />
+              <p className="kicker">С заказами</p>
+              <TrendingUp className="w-4 h-4 text-emerald-500" strokeWidth={1.5} />
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.withOrders}</p>
+            <p className="text-3xl font-extrabold text-emerald-600 tabular" style={{ letterSpacing: '-0.03em' }}>
+              {stats.withOrders}
+            </p>
           </div>
 
           <div className="stat-card">
             <div className="flex items-start justify-between mb-3">
-              <p className="text-xs sm:text-sm text-gray-600">Общая выручка</p>
-              <DollarSign className="w-4 h-4 text-blue-500" />
+              <p className="kicker">Выручка</p>
+              <DollarSign className="w-4 h-4 text-primary" strokeWidth={1.5} />
             </div>
-            <p className="text-lg sm:text-xl font-bold text-blue-600">{formatCurrency(stats.totalSpent)}</p>
+            <p className="text-xl font-extrabold text-primary tabular" style={{ letterSpacing: '-0.025em' }}>
+              {formatCurrency(stats.totalSpent)}
+            </p>
           </div>
 
           <div className="stat-card">
             <div className="flex items-start justify-between mb-3">
-              <p className="text-xs sm:text-sm text-gray-600">Средний чек</p>
-              <DollarSign className="w-4 h-4 text-purple-500" />
+              <p className="kicker">Средний чек</p>
+              <DollarSign className="w-4 h-4 text-violet-500" strokeWidth={1.5} />
             </div>
-            <p className="text-lg sm:text-xl font-bold text-purple-600">{formatCurrency(stats.avgSpent)}</p>
+            <p className="text-xl font-extrabold text-violet-600 tabular" style={{ letterSpacing: '-0.025em' }}>
+              {formatCurrency(stats.avgSpent)}
+            </p>
           </div>
         </div>
 
-        {/* Search & View Controls */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Поиск по имени, телефону, email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-            </div>
-
-            <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                <Grid className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                <List className="w-5 h-5" />
-              </button>
-            </div>
+        {/* Search */}
+        <div className="card p-4 mb-4">
+          <div className="relative">
+            <Search
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+              strokeWidth={1.5}
+            />
+            <input
+              type="text"
+              placeholder="Поиск по имени, телефону, email..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="form-input pl-10"
+            />
           </div>
         </div>
 
-        {/* Customers List/Grid */}
+        {/* Customers list */}
         {isLoading ? (
-          <div className="text-center py-12">
-            <Spinner size="md" className="inline-block" />
+          <div className="flex items-center justify-center py-16">
+            <Spinner size="md" />
           </div>
         ) : filteredCustomers.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-2">
-              {searchQuery ? 'Клиенты не найдены' : 'Нет клиентов'}
-            </p>
-            {!searchQuery && (
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="mt-4 text-primary hover:underline"
-              >
-                Добавить первого клиента
-              </button>
-            )}
-          </div>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredCustomers.map((customer) => (
-              <div
-                key={customer.id}
-                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all overflow-hidden group"
-              >
-                <div className="p-5">
-                  {/* Customer Name */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-gray-900 mb-1 truncate group-hover:text-primary transition-colors">
-                        {customer.full_name}
-                      </h3>
-                      {customer.discount_percent > 0 && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Скидка {customer.discount_percent}%
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Contact Info */}
-                  <div className="space-y-2 mb-4">
-                    {customer.phone && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Phone className="w-4 h-4 flex-shrink-0" />
-                        <a href={`tel:${customer.phone}`} className="hover:text-primary truncate">
-                          {customer.phone}
-                        </a>
-                      </div>
-                    )}
-                    {customer.email && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Mail className="w-4 h-4 flex-shrink-0" />
-                        <a href={`mailto:${customer.email}`} className="hover:text-primary truncate">
-                          {customer.email}
-                        </a>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Stats */}
-                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
-                    <div>
-                      <p className="text-xs text-gray-500">Заказов</p>
-                      <p className="text-lg font-semibold text-gray-900">{customer.total_orders}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Потрачено</p>
-                      <p className="text-lg font-semibold text-primary">{formatCurrency(customer.total_spent)}</p>
-                    </div>
-                  </div>
-
-                  {customer.notes && (
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <p className="text-xs text-gray-500 mb-1">Примечание:</p>
-                      <p className="text-sm text-gray-600 line-clamp-2">{customer.notes}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Actions Footer */}
-                <div className="bg-gray-50 px-4 py-3 flex gap-2">
-                  <button
-                    onClick={(e) => handleViewProfile(customer.id, e)}
-                    className="flex-1 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                  >
-                    Просмотр
-                  </button>
-                  <button
-                    onClick={(e) => handleCopyPublicLink(customer.id, e)}
-                    className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="Скопировать публичную ссылку"
-                  >
-                    <Link2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={(e) => handleEdit(customer, e)}
-                    className="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    Изменить
-                  </button>
-                  <button
-                    onClick={(e) => handleDelete(customer.id, e)}
-                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    Удалить
-                  </button>
-                </div>
+          <div className="card">
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <Users className="w-7 h-7 text-gray-400" strokeWidth={1.5} />
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Клиент
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                      Контакты
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                      Заказов
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                      Потрачено
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Действия
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredCustomers.map((customer) => (
-                    <tr 
-                      key={customer.id} 
-                      onClick={() => handleViewProfile(customer.id)}
-                      className="hover:bg-gray-50 transition-colors cursor-pointer"
-                    >
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="font-medium text-gray-900">{customer.full_name}</div>
-                          {customer.discount_percent > 0 && (
-                            <span className="text-xs text-green-600">Скидка {customer.discount_percent}%</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 hidden md:table-cell">
-                        <div className="text-sm space-y-1">
-                          {customer.phone && (
-                            <div className="flex items-center gap-1 text-gray-600">
-                              <Phone className="w-3 h-3" />
-                              <span>{customer.phone}</span>
-                            </div>
-                          )}
-                          {customer.email && (
-                            <div className="flex items-center gap-1 text-gray-600">
-                              <Mail className="w-3 h-3" />
-                              <span className="truncate max-w-[200px]">{customer.email}</span>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 hidden lg:table-cell">
-                        {customer.total_orders}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-primary hidden sm:table-cell">
-                        {formatCurrency(customer.total_spent)}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-right text-sm">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={(e) => handleCopyPublicLink(customer.id, e)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Публичная ссылка"
-                          >
-                            <Link2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => handleEdit(customer, e)}
-                            className="px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                          >
-                            Изменить
-                          </button>
-                          <button
-                            onClick={(e) => handleDelete(customer.id, e)}
-                            className="px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            Удалить
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <p className="empty-state-title">
+                {searchQuery ? 'Клиенты не найдены' : 'Нет клиентов'}
+              </p>
+              {!searchQuery && (
+                <p className="empty-state-text">
+                  Добавьте первого клиента, чтобы начать работу
+                </p>
+              )}
+              {!searchQuery && (
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="btn-primary mt-4"
+                >
+                  <Plus className="w-4 h-4" strokeWidth={1.5} />
+                  Добавить клиента
+                </button>
+              )}
             </div>
           </div>
+        ) : (
+          <>
+            {/* ── Desktop table (md+) ───────────────────────────── */}
+            <div className="card p-0 overflow-hidden hidden md:block">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr>
+                      <th className="table-header-cell">Клиент</th>
+                      <th className="table-header-cell">Телефон</th>
+                      <th className="table-header-cell text-right">Заказов</th>
+                      <th className="table-header-cell text-right">Потрачено</th>
+                      <th className="table-header-cell text-right">Действия</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCustomers.map(customer => (
+                      <tr
+                        key={customer.id}
+                        onClick={() => handleViewProfile(customer.id)}
+                        className="table-row cursor-pointer group/row"
+                      >
+                        {/* Имя + аватар */}
+                        <td className="table-cell">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span
+                              className={`avatar-md flex-shrink-0 ${avatarColor(customer.full_name)}`}
+                            >
+                              {getInitials(customer.full_name)}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-gray-900 group-hover/row:text-primary transition-colors truncate">
+                                {customer.full_name}
+                              </p>
+                              {customer.discount_percent > 0 && (
+                                <span className="badge badge-green">
+                                  Скидка {customer.discount_percent}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Телефон */}
+                        <td className="table-cell">
+                          {customer.phone ? (
+                            <a
+                              href={`tel:${customer.phone}`}
+                              onClick={e => e.stopPropagation()}
+                              className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-primary transition-colors"
+                            >
+                              <Phone className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
+                              {customer.phone}
+                            </a>
+                          ) : (
+                            <span className="text-gray-300">—</span>
+                          )}
+                        </td>
+
+                        {/* Заказов */}
+                        <td className="table-cell text-right">
+                          <span className="text-sm font-semibold text-gray-900 tabular">
+                            {customer.total_orders}
+                          </span>
+                        </td>
+
+                        {/* Потрачено */}
+                        <td className="table-cell text-right">
+                          <span
+                            className="text-sm font-extrabold text-primary tabular"
+                            style={{ letterSpacing: '-0.02em' }}
+                          >
+                            {formatCurrency(customer.total_spent)}
+                          </span>
+                        </td>
+
+                        {/* Действия */}
+                        <td className="table-cell text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={e => handleCopyPublicLink(customer.id, e)}
+                              className="btn-icon-sm text-blue-500"
+                              title="Скопировать публичную ссылку"
+                            >
+                              <Link2 className="w-4 h-4" strokeWidth={1.5} />
+                            </button>
+                            <button
+                              onClick={e => handleEdit(customer, e)}
+                              className="btn-ghost btn-sm"
+                            >
+                              Изменить
+                            </button>
+                            <button
+                              onClick={e => handleDelete(customer.id, e)}
+                              className="btn-sm btn text-red-600 hover:bg-red-50 px-3 py-1.5 text-xs min-h-[30px] rounded"
+                            >
+                              Удалить
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* ── Mobile cards (< md) ───────────────────────────── */}
+            <div className="flex flex-col gap-2 md:hidden">
+              {filteredCustomers.map(customer => (
+                <div
+                  key={customer.id}
+                  onClick={() => handleViewProfile(customer.id)}
+                  className="card card-interactive p-0 overflow-hidden"
+                >
+                  <div className="flex items-center gap-3 px-4 py-3.5">
+                    {/* Avatar */}
+                    <span
+                      className={`avatar-md flex-shrink-0 ${avatarColor(customer.full_name)}`}
+                    >
+                      {getInitials(customer.full_name)}
+                    </span>
+
+                    {/* Main info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate leading-snug">
+                        {customer.full_name}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5 truncate">
+                        {[
+                          customer.phone,
+                          customer.total_orders > 0
+                            ? `${customer.total_orders} заказ${customer.total_orders === 1 ? '' : customer.total_orders < 5 ? 'а' : 'ов'}`
+                            : null,
+                          customer.total_spent > 0
+                            ? formatCurrency(customer.total_spent)
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </p>
+                    </div>
+
+                    {/* Discount badge */}
+                    {customer.discount_percent > 0 && (
+                      <span className="badge badge-green flex-shrink-0">
+                        −{customer.discount_percent}%
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Actions footer */}
+                  <div className="border-t border-gray-100 flex divide-x divide-gray-100">
+                    <button
+                      onClick={e => handleCopyPublicLink(customer.id, e)}
+                      className="flex-none px-4 py-2.5 text-blue-500 hover:bg-blue-50 transition-colors"
+                      title="Публичная ссылка"
+                    >
+                      <Link2 className="w-4 h-4" strokeWidth={1.5} />
+                    </button>
+                    <button
+                      onClick={e => handleEdit(customer, e)}
+                      className="flex-1 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      Изменить
+                    </button>
+                    <button
+                      onClick={e => handleDelete(customer.id, e)}
+                      className="flex-1 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -435,7 +455,7 @@ export default function PartsCustomers() {
             setIsModalOpen(false)
             setSelectedCustomer(null)
           }}
-          onSubmit={(data) => saveMutation.mutateAsync(data)}
+          onSubmit={data => saveMutation.mutateAsync(data)}
         />
       )}
       <ConfirmDialog {...dialogProps} />

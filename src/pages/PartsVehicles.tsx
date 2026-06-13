@@ -23,10 +23,16 @@ const statusLabels: Record<PartsVehicleStatus, string> = {
   dismantled: 'Разобран',
 }
 
-const statusColors: Record<PartsVehicleStatus, string> = {
-  awaiting: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
-  dismantled: 'bg-green-100 text-green-800 border-green-200',
+const statusBadge: Record<PartsVehicleStatus, string> = {
+  awaiting:    'badge badge-yellow',
+  in_progress: 'badge badge-blue',
+  dismantled:  'badge badge-green',
+}
+
+const statusDot: Record<PartsVehicleStatus, string> = {
+  awaiting:    'bg-yellow-500',
+  in_progress: 'bg-blue-500',
+  dismantled:  'bg-green-500',
 }
 
 type ViewMode = 'grid' | 'list'
@@ -46,7 +52,7 @@ export default function PartsVehicles() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState<PartsVehicle | null>(null)
-  
+
   const queryClient = useQueryClient()
   const { confirm: showConfirm, dialogProps } = useConfirm()
   const { data: profile } = useUserProfile()
@@ -126,14 +132,14 @@ export default function PartsVehicles() {
 
   // Filter vehicles
   const filteredVehicles = vehicles.filter(vehicle => {
-    const matchesSearch = searchQuery === '' || 
+    const matchesSearch = searchQuery === '' ||
       vehicle.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
       vehicle.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
       vehicle.vin?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       vehicle.license_plate?.toLowerCase().includes(searchQuery.toLowerCase())
-    
+
     const matchesStatus = statusFilter === 'all' || vehicle.status === statusFilter
-    
+
     return matchesSearch && matchesStatus
   })
 
@@ -163,7 +169,7 @@ export default function PartsVehicles() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50">
+    <div className="page-container animate-fade-in">
       {/* Header */}
       <PartsPageHeader
         title="Автомобили"
@@ -175,268 +181,261 @@ export default function PartsVehicles() {
               setSelectedVehicle(null)
               setIsModalOpen(true)
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            className="btn-primary"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Добавить</span>
           </button>
         }
       />
 
-      {/* Content */}
-      <div className="w-full py-4 sm:py-6">
-        {/* Limit reached banner */}
-        {!canCreate.vehicle() && limits.maxVehicles !== null && (
-          <div className="mb-4">
-            <LimitReachedBanner
-              used={usage.vehicles}
-              max={limits.maxVehicles}
-              label="Автомобили"
-              ctaHref="/parts/subscription"
+      {/* Limit reached banner */}
+      {!canCreate.vehicle() && limits.maxVehicles !== null && (
+        <div className="mb-5">
+          <LimitReachedBanner
+            used={usage.vehicles}
+            max={limits.maxVehicles}
+            label="Автомобили"
+            ctaHref="/parts/subscription"
+          />
+        </div>
+      )}
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        {([
+          { key: 'all',         label: 'Всего',    value: stats.total,       dotCls: 'bg-gray-400',   ringCls: 'ring-primary' },
+          { key: 'awaiting',    label: 'Ожидают',  value: stats.awaiting,    dotCls: statusDot.awaiting,    ringCls: 'ring-yellow-500' },
+          { key: 'in_progress', label: 'В работе', value: stats.in_progress, dotCls: statusDot.in_progress, ringCls: 'ring-blue-500' },
+          { key: 'dismantled',  label: 'Разобраны',value: stats.dismantled,  dotCls: statusDot.dismantled,  ringCls: 'ring-green-500' },
+        ] as const).map(({ key, label, value, dotCls, ringCls }) => (
+          <button
+            key={key}
+            onClick={() => setStatusFilter(key)}
+            className={`stat-card text-left ${statusFilter === key ? `ring-2 ${ringCls}` : ''}`}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="kicker">{label}</span>
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotCls}`} />
+            </div>
+            <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tabular-nums" style={{ letterSpacing: '-0.03em' }}>
+              {value}
+            </p>
+          </button>
+        ))}
+      </div>
+
+      {/* Filters & View Controls */}
+      <div className="card mb-5 !p-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Поиск по марке, модели, VIN, номеру…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="form-input pl-9"
             />
           </div>
-        )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 sm:mb-6">
-          {[
-            { key: 'all', label: 'Всего', value: stats.total, color: 'gray', ring: 'ring-primary', dot: 'bg-gray-400' },
-            { key: 'awaiting', label: 'Ожидают', value: stats.awaiting, color: 'yellow', ring: 'ring-yellow-500', dot: 'bg-yellow-500' },
-            { key: 'in_progress', label: 'В работе', value: stats.in_progress, color: 'blue', ring: 'ring-blue-500', dot: 'bg-blue-500' },
-            { key: 'dismantled', label: 'Разобраны', value: stats.dismantled, color: 'green', ring: 'ring-green-500', dot: 'bg-green-500' },
-          ].map(({ key, label, value, ring, dot, color }) => (
+          {/* View Mode Toggle */}
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1 self-start sm:self-auto">
             <button
-              key={key}
-              onClick={() => setStatusFilter(key as any)}
-              className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all flex flex-col ${
-                statusFilter === key ? `ring-2 ${ring}` : ''
-              }`}
+              onClick={() => setViewMode('grid')}
+              className={`btn-icon-sm ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+              title="Сетка"
             >
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs sm:text-sm font-medium text-gray-500">{label}</p>
-                <span className={`w-2.5 h-2.5 rounded-full ${dot} flex-shrink-0`} />
-              </div>
-              <p className={`text-2xl sm:text-3xl font-bold ${
-                color === 'gray' ? 'text-gray-900' :
-                color === 'yellow' ? 'text-yellow-600' :
-                color === 'blue' ? 'text-blue-600' : 'text-green-600'
-              }`}>{value}</p>
+              <Grid className="w-4 h-4" />
             </button>
-          ))}
+            <button
+              onClick={() => setViewMode('list')}
+              className={`btn-icon-sm ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+              title="Список"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Filters & View Controls */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Поиск по марке, модели, VIN, номеру..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-            </div>
-
-            {/* View Mode Toggle */}
-            <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                <Grid className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                <List className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {statusFilter !== 'all' && (
-            <div className="mt-3 flex items-center gap-2">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <span className="text-sm text-gray-600">
-                Фильтр: <span className="font-medium">{statusLabels[statusFilter as PartsVehicleStatus]}</span>
-              </span>
-              <button
-                onClick={() => setStatusFilter('all')}
-                className="ml-2 text-sm text-primary hover:underline"
-              >
-                Сбросить
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Vehicles List/Grid */}
-        {isLoading ? (
-          <div className="text-center py-12">
-            <Spinner size="md" className="inline-block" />
-          </div>
-        ) : filteredVehicles.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <Car className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-2">
-              {searchQuery || statusFilter !== 'all' ? 'Автомобили не найдены' : 'Нет автомобилей'}
-            </p>
-            {!searchQuery && statusFilter === 'all' && (
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="mt-4 text-primary hover:underline"
-              >
-                Добавить первый автомобиль
-              </button>
-            )}
-          </div>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredVehicles.map((vehicle) => (
-              <div
-                key={vehicle.id}
-                onClick={() => navigate(`/parts/vehicles/${vehicle.id}`)}
-                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden group flex flex-col"
-              >
-                <div className="p-3 sm:p-4 flex-1">
-                  {/* Status Badge */}
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[vehicle.status]}`}>
-                      {statusLabels[vehicle.status]}
-                    </span>
-                  </div>
-
-                  {/* Vehicle Info */}
-                  <div className="mb-4">
-                    <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary transition-colors">
-                      {vehicle.make} {vehicle.model}
-                    </h3>
-                    {vehicle.year && (
-                      <p className="text-sm text-gray-600">{vehicle.year} год</p>
-                    )}
-                  </div>
-
-                  {/* Details */}
-                  <div className="space-y-2 text-sm">
-                    {vehicle.vin && (
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <span className="font-medium">VIN:</span>
-                        <span className="truncate font-mono text-xs">{vehicle.vin}</span>
-                      </div>
-                    )}
-                    {vehicle.color && (
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <span className="font-medium">Цвет:</span>
-                        <span>{vehicle.color}</span>
-                      </div>
-                    )}
-                    {vehicle.purchase_price && (
-                      <div className="flex items-center gap-2 text-gray-900 font-medium">
-                        <span className="text-gray-600 font-normal">Покупка:</span>
-                        <span>{formatPriceUSD(vehicle)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Actions Footer */}
-                <div className="bg-gray-50 px-4 py-3 flex gap-2">
-                  <button
-                    onClick={(e) => handleEdit(vehicle, e)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors font-medium text-gray-700"
-                  >
-                    Редактировать
-                  </button>
-                  <button
-                    onClick={(e) => handleDelete(vehicle.id, e)}
-                    className="px-3 py-2 text-sm font-medium text-red-600 bg-white border border-red-100 hover:bg-red-50 hover:border-red-200 rounded-lg transition-colors"
-                  >
-                    Удалить
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Автомобиль
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                      VIN
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                      Статус
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                      Цена покупки
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Действия
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredVehicles.map((vehicle) => (
-                    <tr
-                      key={vehicle.id}
-                      onClick={() => navigate(`/parts/vehicles/${vehicle.id}`)}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors"
-                    >
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {vehicle.make} {vehicle.model}
-                          </div>
-                          {vehicle.year && (
-                            <div className="text-sm text-gray-500">{vehicle.year} • {vehicle.color}</div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-mono hidden lg:table-cell">
-                        {vehicle.vin ? (
-                          <span className="truncate max-w-[150px] inline-block">{vehicle.vin}</span>
-                        ) : '—'}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap hidden md:table-cell">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[vehicle.status]}`}>
-                          {statusLabels[vehicle.status]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 hidden sm:table-cell">
-                        {formatPriceUSD(vehicle)}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-right text-sm">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={(e) => handleEdit(vehicle, e)}
-                            className="px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                          >
-                            Изменить
-                          </button>
-                          <button
-                            onClick={(e) => handleDelete(vehicle.id, e)}
-                            className="px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            Удалить
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        {statusFilter !== 'all' && (
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <Filter className="w-3.5 h-3.5 text-gray-400" />
+            <span className="text-sm text-gray-500">
+              Фильтр: <span className="font-semibold text-gray-700">{statusLabels[statusFilter as PartsVehicleStatus]}</span>
+            </span>
+            <button
+              onClick={() => setStatusFilter('all')}
+              className="text-sm text-primary hover:underline font-medium"
+            >
+              Сбросить
+            </button>
           </div>
         )}
       </div>
+
+      {/* Vehicles List/Grid */}
+      {isLoading ? (
+        <div className="flex justify-center py-16">
+          <Spinner size="md" />
+        </div>
+      ) : filteredVehicles.length === 0 ? (
+        <div className="card">
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              <Car className="w-8 h-8 text-gray-400" />
+            </div>
+            <p className="empty-state-title">
+              {searchQuery || statusFilter !== 'all' ? 'Автомобили не найдены' : 'Нет автомобилей'}
+            </p>
+            {!searchQuery && statusFilter === 'all' && (
+              <>
+                <p className="empty-state-text">Добавьте первый автомобиль для разборки</p>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="btn-primary mt-5"
+                >
+                  <Plus className="w-4 h-4" />
+                  Добавить автомобиль
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      ) : viewMode === 'grid' ? (
+        /* ── Grid (mobile: 1 col, sm: 2, lg: 3) ── */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
+          {filteredVehicles.map((vehicle) => (
+            <div
+              key={vehicle.id}
+              onClick={() => navigate(`/parts/vehicles/${vehicle.id}`)}
+              className="card card-interactive flex flex-col !p-0 overflow-hidden"
+            >
+              {/* Card body */}
+              <div className="p-4 flex-1">
+                {/* Status */}
+                <div className="mb-3">
+                  <span className={statusBadge[vehicle.status]}>
+                    {statusLabels[vehicle.status]}
+                  </span>
+                </div>
+
+                {/* Title */}
+                <h3 className="heading-3 mb-0.5 group-hover:text-primary transition-colors">
+                  {vehicle.make} {vehicle.model}
+                </h3>
+                {vehicle.year && (
+                  <p className="text-sm text-gray-500 tabular-nums">{vehicle.year} г.</p>
+                )}
+
+                {/* Details */}
+                <div className="mt-3 space-y-1.5 text-sm">
+                  {vehicle.vin && (
+                    <div className="flex items-baseline gap-1.5 text-gray-600 min-w-0">
+                      <span className="kicker shrink-0">VIN</span>
+                      <span className="font-mono text-xs truncate text-gray-700">{vehicle.vin}</span>
+                    </div>
+                  )}
+                  {vehicle.color && (
+                    <div className="flex items-baseline gap-1.5 text-gray-600">
+                      <span className="kicker shrink-0">Цвет</span>
+                      <span>{vehicle.color}</span>
+                    </div>
+                  )}
+                  {vehicle.purchase_price && (
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="kicker shrink-0">Покупка</span>
+                      <span className="font-semibold text-gray-900 tabular-nums">{formatPriceUSD(vehicle)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions footer */}
+              <div className="border-t border-gray-100 px-4 py-3 flex gap-2 bg-gray-50/60">
+                <button
+                  onClick={(e) => handleEdit(vehicle, e)}
+                  className="btn-secondary btn-sm flex-1"
+                >
+                  Редактировать
+                </button>
+                <button
+                  onClick={(e) => handleDelete(vehicle.id, e)}
+                  className="btn-danger btn-sm"
+                >
+                  Удалить
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* ── Table (list mode) ── */
+        <div className="card !p-0 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className="table-header-cell">Автомобиль</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200 hidden lg:table-cell" style={{ letterSpacing: '0.06em' }}>VIN</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200 hidden md:table-cell" style={{ letterSpacing: '0.06em' }}>Статус</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200 hidden sm:table-cell" style={{ letterSpacing: '0.06em' }}>Цена покупки</th>
+                  <th className="table-header-cell text-right">Действия</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredVehicles.map((vehicle) => (
+                  <tr
+                    key={vehicle.id}
+                    onClick={() => navigate(`/parts/vehicles/${vehicle.id}`)}
+                    className="table-row cursor-pointer"
+                  >
+                    <td className="table-cell">
+                      <p className="font-semibold text-gray-900">{vehicle.make} {vehicle.model}</p>
+                      {vehicle.year && (
+                        <p className="text-xs text-gray-500 mt-0.5 tabular-nums">
+                          {vehicle.year}{vehicle.color ? ` · ${vehicle.color}` : ''}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700 border-b border-gray-100 hidden lg:table-cell">
+                      {vehicle.vin
+                        ? <span className="font-mono text-xs text-gray-600 max-w-[160px] block truncate">{vehicle.vin}</span>
+                        : <span className="text-gray-400">—</span>
+                      }
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700 border-b border-gray-100 hidden md:table-cell">
+                      <span className={statusBadge[vehicle.status]}>
+                        {statusLabels[vehicle.status]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm border-b border-gray-100 hidden sm:table-cell text-right font-semibold text-gray-900 tabular-nums">
+                      {formatPriceUSD(vehicle)}
+                    </td>
+                    <td className="table-cell text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={(e) => handleEdit(vehicle, e)}
+                          className="btn-ghost btn-sm"
+                        >
+                          Изменить
+                        </button>
+                        <button
+                          onClick={(e) => handleDelete(vehicle.id, e)}
+                          className="btn-ghost btn-sm text-red-600 hover:bg-red-50 hover:text-red-700"
+                        >
+                          Удалить
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       {isModalOpen && (
