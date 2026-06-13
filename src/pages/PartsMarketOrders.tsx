@@ -64,20 +64,19 @@ function MarketOrderCard({
           <div className="min-w-0">
             <a
               href={telHref}
-              className="text-xl sm:text-2xl font-extrabold text-gray-900 hover:text-blue-600 transition-colors tracking-tight block"
-              style={{ letterSpacing: '-0.02em' }}
+              className="heading-2 hover:text-blue-600 transition-colors block"
               onClick={(e) => e.stopPropagation()}
             >
               {order.buyerPhone}
             </a>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-sm text-gray-500">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
               {order.buyerName && (
-                <span className="inline-flex items-center gap-1 font-medium text-gray-700">
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
                   <User className="w-3.5 h-3.5 text-gray-400" strokeWidth={1.5} />
                   {order.buyerName}
                 </span>
               )}
-              <span className="text-gray-400">{formatDateTime(order.createdAt)}</span>
+              <span className="kicker">{formatDateTime(order.createdAt)}</span>
             </div>
           </div>
           <span className={`${STATUS_BADGES[order.status]} flex-shrink-0`}>
@@ -89,7 +88,7 @@ function MarketOrderCard({
         <a
           href={telHref}
           onClick={(e) => e.stopPropagation()}
-          className="btn-primary mt-3 w-full sm:w-auto flex items-center justify-center gap-2"
+          className="btn-primary mt-3 w-full sm:w-auto"
         >
           <Phone className="w-4 h-4" strokeWidth={1.5} />
           Позвонить
@@ -99,9 +98,9 @@ function MarketOrderCard({
       <div className="px-5 py-4 space-y-3">
         {/* Комментарий покупателя */}
         {order.comment && (
-          <div className="flex items-start gap-2.5 bg-gray-50 rounded-xl px-3.5 py-3 border border-gray-100">
-            <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-            <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{order.comment}</p>
+          <div className="alert alert-info gap-2.5">
+            <MessageSquare className="w-4 h-4 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+            <p className="text-sm whitespace-pre-wrap break-words">{order.comment}</p>
           </div>
         )}
 
@@ -125,7 +124,7 @@ function MarketOrderCard({
                 <p className="text-sm font-semibold text-gray-900 line-clamp-2">{item.name}</p>
                 <p className="text-xs text-gray-400 mt-0.5">× {item.quantity}</p>
               </div>
-              <p className="text-sm font-extrabold text-gray-900 whitespace-nowrap" style={{ letterSpacing: '-0.01em' }}>
+              <p className="text-sm font-extrabold text-gray-900 whitespace-nowrap tabular">
                 {formatPrice(item.sellingPrice, item.priceCurrency)}
               </p>
             </div>
@@ -135,7 +134,7 @@ function MarketOrderCard({
         {/* Сумма */}
         <div className="flex items-center justify-between pt-2 border-t border-gray-100">
           <span className="text-sm text-gray-500 font-medium">Сумма заявки</span>
-          <span className="text-lg font-extrabold text-blue-600" style={{ letterSpacing: '-0.02em' }}>{formatOrderTotal(order)}</span>
+          <span className="text-lg font-extrabold text-blue-600 tabular">{formatOrderTotal(order)}</span>
         </div>
 
         {/* Оформление заказа из заявки */}
@@ -253,9 +252,9 @@ export default function PartsMarketOrders() {
         backPath="/parts/dashboard"
       />
 
-      <div className="w-full py-4 sm:py-6">
+      <div className="page-container">
         {/* Фильтр по статусу */}
-        <div className="inline-flex gap-1 bg-gray-100 rounded-xl p-1 mb-4">
+        <div className="flex gap-2 mb-4">
           {(
             [
               { key: 'new', label: 'Новые' },
@@ -265,15 +264,11 @@ export default function PartsMarketOrders() {
             <button
               key={key}
               onClick={() => setStatusFilter(key)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 ${
-                statusFilter === key
-                  ? 'bg-white shadow-sm text-gray-900'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+              className={`chip ${statusFilter === key ? 'chip-active' : ''}`}
             >
               {label}
               {key === 'new' && newCount > 0 && (
-                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-white text-xs font-bold" style={{ background: 'linear-gradient(180deg, #3B82F6 0%, #2563EB 100%)' }}>
+                <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${statusFilter === key ? 'bg-white/25 text-white' : 'bg-blue-600 text-white'}`}>
                   {newCount}
                 </span>
               )}

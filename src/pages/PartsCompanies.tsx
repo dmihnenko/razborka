@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { Plus, Edit2, Trash2, Store, BarChart3 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Store, BarChart3, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { IMaskInput } from 'react-imask';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -36,6 +36,7 @@ interface PartsFormData {
 export default function PartsCompanies() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<PartsCompany | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState<PartsFormData>({
     name: '',
     address: '',
@@ -81,7 +82,7 @@ export default function PartsCompanies() {
       setIsModalOpen(false);
       resetForm();
     },
-    onError: (error: any) => {
+    onError: (error: Error & { message?: string }) => {
       toast.error(error.message || 'Ошибка при создании разборки');
     }
   });
@@ -108,7 +109,7 @@ export default function PartsCompanies() {
       setSelectedCompany(null);
       resetForm();
     },
-    onError: (error: any) => {
+    onError: (error: Error & { message?: string }) => {
       toast.error(error.message || 'Ошибка при обновлении разборки');
     }
   });
@@ -126,7 +127,7 @@ export default function PartsCompanies() {
       queryClient.invalidateQueries({ queryKey: ['parts_companies'] });
       toast.success('Разборка удалена');
     },
-    onError: (error: any) => {
+    onError: (error: Error & { message?: string }) => {
       toast.error(error.message || 'Ошибка при удалении разборки');
     }
   });
@@ -142,9 +143,9 @@ export default function PartsCompanies() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts_companies'] });
-      toast.success('Статус разборки изменен');
+      toast.success('Статус разборки изменён');
     },
-    onError: (error: any) => {
+    onError: (error: Error & { message?: string }) => {
       toast.error(error.message || 'Ошибка при изменении статуса');
     }
   });
@@ -168,8 +169,11 @@ export default function PartsCompanies() {
   };
 
   const handleDelete = async (company: PartsCompany) => {
-    const ok = await showConfirm({ message: `Вы уверены, что хотите удалить разборку "${company.name}"? Это действие нельзя отменить.`, danger: true })
-    if (!ok) return
+    const ok = await showConfirm({
+      message: `Вы уверены, что хотите удалить разборку «${company.name}»? Это действие нельзя отменить.`,
+      danger: true
+    });
+    if (!ok) return;
     deleteMutation.mutate(company.id);
   };
 
@@ -178,7 +182,6 @@ export default function PartsCompanies() {
       toast.error('Введите название разборки');
       return;
     }
-
     if (selectedCompany) {
       updateMutation.mutate({ id: selectedCompany.id, data: formData });
     } else {
@@ -187,22 +190,40 @@ export default function PartsCompanies() {
   };
 
   const resetForm = () => {
-    setFormData({
-      name: '',
-      address: '',
-      phone: '',
-      email: '',
-      description: ''
-    });
+    setFormData({ name: '', address: '', phone: '', email: '', description: '' });
   };
 
+  const filtered = companies.filter(c => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      c.name.toLowerCase().includes(q) ||
+      (c.address ?? '').toLowerCase().includes(q) ||
+      (c.phone ?? '').includes(q) ||
+      (c.email ?? '').toLowerCase().includes(q)
+    );
+  });
+
+  const isMutating =
+    createMutation.isPending || updateMutation.isPending;
+
+  // ── Loading skeleton ───────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="h-8 w-40 bg-gray-100 rounded-lg animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 h-48 animate-pulse" />
+      <div className="space-y-5">
+        <div className="page-header">
+          <div className="h-7 w-36 bg-gray-100 rounded-lg animate-pulse" />
+          <div className="h-9 w-36 bg-gray-100 rounded-lg animate-pulse" />
+        </div>
+        <div className="card p-0 overflow-hidden">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-5 py-4 border-b border-gray-100 last:border-0">
+              <div className="icon-tile bg-gray-100 animate-pulse" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-40 bg-gray-100 rounded animate-pulse" />
+                <div className="h-3 w-56 bg-gray-50 rounded animate-pulse" />
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -210,214 +231,370 @@ export default function PartsCompanies() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-5">
+
+      {/* ── Page header ─────────────────────────────────────────────────── */}
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Разборки</h1>
-          <p className="text-sm text-gray-600 mt-1">Управление разборками и магазинами запчастей</p>
+          <p className="kicker mb-1">Администрирование</p>
+          <h1 className="page-title">Разборки</h1>
+          <p className="page-subtitle">
+            Управление разборками и магазинами запчастей
+            {companies.length > 0 && (
+              <> · <span className="tabular">{companies.length}</span></>
+            )}
+          </p>
         </div>
-        <button
-          onClick={handleCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-xl hover:bg-purple-700 transition-colors shadow-sm"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Создать разборку</span>
+        <button onClick={handleCreate} className="btn-primary">
+          <Plus className="w-4 h-4" strokeWidth={2} />
+          Создать разборку
         </button>
       </div>
 
-      {companies.length === 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-16 flex flex-col items-center text-gray-400">
-          <Store className="w-10 h-10 mb-3 opacity-30" />
-          <p className="text-sm font-medium">Нет разборок</p>
-          <button onClick={handleCreate} className="mt-3 text-sm text-purple-600 font-semibold hover:underline">Создать первую</button>
+      {/* ── Search ──────────────────────────────────────────────────────── */}
+      {companies.length > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" strokeWidth={1.5} />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Поиск по названию, адресу, телефону..."
+            className="form-input pl-10"
+          />
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {companies.map((company) => (
-          <div
-            key={company.id}
-            className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow"
-          >
-            <button
-              onClick={() => navigate(`/admin/parts-companies/${company.id}`)}
-              className="flex items-start justify-between mb-4 w-full text-left group"
-              title="Открыть статистику"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Store className="h-6 w-6 text-orange-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 group-hover:text-orange-700 transition-colors">{company.name}</h3>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    company.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {company.is_active ? 'Активна' : 'Неактивна'}
-                  </span>
-                </div>
-              </div>
-              <BarChart3 className="h-5 w-5 text-gray-300 group-hover:text-orange-500 transition-colors flex-shrink-0" />
+      {/* ── Empty state ─────────────────────────────────────────────────── */}
+      {companies.length === 0 && (
+        <div className="card">
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              <Store className="w-7 h-7 text-gray-400" strokeWidth={1.5} />
+            </div>
+            <p className="empty-state-title">Нет разборок</p>
+            <p className="empty-state-text">Создайте первую разборку, чтобы начать работу</p>
+            <button onClick={handleCreate} className="btn-primary mt-5">
+              <Plus className="w-4 h-4" strokeWidth={2} />
+              Создать разборку
             </button>
+          </div>
+        </div>
+      )}
 
-            <div className="space-y-2 mb-4 text-sm text-gray-600">
-              {company.address && (
-                <div className="flex items-start">
-                  <span className="font-medium mr-2">Адрес:</span>
-                  <span>{company.address}</span>
-                </div>
-              )}
-              {company.phone && (
-                <div className="flex items-center">
-                  <span className="font-medium mr-2">Телефон:</span>
-                  <span>{company.phone}</span>
-                </div>
-              )}
-              {company.email && (
-                <div className="flex items-center">
-                  <span className="font-medium mr-2">Email:</span>
-                  <span>{company.email}</span>
-                </div>
-              )}
-              {company.description && (
-                <div className="flex items-start">
-                  <span className="font-medium mr-2">Описание:</span>
-                  <span className="text-gray-500">{company.description}</span>
-                </div>
-              )}
-            </div>
+      {/* ── No search results ───────────────────────────────────────────── */}
+      {companies.length > 0 && filtered.length === 0 && (
+        <div className="card">
+          <div className="empty-state py-10">
+            <Search className="w-8 h-8 text-gray-300 mb-3" strokeWidth={1.5} />
+            <p className="empty-state-title">Ничего не найдено</p>
+            <p className="empty-state-text">Попробуйте изменить запрос поиска</p>
+          </div>
+        </div>
+      )}
 
-            <div className="flex justify-between items-center pt-4 border-t">
+      {/* ── Desktop table (hidden on mobile) ────────────────────────────── */}
+      {filtered.length > 0 && (
+        <div className="card p-0 overflow-hidden hidden sm:block">
+          <table className="w-full">
+            <thead>
+              <tr>
+                <th className="table-header-cell w-10 rounded-tl-xl">#</th>
+                <th className="table-header-cell">Разборка</th>
+                <th className="table-header-cell">Контакты</th>
+                <th className="table-header-cell">Статус</th>
+                <th className="table-header-cell text-right rounded-tr-xl">Действия</th>
+              </tr>
+            </thead>
+            <tbody className="grid-hairline">
+              {filtered.map((company, idx) => (
+                <tr key={company.id} className="table-row">
+                  {/* # */}
+                  <td className="table-cell">
+                    <span className="kicker tabular">{idx + 1}</span>
+                  </td>
+
+                  {/* Name + description */}
+                  <td className="table-cell">
+                    <button
+                      onClick={() => navigate(`/admin/parts-companies/${company.id}`)}
+                      className="flex items-center gap-3 group text-left"
+                      title="Открыть статистику"
+                    >
+                      <div className="icon-tile bg-blue-50 flex-shrink-0">
+                        <Store className="w-5 h-5 text-blue-600" strokeWidth={1.5} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 group-hover:text-primary transition-colors">
+                          {company.name}
+                        </p>
+                        {company.description && (
+                          <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{company.description}</p>
+                        )}
+                        {company.address && (
+                          <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{company.address}</p>
+                        )}
+                      </div>
+                    </button>
+                  </td>
+
+                  {/* Contacts */}
+                  <td className="table-cell">
+                    <div className="space-y-0.5">
+                      {company.phone && (
+                        <p className="text-sm text-gray-700 tabular">{company.phone}</p>
+                      )}
+                      {company.email && (
+                        <p className="text-xs text-gray-400">{company.email}</p>
+                      )}
+                      {!company.phone && !company.email && (
+                        <span className="text-xs text-gray-300">—</span>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Status */}
+                  <td className="table-cell">
+                    {company.is_active ? (
+                      <span className="badge badge-green">Активна</span>
+                    ) : (
+                      <span className="badge badge-gray">Неактивна</span>
+                    )}
+                  </td>
+
+                  {/* Actions */}
+                  <td className="table-cell">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => navigate(`/admin/parts-companies/${company.id}`)}
+                        className="btn-icon btn-icon-sm"
+                        title="Статистика"
+                      >
+                        <BarChart3 className="w-4 h-4" strokeWidth={1.5} />
+                      </button>
+                      <button
+                        onClick={() => toggleActiveMutation.mutate({ id: company.id, isActive: company.is_active })}
+                        className={`btn-sm font-semibold ${
+                          company.is_active
+                            ? 'text-amber-600 hover:bg-amber-50'
+                            : 'text-green-600 hover:bg-green-50'
+                        } rounded transition-colors`}
+                        title={company.is_active ? 'Деактивировать' : 'Активировать'}
+                      >
+                        {company.is_active ? 'Деактивировать' : 'Активировать'}
+                      </button>
+                      <button
+                        onClick={() => handleEdit(company)}
+                        className="btn-icon btn-icon-sm text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                        title="Редактировать"
+                      >
+                        <Edit2 className="w-4 h-4" strokeWidth={1.5} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(company)}
+                        className="btn-icon btn-icon-sm text-red-500 hover:text-red-700 hover:bg-red-50"
+                        title="Удалить"
+                      >
+                        <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ── Mobile cards (hidden on desktop) ────────────────────────────── */}
+      {filtered.length > 0 && (
+        <div className="sm:hidden space-y-3">
+          {filtered.map(company => (
+            <div key={company.id} className="card p-0 overflow-hidden">
+              {/* Card header — clickable */}
               <button
-                onClick={() => toggleActiveMutation.mutate({ id: company.id, isActive: company.is_active })}
-                className={`text-sm font-medium ${
-                  company.is_active ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'
-                }`}
+                onClick={() => navigate(`/admin/parts-companies/${company.id}`)}
+                className="flex items-start gap-3 w-full text-left px-4 pt-4 pb-3 group"
               >
-                {company.is_active ? 'Деактивировать' : 'Активировать'}
+                <div className="icon-tile bg-blue-50 flex-shrink-0">
+                  <Store className="w-5 h-5 text-blue-600" strokeWidth={1.5} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-semibold text-gray-900 group-hover:text-primary transition-colors truncate">
+                      {company.name}
+                    </p>
+                    {company.is_active ? (
+                      <span className="badge badge-green flex-shrink-0">Активна</span>
+                    ) : (
+                      <span className="badge badge-gray flex-shrink-0">Неактивна</span>
+                    )}
+                  </div>
+                  {company.description && (
+                    <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{company.description}</p>
+                  )}
+                </div>
+                <BarChart3 className="w-4 h-4 text-gray-300 group-hover:text-primary flex-shrink-0 mt-0.5 transition-colors" strokeWidth={1.5} />
               </button>
-              <div className="flex space-x-2">
+
+              {/* Details */}
+              {(company.address || company.phone || company.email) && (
+                <div className="px-4 pb-3 space-y-1">
+                  {company.address && (
+                    <p className="text-xs text-gray-500">
+                      <span className="font-semibold text-gray-600">Адрес:</span> {company.address}
+                    </p>
+                  )}
+                  {company.phone && (
+                    <p className="text-xs text-gray-500 tabular">
+                      <span className="font-semibold text-gray-600">Тел:</span> {company.phone}
+                    </p>
+                  )}
+                  {company.email && (
+                    <p className="text-xs text-gray-500">
+                      <span className="font-semibold text-gray-600">Email:</span> {company.email}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Footer actions */}
+              <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-gray-100">
                 <button
-                  onClick={() => handleEdit(company)}
-                  className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                  title="Редактировать"
+                  onClick={() => toggleActiveMutation.mutate({ id: company.id, isActive: company.is_active })}
+                  className={`text-xs font-semibold ${
+                    company.is_active
+                      ? 'text-amber-600 hover:text-amber-700'
+                      : 'text-green-600 hover:text-green-700'
+                  }`}
                 >
-                  <Edit2 className="h-4 w-4" />
+                  {company.is_active ? 'Деактивировать' : 'Активировать'}
                 </button>
-                <button
-                  onClick={() => handleDelete(company)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded"
-                  title="Удалить"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleEdit(company)}
+                    className="btn-icon btn-icon-sm text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                    title="Редактировать"
+                  >
+                    <Edit2 className="w-4 h-4" strokeWidth={1.5} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(company)}
+                    className="btn-icon btn-icon-sm text-red-500 hover:text-red-700 hover:bg-red-50"
+                    title="Удалить"
+                  >
+                    <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+      )}
 
-        {companies.length === 0 && (
-          <div className="col-span-full text-center py-12 text-gray-500">
-            <Store className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <p>Нет созданных разборок</p>
-            <p className="text-sm mt-2">Нажмите "Создать разборку" чтобы добавить первую</p>
-          </div>
-        )}
-      </div>
-
-      {/* Модальное окно */}
+      {/* ── Modal (bottom-sheet mobile / center desktop) ─────────────────── */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h2 className="text-xl font-bold mb-4">
-              {selectedCompany ? 'Редактировать разборку' : 'Создать разборку'}
-            </h2>
-            <div className="space-y-4">
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+          onClick={e => { if (e.target === e.currentTarget) { setIsModalOpen(false); setSelectedCompany(null); resetForm(); } }}
+        >
+          <div className="w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl animate-slide-up sm:animate-modal-pop">
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-1 sm:hidden">
+              <div className="w-9 h-1 rounded-full bg-gray-200" />
+            </div>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-4 border-b border-gray-100">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Название разборки *
-                </label>
+                <p className="kicker mb-0.5">
+                  {selectedCompany ? 'Редактирование' : 'Новая разборка'}
+                </p>
+                <h2 className="heading-3">
+                  {selectedCompany ? selectedCompany.name : 'Создать разборку'}
+                </h2>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-5 py-4 space-y-4 overflow-y-auto max-h-[60vh] sm:max-h-none">
+              <div>
+                <label className="form-label">Название <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  className="form-input"
                   placeholder="Например: Разборка Автозапчасти"
-                  required
+                  autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Адрес
-                </label>
+                <label className="form-label">Адрес</label>
                 <input
                   type="text"
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  onChange={e => setFormData({ ...formData, address: e.target.value })}
+                  className="form-input"
                   placeholder="г. Киев, ул. Примерная, 123"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Телефон
-                </label>
+                <label className="form-label">Телефон</label>
                 <IMaskInput
                   mask="+380 00 000-00-00"
                   value={formData.phone}
-                  onAccept={(value) => setFormData({ ...formData, phone: value })}
+                  onAccept={value => setFormData({ ...formData, phone: value })}
                   type="tel"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="form-input"
                   placeholder="+380 XX XXX-XX-XX"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
+                <label className="form-label">Email</label>
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  className="form-input"
                   placeholder="info@example.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Описание
-                </label>
+                <label className="form-label">Описание</label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  className="form-input resize-none"
                   rows={3}
                   placeholder="Краткое описание разборки..."
                 />
               </div>
             </div>
-            <div className="flex justify-end space-x-3 mt-6">
+
+            {/* Footer */}
+            <div
+              className="flex gap-3 px-5 pt-3 pb-5 border-t border-gray-100"
+              style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+            >
               <button
-                onClick={() => {
-                  setIsModalOpen(false);
-                  setSelectedCompany(null);
-                  resetForm();
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                onClick={() => { setIsModalOpen(false); setSelectedCompany(null); resetForm(); }}
+                className="btn-secondary flex-1"
               >
                 Отмена
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={!formData.name.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-purple-700 rounded-md hover:bg-purple-800 disabled:bg-gray-400"
+                disabled={!formData.name.trim() || isMutating}
+                className="btn-primary flex-1"
               >
-                {selectedCompany ? 'Сохранить' : 'Создать'}
+                {isMutating ? 'Сохранение…' : selectedCompany ? 'Сохранить' : 'Создать'}
               </button>
             </div>
           </div>
         </div>
       )}
+
       <ConfirmDialog {...dialogProps} />
     </div>
   );

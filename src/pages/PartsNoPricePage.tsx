@@ -133,14 +133,16 @@ export default function PartsNoPricePage() {
 
   if (!partsCompanyId) {
     return (
-      <div className="min-h-dvh bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Нет доступа к разборке</p>
+      <div className="min-h-dvh flex items-center justify-center bg-gray-50 dark:bg-slate-950">
+        <div className="empty-state">
+          <p className="empty-state-title">Нет доступа к разборке</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50">
+    <div className="min-h-dvh bg-gray-50 dark:bg-slate-950">
       <PartsPageHeader
         title="Запчасти без цены"
         subtitle={!isLoading ? `${noPriceItems.length} позиций требуют заполнения` : undefined}
@@ -148,66 +150,236 @@ export default function PartsNoPricePage() {
         maxWidth="4xl"
       />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-4xl mx-auto px-3 sm:px-5 lg:px-8 py-4 sm:py-6">
         {isLoading ? (
-          <div className="text-center py-16">
+          <div className="empty-state">
             <Spinner size="md" className="inline-block" />
           </div>
         ) : noPriceItems.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-            <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
-            <p className="text-lg font-semibold text-gray-800 mb-1">Всё заполнено!</p>
-            <p className="text-gray-500 mb-6">У всех запчастей указана цена.</p>
-            <button
-              onClick={() => navigate('/parts/inventory')}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              На склад
-            </button>
+          /* ── Empty state ── */
+          <div className="card p-12">
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <CheckCircle2 className="w-8 h-8 text-green-500" />
+              </div>
+              <p className="empty-state-title">Всё заполнено!</p>
+              <p className="empty-state-text">У всех запчастей указана цена.</p>
+              <button
+                onClick={() => navigate('/parts/inventory')}
+                className="btn-primary mt-6"
+              >
+                На склад
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="space-y-3">
-            {noPriceItems.map(item => {
-              const row = editState[item.id]
-              if (!row) return null
-              const isExpanded = expanded.has(item.id)
-              const isSaved = saved.has(item.id)
-              const isSaving = updateMutation.isPending && updateMutation.variables?.id === item.id
+          <>
+            {/* ── Desktop table (hidden on mobile) ── */}
+            <div className="card hidden sm:block overflow-hidden">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th className="table-header-cell">Название</th>
+                    <th className="table-header-cell">Кол-во / Сост.</th>
+                    <th className="table-header-cell w-52">Цена</th>
+                    <th className="table-header-cell w-10"></th>
+                    <th className="table-header-cell w-28"></th>
+                  </tr>
+                </thead>
+                <tbody className="grid-hairline">
+                  {noPriceItems.map(item => {
+                    const row = editState[item.id]
+                    if (!row) return null
+                    const isExpanded = expanded.has(item.id)
+                    const isSaved = saved.has(item.id)
+                    const isSaving = updateMutation.isPending && updateMutation.variables?.id === item.id
 
-              return (
-                <div
-                  key={item.id}
-                  className={`bg-white rounded-xl shadow-sm border transition-all ${
-                    isSaved ? 'border-green-300' : 'border-gray-200'
-                  }`}
-                >
-                  {/* Item header row */}
-                  <div className="flex items-center gap-3 px-4 py-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-gray-900 truncate">{item.name}</span>
-                        {item.part_number && (
-                          <span className="text-xs text-gray-400 font-mono">{item.part_number}</span>
+                    return (
+                      <>
+                        <tr key={item.id} className="table-row">
+                          {/* Name + badges */}
+                          <td className="table-cell">
+                            <div className="flex items-center gap-2 flex-wrap min-w-0">
+                              <span className="font-semibold text-gray-900 truncate">{item.name}</span>
+                              {item.part_number && (
+                                <span className="kicker">{item.part_number}</span>
+                              )}
+                              {item.category && (
+                                <span className="badge badge-gray">{item.category.name}</span>
+                              )}
+                              {isSaved && (
+                                <span className="badge badge-green flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" /> Сохранено
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Qty / condition */}
+                          <td className="table-cell tabular-nums text-gray-500">
+                            {item.quantity} шт
+                            <span className="mx-1 text-gray-300">·</span>
+                            {item.condition === 'new' ? 'Новая' : item.condition === 'used' ? 'Б/У' : 'Повреждена'}
+                          </td>
+
+                          {/* Price input */}
+                          <td className="table-cell">
+                            <div className="flex items-center border border-amber-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-amber-400 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700">
+                              <Tag className="w-3.5 h-3.5 text-amber-500 ml-2 flex-shrink-0" />
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={row.selling_price}
+                                onChange={(e) => setField(item.id, 'selling_price', e.target.value)}
+                                placeholder="Цена"
+                                className="flex-1 min-w-0 pl-1.5 pr-1 py-1.5 text-sm border-0 focus:outline-none focus:ring-0 bg-transparent tabular-nums"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setField(item.id, 'price_currency', row.price_currency === 'USD' ? 'UAH' : 'USD')}
+                                className="px-2 py-1.5 text-xs font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors border-l border-amber-300 dark:bg-amber-800/40 dark:text-amber-300 dark:border-amber-700 dark:hover:bg-amber-800/60"
+                              >
+                                {row.price_currency === 'USD' ? '$' : '₴'}
+                              </button>
+                            </div>
+                          </td>
+
+                          {/* Expand toggle */}
+                          <td className="table-cell">
+                            <button
+                              type="button"
+                              onClick={() => toggleExpand(item.id)}
+                              className="btn-icon-sm"
+                              title="Доп. поля"
+                            >
+                              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            </button>
+                          </td>
+
+                          {/* Save */}
+                          <td className="table-cell">
+                            <button
+                              type="button"
+                              onClick={() => handleSave(item)}
+                              disabled={isSaving}
+                              className="btn-primary btn-sm flex items-center gap-1.5"
+                            >
+                              <Save className="w-3.5 h-3.5" />
+                              {isSaving ? 'Сохр...' : 'Сохранить'}
+                            </button>
+                          </td>
+                        </tr>
+
+                        {/* Expanded extra fields row */}
+                        {isExpanded && (
+                          <tr key={`${item.id}-expanded`} className="bg-gray-50 dark:bg-slate-900/50">
+                            <td colSpan={5} className="px-4 py-3">
+                              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                <div>
+                                  <label className="form-label text-xs">Оригинальный номер</label>
+                                  <input
+                                    type="text"
+                                    value={row.part_number}
+                                    onChange={(e) => setField(item.id, 'part_number', e.target.value)}
+                                    placeholder="Не указан"
+                                    className="form-input py-2 text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="form-label text-xs">Категория</label>
+                                  <select
+                                    value={row.category_id}
+                                    onChange={(e) => setField(item.id, 'category_id', e.target.value)}
+                                    className="form-select py-2 text-sm"
+                                  >
+                                    <option value="">Без категории</option>
+                                    {categories.map((cat: any) => (
+                                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                {storageLocations.length > 0 && (
+                                  <div>
+                                    <label className="form-label text-xs">Место хранения</label>
+                                    <select
+                                      value={row.storage_location_id}
+                                      onChange={(e) => setField(item.id, 'storage_location_id', e.target.value)}
+                                      className="form-select py-2 text-sm"
+                                    >
+                                      <option value="">Не указано</option>
+                                      {buildLocationOptions(storageLocations as StorageLocation[]).map(opt => (
+                                        <option key={opt.id} value={opt.id}>{opt.label}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                )}
+                                <div className={storageLocations.length > 0 ? '' : 'col-span-2'}>
+                                  <label className="form-label text-xs">Описание</label>
+                                  <textarea
+                                    value={row.description}
+                                    onChange={(e) => setField(item.id, 'description', e.target.value)}
+                                    placeholder="Не указано"
+                                    rows={2}
+                                    className="form-input py-2 text-sm resize-none"
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
                         )}
-                        {item.category && (
-                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                            {item.category.name}
+                      </>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* ── Mobile cards (hidden on sm+) ── */}
+            <div className="sm:hidden space-y-2">
+              {noPriceItems.map(item => {
+                const row = editState[item.id]
+                if (!row) return null
+                const isExpanded = expanded.has(item.id)
+                const isSaved = saved.has(item.id)
+                const isSaving = updateMutation.isPending && updateMutation.variables?.id === item.id
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`card transition-all ${isSaved ? 'border-green-300 dark:border-green-700' : ''}`}
+                  >
+                    {/* Card header */}
+                    <div className="flex items-start gap-3 px-4 py-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-gray-900 dark:text-slate-100 truncate">
+                            {item.name}
                           </span>
-                        )}
-                        {isSaved && (
-                          <span className="text-xs flex items-center gap-1 text-green-600">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Сохранено
-                          </span>
-                        )}
+                          {isSaved && (
+                            <span className="badge badge-green flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" /> Сохранено
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 tabular-nums">
+                          {item.quantity} шт
+                          {item.part_number && (
+                            <><span className="mx-1">·</span><span className="kicker">{item.part_number}</span></>
+                          )}
+                          {item.category && (
+                            <><span className="mx-1">·</span>{item.category.name}</>
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
+                          {item.condition === 'new' ? 'Новая' : item.condition === 'used' ? 'Б/У' : 'Повреждена'}
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {item.quantity} шт · {item.condition === 'new' ? 'Новая' : item.condition === 'used' ? 'Б/У' : 'Повреждена'}
-                      </p>
                     </div>
 
-                    {/* Price + currency inline */}
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <div className="flex items-center gap-0 border border-amber-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-amber-400">
+                    {/* Price row */}
+                    <div className="flex items-center gap-2 px-4 pb-3">
+                      <div className="flex-1 flex items-center border border-amber-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-amber-400 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700">
                         <Tag className="w-3.5 h-3.5 text-amber-500 ml-2 flex-shrink-0" />
                         <input
                           type="number"
@@ -216,103 +388,95 @@ export default function PartsNoPricePage() {
                           value={row.selling_price}
                           onChange={(e) => setField(item.id, 'selling_price', e.target.value)}
                           placeholder="Цена"
-                          className="w-24 pl-1.5 pr-1 py-1.5 text-sm border-0 focus:outline-none focus:ring-0 bg-amber-50"
+                          className="flex-1 min-w-0 pl-1.5 pr-1 py-2 text-sm border-0 focus:outline-none focus:ring-0 bg-transparent tabular-nums"
                         />
                         <button
                           type="button"
                           onClick={() => setField(item.id, 'price_currency', row.price_currency === 'USD' ? 'UAH' : 'USD')}
-                          className="px-2 py-1.5 text-xs font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors border-l border-amber-300"
+                          className="px-2 py-2 text-xs font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors border-l border-amber-300 dark:bg-amber-800/40 dark:text-amber-300 dark:border-amber-700 dark:hover:bg-amber-800/60"
                         >
                           {row.price_currency === 'USD' ? '$' : '₴'}
                         </button>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(item.id)}
+                        className="btn-icon-sm"
+                        title="Доп. поля"
+                      >
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSave(item)}
+                        disabled={isSaving}
+                        className="btn-primary btn-sm flex items-center gap-1.5"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        {isSaving ? 'Сохр...' : 'Сохр.'}
+                      </button>
                     </div>
 
-                    {/* Expand / save buttons */}
-                    <button
-                      type="button"
-                      onClick={() => toggleExpand(item.id)}
-                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-                      title="Доп. поля"
-                    >
-                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleSave(item)}
-                      disabled={isSaving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 flex-shrink-0"
-                    >
-                      <Save className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">{isSaving ? 'Сохр...' : 'Сохранить'}</span>
-                    </button>
-                  </div>
-
-                  {/* Expanded: extra fields */}
-                  {isExpanded && (
-                    <div className="border-t border-gray-100 px-4 py-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-50 rounded-b-xl">
-                      {/* Part number */}
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Оригинальный номер</label>
-                        <input
-                          type="text"
-                          value={row.part_number}
-                          onChange={(e) => setField(item.id, 'part_number', e.target.value)}
-                          placeholder="Не указан"
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
-                        />
-                      </div>
-
-                      {/* Category */}
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Категория</label>
-                        <select
-                          value={row.category_id}
-                          onChange={(e) => setField(item.id, 'category_id', e.target.value)}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
-                        >
-                          <option value="">Без категории</option>
-                          {categories.map((cat: any) => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Storage location */}
-                      {storageLocations.length > 0 && (
+                    {/* Expanded extra fields */}
+                    {isExpanded && (
+                      <div className="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3 grid grid-cols-1 gap-3 bg-gray-50 dark:bg-slate-900/50 rounded-b-xl">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Место хранения</label>
+                          <label className="form-label text-xs">Оригинальный номер</label>
+                          <input
+                            type="text"
+                            value={row.part_number}
+                            onChange={(e) => setField(item.id, 'part_number', e.target.value)}
+                            placeholder="Не указан"
+                            className="form-input"
+                          />
+                        </div>
+                        <div>
+                          <label className="form-label text-xs">Категория</label>
                           <select
-                            value={row.storage_location_id}
-                            onChange={(e) => setField(item.id, 'storage_location_id', e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                            value={row.category_id}
+                            onChange={(e) => setField(item.id, 'category_id', e.target.value)}
+                            className="form-select"
                           >
-                            <option value="">Не указано</option>
-                            {buildLocationOptions(storageLocations as StorageLocation[]).map(opt => (
-                              <option key={opt.id} value={opt.id}>{opt.label}</option>
+                            <option value="">Без категории</option>
+                            {categories.map((cat: any) => (
+                              <option key={cat.id} value={cat.id}>{cat.name}</option>
                             ))}
                           </select>
                         </div>
-                      )}
-
-                      {/* Description */}
-                      <div className={storageLocations.length > 0 ? '' : 'sm:col-span-2'}>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Описание</label>
-                        <textarea
-                          value={row.description}
-                          onChange={(e) => setField(item.id, 'description', e.target.value)}
-                          placeholder="Не указано"
-                          rows={2}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none bg-white"
-                        />
+                        {storageLocations.length > 0 && (
+                          <div>
+                            <label className="form-label text-xs">Место хранения</label>
+                            <select
+                              value={row.storage_location_id}
+                              onChange={(e) => setField(item.id, 'storage_location_id', e.target.value)}
+                              className="form-select"
+                            >
+                              <option value="">Не указано</option>
+                              {buildLocationOptions(storageLocations as StorageLocation[]).map(opt => (
+                                <option key={opt.id} value={opt.id}>{opt.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                        <div>
+                          <label className="form-label text-xs">Описание</label>
+                          <textarea
+                            value={row.description}
+                            onChange={(e) => setField(item.id, 'description', e.target.value)}
+                            placeholder="Не указано"
+                            rows={2}
+                            className="form-input resize-none"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>

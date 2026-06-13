@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2, Phone, Send } from 'lucide-react'
+import { RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2, Phone, Send, Info } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -11,6 +11,7 @@ import { getImgbbKey, setImgbbKey } from '@/utils/imgbbKey'
 import { toast } from 'sonner'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { TELEGRAM_BOT_USERNAME, telegramConnectLink } from '@/config/telegram'
+
 export default function PartsSettings() {
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
@@ -95,8 +96,7 @@ export default function PartsSettings() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50">
-      {/* Header */}
+    <div className="min-h-dvh bg-gray-50 dark:bg-slate-950">
       <PartsPageHeader
         title="Настройки разборки"
         backPath="/parts/dashboard"
@@ -106,143 +106,220 @@ export default function PartsSettings() {
       <div className="w-full py-4 sm:py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 
-          {/* Левая колонка */}
-          <div className="space-y-4 sm:space-y-6">
+          {/* ── Левая колонка ── */}
+          <div className="space-y-4 sm:space-y-5">
 
             {/* Контакты разборки */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-emerald-100 rounded-lg flex-shrink-0">
-                  <Phone className="w-4 h-4 text-emerald-600" />
+            <div className="card">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="icon-tile bg-emerald-100 dark:bg-emerald-900/40">
+                  <Phone className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-900">Контакты разборки</h2>
-                  <p className="text-xs text-gray-500">Название, телефон и адрес для клиентов и документов</p>
+                  <h2 className="heading-3">Контакты разборки</h2>
+                  <p className="kicker mt-0.5">Название, телефон и адрес</p>
                 </div>
               </div>
-              <div className="space-y-2.5">
-                <input type="text" value={contacts.name} onChange={e => setContacts(p => ({ ...p, name: e.target.value }))}
-                  placeholder="Название разборки" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <input type="tel" value={contacts.phone} onChange={e => setContacts(p => ({ ...p, phone: e.target.value }))}
-                    placeholder="+380 XX XXX-XX-XX" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm" />
-                  <input type="email" value={contacts.email} onChange={e => setContacts(p => ({ ...p, email: e.target.value }))}
-                    placeholder="email@example.com" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm" />
-                </div>
-                <input type="text" value={contacts.address} onChange={e => setContacts(p => ({ ...p, address: e.target.value }))}
-                  placeholder="Адрес" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm" />
-                <input type="text" value={contacts.telegram} onChange={e => setContacts(p => ({ ...p, telegram: e.target.value }))}
-                  placeholder="Telegram: @username или ссылка https://t.me/..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm" />
+
+              <div className="space-y-3">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Описание разборки <span className="text-gray-400">(видят покупатели на маркете)</span></label>
-                  <textarea value={contacts.description} onChange={e => setContacts(p => ({ ...p, description: e.target.value }))}
-                    placeholder="Кратко о вашей разборке: специализация, регион, условия работы..." rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm resize-none" />
+                  <label className="form-label">Название разборки</label>
+                  <input
+                    type="text"
+                    value={contacts.name}
+                    onChange={e => setContacts(p => ({ ...p, name: e.target.value }))}
+                    placeholder="Название разборки"
+                    className="form-input"
+                  />
                 </div>
-                <button onClick={() => saveContactsMutation.mutate()} disabled={saveContactsMutation.isPending || !contactsDirty}
-                  className="px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium flex items-center gap-1.5 transition-colors text-sm disabled:opacity-50">
-                  <Save className="w-4 h-4" /> Сохранить контакты
-                </button>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="form-label">Телефон</label>
+                    <input
+                      type="tel"
+                      value={contacts.phone}
+                      onChange={e => setContacts(p => ({ ...p, phone: e.target.value }))}
+                      placeholder="+380 XX XXX-XX-XX"
+                      className="form-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Email</label>
+                    <input
+                      type="email"
+                      value={contacts.email}
+                      onChange={e => setContacts(p => ({ ...p, email: e.target.value }))}
+                      placeholder="email@example.com"
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="form-label">Адрес</label>
+                  <input
+                    type="text"
+                    value={contacts.address}
+                    onChange={e => setContacts(p => ({ ...p, address: e.target.value }))}
+                    placeholder="Адрес"
+                    className="form-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Telegram</label>
+                  <input
+                    type="text"
+                    value={contacts.telegram}
+                    onChange={e => setContacts(p => ({ ...p, telegram: e.target.value }))}
+                    placeholder="@username или https://t.me/..."
+                    className="form-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">
+                    Описание разборки
+                    <span className="text-gray-400 font-normal ml-1">(видят покупатели на маркете)</span>
+                  </label>
+                  <textarea
+                    value={contacts.description}
+                    onChange={e => setContacts(p => ({ ...p, description: e.target.value }))}
+                    placeholder="Кратко о вашей разборке: специализация, регион, условия работы..."
+                    rows={3}
+                    className="form-input resize-none"
+                  />
+                </div>
+
+                <div>
+                  <button
+                    onClick={() => saveContactsMutation.mutate()}
+                    disabled={saveContactsMutation.isPending || !contactsDirty}
+                    className="btn-primary"
+                  >
+                    <Save className="w-4 h-4" />
+                    Сохранить контакты
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Уведомления в Telegram */}
             {TELEGRAM_BOT_USERNAME && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-sky-100 rounded-lg flex-shrink-0">
-                    <Send className="w-4 h-4 text-sky-600" />
+              <div className="card">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="icon-tile bg-sky-100 dark:bg-sky-900/40">
+                    <Send className="w-5 h-5 text-sky-600 dark:text-sky-400" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-semibold text-gray-900">Уведомления в Telegram</h2>
-                    <p className="text-xs text-gray-500">Новые заявки с маркета и напоминания о подписке — прямо в Telegram</p>
+                    <h2 className="heading-3">Уведомления в Telegram</h2>
+                    <p className="kicker mt-0.5">Заявки с маркета и напоминания</p>
                   </div>
                 </div>
+
                 {(company as any)?.telegram_chat_id ? (
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm text-green-600 flex items-center gap-1.5">
-                      <CheckCircle className="w-4 h-4" /> Уведомления подключены
-                    </p>
-                    <a href={partsCompanyId ? telegramConnectLink(partsCompanyId) : '#'} target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-sky-600 hover:underline">Переподключить</a>
+                    <span className="badge badge-green">
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      Уведомления подключены
+                    </span>
+                    <a
+                      href={partsCompanyId ? telegramConnectLink(partsCompanyId) : '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-ghost btn-sm"
+                    >
+                      Переподключить
+                    </a>
                   </div>
                 ) : (
-                  <a href={partsCompanyId ? telegramConnectLink(partsCompanyId) : '#'} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 font-medium transition-colors text-sm min-h-[44px]">
-                    <Send className="w-4 h-4" /> Подключить уведомления
+                  <a
+                    href={partsCompanyId ? telegramConnectLink(partsCompanyId) : '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-primary inline-flex"
+                  >
+                    <Send className="w-4 h-4" />
+                    Подключить уведомления
                   </a>
                 )}
               </div>
             )}
 
-            {/* Каталог */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-                <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Каталог</h2>
+            {/* Каталог — Категории и Склады */}
+            <div className="card !p-0 overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100 dark:border-slate-700">
+                <p className="kicker">Каталог</p>
               </div>
-              <button
-                onClick={() => navigate('/parts/categories')}
-                className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors border-b border-gray-100"
-              >
-                <div className="p-2 bg-orange-100 rounded-lg flex-shrink-0">
-                  <Tag className="w-4 h-4 text-orange-600" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-gray-900">Категории запчастей</p>
-                  <p className="text-xs text-gray-500">Управление категориями и шаблонами</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              </button>
-              <button
-                onClick={() => navigate('/parts/warehouse')}
-                className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors"
-              >
-                <div className="p-2 bg-indigo-100 rounded-lg flex-shrink-0">
-                  <Warehouse className="w-4 h-4 text-indigo-600" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-gray-900">Места хранения</p>
-                  <p className="text-xs text-gray-500">Стеллажи, полки, ячейки склада</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              </button>
+              <div className="panel-divided">
+                <button
+                  onClick={() => navigate('/parts/categories')}
+                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors text-left"
+                >
+                  <div className="icon-tile-sm bg-orange-100 dark:bg-orange-900/40">
+                    <Tag className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Категории запчастей</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">Управление категориями и шаблонами</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                </button>
+                <button
+                  onClick={() => navigate('/parts/warehouse')}
+                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors text-left"
+                >
+                  <div className="icon-tile-sm bg-indigo-100 dark:bg-indigo-900/40">
+                    <Warehouse className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Места хранения</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">Стеллажи, полки, ячейки склада</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                </button>
+              </div>
             </div>
 
             {/* ImgBB API ключ */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
-                  <Key className="w-4 h-4 text-purple-600" />
+            <div className="card">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="icon-tile bg-purple-100 dark:bg-purple-900/40">
+                  <Key className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-900">ImgBB API ключ</h2>
-                  <p className="text-xs text-gray-500">Нужен для хранения фотографий запчастей</p>
+                  <h2 className="heading-3">ImgBB API ключ</h2>
+                  <p className="kicker mt-0.5">Хранение фотографий запчастей</p>
                 </div>
               </div>
+
               <div className="flex gap-2 mb-2">
                 <input
                   type="text"
                   value={imgbbKeyInput}
                   onChange={e => setImgbbKeyInput(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-mono text-sm"
+                  className="form-input flex-1 font-mono"
                   placeholder="Вставьте ключ API..."
                 />
-                <button
-                  onClick={handleSaveImgbbKey}
-                  className="px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium flex items-center gap-1.5 transition-colors text-sm"
-                >
+                <button onClick={handleSaveImgbbKey} className="btn-primary flex-shrink-0">
                   <Save className="w-4 h-4" />
                   Сохранить
                 </button>
               </div>
+
               {imgbbKeyInput && (
-                <p className="text-xs text-green-600">✓ Ключ установлен</p>
+                <p className="text-xs text-green-600 dark:text-green-400 mb-2">
+                  <CheckCircle className="w-3.5 h-3.5 inline mr-1" />
+                  Ключ установлен
+                </p>
               )}
+
               <a
                 href="https://api.imgbb.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline mt-2"
+                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
                 Получить бесплатный ключ на imgbb.com
@@ -250,88 +327,87 @@ export default function PartsSettings() {
             </div>
 
             {/* Корзина */}
-            <button
-              onClick={() => navigate('/parts/trash')}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden w-full"
-            >
-              <div className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors">
-                <div className="p-2 bg-red-100 rounded-lg flex-shrink-0">
-                  <Trash2 className="w-4 h-4 text-red-600" />
+            <div className="card !p-0 overflow-hidden">
+              <button
+                onClick={() => navigate('/parts/trash')}
+                className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors text-left"
+              >
+                <div className="icon-tile-sm bg-red-100 dark:bg-red-900/40">
+                  <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                 </div>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-gray-900">Корзина</p>
-                  <p className="text-xs text-gray-500">Удалённые объекты хранятся 7 дней</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Корзина</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">Удалённые объекты хранятся 7 дней</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              </div>
-            </button>
+              </button>
+            </div>
 
           </div>
 
-          {/* Правая колонка — курс доллара */}
-          <div className="space-y-4 sm:space-y-6">
+          {/* ── Правая колонка — курс доллара ── */}
+          <div className="space-y-4 sm:space-y-5">
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
-                  <DollarSign className="w-4 h-4 text-green-600" />
+            <div className="card">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="icon-tile bg-green-100 dark:bg-green-900/40">
+                  <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-900">Курс доллара по умолчанию</h2>
-                  <p className="text-xs text-gray-500">
-                    Используется для расчёта доходности при продаже запчастей в гривне
-                  </p>
+                  <h2 className="heading-3">Курс доллара по умолчанию</h2>
+                  <p className="kicker mt-0.5">Расчёт доходности при продаже в гривне</p>
                 </div>
               </div>
 
               {/* Текущий курс */}
-              <div className={`mb-3 p-3 rounded-lg border flex items-start gap-2 ${
-                isStale ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'
-              }`}>
+              <div className={`alert mb-4 ${isStale ? 'alert-warning' : 'alert-success'}`}>
                 {isStale ? (
-                  <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 ) : (
-                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 )}
                 <div>
-                  <p className="text-sm font-medium">
-                    Текущий курс: <span className="text-base font-bold">{rate} ₴/$</span>
+                  <p className="text-sm font-semibold">
+                    Текущий курс:{' '}
+                    <span className="tabular text-base font-bold">{rate} ₴/$</span>
                   </p>
                   {date && (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs mt-0.5 opacity-80">
                       {isStale
-                        ? `Установлен ${formatDate(date)} (вчерашний курс — используется до обновления)`
-                        : `Установлен сегодня ${formatDate(date)} · ${source === 'privatbank' ? 'ПриватБанк' : 'вручную'}`
+                        ? `Установлен ${formatDate(date)} — вчерашний, используется до обновления`
+                        : `Сегодня ${formatDate(date)} · ${source === 'privatbank' ? 'ПриватБанк' : 'вручную'}`
                       }
                     </p>
                   )}
                   {!date && (
-                    <p className="text-xs text-gray-500">Курс по умолчанию — обновите для точных расчётов</p>
+                    <p className="text-xs mt-0.5 opacity-80">Курс по умолчанию — обновите для точных расчётов</p>
                   )}
                 </div>
               </div>
 
               {/* Получить от ПриватБанка */}
-              <div className="mb-3">
+              <div className="mb-4">
                 <button
                   onClick={handleFetchPrivatBank}
                   disabled={fetching}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-700 text-white rounded-lg hover:bg-blue-800 disabled:opacity-50 font-medium transition-colors text-sm"
+                  className="btn-primary w-full sm:w-auto"
                 >
                   <RefreshCw className={`w-4 h-4 ${fetching ? 'animate-spin' : ''}`} />
                   {fetching ? 'Получаем курс...' : 'Получить курс ПриватБанка'}
                 </button>
                 {fetchError && (
-                  <p className="text-xs text-red-600 mt-1">{fetchError}</p>
+                  <p className="form-error mt-1.5">{fetchError}</p>
                 )}
-                <p className="text-xs text-gray-400 mt-1 text-center">Курс продажи USD/UAH на сегодня</p>
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1.5">
+                  Курс продажи USD/UAH на сегодня
+                </p>
               </div>
 
               {/* Разделитель */}
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex-1 h-px bg-gray-200" />
-                <span className="text-xs text-gray-400">или установить вручную</span>
-                <div className="flex-1 h-px bg-gray-200" />
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+                <span className="kicker">или установить вручную</span>
+                <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
               </div>
 
               {/* Ручная установка */}
@@ -343,15 +419,12 @@ export default function PartsSettings() {
                     onChange={e => setManualInput(e.target.value)}
                     min="1"
                     step="0.01"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                    className="form-input tabular pr-10"
                     placeholder="41.50"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₴/$</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">₴/$</span>
                 </div>
-                <button
-                  onClick={handleSaveManual}
-                  className="px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium flex items-center gap-1.5 transition-colors text-sm"
-                >
+                <button onClick={handleSaveManual} className="btn-primary flex-shrink-0">
                   <Save className="w-4 h-4" />
                   Сохранить
                 </button>
@@ -359,13 +432,16 @@ export default function PartsSettings() {
             </div>
 
             {/* Подсказка */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
-              <p className="font-medium mb-1.5">Как работает курс:</p>
-              <ul className="space-y-1 list-disc list-inside text-xs text-blue-600">
-                <li>Если запчасть продана в гривне — доход в $ считается по этому курсу</li>
-                <li>Каждый автомобиль может иметь свой курс (указывается при редактировании авто)</li>
-                <li>Если курс не обновлялся сегодня — используется последний установленный</li>
-              </ul>
+            <div className="alert alert-info">
+              <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold mb-1">Как работает курс</p>
+                <ul className="space-y-1 list-disc list-inside text-xs">
+                  <li>Если запчасть продана в гривне — доход в $ считается по этому курсу</li>
+                  <li>Каждый автомобиль может иметь свой курс (указывается при редактировании авто)</li>
+                  <li>Если курс не обновлялся сегодня — используется последний установленный</li>
+                </ul>
+              </div>
             </div>
 
           </div>
