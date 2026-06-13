@@ -24,6 +24,9 @@ export interface PartsCustomer {
   city?: string
   /** Отделение Новой почты */
   np_office?: string
+  /** Ref города/отделения Новой почты (для создания ТТН) */
+  np_city_ref?: string
+  np_warehouse_ref?: string
   notes?: string
   discount_percent: number
   total_orders: number
@@ -147,6 +150,8 @@ export interface CreatePartsCustomerInput {
   address?: string
   city?: string
   np_office?: string
+  np_city_ref?: string
+  np_warehouse_ref?: string
   notes?: string
   discount_percent?: number
 }
@@ -216,6 +221,8 @@ export interface PartsOrder {
   total_amount: number
   notes?: string
   created_by?: string
+  /** Номер ТТН Новой почты (если создана) */
+  np_ttn?: string
   created_at: string
   updated_at: string
   // Joined data

@@ -9,10 +9,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowLeft, Plus, Trash2, Edit2, Search,
-  CheckCircle, MapPin, Truck, User, Package, X,
+  CheckCircle, MapPin, Truck, User, Package, X, Copy, ExternalLink,
 } from 'lucide-react'
 import { getNpApiKey } from '@/utils/npApiKey'
-import { searchCities, searchWarehouses, NpCity, NpWarehouse } from '@/services/npService'
+import { searchCities, searchWarehouses, NpCity, NpWarehouse, createTtn } from '@/services/npService'
 import { formatCurrency, formatPrice } from '@/utils/currency'
 import { getPartsOrderStatusText } from '@/utils/status'
 import {
@@ -53,6 +53,9 @@ export default function PartsOrderDetails() {
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerCity, setCustomerCity] = useState('')
   const [customerNpOffice, setCustomerNpOffice] = useState('')
+  /* рефы для НП ТТН */
+  const [npCityRef, setNpCityRef] = useState('')
+  const [npWarehouseRef, setNpWarehouseRef] = useState('')
 
   /* ── Новая почта автокомплит ─────────────────────────────────── */
   const npApiKeySet = Boolean(getNpApiKey())
@@ -63,6 +66,13 @@ export default function PartsOrderDetails() {
   const [warehouseDebounced, setWarehouseDebounced] = useState('')
   const [showCityList, setShowCityList] = useState(false)
   const [showWarehouseList, setShowWarehouseList] = useState(false)
+
+  /* ── Создание ТТН ───────────────────────────────────────────── */
+  const [showTtnForm, setShowTtnForm] = useState(false)
+  const [ttnWeight, setTtnWeight] = useState('1')
+  const [ttnDescription, setTtnDescription] = useState('Автозапчастини')
+  const [ttnCost, setTtnCost] = useState('')
+  const [ttnCreating, setTtnCreating] = useState(false)
 
   /* ── запрос заказа ──────────────────────────────────────────── */
   const { data: order, isLoading } = useQuery({
@@ -155,8 +165,18 @@ export default function PartsOrderDetails() {
         setCityInputValue(city)
         setWarehouseInputValue(npOffice)
       }
+      // префилл рефов из клиента
+      setNpCityRef((order.customer as any).np_city_ref || '')
+      setNpWarehouseRef((order.customer as any).np_warehouse_ref || '')
     }
   }, [order?.customer?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Префилл стоимости ТТН из итога заказа ─────────────────── */
+  useEffect(() => {
+    if (computedTotalUAH > 0) {
+      setTtnCost(String(Math.round(computedTotalUAH)))
+    }
+  }, [computedTotalUAH])
 
   /* ── debounce для НП-поиска ─────────────────────────────────── */
   useEffect(() => {
@@ -195,6 +215,8 @@ export default function PartsOrderDetails() {
         phone: customerPhone.trim() || undefined,
         city: customerCity.trim() || undefined,
         np_office: customerNpOffice.trim() || undefined,
+        np_city_ref: npCityRef || undefined,
+        np_warehouse_ref: npWarehouseRef || undefined,
       },
       partsCompanyId
     )
@@ -212,6 +234,8 @@ export default function PartsOrderDetails() {
           full_name: customerFullName.trim() || undefined,
           city: customerCity.trim() || undefined,
           np_office: customerNpOffice.trim() || undefined,
+          np_city_ref: npCityRef || undefined,
+          np_warehouse_ref: npWarehouseRef || undefined,
           ...phoneUpdate,
         })
       } else {
@@ -507,9 +531,11 @@ export default function PartsOrderDetails() {
                       setCityInputValue(item.label)
                       setCustomerCity(item.label)
                       setCityRef(item.value)
+                      setNpCityRef(item.value)
                       setShowCityList(false)
                       setWarehouseInputValue('')
                       setCustomerNpOffice('')
+                      setNpWarehouseRef('')
                       setCityDebounced('')
                     }}
                   />
@@ -538,6 +564,7 @@ export default function PartsOrderDetails() {
                     onSelect={(item) => {
                       setWarehouseInputValue(item.label)
                       setCustomerNpOffice(item.label)
+                      setNpWarehouseRef(item.value)
                       setShowWarehouseList(false)
                     }}
                   />
@@ -678,6 +705,31 @@ export default function PartsOrderDetails() {
             </div>
           )}
         </div>
+
+        {/* ── блок «Доставка Новой почты» ─────────────────────────────── */}
+        <NpTtnBlock
+          order={order}
+          npCityRef={npCityRef}
+          npWarehouseRef={npWarehouseRef}
+          customerFullName={customerFullName}
+          customerPhone={customerPhone}
+          computedTotalUAH={computedTotalUAH}
+          showTtnForm={showTtnForm}
+          setShowTtnForm={setShowTtnForm}
+          ttnWeight={ttnWeight}
+          setTtnWeight={setTtnWeight}
+          ttnDescription={ttnDescription}
+          setTtnDescription={setTtnDescription}
+          ttnCost={ttnCost}
+          setTtnCost={setTtnCost}
+          ttnCreating={ttnCreating}
+          setTtnCreating={setTtnCreating}
+          onTtnCreated={(ttn) => {
+            queryClient.invalidateQueries({ queryKey: ['parts-order', id] })
+            toast.success(`ТТН создана: ${ttn}`)
+          }}
+          orderId={order.id}
+        />
 
         {/* ── кнопка «Завершить» ────────────────────────────────────── */}
         {canManage && order.status !== 'completed' && order.items && order.items.length > 0 && (
@@ -1130,6 +1182,223 @@ function ConfirmCompleteModal({ onConfirm, onClose, isLoading }: ConfirmComplete
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   NpTtnBlock — блок «Доставка Новой почты»
+══════════════════════════════════════════════════════════════════ */
+interface NpTtnBlockProps {
+  order: any
+  npCityRef: string
+  npWarehouseRef: string
+  customerFullName: string
+  customerPhone: string
+  computedTotalUAH: number
+  showTtnForm: boolean
+  setShowTtnForm: (v: boolean) => void
+  ttnWeight: string
+  setTtnWeight: (v: string) => void
+  ttnDescription: string
+  setTtnDescription: (v: string) => void
+  ttnCost: string
+  setTtnCost: (v: string) => void
+  ttnCreating: boolean
+  setTtnCreating: (v: boolean) => void
+  onTtnCreated: (ttn: string) => void
+  orderId: string
+}
+
+function NpTtnBlock({
+  order,
+  npCityRef,
+  npWarehouseRef,
+  customerFullName,
+  customerPhone,
+  showTtnForm,
+  setShowTtnForm,
+  ttnWeight,
+  setTtnWeight,
+  ttnDescription,
+  setTtnDescription,
+  ttnCost,
+  setTtnCost,
+  ttnCreating,
+  setTtnCreating,
+  onTtnCreated,
+  orderId,
+}: NpTtnBlockProps) {
+  const npApiKeySet = Boolean(getNpApiKey())
+
+  const hasTtn = Boolean(order.np_ttn)
+
+  // Условие для показа кнопки создания ТТН
+  const customerNpCityRef = (order.customer as any)?.np_city_ref || npCityRef
+  const customerNpWarehouseRef = (order.customer as any)?.np_warehouse_ref || npWarehouseRef
+  const customerName = order.customer?.full_name || customerFullName
+  const customerPhone_ = order.customer?.phone || customerPhone
+
+  const canCreateTtn = npApiKeySet &&
+    Boolean(customerNpCityRef) &&
+    Boolean(customerNpWarehouseRef) &&
+    Boolean(customerPhone_) &&
+    Boolean(customerName)
+
+  const handleCreateTtn = async () => {
+    setTtnCreating(true)
+    try {
+      const result = await createTtn({
+        recipientCityRef: customerNpCityRef,
+        recipientWarehouseRef: customerNpWarehouseRef,
+        recipientName: customerName,
+        recipientPhone: customerPhone_,
+        description: ttnDescription || undefined,
+        cost: ttnCost ? Number(ttnCost) : undefined,
+        weight: ttnWeight ? Number(ttnWeight) : undefined,
+      })
+      // Сохраняем ТТН в заказе
+      const { supabase } = await import('@/lib/supabase')
+      const { error } = await supabase
+        .from('parts_orders')
+        .update({ np_ttn: result.ttn })
+        .eq('id', orderId)
+      if (error) throw error
+      setShowTtnForm(false)
+      onTtnCreated(result.ttn)
+    } catch (err: any) {
+      toast.error(err?.message || 'Помилка створення ТТН')
+    } finally {
+      setTtnCreating(false)
+    }
+  }
+
+  return (
+    <div className="card">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="icon-tile-sm bg-red-50 text-red-600">
+          <Truck className="w-4 h-4" />
+        </span>
+        <h2 className="heading-3">Доставка Новою поштою</h2>
+      </div>
+
+      {hasTtn ? (
+        /* ── ТТН вже є ── */
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800">
+            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-green-700 dark:text-green-400 font-medium">Номер ТТН</p>
+              <p className="text-base font-bold text-green-900 dark:text-green-300 tabular tracking-wide">
+                {order.np_ttn}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(order.np_ttn)
+                toast.success('ТТН скопійовано')
+              }}
+              className="btn-secondary btn-sm gap-1.5"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              Копировать
+            </button>
+            <a
+              href={`https://novaposhta.ua/tracking/?cargo_number=${order.np_ttn}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-ghost btn-sm gap-1.5"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              Відстежити
+            </a>
+          </div>
+        </div>
+      ) : canCreateTtn ? (
+        /* ── Создать ТТН ── */
+        <div>
+          {!showTtnForm ? (
+            <button
+              onClick={() => setShowTtnForm(true)}
+              className="btn-primary gap-1.5"
+            >
+              <Truck className="w-4 h-4" />
+              Создать ТТН
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="form-label">Вес (кг)</label>
+                  <input
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={ttnWeight}
+                    onChange={e => setTtnWeight(e.target.value)}
+                    className="form-input"
+                    placeholder="1"
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Оценочная стоимость (₴)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={ttnCost}
+                    onChange={e => setTtnCost(e.target.value)}
+                    className="form-input"
+                    placeholder="500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="form-label">Описание груза</label>
+                <input
+                  type="text"
+                  value={ttnDescription}
+                  onChange={e => setTtnDescription(e.target.value)}
+                  className="form-input"
+                  placeholder="Автозапчастини"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCreateTtn}
+                  disabled={ttnCreating}
+                  className="btn-primary gap-1.5 disabled:opacity-60"
+                >
+                  {ttnCreating ? 'Создание…' : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      Підтвердити
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowTtnForm(false)}
+                  className="btn-ghost"
+                  disabled={ttnCreating}
+                >
+                  Скасувати
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ── Нет данных ── */
+        <div className="flex items-start gap-2">
+          <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-gray-500 dark:text-slate-400">
+            {!npApiKeySet
+              ? 'Укажите API-ключ Новой почты в Настройках'
+              : 'Сохраните город, отделение и телефон клиента для создания ТТН'}
+          </p>
+        </div>
+      )}
     </div>
   )
 }

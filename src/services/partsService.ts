@@ -771,10 +771,10 @@ export async function getPartsCustomersDropdown(partsCompanyId: string) {
   return data
 }
 
-/** Update order customer / notes */
+/** Update order customer / notes / np_ttn */
 export async function updatePartsOrder(
   orderId: string,
-  updates: { customer_id?: string | null; notes?: string | null }
+  updates: { customer_id?: string | null; notes?: string | null; np_ttn?: string | null }
 ): Promise<void> {
   const { error } = await supabase.from('parts_orders').update(updates).eq('id', orderId)
   if (error) throw error

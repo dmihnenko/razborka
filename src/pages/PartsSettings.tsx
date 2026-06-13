@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2, Phone, Send, Info, Truck } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle, Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2, Phone, Send, Info, Truck, MapPin } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -9,6 +9,8 @@ import { formatDate } from '@/utils/date'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getImgbbKey, setImgbbKey } from '@/utils/imgbbKey'
 import { getNpApiKey, setNpApiKey } from '@/utils/npApiKey'
+import { getNpConfig, setNpConfig, NpSenderConfig } from '@/utils/npConfig'
+import { searchCities, searchWarehouses, NpCity, NpWarehouse } from '@/services/npService'
 import { toast } from 'sonner'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { TELEGRAM_BOT_USERNAME, telegramConnectLink } from '@/config/telegram'
@@ -32,6 +34,47 @@ export default function PartsSettings() {
   const [manualInput, setManualInput] = useState<string>(String(rate))
   const [imgbbKeyInput, setImgbbKeyInput] = useState<string>(getImgbbKey)
   const [npKeyInput, setNpKeyInput] = useState<string>(getNpApiKey)
+
+  /* ── НП: конфиг отправителя ──────────────────────────────────── */
+  const [npSender, setNpSender] = useState<Partial<NpSenderConfig>>(() => getNpConfig())
+  const [npCityInput, setNpCityInput] = useState(npSender.senderCityName || '')
+  const [npCityRef, setNpCityRef] = useState(npSender.senderCityRef || '')
+  const [npCityDebounced, setNpCityDebounced] = useState('')
+  const [npWarehouseInput, setNpWarehouseInput] = useState(npSender.senderWarehouseName || '')
+  const [npWarehouseDebounced, setNpWarehouseDebounced] = useState('')
+  const [showNpCityList, setShowNpCityList] = useState(false)
+  const [showNpWarehouseList, setShowNpWarehouseList] = useState(false)
+
+  useEffect(() => {
+    const t = setTimeout(() => setNpCityDebounced(npCityInput), 350)
+    return () => clearTimeout(t)
+  }, [npCityInput])
+
+  useEffect(() => {
+    const t = setTimeout(() => setNpWarehouseDebounced(npWarehouseInput), 350)
+    return () => clearTimeout(t)
+  }, [npWarehouseInput])
+
+  const npKeyActive = Boolean(npKeyInput.trim())
+
+  const { data: npSettingsCities = [] } = useQuery<NpCity[]>({
+    queryKey: ['np-cities-settings', npCityDebounced],
+    queryFn: () => searchCities(npCityDebounced),
+    enabled: npKeyActive && npCityDebounced.length >= 2,
+    staleTime: 60_000,
+  })
+
+  const { data: npSettingsWarehouses = [] } = useQuery<NpWarehouse[]>({
+    queryKey: ['np-warehouses-settings', npCityRef, npWarehouseDebounced],
+    queryFn: () => searchWarehouses(npCityRef, npWarehouseDebounced),
+    enabled: npKeyActive && Boolean(npCityRef),
+    staleTime: 60_000,
+  })
+
+  const handleSaveNpSender = () => {
+    setNpConfig(npSender)
+    toast.success('Данные отправителя сохранены')
+  }
 
   // Контакты разборки
   const queryClient = useQueryClient()
@@ -376,6 +419,91 @@ export default function PartsSettings() {
                 <ExternalLink className="w-3.5 h-3.5" />
                 Получить API-ключ в кабинете Новой почты
               </a>
+
+              {/* ── Блок отправителя ── */}
+              {npKeyInput && (
+                <div className="mt-5 pt-4 border-t border-gray-100 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-3">
+                    <MapPin className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0" />
+                    <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">Отправитель</span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {/* Город отправителя */}
+                    <div>
+                      <label className="form-label">Город отправления</label>
+                      <NpSettingsCombobox
+                        value={npCityInput}
+                        onChange={(v) => { setNpCityInput(v); setShowNpCityList(true) }}
+                        placeholder="Введіть місто..."
+                        items={npSettingsCities.map(c => ({ value: c.ref, label: c.name }))}
+                        open={showNpCityList}
+                        onOpen={() => setShowNpCityList(true)}
+                        onClose={() => setShowNpCityList(false)}
+                        onSelect={(item) => {
+                          setNpCityInput(item.label)
+                          setNpCityRef(item.value)
+                          setNpSender(p => ({ ...p, senderCityRef: item.value, senderCityName: item.label, senderWarehouseRef: '', senderWarehouseName: '' }))
+                          setNpWarehouseInput('')
+                          setShowNpCityList(false)
+                        }}
+                      />
+                    </div>
+
+                    {/* Отделение отправителя */}
+                    <div>
+                      <label className="form-label">Отделение отправителя</label>
+                      <NpSettingsCombobox
+                        value={npWarehouseInput}
+                        onChange={(v) => { setNpWarehouseInput(v); setShowNpWarehouseList(true) }}
+                        placeholder={npCityRef ? 'Введіть відділення...' : 'Спочатку оберіть місто'}
+                        disabled={!npCityRef}
+                        items={npSettingsWarehouses.map(w => ({ value: w.ref, label: w.description }))}
+                        open={showNpWarehouseList}
+                        onOpen={() => { if (npCityRef) setShowNpWarehouseList(true) }}
+                        onClose={() => setShowNpWarehouseList(false)}
+                        onSelect={(item) => {
+                          setNpWarehouseInput(item.label)
+                          setNpSender(p => ({ ...p, senderWarehouseRef: item.value, senderWarehouseName: item.label }))
+                          setShowNpWarehouseList(false)
+                        }}
+                      />
+                    </div>
+
+                    {/* Телефон */}
+                    <div>
+                      <label className="form-label">Телефон отправителя</label>
+                      <input
+                        type="tel"
+                        value={npSender.senderPhone || ''}
+                        onChange={e => setNpSender(p => ({ ...p, senderPhone: e.target.value }))}
+                        placeholder="+380XXXXXXXXX"
+                        className="form-input"
+                      />
+                    </div>
+
+                    {/* Имя/контакт */}
+                    <div>
+                      <label className="form-label">Ім'я / контактна особа</label>
+                      <input
+                        type="text"
+                        value={npSender.senderName || ''}
+                        onChange={e => setNpSender(p => ({ ...p, senderName: e.target.value }))}
+                        placeholder="Іванов Іван"
+                        className="form-input"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleSaveNpSender}
+                      className="btn-primary"
+                    >
+                      <Save className="w-4 h-4" />
+                      Сохранить отправителя
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Корзина */}
@@ -499,6 +627,75 @@ export default function PartsSettings() {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   NpSettingsCombobox — комбобокс для поиска городов/отделений НП
+   в настройках отправителя
+══════════════════════════════════════════════════════════════════ */
+interface NpSettingsComboboxItem {
+  value: string
+  label: string
+}
+
+interface NpSettingsComboboxProps {
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+  disabled?: boolean
+  items: NpSettingsComboboxItem[]
+  open: boolean
+  onOpen: () => void
+  onClose: () => void
+  onSelect: (item: NpSettingsComboboxItem) => void
+}
+
+function NpSettingsCombobox({
+  value, onChange, placeholder, disabled,
+  items, open, onOpen, onClose, onSelect,
+}: NpSettingsComboboxProps) {
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        onClose()
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open, onClose])
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <input
+        type="text"
+        value={value}
+        disabled={disabled}
+        placeholder={placeholder}
+        className="form-input w-full disabled:opacity-50 disabled:cursor-not-allowed"
+        onChange={e => onChange(e.target.value)}
+        onFocus={onOpen}
+        onKeyDown={e => { if (e.key === 'Escape') onClose() }}
+      />
+      {open && items.length > 0 && (
+        <ul className="absolute z-50 left-0 right-0 top-full mt-1 max-h-56 overflow-y-auto rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
+          {items.map(item => (
+            <li key={item.value}>
+              <button
+                type="button"
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-800 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
+                onMouseDown={e => { e.preventDefault(); onSelect(item) }}
+              >
+                {item.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

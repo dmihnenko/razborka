@@ -1,4 +1,5 @@
 import { getNpApiKey } from '@/utils/npApiKey'
+import { getNpConfig } from '@/utils/npConfig'
 
 const NP_API_URL = 'https://api.novaposhta.ua/v2.0/json/'
 
@@ -66,6 +67,21 @@ interface NpWarehouseRaw {
   Description: string
 }
 
+/* ─── Counterparty raw types ──────────────────────────────────────── */
+interface NpCounterpartyRaw {
+  Ref: string
+  ContactPerson?: { data?: Array<{ Ref: string }> }
+}
+
+interface NpContactPersonRaw {
+  Ref: string
+}
+
+interface NpInternetDocumentRaw {
+  IntDocNumber: string
+  Ref: string
+}
+
 /* ─── API-функции ─────────────────────────────────────────────────── */
 
 /**
@@ -107,4 +123,148 @@ export async function searchWarehouses(
     ref: w.Ref,
     description: w.Description,
   }))
+}
+
+/* ─── TTN helpers ─────────────────────────────────────────────────── */
+
+/**
+ * Получает Ref первого контрагента-отправителя из кабинета НП.
+ */
+export async function getSenderCounterpartyRef(): Promise<string> {
+  const data = await npRequest<NpCounterpartyRaw>(
+    'Counterparty',
+    'getCounterparties',
+    { CounterpartyProperty: 'Sender', Page: '1' }
+  )
+  if (!data[0]?.Ref) throw new Error('Не найден контрагент-отправитель в кабинете НП')
+  return data[0].Ref
+}
+
+/**
+ * Получает Ref первого контактного лица указанного контрагента.
+ */
+export async function getSenderContactRef(counterpartyRef: string): Promise<string> {
+  const data = await npRequest<NpContactPersonRaw>(
+    'Counterparty',
+    'getCounterpartyContactPersons',
+    { Ref: counterpartyRef, Page: '1' }
+  )
+  if (!data[0]?.Ref) throw new Error('Не найдено контактное лицо отправителя в кабинете НП')
+  return data[0].Ref
+}
+
+/**
+ * Создаёт получателя (физическое лицо) и возвращает его Ref и contactRef.
+ */
+export async function createRecipientPrivatePerson(params: {
+  firstName: string
+  lastName: string
+  phone: string
+}): Promise<{ ref: string; contactRef: string | undefined }> {
+  const data = await npRequest<NpCounterpartyRaw>(
+    'Counterparty',
+    'save',
+    {
+      FirstName: params.firstName,
+      LastName: params.lastName,
+      Phone: params.phone,
+      CounterpartyType: 'PrivatePerson',
+      CounterpartyProperty: 'Recipient',
+    }
+  )
+  if (!data[0]?.Ref) throw new Error('Не вдалося створити одержувача в НП')
+  return {
+    ref: data[0].Ref,
+    contactRef: data[0].ContactPerson?.data?.[0]?.Ref,
+  }
+}
+
+export interface CreateTtnParams {
+  recipientCityRef: string
+  recipientWarehouseRef: string
+  recipientName: string
+  recipientPhone: string
+  description?: string
+  cost?: number
+  weight?: number
+}
+
+/**
+ * Создаёт ТТН (накладную) Новой почты.
+ * Требует заполненного отправителя в Настройках → Новая почта.
+ */
+export async function createTtn(
+  p: CreateTtnParams
+): Promise<{ ttn: string; ref: string }> {
+  const sender = getNpConfig()
+
+  if (!sender.senderCityRef || !sender.senderWarehouseRef || !sender.senderPhone) {
+    throw new Error('Заполните отправителя в Настройках → Новая почта')
+  }
+
+  const [senderCounterparty, ] = await Promise.all([getSenderCounterpartyRef()])
+  const senderContact = await getSenderContactRef(senderCounterparty)
+
+  // Разбиваем имя получателя на имя и фамилию
+  const nameParts = p.recipientName.trim().split(/\s+/)
+  const lastName = nameParts[0] || 'Клієнт'
+  const firstName = nameParts.slice(1).join(' ') || 'Клієнт'
+
+  const recipient = await createRecipientPrivatePerson({
+    firstName,
+    lastName,
+    phone: p.recipientPhone,
+  })
+
+  // Используем npRequest напрямую через fetch, т.к. InternetDocument/save
+  // возвращает иной shape — но success/errors такой же, так что используем npRequest
+  // с кастомным типом:
+  const apiKey = getNpApiKey()
+  if (!apiKey) throw new Error('Укажите API-ключ Новой почты в настройках')
+
+  const body = {
+    apiKey,
+    modelName: 'InternetDocument',
+    calledMethod: 'save',
+    methodProperties: {
+      PayerType: 'Recipient',
+      PaymentMethod: 'Cash',
+      CargoType: 'Parcel',
+      Weight: String(p.weight ?? 1),
+      ServiceType: 'WarehouseWarehouse',
+      SeatsAmount: '1',
+      Description: p.description || 'Автозапчастини',
+      Cost: String(p.cost ?? 500),
+      CitySender: sender.senderCityRef,
+      Sender: senderCounterparty,
+      SenderAddress: sender.senderWarehouseRef,
+      ContactSender: senderContact,
+      SendersPhone: sender.senderPhone,
+      CityRecipient: p.recipientCityRef,
+      Recipient: recipient.ref,
+      RecipientAddress: p.recipientWarehouseRef,
+      ContactRecipient: recipient.contactRef ?? '',
+      RecipientsPhone: p.recipientPhone,
+    },
+  }
+
+  const res = await fetch('https://api.novaposhta.ua/v2.0/json/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+
+  if (!res.ok) throw new Error(`Помилка мережі: ${res.status}`)
+
+  const json = await res.json() as { success: boolean; errors: string[]; data: NpInternetDocumentRaw[] }
+
+  if (!json.success) {
+    const msg = (json.errors ?? []).filter(Boolean).join('; ') || 'Ошибка API Новой почты'
+    throw new Error(msg)
+  }
+
+  const doc = json.data?.[0]
+  if (!doc?.IntDocNumber) throw new Error('НП не повернула номер ТТН')
+
+  return { ttn: doc.IntDocNumber, ref: doc.Ref }
 }
