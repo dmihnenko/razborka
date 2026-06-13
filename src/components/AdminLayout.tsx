@@ -85,25 +85,28 @@ export default function AdminLayout() {
   return (
     <div className="min-h-dvh bg-[#F4F6FA]">
 
-      {/* ═══ DESKTOP SIDEBAR ═══ */}
-      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:w-64 bg-white border-r border-gray-200/80 z-30">
-        <div className="px-3 h-16 flex items-center border-b border-gray-100">
-          <ContextSwitcher current="admin" />
+      {/* ═══ DESKTOP SIDEBAR (navy, kit) ═══ */}
+      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:w-64 border-r z-30"
+        style={{ background: '#0E1C3D', borderColor: 'rgba(255,255,255,0.08)' }}>
+        <div className="px-3 h-16 flex items-center" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="w-full rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
+            <ContextSwitcher current="admin" />
+          </div>
         </div>
         <nav className="flex-1 overflow-y-auto py-4 px-2.5 space-y-5">
           {NAV_GROUPS.map(group => (
             <div key={group.title}>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-3 mb-1.5">{group.title}</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest px-3 mb-1.5" style={{ color: '#64748B' }}>{group.title}</p>
               <div className="space-y-0.5">
                 {group.items.map(item => {
                   const Icon = item.icon
                   const active = isActive(item.href)
                   return (
                     <Link key={item.href} to={item.href}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                        active ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                        active ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-300 hover:bg-white/[0.07] hover:text-white'
                       }`}>
-                      <Icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-white' : 'text-gray-400'}`} strokeWidth={1.5} />
+                      <Icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-white' : 'text-slate-400'}`} strokeWidth={1.5} />
                       <span className="truncate">{item.name}</span>
                     </Link>
                   )
@@ -112,18 +115,18 @@ export default function AdminLayout() {
             </div>
           ))}
         </nav>
-        <div className="border-t border-gray-100 p-2.5">
-          <Link to="/profile" className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-gray-100 transition-colors mb-1">
+        <div className="p-2.5" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <Link to="/profile" className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-white/[0.07] transition-colors mb-1">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
               {(profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'A').toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-800 truncate">{profile?.full_name || 'Админ'}</p>
-              <p className="text-[11px] text-gray-400 truncate">{profile?.email}</p>
+              <p className="text-sm font-semibold text-white truncate">{profile?.full_name || 'Админ'}</p>
+              <p className="text-[11px] truncate" style={{ color: '#64748B' }}>{profile?.email}</p>
             </div>
           </Link>
           <button onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors">
+            className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-colors text-slate-300 hover:bg-red-500/15 hover:text-red-300">
             <LogOut className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} /> Выйти
           </button>
         </div>
