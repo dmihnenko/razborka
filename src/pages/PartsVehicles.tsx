@@ -169,7 +169,7 @@ export default function PartsVehicles() {
   }
 
   return (
-    <div className="page-container animate-fade-in">
+    <div className="min-h-dvh bg-gray-50">
       {/* Header */}
       <PartsPageHeader
         title="Автомобили"
@@ -188,6 +188,8 @@ export default function PartsVehicles() {
           </button>
         }
       />
+
+      <div className="page-container animate-fade-in">
 
       {/* Limit reached banner */}
       {!canCreate.vehicle() && limits.maxVehicles !== null && (
@@ -452,6 +454,7 @@ export default function PartsVehicles() {
         />
       )}
       <ConfirmDialog {...dialogProps} />
+      </div>
     </div>
   )
 }

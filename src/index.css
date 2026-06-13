@@ -52,8 +52,8 @@
     --brand-800:  #1E40AF;
     --brand-gradient: linear-gradient(135deg, var(--brand-800) 0%, var(--brand-600) 55%, var(--brand-500) 100%);
 
-    /* Типографика — базовый размер (fluid, масштабирует весь rem-текст) */
-    --app-font-size: clamp(1rem, 0.875rem + 0.26vw, 1.125rem);
+    /* Типографика — базовый размер (мягкий fluid, кап 16.5px чтобы не раздувать UI). */
+    --app-font-size: clamp(15.5px, 14px + 0.5vw, 16.5px);
 
     /* Шрифты — единый источник (tailwind fontFamily читает эти переменные) */
     --font-sans: 'Manrope', 'Manrope Variable', 'Inter', system-ui, -apple-system, sans-serif;
