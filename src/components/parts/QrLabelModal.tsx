@@ -57,7 +57,7 @@ export default function QrLabelModal({ title, subtitle, value, onClose }: Props)
         aria-label="Печать QR-этикетки"
         onClick={e => e.stopPropagation()}
         className="relative bg-white w-full sm:max-w-sm rounded-2xl shadow-2xl
-          max-h-[calc(100dvh-1.5rem)] sm:max-h-[92dvh] flex flex-col overflow-hidden animate-slide-down sm:animate-modal-pop"
+          max-h-[calc(100dvh-1.5rem)] sm:max-h-[92dvh] flex flex-col overflow-hidden animate-modal-pop"
       >
         {/* Шапка */}
         <div className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-100 flex-shrink-0 no-print">

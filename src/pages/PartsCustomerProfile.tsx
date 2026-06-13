@@ -553,7 +553,7 @@ export default function PartsCustomerProfile() {
             className="fixed inset-0 bg-black/40 backdrop-blur-[2px]"
             onClick={() => setIsOrderModalOpen(false)}
           />
-          <div className="relative w-full sm:max-w-4xl h-[calc(100dvh-1.5rem)] sm:h-[88vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-slide-down">
+          <div className="relative w-full sm:max-w-4xl h-[calc(100dvh-1.5rem)] sm:h-[88vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-modal-pop">
 
             {/* Modal header */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white flex-shrink-0">

@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
 
@@ -54,15 +55,25 @@ export default function Modal({
     return () => window.removeEventListener('keydown', onKey)
   }, [isOpen, closeOnEsc, onClose])
 
+  // Фокус на модалку при открытии — на поле [autofocus]/[data-autofocus],
+  // иначе на сам диалог; + подскролл в зону видимости (особенно мобиль).
   useEffect(() => {
-    if (isOpen) dialogRef.current?.focus()
+    if (!isOpen) return
+    const id = requestAnimationFrame(() => {
+      const el = dialogRef.current
+      if (!el) return
+      const auto = el.querySelector<HTMLElement>('[autofocus],[data-autofocus]')
+      ;(auto ?? el).focus({ preventScroll: false })
+      el.scrollIntoView({ block: 'nearest' })
+    })
+    return () => cancelAnimationFrame(id)
   }, [isOpen])
 
   if (!isOpen) return null
 
   const hasHeader = title || subtitle || icon || !hideClose
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/40 backdrop-blur-[2px] px-3 py-3 sm:p-4 animate-fade-in"
       style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}
@@ -75,7 +86,7 @@ export default function Modal({
         tabIndex={-1}
         onClick={e => e.stopPropagation()}
         className={`relative bg-white w-full ${SIZE[size]} rounded-2xl shadow-2xl outline-none
-          max-h-[calc(100dvh-1.5rem)] sm:max-h-[92dvh] flex flex-col overflow-hidden animate-slide-down sm:animate-modal-pop ${className}`}
+          max-h-[calc(100dvh-1.5rem)] sm:max-h-[92dvh] flex flex-col overflow-hidden animate-modal-pop ${className}`}
       >
         {/* Шапка */}
         {hasHeader && (
@@ -117,6 +128,7 @@ export default function Modal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

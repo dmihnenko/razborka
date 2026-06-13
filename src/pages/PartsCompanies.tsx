@@ -499,7 +499,7 @@ export default function PartsCompanies() {
           style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}
           onClick={e => { if (e.target === e.currentTarget) { setIsModalOpen(false); setSelectedCompany(null); resetForm(); } }}
         >
-          <div className="w-full sm:max-w-md bg-white rounded-2xl shadow-2xl animate-slide-down sm:animate-modal-pop">
+          <div className="w-full sm:max-w-md bg-white rounded-2xl shadow-2xl animate-modal-pop">
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-4 pb-4 border-b border-gray-100">
               <div>

@@ -447,17 +447,10 @@
   }
   .animate-fade-in { animation: fade-in 0.2s ease-out; }
 
-  /* Top-sheet (модалка на мобиле выезжает сверху) */
-  @keyframes slide-down {
-    from { transform: translateY(-16px); opacity: 0; }
-    to   { transform: translateY(0);     opacity: 1; }
-  }
-  .animate-slide-down { animation: slide-down 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
-
-  /* Desktop-модалка: лёгкий pop-in (scale + fade) */
+  /* Модалка (СТАНДАРТ): лёгкий pop-in — fade + подъём (spec/reference) */
   @keyframes modal-pop {
-    from { transform: scale(0.96); opacity: 0; }
-    to   { transform: scale(1);    opacity: 1; }
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to   { opacity: 1; transform: none; }
   }
   .animate-modal-pop { animation: modal-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1); }
 
