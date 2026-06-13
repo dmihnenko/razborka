@@ -329,6 +329,16 @@ export async function getPartsDashboardStats(partsCompanyId: string, rate = 41):
   return data as PartsDashboardStats
 }
 
+/** Аналитика разборки одним серверным RPC (вместо нескольких клиентских запросов). */
+export async function getPartsAnalytics(partsCompanyId: string, rate = 41): Promise<any> {
+  const { data, error } = await supabase.rpc('get_parts_analytics', {
+    p_company: partsCompanyId,
+    p_rate: rate,
+  })
+  if (error) throw error
+  return data
+}
+
 export async function getPartsInventory(partsCompanyId: string) {
   const { data, error } = await supabase
     .from('parts_inventory')
