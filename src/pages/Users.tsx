@@ -33,6 +33,45 @@ interface UserProfile {
   roles?: Role[]; // Массив ролей
 }
 
+/** Инициалы для аватара */
+function getInitials(name?: string | null, email?: string): string {
+  if (name?.trim()) {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  }
+  return (email?.charAt(0) ?? '?').toUpperCase();
+}
+
+const AVATAR_COLORS = [
+  'bg-blue-100 text-blue-700',
+  'bg-violet-100 text-violet-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-amber-100 text-amber-700',
+  'bg-rose-100 text-rose-700',
+  'bg-cyan-100 text-cyan-700',
+];
+function avatarColor(seed?: string | null): string {
+  if (!seed) return AVATAR_COLORS[0];
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+const getRoleBadgeClass = (roleName?: string): string => {
+  switch (roleName) {
+    case 'admin':        return 'badge badge-red';
+    case 'parts_owner':  return 'badge badge-yellow';
+    case 'parts_worker': return 'badge badge-green';
+    case 'store_owner':  return 'badge badge-orange';
+    case 'store_worker': return 'badge badge-blue';
+    default:             return 'badge badge-gray';
+  }
+};
+
+const shouldShowPartsCompany = (roleNames: string[]) =>
+  roleNames.some(name => name === 'parts_owner' || name === 'parts_worker');
+
 
 export default function Users() {
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
@@ -52,12 +91,12 @@ export default function Users() {
   const navigate = useNavigate();
   const location = useLocation();
   const { confirm: showConfirm, dialogProps } = useConfirm();
-  
+
   // Получаем информацию о текущем пользователе
   const isAdmin = useIsAdmin();
   const { data: currentUserProfile } = useUserProfile();
   const { hasSubscription, limits } = useSubscriptionLimits();
-  
+
   // Определяем роль текущего пользователя
   const isPartsOwner = currentUserProfile?.roles?.some((r: Role) => r.name === 'parts_owner');
 
@@ -152,8 +191,6 @@ export default function Users() {
     });
   };
   const clearSelection = () => setSelectedIds(new Set());
-
-
 
   // Переключение активности пользователя
   const toggleActiveMutation = useMutation({
@@ -328,74 +365,45 @@ export default function Users() {
     bulkMutation.mutate(action);
   };
 
-  // Отслеживание изменения ролей
-
-
-  const getRoleBadgeColor = (roleName?: string) => {
-    switch (roleName) {
-      case 'admin':
-        return 'bg-red-100 text-red-800';
-      case 'parts_owner':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'parts_worker':
-        return 'bg-green-100 text-green-800';
-      case 'store_owner':
-        return 'bg-pink-100 text-pink-800';
-      case 'store_worker':
-        return 'bg-indigo-100 text-indigo-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const shouldShowPartsCompany = (roleNames: string[]) => {
-    return roleNames.some(name => name === 'parts_owner' || name === 'parts_worker');
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
-        <div className="flex items-center gap-3 text-gray-400">
-          <span className="w-5 h-5 border-2 border-gray-200 border-t-indigo-500 rounded-full animate-spin" />
-          <span className="text-sm">Загрузка...</span>
-        </div>
+        <span className="spinner spinner-sm" />
       </div>
     );
   }
 
-
-
   return (
     <div className="space-y-5">
+
       {/* Подписка */}
       {isPartsOwner && !isAdmin && (
-        <div className={`flex items-center justify-between gap-4 px-4 py-3 rounded-xl text-sm ${hasSubscription ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-amber-50 border border-amber-200 text-amber-700'}`}>
-          <div className="flex items-center gap-2">
+        <div className={`alert ${hasSubscription ? 'alert-success' : 'alert-warning'}`}>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             {hasSubscription
               ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
               : <span className="flex-shrink-0">⚠️</span>
             }
-            <span className="font-medium">{hasSubscription ? 'Активная подписка' : 'Без подписки'}</span>
+            <span className="font-semibold">{hasSubscription ? 'Активная подписка' : 'Без подписки'}</span>
             {!hasSubscription && <span className="text-xs opacity-80">· Свяжитесь с администратором</span>}
           </div>
-          <span className="text-xs opacity-70 flex-shrink-0">
-            Сотрудников: {users.length} / {hasSubscription ? '∞' : limits.parts?.workers}
+          <span className="kicker flex-shrink-0">
+            {users.length} / {hasSubscription ? '∞' : limits.parts?.workers}
           </span>
         </div>
       )}
 
       {/* Хедер */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="page-header">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">
+          <h1 className="page-title">
             {isAdmin ? 'Пользователи' : isPartsOwner ? 'Сотрудники разборки' : 'Пользователи'}
           </h1>
-          <p className="text-xs text-gray-400 mt-0.5">{filteredUsers.length} из {users.length}</p>
+          <p className="page-subtitle kicker mt-0.5">{filteredUsers.length} из {users.length}</p>
         </div>
         {isAdmin && view === 'active' && (
-          <button onClick={handleCreateUser}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm">
-            <Plus className="h-4 w-4" />
+          <button onClick={handleCreateUser} className="btn-primary flex items-center gap-2">
+            <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Добавить пользователя</span>
             <span className="sm:hidden">Добавить</span>
           </button>
@@ -408,8 +416,8 @@ export default function Users() {
           {([{ id: 'active', label: 'Активные' }, { id: 'trash', label: 'Корзина' }] as const).map(t => (
             <button key={t.id}
               onClick={() => { setView(t.id); clearSelection(); }}
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-colors ${view === t.id ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
-              {t.id === 'trash' && <Trash2 className="w-3.5 h-3.5 inline mr-1 -mt-0.5" />}{t.label}
+              className={`chip ${view === t.id ? 'chip-active' : ''}`}>
+              {t.id === 'trash' && <Trash2 className="w-3.5 h-3.5" />}{t.label}
             </button>
           ))}
         </div>
@@ -418,31 +426,31 @@ export default function Users() {
       {/* Поиск + фильтры */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           <input
             type="text"
             placeholder="Поиск по имени, email, логину..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 shadow-sm transition-all"
+            className="form-input pl-10"
           />
         </div>
         {view === 'active' && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
-              className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:border-indigo-400 shadow-sm">
+              className="form-select w-auto">
               <option value="all">Все роли</option>
               {roles.map((r: any) => <option key={r.id} value={r.name}>{r.display_name}</option>)}
             </select>
             <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)}
-              className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:border-indigo-400 shadow-sm">
+              className="form-select w-auto">
               <option value="all">Все</option>
               <option value="active">Активные</option>
               <option value="inactive">Неактивные</option>
             </select>
             {isAdmin && (
               <select value={companyFilter} onChange={e => setCompanyFilter(e.target.value)}
-                className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:border-indigo-400 shadow-sm max-w-[160px]">
+                className="form-select w-auto max-w-[160px]">
                 <option value="all">Все компании</option>
                 <option value="none">Без компании</option>
                 <optgroup label="Разборки">
@@ -456,17 +464,19 @@ export default function Users() {
 
       {/* Панель массовых действий */}
       {isAdmin && view === 'active' && selectedIds.size > 0 && (
-        <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-indigo-50 border border-indigo-200 rounded-xl flex-wrap">
-          <span className="text-sm font-semibold text-indigo-700">Выбрано: {selectedIds.size}</span>
+        <div className="alert alert-info flex items-center justify-between gap-3 flex-wrap">
+          <span className="font-semibold">Выбрано: {selectedIds.size}</span>
           <div className="flex items-center gap-2 flex-wrap">
             <button onClick={() => handleBulk('activate')} disabled={bulkMutation.isPending}
-              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50">Активировать</button>
+              className="btn-success btn-sm">Активировать</button>
             <button onClick={() => handleBulk('deactivate')} disabled={bulkMutation.isPending}
-              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50">Деактивировать</button>
+              className="btn-secondary btn-sm">Деактивировать</button>
             <button onClick={() => handleBulk('delete')} disabled={bulkMutation.isPending}
-              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-50">В корзину</button>
+              className="btn-danger btn-sm">В корзину</button>
             <button onClick={clearSelection}
-              className="px-2 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-100 rounded-lg flex items-center gap-1"><X className="w-3.5 h-3.5" />Снять</button>
+              className="btn-ghost btn-sm flex items-center gap-1">
+              <X className="w-3.5 h-3.5" />Снять
+            </button>
           </div>
         </div>
       )}
@@ -474,123 +484,257 @@ export default function Users() {
       {/* Выбрать всё */}
       {isAdmin && view === 'active' && filteredUsers.length > 0 && (
         <button onClick={toggleSelectAll} className="flex items-center gap-2 text-xs font-medium text-gray-500 hover:text-gray-700 -mb-2">
-          {allSelected ? <CheckSquare className="w-4 h-4 text-indigo-600" /> : <Square className="w-4 h-4" />}
+          {allSelected ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
           {allSelected ? 'Снять выбор' : 'Выбрать всё'}
         </button>
       )}
 
-      {/* Список пользователей */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* ── Список: мобайл — плоские карточки, десктоп — таблица ── */}
+
+      {/* Мобайл: карточки (hidden на sm+) */}
+      <div className="sm:hidden space-y-2">
         {filteredUsers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-            <UserCog className="w-10 h-10 mb-3 opacity-30" />
-            <p className="text-sm font-medium">
-              {view === 'trash' ? 'Корзина пуста' : (searchQuery || roleFilter !== 'all' || companyFilter !== 'all' || statusFilter !== 'all') ? 'Ничего не найдено' : 'Нет пользователей'}
-            </p>
-            {view === 'active' && (searchQuery || roleFilter !== 'all') && <p className="text-xs mt-1 opacity-70">Попробуйте изменить запрос или фильтры</p>}
+          <div className="card">
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <UserCog className="w-7 h-7 text-gray-400" />
+              </div>
+              <p className="empty-state-title">
+                {view === 'trash' ? 'Корзина пуста' : (searchQuery || roleFilter !== 'all' || companyFilter !== 'all' || statusFilter !== 'all') ? 'Ничего не найдено' : 'Нет пользователей'}
+              </p>
+              {view === 'active' && (searchQuery || roleFilter !== 'all') && (
+                <p className="empty-state-text">Попробуйте изменить запрос или фильтры</p>
+              )}
+            </div>
           </div>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {filteredUsers.map((user) => {
-              const company = user.parts_companies?.name || null
-              const primaryRole = user.roles && user.roles.length > 0
-                ? (user.roles.find((r: Role) => r.is_primary) || user.roles[0])
-                : null
-              const extraRoles = user.roles ? user.roles.length - 1 : 0
+        ) : filteredUsers.map((user) => {
+          const company = user.parts_companies?.name || null;
+          const primaryRole = user.roles && user.roles.length > 0
+            ? (user.roles.find((r: Role) => r.is_primary) || user.roles[0])
+            : null;
+          const extraRoles = user.roles ? user.roles.length - 1 : 0;
+          const selectable = isAdmin && view === 'active';
+          const isSel = selectedIds.has(user.id);
 
-              const actions = view === 'trash'
-                ? [
-                    { key: 'restore', show: isAdmin, title: 'Восстановить', Icon: RotateCcw, cls: 'text-emerald-600 hover:bg-emerald-50', onClick: () => restoreMutation.mutate(user.id) },
-                    { key: 'purge', show: isAdmin, title: 'Удалить навсегда', Icon: Trash2, cls: 'text-red-500 hover:bg-red-50', onClick: () => handlePurgeUser(user) },
-                  ].filter(a => a.show)
-                : [
-                    { key: 'edit', show: true, title: 'Редактировать', Icon: Edit2, cls: 'text-indigo-600 hover:bg-indigo-50', onClick: () => handleEditUser(user) },
-                    { key: 'pwd', show: isAdmin || isPartsOwner, title: 'Сменить пароль', Icon: KeyRound, cls: 'text-amber-600 hover:bg-amber-50', onClick: () => openPasswordModal(user) },
-                    { key: 'roles', show: isAdmin, title: 'Роли', Icon: UserCog, cls: 'text-purple-600 hover:bg-purple-50', onClick: () => handleEditRole(user) },
-                    { key: 'login-as', show: isAdmin && !user.roles?.some(r => r.name === 'admin'), title: 'Войти как', Icon: LogIn, cls: 'text-sky-600 hover:bg-sky-50', onClick: () => handleImpersonate(user) },
-                    { key: 'activate', show: isAdmin && !user.is_active, title: 'Активировать', Icon: CheckCircle2, cls: 'text-emerald-600 hover:bg-emerald-50', onClick: () => handleToggleActive(user) },
-                    { key: 'delete', show: isAdmin, title: 'В корзину', Icon: Trash2, cls: 'text-red-500 hover:bg-red-50', onClick: () => handleDeleteUser(user) },
-                  ].filter(a => a.show)
+          const actions = view === 'trash'
+            ? [
+                { key: 'restore', show: isAdmin, title: 'Восстановить', Icon: RotateCcw, cls: 'text-emerald-600', onClick: () => restoreMutation.mutate(user.id) },
+                { key: 'purge',   show: isAdmin, title: 'Удалить навсегда', Icon: Trash2, cls: 'text-red-500', onClick: () => handlePurgeUser(user) },
+              ].filter(a => a.show)
+            : [
+                { key: 'edit',      show: true,                               title: 'Редактировать',  Icon: Edit2,        cls: 'text-primary',    onClick: () => handleEditUser(user) },
+                { key: 'pwd',       show: isAdmin || isPartsOwner,            title: 'Сменить пароль', Icon: KeyRound,     cls: 'text-amber-600',  onClick: () => openPasswordModal(user) },
+                { key: 'roles',     show: isAdmin,                            title: 'Роли',           Icon: UserCog,      cls: 'text-purple-600', onClick: () => handleEditRole(user) },
+                { key: 'login-as',  show: isAdmin && !user.roles?.some(r => r.name === 'admin'), title: 'Войти как', Icon: LogIn, cls: 'text-sky-600', onClick: () => handleImpersonate(user) },
+                { key: 'activate',  show: isAdmin && !user.is_active,         title: 'Активировать',  Icon: CheckCircle2, cls: 'text-emerald-600', onClick: () => handleToggleActive(user) },
+                { key: 'delete',    show: isAdmin,                            title: 'В корзину',      Icon: Trash2,       cls: 'text-red-500',    onClick: () => handleDeleteUser(user) },
+              ].filter(a => a.show);
 
-              const selectable = isAdmin && view === 'active'
-              const isSel = selectedIds.has(user.id)
+          return (
+            <div key={user.id} className={`card p-3.5 transition-colors ${isSel ? 'ring-2 ring-primary/40' : ''}`}>
+              <div className="flex items-start gap-3">
+                {selectable && (
+                  <button onClick={() => toggleSelect(user.id)} className="flex-shrink-0 mt-1 btn-icon-sm" aria-label="Выбрать">
+                    {isSel ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4 text-gray-300" />}
+                  </button>
+                )}
 
-              return (
-                <div key={user.id} className={`px-4 py-3.5 transition-colors ${isSel ? 'bg-indigo-50/60' : 'hover:bg-gray-50/80'}`}>
-                  <div className="flex items-start gap-3">
-                    {/* Чекбокс выбора */}
-                    {selectable && (
-                      <button onClick={() => toggleSelect(user.id)} className="flex-shrink-0 mt-1" aria-label="Выбрать">
-                        {isSel ? <CheckSquare className="w-5 h-5 text-indigo-600" /> : <Square className="w-5 h-5 text-gray-300" />}
-                      </button>
-                    )}
-                    {/* Аватар */}
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-sm">
-                      {(user.full_name?.charAt(0) || user.email?.charAt(0) || '?').toUpperCase()}
-                    </div>
+                {/* Аватар */}
+                <span className={`avatar-md flex-shrink-0 ${avatarColor(user.full_name || user.email)}`}>
+                  {getInitials(user.full_name, user.email)}
+                </span>
 
-                    {/* Инфо */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-gray-900 truncate">
-                          {user.full_name || <span className="text-gray-400 font-normal">Имя не указано</span>}
+                {/* Инфо */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-semibold text-gray-900 truncate">
+                      {user.full_name || <span className="text-gray-400 font-normal">Имя не указано</span>}
+                    </span>
+                    <span className={`badge ${user.is_active ? 'badge-green' : 'badge-gray'}`}>
+                      {user.is_active ? 'Активен' : 'Неактивен'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5 truncate">
+                    {user.email}{user.username ? <span className="font-mono"> · @{user.username}</span> : null}
+                  </p>
+
+                  {/* Роли + компания */}
+                  <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                    {primaryRole ? (
+                      <>
+                        <span className={getRoleBadgeClass(primaryRole.name)}>
+                          {primaryRole.display_name}
                         </span>
-                        <span className={`flex-shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full ${user.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                          {user.is_active ? 'Активен' : 'Неактивен'}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-400 mt-0.5 truncate">
-                        {user.email}{user.username ? <span className="font-mono"> · @{user.username}</span> : null}
-                      </p>
-
-                      {/* Роли + компания — всегда видны (в т.ч. на мобиле) */}
-                      <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-                        {primaryRole ? (
-                          <>
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap ${getRoleBadgeColor(primaryRole.name)}`}>
-                              {primaryRole.display_name}
-                            </span>
-                            {extraRoles > 0 && (
-                              <span title={user.roles!.slice(1).map((r: Role) => r.display_name).join(', ')}
-                                className="text-[11px] text-gray-500 px-1.5 py-0.5 bg-gray-100 rounded-md cursor-default whitespace-nowrap">
-                                +{extraRoles}
-                              </span>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-[11px] text-gray-400 italic">Без роли</span>
-                        )}
-                        {company && (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-gray-500 px-2 py-0.5 bg-gray-50 border border-gray-200 rounded-md max-w-[160px] truncate">
-                            {company}
+                        {extraRoles > 0 && (
+                          <span title={user.roles!.slice(1).map((r: Role) => r.display_name).join(', ')}
+                            className="badge badge-gray cursor-default">
+                            +{extraRoles}
                           </span>
                         )}
-                      </div>
-                    </div>
-
-                    {/* Действия — десктоп */}
-                    <div className="hidden sm:flex items-center gap-0.5 flex-shrink-0">
-                      {actions.map(({ key, title, Icon, cls, onClick }) => (
-                        <button key={key} onClick={onClick} title={title}
-                          className={`p-2.5 rounded-lg transition-colors ${cls}`}>
-                          <Icon className="w-4 h-4" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Действия — мобайл: крупные тач-таргеты, на всю ширину */}
-                  <div className="flex sm:hidden items-center gap-2 mt-3">
-                    {actions.map(({ key, title, Icon, cls, onClick }) => (
-                      <button key={key} onClick={onClick} aria-label={title}
-                        className={`flex-1 min-h-[44px] flex items-center justify-center rounded-xl border border-gray-100 bg-gray-50 active:scale-95 transition-all ${cls}`}>
-                        <Icon className="w-[18px] h-[18px]" />
-                      </button>
-                    ))}
+                      </>
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">Без роли</span>
+                    )}
+                    {company && (
+                      <span className="badge badge-gray max-w-[160px] truncate">{company}</span>
+                    )}
                   </div>
                 </div>
-              )
-            })}
+              </div>
+
+              {/* Действия — мобайл: крупные тач-таргеты */}
+              {actions.length > 0 && (
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                  {actions.map(({ key, title, Icon, cls, onClick }) => (
+                    <button key={key} onClick={onClick} aria-label={title}
+                      className={`flex-1 min-h-[44px] flex items-center justify-center rounded-lg border border-gray-100 bg-gray-50 active:scale-95 transition-all ${cls}`}>
+                      <Icon className="w-[18px] h-[18px]" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Десктоп: таблица (hidden на mobile) */}
+      <div className="hidden sm:block card p-0 overflow-hidden">
+        {filteredUsers.length === 0 ? (
+          <div className="empty-state py-16">
+            <div className="empty-state-icon">
+              <UserCog className="w-7 h-7 text-gray-400" />
+            </div>
+            <p className="empty-state-title">
+              {view === 'trash' ? 'Корзина пуста' : (searchQuery || roleFilter !== 'all' || companyFilter !== 'all' || statusFilter !== 'all') ? 'Ничего не найдено' : 'Нет пользователей'}
+            </p>
+            {view === 'active' && (searchQuery || roleFilter !== 'all') && (
+              <p className="empty-state-text">Попробуйте изменить запрос или фильтры</p>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  {isAdmin && view === 'active' && (
+                    <th className="table-header-cell w-10">
+                      <button onClick={toggleSelectAll} aria-label="Выбрать всё" className="btn-icon-sm mx-auto">
+                        {allSelected
+                          ? <CheckSquare className="w-4 h-4 text-primary" />
+                          : <Square className="w-4 h-4" />}
+                      </button>
+                    </th>
+                  )}
+                  <th className="table-header-cell">Пользователь</th>
+                  <th className="table-header-cell hidden md:table-cell">Роль</th>
+                  <th className="table-header-cell hidden lg:table-cell">Компания</th>
+                  <th className="table-header-cell hidden sm:table-cell">Статус</th>
+                  <th className="table-header-cell text-right">Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.map((user) => {
+                  const company = user.parts_companies?.name || null;
+                  const primaryRole = user.roles && user.roles.length > 0
+                    ? (user.roles.find((r: Role) => r.is_primary) || user.roles[0])
+                    : null;
+                  const extraRoles = user.roles ? user.roles.length - 1 : 0;
+                  const selectable = isAdmin && view === 'active';
+                  const isSel = selectedIds.has(user.id);
+
+                  const actions = view === 'trash'
+                    ? [
+                        { key: 'restore', show: isAdmin, title: 'Восстановить', Icon: RotateCcw, cls: 'text-emerald-600 hover:bg-emerald-50', onClick: () => restoreMutation.mutate(user.id) },
+                        { key: 'purge',   show: isAdmin, title: 'Удалить навсегда', Icon: Trash2, cls: 'text-red-500 hover:bg-red-50', onClick: () => handlePurgeUser(user) },
+                      ].filter(a => a.show)
+                    : [
+                        { key: 'edit',     show: true,                                              title: 'Редактировать',  Icon: Edit2,        cls: 'hover:text-primary hover:bg-blue-50',     onClick: () => handleEditUser(user) },
+                        { key: 'pwd',      show: isAdmin || isPartsOwner,                           title: 'Сменить пароль', Icon: KeyRound,     cls: 'hover:text-amber-600 hover:bg-amber-50',  onClick: () => openPasswordModal(user) },
+                        { key: 'roles',    show: isAdmin,                                           title: 'Роли',           Icon: UserCog,      cls: 'hover:text-purple-600 hover:bg-purple-50', onClick: () => handleEditRole(user) },
+                        { key: 'login-as', show: isAdmin && !user.roles?.some(r => r.name === 'admin'), title: 'Войти как', Icon: LogIn, cls: 'hover:text-sky-600 hover:bg-sky-50', onClick: () => handleImpersonate(user) },
+                        { key: 'activate', show: isAdmin && !user.is_active,                        title: 'Активировать',  Icon: CheckCircle2, cls: 'hover:text-emerald-600 hover:bg-emerald-50', onClick: () => handleToggleActive(user) },
+                        { key: 'delete',   show: isAdmin,                                           title: 'В корзину',     Icon: Trash2,       cls: 'hover:text-red-500 hover:bg-red-50',      onClick: () => handleDeleteUser(user) },
+                      ].filter(a => a.show);
+
+                  return (
+                    <tr key={user.id} className={`table-row ${isSel ? 'bg-blue-50/60' : ''}`}>
+                      {selectable && (
+                        <td className="table-cell w-10">
+                          <button onClick={() => toggleSelect(user.id)} aria-label="Выбрать" className="btn-icon-sm mx-auto">
+                            {isSel ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4 text-gray-300" />}
+                          </button>
+                        </td>
+                      )}
+
+                      {/* Пользователь */}
+                      <td className="table-cell">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className={`avatar-md flex-shrink-0 ${avatarColor(user.full_name || user.email)}`}>
+                            {getInitials(user.full_name, user.email)}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">
+                              {user.full_name || <span className="text-gray-400 font-normal">Имя не указано</span>}
+                            </p>
+                            <p className="text-xs text-gray-400 truncate">
+                              {user.email}{user.username ? <span className="font-mono"> · @{user.username}</span> : null}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Роль */}
+                      <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {primaryRole ? (
+                            <>
+                              <span className={getRoleBadgeClass(primaryRole.name)}>
+                                {primaryRole.display_name}
+                              </span>
+                              {extraRoles > 0 && (
+                                <span title={user.roles!.slice(1).map((r: Role) => r.display_name).join(', ')}
+                                  className="badge badge-gray cursor-default">
+                                  +{extraRoles}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-xs text-gray-400 italic">Без роли</span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Компания */}
+                      <td className="hidden lg:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
+                        {company
+                          ? <span className="badge badge-gray max-w-[160px] truncate">{company}</span>
+                          : <span className="text-gray-300">—</span>}
+                      </td>
+
+                      {/* Статус */}
+                      <td className="hidden sm:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
+                        <span className={`badge ${user.is_active ? 'badge-green' : 'badge-gray'}`}>
+                          {user.is_active ? 'Активен' : 'Неактивен'}
+                        </span>
+                      </td>
+
+                      {/* Действия */}
+                      <td className="table-cell">
+                        <div className="flex items-center gap-0.5 justify-end">
+                          {actions.map(({ key, title, Icon, cls, onClick }) => (
+                            <button key={key} onClick={onClick} title={title}
+                              className={`btn-icon ${cls}`}>
+                              <Icon className="w-4 h-4" />
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -606,133 +750,145 @@ export default function Users() {
         const closeRoleModal = () => { setIsRoleModalOpen(false); setSelectedUser(null); };
 
         return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-[2px] flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md max-h-[92dvh] flex flex-col shadow-xl">
-            {/* Хедер */}
-            <div className="flex-shrink-0 px-5 pt-3 pb-3 border-b border-gray-100">
-              <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-3 sm:hidden" />
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
-                  <UserCog className="w-4.5 h-4.5 text-purple-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-base font-bold text-gray-900">Роли и доступ</h2>
-                  <p className="text-xs text-gray-400 truncate">{selectedUser.full_name || selectedUser.email}</p>
-                </div>
-              </div>
-            </div>
+          <div className="modal-overlay">
+            <div className="modal-sheet animate-slide-up">
+              <div className="modal-handle" />
 
-            {/* Тело */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-              {/* Роли */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Роли</label>
-                <RoleSelector
-                  roles={roles}
-                  selectedIds={userRoleIds}
-                  primaryId={selectedUser.roles?.find(r => r.is_primary)?.id || selectedUser.roles?.[0]?.id || ''}
-                  onChange={(ids, pid) => {
-                    const newRoles = ids
-                      .map(id => roles.find(r => r.id === id))
-                      .filter((r): r is Role => !!r)
-                      .map(r => ({ ...r, is_primary: r.id === pid }));
-                    setSelectedUser({ ...selectedUser, roles: newRoles });
-                  }}
-                />
+              {/* Хедер */}
+              <div className="modal-header">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="icon-tile-sm bg-purple-100 flex-shrink-0">
+                    <UserCog className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-base font-bold text-gray-900">Роли и доступ</h2>
+                    <p className="text-xs text-gray-400 truncate">{selectedUser.full_name || selectedUser.email}</p>
+                  </div>
+                </div>
+                <button onClick={closeRoleModal} className="btn-icon flex-shrink-0" aria-label="Закрыть">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              {/* Разборка */}
-              {needsParts && (
+              {/* Тело */}
+              <div className="modal-body space-y-5">
+                {/* Роли */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Разборка *</label>
-                  <select
-                    value={selectedUser.parts_company_id || ''}
-                    onChange={(e) => setSelectedUser({ ...selectedUser, parts_company_id: e.target.value || null })}
-                    className={`w-full px-3.5 py-3 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-100 ${partsMissing ? 'border-red-300' : 'border-gray-200 focus:border-purple-400'}`}
-                  >
-                    <option value="">Выберите разборку</option>
-                    {partsCompanies.map((company) => (
-                      <option key={company.id} value={company.id}>{company.name}</option>
-                    ))}
-                  </select>
+                  <label className="kicker block mb-2">Роли</label>
+                  <RoleSelector
+                    roles={roles}
+                    selectedIds={userRoleIds}
+                    primaryId={selectedUser.roles?.find(r => r.is_primary)?.id || selectedUser.roles?.[0]?.id || ''}
+                    onChange={(ids, pid) => {
+                      const newRoles = ids
+                        .map(id => roles.find(r => r.id === id))
+                        .filter((r): r is Role => !!r)
+                        .map(r => ({ ...r, is_primary: r.id === pid }));
+                      setSelectedUser({ ...selectedUser, roles: newRoles });
+                    }}
+                  />
                 </div>
-              )}
-            </div>
 
-            {/* Футер */}
-            <div className="flex-shrink-0 flex gap-2 px-5 py-4 border-t border-gray-100" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
-              <button onClick={closeRoleModal}
-                className="flex-1 py-3 text-sm font-semibold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
-                Отмена
-              </button>
-              <button
-                disabled={!canSaveRoles || updateUserRolesMutation.isPending}
-                onClick={() => {
-                  const roleIds = selectedUser.roles?.map(r => r.id) || [];
-                  const primaryRoleId = selectedUser.roles?.find(r => r.is_primary)?.id || roleIds[0];
-                  updateUserRolesMutation.mutate({
-                    userId: selectedUser.id,
-                    roleIds,
-                    primaryRoleId,
-                    parts_company_id: selectedUser.parts_company_id
-                  });
-                }}
-                className="flex-1 py-3 text-sm font-semibold text-white bg-purple-600 rounded-xl hover:bg-purple-700 disabled:opacity-50 transition-colors">
-                {updateUserRolesMutation.isPending ? 'Сохранение...' : 'Сохранить'}
-              </button>
+                {/* Разборка */}
+                {needsParts && (
+                  <div>
+                    <label className="kicker block mb-2">Разборка *</label>
+                    <select
+                      value={selectedUser.parts_company_id || ''}
+                      onChange={(e) => setSelectedUser({ ...selectedUser, parts_company_id: e.target.value || null })}
+                      className={`modal-input ${partsMissing ? 'border-red-300' : ''}`}
+                    >
+                      <option value="">Выберите разборку</option>
+                      {partsCompanies.map((company) => (
+                        <option key={company.id} value={company.id}>{company.name}</option>
+                      ))}
+                    </select>
+                    {partsMissing && <p className="form-error">Укажите разборку</p>}
+                  </div>
+                )}
+              </div>
+
+              {/* Футер */}
+              <div className="modal-footer">
+                <button onClick={closeRoleModal} className="modal-btn-cancel">
+                  Отмена
+                </button>
+                <button
+                  disabled={!canSaveRoles || updateUserRolesMutation.isPending}
+                  onClick={() => {
+                    const roleIds = selectedUser.roles?.map(r => r.id) || [];
+                    const primaryRoleId = selectedUser.roles?.find(r => r.is_primary)?.id || roleIds[0];
+                    updateUserRolesMutation.mutate({
+                      userId: selectedUser.id,
+                      roleIds,
+                      primaryRoleId,
+                      parts_company_id: selectedUser.parts_company_id
+                    });
+                  }}
+                  className="modal-btn-primary bg-purple-600 hover:bg-purple-700"
+                  style={{ backgroundImage: 'none' }}
+                >
+                  {updateUserRolesMutation.isPending ? 'Сохранение...' : 'Сохранить'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         );
       })()}
       <ConfirmDialog {...dialogProps} />
 
       {/* Модалка смены пароля */}
       {passwordModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                <KeyRound className="w-4 h-4 text-amber-600" />
+        <div className="modal-overlay">
+          <div className="modal-sheet sm:max-w-sm animate-slide-up">
+            <div className="modal-handle" />
+
+            <div className="modal-header">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="icon-tile-sm bg-amber-100 flex-shrink-0">
+                  <KeyRound className="w-4 h-4 text-amber-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-900">Смена пароля</p>
+                  <p className="text-xs text-gray-400 truncate">{passwordModal.userName}</p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900">Смена пароля</p>
-                <p className="text-xs text-gray-400 truncate">{passwordModal.userName}</p>
-              </div>
-              <button onClick={closePasswordModal} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              <button onClick={closePasswordModal} className="btn-icon flex-shrink-0" aria-label="Закрыть">
+                <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-5 space-y-4">
+
+            <div className="modal-body space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Новый пароль</label>
+                <label className="kicker block mb-2">Новый пароль</label>
                 <input
                   type="text"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
                   autoFocus
                   placeholder="Минимум 6 символов"
-                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all"
+                  className="modal-input"
                 />
                 {newPassword.length > 0 && newPassword.length < 6 && (
-                  <p className="text-xs text-red-500 mt-1">Минимум 6 символов</p>
+                  <p className="form-error">Минимум 6 символов</p>
                 )}
               </div>
-              <div className="flex gap-2">
-                <button onClick={closePasswordModal}
-                  className="flex-1 py-2.5 text-sm text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
-                  Отмена
-                </button>
-                <button
-                  onClick={() => changePasswordMutation.mutate({ userId: passwordModal.userId, password: newPassword })}
-                  disabled={newPassword.length < 6 || changePasswordMutation.isPending}
-                  className="flex-1 py-2.5 text-sm font-semibold text-white bg-amber-500 rounded-xl hover:bg-amber-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                  {changePasswordMutation.isPending
-                    ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    : <KeyRound className="w-4 h-4" />}
-                  {changePasswordMutation.isPending ? 'Сохранение...' : 'Сменить'}
-                </button>
-              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button onClick={closePasswordModal} className="modal-btn-cancel">
+                Отмена
+              </button>
+              <button
+                onClick={() => changePasswordMutation.mutate({ userId: passwordModal.userId, password: newPassword })}
+                disabled={newPassword.length < 6 || changePasswordMutation.isPending}
+                className="modal-btn-primary flex items-center justify-center gap-2"
+              >
+                {changePasswordMutation.isPending
+                  ? <span className="spinner-sm" style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                  : <KeyRound className="w-4 h-4" />}
+                {changePasswordMutation.isPending ? 'Сохранение...' : 'Сменить'}
+              </button>
             </div>
           </div>
         </div>

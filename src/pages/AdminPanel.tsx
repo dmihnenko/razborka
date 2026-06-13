@@ -45,13 +45,14 @@ export default function AdminPanel() {
     },
   ]
 
-  const colorMap: Record<string, { icon: string; bg: string; badge: string; text: string }> = {
-    indigo:  { icon: 'text-indigo-600',  bg: 'bg-indigo-50',  badge: 'bg-indigo-100 text-indigo-700',  text: 'text-indigo-600' },
-    blue:    { icon: 'text-blue-600',    bg: 'bg-blue-50',    badge: 'bg-blue-100 text-blue-700',      text: 'text-blue-600' },
-    orange:  { icon: 'text-orange-600',  bg: 'bg-orange-50',  badge: 'bg-orange-100 text-orange-700',  text: 'text-orange-600' },
-    emerald: { icon: 'text-emerald-600', bg: 'bg-emerald-50', badge: 'bg-emerald-100 text-emerald-700', text: 'text-emerald-600' },
-    purple:  { icon: 'text-purple-600',  bg: 'bg-purple-50',  badge: 'bg-purple-100 text-purple-700',  text: 'text-purple-600' },
-    gray:    { icon: 'text-gray-600',    bg: 'bg-gray-100',   badge: 'bg-gray-100 text-gray-700',      text: 'text-gray-600' },
+  // Цвета для плашек быстрых ссылок (icon-tile + badge-*)
+  const colorMap: Record<string, { iconCls: string; tileBg: string }> = {
+    indigo:  { iconCls: 'text-indigo-600',  tileBg: 'bg-indigo-50' },
+    blue:    { iconCls: 'text-blue-600',    tileBg: 'bg-blue-50' },
+    orange:  { iconCls: 'text-orange-600',  tileBg: 'bg-orange-50' },
+    emerald: { iconCls: 'text-emerald-600', tileBg: 'bg-emerald-50' },
+    purple:  { iconCls: 'text-purple-600',  tileBg: 'bg-purple-50' },
+    gray:    { iconCls: 'text-gray-500',    tileBg: 'bg-gray-100' },
   }
 
   const quickLinks = [
@@ -71,14 +72,16 @@ export default function AdminPanel() {
     <div className="space-y-6">
 
       {/* Приветствие */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-          {greeting}, {profile?.full_name?.split(' ')[0] || 'Администратор'} 👋
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">Панель управления · {BRAND.name}</p>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">
+            {greeting}, {profile?.full_name?.split(' ')[0] || 'Администратор'} 👋
+          </h1>
+          <p className="page-subtitle">Панель управления · {BRAND.name}</p>
+        </div>
       </div>
 
-      {/* Stat cards */}
+      {/* KPI stat-cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {statCards.map(card => (
           <StatCard
@@ -96,19 +99,24 @@ export default function AdminPanel() {
 
       {/* Quick links grid */}
       <div>
-        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Разделы</h2>
+        <p className="kicker mb-3">Разделы</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {quickLinks.map(link => {
             const c = colorMap[link.color]
             const Icon = link.icon
             return (
-              <Link key={link.href} to={link.href}
-                className="group bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md hover:border-gray-200 transition-all flex flex-col gap-2.5 min-h-[90px]">
-                <div className={`w-9 h-9 rounded-xl ${c.bg} flex items-center justify-center`}>
-                  <Icon className={`w-4.5 h-4.5 ${c.icon}`} strokeWidth={1.5} />
+              <Link
+                key={link.href}
+                to={link.href}
+                className="card group flex flex-col gap-2.5 p-4 min-h-[90px] hover:shadow-card-hover hover:-translate-y-0.5 transition-all"
+              >
+                <div className={`icon-tile-sm ${c.tileBg}`}>
+                  <Icon className={`w-4 h-4 ${c.iconCls}`} strokeWidth={1.5} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 group-hover:text-gray-900">{link.name}</p>
+                  <p className="text-sm font-semibold text-gray-800 group-hover:text-gray-900 truncate">
+                    {link.name}
+                  </p>
                   <p className="text-[11px] text-gray-400 truncate mt-0.5">{link.desc}</p>
                 </div>
               </Link>
@@ -117,13 +125,12 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Footer info */}
-      <div className="flex items-center gap-2 text-xs text-gray-400 pb-2">
-        <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.5} />
-        <span>{BRAND.name} · Supabase</span>
-        <span className="mx-1">·</span>
-        <span>{new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+      {/* Footer */}
+      <div className="flex items-center gap-2 pb-2">
+        <TrendingUp className="w-3.5 h-3.5 text-gray-400" strokeWidth={1.5} />
+        <span className="kicker">{BRAND.name} · Supabase · {new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
       </div>
+
     </div>
   )
 }

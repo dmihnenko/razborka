@@ -16,10 +16,16 @@ const roleIcons: Record<string, any> = {
   user: Car,
 }
 
-const roleColors: Record<string, string> = {
-  parts_owner: 'bg-orange-100 text-orange-700',
-  parts_worker: 'bg-amber-100 text-amber-700',
-  user: 'bg-purple-100 text-purple-700',
+const roleBadgeClass: Record<string, string> = {
+  parts_owner: 'badge badge-orange',
+  parts_worker: 'badge badge-yellow',
+  user: 'badge badge-purple',
+}
+
+const roleIconBg: Record<string, string> = {
+  parts_owner: 'bg-orange-50 text-orange-600',
+  parts_worker: 'bg-amber-50 text-amber-600',
+  user: 'bg-purple-50 text-purple-600',
 }
 
 export default function AdminAccessRequests() {
@@ -53,154 +59,387 @@ export default function AdminAccessRequests() {
     onError: () => toast.error('Ошибка'),
   })
 
+  const filterLabels: Record<string, string> = {
+    pending: 'Ожидают',
+    approved: 'Одобрены',
+    rejected: 'Отклонены',
+    all: 'Все',
+  }
+
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+
+      {/* Шапка страницы */}
+      <div className="page-header">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Заявки на доступ</h1>
-          <p className="text-xs text-gray-400 mt-0.5">Управление запросами пользователей</p>
+          <p className="kicker mb-1">Администрирование</p>
+          <h1 className="page-title">Заявки на доступ</h1>
+          <p className="page-subtitle">Управление запросами пользователей</p>
         </div>
-        {/* Фильтр */}
-        <div className="flex gap-1.5 bg-gray-100 p-1 rounded-xl">
+
+        {/* Фильтр-чипы */}
+        <div className="flex gap-1.5 bg-gray-100 dark:bg-white/5 p-1 rounded-xl flex-shrink-0">
           {(['pending', 'approved', 'rejected', 'all'] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)}
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
               className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                filter === f ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}>
-              {f === 'pending' ? 'Ожидают' : f === 'approved' ? 'Одобрены' : f === 'rejected' ? 'Отклонены' : 'Все'}
+                filter === f
+                  ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+            >
+              {filterLabels[f]}
             </button>
           ))}
         </div>
       </div>
 
+      {/* Состояния: загрузка / пусто / список */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <span className="w-5 h-5 border-2 border-gray-200 border-t-primary rounded-full animate-spin" />
         </div>
       ) : requests.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-16 text-center">
-          <Clock className="w-10 h-10 text-gray-200 mx-auto mb-3" strokeWidth={1.5} />
-          <p className="text-sm text-gray-400">Нет заявок</p>
+        <div className="card">
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              <Clock className="w-7 h-7 text-gray-400" strokeWidth={1.5} />
+            </div>
+            <p className="empty-state-title">Нет заявок</p>
+            <p className="empty-state-text">
+              {filter === 'pending' ? 'Все заявки обработаны' : 'В этой категории пока ничего нет'}
+            </p>
+          </div>
         </div>
       ) : (
-        <div className="space-y-3">
-          {requests.map((req: any) => {
-            const Icon = roleIcons[req.request_type] || User
-            const isRejecting = rejectingId === req.id
-            return (
-              <div key={req.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${
-                req.status === 'rejected' ? 'border-red-100' : req.status === 'approved' ? 'border-emerald-100' : 'border-gray-100'
-              }`}>
-                {/* Хедер карточки */}
-                <div className="px-5 py-4 flex items-start gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${roleColors[req.request_type] || 'bg-gray-100 text-gray-600'}`}>
-                    <Icon className="w-5 h-5" strokeWidth={1.5} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-bold text-gray-900">{req.user?.full_name || req.user?.username || 'Без имени'}</p>
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${roleColors[req.request_type] || 'bg-gray-100 text-gray-600'}`}>
-                        {roleLabels[req.request_type]}
-                      </span>
-                      {req.status === 'pending' && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Ожидает</span>}
-                      {req.status === 'approved' && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Одобрено</span>}
-                      {req.status === 'rejected' && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Отклонено</span>}
-                    </div>
-                    <p className="text-xs text-gray-400 mt-0.5">@{req.user?.username} · {new Date(req.created_at).toLocaleDateString('ru-RU')}</p>
-                  </div>
-                </div>
+        <>
+          {/* Desktop — таблица */}
+          <div className="card hidden sm:block p-0 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className="table-header-cell">Пользователь</th>
+                  <th className="table-header-cell">Тип</th>
+                  <th className="table-header-cell">Компания / контакт</th>
+                  <th className="table-header-cell">Дата</th>
+                  <th className="table-header-cell">Статус</th>
+                  <th className="table-header-cell w-40">Действия</th>
+                </tr>
+              </thead>
+              <tbody className="grid-hairline">
+                {requests.map((req: any) => {
+                  const Icon = roleIcons[req.request_type] || User
+                  const isRejecting = rejectingId === req.id
+                  return (
+                    <>
+                      <tr key={req.id} className="table-row">
+                        {/* Пользователь */}
+                        <td className="table-cell">
+                          <div className="flex items-center gap-3">
+                            <div className={`icon-tile-sm ${roleIconBg[req.request_type] || 'bg-gray-100 text-gray-500'}`}>
+                              <Icon className="w-4 h-4" strokeWidth={1.5} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-gray-900 truncate">
+                                {req.user?.full_name || req.user?.username || 'Без имени'}
+                              </p>
+                              <p className="text-xs text-gray-400 truncate">@{req.user?.username}</p>
+                            </div>
+                          </div>
+                        </td>
 
-                {/* Детали */}
-                {(req.company_name || req.owner_phone || req.company_address || req.owner_name || req.vehicle_makes) && (
-                  <div className="px-5 pb-3 space-y-1.5 border-t border-gray-100 pt-3">
-                    {req.owner_name && (
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <User className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
-                        <span className="font-medium">{req.owner_name}</span>
-                      </div>
-                    )}
-                    {req.company_name && (
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <Building2 className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
-                        <span className="font-medium">{req.company_name}</span>
-                      </div>
-                    )}
-                    {req.company_address && (
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
-                        <span>{req.company_address}</span>
-                      </div>
-                    )}
-                    {(req.company_phone || req.owner_phone) && (
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
-                        <span className="font-mono">{req.company_phone || req.owner_phone}</span>
-                      </div>
-                    )}
-                    {req.vehicle_makes && req.vehicle_makes.trim() && (
-                      <div className="flex items-start gap-2 text-xs text-gray-500 mt-1">
-                        <Wrench className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                        <div className="flex flex-wrap gap-1">
-                          {req.vehicle_makes.split(',').map((make: string) => make.trim()).filter(Boolean).map((make: string) => (
-                            <span key={make} className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[11px] font-semibold">
-                              {make}
+                        {/* Тип */}
+                        <td className="table-cell">
+                          <span className={roleBadgeClass[req.request_type] || 'badge badge-gray'}>
+                            {roleLabels[req.request_type] || req.request_type}
+                          </span>
+                        </td>
+
+                        {/* Компания / контакт */}
+                        <td className="table-cell">
+                          <div className="space-y-0.5 text-xs text-gray-600">
+                            {req.owner_name && (
+                              <div className="flex items-center gap-1.5">
+                                <User className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                                <span>{req.owner_name}</span>
+                              </div>
+                            )}
+                            {req.company_name && (
+                              <div className="flex items-center gap-1.5">
+                                <Building2 className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                                <span className="font-medium">{req.company_name}</span>
+                              </div>
+                            )}
+                            {(req.company_phone || req.owner_phone) && (
+                              <div className="flex items-center gap-1.5">
+                                <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                                <span className="font-mono">{req.company_phone || req.owner_phone}</span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Дата */}
+                        <td className="table-cell text-xs text-gray-500 whitespace-nowrap">
+                          {new Date(req.created_at).toLocaleDateString('ru-RU')}
+                        </td>
+
+                        {/* Статус */}
+                        <td className="table-cell">
+                          {req.status === 'pending' && (
+                            <span className="badge badge-yellow">
+                              <span className="status-dot status-dot-pulse bg-yellow-500" />
+                              Ожидает
                             </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {req.rejection_reason && (
-                      <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 mt-2">
-                        <XCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                        <span>{req.rejection_reason}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
+                          )}
+                          {req.status === 'approved' && (
+                            <span className="badge badge-green">
+                              <span className="status-dot bg-green-500" />
+                              Одобрено
+                            </span>
+                          )}
+                          {req.status === 'rejected' && (
+                            <span className="badge badge-red">
+                              <span className="status-dot bg-red-500" />
+                              Отклонено
+                            </span>
+                          )}
+                        </td>
 
-                {/* Форма отклонения */}
-                {isRejecting && (
-                  <div className="px-5 pb-4 border-t border-gray-100 pt-3 space-y-2">
-                    <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)}
-                      rows={2} placeholder="Причина отклонения (опционально)..."
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100" />
-                    <div className="flex gap-2">
-                      <button onClick={() => setRejectingId(null)}
-                        className="flex-1 py-2 text-sm text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
-                        Отмена
-                      </button>
-                      <button onClick={() => rejectMutation.mutate({ id: req.id, reason: rejectReason })}
-                        disabled={rejectMutation.isPending}
-                        className="flex-1 py-2 text-sm font-semibold text-white bg-red-500 rounded-xl hover:bg-red-600 disabled:opacity-50 transition-colors">
+                        {/* Действия */}
+                        <td className="table-cell">
+                          {req.status === 'pending' && !isRejecting && (
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => { setRejectingId(req.id); setRejectReason('') }}
+                                className="btn btn-danger btn-sm"
+                              >
+                                <XCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                Откл.
+                              </button>
+                              <button
+                                onClick={() => approveMutation.mutate(req)}
+                                disabled={approveMutation.isPending}
+                                className="btn btn-success btn-sm"
+                              >
+                                {approveMutation.isPending
+                                  ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                  : <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                }
+                                Одобрить
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+
+                      {/* Строка отклонения — раскрывается под строкой */}
+                      {isRejecting && (
+                        <tr key={`${req.id}-reject`} className="bg-red-50/40 dark:bg-red-900/10">
+                          <td colSpan={6} className="px-4 py-3">
+                            <div className="flex items-start gap-3">
+                              <textarea
+                                value={rejectReason}
+                                onChange={e => setRejectReason(e.target.value)}
+                                rows={2}
+                                placeholder="Причина отклонения (опционально)..."
+                                className="form-input flex-1 resize-none text-sm"
+                              />
+                              <div className="flex gap-2 flex-shrink-0 pt-0.5">
+                                <button
+                                  onClick={() => setRejectingId(null)}
+                                  className="btn btn-secondary btn-sm"
+                                >
+                                  Отмена
+                                </button>
+                                <button
+                                  onClick={() => rejectMutation.mutate({ id: req.id, reason: rejectReason })}
+                                  disabled={rejectMutation.isPending}
+                                  className="btn btn-danger btn-sm"
+                                >
+                                  {rejectMutation.isPending
+                                    ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    : <XCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                  }
+                                  Отклонить
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile — карточки */}
+          <div className="sm:hidden space-y-3">
+            {requests.map((req: any) => {
+              const Icon = roleIcons[req.request_type] || User
+              const isRejecting = rejectingId === req.id
+              return (
+                <div
+                  key={req.id}
+                  className={`card p-0 overflow-hidden ${
+                    req.status === 'rejected'
+                      ? 'border-red-200/60'
+                      : req.status === 'approved'
+                      ? 'border-green-200/60'
+                      : ''
+                  }`}
+                >
+                  {/* Заголовок карточки */}
+                  <div className="px-4 py-3 flex items-start gap-3">
+                    <div className={`icon-tile flex-shrink-0 ${roleIconBg[req.request_type] || 'bg-gray-100 text-gray-500'}`}>
+                      <Icon className="w-5 h-5" strokeWidth={1.5} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-bold text-gray-900 truncate">
+                          {req.user?.full_name || req.user?.username || 'Без имени'}
+                        </p>
+                        <span className={roleBadgeClass[req.request_type] || 'badge badge-gray'}>
+                          {roleLabels[req.request_type]}
+                        </span>
+                        {req.status === 'pending' && (
+                          <span className="badge badge-yellow">
+                            <span className="status-dot status-dot-pulse bg-yellow-500" />
+                            Ожидает
+                          </span>
+                        )}
+                        {req.status === 'approved' && (
+                          <span className="badge badge-green">
+                            <span className="status-dot bg-green-500" />
+                            Одобрено
+                          </span>
+                        )}
+                        {req.status === 'rejected' && (
+                          <span className="badge badge-red">
+                            <span className="status-dot bg-red-500" />
+                            Отклонено
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        @{req.user?.username} · {new Date(req.created_at).toLocaleDateString('ru-RU')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Детали */}
+                  {(req.company_name || req.owner_phone || req.company_address || req.owner_name || req.vehicle_makes) && (
+                    <div className="px-4 pb-3 pt-2.5 space-y-1.5 border-t border-gray-100 dark:border-white/5">
+                      {req.owner_name && (
+                        <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                          <User className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                          <span className="font-medium">{req.owner_name}</span>
+                        </div>
+                      )}
+                      {req.company_name && (
+                        <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                          <Building2 className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                          <span className="font-medium">{req.company_name}</span>
+                        </div>
+                      )}
+                      {req.company_address && (
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                          <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                          <span>{req.company_address}</span>
+                        </div>
+                      )}
+                      {(req.company_phone || req.owner_phone) && (
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                          <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                          <span className="font-mono">{req.company_phone || req.owner_phone}</span>
+                        </div>
+                      )}
+                      {req.vehicle_makes && req.vehicle_makes.trim() && (
+                        <div className="flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
+                          <Wrench className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                          <div className="flex flex-wrap gap-1">
+                            {req.vehicle_makes
+                              .split(',')
+                              .map((make: string) => make.trim())
+                              .filter(Boolean)
+                              .map((make: string) => (
+                                <span key={make} className="badge badge-blue">{make}</span>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                      {req.rejection_reason && (
+                        <div className="alert alert-danger mt-2">
+                          <XCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                          <span>{req.rejection_reason}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Форма отклонения */}
+                  {isRejecting && (
+                    <div className="px-4 pb-4 pt-3 border-t border-gray-100 dark:border-white/5 space-y-2">
+                      <textarea
+                        value={rejectReason}
+                        onChange={e => setRejectReason(e.target.value)}
+                        rows={2}
+                        placeholder="Причина отклонения (опционально)..."
+                        className="form-input resize-none"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setRejectingId(null)}
+                          className="btn btn-secondary flex-1"
+                        >
+                          Отмена
+                        </button>
+                        <button
+                          onClick={() => rejectMutation.mutate({ id: req.id, reason: rejectReason })}
+                          disabled={rejectMutation.isPending}
+                          className="btn btn-danger flex-1"
+                        >
+                          {rejectMutation.isPending
+                            ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            : <XCircle className="w-4 h-4" strokeWidth={1.5} />
+                          }
+                          Отклонить
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Кнопки действий */}
+                  {req.status === 'pending' && !isRejecting && (
+                    <div className="px-4 py-3 border-t border-gray-100 dark:border-white/5 flex gap-2">
+                      <button
+                        onClick={() => { setRejectingId(req.id); setRejectReason('') }}
+                        className="btn btn-danger flex-1"
+                      >
+                        <XCircle className="w-4 h-4" strokeWidth={1.5} />
                         Отклонить
                       </button>
+                      <button
+                        onClick={() => approveMutation.mutate(req)}
+                        disabled={approveMutation.isPending}
+                        className="btn btn-success flex-1"
+                      >
+                        {approveMutation.isPending
+                          ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          : <CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />
+                        }
+                        Одобрить
+                      </button>
                     </div>
-                  </div>
-                )}
-
-                {/* Кнопки действий */}
-                {req.status === 'pending' && !isRejecting && (
-                  <div className="px-5 py-3 border-t border-gray-100 flex gap-2">
-                    <button onClick={() => { setRejectingId(req.id); setRejectReason('') }}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-semibold text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-colors">
-                      <XCircle className="w-4 h-4" strokeWidth={1.5} />
-                      Отклонить
-                    </button>
-                    <button onClick={() => approveMutation.mutate(req)}
-                      disabled={approveMutation.isPending}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-colors">
-                      {approveMutation.isPending
-                        ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        : <CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />
-                      }
-                      Одобрить
-                    </button>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </>
       )}
     </div>
   )
