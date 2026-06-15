@@ -453,7 +453,7 @@
     --mk-shadow:    0 1px 2px rgba(17,24,39,0.04), 0 1px 3px rgba(17,24,39,0.05);
     --mk-shadow-md: 0 6px 16px -8px rgba(17,24,39,0.12);
     /* Раскладка / fluid (масштабируется до 2K/4K) */
-    --mk-maxw: 1680px;
+    --mk-maxw: 1920px;
     --mk-gap: clamp(0.5rem, 0.35rem + 0.7vw, 1rem);
     --mk-pad: clamp(0.75rem, 0.45rem + 1.1vw, 1.4rem);
     --mk-card-min: clamp(140px, 18vw, 196px);

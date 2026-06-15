@@ -25,7 +25,17 @@ export function MarketProductCard({ part }: MarketProductCardProps) {
   const { addItem } = useCart()
   const [imgError, setImgError] = useState(false)
 
-  const photo = part.photoUrl || part.photos?.[0]?.thumb_url || part.photos?.[0]?.url || null
+  const p0 = part.photos?.[0]
+  const photo = part.photoUrl || p0?.thumb_url || p0?.url || null
+  // Адаптив под плотность экрана: браузер выберет нужное разрешение по
+  // размеру отрисовки × devicePixelRatio (чёткое фото на Retina/2K/4K).
+  const srcSet = p0
+    ? [
+        p0.thumb_url && `${p0.thumb_url} 180w`,
+        (p0.medium_url || p0.display_url) && `${p0.medium_url || p0.display_url} 480w`,
+        p0.url && `${p0.url} 1000w`,
+      ].filter(Boolean).join(', ')
+    : undefined
   const conditionLabel = part.condition ? PARTS_CONDITION_LABELS[part.condition] ?? part.condition : null
   const vehicleStr = part.vehicle
     ? `${part.vehicle.make} ${part.vehicle.model}${part.vehicle.year ? ` ${part.vehicle.year}` : ''}`.trim()
@@ -56,6 +66,8 @@ export function MarketProductCard({ part }: MarketProductCardProps) {
           {photo && !imgError ? (
             <img
               src={photo}
+              srcSet={srcSet}
+              sizes="(min-width:1280px) 220px, (min-width:640px) 33vw, 47vw"
               alt={part.name}
               loading="lazy"
               decoding="async"
