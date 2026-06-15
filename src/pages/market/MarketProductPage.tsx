@@ -103,9 +103,9 @@ export default function MarketProductPage() {
         </ol>
       </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] gap-4 lg:gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,520px)_minmax(330px,400px)] lg:justify-start gap-4 lg:gap-5 items-start">
         {/* Левая: галерея + описание */}
-        <div className="space-y-3 min-w-0 lg:max-w-[520px]">
+        <div className="space-y-3 min-w-0">
           {galleryPhotos.length > 0 ? (
             <div className="rounded-xl overflow-hidden mk-card p-0"><PhotoGallery photos={galleryPhotos} alt={part.name} mainAspect="aspect-[4/3]" /></div>
           ) : (
