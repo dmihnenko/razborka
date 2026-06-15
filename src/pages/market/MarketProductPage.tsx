@@ -103,9 +103,9 @@ export default function MarketProductPage() {
         </ol>
       </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,520px)_minmax(330px,400px)] lg:justify-start gap-4 lg:gap-5 items-start">
-        {/* Левая: галерея + описание */}
-        <div className="space-y-3 min-w-0">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,480px)_minmax(0,1fr)] lg:justify-start gap-4 lg:gap-5 items-start">
+        {/* Фото */}
+        <div className="min-w-0">
           {galleryPhotos.length > 0 ? (
             <div className="rounded-xl overflow-hidden mk-card p-0"><PhotoGallery photos={galleryPhotos} alt={part.name} mainAspect="aspect-[4/3]" /></div>
           ) : (
@@ -114,20 +114,12 @@ export default function MarketProductPage() {
               <span className="text-sm mk-meta">Нет фото</span>
             </div>
           )}
-
-          {part.description && (
-            <div className="mk-card p-4">
-              <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-3 mk-meta">
-                <FileText className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Описание
-              </h2>
-              <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--mk-text-2)' }}>{part.description}</p>
-            </div>
-          )}
         </div>
 
-        {/* Правая: sticky-инфо */}
-        <div className="lg:sticky lg:top-20 space-y-3">
-          <div className="mk-card p-4">
+        {/* Справа: инфо/цена и рядом (на xl) — авто + продавец */}
+        <div className="flex flex-col xl:flex-row gap-3 lg:gap-4 items-start w-full">
+          {/* Инфо/цена */}
+          <div className="mk-card p-4 w-full xl:w-[340px] xl:flex-shrink-0">
             <div className="flex flex-wrap gap-1.5 mb-2.5">
               {conditionBadge(part.condition)}
               {part.categoryName && (
@@ -168,36 +160,49 @@ export default function MarketProductPage() {
             </div>
           </div>
 
-          {part.vehicle && (
-            <div className="mk-card p-4">
-              <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-2.5 mk-meta">
-                <Car className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Снята с автомобиля
-              </h2>
-              <div className="flex items-start gap-3">
-                <span className="mk-tile-icon flex-shrink-0"><Car className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" /></span>
-                <div>
-                  <p className="text-base font-bold leading-tight" style={{ color: 'var(--mk-text)' }}>
-                    {part.vehicle.make} {part.vehicle.model}
-                    {part.vehicle.year && <span className="font-normal ml-1.5 text-sm mk-meta">{part.vehicle.year} г.</span>}
-                  </p>
-                  {part.vehicle.vin && <p className="text-[11px] font-mono mt-0.5 select-all mk-meta">VIN: {part.vehicle.vin}</p>}
+          {/* Авто + продавец — справа от инфо на десктопе */}
+          <div className="space-y-3 w-full xl:w-[320px] xl:flex-shrink-0">
+            {part.vehicle && (
+              <div className="mk-card p-4">
+                <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-2.5 mk-meta">
+                  <Car className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Снята с автомобиля
+                </h2>
+                <div className="flex items-start gap-3">
+                  <span className="mk-tile-icon flex-shrink-0"><Car className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" /></span>
+                  <div>
+                    <p className="text-base font-bold leading-tight" style={{ color: 'var(--mk-text)' }}>
+                      {part.vehicle.make} {part.vehicle.model}
+                      {part.vehicle.year && <span className="font-normal ml-1.5 text-sm mk-meta">{part.vehicle.year} г.</span>}
+                    </p>
+                    {part.vehicle.vin && <p className="text-[11px] font-mono mt-0.5 select-all mk-meta">VIN: {part.vehicle.vin}</p>}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <SellerContactCard
-            company={part.company}
-            hideCallButton
-            telegramMessage={
-              `Здравствуйте! Интересует запчасть:\n«${part.name}»` +
-              (part.vehicle ? `\nАвто: ${part.vehicle.make} ${part.vehicle.model}${part.vehicle.year ? ` ${part.vehicle.year}` : ''}` : '') +
-              (part.partNumber ? `\nОриг. номер: ${part.partNumber.toUpperCase()}` : '') +
-              `\n${typeof window !== 'undefined' ? window.location.href : ''}`
-            }
-          />
+            <SellerContactCard
+              company={part.company}
+              hideCallButton
+              telegramMessage={
+                `Здравствуйте! Интересует запчасть:\n«${part.name}»` +
+                (part.vehicle ? `\nАвто: ${part.vehicle.make} ${part.vehicle.model}${part.vehicle.year ? ` ${part.vehicle.year}` : ''}` : '') +
+                (part.partNumber ? `\nОриг. номер: ${part.partNumber.toUpperCase()}` : '') +
+                `\n${typeof window !== 'undefined' ? window.location.href : ''}`
+              }
+            />
+          </div>
         </div>
       </div>
+
+      {/* Описание — на всю ширину под основным блоком */}
+      {part.description && (
+        <div className="mk-card p-4 mt-4 sm:mt-5 max-w-3xl">
+          <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-3 mk-meta">
+            <FileText className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Описание
+          </h2>
+          <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--mk-text-2)' }}>{part.description}</p>
+        </div>
+      )}
 
       {related.length > 0 && (
         <section className="mt-8 sm:mt-10">
