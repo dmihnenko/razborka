@@ -425,98 +425,141 @@
   .tabular { font-variant-numeric: tabular-nums; }
 
   /* ═══════════════════════════════════════════════════════════
-     MARKETPLACE (/market) — публичный маркет-язык «Azure Market».
-     Отдельная поверхность (MarketLayout), но на токенах бренда.
-     Все цвета/градиенты — через var(--brand-*), без inline-хардкодов.
+     MARKETPLACE /market — дизайн «Graphite» (минимал, почти монохром).
+     ВСЕ значения — в --mk-* на .market (scope). Меняешь тут — меняется
+     весь маркет. Сетки auto-fill подстраиваются под любой экран до 4K.
+     Префикс классов: .mk-*
      ═══════════════════════════════════════════════════════════ */
+  .market {
+    /* Палитра (приглушённый графит-индиго акцент) */
+    --mk-bg:           #F6F7F9;
+    --mk-surface:      #FFFFFF;
+    --mk-surface-2:    #EEF0F3;   /* лёгкие заливки/скелетоны/hover */
+    --mk-text:         #111827;
+    --mk-text-2:       #4B5563;
+    --mk-text-3:       #6B7280;
+    --mk-border:       #E5E7EB;
+    --mk-border-2:     #D5D9DF;
+    --mk-accent:       #4F5B7A;
+    --mk-accent-hover: #3E4860;
+    --mk-accent-weak:  rgba(79,91,122,0.10);
+    --mk-on-accent:    #FFFFFF;
+    --mk-focus:        rgba(79,91,122,0.35);
+    /* Радиусы */
+    --mk-r-sm: 8px; --mk-r: 12px; --mk-r-lg: 16px; --mk-r-xl: 22px;
+    /* Тени — мягкие */
+    --mk-shadow:    0 1px 2px rgba(17,24,39,0.04), 0 1px 3px rgba(17,24,39,0.05);
+    --mk-shadow-md: 0 6px 16px -8px rgba(17,24,39,0.12);
+    /* Раскладка / fluid (масштабируется до 2K/4K) */
+    --mk-maxw: 1760px;
+    --mk-gap: clamp(0.625rem, 0.4rem + 0.9vw, 1.25rem);
+    --mk-pad: clamp(0.875rem, 0.4rem + 1.6vw, 1.75rem);
+    --mk-card-min: clamp(150px, 22vw, 232px);
+    --mk-card-min-wide: clamp(260px, 40vw, 380px);
 
-  /* Брендовый градиент-поверхность (герой, CTA) */
-  .market-surface {
-    background-image: linear-gradient(135deg, #0A3A6B 0%, var(--brand-700) 42%, var(--brand-600) 78%, var(--brand-500) 100%);
-    color: #fff;
+    background-color: var(--mk-bg);
+    color: var(--mk-text);
   }
 
-  /* Крупный поиск (герой/шапка) */
-  .market-search {
-    @apply w-full rounded-2xl bg-white text-gray-900 placeholder-gray-400
-           pl-12 pr-4 text-sm sm:text-base border border-gray-200
-           transition-shadow;
-    height: 3rem;
-    box-shadow: 0 1px 2px rgba(16,24,40,0.05), 0 6px 16px -8px rgba(16,24,40,0.12);
-  }
-  .market-search:focus {
-    @apply outline-none border-transparent;
-    box-shadow: 0 0 0 3px rgb(17 115 212 / 0.25), 0 6px 16px -8px rgba(16,24,40,0.18);
+  /* Графитовое фокус-кольцо вместо глобального azure — внутри маркета */
+  .market *:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--mk-accent), 0 0 0 4px var(--mk-focus) !important;
   }
 
-  /* Плитка категории (маркет-навигация) — крупный тач-таргет */
-  .market-cat-tile {
-    @apply flex flex-col items-center justify-center gap-2 rounded-2xl bg-white
-           border border-gray-200 px-3 py-3.5 text-center
-           transition-all duration-150 cursor-pointer;
-    min-height: 88px;
-  }
-  .market-cat-tile:hover {
-    border-color: rgb(17 115 212 / 0.45);
-    box-shadow: 0 8px 20px -10px rgba(16,24,40,0.18);
-    transform: translateY(-2px);
-  }
-  .market-cat-tile .icon-tile { background: var(--brand-50); color: var(--brand-600); }
+  /* Контейнер: fluid, центр, на больших экранах до --mk-maxw */
+  .mk-container { width: 100%; max-width: var(--mk-maxw); margin-inline: auto; padding-inline: var(--mk-pad); }
 
-  /* Горизонтальный скролл-снап ряд (категории/чипы на мобиле) */
-  .market-scroller {
-    @apply flex gap-2.5 overflow-x-auto scrollbar-hide;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-  }
-  .market-scroller > * { scroll-snap-align: start; flex-shrink: 0; }
+  /* Поверхность-карточка */
+  .mk-card { background: var(--mk-surface); border: 1px solid var(--mk-border); border-radius: var(--mk-r-lg); box-shadow: var(--mk-shadow); }
+  .mk-card-interactive { transition: border-color .15s, box-shadow .15s, transform .15s; }
+  .mk-card-interactive:hover { border-color: var(--mk-border-2); box-shadow: var(--mk-shadow-md); transform: translateY(-2px); }
+  .mk-card-interactive:focus-within { box-shadow: 0 0 0 2px var(--mk-accent); }
 
-  /* Цена товара (брендовый акцент) */
-  .market-price { @apply text-lg font-extrabold tracking-tight; color: var(--brand-600); font-variant-numeric: tabular-nums; }
-  .market-price-lg { @apply text-2xl sm:text-3xl font-extrabold tracking-tight; color: var(--brand-600); font-variant-numeric: tabular-nums; }
+  /* Сетки — авто-адаптив под любой экран (телефон → 4K → ультраширокий) */
+  .mk-grid { display: grid; gap: var(--mk-gap); grid-template-columns: repeat(auto-fill, minmax(min(var(--mk-card-min), 100%), 1fr)); }
+  .mk-grid-wide { display: grid; gap: var(--mk-gap); grid-template-columns: repeat(auto-fill, minmax(min(var(--mk-card-min-wide), 100%), 1fr)); }
 
-  /* Бейдж поверх фото товара */
-  .market-photo-badge {
-    @apply absolute top-2.5 left-2.5 backdrop-blur-sm shadow-sm z-10;
-  }
+  /* Типографика (fluid) */
+  .mk-h1   { font-weight: 800; letter-spacing: -0.03em; color: var(--mk-text); font-size: clamp(1.4rem, 1.1rem + 1.4vw, 2.1rem); line-height: 1.1; }
+  .mk-title{ font-weight: 700; letter-spacing: -0.02em; color: var(--mk-text); font-size: clamp(1.05rem, 0.95rem + 0.5vw, 1.35rem); }
+  .mk-sub  { color: var(--mk-text-3); font-size: clamp(.8rem, .78rem + .1vw, .9rem); }
+  .mk-meta { color: var(--mk-text-3); }
+  .mk-link { color: var(--mk-accent); font-weight: 600; transition: color .15s; }
+  .mk-link:hover { color: var(--mk-accent-hover); }
 
-  /* Иконочная кнопка «в корзину» поверх карточки — тач ≥44px */
-  .market-add-btn {
-    @apply inline-flex items-center justify-center rounded-xl text-white
-           transition-all duration-150 cursor-pointer flex-shrink-0;
-    width: 44px; height: 44px;
-    background-color: var(--brand-600);
-    box-shadow: 0 2px 8px -2px rgb(17 115 212 / 0.5);
-  }
-  .market-add-btn:hover { background-color: var(--brand-700); }
-  .market-add-btn:active { transform: scale(0.94); }
-  .market-add-btn:disabled { @apply opacity-40 cursor-not-allowed; }
+  /* Кнопки */
+  .mk-btn { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; min-height:44px; padding-inline:1rem; border-radius:var(--mk-r); font-weight:600; font-size:.875rem; cursor:pointer; white-space:nowrap; transition: background-color .15s, border-color .15s, color .15s, box-shadow .15s; }
+  .mk-btn:active { transform: scale(.98); }
+  .mk-btn-accent  { background: var(--mk-accent); color: var(--mk-on-accent); }
+  .mk-btn-accent:hover { background: var(--mk-accent-hover); }
+  .mk-btn-accent:disabled { opacity:.5; cursor:not-allowed; }
+  .mk-btn-outline { background: var(--mk-surface); color: var(--mk-text-2); border:1px solid var(--mk-border); }
+  .mk-btn-outline:hover { border-color: var(--mk-border-2); color: var(--mk-text); }
+  .mk-btn-ghost   { background: transparent; color: var(--mk-text-2); }
+  .mk-btn-ghost:hover { background: var(--mk-surface-2); color: var(--mk-text); }
+  .mk-btn-lg { min-height:48px; padding-inline:1.25rem; font-size:.95rem; }
 
-  /* Степпер количества — кнопки ≥44px (тач) */
-  .market-qty { @apply inline-flex items-center rounded-xl bg-gray-50 border border-gray-200 overflow-hidden; }
-  .market-qty-btn {
-    @apply inline-flex items-center justify-center text-gray-600 transition-colors cursor-pointer;
-    width: 44px; height: 44px;
-  }
-  .market-qty-btn:hover { @apply bg-gray-100 text-gray-900; }
-  .market-qty-btn:disabled { @apply opacity-40 cursor-not-allowed; }
-  .market-qty-val { @apply min-w-[2.5rem] text-center text-sm font-bold text-gray-900 tabular; }
+  /* Иконочная кнопка ≥44px */
+  .mk-icon-btn { display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:var(--mk-r); flex-shrink:0; color:var(--mk-text-2); cursor:pointer; transition: background-color .15s, color .15s; }
+  .mk-icon-btn:hover { background: var(--mk-surface-2); color: var(--mk-text); }
+  .mk-icon-btn:active { transform: scale(.94); }
 
-  /* Кнопка пагинации — тач ≥44px */
-  .market-page-btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white
-           text-sm font-semibold text-gray-700 transition-colors cursor-pointer px-4;
-    min-height: 44px; min-width: 44px;
-  }
-  .market-page-btn:hover:not(:disabled) { border-color: rgb(17 115 212 / 0.45); color: var(--brand-600); }
-  .market-page-btn:disabled { @apply opacity-40 cursor-not-allowed; }
-  .market-page-btn.active { @apply border-transparent text-white; background-color: var(--brand-600); }
+  /* Поле / поиск */
+  .mk-input { width:100%; min-height:44px; padding:0 .875rem; border-radius:var(--mk-r); background:var(--mk-surface); color:var(--mk-text); border:1px solid var(--mk-border); font-size:.9rem; transition: border-color .15s, box-shadow .15s; }
+  .mk-input::placeholder { color: var(--mk-text-3); }
+  .mk-input:focus { outline:none; border-color:var(--mk-accent); box-shadow:0 0 0 3px var(--mk-focus); }
+  .mk-search { padding-left: 2.75rem; }
 
-  /* Заголовок секции маркета со ссылкой справа */
-  .market-section-title { @apply text-lg sm:text-xl font-bold text-gray-900; letter-spacing: -0.02em; }
+  /* Чип */
+  .mk-chip { display:inline-flex; align-items:center; gap:.375rem; min-height:40px; padding:0 .875rem; border-radius:999px; background:var(--mk-surface); border:1px solid var(--mk-border); color:var(--mk-text-2); font-size:.8rem; font-weight:600; white-space:nowrap; cursor:pointer; transition: border-color .15s, color .15s, background-color .15s; }
+  .mk-chip:hover { border-color: var(--mk-border-2); color: var(--mk-text); }
+  .mk-chip.active { background: var(--mk-accent); border-color: var(--mk-accent); color: var(--mk-on-accent); }
 
-  /* Сетка товаров — единый адаптив для всех экранов маркета */
-  .market-grid { @apply grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4; }
+  /* Бейдж состояния — приглушённые тона */
+  .mk-badge { display:inline-flex; align-items:center; gap:.25rem; padding:.125rem .5rem; border-radius:999px; font-size:.7rem; font-weight:700; border:1px solid transparent; }
+  .mk-badge-new     { background:#ECFDF3; color:#246B45; border-color:#C9EAD6; }
+  .mk-badge-used    { background:var(--mk-surface-2); color:var(--mk-text-2); border-color:var(--mk-border); }
+  .mk-badge-damaged { background:#FEF1F1; color:#9B3535; border-color:#F4D2D2; }
+  .mk-badge-neutral { background:var(--mk-surface-2); color:var(--mk-text-2); border-color:var(--mk-border); }
+
+  /* Цена — монохром (вес важнее цвета) */
+  .mk-price { font-weight:800; letter-spacing:-.01em; color:var(--mk-text); font-variant-numeric:tabular-nums; }
+  .mk-price-lg { font-weight:800; letter-spacing:-.02em; color:var(--mk-text); font-variant-numeric:tabular-nums; font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem); }
+
+  /* Плитка категории */
+  .mk-tile { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.5rem; min-height:92px; padding:.875rem .5rem; text-align:center; background:var(--mk-surface); border:1px solid var(--mk-border); border-radius:var(--mk-r-lg); cursor:pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
+  .mk-tile:hover { border-color: var(--mk-border-2); box-shadow: var(--mk-shadow-md); transform: translateY(-2px); }
+  .mk-tile-icon { display:inline-flex; align-items:center; justify-content:center; width:2.5rem; height:2.5rem; border-radius:var(--mk-r); background:var(--mk-accent-weak); color:var(--mk-accent); }
+
+  /* Add-кнопка (акцент) ≥44px */
+  .mk-add { width:44px; height:44px; border-radius:var(--mk-r); display:inline-flex; align-items:center; justify-content:center; background:var(--mk-accent); color:var(--mk-on-accent); flex-shrink:0; cursor:pointer; transition: background-color .15s, transform .1s; }
+  .mk-add:hover { background: var(--mk-accent-hover); }
+  .mk-add:active { transform: scale(.94); }
+  .mk-add:disabled { opacity:.45; cursor:not-allowed; }
+
+  /* Степпер количества ≥44px */
+  .mk-qty { display:inline-flex; align-items:center; border:1px solid var(--mk-border); border-radius:var(--mk-r); overflow:hidden; background:var(--mk-surface); }
+  .mk-qty-btn { width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; color:var(--mk-text-2); cursor:pointer; transition: background-color .15s; }
+  .mk-qty-btn:hover { background: var(--mk-surface-2); color: var(--mk-text); }
+  .mk-qty-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .mk-qty-val { min-width:2.75rem; text-align:center; font-weight:700; font-variant-numeric:tabular-nums; color:var(--mk-text); }
+
+  /* Пагинация ≥44px */
+  .mk-page-btn { min-width:44px; min-height:44px; padding:0 1rem; display:inline-flex; align-items:center; justify-content:center; gap:.375rem; border:1px solid var(--mk-border); border-radius:var(--mk-r); background:var(--mk-surface); color:var(--mk-text-2); font-weight:600; font-size:.875rem; cursor:pointer; transition: border-color .15s, color .15s; }
+  .mk-page-btn:hover:not(:disabled) { border-color: var(--mk-border-2); color: var(--mk-text); }
+  .mk-page-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .mk-page-btn.active { background: var(--mk-accent); border-color: var(--mk-accent); color: var(--mk-on-accent); }
+
+  /* Горизонтальный скролл-снап (категории/чипы на мобиле) */
+  .mk-scroller { display:flex; gap:.625rem; overflow-x:auto; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; -ms-overflow-style:none; scrollbar-width:none; }
+  .mk-scroller::-webkit-scrollbar { display:none; }
+  .mk-scroller > * { scroll-snap-align:start; flex-shrink:0; }
+
+  /* Бейдж поверх фото */
+  .mk-photo-badge { position:absolute; top:.625rem; left:.625rem; z-index:10; }
+  /* Тонкий разделитель */
+  .mk-divider { border-top:1px solid var(--mk-border); }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -837,16 +880,24 @@
 .dark .heading-mobile-3,
 .dark .page-title { color: #F1F5F9 !important; }
 
-/* ── Dark: маркет-поверхности (@apply инлайнит bg, .dark .bg-* не ловит) ── */
-.dark .market-cat-tile { background-color: #161C2E !important; border-color: rgba(255,255,255,0.07) !important; }
-.dark .market-cat-tile .icon-tile { background: rgba(17,115,212,0.18) !important; color: var(--brand-400) !important; }
-.dark .market-cat-tile span { color: #E2E8F0 !important; }
-.dark .market-search { background-color: #0D1117 !important; border-color: rgba(255,255,255,0.1) !important; color: #F1F5F9 !important; }
-.dark .market-qty { background-color: #0D1117 !important; border-color: rgba(255,255,255,0.1) !important; }
-.dark .market-qty-btn { color: #94A3B8 !important; }
-.dark .market-qty-val { color: #F1F5F9 !important; }
-.dark .market-page-btn { background-color: #161C2E !important; border-color: rgba(255,255,255,0.1) !important; color: #CBD5E1 !important; }
-.dark .market-page-btn.active { background-color: var(--brand-600) !important; color: #fff !important; }
+/* ── Dark: маркет «Graphite» — переопределяем только --mk-* токены ── */
+.dark .market {
+  --mk-bg:           #0C1019;
+  --mk-surface:      #161B26;
+  --mk-surface-2:    #1F2633;
+  --mk-text:         #F1F5F9;
+  --mk-text-2:       #B2BCCC;
+  --mk-text-3:       #8A95A6;
+  --mk-border:       rgba(255,255,255,0.09);
+  --mk-border-2:     rgba(255,255,255,0.16);
+  --mk-accent:       #8FA0C8;
+  --mk-accent-hover: #A6B5D8;
+  --mk-accent-weak:  rgba(143,160,200,0.16);
+  --mk-on-accent:    #0C1019;
+  --mk-focus:        rgba(143,160,200,0.40);
+  --mk-shadow:    0 1px 2px rgba(0,0,0,0.4);
+  --mk-shadow-md: 0 8px 20px -8px rgba(0,0,0,0.6);
+}
 
 /* ── Dark: breadcrumbs ── */
 .dark nav[style*="color: #94A3B8"] { color: #4B5563 !important; }

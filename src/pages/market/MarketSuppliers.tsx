@@ -1,161 +1,79 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { motion, AnimatePresence } from 'framer-motion'
 import { AlertCircle, Search, Store } from 'lucide-react'
 import { getMarketSuppliers } from '@/services/marketplaceService'
 import { SupplierCard, pluralizeParts } from '@/components/market/SupplierCard'
 import EmptyState from '@/components/ui/EmptyState'
 
 // ============================================================================
-// /market/suppliers — публичный список разборок
+// /market/suppliers — список разборок (Graphite)
 // ============================================================================
-
-/** Skeleton-карточка разборки */
-function SkeletonSupplierCard() {
-  return (
-    <div className="card p-4 flex items-start gap-3.5">
-      <div className="w-12 h-12 animate-shimmer rounded-2xl flex-shrink-0" />
-      <div className="flex-1 space-y-2">
-        <div className="h-4 animate-shimmer rounded-lg w-3/4" />
-        <div className="h-3 animate-shimmer rounded-lg w-1/2" />
-        <div className="h-3 animate-shimmer rounded-lg w-2/3" />
-      </div>
-    </div>
-  )
-}
 
 export function MarketSuppliers() {
   const [search, setSearch] = useState('')
 
   const { data: suppliers, isLoading, isError } = useQuery({
-    queryKey: ['market', 'suppliers'],
-    queryFn: getMarketSuppliers,
-    staleTime: 5 * 60 * 1000,
+    queryKey: ['market', 'suppliers'], queryFn: getMarketSuppliers, staleTime: 5 * 60 * 1000,
   })
 
   const filtered = useMemo(() => {
     const list = suppliers ?? []
     const q = search.trim().toLowerCase()
     if (!q) return list
-    return list.filter(
-      s =>
-        s.name.toLowerCase().includes(q) ||
-        (s.address ?? '').toLowerCase().includes(q)
-    )
+    return list.filter(s => s.name.toLowerCase().includes(q) || (s.address ?? '').toLowerCase().includes(q))
   }, [suppliers, search])
 
   if (isLoading) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.2 }}
-        className="space-y-4"
-      >
-        <div>
-          <div className="h-7 animate-shimmer rounded-xl w-32 mb-1" />
-          <div className="h-4 animate-shimmer rounded-lg w-48" />
-        </div>
-        <div className="h-11 animate-shimmer rounded-xl max-w-md" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <SkeletonSupplierCard key={i} />
-          ))}
-        </div>
-      </motion.div>
+      <div className="space-y-4">
+        <div className="h-7 rounded-xl w-32" style={{ background: 'var(--mk-surface-2)' }} />
+        <div className="h-11 rounded-xl max-w-md" style={{ background: 'var(--mk-surface-2)' }} />
+        <div className="mk-grid-wide">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="mk-card h-24" aria-hidden="true" />)}</div>
+      </div>
     )
   }
 
   if (isError) {
-    return (
-      <EmptyState
-        icon={AlertCircle}
-        title="Не удалось загрузить разборки"
-        description="Проверьте соединение и обновите страницу"
-      />
-    )
+    return <EmptyState icon={AlertCircle} title="Не удалось загрузить разборки" description="Проверьте соединение и обновите страницу" />
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className="space-y-5"
-    >
-      {/* Заголовок + счётчик */}
+    <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
         <div>
-          <h1 className="page-title">Разборки</h1>
-          <p className="page-subtitle">
+          <h1 className="mk-h1">Разборки</h1>
+          <p className="mk-sub mt-1" aria-live="polite">
             {filtered.length > 0 && search.trim()
               ? `Найдено: ${filtered.length} из ${suppliers?.length ?? 0}`
               : `Всего разборок: ${suppliers?.length ?? 0}`}
           </p>
         </div>
-
-        {/* Суммарно товаров — плашка */}
         {!search.trim() && suppliers && suppliers.length > 0 && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-50 border border-green-200/60 text-xs font-bold text-green-700 self-start sm:self-auto">
+          <span className="inline-flex items-center gap-1.5 px-3 h-9 rounded-full text-xs font-bold self-start sm:self-auto" style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
             <Store className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" />
-            {pluralizeParts(suppliers.reduce((sum, s) => sum + s.availableParts, 0))} в наличии
-          </div>
+            {pluralizeParts(suppliers.reduce((s, x) => s + x.availableParts, 0))} в наличии
+          </span>
         )}
       </div>
 
-      {/* Поиск по названию (локальный) */}
       <div className="relative max-w-md">
-        <Search
-          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
-          strokeWidth={1.5}
-          aria-hidden="true"
-        />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none mk-meta" strokeWidth={1.5} aria-hidden="true" />
         <input
-          type="search"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Поиск разборки по названию…"
-          className="form-input pl-10 min-h-[44px]"
-          aria-label="Поиск разборки по названию"
+          type="search" value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Поиск разборки по названию…" className="mk-input mk-search" aria-label="Поиск разборки по названию"
         />
       </div>
 
-      {/* Сетка / пусто */}
-      <AnimatePresence mode="wait">
-        {filtered.length === 0 ? (
-          <motion.div
-            key="empty"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <EmptyState
-              icon={Store}
-              title={search.trim() ? 'Ничего не найдено' : 'Разборок пока нет'}
-              description={
-                search.trim()
-                  ? 'Попробуйте изменить запрос'
-                  : 'Активные разборки появятся здесь'
-              }
-            />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="list"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger-children"
-          >
-            {filtered.map(s => (
-              <SupplierCard key={s.id} supplier={s} />
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon={Store}
+          title={search.trim() ? 'Ничего не найдено' : 'Разборок пока нет'}
+          description={search.trim() ? 'Попробуйте изменить запрос' : 'Активные разборки появятся здесь'}
+        />
+      ) : (
+        <div className="mk-grid-wide">{filtered.map(s => <SupplierCard key={s.id} supplier={s} />)}</div>
+      )}
+    </div>
   )
 }
 

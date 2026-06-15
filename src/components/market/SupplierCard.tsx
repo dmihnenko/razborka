@@ -3,7 +3,7 @@ import { ChevronRight, MapPin, Package, Phone, Store } from 'lucide-react'
 import type { MarketSupplier } from '@/types/marketplace'
 
 // ============================================================================
-// Карточка разборки для списка /market/suppliers
+// Карточка разборки (Graphite) для /market/suppliers и главной
 // ============================================================================
 
 export interface SupplierCardProps {
@@ -26,50 +26,43 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
   return (
     <Link
       to={`/market/supplier/${supplier.id}`}
-      className="card card-interactive p-4 flex items-start gap-3.5 group"
+      className="mk-card mk-card-interactive p-4 flex items-start gap-3.5 group"
       aria-label={`Разборка ${supplier.name}`}
     >
-      <span className="icon-tile-lg bg-primary/10 text-primary">
+      <span className="mk-tile-icon w-12 h-12 rounded-2xl flex-shrink-0">
         <Store className="w-6 h-6" strokeWidth={1.5} aria-hidden="true" />
       </span>
 
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-bold text-gray-900 leading-snug truncate group-hover:text-primary transition-colors">
+        <h3 className="text-sm font-semibold leading-snug truncate" style={{ color: 'var(--mk-text)' }}>
           {supplier.name}
         </h3>
 
-        <p className="flex items-center gap-1.5 text-xs font-medium mt-1.5">
-          <Package
-            className={`w-3.5 h-3.5 flex-shrink-0 ${hasParts ? 'text-green-600' : 'text-gray-400'}`}
-            strokeWidth={1.5}
-            aria-hidden="true"
-          />
-          <span className={hasParts ? 'text-gray-600' : 'text-gray-400'}>
-            {hasParts
-              ? `${pluralizeParts(supplier.availableParts)} в наличии`
-              : 'Нет товаров в наличии'}
-          </span>
+        <p className="flex items-center gap-1.5 text-xs font-medium mt-1.5" style={{ color: hasParts ? 'var(--mk-text-2)' : 'var(--mk-text-3)' }}>
+          <Package className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
+          {hasParts ? `${pluralizeParts(supplier.availableParts)} в наличии` : 'Нет товаров в наличии'}
         </p>
 
         {supplier.phone && (
-          <p className="flex items-center gap-1.5 text-xs text-gray-500 mt-1 truncate">
-            <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
+          <p className="flex items-center gap-1.5 text-xs mt-1 truncate mk-meta">
+            <Phone className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
             {supplier.phone}
           </p>
         )}
 
         {supplier.address && (
-          <p className="flex items-center gap-1.5 text-xs text-gray-500 mt-1 truncate">
-            <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-gray-400" strokeWidth={1.5} aria-hidden="true" />
+          <p className="flex items-center gap-1.5 text-xs mt-1 truncate mk-meta">
+            <MapPin className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
             <span className="truncate">{supplier.address}</span>
           </p>
         )}
       </div>
 
       <ChevronRight
-        className="w-[18px] h-[18px] text-gray-300 flex-shrink-0 mt-1 transition-all group-hover:text-primary group-hover:translate-x-0.5"
+        className="w-[18px] h-[18px] flex-shrink-0 mt-1 transition-transform group-hover:translate-x-0.5"
         strokeWidth={1.5}
         aria-hidden="true"
+        style={{ color: 'var(--mk-text-3)' }}
       />
     </Link>
   )

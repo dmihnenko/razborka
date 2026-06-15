@@ -4,25 +4,20 @@ import { toast } from 'sonner'
 import type { MarketCompanyContact } from '@/types/marketplace'
 
 // ============================================================================
-// Карточка контактов продавца (разборки) — для детали товара и страницы разборки
+// Контакты продавца (Graphite) — для детали товара и страницы разборки
 // ============================================================================
 
 export interface SellerContactCardProps {
   company: MarketCompanyContact
-  /** id разборки для ссылки (по умолчанию company.id) */
   supplierId?: string
-  /** Скрыть кнопку «Позвонить» (напр. на странице товара) */
   hideCallButton?: boolean
-  /** Если задан — кнопка Telegram становится «Написать» и копирует этот шаблон в буфер */
   telegramMessage?: string
 }
 
-/** Чистый номер для tel: */
 export function cleanPhone(p: string): string {
   return p.replace(/[^\d+]/g, '')
 }
 
-/** Telegram-значение → кликабельная ссылка (username, @username, +номер, url) */
 export function telegramHref(tg: string | null | undefined): string | null {
   if (!tg) return null
   const v = tg.trim()
@@ -40,6 +35,8 @@ function TelegramIcon({ className }: { className?: string }) {
   )
 }
 
+const TILE = 'inline-flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0'
+
 export function SellerContactCard({ company, supplierId, hideCallButton, telegramMessage }: SellerContactCardProps) {
   const phoneRaw = company.phone ? cleanPhone(company.phone) : null
   const tgHref = telegramHref(company.telegram)
@@ -54,17 +51,15 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
   }
 
   return (
-    <div className="card p-5">
-      {/* Шапка: продавец */}
-      <Link to={supplierLink} className="flex items-center gap-3 mb-4 group" aria-label={`Разборка ${company.name}`}>
-        <span className="icon-tile bg-primary/10 text-primary">
+    <div className="mk-card p-5">
+      {/* Продавец */}
+      <Link to={supplierLink} className="flex items-center gap-3 mb-4" aria-label={`Разборка ${company.name}`}>
+        <span className="mk-tile-icon">
           <Store className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" />
         </span>
         <span className="min-w-0">
-          <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-            Продавец
-          </span>
-          <span className="block text-base font-extrabold tracking-tight text-gray-900 leading-snug truncate group-hover:text-primary transition-colors">
+          <span className="block text-[10px] font-bold uppercase tracking-wider mk-meta">Продавец</span>
+          <span className="block text-base font-bold tracking-tight leading-snug truncate" style={{ color: 'var(--mk-text)' }}>
             {company.name}
           </span>
         </span>
@@ -73,32 +68,24 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
       {/* Контакты */}
       <div className="space-y-1 mb-3 -mx-1.5">
         {company.phone && phoneRaw && (
-          <a
-            href={`tel:${phoneRaw}`}
-            className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-xl text-sm text-gray-700 hover:bg-gray-50 hover:text-primary active:scale-[0.99] transition-all"
-            aria-label={`Позвонить ${company.phone}`}
-          >
-            <span className="icon-tile-sm bg-green-50 text-green-600">
+          <a href={`tel:${phoneRaw}`} className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-xl text-sm transition-colors hover:bg-[var(--mk-surface-2)]" style={{ color: 'var(--mk-text-2)' }} aria-label={`Позвонить ${company.phone}`}>
+            <span className={TILE} style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
               <Phone className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
             </span>
-            <span className="font-semibold">{company.phone}</span>
+            <span className="font-semibold" style={{ color: 'var(--mk-text)' }}>{company.phone}</span>
           </a>
         )}
         {company.address && (
-          <p className="flex items-start gap-2.5 px-1.5 py-1.5 text-sm text-gray-600">
-            <span className="icon-tile-sm bg-orange-50 text-orange-500">
+          <p className="flex items-start gap-2.5 px-1.5 py-1.5 text-sm" style={{ color: 'var(--mk-text-2)' }}>
+            <span className={`${TILE} mt-0.5`} style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
               <MapPin className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
             </span>
             <span className="leading-snug pt-1">{company.address}</span>
           </p>
         )}
         {company.email && (
-          <a
-            href={`mailto:${company.email}`}
-            className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50 hover:text-primary active:scale-[0.99] transition-all min-w-0"
-            aria-label={`Написать на почту ${company.email}`}
-          >
-            <span className="icon-tile-sm bg-primary/10 text-primary">
+          <a href={`mailto:${company.email}`} className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-xl text-sm transition-colors hover:bg-[var(--mk-surface-2)] min-w-0" style={{ color: 'var(--mk-text-2)' }} aria-label={`Написать на почту ${company.email}`}>
+            <span className={TILE} style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
               <Mail className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
             </span>
             <span className="truncate">{company.email}</span>
@@ -107,19 +94,13 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
       </div>
 
       {company.description && (
-        <p className="text-xs text-gray-500 leading-relaxed mb-4 whitespace-pre-wrap">
-          {company.description}
-        </p>
+        <p className="text-xs leading-relaxed mb-4 whitespace-pre-wrap mk-meta">{company.description}</p>
       )}
 
       {(showCall || tgHref) && (
         <div className="flex flex-wrap gap-2.5">
           {showCall && (
-            <a
-              href={`tel:${phoneRaw}`}
-              className="btn-primary flex-1 sm:flex-none min-w-[140px] min-h-[44px]"
-              aria-label={`Позвонить ${company.phone}`}
-            >
+            <a href={`tel:${phoneRaw}`} className="mk-btn mk-btn-accent flex-1 sm:flex-none min-w-[140px]" aria-label={`Позвонить ${company.phone}`}>
               <Phone className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> Позвонить
             </a>
           )}
@@ -129,12 +110,8 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
               target="_blank"
               rel="noopener noreferrer"
               onClick={telegramMessage ? handleWriteTelegram : undefined}
-              className="btn flex-1 sm:flex-none min-w-[140px] min-h-[44px] px-4 py-2 text-sm text-white"
+              className="mk-btn mk-btn-outline flex-1 sm:flex-none min-w-[140px]"
               aria-label={telegramMessage ? 'Написать в Telegram' : 'Открыть Telegram разборки'}
-              style={{
-                backgroundImage: 'linear-gradient(180deg, #2AABEE 0%, #229ED9 100%)',
-                boxShadow: '0 1px 2px rgba(34,158,217,0.35), 0 4px 12px -2px rgba(34,158,217,0.35)',
-              }}
             >
               <TelegramIcon className="w-4 h-4 fill-current" /> {telegramMessage ? 'Написать' : 'Telegram'}
             </a>

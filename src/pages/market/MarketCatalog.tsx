@@ -1,34 +1,25 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, PackageSearch } from 'lucide-react'
 import type { MarketCondition, MarketFilters, MarketSort } from '@/types/marketplace'
-import {
-  getMarketCategories,
-  getMarketMakes,
-  getMarketParts,
-  MARKET_PAGE_SIZE,
-} from '@/services/marketplaceService'
+import { getMarketCategories, getMarketMakes, getMarketParts, MARKET_PAGE_SIZE } from '@/services/marketplaceService'
 import { FilterBar } from '@/components/market/FilterBar'
 import { MarketProductCard } from '@/components/market/MarketProductCard'
 import EmptyState from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
 
 // ============================================================================
-// /market/catalog — публичный каталог запчастей (анонимно, внутри MarketLayout)
-// Ключевые фильтры синхронизируются с URL (?search/category/make/condition/sort/page)
+// /market/catalog — каталог (Graphite). Фильтры синхронятся с URL.
 // ============================================================================
 
 const CONDITIONS: MarketCondition[] = ['new', 'used', 'damaged']
 const SORTS: MarketSort[] = ['new', 'price_asc', 'price_desc']
 
-/** Читаем фильтры из query-строки (только валидные значения) */
 function filtersFromParams(params: URLSearchParams): MarketFilters {
   const condition = params.get('condition') as MarketCondition | null
   const sort = params.get('sort') as MarketSort | null
   const page = parseInt(params.get('page') ?? '', 10)
-
   return {
     search: params.get('search')?.trim() || undefined,
     categoryId: params.get('category') || undefined,
@@ -40,7 +31,6 @@ function filtersFromParams(params: URLSearchParams): MarketFilters {
   }
 }
 
-/** Пишем ключевые фильтры обратно в query-строку (пустые — убираем) */
 function paramsFromFilters(f: MarketFilters): Record<string, string> {
   const out: Record<string, string> = {}
   if (f.search) out.search = f.search
@@ -52,25 +42,21 @@ function paramsFromFilters(f: MarketFilters): Record<string, string> {
   return out
 }
 
-/** Склонение «N товаров» */
 function pluralizeResults(n: number): string {
-  const mod10 = n % 10
-  const mod100 = n % 100
+  const mod10 = n % 10, mod100 = n % 100
   if (mod10 === 1 && mod100 !== 11) return `${n} товар`
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} товара`
   return `${n} товаров`
 }
 
-/** Skeleton-карточка для загрузки */
 function SkeletonCard() {
   return (
-    <div className="card p-0 overflow-hidden">
-      <div className="aspect-[4/3] animate-shimmer rounded-t-2xl" />
-      <div className="p-4 space-y-2.5">
-        <div className="h-3.5 animate-shimmer rounded-lg w-3/4" />
-        <div className="h-3 animate-shimmer rounded-lg w-1/2" />
-        <div className="h-5 animate-shimmer rounded-lg w-2/5 mt-3" />
-        <div className="h-8 animate-shimmer rounded-xl mt-2" />
+    <div className="mk-card overflow-hidden" aria-hidden="true">
+      <div className="aspect-[4/3]" style={{ background: 'var(--mk-surface-2)' }} />
+      <div className="p-3 space-y-2.5">
+        <div className="h-3.5 rounded-lg w-3/4" style={{ background: 'var(--mk-surface-2)' }} />
+        <div className="h-3 rounded-lg w-1/2" style={{ background: 'var(--mk-surface-2)' }} />
+        <div className="h-7 rounded-xl w-full mt-2" style={{ background: 'var(--mk-surface-2)' }} />
       </div>
     </div>
   )
@@ -80,18 +66,13 @@ export function MarketCatalog() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [filters, setFilters] = useState<MarketFilters>(() => filtersFromParams(searchParams))
 
-  // Внешнее изменение URL (поиск из шапки, кнопка «назад») → подхватываем в состояние
   useEffect(() => {
     const next = filtersFromParams(searchParams)
     setFilters(prev => {
       const changed =
-        prev.search !== next.search ||
-        prev.categoryId !== next.categoryId ||
-        prev.make !== next.make ||
-        prev.condition !== next.condition ||
-        prev.sort !== next.sort ||
-        (prev.page ?? 1) !== (next.page ?? 1)
-      // Локальные minPrice/maxPrice не теряем — они не в URL
+        prev.search !== next.search || prev.categoryId !== next.categoryId ||
+        prev.make !== next.make || prev.condition !== next.condition ||
+        prev.sort !== next.sort || (prev.page ?? 1) !== (next.page ?? 1)
       return changed ? { ...prev, ...next } : prev
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -107,25 +88,13 @@ export function MarketCatalog() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // ── Данные ────────────────────────────────────────────────────────────────
-
   const { data, isLoading, isError, isFetching, isPlaceholderData } = useQuery({
     queryKey: ['market-parts', filters],
     queryFn: () => getMarketParts(filters),
     placeholderData: keepPreviousData,
   })
-
-  const { data: categories = [] } = useQuery({
-    queryKey: ['market-categories'],
-    queryFn: getMarketCategories,
-    staleTime: 5 * 60 * 1000,
-  })
-
-  const { data: makes = [] } = useQuery({
-    queryKey: ['market-makes'],
-    queryFn: getMarketMakes,
-    staleTime: 5 * 60 * 1000,
-  })
+  const { data: categories = [] } = useQuery({ queryKey: ['market-categories'], queryFn: getMarketCategories, staleTime: 5 * 60 * 1000 })
+  const { data: makes = [] } = useQuery({ queryKey: ['market-makes'], queryFn: getMarketMakes, staleTime: 5 * 60 * 1000 })
 
   const items = data?.items ?? []
   const total = data?.total ?? 0
@@ -133,186 +102,77 @@ export function MarketCatalog() {
   const page = filters.page ?? 1
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
-  // Если после смены фильтров страница «улетела» за пределы — возвращаемся на 1-ю
   useEffect(() => {
     if (!isLoading && !isPlaceholderData && total > 0 && page > totalPages) setPage(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [total, totalPages, page, isLoading, isPlaceholderData])
 
   const hasActiveFilters = useMemo(
-    () =>
-      Boolean(
-        filters.search ||
-          filters.categoryId ||
-          filters.make ||
-          filters.condition ||
-          filters.minPrice ||
-          filters.maxPrice
-      ),
+    () => Boolean(filters.search || filters.categoryId || filters.make || filters.condition || filters.minPrice || filters.maxPrice),
     [filters]
   )
 
-  // ── Рендер ────────────────────────────────────────────────────────────────
+  const pageNumbers = Array.from({ length: Math.min(totalPages, 5) }, (_, i) =>
+    totalPages <= 5 ? i + 1 : page <= 3 ? i + 1 : page >= totalPages - 2 ? totalPages - 4 + i : page - 2 + i
+  )
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className="space-y-4"
-    >
-      {/* Заголовок */}
+    <div className="space-y-4">
       <div>
-        <h1 className="page-title">Каталог запчастей</h1>
-        <p className="page-subtitle">
-          Б/у и новые запчасти от авторазборок — без посредников
-        </p>
+        <h1 className="mk-h1">Каталог запчастей</h1>
+        <p className="mk-sub mt-1">Б/у и новые запчасти от авторазборок — без посредников</p>
       </div>
 
       <FilterBar value={filters} onChange={applyFilters} categories={categories} makes={makes} />
 
-      {/* Счётчик результатов + индикатор фоновой подгрузки */}
       <div className="flex items-center gap-2 min-h-[20px]" aria-live="polite">
         {!isLoading && !isError && total > 0 && (
-          <p className="text-sm font-medium text-gray-500">
-            Найдено: <span className="font-bold text-gray-700">{pluralizeResults(total)}</span>
-          </p>
+          <p className="text-sm mk-meta">Найдено: <span className="font-bold" style={{ color: 'var(--mk-text)' }}>{pluralizeResults(total)}</span></p>
         )}
         {isFetching && !isLoading && <Spinner size="sm" className="!h-4 !w-4" />}
       </div>
 
-      <AnimatePresence mode="wait">
-        {isLoading ? (
-          <motion.div
-            key="skeleton"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="market-grid"
-          >
-            {Array.from({ length: 10 }).map((_, i) => (
-              <SkeletonCard key={i} />
-            ))}
-          </motion.div>
-        ) : isError ? (
-          <motion.div
-            key="error"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <EmptyState
-              icon={PackageSearch}
-              title="Не удалось загрузить каталог"
-              description="Проверьте подключение к интернету и попробуйте обновить страницу."
-            />
-          </motion.div>
-        ) : items.length === 0 ? (
-          <motion.div
-            key="empty"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <EmptyState
-              icon={PackageSearch}
-              title="Ничего не найдено"
-              description={
-                hasActiveFilters
-                  ? 'Попробуйте изменить запрос или сбросить фильтры.'
-                  : 'В каталоге пока нет доступных запчастей — загляните позже.'
-              }
-              action={
-                hasActiveFilters ? (
-                  <button
-                    type="button"
-                    onClick={() => applyFilters({ sort: filters.sort, page: 1, pageSize })}
-                    className="btn-secondary"
-                  >
-                    Сбросить фильтры
+      {isLoading ? (
+        <div className="mk-grid">{Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)}</div>
+      ) : isError ? (
+        <EmptyState icon={PackageSearch} title="Не удалось загрузить каталог" description="Проверьте подключение к интернету и попробуйте обновить страницу." />
+      ) : items.length === 0 ? (
+        <EmptyState
+          icon={PackageSearch}
+          title="Ничего не найдено"
+          description={hasActiveFilters ? 'Попробуйте изменить запрос или сбросить фильтры.' : 'В каталоге пока нет доступных запчастей — загляните позже.'}
+          action={hasActiveFilters ? (
+            <button type="button" onClick={() => applyFilters({ sort: filters.sort, page: 1, pageSize })} className="mk-btn mk-btn-outline">Сбросить фильтры</button>
+          ) : undefined}
+        />
+      ) : (
+        <>
+          <div className={`mk-grid transition-opacity ${isPlaceholderData ? 'opacity-60 pointer-events-none' : ''}`}>
+            {items.map(part => <MarketProductCard key={part.id} part={part} />)}
+          </div>
+
+          {totalPages > 1 && (
+            <nav className="flex items-center justify-center gap-2 pt-6 pb-2" aria-label="Постраничная навигация">
+              <button type="button" onClick={() => setPage(page - 1)} disabled={page <= 1 || isPlaceholderData} className="mk-page-btn" aria-label="Предыдущая страница">
+                <ChevronLeft className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
+                <span className="hidden sm:inline">Назад</span>
+              </button>
+              <div className="flex items-center gap-1">
+                {pageNumbers.map(n => (
+                  <button key={n} type="button" onClick={() => setPage(n)} disabled={isPlaceholderData} className={`mk-page-btn !px-0 w-11 ${n === page ? 'active' : ''}`} aria-label={`Страница ${n}`} aria-current={n === page ? 'page' : undefined}>
+                    {n}
                   </button>
-                ) : undefined
-              }
-            />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="results"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
-          >
-            {/* Сетка товаров; при фоновой подгрузке слегка гасим прошлую страницу */}
-            <div
-              className={`market-grid transition-opacity stagger-children ${
-                isPlaceholderData ? 'opacity-60 pointer-events-none' : ''
-              }`}
-            >
-              {items.map(part => (
-                <MarketProductCard key={part.id} part={part} />
-              ))}
-            </div>
-
-            {/* Пагинация */}
-            {totalPages > 1 && (
-              <nav
-                className="flex items-center justify-center gap-3 pt-6 pb-4"
-                aria-label="Постраничная навигация"
-              >
-                <button
-                  type="button"
-                  onClick={() => setPage(page - 1)}
-                  disabled={page <= 1 || isPlaceholderData}
-                  className="market-page-btn active:scale-[0.97]"
-                  aria-label="Предыдущая страница"
-                >
-                  <ChevronLeft className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
-                  <span className="hidden sm:inline">Назад</span>
-                </button>
-
-                <div className="flex items-center gap-1">
-                  {/* Кнопки страниц */}
-                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                    const pageNum = totalPages <= 5
-                      ? i + 1
-                      : page <= 3
-                        ? i + 1
-                        : page >= totalPages - 2
-                          ? totalPages - 4 + i
-                          : page - 2 + i
-                    return (
-                      <button
-                        key={pageNum}
-                        type="button"
-                        onClick={() => setPage(pageNum)}
-                        disabled={isPlaceholderData}
-                        className={`market-page-btn !px-0 w-11 active:scale-[0.95] ${pageNum === page ? 'active' : ''}`}
-                        aria-label={`Страница ${pageNum}`}
-                        aria-current={pageNum === page ? 'page' : undefined}
-                      >
-                        {pageNum}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setPage(page + 1)}
-                  disabled={page >= totalPages || isPlaceholderData}
-                  className="market-page-btn active:scale-[0.97]"
-                  aria-label="Следующая страница"
-                >
-                  <span className="hidden sm:inline">Вперёд</span>
-                  <ChevronRight className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
-                </button>
-              </nav>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+                ))}
+              </div>
+              <button type="button" onClick={() => setPage(page + 1)} disabled={page >= totalPages || isPlaceholderData} className="mk-page-btn" aria-label="Следующая страница">
+                <span className="hidden sm:inline">Вперёд</span>
+                <ChevronRight className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
+              </button>
+            </nav>
+          )}
+        </>
+      )}
+    </div>
   )
 }
 
