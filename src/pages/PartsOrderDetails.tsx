@@ -171,6 +171,15 @@ export default function PartsOrderDetails() {
     }
   }, [order?.customer?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* ── вычисляем итог на клиенте ──────────────────────────────── */
+  const getItemCurrency = (item: any): 'UAH' | 'USD' =>
+    item.price_at_sale_currency || item.inventory_item?.price_currency || 'USD'
+
+  const computedTotalUAH = (order?.items ?? []).reduce((sum, item: any) => {
+    const amount = (item.price_at_sale || 0) * (item.quantity || 1)
+    return sum + (getItemCurrency(item) === 'USD' ? amount * (exchangeRate || 41) : amount)
+  }, 0)
+
   /* ── Префилл стоимости ТТН из итога заказа ─────────────────── */
   useEffect(() => {
     if (computedTotalUAH > 0) {
@@ -251,15 +260,6 @@ export default function PartsOrderDetails() {
     },
     onError: (err: any) => toast.error(err?.message || 'Ошибка сохранения данных клиента'),
   })
-
-  /* ── вычисляем итог на клиенте ──────────────────────────────── */
-  const getItemCurrency = (item: any): 'UAH' | 'USD' =>
-    item.price_at_sale_currency || item.inventory_item?.price_currency || 'USD'
-
-  const computedTotalUAH = (order?.items ?? []).reduce((sum, item: any) => {
-    const amount = (item.price_at_sale || 0) * (item.quantity || 1)
-    return sum + (getItemCurrency(item) === 'USD' ? amount * (exchangeRate || 41) : amount)
-  }, 0)
 
   /* ── guard: нет компании ────────────────────────────────────── */
   if (!partsCompanyId) return <PartsAccessDenied />

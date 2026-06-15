@@ -98,7 +98,6 @@ export function MarketHome() {
           <Zap className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Запчасти напрямую от авторазборок
         </span>
         <h1 id="mk-hero-title" className="mk-h1 max-w-2xl mx-auto">Найдите нужную запчасть с фото и ценой</h1>
-        <p className="mt-2.5 mk-sub max-w-md mx-auto">Б/у и новые — напрямую от разборок, без посредников</p>
 
         <form onSubmit={handleSearch} role="search" className="mt-6 max-w-xl mx-auto">
           <div className="flex gap-2">

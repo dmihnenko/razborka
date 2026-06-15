@@ -28,15 +28,40 @@ function MarketLayoutInner() {
   const { totalCount } = useCart()
   const [search, setSearch] = useState('')
   const isHome = location.pathname === '/market' || location.pathname === '/market/'
-  // На каталоге свой поиск (FilterBar) — поиск в шапке скрываем, чтобы не дублировать
+  // Каталог и разборки имеют свой поиск/листинг — поиск в шапке скрываем, чтобы не дублировать.
+  // Когда поиска нет, табы «Каталог/Разборки» поднимаем в первый ряд (десктоп).
   const isCatalog = location.pathname.startsWith('/market/catalog')
-  const showHeaderSearch = !isHome && !isCatalog
+  const isSupplier = location.pathname.startsWith('/market/supplier')
+  const showHeaderSearch = !isHome && !isCatalog && !isSupplier
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault()
     const q = search.trim()
     navigate(q ? `/market/catalog?search=${encodeURIComponent(q)}` : '/market/catalog')
   }
+
+  const navTabs = (
+    <div className="inline-flex items-center gap-1 p-1 rounded-[10px]" style={{ background: 'var(--mk-surface-2)' }}>
+      <NavLink
+        to="/market/catalog"
+        className={navTab}
+        style={({ isActive }) => isActive
+          ? { background: 'var(--mk-surface)', color: 'var(--mk-text)', boxShadow: 'var(--mk-shadow)' }
+          : { color: 'var(--mk-text-2)' }}
+      >
+        Каталог
+      </NavLink>
+      <NavLink
+        to="/market/suppliers"
+        className={navTab}
+        style={({ isActive }) => isActive
+          ? { background: 'var(--mk-surface)', color: 'var(--mk-text)', boxShadow: 'var(--mk-shadow)' }
+          : { color: 'var(--mk-text-2)' }}
+      >
+        Разборки
+      </NavLink>
+    </div>
+  )
 
   return (
     <div className="market min-h-dvh flex flex-col">
@@ -82,6 +107,10 @@ function MarketLayoutInner() {
               </form>
             )}
 
+            {!showHeaderSearch && (
+              <div className="hidden md:flex flex-1 justify-center">{navTabs}</div>
+            )}
+
             <div className="flex items-center gap-2 ml-auto flex-shrink-0">
               <Link to="/market/cart" className="mk-icon-btn relative" aria-label={`Корзина${totalCount ? `, товаров: ${totalCount}` : ' (пусто)'}`}>
                 <ShoppingCart className="w-5 h-5" aria-hidden="true" />
@@ -119,28 +148,12 @@ function MarketLayoutInner() {
             </form>
           )}
 
-          {/* Ряд 3: навигация */}
-          <nav className="flex items-center justify-center pb-2.5" aria-label="Разделы маркета">
-            <div className="inline-flex items-center gap-1 p-1 rounded-[10px]" style={{ background: 'var(--mk-surface-2)' }}>
-              <NavLink
-                to="/market/catalog"
-                className={navTab}
-                style={({ isActive }) => isActive
-                  ? { background: 'var(--mk-surface)', color: 'var(--mk-text)', boxShadow: 'var(--mk-shadow)' }
-                  : { color: 'var(--mk-text-2)' }}
-              >
-                Каталог
-              </NavLink>
-              <NavLink
-                to="/market/suppliers"
-                className={navTab}
-                style={({ isActive }) => isActive
-                  ? { background: 'var(--mk-surface)', color: 'var(--mk-text)', boxShadow: 'var(--mk-shadow)' }
-                  : { color: 'var(--mk-text-2)' }}
-              >
-                Разборки
-              </NavLink>
-            </div>
+          {/* Ряд 3: навигация — на мобиле всегда; на десктопе только когда табы не в первом ряду */}
+          <nav
+            className={`${showHeaderSearch ? 'flex' : 'flex md:hidden'} items-center justify-center pb-2.5`}
+            aria-label="Разделы маркета"
+          >
+            {navTabs}
           </nav>
         </div>
       </header>
