@@ -423,6 +423,100 @@
 
   /* ── Tabular-nums helper ─────────────────────────────────── */
   .tabular { font-variant-numeric: tabular-nums; }
+
+  /* ═══════════════════════════════════════════════════════════
+     MARKETPLACE (/market) — публичный маркет-язык «Azure Market».
+     Отдельная поверхность (MarketLayout), но на токенах бренда.
+     Все цвета/градиенты — через var(--brand-*), без inline-хардкодов.
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Брендовый градиент-поверхность (герой, CTA) */
+  .market-surface {
+    background-image: linear-gradient(135deg, #0A3A6B 0%, var(--brand-700) 42%, var(--brand-600) 78%, var(--brand-500) 100%);
+    color: #fff;
+  }
+
+  /* Крупный поиск (герой/шапка) */
+  .market-search {
+    @apply w-full rounded-2xl bg-white text-gray-900 placeholder-gray-400
+           pl-12 pr-4 text-sm sm:text-base border border-gray-200
+           transition-shadow;
+    height: 3rem;
+    box-shadow: 0 1px 2px rgba(16,24,40,0.05), 0 6px 16px -8px rgba(16,24,40,0.12);
+  }
+  .market-search:focus {
+    @apply outline-none border-transparent;
+    box-shadow: 0 0 0 3px rgb(17 115 212 / 0.25), 0 6px 16px -8px rgba(16,24,40,0.18);
+  }
+
+  /* Плитка категории (маркет-навигация) — крупный тач-таргет */
+  .market-cat-tile {
+    @apply flex flex-col items-center justify-center gap-2 rounded-2xl bg-white
+           border border-gray-200 px-3 py-3.5 text-center
+           transition-all duration-150 cursor-pointer;
+    min-height: 88px;
+  }
+  .market-cat-tile:hover {
+    border-color: rgb(17 115 212 / 0.45);
+    box-shadow: 0 8px 20px -10px rgba(16,24,40,0.18);
+    transform: translateY(-2px);
+  }
+  .market-cat-tile .icon-tile { background: var(--brand-50); color: var(--brand-600); }
+
+  /* Горизонтальный скролл-снап ряд (категории/чипы на мобиле) */
+  .market-scroller {
+    @apply flex gap-2.5 overflow-x-auto scrollbar-hide;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+  .market-scroller > * { scroll-snap-align: start; flex-shrink: 0; }
+
+  /* Цена товара (брендовый акцент) */
+  .market-price { @apply text-lg font-extrabold tracking-tight; color: var(--brand-600); font-variant-numeric: tabular-nums; }
+  .market-price-lg { @apply text-2xl sm:text-3xl font-extrabold tracking-tight; color: var(--brand-600); font-variant-numeric: tabular-nums; }
+
+  /* Бейдж поверх фото товара */
+  .market-photo-badge {
+    @apply absolute top-2.5 left-2.5 backdrop-blur-sm shadow-sm z-10;
+  }
+
+  /* Иконочная кнопка «в корзину» поверх карточки — тач ≥44px */
+  .market-add-btn {
+    @apply inline-flex items-center justify-center rounded-xl text-white
+           transition-all duration-150 cursor-pointer flex-shrink-0;
+    width: 44px; height: 44px;
+    background-color: var(--brand-600);
+    box-shadow: 0 2px 8px -2px rgb(17 115 212 / 0.5);
+  }
+  .market-add-btn:hover { background-color: var(--brand-700); }
+  .market-add-btn:active { transform: scale(0.94); }
+  .market-add-btn:disabled { @apply opacity-40 cursor-not-allowed; }
+
+  /* Степпер количества — кнопки ≥44px (тач) */
+  .market-qty { @apply inline-flex items-center rounded-xl bg-gray-50 border border-gray-200 overflow-hidden; }
+  .market-qty-btn {
+    @apply inline-flex items-center justify-center text-gray-600 transition-colors cursor-pointer;
+    width: 44px; height: 44px;
+  }
+  .market-qty-btn:hover { @apply bg-gray-100 text-gray-900; }
+  .market-qty-btn:disabled { @apply opacity-40 cursor-not-allowed; }
+  .market-qty-val { @apply min-w-[2.5rem] text-center text-sm font-bold text-gray-900 tabular; }
+
+  /* Кнопка пагинации — тач ≥44px */
+  .market-page-btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white
+           text-sm font-semibold text-gray-700 transition-colors cursor-pointer px-4;
+    min-height: 44px; min-width: 44px;
+  }
+  .market-page-btn:hover:not(:disabled) { border-color: rgb(17 115 212 / 0.45); color: var(--brand-600); }
+  .market-page-btn:disabled { @apply opacity-40 cursor-not-allowed; }
+  .market-page-btn.active { @apply border-transparent text-white; background-color: var(--brand-600); }
+
+  /* Заголовок секции маркета со ссылкой справа */
+  .market-section-title { @apply text-lg sm:text-xl font-bold text-gray-900; letter-spacing: -0.02em; }
+
+  /* Сетка товаров — единый адаптив для всех экранов маркета */
+  .market-grid { @apply grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -743,6 +837,17 @@
 .dark .heading-mobile-3,
 .dark .page-title { color: #F1F5F9 !important; }
 
+/* ── Dark: маркет-поверхности (@apply инлайнит bg, .dark .bg-* не ловит) ── */
+.dark .market-cat-tile { background-color: #161C2E !important; border-color: rgba(255,255,255,0.07) !important; }
+.dark .market-cat-tile .icon-tile { background: rgba(17,115,212,0.18) !important; color: var(--brand-400) !important; }
+.dark .market-cat-tile span { color: #E2E8F0 !important; }
+.dark .market-search { background-color: #0D1117 !important; border-color: rgba(255,255,255,0.1) !important; color: #F1F5F9 !important; }
+.dark .market-qty { background-color: #0D1117 !important; border-color: rgba(255,255,255,0.1) !important; }
+.dark .market-qty-btn { color: #94A3B8 !important; }
+.dark .market-qty-val { color: #F1F5F9 !important; }
+.dark .market-page-btn { background-color: #161C2E !important; border-color: rgba(255,255,255,0.1) !important; color: #CBD5E1 !important; }
+.dark .market-page-btn.active { background-color: var(--brand-600) !important; color: #fff !important; }
+
 /* ── Dark: breadcrumbs ── */
 .dark nav[style*="color: #94A3B8"] { color: #4B5563 !important; }
 .dark nav span[style*="color: #374151"] { color: #CBD5E1 !important; }
@@ -871,4 +976,19 @@ svg.lucide {
     border-radius: 0 !important;
   }
   .no-print { display: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ДОСТУПНОСТЬ: уважение к prefers-reduced-motion
+   Гасим CSS-анимации/переходы и плавный скролл для пользователей,
+   которым важна сниженная анимация (вестибулярные расстройства и т.п.).
+   Framer Motion в коде маркета дополнительно использует useReducedMotion.
+   ═══════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

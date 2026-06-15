@@ -189,9 +189,9 @@ export function MarketCatalog() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4"
+            className="market-grid"
           >
-            {Array.from({ length: 8 }).map((_, i) => (
+            {Array.from({ length: 10 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
           </motion.div>
@@ -245,7 +245,7 @@ export function MarketCatalog() {
           >
             {/* Сетка товаров; при фоновой подгрузке слегка гасим прошлую страницу */}
             <div
-              className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 transition-opacity stagger-children ${
+              className={`market-grid transition-opacity stagger-children ${
                 isPlaceholderData ? 'opacity-60 pointer-events-none' : ''
               }`}
             >
@@ -264,9 +264,10 @@ export function MarketCatalog() {
                   type="button"
                   onClick={() => setPage(page - 1)}
                   disabled={page <= 1 || isPlaceholderData}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:border-gray-300 hover:shadow-card-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
+                  className="market-page-btn active:scale-[0.97]"
+                  aria-label="Предыдущая страница"
                 >
-                  <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
+                  <ChevronLeft className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
                   <span className="hidden sm:inline">Назад</span>
                 </button>
 
@@ -286,14 +287,8 @@ export function MarketCatalog() {
                         type="button"
                         onClick={() => setPage(pageNum)}
                         disabled={isPlaceholderData}
-                        className={`w-9 h-9 rounded-xl text-sm font-bold transition-all active:scale-[0.95] ${
-                          pageNum === page
-                            ? 'text-white shadow-glow-blue'
-                            : 'border border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                        }`}
-                        style={pageNum === page ? {
-                          backgroundImage: 'linear-gradient(180deg, #3B82F6 0%, #2563EB 100%)',
-                        } : undefined}
+                        className={`market-page-btn !px-0 w-11 active:scale-[0.95] ${pageNum === page ? 'active' : ''}`}
+                        aria-label={`Страница ${pageNum}`}
                         aria-current={pageNum === page ? 'page' : undefined}
                       >
                         {pageNum}
@@ -306,10 +301,11 @@ export function MarketCatalog() {
                   type="button"
                   onClick={() => setPage(page + 1)}
                   disabled={page >= totalPages || isPlaceholderData}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:border-gray-300 hover:shadow-card-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
+                  className="market-page-btn active:scale-[0.97]"
+                  aria-label="Следующая страница"
                 >
                   <span className="hidden sm:inline">Вперёд</span>
-                  <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
+                  <ChevronRight className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
                 </button>
               </nav>
             )}

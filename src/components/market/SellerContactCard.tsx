@@ -56,9 +56,9 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
   return (
     <div className="card p-5">
       {/* Шапка: продавец */}
-      <Link to={supplierLink} className="flex items-center gap-3 mb-4 group">
-        <span className="icon-tile bg-blue-50 text-blue-600">
-          <Store className="w-5 h-5" strokeWidth={1.5} />
+      <Link to={supplierLink} className="flex items-center gap-3 mb-4 group" aria-label={`Разборка ${company.name}`}>
+        <span className="icon-tile bg-primary/10 text-primary">
+          <Store className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" />
         </span>
         <span className="min-w-0">
           <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
@@ -76,9 +76,10 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
           <a
             href={`tel:${phoneRaw}`}
             className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-xl text-sm text-gray-700 hover:bg-gray-50 hover:text-primary active:scale-[0.99] transition-all"
+            aria-label={`Позвонить ${company.phone}`}
           >
             <span className="icon-tile-sm bg-green-50 text-green-600">
-              <Phone className="w-4 h-4" strokeWidth={1.5} />
+              <Phone className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
             </span>
             <span className="font-semibold">{company.phone}</span>
           </a>
@@ -86,7 +87,7 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
         {company.address && (
           <p className="flex items-start gap-2.5 px-1.5 py-1.5 text-sm text-gray-600">
             <span className="icon-tile-sm bg-orange-50 text-orange-500">
-              <MapPin className="w-4 h-4" strokeWidth={1.5} />
+              <MapPin className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
             </span>
             <span className="leading-snug pt-1">{company.address}</span>
           </p>
@@ -95,9 +96,10 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
           <a
             href={`mailto:${company.email}`}
             className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50 hover:text-primary active:scale-[0.99] transition-all min-w-0"
+            aria-label={`Написать на почту ${company.email}`}
           >
-            <span className="icon-tile-sm bg-blue-50 text-blue-600">
-              <Mail className="w-4 h-4" strokeWidth={1.5} />
+            <span className="icon-tile-sm bg-primary/10 text-primary">
+              <Mail className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
             </span>
             <span className="truncate">{company.email}</span>
           </a>
@@ -113,8 +115,12 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
       {(showCall || tgHref) && (
         <div className="flex flex-wrap gap-2.5">
           {showCall && (
-            <a href={`tel:${phoneRaw}`} className="btn-primary flex-1 sm:flex-none min-w-[140px] min-h-[44px]">
-              <Phone className="w-4 h-4" strokeWidth={1.5} /> Позвонить
+            <a
+              href={`tel:${phoneRaw}`}
+              className="btn-primary flex-1 sm:flex-none min-w-[140px] min-h-[44px]"
+              aria-label={`Позвонить ${company.phone}`}
+            >
+              <Phone className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> Позвонить
             </a>
           )}
           {tgHref && (
@@ -124,6 +130,7 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
               rel="noopener noreferrer"
               onClick={telegramMessage ? handleWriteTelegram : undefined}
               className="btn flex-1 sm:flex-none min-w-[140px] min-h-[44px] px-4 py-2 text-sm text-white"
+              aria-label={telegramMessage ? 'Написать в Telegram' : 'Открыть Telegram разборки'}
               style={{
                 backgroundImage: 'linear-gradient(180deg, #2AABEE 0%, #229ED9 100%)',
                 boxShadow: '0 1px 2px rgba(34,158,217,0.35), 0 4px 12px -2px rgba(34,158,217,0.35)',

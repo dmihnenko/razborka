@@ -107,18 +107,16 @@ export function FilterBar({ value, onChange, categories = [], makes = [] }: Filt
             'sm:hidden relative flex items-center gap-1.5 px-3.5 min-h-[44px] rounded-xl border text-sm font-semibold',
             'transition-all active:scale-[0.97] flex-shrink-0',
             open || activeCount > 0
-              ? 'border-primary/30 bg-blue-50 text-primary'
+              ? 'border-primary/30 bg-primary/10 text-primary'
               : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50',
           ].join(' ')}
           aria-expanded={open}
+          aria-controls="market-filter-panel"
         >
-          <SlidersHorizontal className="w-4 h-4" strokeWidth={1.5} />
+          <SlidersHorizontal className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
           Фильтры
           {activeCount > 0 && (
-            <span
-              className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full text-white text-[10px] font-bold flex items-center justify-center shadow-glow-blue"
-              style={{ backgroundImage: 'linear-gradient(180deg, #3B82F6 0%, #2563EB 100%)' }}
-            >
+            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center shadow-glow-blue">
               {activeCount}
             </span>
           )}
@@ -126,7 +124,7 @@ export function FilterBar({ value, onChange, categories = [], makes = [] }: Filt
       </div>
 
       {/* Панель фильтров: на мобиле — по кнопке, на ≥sm — всегда */}
-      <div className={`${open ? 'block animate-fade-in' : 'hidden'} sm:block mt-3.5`}>
+      <div id="market-filter-panel" className={`${open ? 'block animate-fade-in' : 'hidden'} sm:block mt-3.5`}>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
 
           {categories.length > 0 && (

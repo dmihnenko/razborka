@@ -78,7 +78,7 @@ function CartItemRow({ item }: { item: CartItem }) {
             className="w-full h-full object-cover"
           />
         ) : (
-          <Package className="w-7 h-7 text-gray-300" strokeWidth={1.5} />
+          <Package className="w-7 h-7 text-gray-300" strokeWidth={1.5} aria-hidden="true" />
         )}
       </Link>
 
@@ -95,26 +95,24 @@ function CartItemRow({ item }: { item: CartItem }) {
         )}
 
         <div className="mt-auto pt-2 flex items-center justify-between gap-2 flex-wrap">
-          {/* Количество */}
-          <div className="flex items-center gap-1.5 bg-gray-50 rounded-xl p-1 border border-gray-100">
+          {/* Количество — степпер с тач-таргетами ≥44px */}
+          <div className="market-qty">
             <button
               type="button"
               onClick={() => setQty(item.inventoryId, item.quantity - 1)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-white hover:text-gray-700 hover:shadow-card transition-all active:scale-90"
-              aria-label="Уменьшить количество"
+              className="market-qty-btn active:scale-90"
+              aria-label={`Уменьшить количество «${item.name}»`}
             >
-              <Minus className="w-3.5 h-3.5" strokeWidth={2} />
+              <Minus className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
             </button>
-            <span className="w-7 text-center text-sm font-bold text-gray-900 tabular-nums">
-              {item.quantity}
-            </span>
+            <span className="market-qty-val" aria-live="polite">{item.quantity}</span>
             <button
               type="button"
               onClick={() => setQty(item.inventoryId, item.quantity + 1)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-white hover:text-gray-700 hover:shadow-card transition-all active:scale-90"
-              aria-label="Увеличить количество"
+              className="market-qty-btn active:scale-90"
+              aria-label={`Увеличить количество «${item.name}»`}
             >
-              <Plus className="w-3.5 h-3.5" strokeWidth={2} />
+              <Plus className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
             </button>
           </div>
 
@@ -138,10 +136,10 @@ function CartItemRow({ item }: { item: CartItem }) {
           removeItem(item.inventoryId)
           toast.success('Удалено из корзины')
         }}
-        className="btn-icon-sm self-start text-gray-300 hover:text-red-500 hover:bg-red-50"
+        className="inline-flex items-center justify-center w-11 h-11 rounded-xl self-start flex-shrink-0 text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors active:scale-90"
         aria-label={`Удалить «${item.name}» из корзины`}
       >
-        <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+        <Trash2 className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
       </button>
     </motion.div>
   )
@@ -151,11 +149,11 @@ function CartItemRow({ item }: { item: CartItem }) {
 
 function CompanyGroup({ group }: { group: CartGroup }) {
   return (
-    <section className="card px-5 py-4 space-y-0">
+    <section className="card px-5 py-4 space-y-0" aria-label={`Товары разборки ${group.companyName}`}>
       {/* Шапка группы */}
       <div className="flex items-center gap-2.5 pb-3 border-b border-gray-100">
-        <span className="icon-tile-sm bg-blue-50 text-blue-600 flex-shrink-0">
-          <Store className="w-4 h-4" strokeWidth={1.5} />
+        <span className="icon-tile-sm bg-primary/10 text-primary flex-shrink-0">
+          <Store className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
         </span>
         <Link
           to={`/market/supplier/${group.companyId}`}
@@ -244,7 +242,7 @@ export function MarketCart() {
             transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center mb-5 border border-green-100"
           >
-            <CheckCircle2 className="w-10 h-10 text-green-600" strokeWidth={1.5} />
+            <CheckCircle2 className="w-10 h-10 text-green-600" strokeWidth={1.5} aria-hidden="true" />
           </motion.div>
           <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">Заявка отправлена!</h1>
           <p className="text-sm text-gray-500 mt-2 max-w-xs leading-relaxed">
@@ -323,11 +321,12 @@ export function MarketCart() {
               }}
               type="tel"
               autoComplete="tel"
-              className="form-input"
+              className="form-input min-h-[44px]"
               placeholder="+380 XX XXX-XX-XX"
               aria-invalid={!!phoneError}
+              aria-describedby={phoneError ? 'cart-phone-error' : undefined}
             />
-            {phoneError && <p className="form-error">{phoneError}</p>}
+            {phoneError && <p id="cart-phone-error" className="form-error">{phoneError}</p>}
           </div>
 
           <div>
@@ -370,7 +369,7 @@ export function MarketCart() {
             disabled={mutation.isPending}
             className="btn-primary btn-lg w-full disabled:opacity-60 disabled:pointer-events-none"
           >
-            <Send className="w-4 h-4" strokeWidth={1.5} />
+            <Send className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
             {mutation.isPending ? 'Отправляем…' : 'Отправить заявку'}
           </button>
 

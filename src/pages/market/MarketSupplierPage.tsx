@@ -177,17 +177,17 @@ export function MarketSupplierPage() {
     >
       <Link
         to="/market/suppliers"
-        className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-primary transition-colors"
+        className="inline-flex items-center gap-1.5 min-h-[44px] text-sm font-semibold text-gray-500 hover:text-primary transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
+        <ArrowLeft className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
         Все разборки
       </Link>
 
       {/* ── Шапка разборки ─────────────────────────────────────────────── */}
       <div className="card p-5">
         <div className="flex items-start gap-4">
-          <span className="icon-tile-lg bg-blue-50 text-blue-600 flex-shrink-0">
-            <Store className="w-6 h-6" strokeWidth={1.5} />
+          <span className="icon-tile-lg bg-primary/10 text-primary flex-shrink-0">
+            <Store className="w-6 h-6" strokeWidth={1.5} aria-hidden="true" />
           </span>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 leading-snug tracking-tight">
@@ -215,7 +215,7 @@ export function MarketSupplierPage() {
               className="flex items-center gap-2 text-gray-700 hover:text-primary transition-colors"
             >
               <span className="icon-tile-sm bg-green-50 text-green-600 flex-shrink-0">
-                <Phone className="w-4 h-4" strokeWidth={1.5} />
+                <Phone className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
               </span>
               <span className="font-bold">{supplier.phone}</span>
             </a>
@@ -223,7 +223,7 @@ export function MarketSupplierPage() {
           {supplier.address && (
             <p className="flex items-start gap-2 text-gray-600">
               <span className="icon-tile-sm bg-orange-50 text-orange-500 flex-shrink-0 mt-0.5">
-                <MapPin className="w-4 h-4" strokeWidth={1.5} />
+                <MapPin className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
               </span>
               <span className="leading-snug pt-1">{supplier.address}</span>
             </p>
@@ -243,8 +243,9 @@ export function MarketSupplierPage() {
               <a
                 href={`tel:${phoneRaw}`}
                 className="flex-1 sm:flex-none min-w-[140px] btn-success"
+                aria-label={`Позвонить ${supplier.phone}`}
               >
-                <Phone className="w-4 h-4" strokeWidth={1.5} />
+                <Phone className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
                 Позвонить
               </a>
             )}
@@ -253,7 +254,8 @@ export function MarketSupplierPage() {
                 href={tgHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 sm:flex-none min-w-[140px] inline-flex items-center justify-center gap-1.5 py-2.5 text-white text-sm font-semibold rounded-xl active:scale-[0.97] transition-all"
+                className="flex-1 sm:flex-none min-w-[140px] min-h-[44px] inline-flex items-center justify-center gap-1.5 text-white text-sm font-semibold rounded-xl active:scale-[0.97] transition-all"
+                aria-label="Открыть Telegram разборки"
                 style={{ background: 'linear-gradient(180deg, #33B5E5 0%, #229ED9 100%)' }}
               >
                 <TelegramIcon className="w-4 h-4 fill-current" />
@@ -271,10 +273,11 @@ export function MarketSupplierPage() {
             <span className="ml-2 text-base font-semibold text-gray-400">({total})</span>
           ) : ''}
         </h2>
-        <form onSubmit={applySearch} className="relative w-full sm:max-w-xs sm:ml-auto">
+        <form onSubmit={applySearch} role="search" className="relative w-full sm:max-w-xs sm:ml-auto">
           <Search
             className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
             strokeWidth={1.5}
+            aria-hidden="true"
           />
           <input
             type="search"
@@ -288,7 +291,7 @@ export function MarketSupplierPage() {
               }
             }}
             placeholder="Поиск по товарам разборки…"
-            className="form-input pl-10"
+            className="form-input pl-10 min-h-[44px]"
             aria-label="Поиск по товарам разборки"
           />
         </form>
@@ -311,7 +314,7 @@ export function MarketSupplierPage() {
       ) : (
         <>
           <div
-            className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 transition-opacity stagger-children ${partsFetching ? 'opacity-60 pointer-events-none' : ''}`}
+            className={`market-grid transition-opacity stagger-children ${partsFetching ? 'opacity-60 pointer-events-none' : ''}`}
           >
             {items.map(part => (
               <MarketProductCard key={part.id} part={part} />
@@ -328,10 +331,10 @@ export function MarketSupplierPage() {
                 type="button"
                 onClick={() => goToPage(page - 1)}
                 disabled={page <= 1}
-                className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:shadow-card-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.95]"
+                className="market-page-btn !px-0 active:scale-[0.95]"
                 aria-label="Предыдущая страница"
               >
-                <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
+                <ChevronLeft className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
               </button>
 
               <span className="text-sm font-semibold text-gray-600 px-2 tabular-nums">
@@ -344,10 +347,10 @@ export function MarketSupplierPage() {
                 type="button"
                 onClick={() => goToPage(page + 1)}
                 disabled={page >= totalPages}
-                className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:shadow-card-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.95]"
+                className="market-page-btn !px-0 active:scale-[0.95]"
                 aria-label="Следующая страница"
               >
-                <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
+                <ChevronRight className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
               </button>
             </nav>
           )}

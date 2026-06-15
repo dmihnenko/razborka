@@ -27,9 +27,10 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
     <Link
       to={`/market/supplier/${supplier.id}`}
       className="card card-interactive p-4 flex items-start gap-3.5 group"
+      aria-label={`Разборка ${supplier.name}`}
     >
-      <span className="icon-tile-lg bg-blue-50 text-blue-600">
-        <Store className="w-6 h-6" strokeWidth={1.5} />
+      <span className="icon-tile-lg bg-primary/10 text-primary">
+        <Store className="w-6 h-6" strokeWidth={1.5} aria-hidden="true" />
       </span>
 
       <div className="flex-1 min-w-0">
@@ -41,6 +42,7 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
           <Package
             className={`w-3.5 h-3.5 flex-shrink-0 ${hasParts ? 'text-green-600' : 'text-gray-400'}`}
             strokeWidth={1.5}
+            aria-hidden="true"
           />
           <span className={hasParts ? 'text-gray-600' : 'text-gray-400'}>
             {hasParts
@@ -51,14 +53,14 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
 
         {supplier.phone && (
           <p className="flex items-center gap-1.5 text-xs text-gray-500 mt-1 truncate">
-            <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+            <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
             {supplier.phone}
           </p>
         )}
 
         {supplier.address && (
-          <p className="flex items-center gap-1.5 text-xs text-gray-400 mt-1 truncate">
-            <MapPin className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
+          <p className="flex items-center gap-1.5 text-xs text-gray-500 mt-1 truncate">
+            <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-gray-400" strokeWidth={1.5} aria-hidden="true" />
             <span className="truncate">{supplier.address}</span>
           </p>
         )}
@@ -67,6 +69,7 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
       <ChevronRight
         className="w-[18px] h-[18px] text-gray-300 flex-shrink-0 mt-1 transition-all group-hover:text-primary group-hover:translate-x-0.5"
         strokeWidth={1.5}
+        aria-hidden="true"
       />
     </Link>
   )

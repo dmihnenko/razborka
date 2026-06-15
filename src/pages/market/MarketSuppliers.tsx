@@ -97,7 +97,7 @@ export function MarketSuppliers() {
         {/* Суммарно товаров — плашка */}
         {!search.trim() && suppliers && suppliers.length > 0 && (
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-50 border border-green-200/60 text-xs font-bold text-green-700 self-start sm:self-auto">
-            <Store className="w-3.5 h-3.5" strokeWidth={1.5} />
+            <Store className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" />
             {pluralizeParts(suppliers.reduce((sum, s) => sum + s.availableParts, 0))} в наличии
           </div>
         )}
@@ -108,13 +108,14 @@ export function MarketSuppliers() {
         <Search
           className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
           strokeWidth={1.5}
+          aria-hidden="true"
         />
         <input
           type="search"
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Поиск разборки по названию…"
-          className="form-input pl-10"
+          className="form-input pl-10 min-h-[44px]"
           aria-label="Поиск разборки по названию"
         />
       </div>

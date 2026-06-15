@@ -150,13 +150,13 @@ export default function MarketProductPage() {
               Маркетплейс
             </Link>
           </li>
-          <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
+          <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
           <li>
             <Link to="/market/catalog" className="hover:text-primary transition-colors font-medium">
               Каталог
             </Link>
           </li>
-          <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
+          <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
           <li className="text-gray-700 font-semibold truncate min-w-0" aria-current="page">
             {part.name}
           </li>
@@ -224,12 +224,13 @@ export default function MarketProductPage() {
                   type="button"
                   onClick={copyPartNumber}
                   title="Нажмите, чтобы скопировать"
-                  className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border-2 border-primary/20 hover:border-primary/50 hover:shadow-glow-blue active:scale-95 transition-all"
+                  aria-label={`Скопировать оригинальный номер ${part.partNumber.toUpperCase()}`}
+                  className="group inline-flex items-center gap-2 min-h-[44px] px-3 rounded-xl bg-white border-2 border-primary/20 hover:border-primary/50 hover:shadow-glow-blue active:scale-95 transition-all"
                 >
                   <span className="font-mono font-bold tracking-wider text-gray-800 uppercase text-sm">
                     {part.partNumber.toUpperCase()}
                   </span>
-                  <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-primary transition-colors" strokeWidth={1.5} />
+                  <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-primary transition-colors" strokeWidth={1.5} aria-hidden="true" />
                 </button>
               </div>
             )}
@@ -276,8 +277,8 @@ export default function MarketProductPage() {
                 Снята с автомобиля
               </h2>
               <div className="flex items-start gap-3">
-                <span className="icon-tile bg-blue-50 text-blue-600 flex-shrink-0">
-                  <Car className="w-5 h-5" strokeWidth={1.5} />
+                <span className="icon-tile bg-primary/10 text-primary flex-shrink-0">
+                  <Car className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" />
                 </span>
                 <div>
                   <p className="text-base font-bold text-gray-900 leading-tight">
@@ -323,10 +324,10 @@ export default function MarketProductPage() {
             <h2 className="heading-3">Ещё от этой разборки</h2>
             <Link
               to={`/market/supplier/${part.company.id}`}
-              className="text-sm font-semibold text-primary hover:text-blue-700 transition-colors whitespace-nowrap flex items-center gap-1"
+              className="text-sm font-semibold text-primary hover:text-brand-hover transition-colors whitespace-nowrap flex items-center gap-1 min-h-[44px]"
             >
               Все товары
-              <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
+              <ChevronRight className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
             </Link>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 stagger-children">

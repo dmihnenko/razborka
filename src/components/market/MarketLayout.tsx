@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Cog, LayoutDashboard, LogIn, Search, ShoppingCart, Wrench } from 'lucide-react'
+import { Boxes, LayoutDashboard, LogIn, Search, ShoppingCart, Wrench } from 'lucide-react'
 import { CartProvider, useCart } from '@/hooks/useCart'
 import { useAuth } from '@/hooks/useAuth'
 import { useUserProfile } from '@/hooks/useUserProfile'
@@ -10,11 +10,12 @@ import { getDefaultRouteForRoles } from '@/config/navigation'
 // Публичный каркас маркетплейса (/market/*) — без сайдбара приложения.
 // Сам оборачивает контент в CartProvider, поэтому в App.tsx достаточно:
 // <Route path="/market" element={<MarketLayout />}> ...дочерние роуты... </Route>
+// «Azure Market» — токены бренда (--brand-*), тач-таргеты ≥44px, a11y.
 // ============================================================================
 
 function navLinkCls({ isActive }: { isActive: boolean }) {
   return [
-    'inline-flex items-center justify-center min-w-[104px] px-5 py-1.5 rounded-full text-sm transition-all duration-150 whitespace-nowrap active:scale-[0.97]',
+    'inline-flex items-center justify-center min-w-[100px] px-5 rounded-full text-sm transition-colors duration-150 whitespace-nowrap',
     isActive
       ? 'bg-white text-gray-900 font-semibold shadow-sm'
       : 'text-gray-500 font-medium hover:text-gray-800',
@@ -47,10 +48,14 @@ function MarketLayoutInner() {
         <div className="max-w-[1440px] mx-auto px-3 sm:px-4">
 
           {/* Ряд 1: логотип · поиск(десктоп) · корзина · войти */}
-          <div className="flex items-center gap-2 sm:gap-3 h-[60px]">
-            <Link to="/market" className="group flex items-center gap-2.5 flex-shrink-0 min-w-0">
-              <span className="w-9 h-9 rounded-xl bg-gradient-to-b from-blue-500 to-blue-600 shadow-glow-blue flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-105">
-                <Cog className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-2 sm:gap-3 h-16">
+            <Link
+              to="/market"
+              className="group flex items-center gap-2.5 flex-shrink-0 min-w-0"
+              aria-label="Маркет запчастей — на главную"
+            >
+              <span className="w-10 h-10 rounded-xl bg-primary shadow-glow-blue flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-105">
+                <Boxes className="w-5 h-5 text-white" aria-hidden="true" />
               </span>
               <span className="flex flex-col leading-none min-w-0">
                 <span className="font-extrabold tracking-tight text-gray-900 text-sm sm:text-base truncate">
@@ -64,16 +69,16 @@ function MarketLayoutInner() {
 
             {/* Поиск — на десктопе в шапке (кроме главной, где он в герое) */}
             {!isHome && (
-              <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-auto">
+              <form onSubmit={handleSearch} role="search" className="hidden md:flex flex-1 max-w-md mx-auto">
                 <div className="relative w-full">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" aria-hidden="true" />
                   <input
                     type="search"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    placeholder="Поиск запчасти, артикула…"
-                    className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-200 rounded-full bg-gray-100/80 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200"
-                    aria-label="Поиск по каталогу"
+                    placeholder="Поиск запчасти или артикула…"
+                    className="w-full h-11 pl-11 pr-3 text-sm border border-gray-200 rounded-full bg-gray-100/80 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/15 focus:border-primary transition-all duration-200"
+                    aria-label="Поиск по каталогу запчастей"
                   />
                 </div>
               </form>
@@ -82,48 +87,39 @@ function MarketLayoutInner() {
             <div className="flex items-center gap-1.5 sm:gap-2 ml-auto flex-shrink-0">
               <Link
                 to="/market/cart"
-                className="relative p-2.5 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-150 active:scale-[0.94]"
-                aria-label={`Корзина${totalCount ? `, ${totalCount} шт.` : ''}`}
+                className="relative inline-flex items-center justify-center w-11 h-11 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-150 active:scale-[0.94]"
+                aria-label={`Корзина${totalCount ? `, товаров: ${totalCount}` : ' (пусто)'}`}
               >
-                <ShoppingCart className="w-5 h-5" />
+                <ShoppingCart className="w-5 h-5" aria-hidden="true" />
                 {totalCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 text-white text-[10px] font-bold flex items-center justify-center leading-none shadow-glow-blue animate-scale-in">
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center leading-none shadow-glow-blue animate-scale-in">
                     {totalCount > 99 ? '99+' : totalCount}
                   </span>
                 )}
               </Link>
-              {user ? (
-                <Link
-                  to={dashboardHref}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold text-gray-700 border border-gray-200 bg-white hover:border-gray-300 hover:text-gray-900 shadow-sm transition-all duration-150 active:scale-[0.97]"
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  <span className="hidden sm:inline">В кабинет</span>
-                </Link>
-              ) : (
-                <Link
-                  to="/login"
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold text-gray-700 border border-gray-200 bg-white hover:border-gray-300 hover:text-gray-900 shadow-sm transition-all duration-150 active:scale-[0.97]"
-                >
-                  <LogIn className="w-4 h-4" />
-                  <span className="hidden sm:inline">Войти</span>
-                </Link>
-              )}
+              <Link
+                to={user ? dashboardHref : '/login'}
+                className="inline-flex items-center gap-1.5 h-11 px-3.5 rounded-xl text-sm font-semibold text-gray-700 border border-gray-200 bg-white hover:border-gray-300 hover:text-gray-900 shadow-sm transition-colors duration-150 active:scale-[0.97]"
+              >
+                {user
+                  ? <><LayoutDashboard className="w-4 h-4" aria-hidden="true" /><span className="hidden sm:inline">В кабинет</span></>
+                  : <><LogIn className="w-4 h-4" aria-hidden="true" /><span className="hidden sm:inline">Войти</span></>}
+              </Link>
             </div>
           </div>
 
           {/* Ряд 2 (мобила): поиск — кроме главной, где он в герое */}
           {!isHome && (
-            <form onSubmit={handleSearch} className="md:hidden pb-2">
+            <form onSubmit={handleSearch} role="search" className="md:hidden pb-2.5">
               <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" aria-hidden="true" />
                 <input
                   type="search"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Поиск запчасти, артикула…"
-                  className="w-full pl-10 pr-3 py-2 text-sm border border-gray-200 rounded-full bg-gray-100/80 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200"
-                  aria-label="Поиск по каталогу"
+                  placeholder="Поиск запчасти или артикула…"
+                  className="w-full h-11 pl-11 pr-3 text-sm border border-gray-200 rounded-full bg-gray-100/80 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/15 focus:border-primary transition-all duration-200"
+                  aria-label="Поиск по каталогу запчастей"
                 />
               </div>
             </form>
@@ -131,7 +127,7 @@ function MarketLayoutInner() {
 
           {/* Ряд 3: навигация — центрированный сегмент-контрол */}
           <nav className="flex items-center justify-center pb-2.5" aria-label="Разделы маркета">
-            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-gray-100/80 border border-gray-200/70">
+            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-gray-100/80 border border-gray-200/70 h-11">
               <NavLink to="/market/catalog" className={navLinkCls}>Каталог</NavLink>
               <NavLink to="/market/suppliers" className={navLinkCls}>Разборки</NavLink>
             </div>
@@ -148,22 +144,22 @@ function MarketLayoutInner() {
       <footer className="bg-white border-t border-gray-200 mt-8">
         <div className="max-w-[1440px] mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-lg bg-gradient-to-b from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
-              <Cog className="w-3.5 h-3.5 text-white" />
+            <span className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
+              <Boxes className="w-3.5 h-3.5 text-white" aria-hidden="true" />
             </span>
-            <p className="text-xs font-medium text-gray-400">
+            <p className="text-xs font-medium text-gray-500">
               Маркет запчастей · б/у и новые запчасти от авторазборок
             </p>
           </div>
           <div className="flex items-center gap-4">
             <Link
               to="/business"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-blue-700 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-brand-hover transition-colors"
             >
-              <Wrench className="w-3.5 h-3.5" />
+              <Wrench className="w-3.5 h-3.5" aria-hidden="true" />
               Открыть разборку
             </Link>
-            <p className="text-xs text-gray-300">© {new Date().getFullYear()}</p>
+            <p className="text-xs text-gray-400">© {new Date().getFullYear()}</p>
           </div>
         </div>
       </footer>
