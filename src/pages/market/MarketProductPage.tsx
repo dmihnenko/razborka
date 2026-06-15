@@ -103,7 +103,7 @@ export default function MarketProductPage() {
         </ol>
       </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,480px)_minmax(0,1fr)] lg:justify-start gap-4 lg:gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,500px)_minmax(280px,330px)_minmax(250px,310px)] gap-4 lg:gap-5 items-start">
         {/* Фото */}
         <div className="min-w-0">
           {galleryPhotos.length > 0 ? (
@@ -116,10 +116,8 @@ export default function MarketProductPage() {
           )}
         </div>
 
-        {/* Справа: инфо/цена и рядом (на xl) — авто + продавец */}
-        <div className="flex flex-col xl:flex-row gap-3 lg:gap-4 items-start w-full">
-          {/* Инфо/цена */}
-          <div className="mk-card p-4 w-full xl:w-[340px] xl:flex-shrink-0">
+        {/* Инфо/цена */}
+        <div className="mk-card p-4">
             <div className="flex flex-wrap gap-1.5 mb-2.5">
               {conditionBadge(part.condition)}
               {part.categoryName && (
@@ -160,8 +158,8 @@ export default function MarketProductPage() {
             </div>
           </div>
 
-          {/* Авто + продавец — справа от инфо на десктопе */}
-          <div className="space-y-3 w-full xl:w-[320px] xl:flex-shrink-0">
+        {/* Авто + продавец — справа от инфо на десктопе */}
+        <div className="space-y-3">
             {part.vehicle && (
               <div className="mk-card p-4">
                 <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-2.5 mk-meta">
@@ -191,7 +189,6 @@ export default function MarketProductPage() {
               }
             />
           </div>
-        </div>
       </div>
 
       {/* Описание — на всю ширину под основным блоком */}
