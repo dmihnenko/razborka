@@ -294,9 +294,9 @@ export default function PartsOrderDetails() {
   return (
     <div className="min-h-dvh bg-gray-50 pb-[calc(64px+env(safe-area-inset-bottom,0px))] sm:pb-6">
 
-      {/* ── sticky шапка ────────────────────────────────────────── */}
-      <div className="bg-white border-b sticky top-0 z-20 glass">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* ── sticky шапка (вид как PartsPageHeader; действий много — оставляем перенос) ── */}
+      <div className="bg-white border-b sticky top-0 z-20">
+        <div className="w-full">
           <div className="h-14 sm:h-16 flex items-center justify-between gap-3">
 
             {/* back + заголовок */}
@@ -348,7 +348,7 @@ export default function PartsOrderDetails() {
                   </button>
                   <button
                     onClick={() => updateStatusMutation.mutate('cancelled')}
-                    disabled={updateStatusMutation.isPending}
+                    disabled={order.status === 'cancelled' || updateStatusMutation.isPending}
                     className="btn btn-xs btn-ghost"
                   >
                     Отменить
@@ -389,7 +389,7 @@ export default function PartsOrderDetails() {
       </div>
 
       {/* ── основной контент ─────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-5">
+      <div className="w-full py-5 sm:py-6 space-y-5">
 
         {/* ── дата + примечание ────────────────────────────────────── */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-1 px-1 text-sm">
@@ -403,7 +403,7 @@ export default function PartsOrderDetails() {
         {canManage && (
           <div className="card">
             <div className="flex items-center gap-2 mb-4">
-              <span className="icon-tile-sm bg-blue-50 text-blue-600">
+              <span className="icon-tile-sm bg-slate-100 text-slate-700">
                 <Truck className="w-4 h-4" />
               </span>
               <h2 className="heading-3">Клиент и доставка</h2>
@@ -656,7 +656,7 @@ export default function PartsOrderDetails() {
 
         {/* ── кнопка «Завершить» ────────────────────────────────────── */}
         {canManage && order.status !== 'completed' && order.items && order.items.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-t border-gray-100 px-4 py-3 sm:static sm:bg-transparent sm:border-0 sm:backdrop-blur-none sm:px-0 sm:py-0"
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-t border-gray-100 px-4 py-3 sm:static sm:bg-transparent sm:border-0 sm:backdrop-blur-none sm:px-0 sm:py-0 sm:flex sm:justify-end"
                style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
           >
             <button

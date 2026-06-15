@@ -190,6 +190,7 @@ export default function PartsSettings() {
         title="Настройки разборки"
         backPath="/parts/dashboard"
         height="sm"
+        maxWidth="2xl"
       />
 
       <div className="page-container">

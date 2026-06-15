@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Package, ImageIcon, Trash2, Car, Edit2, ShoppingCart, CheckSquare, Square, Share2, Copy } from 'lucide-react'
+import { Package, ImageIcon, Trash2, Car, Edit2, ShoppingCart, CheckSquare, Square, Share2 } from 'lucide-react'
 import ShareModal from '@/components/ui/ShareModal'
 import type { PartsInventoryItem, PartsInventoryStatus } from '@/types/parts'
 import { formatPrice } from '@/utils/currency'
@@ -24,7 +24,6 @@ interface InventoryCardProps {
   onEdit: (item: PartsInventoryItem, e: React.MouseEvent) => void
   onSell: (item: PartsInventoryItem, e: React.MouseEvent) => void
   onDelete: (item: PartsInventoryItem, e: React.MouseEvent) => void
-  onDuplicate?: (item: PartsInventoryItem, e: React.MouseEvent) => void
   onNavigate: (id: string) => void
   onToggleSelect?: (id: string, e: React.MouseEvent) => void
 }
@@ -39,7 +38,6 @@ export function InventoryCard({
   onEdit,
   onSell,
   onDelete,
-  onDuplicate,
   onNavigate,
   onToggleSelect,
 }: InventoryCardProps) {
@@ -277,18 +275,6 @@ export function InventoryCard({
           <ShoppingCart className="w-3.5 h-3.5" />
           Продать
         </button>
-
-        {/* Дублировать */}
-        {onDuplicate && (
-          <button
-            onClick={(e) => onDuplicate(item, e)}
-            aria-label="Дублировать"
-            title="Дублировать"
-            className="btn-icon-sm text-blue-400 hover:text-blue-600 hover:bg-blue-50 flex-shrink-0"
-          >
-            <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />
-          </button>
-        )}
 
         {/* Удалить */}
         <button

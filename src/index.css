@@ -245,8 +245,10 @@
   .icon-tile-lg { @apply icon-tile w-12 h-12 rounded-2xl; }
 
   /* ── Page layout ────────────────────────────────────────── */
+  /* Ширину/гориз. паддинг даёт main в Layout — здесь только вертикальный ритм,
+     чтобы контент страниц выравнивался с дашбордом (не было двойного паддинга). */
   .page-container {
-    @apply mx-auto max-w-[1440px] w-full px-4 py-4 sm:px-6 sm:py-5 md:px-8 md:py-6;
+    @apply w-full py-4 sm:py-5 md:py-6;
   }
 
   /* ── Typography ─────────────────────────────────────────── */

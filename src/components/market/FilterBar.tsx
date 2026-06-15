@@ -25,33 +25,23 @@ const FIELD_LABEL = 'block text-xs font-semibold mb-1.5'
 export function FilterBar({ value, onChange, categories = [], makes = [] }: FilterBarProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState(value.search ?? '')
-  const [minPrice, setMinPrice] = useState(value.minPrice != null ? String(value.minPrice) : '')
-  const [maxPrice, setMaxPrice] = useState(value.maxPrice != null ? String(value.maxPrice) : '')
 
   useEffect(() => { setSearch(value.search ?? '') }, [value.search])
-  useEffect(() => { setMinPrice(value.minPrice != null ? String(value.minPrice) : '') }, [value.minPrice])
-  useEffect(() => { setMaxPrice(value.maxPrice != null ? String(value.maxPrice) : '') }, [value.maxPrice])
 
   const patch = (p: Partial<MarketFilters>) => onChange({ ...value, ...p, page: 1 })
 
   const applyText = () => {
-    const min = parseFloat(minPrice)
-    const max = parseFloat(maxPrice)
-    patch({
-      search: search.trim() || undefined,
-      minPrice: Number.isFinite(min) && min > 0 ? min : undefined,
-      maxPrice: Number.isFinite(max) && max > 0 ? max : undefined,
-    })
+    patch({ search: search.trim() || undefined })
   }
 
   const handleSubmit = (e: FormEvent) => { e.preventDefault(); applyText() }
 
   const reset = () => {
-    setSearch(''); setMinPrice(''); setMaxPrice('')
+    setSearch('')
     onChange({ sort: value.sort, page: 1, pageSize: value.pageSize })
   }
 
-  const activeCount = [value.search, value.categoryId, value.condition, value.make, value.minPrice, value.maxPrice]
+  const activeCount = [value.search, value.categoryId, value.condition, value.make]
     .filter(v => v != null && v !== '').length
 
   return (
@@ -129,16 +119,6 @@ export function FilterBar({ value, onChange, categories = [], makes = [] }: Filt
               </select>
             </div>
           )}
-
-          <div>
-            <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-min">Цена от</label>
-            <input id="mf-min" type="number" inputMode="numeric" min={0} value={minPrice} onChange={e => setMinPrice(e.target.value)} onBlur={applyText} placeholder="0" className="mk-input" />
-          </div>
-
-          <div>
-            <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-max">Цена до</label>
-            <input id="mf-max" type="number" inputMode="numeric" min={0} value={maxPrice} onChange={e => setMaxPrice(e.target.value)} onBlur={applyText} placeholder="∞" className="mk-input" />
-          </div>
 
           <div>
             <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-sort">Сортировка</label>

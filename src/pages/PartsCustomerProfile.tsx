@@ -339,7 +339,7 @@ export default function PartsCustomerProfile() {
         <div className="flex flex-wrap gap-x-4 gap-y-2 mb-3">
           {customer.phone && (
             <div className="flex items-center gap-2">
-              <span className="icon-tile-sm bg-blue-50 text-blue-600 flex-shrink-0">
+              <span className="icon-tile-sm bg-slate-100 text-slate-700 flex-shrink-0">
                 <Phone className="w-3.5 h-3.5" />
               </span>
               <span className="text-sm font-medium text-gray-900">{customer.phone}</span>
@@ -347,7 +347,7 @@ export default function PartsCustomerProfile() {
           )}
           {customer.email && (
             <div className="flex items-center gap-2">
-              <span className="icon-tile-sm bg-blue-50 text-blue-600 flex-shrink-0">
+              <span className="icon-tile-sm bg-slate-100 text-slate-700 flex-shrink-0">
                 <Mail className="w-3.5 h-3.5" />
               </span>
               <span className="text-sm font-medium text-gray-900">{customer.email}</span>

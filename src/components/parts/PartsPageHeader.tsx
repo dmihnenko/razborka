@@ -9,7 +9,9 @@ interface PartsPageHeaderProps {
   /** Extra content rendered below the main row (e.g. tab bar) */
   footer?: React.ReactNode
   height?: 'sm' | 'md'
-  maxWidth?: '3xl' | '4xl' | '7xl'
+  /** Если задан — контент шапки центрируется на этой ширине (для узких страниц,
+      чтобы заголовок совпадал с узким контентом). По умолчанию — во всю ширину main. */
+  maxWidth?: '2xl' | '3xl' | '4xl' | '7xl'
 }
 
 export default function PartsPageHeader({
@@ -19,15 +21,15 @@ export default function PartsPageHeader({
   actions,
   footer,
   height = 'md',
-  maxWidth = '7xl',
+  maxWidth,
 }: PartsPageHeaderProps) {
   const navigate = useNavigate()
   const hClass = height === 'sm' ? 'h-14' : 'h-16'
-  const mwClass = `max-w-${maxWidth}`
+  const innerClass = maxWidth ? `max-w-${maxWidth} mx-auto` : 'w-full'
 
   return (
     <div className="bg-white border-b sticky top-0 z-10">
-      <div className={`${mwClass} mx-auto px-4 sm:px-6 lg:px-8`}>
+      <div className={innerClass}>
         <div className={`flex items-center justify-between ${hClass}`}>
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <button

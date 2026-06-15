@@ -170,7 +170,7 @@ export default function PartsDashboard() {
             </div>
             <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400" strokeWidth={1.5} />
           </div>
-          <p className="kicker mb-1">Автомобілі</p>
+          <p className="kicker mb-1">Автомобили</p>
           <p className="heading-2 tabular">
             {stats?.vehicles?.total ?? 0}
           </p>
@@ -180,7 +180,7 @@ export default function PartsDashboard() {
               <span className="font-bold text-amber-600 tabular">{stats?.vehicles?.in_progress ?? 0}</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-gray-400">Розібрано</span>
+              <span className="text-gray-400">Разобрано</span>
               <span className="font-bold text-green-600 tabular">{stats?.vehicles?.dismantled ?? 0}</span>
             </div>
           </div>

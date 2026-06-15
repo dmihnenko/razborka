@@ -21,7 +21,6 @@ import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
 import { useAuth } from '../hooks/useAuth'
 import { getMenuForRoles } from '../config/navigation'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
-import Breadcrumbs from './Breadcrumbs'
 import { useAdminNotifications } from '../hooks/useAdminNotifications'
 import { useSubscriptionLimits } from '../hooks/useSubscription'
 import NotificationBanner from './NotificationBanner'
@@ -337,16 +336,6 @@ export default function Layout() {
             <div className="flex-1 min-w-0">
               <ContextSwitcher current={currentCtx} />
             </div>
-            {currentCtx === 'parts' && (
-              <Link
-                to="/market"
-                aria-label="В маркет"
-                title="Открыть маркет запчастей"
-                className="flex-shrink-0 flex items-center justify-center w-9 h-9 text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all active:scale-[0.97]"
-              >
-                <Store className="w-4 h-4" strokeWidth={1.5} />
-              </Link>
-            )}
             <button
               onClick={() => setSearchOpen(true)}
               aria-label="Поиск"
@@ -355,6 +344,16 @@ export default function Layout() {
               <Search className="w-4 h-4" strokeWidth={1.5} />
             </button>
             <NotificationsBell userId={profile?.id} />
+            {currentCtx === 'parts' && (
+              <Link
+                to="/market"
+                title="Открыть маркет запчастей"
+                className="flex-shrink-0 flex items-center gap-1.5 h-9 px-3 text-xs font-semibold text-slate-600 bg-gray-100 rounded-xl hover:bg-slate-200 hover:text-slate-900 transition-all active:scale-[0.97]"
+              >
+                <Store className="w-3.5 h-3.5" strokeWidth={1.5} />
+                <span>В маркет</span>
+              </Link>
+            )}
             <button onClick={handleLogout}
               className="flex-shrink-0 flex items-center gap-1.5 h-9 px-3 text-xs font-semibold text-gray-500 bg-gray-100 rounded-xl hover:bg-red-50 hover:text-red-600 transition-all active:scale-[0.97]"
             >
@@ -368,7 +367,6 @@ export default function Layout() {
         <div className="flex-1 bg-gray-50">
           <div className="mx-auto max-w-[1440px] w-full px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
             <NotificationBanner userId={profile?.id} />
-            <Breadcrumbs />
             <Outlet />
           </div>
           {/* Спейсер под фиксированное нижнее меню (только мобайл) */}

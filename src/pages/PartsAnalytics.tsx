@@ -100,7 +100,7 @@ export default function PartsAnalytics() {
 
             <div className="stat-card">
               <div className="flex items-start justify-between mb-3">
-                <div className="icon-tile bg-blue-50 text-blue-600">
+                <div className="icon-tile bg-slate-100 text-slate-700">
                   <BarChart3 className="w-5 h-5" strokeWidth={1.5} />
                 </div>
               </div>
@@ -169,7 +169,7 @@ export default function PartsAnalytics() {
                   <p className="kicker mb-1">Динамика</p>
                   <h2 className="heading-3">Выручка по месяцам</h2>
                 </div>
-                <div className="icon-tile bg-blue-50 text-blue-500">
+                <div className="icon-tile bg-slate-100 text-slate-700">
                   <BarChart3 className="w-5 h-5" strokeWidth={1.5} />
                 </div>
               </div>

@@ -78,7 +78,7 @@ export default function Breadcrumbs() {
       <Link
         to="/"
         title="Главная"
-        className="flex items-center flex-shrink-0 text-gray-400 hover:text-blue-500 transition-colors"
+        className="flex items-center flex-shrink-0 text-gray-400 hover:text-primary transition-colors"
       >
         <Home className="w-3.5 h-3.5" />
       </Link>
@@ -98,7 +98,7 @@ export default function Breadcrumbs() {
             ) : (
               <Link
                 to={crumb.path}
-                className="flex items-center whitespace-nowrap text-gray-400 hover:text-blue-500 transition-colors"
+                className="flex items-center whitespace-nowrap text-gray-400 hover:text-primary transition-colors"
               >
                 {crumb.label}
               </Link>

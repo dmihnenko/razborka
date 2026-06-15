@@ -30,15 +30,15 @@ export const adminMenu: MenuItem[] = [
 
 // Меню для владельца разборки.
 // Порядок = и для сайдбара, и для мобильного нижнего меню (первые 4 — табы):
-// Дашборд / Заказы / Запчасти / Клиенты — самые частые.
+// Дашборд / Заказы / Заявки с маркета / Запчасти — самые частые.
 export const partsOwnerMenu: MenuItem[] = [
   { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutGrid },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart },
+  { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox },
   { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package },
   { name: 'Клиенты', href: '/parts/customers', icon: Users },
   { name: 'Автомобили', href: '/parts/vehicles', icon: Car },
   { name: 'Магазин', href: '/parts/inventory?source=shop', icon: ShoppingBag },
-  { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox },
   { name: 'Сотрудники', href: '/parts/employees', icon: Users },
   { name: 'Аналитика', href: '/parts/analytics', icon: LineChart },
   { name: 'Подписка', href: '/parts/subscription', icon: CreditCard },
@@ -52,11 +52,10 @@ export const partsOwnerMenu: MenuItem[] = [
 export const partsWorkerMenu: MenuItem[] = [
   { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutGrid },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart },
+  { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox },
   { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package },
   { name: 'Клиенты', href: '/parts/customers', icon: Users },
   { name: 'Автомобили', href: '/parts/vehicles', icon: Car },
-  { name: 'Магазин', href: '/parts/inventory?source=shop', icon: ShoppingBag },
-  { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox },
   { name: 'Профиль', href: '/profile', icon: CircleUser },
 ];
 

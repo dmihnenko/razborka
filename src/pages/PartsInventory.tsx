@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
-import { Plus, Search, Package, Grid, List, ArrowLeft, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, Copy, Download, Zap, MapPin, FolderOpen } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, Download, Zap, MapPin, FolderOpen } from 'lucide-react'
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -9,7 +9,8 @@ import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { InventoryCard } from '@/components/parts/InventoryCard'
-import { getPartsInventoryPaged, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, duplicatePartsInventoryItem, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
+import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import { getPartsInventoryPaged, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { uploadToImgbb, deletePhotosFromImgbb } from '@/services/imgbbService'
@@ -561,21 +562,6 @@ export default function PartsInventory() {
     onError: () => toast.error('Ошибка при изменении статуса'),
   })
 
-  const duplicateMutation = useMutation({
-    mutationFn: (item: PartsInventoryItem) =>
-      duplicatePartsInventoryItem(item.id, partsCompanyId!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success('Позиция продублирована')
-    },
-    onError: () => toast.error('Ошибка при дублировании'),
-  })
-
-  const handleDuplicate = (item: PartsInventoryItem, e: React.MouseEvent) => {
-    e.stopPropagation()
-    duplicateMutation.mutate(item)
-  }
-
   const handleExportCsv = () => {
     const rows: CsvRow[] = filteredAndSorted.map((item: PartsInventoryItem) => ({
       name: item.name,
@@ -665,61 +651,43 @@ export default function PartsInventory() {
   return (
     <div ref={rootRef} className="min-h-dvh bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-10" style={{ boxShadow: '0 1px 0 #E2E8F0, 0 4px 16px -4px rgba(15,23,42,0.06)' }}>
-        <div className="w-full px-4 sm:px-6">
-          {/* Top row */}
-          <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
+      <PartsPageHeader
+        title={sourceFilter === 'shop' ? 'Магазин' : 'Запчасти'}
+        subtitle={`Загружено: ${inventory.length}${totalCount > inventory.length ? ` из ${totalCount}` : ` (всего ${totalCount})`}`}
+        backPath="/parts"
+        actions={
+          <>
+            <button
+              onClick={handleExportCsv}
+              className="btn-ghost btn-sm flex items-center gap-1.5"
+              title="Экспорт текущего списка в CSV"
+            >
+              <Download className="w-4 h-4" strokeWidth={1.5} />
+              <span className="hidden md:inline">CSV</span>
+            </button>
+            {sourceFilter !== 'shop' && (
               <button
-                onClick={() => navigate('/parts')}
-                className="btn-icon flex-shrink-0"
+                onClick={() => setIsConveyorOpen(true)}
+                className="btn-secondary btn-sm flex items-center gap-1.5"
+                title="Быстрый ввод запчастей к авто"
               >
-                <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
+                <Zap className="w-4 h-4" strokeWidth={1.5} />
+                <span className="hidden sm:inline">Конвейер</span>
               </button>
-              <div className="min-w-0">
-                <h1 className="text-lg sm:text-2xl font-extrabold text-gray-900 truncate" style={{ letterSpacing: '-0.025em' }}>
-                  {sourceFilter === 'shop' ? 'Магазин' : 'Запчасти'}
-                </h1>
-                <p className="text-xs font-medium text-gray-400 hidden sm:block">
-                  Загружено: {inventory.length}{totalCount > inventory.length ? ` из ${totalCount}` : ` (всего ${totalCount})`}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              {/* Экспорт CSV */}
-              <button
-                onClick={handleExportCsv}
-                className="btn-ghost btn-sm flex items-center gap-1.5"
-                title="Экспорт текущего списка в CSV"
-              >
-                <Download className="w-4 h-4" strokeWidth={1.5} />
-                <span className="hidden md:inline">CSV</span>
-              </button>
-              {/* Конвейер — только в режиме Разборки */}
-              {sourceFilter !== 'shop' && (
-                <button
-                  onClick={() => setIsConveyorOpen(true)}
-                  className="btn-secondary btn-sm flex items-center gap-1.5"
-                  title="Быстрый ввод запчастей к авто"
-                >
-                  <Zap className="w-4 h-4" strokeWidth={1.5} />
-                  <span className="hidden sm:inline">Конвейер</span>
-                </button>
-              )}
-              <button
-                onClick={() => {
-                  setEditingItem(null)
-                  setIsModalOpen(true)
-                }}
-                className="btn-primary btn-sm flex items-center gap-1.5"
-              >
-                <Plus className="w-4 h-4" strokeWidth={1.5} />
-                <span className="hidden sm:inline">Добавить</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+            )}
+            <button
+              onClick={() => {
+                setEditingItem(null)
+                setIsModalOpen(true)
+              }}
+              className="btn-primary btn-sm flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" strokeWidth={1.5} />
+              <span className="hidden sm:inline">Добавить</span>
+            </button>
+          </>
+        }
+      />
 
       {/* Content */}
       <div className="page-container">
@@ -930,7 +898,6 @@ export default function PartsInventory() {
                 onEdit={handleEdit}
                 onSell={handleSell}
                 onDelete={handleDelete}
-                onDuplicate={handleDuplicate}
                 onNavigate={goToItem}
                 onToggleSelect={(id, e) => toggleSelect(id, e as React.MouseEvent)}
               />
@@ -1048,14 +1015,6 @@ export default function PartsInventory() {
                             title="Редактировать"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                          </button>
-                          <button
-                            onClick={(e) => handleDuplicate(item, e)}
-                            disabled={duplicateMutation.isPending}
-                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-40"
-                            title="Дублировать"
-                          >
-                            <Copy className="w-4 h-4" strokeWidth={1.5} />
                           </button>
                           {item.status !== 'sold' && (
                             <button

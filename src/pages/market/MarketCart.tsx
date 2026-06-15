@@ -101,11 +101,13 @@ export function MarketCart() {
   const [name, setName] = useState('')
   const [comment, setComment] = useState('')
   const [phoneError, setPhoneError] = useState<string | null>(null)
+  const [nameError, setNameError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
 
   const groups = groupedByCompany()
   const phoneDigits = phone.replace(/\D/g, '')
   const phoneValid = phoneDigits.length === 12
+  const nameValid = name.trim().length > 0
 
   const mutation = useMutation({
     mutationFn: (vars: { groups: { companyId: string; items: CartItem[] }[]; buyer: { phone: string; name?: string; comment?: string } }) => submitMarketOrders(vars.groups, vars.buyer),
@@ -117,9 +119,11 @@ export function MarketCart() {
     e.preventDefault()
     if (!phoneValid) { setPhoneError('Укажите телефон полностью — разборка свяжется с вами по нему'); return }
     setPhoneError(null)
+    if (!nameValid) { setNameError('Укажите имя — как к вам обращаться'); return }
+    setNameError(null)
     mutation.mutate({
       groups: groups.map(g => ({ companyId: g.companyId, items: g.items })),
-      buyer: { phone: phone.trim(), name: name.trim() || undefined, comment: comment.trim() || undefined },
+      buyer: { phone: phone.trim(), name: name.trim(), comment: comment.trim() || undefined },
     })
   }
 
@@ -173,8 +177,14 @@ export function MarketCart() {
           </div>
 
           <div>
-            <label htmlFor="cart-name" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--mk-text-2)' }}>Имя</label>
-            <input id="cart-name" type="text" value={name} onChange={e => setName(e.target.value)} autoComplete="name" maxLength={100} className="mk-input" placeholder="Как к вам обращаться (необязательно)" />
+            <label htmlFor="cart-name" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--mk-text-2)' }}>Имя <span style={{ color: '#9B3535' }}>*</span></label>
+            <input
+              id="cart-name" type="text" value={name}
+              onChange={e => { setName(e.target.value); if (nameError) setNameError(null) }}
+              autoComplete="name" maxLength={100} className="mk-input" placeholder="Как к вам обращаться"
+              aria-invalid={!!nameError} aria-describedby={nameError ? 'cart-name-error' : undefined}
+            />
+            {nameError && <p id="cart-name-error" className="text-xs mt-1" style={{ color: '#9B3535' }}>{nameError}</p>}
           </div>
 
           <div>
