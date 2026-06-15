@@ -74,7 +74,7 @@ export default {
         sidebar: {
           DEFAULT:     '#0C1220',
           hover:       '#162035',
-          active:      '#2563EB',   /* = brand-600 */
+          active:      '#1173D4',   /* = brand-600 */
           border:      'rgba(255,255,255,0.07)',
           text:        '#94A3B8',
           'text-active': '#FFFFFF',
@@ -86,10 +86,10 @@ export default {
         },
         // Brand
         brand: {
-          DEFAULT: '#2563EB',
-          hover:   '#1D4ED8',
-          light:   '#EFF6FF',
-          glow:    '#3B82F6',
+          DEFAULT: '#1173D4',
+          hover:   '#0E5FB0',
+          light:   '#EAF4FE',
+          glow:    '#1E86E5',
         },
       },
       borderRadius: {

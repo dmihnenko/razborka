@@ -115,18 +115,18 @@ export function MarketHome() {
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         className="relative overflow-hidden rounded-3xl px-5 py-10 sm:px-10 sm:py-14 text-center"
         style={{
-          background: 'linear-gradient(135deg, #1E3A6E 0%, #1E40AF 45%, #2563EB 80%, #3B82F6 100%)',
+          background: 'linear-gradient(135deg, #0A3A6B 0%, var(--brand-700) 45%, var(--brand-600) 80%, var(--brand-500) 100%)',
         }}
       >
         {/* Декор: размытые кружки */}
         <div
           className="pointer-events-none absolute -top-16 -right-16 w-64 h-64 rounded-full opacity-20"
-          style={{ background: 'radial-gradient(circle, #60A5FA 0%, transparent 70%)' }}
+          style={{ background: 'radial-gradient(circle, var(--brand-400) 0%, transparent 70%)' }}
           aria-hidden="true"
         />
         <div
           className="pointer-events-none absolute -bottom-12 -left-12 w-48 h-48 rounded-full opacity-15"
-          style={{ background: 'radial-gradient(circle, #93C5FD 0%, transparent 70%)' }}
+          style={{ background: 'radial-gradient(circle, var(--brand-200) 0%, transparent 70%)' }}
           aria-hidden="true"
         />
 

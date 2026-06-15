@@ -4,7 +4,7 @@
 
 /* ═══════════════════════════════════════════════════════════════
    DESIGN TOKENS — CSS custom properties
-   Дизайн-язык v2: сталисто-синие нейтральные, бренд #2563EB,
+   Дизайн-язык v2: сталисто-синие нейтральные, бренд #1173D4 (azure),
    шрифт Manrope Variable, крупные радиусы, многоуровневые тени.
    ═══════════════════════════════════════════════════════════════ */
 @layer base {
@@ -18,7 +18,7 @@
     --foreground:    222 47% 11%;
     --card:          0 0% 100%;
     --card-foreground: 222 47% 11%;
-    --primary:       221 83% 53%;
+    --primary:       210 85% 45%;
     --primary-foreground: 0 0% 100%;
     --secondary:     214 32% 91%;
     --secondary-foreground: 222 47% 11%;
@@ -28,7 +28,7 @@
     --destructive-foreground: 0 0% 100%;
     --border:        215 25% 89%;
     --input:         215 25% 89%;
-    --ring:          221 83% 53%;
+    --ring:          210 85% 45%;
     --accent:        214 32% 91%;
     --accent-foreground: 222 47% 11%;
     --popover:       0 0% 100%;
@@ -41,15 +41,15 @@
         и т.п.). Tailwind-утилиты на rem (text-, p- и пр.) масштабируются
        от --app-font-size автоматически. */
 
-    /* Бренд — синий рамп (electric blue) */
-    --brand-50:   #EFF6FF;
-    --brand-100:  #DBEAFE;
-    --brand-200:  #BFDBFE;
-    --brand-400:  #60A5FA;
-    --brand-500:  #3B82F6;
-    --brand-600:  #2563EB;   /* основной primary */
-    --brand-700:  #1D4ED8;
-    --brand-800:  #1E40AF;
+    /* Бренд — синий рамп (azure, hue ~210) */
+    --brand-50:   #EAF4FE;
+    --brand-100:  #D2E7FC;
+    --brand-200:  #A6CFF9;
+    --brand-400:  #4DA1EE;
+    --brand-500:  #1E86E5;
+    --brand-600:  #1173D4;   /* основной primary */
+    --brand-700:  #0E5FB0;
+    --brand-800:  #0C4F92;
     --brand-gradient: linear-gradient(135deg, var(--brand-800) 0%, var(--brand-600) 55%, var(--brand-500) 100%);
 
     /* Типографика — базовый размер (мягкий fluid, кап 16.5px чтобы не раздувать UI). */
@@ -88,7 +88,7 @@
   /* Focus ring — brand-600 inner + soft halo */
   *:focus-visible {
     @apply outline-none;
-    box-shadow: 0 0 0 2px var(--brand-600, #2563EB), 0 0 0 4px rgba(37,99,235,0.15);
+    box-shadow: 0 0 0 2px var(--brand-600), 0 0 0 4px rgb(17 115 212 / 0.15);
   }
 
   /* Touch targets */
@@ -133,13 +133,13 @@
 
   .btn-primary {
     @apply btn text-white px-4 py-2 text-sm min-h-[38px];
-    background-image: linear-gradient(180deg, #3B82F6 0%, #2563EB 100%);
+    background-image: linear-gradient(180deg, var(--brand-500) 0%, var(--brand-600) 100%);
     box-shadow: 0 1px 2px rgba(37,99,235,0.35),
                 0 4px 12px -2px rgba(37,99,235,0.35),
                 inset 0 1px 0 rgba(255,255,255,0.18);
   }
   .btn-primary:hover {
-    background-image: linear-gradient(180deg, #2F76F4 0%, #1D4ED8 100%);
+    background-image: linear-gradient(180deg, var(--brand-500) 0%, var(--brand-700) 100%);
     box-shadow: 0 2px 4px rgba(37,99,235,0.35),
                 0 8px 20px -4px rgba(37,99,235,0.45),
                 inset 0 1px 0 rgba(255,255,255,0.18);
@@ -310,7 +310,7 @@
   }
   .form-input:hover { @apply border-gray-300; }
   .form-input:focus {
-    box-shadow: 0 0 0 2px var(--brand-600, #2563EB), 0 0 0 4px rgba(37,99,235,0.15);
+    box-shadow: 0 0 0 2px var(--brand-600), 0 0 0 4px rgb(17 115 212 / 0.15);
   }
   .form-select {
     @apply form-input appearance-none bg-white;
@@ -330,7 +330,7 @@
     color: #FFFFFF;
   }
   .sidebar-link.active {
-    background-color: #2563EB;   /* brand-600 = sidebar active */
+    background-color: var(--brand-600);   /* brand-600 = sidebar active */
     color: #FFFFFF;
     box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
   }
@@ -390,7 +390,7 @@
   }
   .chip.active, .chip-active {
     @apply border-transparent text-white;
-    background-image: linear-gradient(180deg, #3B82F6 0%, #2563EB 100%);
+    background-image: linear-gradient(180deg, var(--brand-500) 0%, var(--brand-600) 100%);
     box-shadow: 0 2px 8px -2px rgba(37,99,235,0.4);
   }
 
@@ -489,7 +489,7 @@
 
   /* Градиентный бренд-текст (hero, числа на лендинге) */
   .text-gradient-brand {
-    background-image: linear-gradient(135deg, #3B82F6 0%, #2563EB 55%, #1D4ED8 100%);
+    background-image: linear-gradient(135deg, var(--brand-500) 0%, var(--brand-600) 55%, var(--brand-700) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -527,7 +527,7 @@
   --input:              220 20% 16%;
   --muted:              220 22% 16%;
   --muted-foreground:   215 20% 55%;
-  --primary:            221 83% 53%;
+  --primary:            210 90% 56%;
   --primary-foreground: 0 0% 100%;
   --secondary:          220 22% 18%;
   --secondary-foreground: 210 30% 80%;
@@ -628,7 +628,7 @@
 /* ── Dark: focus ring ── */
 .dark *:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px #2563EB, 0 0 0 5px rgba(37,99,235,0.3) !important;
+  box-shadow: 0 0 0 2px var(--brand-600), 0 0 0 5px rgb(17 115 212 / 0.3) !important;
 }
 
 /* ── Dark: scrollbar ── */
@@ -688,8 +688,8 @@
 }
 .dark .form-input:focus,
 .dark .form-select:focus {
-  border-color: #2563EB !important;
-  box-shadow: 0 0 0 4px rgba(37,99,235,0.2) !important;
+  border-color: var(--brand-600) !important;
+  box-shadow: 0 0 0 4px rgb(17 115 212 / 0.2) !important;
 }
 .dark .empty-state-icon {
   background: #111827 !important;
@@ -753,7 +753,7 @@
 .dark .grid-hairline > * { border-color: rgba(255,255,255,0.06) !important; }
 .dark .panel-divided > * + * { border-color: rgba(255,255,255,0.06) !important; }
 .dark .sidebar-link.active {
-  background-color: #2563EB !important;
+  background-color: var(--brand-600) !important;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15) !important;
 }
 
@@ -761,8 +761,8 @@
 .spinner {
   display: inline-block;
   width: 36px; height: 36px;
-  border: 3px solid rgba(37,99,235,0.15);
-  border-top-color: #2563EB;
+  border: 3px solid rgb(17 115 212 / 0.15);
+  border-top-color: var(--brand-600);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
