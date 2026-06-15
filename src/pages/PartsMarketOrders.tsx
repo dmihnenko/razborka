@@ -268,7 +268,7 @@ export default function PartsMarketOrders() {
             >
               {label}
               {key === 'new' && newCount > 0 && (
-                <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${statusFilter === key ? 'bg-white/25 text-white' : 'bg-blue-600 text-white'}`}>
+                <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${statusFilter === key ? 'bg-white/25 text-white' : 'bg-[#4F5B7A] text-white'}`}>
                   {newCount}
                 </span>
               )}

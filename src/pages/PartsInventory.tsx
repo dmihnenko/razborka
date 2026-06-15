@@ -1211,7 +1211,7 @@ export default function PartsInventory() {
             <button
               type="button"
               onClick={() => { setBulkLocationId(''); setIsBulkLocationOpen(true) }}
-              className="bg-blue-600 hover:bg-blue-700 text-white btn-sm flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors"
+              className="bg-[#4F5B7A] hover:bg-[#3E4860] text-white btn-sm flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors"
             >
               <MapPin className="w-4 h-4" strokeWidth={1.5} />
               <span className="hidden sm:inline">Место</span>

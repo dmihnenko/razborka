@@ -869,7 +869,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
                   key={item.id}
                   onClick={() => handleSelectItem(item)}
                   className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
-                    selectedItem?.id === item.id ? 'bg-blue-50' : 'bg-white'
+                    selectedItem?.id === item.id ? 'bg-slate-100' : 'bg-white'
                   }`}
                 >
                   <p className="text-sm font-semibold text-gray-900">{item.name}</p>
@@ -888,7 +888,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
 
           {/* выбранный товар: кол-во + цена */}
           {selectedItem && (
-            <div className="rounded-xl bg-blue-50/60 border border-blue-100 p-4 space-y-4">
+            <div className="rounded-xl bg-slate-100/70 border border-slate-200 p-4 space-y-4">
               <p className="text-sm font-semibold text-gray-800">
                 Выбрано: {selectedItem.name}
               </p>

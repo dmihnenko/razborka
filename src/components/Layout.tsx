@@ -6,6 +6,7 @@ import {
   Menu,
   X,
   Search,
+  Store,
 } from 'lucide-react'
 import GlobalSearch from './GlobalSearch'
 import { LayoutSkeleton } from './LayoutSkeleton'
@@ -210,21 +211,24 @@ export default function Layout() {
   const showAdminInSheet = isAdmin && !adminInNav
 
   return (
-    <div className="flex flex-col md:flex-row h-dvh bg-gray-100 font-sans overscroll-none">
+    <div
+      className="flex flex-col md:flex-row h-dvh bg-gray-100 font-sans overscroll-none"
+      // Светлый Graphite: акцент кабинета — графит #4F5B7A (hsl 223 21% 39%).
+      // Переопределяем --primary только в обёртке кабинета: bg-primary/text-primary/фокус
+      // во всех вложенных страницах становятся графитовыми, логин/админку не задевает.
+      style={{ '--primary': '223 21% 39%' } as React.CSSProperties}
+    >
 
       {/* ════════════════════════════════════════════
-          DESKTOP SIDEBAR — navy, md:w-16 → lg:w-64
+          DESKTOP SIDEBAR — светлый Graphite, md:w-16 → lg:w-64
           ════════════════════════════════════════════ */}
       <aside
-        className={`${isUserCtx ? 'hidden' : 'hidden md:flex'} md:flex-col md:w-16 lg:w-64 flex-shrink-0`}
-        style={{ background: '#0E1C3D' }}
+        className={`${isUserCtx ? 'hidden' : 'hidden md:flex'} md:flex-col md:w-16 lg:w-64 flex-shrink-0 bg-white border-r border-gray-200`}
       >
         {/* Шапка сайдбара — ContextSwitcher */}
-        <div className="flex items-center px-2 lg:px-3 h-14 border-b"
-          style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+        <div className="flex items-center px-2 lg:px-3 h-14 border-b border-gray-200">
           {/* На lg — полный switcher; на md — только иконка (switcher сам адаптируется) */}
-          <div className="w-full overflow-hidden"
-            style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '10px' }}>
+          <div className="w-full overflow-hidden rounded-[10px]">
             <ContextSwitcher current={currentCtx} />
           </div>
         </div>
@@ -243,26 +247,9 @@ export default function Layout() {
                 title={item.name}
                 className={`group flex items-center justify-center lg:justify-start gap-3 px-0 lg:px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
                   isActive
-                    ? 'text-white font-semibold'
-                    : 'font-medium active:scale-[0.98]'
+                    ? 'bg-[#4F5B7A] text-white font-semibold'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium active:scale-[0.98]'
                 }`}
-                style={
-                  isActive
-                    ? { background: '#2563EB' }
-                    : { color: '#94A3B8' }
-                }
-                onMouseEnter={e => {
-                  if (!isActive) {
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'
-                    ;(e.currentTarget as HTMLElement).style.color = '#E2E8F0'
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!isActive) {
-                    (e.currentTarget as HTMLElement).style.background = ''
-                    ;(e.currentTarget as HTMLElement).style.color = '#94A3B8'
-                  }
-                }}
               >
                 <Icon
                   className="w-[18px] h-[18px] flex-shrink-0"
@@ -275,21 +262,24 @@ export default function Layout() {
         </nav>
 
         {/* Footer */}
-        <div className="px-2 py-3 space-y-0.5" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
+        <div className="px-2 py-3 space-y-0.5 border-t border-gray-200">
+          {/* В маркет — публичная витрина запчастей */}
+          {currentCtx === 'parts' && (
+            <Link
+              to="/market"
+              title="Открыть маркет запчастей"
+              className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm rounded-lg transition-colors active:scale-[0.98] text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            >
+              <Store className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} />
+              <span className="hidden lg:block">В маркет</span>
+            </Link>
+          )}
+
           {/* Кнопка поиска */}
           <button
             onClick={() => setSearchOpen(true)}
             title="Поиск (Ctrl+K)"
-            className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm rounded-lg transition-colors active:scale-[0.98]"
-            style={{ color: '#94A3B8' }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'
-              ;(e.currentTarget as HTMLElement).style.color = '#E2E8F0'
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.background = ''
-              ;(e.currentTarget as HTMLElement).style.color = '#94A3B8'
-            }}
+            className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm rounded-lg transition-colors active:scale-[0.98] text-slate-600 hover:bg-slate-100 hover:text-slate-900"
           >
             <Search className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} />
             <span className="hidden lg:block">Поиск</span>
@@ -305,33 +295,15 @@ export default function Layout() {
             <Link
               to="/admin"
               onClick={() => localStorage.removeItem('activeRole')}
-              className="lg:hidden flex items-center justify-center gap-3 w-full px-1 py-2.5 rounded-lg transition-colors"
+              className="lg:hidden flex items-center justify-center gap-3 w-full px-1 py-2.5 rounded-lg transition-colors text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               title="Панель администратора"
-              style={{ color: '#CBD5E1' }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'
-                ;(e.currentTarget as HTMLElement).style.color = '#E2E8F0'
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.background = ''
-                ;(e.currentTarget as HTMLElement).style.color = '#CBD5E1'
-              }}
             >
               <Shield className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} />
             </Link>
           )}
           <button
             onClick={handleLogout}
-            className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm rounded-lg transition-colors active:scale-[0.98]"
-            style={{ color: '#CBD5E1' }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.background = 'rgba(220,38,38,0.15)'
-              ;(e.currentTarget as HTMLElement).style.color = '#FCA5A5'
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.background = ''
-              ;(e.currentTarget as HTMLElement).style.color = '#CBD5E1'
-            }}
+            className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm rounded-lg transition-colors active:scale-[0.98] text-slate-600 hover:bg-red-50 hover:text-red-600"
           >
             <LogOut className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} />
             <span className="hidden lg:block">Выход</span>
@@ -365,6 +337,16 @@ export default function Layout() {
             <div className="flex-1 min-w-0">
               <ContextSwitcher current={currentCtx} />
             </div>
+            {currentCtx === 'parts' && (
+              <Link
+                to="/market"
+                aria-label="В маркет"
+                title="Открыть маркет запчастей"
+                className="flex-shrink-0 flex items-center justify-center w-9 h-9 text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all active:scale-[0.97]"
+              >
+                <Store className="w-4 h-4" strokeWidth={1.5} />
+              </Link>
+            )}
             <button
               onClick={() => setSearchOpen(true)}
               aria-label="Поиск"
@@ -416,7 +398,7 @@ export default function Layout() {
                 key={item.href}
                 to={item.href}
                 className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-colors ${
-                  isActive ? 'text-[#2563EB]' : 'text-gray-400 hover:text-gray-600'
+                  isActive ? 'text-[#4F5B7A]' : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
@@ -482,7 +464,7 @@ export default function Layout() {
                     onClick={() => setSheetOpen(false)}
                     className={`flex flex-col items-center justify-center gap-1.5 px-1 py-3 rounded-xl min-h-[64px] transition-colors active:scale-[0.96] ${
                       isActive
-                        ? 'bg-[#2563EB] text-white font-semibold'
+                        ? 'bg-[#4F5B7A] text-white font-semibold'
                         : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                     }`}
                   >

@@ -165,10 +165,10 @@ export default function PartsDashboard() {
           className="stat-card cursor-pointer text-left group"
         >
           <div className="flex items-start justify-between mb-3">
-            <div className="icon-tile bg-blue-50 text-blue-600">
+            <div className="icon-tile bg-slate-100 text-slate-700">
               <Car className="w-5 h-5" strokeWidth={1.5} />
             </div>
-            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-500" strokeWidth={1.5} />
+            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400" strokeWidth={1.5} />
           </div>
           <p className="kicker mb-1">Автомобілі</p>
           <p className="heading-2 tabular">
@@ -192,10 +192,10 @@ export default function PartsDashboard() {
           className="stat-card cursor-pointer text-left group"
         >
           <div className="flex items-start justify-between mb-3">
-            <div className="icon-tile bg-orange-50 text-orange-500">
+            <div className="icon-tile bg-slate-100 text-slate-700">
               <Wrench className="w-5 h-5" strokeWidth={1.5} />
             </div>
-            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-orange-500" strokeWidth={1.5} />
+            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400" strokeWidth={1.5} />
           </div>
           <p className="kicker mb-1">Запчасти</p>
           <p className="heading-2 tabular">
@@ -221,10 +221,10 @@ export default function PartsDashboard() {
           className="stat-card cursor-pointer text-left group"
         >
           <div className="flex items-start justify-between mb-3">
-            <div className="icon-tile bg-amber-50 text-amber-600">
+            <div className="icon-tile bg-slate-100 text-slate-700">
               <ShoppingCart className="w-5 h-5" strokeWidth={1.5} />
             </div>
-            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-amber-500" strokeWidth={1.5} />
+            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400" strokeWidth={1.5} />
           </div>
           <p className="kicker mb-1">Заказы</p>
           <p className="heading-2 tabular">
@@ -246,7 +246,7 @@ export default function PartsDashboard() {
         <button
           onClick={() => navigate('/parts/customers')}
           className="stat-card cursor-pointer text-left group"
-          style={{ background: 'var(--brand-gradient)', border: 'none' }}
+          style={{ background: 'linear-gradient(135deg, #3E4860 0%, #4F5B7A 100%)', border: 'none' }}
         >
           <div className="flex items-start justify-between mb-3">
             <div className="icon-tile flex-shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>

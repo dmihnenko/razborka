@@ -463,7 +463,7 @@ export default function PartsCategories() {
               <div className="sticky top-16 z-20 mb-4 animate-slide-up">
                 <div
                   className="rounded-xl px-4 py-3 flex items-center justify-between shadow-lg"
-                  style={{ background: 'var(--brand-gradient)' }}
+                  style={{ background: 'linear-gradient(135deg, #3E4860 0%, #4F5B7A 100%)' }}
                 >
                   <span className="text-sm font-semibold text-white tabular-nums">
                     Выбрано: {selectedTemplateIds.size}

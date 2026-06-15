@@ -113,10 +113,10 @@ export default function CreateFab() {
           aria-expanded={open}
           className="w-14 h-14 rounded-full flex items-center justify-center text-white active:scale-95"
           style={{
-            background: 'var(--brand-gradient)',
+            background: 'linear-gradient(135deg, #3E4860 0%, #4F5B7A 100%)',
             boxShadow: open
-              ? '0 2px 8px rgba(37,99,235,0.50), 0 8px 24px -4px rgba(37,99,235,0.60)'
-              : '0 4px 16px rgba(37,99,235,0.45), 0 2px 6px rgba(37,99,235,0.30)',
+              ? '0 2px 8px rgba(79,91,122,0.50), 0 8px 24px -4px rgba(79,91,122,0.60)'
+              : '0 4px 16px rgba(79,91,122,0.45), 0 2px 6px rgba(79,91,122,0.30)',
             transition: 'box-shadow 200ms',
           }}
         >

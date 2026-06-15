@@ -24,7 +24,12 @@ function MarketLayoutInner() {
   const location = useLocation()
   const { user } = useAuth()
   const { data: profile } = useUserProfile()
-  const dashboardHref = getDefaultRouteForRoles((profile?.roles || []).map((r: any) => r.name))
+  const roleNames = (profile?.roles || []).map((r: any) => r.name)
+  // «В кабинет» из маркета: маркет — публичная витрина разборки, поэтому владельца/работника
+  // разборки ведём в кабинет разборки, даже если у него есть и роль admin.
+  const dashboardHref = roleNames.includes('parts_owner') || roleNames.includes('parts_worker')
+    ? '/parts/dashboard'
+    : getDefaultRouteForRoles(roleNames)
   const { totalCount } = useCart()
   const [search, setSearch] = useState('')
   const isHome = location.pathname === '/market' || location.pathname === '/market/'
