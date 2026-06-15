@@ -90,10 +90,10 @@ export function MarketHome() {
   const topSuppliers = (suppliers ?? []).slice(0, MAX_SUPPLIERS)
 
   return (
-    <div className="space-y-8 sm:space-y-10">
+    <div className="space-y-6 sm:space-y-8">
 
       {/* ── Герой: чистая панель, акцент только на кнопке ─────────────── */}
-      <motion.section {...anim(0)} className="mk-card p-6 sm:p-10 text-center" aria-labelledby="mk-hero-title">
+      <motion.section {...anim(0)} className="mk-card p-5 sm:p-8 text-center" aria-labelledby="mk-hero-title">
         <span className="inline-flex items-center gap-1.5 px-3 h-7 rounded-full text-xs font-semibold mb-4" style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
           <Zap className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Запчасти напрямую от авторазборок
         </span>
@@ -107,10 +107,10 @@ export function MarketHome() {
               <input
                 type="search" value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Название запчасти или артикул…"
-                className="mk-input mk-search !min-h-[48px] !rounded-2xl" aria-label="Поиск по каталогу запчастей"
+                className="mk-input mk-search !min-h-[var(--mk-control-h-lg)]" aria-label="Поиск по каталогу запчастей"
               />
             </div>
-            <button type="submit" className="mk-btn mk-btn-accent mk-btn-lg !rounded-2xl flex-shrink-0">Найти</button>
+            <button type="submit" className="mk-btn mk-btn-accent mk-btn-lg flex-shrink-0">Найти</button>
           </div>
         </form>
 

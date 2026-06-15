@@ -103,11 +103,11 @@ export default function MarketProductPage() {
         </ol>
       </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(340px,400px)] gap-4 lg:gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] gap-4 lg:gap-5 items-start">
         {/* Левая: галерея + описание */}
-        <div className="space-y-3 min-w-0">
+        <div className="space-y-3 min-w-0 lg:max-w-[520px]">
           {galleryPhotos.length > 0 ? (
-            <div className="rounded-2xl overflow-hidden mk-card p-0"><PhotoGallery photos={galleryPhotos} alt={part.name} mainAspect="aspect-[4/3]" /></div>
+            <div className="rounded-xl overflow-hidden mk-card p-0"><PhotoGallery photos={galleryPhotos} alt={part.name} mainAspect="aspect-[4/3]" /></div>
           ) : (
             <div className="mk-card aspect-[4/3] flex flex-col items-center justify-center gap-3" style={{ color: 'var(--mk-text-3)' }}>
               <Package className="w-12 h-12" strokeWidth={1.5} aria-hidden="true" />
@@ -116,7 +116,7 @@ export default function MarketProductPage() {
           )}
 
           {part.description && (
-            <div className="mk-card p-5">
+            <div className="mk-card p-4">
               <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-3 mk-meta">
                 <FileText className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Описание
               </h2>
@@ -126,16 +126,16 @@ export default function MarketProductPage() {
         </div>
 
         {/* Правая: sticky-инфо */}
-        <div className="lg:sticky lg:top-24 space-y-3">
-          <div className="mk-card p-5">
-            <div className="flex flex-wrap gap-1.5 mb-3">
+        <div className="lg:sticky lg:top-20 space-y-3">
+          <div className="mk-card p-4">
+            <div className="flex flex-wrap gap-1.5 mb-2.5">
               {conditionBadge(part.condition)}
               {part.categoryName && (
                 <span className="mk-badge mk-badge-neutral"><Tag className="w-3 h-3" strokeWidth={1.5} aria-hidden="true" /> {part.categoryName}</span>
               )}
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-extrabold leading-tight tracking-tight mb-1" style={{ color: 'var(--mk-text)' }}>{part.name}</h1>
+            <h1 className="text-lg sm:text-xl font-extrabold leading-tight tracking-tight mb-1" style={{ color: 'var(--mk-text)' }}>{part.name}</h1>
 
             {part.partNumber && (
               <div className="mb-3 mt-2">
@@ -152,7 +152,7 @@ export default function MarketProductPage() {
               </div>
             )}
 
-            <div className="mt-3 p-4 rounded-2xl" style={{ background: 'var(--mk-surface-2)' }}>
+            <div className="mt-3 p-3.5 rounded-xl" style={{ background: 'var(--mk-surface-2)' }}>
               <p className="text-[10px] uppercase tracking-widest font-bold mb-1 mk-meta">Цена</p>
               <p className="mk-price-lg leading-none">{formatPrice(part.sellingPrice, part.priceCurrency)}</p>
               {part.quantity > 1 && (
@@ -160,17 +160,17 @@ export default function MarketProductPage() {
               )}
             </div>
 
-            <div className="mt-4 space-y-2">
-              <button type="button" onClick={handleAddToCart} className="mk-btn mk-btn-accent mk-btn-lg w-full">
-                <ShoppingCart className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" /> Добавить в корзину
+            <div className="mt-3 space-y-2">
+              <button type="button" onClick={handleAddToCart} className="mk-btn mk-btn-accent w-full">
+                <ShoppingCart className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> Добавить в корзину
               </button>
-              <Link to="/market/cart" className="mk-btn mk-btn-outline mk-btn-lg w-full">Перейти к корзине</Link>
+              <Link to="/market/cart" className="mk-btn mk-btn-outline w-full">Перейти к корзине</Link>
             </div>
           </div>
 
           {part.vehicle && (
             <div className="mk-card p-4">
-              <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-3 mk-meta">
+              <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-2.5 mk-meta">
                 <Car className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Снята с автомобиля
               </h2>
               <div className="flex items-start gap-3">

@@ -445,20 +445,26 @@
     --mk-accent-weak:  rgba(79,91,122,0.10);
     --mk-on-accent:    #FFFFFF;
     --mk-focus:        rgba(79,91,122,0.35);
-    /* Радиусы */
-    --mk-r-sm: 8px; --mk-r: 12px; --mk-r-lg: 16px; --mk-r-xl: 22px;
+    /* Радиусы — кнопки прямоугольные, слегка скруглённые */
+    --mk-r-btn: 7px; --mk-r-sm: 7px; --mk-r: 10px; --mk-r-lg: 12px; --mk-r-xl: 16px;
+    /* Высоты контролов: компактно на десктопе; на тач ≥44px (см. @media coarse ниже) */
+    --mk-control-h: 36px; --mk-control-h-lg: 42px;
     /* Тени — мягкие */
     --mk-shadow:    0 1px 2px rgba(17,24,39,0.04), 0 1px 3px rgba(17,24,39,0.05);
     --mk-shadow-md: 0 6px 16px -8px rgba(17,24,39,0.12);
     /* Раскладка / fluid (масштабируется до 2K/4K) */
-    --mk-maxw: 1760px;
-    --mk-gap: clamp(0.625rem, 0.4rem + 0.9vw, 1.25rem);
-    --mk-pad: clamp(0.875rem, 0.4rem + 1.6vw, 1.75rem);
-    --mk-card-min: clamp(150px, 22vw, 232px);
-    --mk-card-min-wide: clamp(260px, 40vw, 380px);
+    --mk-maxw: 1680px;
+    --mk-gap: clamp(0.5rem, 0.35rem + 0.7vw, 1rem);
+    --mk-pad: clamp(0.75rem, 0.45rem + 1.1vw, 1.4rem);
+    --mk-card-min: clamp(140px, 18vw, 196px);
+    --mk-card-min-wide: clamp(238px, 32vw, 330px);
 
     background-color: var(--mk-bg);
     color: var(--mk-text);
+  }
+  /* Тач-устройства: контролы крупнее для пальца (≥44px) */
+  @media (pointer: coarse) {
+    .market { --mk-control-h: 44px; --mk-control-h-lg: 48px; }
   }
 
   /* Графитовое фокус-кольцо вместо глобального azure — внутри маркета */
@@ -481,15 +487,15 @@
   .mk-grid-wide { display: grid; gap: var(--mk-gap); grid-template-columns: repeat(auto-fill, minmax(min(var(--mk-card-min-wide), 100%), 1fr)); }
 
   /* Типографика (fluid) */
-  .mk-h1   { font-weight: 800; letter-spacing: -0.03em; color: var(--mk-text); font-size: clamp(1.4rem, 1.1rem + 1.4vw, 2.1rem); line-height: 1.1; }
-  .mk-title{ font-weight: 700; letter-spacing: -0.02em; color: var(--mk-text); font-size: clamp(1.05rem, 0.95rem + 0.5vw, 1.35rem); }
+  .mk-h1   { font-weight: 800; letter-spacing: -0.03em; color: var(--mk-text); font-size: clamp(1.2rem, 1.05rem + 0.7vw, 1.55rem); line-height: 1.15; }
+  .mk-title{ font-weight: 700; letter-spacing: -0.02em; color: var(--mk-text); font-size: clamp(0.98rem, 0.93rem + 0.25vw, 1.12rem); }
   .mk-sub  { color: var(--mk-text-3); font-size: clamp(.8rem, .78rem + .1vw, .9rem); }
   .mk-meta { color: var(--mk-text-3); }
   .mk-link { color: var(--mk-accent); font-weight: 600; transition: color .15s; }
   .mk-link:hover { color: var(--mk-accent-hover); }
 
-  /* Кнопки */
-  .mk-btn { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; min-height:44px; padding-inline:1rem; border-radius:var(--mk-r); font-weight:600; font-size:.875rem; cursor:pointer; white-space:nowrap; transition: background-color .15s, border-color .15s, color .15s, box-shadow .15s; }
+  /* Кнопки — прямоугольные, слегка скруглённые (--mk-r-btn) */
+  .mk-btn { display:inline-flex; align-items:center; justify-content:center; gap:.45rem; min-height:var(--mk-control-h); padding-inline:.875rem; border-radius:var(--mk-r-btn); font-weight:600; font-size:.85rem; cursor:pointer; white-space:nowrap; transition: background-color .15s, border-color .15s, color .15s, box-shadow .15s; }
   .mk-btn:active { transform: scale(.98); }
   .mk-btn-accent  { background: var(--mk-accent); color: var(--mk-on-accent); }
   .mk-btn-accent:hover { background: var(--mk-accent-hover); }
@@ -498,21 +504,21 @@
   .mk-btn-outline:hover { border-color: var(--mk-border-2); color: var(--mk-text); }
   .mk-btn-ghost   { background: transparent; color: var(--mk-text-2); }
   .mk-btn-ghost:hover { background: var(--mk-surface-2); color: var(--mk-text); }
-  .mk-btn-lg { min-height:48px; padding-inline:1.25rem; font-size:.95rem; }
+  .mk-btn-lg { min-height:var(--mk-control-h-lg); padding-inline:1.1rem; font-size:.9rem; }
 
-  /* Иконочная кнопка ≥44px */
-  .mk-icon-btn { display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:var(--mk-r); flex-shrink:0; color:var(--mk-text-2); cursor:pointer; transition: background-color .15s, color .15s; }
+  /* Иконочная кнопка */
+  .mk-icon-btn { display:inline-flex; align-items:center; justify-content:center; width:var(--mk-control-h); height:var(--mk-control-h); border-radius:var(--mk-r-btn); flex-shrink:0; color:var(--mk-text-2); cursor:pointer; transition: background-color .15s, color .15s; }
   .mk-icon-btn:hover { background: var(--mk-surface-2); color: var(--mk-text); }
   .mk-icon-btn:active { transform: scale(.94); }
 
   /* Поле / поиск */
-  .mk-input { width:100%; min-height:44px; padding:0 .875rem; border-radius:var(--mk-r); background:var(--mk-surface); color:var(--mk-text); border:1px solid var(--mk-border); font-size:.9rem; transition: border-color .15s, box-shadow .15s; }
+  .mk-input { width:100%; min-height:var(--mk-control-h); padding:0 .8rem; border-radius:var(--mk-r-btn); background:var(--mk-surface); color:var(--mk-text); border:1px solid var(--mk-border); font-size:.875rem; transition: border-color .15s, box-shadow .15s; }
   .mk-input::placeholder { color: var(--mk-text-3); }
   .mk-input:focus { outline:none; border-color:var(--mk-accent); box-shadow:0 0 0 3px var(--mk-focus); }
-  .mk-search { padding-left: 2.75rem; }
+  .mk-search { padding-left: 2.5rem; }
 
-  /* Чип */
-  .mk-chip { display:inline-flex; align-items:center; gap:.375rem; min-height:40px; padding:0 .875rem; border-radius:999px; background:var(--mk-surface); border:1px solid var(--mk-border); color:var(--mk-text-2); font-size:.8rem; font-weight:600; white-space:nowrap; cursor:pointer; transition: border-color .15s, color .15s, background-color .15s; }
+  /* Чип — прямоугольный, слегка скруглённый */
+  .mk-chip { display:inline-flex; align-items:center; gap:.375rem; min-height:var(--mk-control-h); padding:0 .75rem; border-radius:var(--mk-r-btn); background:var(--mk-surface); border:1px solid var(--mk-border); color:var(--mk-text-2); font-size:.8rem; font-weight:600; white-space:nowrap; cursor:pointer; transition: border-color .15s, color .15s, background-color .15s; }
   .mk-chip:hover { border-color: var(--mk-border-2); color: var(--mk-text); }
   .mk-chip.active { background: var(--mk-accent); border-color: var(--mk-accent); color: var(--mk-on-accent); }
 
@@ -525,28 +531,28 @@
 
   /* Цена — монохром (вес важнее цвета) */
   .mk-price { font-weight:800; letter-spacing:-.01em; color:var(--mk-text); font-variant-numeric:tabular-nums; }
-  .mk-price-lg { font-weight:800; letter-spacing:-.02em; color:var(--mk-text); font-variant-numeric:tabular-nums; font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem); }
+  .mk-price-lg { font-weight:800; letter-spacing:-.02em; color:var(--mk-text); font-variant-numeric:tabular-nums; font-size: clamp(1.3rem, 1.1rem + 0.7vw, 1.6rem); }
 
   /* Плитка категории */
-  .mk-tile { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.5rem; min-height:92px; padding:.875rem .5rem; text-align:center; background:var(--mk-surface); border:1px solid var(--mk-border); border-radius:var(--mk-r-lg); cursor:pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
+  .mk-tile { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.4rem; min-height:78px; padding:.7rem .5rem; text-align:center; background:var(--mk-surface); border:1px solid var(--mk-border); border-radius:var(--mk-r-lg); cursor:pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
   .mk-tile:hover { border-color: var(--mk-border-2); box-shadow: var(--mk-shadow-md); transform: translateY(-2px); }
-  .mk-tile-icon { display:inline-flex; align-items:center; justify-content:center; width:2.5rem; height:2.5rem; border-radius:var(--mk-r); background:var(--mk-accent-weak); color:var(--mk-accent); }
+  .mk-tile-icon { display:inline-flex; align-items:center; justify-content:center; width:2.25rem; height:2.25rem; border-radius:var(--mk-r-btn); background:var(--mk-accent-weak); color:var(--mk-accent); }
 
-  /* Add-кнопка (акцент) ≥44px */
-  .mk-add { width:44px; height:44px; border-radius:var(--mk-r); display:inline-flex; align-items:center; justify-content:center; background:var(--mk-accent); color:var(--mk-on-accent); flex-shrink:0; cursor:pointer; transition: background-color .15s, transform .1s; }
+  /* Add-кнопка (акцент) */
+  .mk-add { width:var(--mk-control-h); height:var(--mk-control-h); border-radius:var(--mk-r-btn); display:inline-flex; align-items:center; justify-content:center; background:var(--mk-accent); color:var(--mk-on-accent); flex-shrink:0; cursor:pointer; transition: background-color .15s, transform .1s; }
   .mk-add:hover { background: var(--mk-accent-hover); }
   .mk-add:active { transform: scale(.94); }
   .mk-add:disabled { opacity:.45; cursor:not-allowed; }
 
-  /* Степпер количества ≥44px */
-  .mk-qty { display:inline-flex; align-items:center; border:1px solid var(--mk-border); border-radius:var(--mk-r); overflow:hidden; background:var(--mk-surface); }
-  .mk-qty-btn { width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; color:var(--mk-text-2); cursor:pointer; transition: background-color .15s; }
+  /* Степпер количества */
+  .mk-qty { display:inline-flex; align-items:center; border:1px solid var(--mk-border); border-radius:var(--mk-r-btn); overflow:hidden; background:var(--mk-surface); }
+  .mk-qty-btn { width:var(--mk-control-h); height:var(--mk-control-h); display:inline-flex; align-items:center; justify-content:center; color:var(--mk-text-2); cursor:pointer; transition: background-color .15s; }
   .mk-qty-btn:hover { background: var(--mk-surface-2); color: var(--mk-text); }
   .mk-qty-btn:disabled { opacity:.4; cursor:not-allowed; }
-  .mk-qty-val { min-width:2.75rem; text-align:center; font-weight:700; font-variant-numeric:tabular-nums; color:var(--mk-text); }
+  .mk-qty-val { min-width:2.5rem; text-align:center; font-weight:700; font-variant-numeric:tabular-nums; color:var(--mk-text); }
 
-  /* Пагинация ≥44px */
-  .mk-page-btn { min-width:44px; min-height:44px; padding:0 1rem; display:inline-flex; align-items:center; justify-content:center; gap:.375rem; border:1px solid var(--mk-border); border-radius:var(--mk-r); background:var(--mk-surface); color:var(--mk-text-2); font-weight:600; font-size:.875rem; cursor:pointer; transition: border-color .15s, color .15s; }
+  /* Пагинация */
+  .mk-page-btn { min-width:var(--mk-control-h); min-height:var(--mk-control-h); padding:0 .875rem; display:inline-flex; align-items:center; justify-content:center; gap:.375rem; border:1px solid var(--mk-border); border-radius:var(--mk-r-btn); background:var(--mk-surface); color:var(--mk-text-2); font-weight:600; font-size:.85rem; cursor:pointer; transition: border-color .15s, color .15s; }
   .mk-page-btn:hover:not(:disabled) { border-color: var(--mk-border-2); color: var(--mk-text); }
   .mk-page-btn:disabled { opacity:.4; cursor:not-allowed; }
   .mk-page-btn.active { background: var(--mk-accent); border-color: var(--mk-accent); color: var(--mk-on-accent); }

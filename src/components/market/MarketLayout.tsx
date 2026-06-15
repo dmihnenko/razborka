@@ -14,7 +14,7 @@ import { getDefaultRouteForRoles } from '@/config/navigation'
 
 function navTab({ isActive }: { isActive: boolean }) {
   return [
-    'inline-flex items-center justify-center min-w-[96px] h-9 px-4 rounded-full text-sm transition-colors',
+    'inline-flex items-center justify-center min-w-[92px] h-8 px-4 rounded-[7px] text-sm transition-colors',
     isActive ? 'font-semibold' : 'font-medium',
   ].join(' ')
 }
@@ -45,7 +45,7 @@ function MarketLayoutInner() {
       >
         <div className="mk-container">
           {/* Ряд 1 */}
-          <div className="flex items-center gap-3 h-16">
+          <div className="flex items-center gap-3 h-14">
             <Link to="/market" className="flex items-center gap-2.5 flex-shrink-0 min-w-0" aria-label="Маркет запчастей — на главную">
               <span
                 className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -72,7 +72,7 @@ function MarketLayoutInner() {
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     placeholder="Поиск запчасти или артикула…"
-                    className="mk-input mk-search !rounded-full"
+                    className="mk-input mk-search"
                     aria-label="Поиск по каталогу запчастей"
                   />
                 </div>
@@ -118,7 +118,7 @@ function MarketLayoutInner() {
 
           {/* Ряд 3: навигация */}
           <nav className="flex items-center justify-center pb-2.5" aria-label="Разделы маркета">
-            <div className="inline-flex items-center gap-1 p-1 rounded-full" style={{ background: 'var(--mk-surface-2)' }}>
+            <div className="inline-flex items-center gap-1 p-1 rounded-[10px]" style={{ background: 'var(--mk-surface-2)' }}>
               <NavLink
                 to="/market/catalog"
                 className={navTab}
@@ -144,7 +144,7 @@ function MarketLayoutInner() {
 
       {/* ── Контент ────────────────────────────────────────────────────── */}
       <main className="flex-1 w-full">
-        <div className="mk-container py-5 sm:py-7">
+        <div className="mk-container py-4 sm:py-5">
           <Outlet />
         </div>
       </main>
