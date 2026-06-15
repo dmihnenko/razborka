@@ -68,7 +68,7 @@ export default function PartsCreateOrder() {
         <form onSubmit={handleSubmit} className="space-y-4">
 
           {/* Клиент + Примечание — единый card */}
-          <div className="card p-5 sm:p-6 space-y-4">
+          <div className="cab-card p-4 space-y-4">
             <div>
               <label htmlFor="customer_id" className="form-label">
                 Клиент
@@ -141,14 +141,14 @@ export default function PartsCreateOrder() {
             <button
               type="button"
               onClick={() => navigate('/parts/orders')}
-              className="btn-secondary sm:w-auto w-full"
+              className="cab-btn cab-btn-secondary sm:w-auto w-full"
             >
               Отмена
             </button>
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="btn-primary sm:w-auto w-full flex items-center justify-center gap-2"
+              className="cab-btn cab-btn-primary sm:w-auto w-full flex items-center justify-center gap-2"
             >
               {createMutation.isPending ? (
                 <>

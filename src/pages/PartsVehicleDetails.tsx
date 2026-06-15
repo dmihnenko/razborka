@@ -326,7 +326,7 @@ export default function PartsVehicleDetails() {
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setIsConveyorOpen(true)}
-              className="btn-primary btn-sm"
+              className="cab-btn cab-btn-primary cab-btn-sm"
               title="Быстрый ввод запчастей (Конвейер)"
             >
               <Zap className="w-3.5 h-3.5" />
@@ -334,7 +334,7 @@ export default function PartsVehicleDetails() {
             </button>
             <button
               onClick={() => setIsEditModalOpen(true)}
-              className="btn-secondary btn-sm"
+              className="cab-btn cab-btn-secondary cab-btn-sm"
             >
               <Edit className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Редактировать</span>
@@ -347,7 +347,7 @@ export default function PartsVehicleDetails() {
       <div className="page-container space-y-5">
 
         {/* ── Hero: vehicle info + status ──────────────────────────────────── */}
-        <div className="card">
+        <div className="cab-card p-4">
           {/* Status switcher */}
           <div className="mb-5">
             <p className="kicker text-gray-400 mb-2">Статус разборки</p>
@@ -431,7 +431,7 @@ export default function PartsVehicleDetails() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
           {/* ── Parts list ────────────────────────────────────────────────── */}
-          <div className="lg:col-span-2 card p-0 overflow-hidden">
+          <div className="lg:col-span-2 cab-card overflow-hidden">
             {/* Section header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <h2 className="heading-3 text-base">
@@ -444,7 +444,7 @@ export default function PartsVehicleDetails() {
               </h2>
               <button
                 onClick={() => setIsAddPartOpen(true)}
-                className="btn-primary btn-sm"
+                className="cab-btn cab-btn-primary cab-btn-sm"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Добавить</span>
@@ -460,7 +460,7 @@ export default function PartsVehicleDetails() {
                 <p className="empty-state-text">Добавьте первую запчасть с этого автомобиля</p>
                 <button
                   onClick={() => setIsAddPartOpen(true)}
-                  className="mt-4 btn-primary btn-sm"
+                  className="mt-4 cab-btn cab-btn-primary cab-btn-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Добавить запчасть
@@ -628,7 +628,7 @@ export default function PartsVehicleDetails() {
           <div className="space-y-4">
 
             {/* Объединённая карточка: Статистика + Окупаемость */}
-            <div className="card space-y-4">
+            <div className="cab-card p-4 space-y-4">
 
               {/* 3 мини-плитки */}
               <dl className="grid grid-cols-3 gap-2">
@@ -727,7 +727,7 @@ export default function PartsVehicleDetails() {
 
             {/* Brand template suggestion */}
             {!suggestionDismissed && unimportedTemplates.length > 0 && (
-              <div className="card border-indigo-200/80 bg-indigo-50/60">
+              <div className="cab-card p-4 border-indigo-200/80 bg-indigo-50/60">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
                     <span className="icon-tile-sm bg-indigo-100">
@@ -773,7 +773,7 @@ export default function PartsVehicleDetails() {
             {/* No categories nudge */}
             {(suggestionDismissed || unimportedTemplates.length === 0) &&
               myCategoryNames.length === 0 && (
-                <div className="card text-center py-6">
+                <div className="cab-card p-4 text-center py-6">
                   <div className="empty-state-icon mx-auto">
                     <Tag className="w-6 h-6 text-gray-400" />
                   </div>

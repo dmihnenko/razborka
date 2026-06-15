@@ -261,7 +261,7 @@ export default function PartsCustomerProfile() {
         </div>
         <p className="empty-state-title">Клиент не найден</p>
         <p className="empty-state-text">Профиль не существует или был удалён</p>
-        <Link to="/parts/customers" className="btn-secondary btn-sm mt-4">
+        <Link to="/parts/customers" className="cab-btn cab-btn-secondary cab-btn-sm mt-4">
           <ArrowLeft className="w-3.5 h-3.5" />
           К клиентам
         </Link>
@@ -294,7 +294,7 @@ export default function PartsCustomerProfile() {
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={handleCopyPublicLink}
-              className="btn-secondary btn-sm"
+              className="cab-btn cab-btn-secondary cab-btn-sm"
               title="Скопировать публичную ссылку"
             >
               <Link2 className="w-3.5 h-3.5" />
@@ -319,7 +319,7 @@ export default function PartsCustomerProfile() {
       </div>
 
       {/* ── Hero-карточка клиента ───────────────────────────────────────── */}
-      <div className="card mb-5">
+      <div className="cab-card p-4 mb-5">
         {/* Верхняя строка: аватар + имя + бейдж скидки */}
         <div className="flex items-start gap-4 mb-5">
           <div className={`avatar-lg flex-shrink-0 text-base font-bold ${avatarCls}`}>
@@ -398,10 +398,10 @@ export default function PartsCustomerProfile() {
       </div>
 
       {/* ── Секция заказов ─────────────────────────────────────────────── */}
-      <div className="card">
+      <div className="cab-card p-4">
         {/* Заголовок секции */}
         <div className="flex items-center gap-3 mb-4">
-          <span className="icon-tile bg-primary/10 text-primary">
+          <span className="icon-tile bg-slate-100 text-slate-700">
             <Package className="w-5 h-5" />
           </span>
           <div>
@@ -467,7 +467,7 @@ export default function PartsCustomerProfile() {
                 <Link
                   key={order.id}
                   to={`/parts/orders/${order.id}`}
-                  className="block card card-interactive p-3"
+                  className="block cab-card cab-card-hover p-3"
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex-1 min-w-0">
@@ -534,7 +534,7 @@ export default function PartsCustomerProfile() {
                 setMobileTab('parts')
                 setIsOrderModalOpen(true)
               }}
-              className="btn-primary btn-sm mt-4"
+              className="cab-btn cab-btn-primary cab-btn-sm mt-4"
             >
               <ShoppingCart className="w-3.5 h-3.5" />
               Создать заказ
@@ -812,7 +812,7 @@ export default function PartsCustomerProfile() {
                   ) : (
                     <div className="space-y-2">
                       {cart.map((item) => (
-                        <div key={item.id} className="card p-3 shadow-none">
+                        <div key={item.id} className="cab-card p-3 shadow-none">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-gray-900 leading-tight">{item.name}</p>

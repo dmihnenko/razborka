@@ -231,7 +231,7 @@ export default function PartsSettings() {
         <div className="max-w-2xl mx-auto space-y-4 sm:space-y-5">
 
           {/* ══ Контакты разборки ══════════════════════════════════════ */}
-          <div className="card">
+          <div className="cab-card p-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="icon-tile bg-emerald-100 dark:bg-emerald-900/40">
                 <Phone className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
@@ -319,7 +319,7 @@ export default function PartsSettings() {
               <button
                 onClick={() => saveContactsMutation.mutate()}
                 disabled={saveContactsMutation.isPending || !contactsDirty}
-                className="btn-primary"
+                className="cab-btn cab-btn-primary"
               >
                 <Save className="w-4 h-4" />
                 Сохранить контакты
@@ -328,7 +328,7 @@ export default function PartsSettings() {
           </div>
 
           {/* ══ Курс доллара ════════════════════════════════════════════ */}
-          <div className="card">
+          <div className="cab-card p-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="icon-tile bg-green-100 dark:bg-green-900/40">
                 <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -387,7 +387,7 @@ export default function PartsSettings() {
                 <button
                   onClick={handleFetchPrivatBank}
                   disabled={fetching}
-                  className="btn-primary"
+                  className="cab-btn cab-btn-primary"
                 >
                   <RefreshCw className={`w-4 h-4 ${fetching ? 'animate-spin' : ''}`} />
                   {fetching ? 'Получаем курс...' : 'Получить курс ПриватБанка'}
@@ -409,7 +409,7 @@ export default function PartsSettings() {
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">₴/$</span>
                 </div>
-                <button onClick={handleSaveManual} className="btn-primary flex-shrink-0">
+                <button onClick={handleSaveManual} className="cab-btn cab-btn-primary flex-shrink-0">
                   <Save className="w-4 h-4" />
                   Сохранить
                 </button>
@@ -431,7 +431,7 @@ export default function PartsSettings() {
           </div>
 
           {/* ══ Интеграции ══════════════════════════════════════════════ */}
-          <div className="card !p-0 overflow-hidden">
+          <div className="cab-card!p-0 overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-100 dark:border-slate-700">
               <p className="kicker">Интеграции</p>
             </div>
@@ -462,7 +462,7 @@ export default function PartsSettings() {
                       className="form-input flex-1 font-mono"
                       placeholder="Вставьте ключ API..."
                     />
-                    <button onClick={handleSaveImgbbKey} className="btn-primary flex-shrink-0">
+                    <button onClick={handleSaveImgbbKey} className="cab-btn cab-btn-primary flex-shrink-0">
                       <Save className="w-4 h-4" />
                       Сохранить
                     </button>
@@ -503,7 +503,7 @@ export default function PartsSettings() {
                       className="form-input flex-1 font-mono"
                       placeholder="Вставьте API-ключ Новой почты..."
                     />
-                    <button onClick={handleSaveNpKey} className="btn-primary flex-shrink-0">
+                    <button onClick={handleSaveNpKey} className="cab-btn cab-btn-primary flex-shrink-0">
                       <Save className="w-4 h-4" />
                       Сохранить
                     </button>
@@ -593,7 +593,7 @@ export default function PartsSettings() {
                         />
                       </div>
 
-                      <button onClick={handleSaveNpSender} className="btn-primary">
+                      <button onClick={handleSaveNpSender} className="cab-btn cab-btn-primary">
                         <Save className="w-4 h-4" />
                         Сохранить отправителя
                       </button>
@@ -639,7 +639,7 @@ export default function PartsSettings() {
                         href={partsCompanyId ? telegramConnectLink(partsCompanyId) : '#'}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn-primary inline-flex"
+                        className="cab-btn cab-btn-primary inline-flex"
                       >
                         <Send className="w-4 h-4" />
                         Подключить уведомления
@@ -653,7 +653,7 @@ export default function PartsSettings() {
           </div>
 
           {/* ══ Разделы ════════════════════════════════════════════════ */}
-          <div className="card !p-0 overflow-hidden">
+          <div className="cab-card!p-0 overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-100 dark:border-slate-700">
               <p className="kicker">Разделы</p>
             </div>

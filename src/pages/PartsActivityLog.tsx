@@ -24,7 +24,7 @@ interface ActionIconProps {
 function ActionIcon({ action }: ActionIconProps) {
   if (action === 'status_change') {
     return (
-      <span className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex-shrink-0">
+      <span className="flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-700 flex-shrink-0">
         <ArrowRightLeft className="w-4 h-4" />
       </span>
     )
@@ -143,7 +143,7 @@ export default function PartsActivityLog() {
             <Spinner size="sm" />
           </div>
         ) : allItems.length === 0 ? (
-          <div className="card text-center py-16">
+          <div className="cab-card p-4 text-center py-16">
             <History className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 font-medium">Пока нет записей</p>
             <p className="text-sm text-gray-400 mt-1">
@@ -151,7 +151,7 @@ export default function PartsActivityLog() {
             </p>
           </div>
         ) : (
-          <div className="card overflow-hidden p-0">
+          <div className="cab-card overflow-hidden p-0">
             {allItems.map(entry => (
               <LogItem key={entry.id} entry={entry} />
             ))}
@@ -162,7 +162,7 @@ export default function PartsActivityLog() {
         {hasMore && (
           <div className="mt-4 text-center">
             <button
-              className="btn-secondary"
+              className="cab-btn cab-btn-secondary"
               disabled={isFetching}
               onClick={() => setPage(p => p + 1)}
             >

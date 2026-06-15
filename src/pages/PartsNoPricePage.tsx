@@ -157,7 +157,7 @@ export default function PartsNoPricePage() {
           </div>
         ) : noPriceItems.length === 0 ? (
           /* ── Empty state ── */
-          <div className="card p-12">
+          <div className="cab-card p-12">
             <div className="empty-state">
               <div className="empty-state-icon">
                 <CheckCircle2 className="w-8 h-8 text-green-500" />
@@ -166,7 +166,7 @@ export default function PartsNoPricePage() {
               <p className="empty-state-text">У всех запчастей указана цена.</p>
               <button
                 onClick={() => navigate('/parts/inventory')}
-                className="btn-primary mt-6"
+                className="cab-btn cab-btn-primary mt-6"
               >
                 На склад
               </button>
@@ -175,7 +175,7 @@ export default function PartsNoPricePage() {
         ) : (
           <>
             {/* ── Desktop table (hidden on mobile) ── */}
-            <div className="card hidden sm:block overflow-hidden">
+            <div className="cab-card hidden sm:block overflow-hidden">
               <table className="w-full border-collapse">
                 <thead>
                   <tr>
@@ -263,7 +263,7 @@ export default function PartsNoPricePage() {
                               type="button"
                               onClick={() => handleSave(item)}
                               disabled={isSaving}
-                              className="btn-primary btn-sm flex items-center gap-1.5"
+                              className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
                             >
                               <Save className="w-3.5 h-3.5" />
                               {isSaving ? 'Сохр...' : 'Сохранить'}
@@ -347,7 +347,7 @@ export default function PartsNoPricePage() {
                 return (
                   <div
                     key={item.id}
-                    className={`card transition-all ${isSaved ? 'border-green-300 dark:border-green-700' : ''}`}
+                    className={`cab-card transition-all ${isSaved ? 'border-green-300 dark:border-green-700' : ''}`}
                   >
                     {/* Card header */}
                     <div className="flex items-start gap-3 px-4 py-3">
@@ -412,7 +412,7 @@ export default function PartsNoPricePage() {
                         type="button"
                         onClick={() => handleSave(item)}
                         disabled={isSaving}
-                        className="btn-primary btn-sm flex items-center gap-1.5"
+                        className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
                       >
                         <Save className="w-3.5 h-3.5" />
                         {isSaving ? 'Сохр...' : 'Сохр.'}

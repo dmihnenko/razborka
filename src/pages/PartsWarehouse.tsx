@@ -195,7 +195,7 @@ export default function PartsWarehouse() {
         actions={
           <button
             onClick={() => { setAddingParentId(null); setAddingName('') }}
-            className="btn-primary btn-sm flex items-center gap-1.5"
+            className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Добавить</span>
@@ -207,7 +207,7 @@ export default function PartsWarehouse() {
 
         {/* Add root form */}
         {addingParentId === null && (
-          <div className="card p-4 animate-slide-up">
+          <div className="cab-card p-4 animate-slide-up">
             <p className="kicker mb-2">Место верхнего уровня</p>
             <p className="text-xs text-gray-500 mb-3">Бокс, зона, секция…</p>
             <form onSubmit={handleAdd} className="flex gap-2">
@@ -222,14 +222,14 @@ export default function PartsWarehouse() {
               <button
                 type="submit"
                 disabled={!addingName.trim() || createMutation.isPending}
-                className="btn-primary px-3 min-h-[40px]"
+                className="cab-btn cab-btn-primary px-3 min-h-[40px]"
               >
                 <Check className="w-4 h-4" />
               </button>
               <button
                 type="button"
                 onClick={cancelAdd}
-                className="btn-secondary px-3 min-h-[40px]"
+                className="cab-btn cab-btn-secondary px-3 min-h-[40px]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -244,7 +244,7 @@ export default function PartsWarehouse() {
           </div>
         ) : locations.length === 0 && addingParentId === undefined ? (
           /* Empty state */
-          <div className="card">
+          <div className="cab-card p-4">
             <div className="empty-state">
               <div className="empty-state-icon">
                 <Warehouse className="w-7 h-7 text-gray-400" />
@@ -259,7 +259,7 @@ export default function PartsWarehouse() {
               </p>
               <button
                 onClick={() => { setAddingParentId(null); setAddingName('') }}
-                className="btn-primary mt-5"
+                className="cab-btn cab-btn-primary mt-5"
               >
                 <Plus className="w-4 h-4" />
                 Создать первое место
@@ -269,7 +269,7 @@ export default function PartsWarehouse() {
         ) : locations.length > 0 ? (
           <>
             {/* Tree card */}
-            <div className="card p-0 overflow-hidden">
+            <div className="cab-card overflow-hidden">
               <div className="grid-hairline">
                 {flatList.map((node) => {
                   const usage = usageMap[node.id] || 0
@@ -424,14 +424,14 @@ export default function PartsWarehouse() {
                             <button
                               type="submit"
                               disabled={!addingName.trim() || createMutation.isPending}
-                              className="btn-primary px-3 min-h-[40px]"
+                              className="cab-btn cab-btn-primary px-3 min-h-[40px]"
                             >
                               <Check className="w-4 h-4" />
                             </button>
                             <button
                               type="button"
                               onClick={cancelAdd}
-                              className="btn-secondary px-3 min-h-[40px]"
+                              className="cab-btn cab-btn-secondary px-3 min-h-[40px]"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -457,7 +457,7 @@ export default function PartsWarehouse() {
 
             {/* Help hint */}
             <div className="alert alert-info">
-              <div className="icon-tile-sm bg-blue-100 text-blue-600 flex-shrink-0">
+              <div className="icon-tile-sm bg-slate-100 text-slate-700 flex-shrink-0">
                 <Warehouse className="w-4 h-4" />
               </div>
               <div>

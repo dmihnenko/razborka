@@ -530,7 +530,7 @@ export default function PartsOrderDetails() {
         )}
 
         {/* ── позиции заказа ─────────────────────────────────────────── */}
-        <div className="card">
+        <div className="cab-card p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <span className="icon-tile-sm bg-slate-100 text-slate-600">
@@ -1225,7 +1225,7 @@ function NpTtnBlock({
   }
 
   return (
-    <div className="card">
+    <div className="cab-card p-4">
       <div className="flex items-center gap-2 mb-3">
         <span className="icon-tile-sm bg-red-50 text-red-600">
           <Truck className="w-4 h-4" />
@@ -1251,7 +1251,7 @@ function NpTtnBlock({
                 navigator.clipboard.writeText(order.np_ttn)
                 toast.success('ТТН скопійовано')
               }}
-              className="btn-secondary btn-sm gap-1.5"
+              className="cab-btn cab-btn-secondary btn-sm gap-1.5"
             >
               <Copy className="w-3.5 h-3.5" />
               Копировать
@@ -1273,7 +1273,7 @@ function NpTtnBlock({
           {!showTtnForm ? (
             <button
               onClick={() => setShowTtnForm(true)}
-              className="btn-primary gap-1.5"
+              className="cab-btn cab-btn-primary gap-1.5"
             >
               <Truck className="w-4 h-4" />
               Создать ТТН
@@ -1319,7 +1319,7 @@ function NpTtnBlock({
                 <button
                   onClick={handleCreateTtn}
                   disabled={ttnCreating}
-                  className="btn-primary gap-1.5 disabled:opacity-60"
+                  className="cab-btn cab-btn-primary gap-1.5 disabled:opacity-60"
                 >
                   {ttnCreating ? 'Создание…' : (
                     <>

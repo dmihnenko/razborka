@@ -102,39 +102,39 @@ export default function PartsEmployees() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4 sm:mb-6">
-          <div className="stat-card">
+          <div className="cab-card p-4">
             <div className="flex items-start justify-between mb-3">
               <p className="kicker">Всего</p>
-              <Users className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
+              <Users className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
             </div>
-            <p className="text-3xl font-extrabold text-gray-900 tabular" style={{ letterSpacing: '-0.03em' }}>
+            <p className="text-3xl font-extrabold tabular" style={{ letterSpacing: '-0.03em', color: 'var(--cab-ink)' }}>
               {stats.total}
             </p>
           </div>
 
-          <div className="stat-card">
+          <div className="cab-card p-4">
             <div className="flex items-start justify-between mb-3">
               <p className="kicker">С email</p>
-              <UserCheck className="w-4 h-4 text-emerald-500" strokeWidth={1.5} />
+              <UserCheck className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
             </div>
-            <p className="text-3xl font-extrabold text-emerald-600 tabular" style={{ letterSpacing: '-0.03em' }}>
+            <p className="text-3xl font-extrabold tabular" style={{ letterSpacing: '-0.03em', color: 'var(--cab-ink)' }}>
               {stats.active}
             </p>
           </div>
 
-          <div className="stat-card">
+          <div className="cab-card p-4">
             <div className="flex items-start justify-between mb-3">
               <p className="kicker">С телефоном</p>
-              <Phone className="w-4 h-4 text-primary" strokeWidth={1.5} />
+              <Phone className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
             </div>
-            <p className="text-3xl font-extrabold text-primary tabular" style={{ letterSpacing: '-0.03em' }}>
+            <p className="text-3xl font-extrabold tabular" style={{ letterSpacing: '-0.03em', color: 'var(--cab-ink)' }}>
               {stats.withPhone}
             </p>
           </div>
         </div>
 
         {/* Search & View toggle */}
-        <div className="card p-4 mb-4">
+        <div className="cab-card p-4 mb-4">
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Search */}
             <div className="flex-1 relative">
@@ -183,7 +183,7 @@ export default function PartsEmployees() {
             <Spinner size="md" />
           </div>
         ) : filteredEmployees.length === 0 ? (
-          <div className="card">
+          <div className="cab-card p-4">
             <div className="empty-state">
               <div className="empty-state-icon">
                 <Users className="w-7 h-7 text-gray-400" strokeWidth={1.5} />
@@ -203,7 +203,7 @@ export default function PartsEmployees() {
           /* ── Мобайл/grid: плоские карточки ─────────────────── */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
             {filteredEmployees.map(employee => (
-              <div key={employee.id} className="card flex items-start gap-4">
+              <div key={employee.id} className="cab-card cab-card-hover p-4 flex items-start gap-4">
                 {/* Аватар */}
                 <span className={`avatar-lg flex-shrink-0 ${avatarColor(employee.full_name)}`}>
                   {getInitials(employee.full_name)}
@@ -252,7 +252,7 @@ export default function PartsEmployees() {
 
         ) : (
           /* ── Десктоп: таблица ───────────────────────────────── */
-          <div className="card p-0 overflow-hidden">
+          <div className="cab-card p-0 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>

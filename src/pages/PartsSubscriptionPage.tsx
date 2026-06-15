@@ -94,8 +94,8 @@ export default function PartsSubscriptionPage() {
       )}
 
       {/* ── Текущий тариф ─────────────────────────────────────── */}
-      <div className="card overflow-hidden p-0">
-        <div className="px-5 sm:px-6 py-5 bg-gradient-to-br from-blue-50/60 to-white border-b border-gray-100">
+      <div className="cab-card overflow-hidden">
+        <div className="px-5 sm:px-6 py-5 bg-[color:var(--cab-surface-2)] border-b border-gray-100">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-1.5">
@@ -141,8 +141,8 @@ export default function PartsSubscriptionPage() {
               )}
             </div>
 
-            <div className="icon-tile-lg bg-primary/10 flex-shrink-0">
-              <Package className="w-6 h-6 text-primary" strokeWidth={1.5} />
+            <div className="icon-tile-lg bg-slate-100 flex-shrink-0">
+              <Package className="w-6 h-6 text-slate-700" strokeWidth={1.5} />
             </div>
           </div>
         </div>
@@ -177,7 +177,7 @@ export default function PartsSubscriptionPage() {
 
       {/* ── Выбор тарифа ──────────────────────────────────────── */}
       {isLifetime ? (
-        <div className="card">
+        <div className="cab-card p-4">
           <div className="empty-state py-10">
             <div className="empty-state-icon">
               <InfinityIcon className="w-8 h-8 text-gray-400" strokeWidth={1.5} />
@@ -187,7 +187,7 @@ export default function PartsSubscriptionPage() {
           </div>
         </div>
       ) : pending ? (
-        <div className="card border-amber-200">
+        <div className="cab-card p-4 border-amber-200">
           <div className="flex items-start gap-4">
             <div className="icon-tile bg-amber-100 flex-shrink-0">
               <Hourglass className="w-5 h-5 text-amber-600" strokeWidth={1.5} />
@@ -205,7 +205,7 @@ export default function PartsSubscriptionPage() {
           </div>
         </div>
       ) : (
-        <div className="card p-0 overflow-hidden">
+        <div className="cab-card overflow-hidden">
           {/* Шапка секции */}
           <div className="px-5 sm:px-6 py-4 border-b border-gray-100
                           flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -260,7 +260,7 @@ export default function PartsSubscriptionPage() {
                     return (
                       <div
                         key={t.id}
-                        className="card border-2 border-dashed border-gray-200 flex flex-col"
+                        className="cab-card p-4 border-dashed border-gray-200 flex flex-col"
                       >
                         <p className="font-bold text-gray-900">{t.name}</p>
                         <p className="text-sm text-gray-500 mt-1 flex-1">
@@ -271,7 +271,7 @@ export default function PartsSubscriptionPage() {
                         </p>
                         <button
                           onClick={() => navigate('/support')}
-                          className="btn-secondary btn-sm w-full justify-center"
+                          className="cab-btn cab-btn-secondary cab-btn-sm w-full justify-center"
                         >
                           Обсудить
                         </button>
@@ -286,7 +286,7 @@ export default function PartsSubscriptionPage() {
                       key={t.id}
                       onClick={() => setSelectedTierId(t.id)}
                       className={[
-                        'card text-left flex flex-col transition-all duration-150 p-4',
+                        'cab-card text-left flex flex-col transition-all duration-150 p-4',
                         isSelected
                           ? 'ring-2 ring-primary shadow-md'
                           : isCurrent
@@ -360,7 +360,7 @@ export default function PartsSubscriptionPage() {
                 <button
                   onClick={() => requestMutation.mutate()}
                   disabled={requestMutation.isPending || !companyId}
-                  className="btn-primary btn-lg w-full justify-center"
+                  className="cab-btn cab-btn-primary btn-lg w-full justify-center"
                 >
                   <Send className="w-4 h-4" strokeWidth={1.5} />
                   {requestMutation.isPending
@@ -377,10 +377,10 @@ export default function PartsSubscriptionPage() {
       )}
 
       {/* ── Поддержка ─────────────────────────────────────────── */}
-      <div className="card flex flex-col sm:flex-row items-start sm:items-center gap-4
-                      bg-primary/5 border-primary/20">
-        <div className="icon-tile-lg bg-primary/10 flex-shrink-0">
-          <MessageCircle className="w-5 h-5 text-primary" strokeWidth={1.5} />
+      <div className="cab-card p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4
+                      bg-[color:var(--cab-surface-2)]">
+        <div className="icon-tile-lg bg-slate-100 flex-shrink-0">
+          <MessageCircle className="w-5 h-5 text-slate-700" strokeWidth={1.5} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-gray-900">Вопросы по тарифу?</p>
@@ -390,7 +390,7 @@ export default function PartsSubscriptionPage() {
         </div>
         <button
           onClick={() => navigate('/support')}
-          className="btn-primary flex-shrink-0"
+          className="cab-btn cab-btn-primary flex-shrink-0"
         >
           <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
           Написать поддержке

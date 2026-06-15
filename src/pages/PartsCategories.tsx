@@ -205,7 +205,7 @@ export default function PartsCategories() {
           tab === 'my' ? (
             <button
               onClick={() => { setIsAddOpen(v => !v); setAddMode('single') }}
-              className="btn-primary btn-sm flex items-center gap-1.5"
+              className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Добавить</span>
@@ -237,20 +237,20 @@ export default function PartsCategories() {
         {tab === 'my' && (
           <>
             {isAddOpen && (
-              <div className="card mb-4 animate-slide-up">
+              <div className="cab-card p-4 mb-4 animate-slide-up">
                 {/* Переключатель режима */}
                 <div className="flex gap-2 mb-4">
                   <button
                     type="button"
                     onClick={() => setAddMode('single')}
-                    className={addMode === 'single' ? 'chip chip-active' : 'chip'}
+                    className={addMode === 'single' ? 'cab-chip cab-chip-signal' : 'cab-chip'}
                   >
                     <Plus className="w-3.5 h-3.5" />По одной
                   </button>
                   <button
                     type="button"
                     onClick={() => setAddMode('list')}
-                    className={addMode === 'list' ? 'chip chip-active' : 'chip'}
+                    className={addMode === 'list' ? 'cab-chip cab-chip-signal' : 'cab-chip'}
                   >
                     <List className="w-3.5 h-3.5" />Списком
                   </button>
@@ -269,14 +269,14 @@ export default function PartsCategories() {
                     <button
                       type="submit"
                       disabled={!newName.trim() || createMutation.isPending}
-                      className="btn-primary"
+                      className="cab-btn cab-btn-primary"
                     >
                       <Check className="w-4 h-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => { setIsAddOpen(false); setNewName('') }}
-                      className="btn-secondary"
+                      className="cab-btn cab-btn-secondary"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -309,14 +309,14 @@ export default function PartsCategories() {
                       <button
                         type="button"
                         onClick={() => { setIsAddOpen(false); setBulkText('') }}
-                        className="btn-secondary btn-sm"
+                        className="cab-btn cab-btn-secondary cab-btn-sm"
                       >
                         Отмена
                       </button>
                       <button
                         type="submit"
                         disabled={!bulkNew.length || bulkMutation.isPending}
-                        className="btn-primary btn-sm"
+                        className="cab-btn cab-btn-primary cab-btn-sm"
                       >
                         {bulkMutation.isPending ? 'Добавляем…' : `Добавить ${bulkNew.length || ''}`}
                       </button>
@@ -331,7 +331,7 @@ export default function PartsCategories() {
                 <Spinner size="xl" />
               </div>
             ) : categories.length === 0 ? (
-              <div className="card">
+              <div className="cab-card p-4">
                 <div className="empty-state">
                   <div className="empty-state-icon">
                     <Tag className="w-7 h-7 text-gray-400" />
@@ -341,13 +341,13 @@ export default function PartsCategories() {
                   <div className="flex flex-col sm:flex-row gap-2 mt-6">
                     <button
                       onClick={() => { setIsAddOpen(true); setAddMode('single') }}
-                      className="btn-primary btn-sm"
+                      className="cab-btn cab-btn-primary cab-btn-sm"
                     >
                       Добавить
                     </button>
                     <button
                       onClick={() => setTab('templates')}
-                      className="btn-secondary btn-sm"
+                      className="cab-btn cab-btn-secondary cab-btn-sm"
                     >
                       Импортировать стандартные
                     </button>
@@ -355,7 +355,7 @@ export default function PartsCategories() {
                 </div>
               </div>
             ) : (
-              <div className="card p-0 overflow-hidden">
+              <div className="cab-card overflow-hidden">
                 <div className="panel-divided">
                   {categories.map((cat) => {
                     const usage = usageMap[cat.id] || 0
@@ -365,8 +365,8 @@ export default function PartsCategories() {
                         key={cat.id}
                         className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
                       >
-                        <div className="icon-tile-sm bg-primary/10 flex-shrink-0">
-                          <Tag className="w-4 h-4 text-primary" />
+                        <div className="icon-tile-sm bg-slate-100 text-slate-700 flex-shrink-0">
+                          <Tag className="w-4 h-4" />
                         </div>
 
                         {isEditing ? (
@@ -442,7 +442,7 @@ export default function PartsCategories() {
         {tab === 'templates' && (
           <>
             {/* Поиск по марке */}
-            <div className="card mb-4">
+            <div className="cab-card p-4 mb-4">
               <p className="text-sm text-gray-500 mb-3">
                 Стандартные категории от администратора по марке авто. Выберите нужные и импортируйте в свой список.
               </p>
@@ -462,8 +462,8 @@ export default function PartsCategories() {
             {selectedTemplateIds.size > 0 && (
               <div className="sticky top-16 z-20 mb-4 animate-slide-up">
                 <div
-                  className="rounded-xl px-4 py-3 flex items-center justify-between shadow-lg"
-                  style={{ background: 'linear-gradient(135deg, #3E4860 0%, #4F5B7A 100%)' }}
+                  className="rounded-xl px-4 py-3 flex items-center justify-between"
+                  style={{ background: 'var(--cab-ink)' }}
                 >
                   <span className="text-sm font-semibold text-white tabular-nums">
                     Выбрано: {selectedTemplateIds.size}
@@ -493,7 +493,7 @@ export default function PartsCategories() {
                 <Spinner size="xl" />
               </div>
             ) : templates.length === 0 ? (
-              <div className="card">
+              <div className="cab-card p-4">
                 <div className="empty-state">
                   <div className="empty-state-icon">
                     <Tag className="w-7 h-7 text-gray-400" />
@@ -510,7 +510,7 @@ export default function PartsCategories() {
                 </div>
               </div>
             ) : (
-              <div className="card p-0 overflow-hidden">
+              <div className="cab-card overflow-hidden">
                 {/* Шапка таблицы */}
                 <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                   <span className="kicker tabular-nums">

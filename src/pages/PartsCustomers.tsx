@@ -165,7 +165,7 @@ export default function PartsCustomers() {
               setSelectedCustomer(null)
               setIsModalOpen(true)
             }}
-            className="btn-primary"
+            className="cab-btn cab-btn-primary"
           >
             <Plus className="w-4 h-4" strokeWidth={1.5} />
             <span className="hidden sm:inline">Добавить</span>
@@ -178,7 +178,7 @@ export default function PartsCustomers() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 sm:mb-6">
-          <div className="stat-card">
+          <div className="cab-card p-4">
             <div className="flex items-start justify-between mb-3">
               <p className="kicker">Клиентов</p>
               <Users className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
@@ -188,7 +188,7 @@ export default function PartsCustomers() {
             </p>
           </div>
 
-          <div className="stat-card">
+          <div className="cab-card p-4">
             <div className="flex items-start justify-between mb-3">
               <p className="kicker">С заказами</p>
               <TrendingUp className="w-4 h-4 text-emerald-500" strokeWidth={1.5} />
@@ -198,7 +198,7 @@ export default function PartsCustomers() {
             </p>
           </div>
 
-          <div className="stat-card">
+          <div className="cab-card p-4">
             <div className="flex items-start justify-between mb-3">
               <p className="kicker">Выручка</p>
               <DollarSign className="w-4 h-4 text-primary" strokeWidth={1.5} />
@@ -208,7 +208,7 @@ export default function PartsCustomers() {
             </p>
           </div>
 
-          <div className="stat-card">
+          <div className="cab-card p-4">
             <div className="flex items-start justify-between mb-3">
               <p className="kicker">Средний чек</p>
               <DollarSign className="w-4 h-4 text-violet-500" strokeWidth={1.5} />
@@ -220,7 +220,7 @@ export default function PartsCustomers() {
         </div>
 
         {/* Search */}
-        <div className="card p-4 mb-4">
+        <div className="cab-card p-4 mb-4">
           <div className="relative">
             <Search
               className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
@@ -242,7 +242,7 @@ export default function PartsCustomers() {
             <Spinner size="md" />
           </div>
         ) : filteredCustomers.length === 0 ? (
-          <div className="card">
+          <div className="cab-card p-4">
             <div className="empty-state">
               <div className="empty-state-icon">
                 <Users className="w-7 h-7 text-gray-400" strokeWidth={1.5} />
@@ -258,7 +258,7 @@ export default function PartsCustomers() {
               {!searchQuery && (
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="btn-primary mt-4"
+                  className="cab-btn cab-btn-primary mt-4"
                 >
                   <Plus className="w-4 h-4" strokeWidth={1.5} />
                   Добавить клиента
@@ -269,7 +269,7 @@ export default function PartsCustomers() {
         ) : (
           <>
             {/* ── Desktop table (md+) ───────────────────────────── */}
-            <div className="card p-0 overflow-hidden hidden md:block">
+            <div className="cab-card p-0 overflow-hidden hidden md:block">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -379,7 +379,7 @@ export default function PartsCustomers() {
                 <div
                   key={customer.id}
                   onClick={() => handleViewProfile(customer.id)}
-                  className="card card-interactive p-0 overflow-hidden"
+                  className="cab-card cab-card-hover p-0 overflow-hidden"
                 >
                   <div className="flex items-center gap-3 px-4 py-3.5">
                     {/* Avatar */}

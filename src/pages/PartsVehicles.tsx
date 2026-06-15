@@ -181,7 +181,7 @@ export default function PartsVehicles() {
               setSelectedVehicle(null)
               setIsModalOpen(true)
             }}
-            className="btn-primary"
+            className="cab-btn cab-btn-primary"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Добавить</span>
@@ -214,7 +214,7 @@ export default function PartsVehicles() {
           <button
             key={key}
             onClick={() => setStatusFilter(key)}
-            className={`stat-card text-left ${statusFilter === key ? `ring-2 ${ringCls}` : ''}`}
+            className={`cab-card p-4 text-left ${statusFilter === key ? `ring-2 ${ringCls}` : ''}`}
           >
             <div className="flex items-center justify-between mb-3">
               <span className="kicker">{label}</span>
@@ -228,7 +228,7 @@ export default function PartsVehicles() {
       </div>
 
       {/* Filters & View Controls */}
-      <div className="card mb-5 !p-4">
+      <div className="cab-card mb-5 p-4">
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Search */}
           <div className="flex-1 relative">
@@ -283,7 +283,7 @@ export default function PartsVehicles() {
           <Spinner size="md" />
         </div>
       ) : filteredVehicles.length === 0 ? (
-        <div className="card">
+        <div className="cab-card p-4">
           <div className="empty-state">
             <div className="empty-state-icon">
               <Car className="w-8 h-8 text-gray-400" />
@@ -296,7 +296,7 @@ export default function PartsVehicles() {
                 <p className="empty-state-text">Добавьте первый автомобиль для разборки</p>
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="btn-primary mt-5"
+                  className="cab-btn cab-btn-primary mt-5"
                 >
                   <Plus className="w-4 h-4" />
                   Добавить автомобиль
@@ -312,7 +312,7 @@ export default function PartsVehicles() {
             <div
               key={vehicle.id}
               onClick={() => navigate(`/parts/vehicles/${vehicle.id}`)}
-              className="card card-interactive flex flex-col !p-0 overflow-hidden"
+              className="cab-card cab-card-hover flex flex-col overflow-hidden"
             >
               {/* Card body */}
               <div className="p-4 flex-1">
@@ -358,7 +358,7 @@ export default function PartsVehicles() {
               <div className="border-t border-gray-100 px-4 py-3 flex gap-2 bg-gray-50/60">
                 <button
                   onClick={(e) => handleEdit(vehicle, e)}
-                  className="btn-secondary btn-sm flex-1"
+                  className="cab-btn cab-btn-secondary cab-btn-sm flex-1"
                 >
                   Редактировать
                 </button>
@@ -374,7 +374,7 @@ export default function PartsVehicles() {
         </div>
       ) : (
         /* ── Table (list mode) ── */
-        <div className="card !p-0 overflow-hidden">
+        <div className="cab-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>

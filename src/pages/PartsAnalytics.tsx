@@ -59,7 +59,7 @@ export default function PartsAnalytics() {
         {/* ── Paywall overlay ─────────────────────────────────── */}
         {!hasAnalytics && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center px-6 py-20 pointer-events-none">
-            <div className="pointer-events-auto max-w-sm w-full bg-white rounded-3xl border border-gray-100 shadow-2xl p-8 flex flex-col items-center text-center gap-5 animate-fade-in">
+            <div className="pointer-events-auto max-w-sm w-full cab-card p-8 flex flex-col items-center text-center gap-5 animate-fade-in">
               <div className="icon-tile-lg bg-primary/10">
                 <Lock className="w-6 h-6 text-primary" strokeWidth={1.5} />
               </div>
@@ -70,7 +70,7 @@ export default function PartsAnalytics() {
                   <span className="font-semibold text-gray-700">Профи</span> и выше.
                 </p>
               </div>
-              <Link to="/parts/subscription" className="btn-primary w-full text-center justify-center">
+              <Link to="/parts/subscription" className="cab-btn cab-btn-primary w-full text-center justify-center">
                 Открыть аналитику
               </Link>
             </div>
@@ -83,14 +83,14 @@ export default function PartsAnalytics() {
           {/* ── Primary KPI row ──────────────────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 sm:mb-6 stagger-children">
 
-            <div className="stat-card">
+            <div className="cab-card p-4">
               <div className="flex items-start justify-between mb-3">
-                <div className="icon-tile bg-green-50 text-green-600">
+                <div className="icon-tile bg-slate-100 text-slate-700">
                   <TrendingUp className="w-5 h-5" strokeWidth={1.5} />
                 </div>
               </div>
               <p className="kicker mb-1">Общая выручка</p>
-              <p className="heading-2 tabular">
+              <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>
                 {formatPrice(data?.totalRevenue ?? 0, 'USD')}
               </p>
               <p className="text-mobile-sm text-gray-500 mt-2">
@@ -98,14 +98,14 @@ export default function PartsAnalytics() {
               </p>
             </div>
 
-            <div className="stat-card">
+            <div className="cab-card p-4">
               <div className="flex items-start justify-between mb-3">
                 <div className="icon-tile bg-slate-100 text-slate-700">
                   <BarChart3 className="w-5 h-5" strokeWidth={1.5} />
                 </div>
               </div>
               <p className="kicker mb-1">Средний чек</p>
-              <p className="heading-2 tabular">
+              <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>
                 {formatPrice(data?.avgCheck ?? 0, 'USD')}
               </p>
               <p className="text-mobile-sm text-gray-500 mt-2">
@@ -113,27 +113,27 @@ export default function PartsAnalytics() {
               </p>
             </div>
 
-            <div className="stat-card">
+            <div className="cab-card p-4">
               <div className="flex items-start justify-between mb-3">
-                <div className="icon-tile bg-green-50 text-green-600">
+                <div className="icon-tile bg-slate-100 text-slate-700">
                   <Package className="w-5 h-5" strokeWidth={1.5} />
                 </div>
               </div>
               <p className="kicker mb-1">Продано запчастей</p>
-              <p className="heading-2 tabular">{data?.totalSoldParts ?? 0}</p>
+              <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>{data?.totalSoldParts ?? 0}</p>
               <p className="text-mobile-sm text-gray-500 mt-2">
                 Склад: {formatPrice(data?.inventoryValue ?? 0, 'USD')}
               </p>
             </div>
 
-            <div className="stat-card">
+            <div className="cab-card p-4">
               <div className="flex items-start justify-between mb-3">
-                <div className="icon-tile bg-slate-100 text-slate-500">
+                <div className="icon-tile bg-slate-100 text-slate-700">
                   <Calendar className="w-5 h-5" strokeWidth={1.5} />
                 </div>
               </div>
               <p className="kicker mb-1">Разобрано авто</p>
-              <p className="heading-2 tabular">{data?.dismantledVehicles ?? 0}</p>
+              <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>{data?.dismantledVehicles ?? 0}</p>
               <p className="text-mobile-sm text-gray-500 mt-2">
                 Из {data?.totalVehicles ?? 0} всего
               </p>
@@ -142,8 +142,8 @@ export default function PartsAnalytics() {
 
           {/* ── Маржа склада ─────────────────────────────────── */}
           {(data?.potentialMargin ?? 0) !== 0 && (
-            <div className="stat-card mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="icon-tile bg-emerald-50 text-emerald-600 flex-shrink-0">
+            <div className="cab-card p-4 mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="icon-tile bg-slate-100 text-slate-700 flex-shrink-0">
                 <TrendingUp className="w-5 h-5" strokeWidth={1.5} />
               </div>
               <div className="flex-1 min-w-0">
@@ -163,7 +163,7 @@ export default function PartsAnalytics() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 
             {/* Monthly Revenue Chart */}
-            <div className="card">
+            <div className="cab-card p-4">
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <p className="kicker mb-1">Динамика</p>
@@ -210,13 +210,13 @@ export default function PartsAnalytics() {
             </div>
 
             {/* Top Parts */}
-            <div className="card">
+            <div className="cab-card p-4">
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <p className="kicker mb-1">Рейтинг</p>
                   <h2 className="heading-3">Топ запчастей</h2>
                 </div>
-                <div className="icon-tile bg-purple-50 text-purple-500">
+                <div className="icon-tile bg-slate-100 text-slate-700">
                   <Package className="w-5 h-5" strokeWidth={1.5} />
                 </div>
               </div>
@@ -225,8 +225,8 @@ export default function PartsAnalytics() {
                 <div className="grid-hairline">
                   {topParts.map((part, index) => (
                     <div key={index} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-purple-50 flex items-center justify-center">
-                        <span className="text-xs font-bold text-purple-600">{index + 1}</span>
+                      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center">
+                        <span className="text-xs font-bold text-slate-700">{index + 1}</span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-900 truncate">{part.name}</p>
@@ -258,20 +258,20 @@ export default function PartsAnalytics() {
           {/* ── Secondary KPI row ────────────────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4 sm:mt-6 stagger-children">
 
-            <div className="stat-card">
+            <div className="cab-card p-4">
               <div className="flex items-start justify-between mb-3">
                 <p className="kicker">Всего заказов</p>
-                <ShoppingCart className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
+                <ShoppingCart className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
               </div>
-              <p className="heading-2 tabular">{data?.totalOrders ?? 0}</p>
+              <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>{data?.totalOrders ?? 0}</p>
             </div>
 
-            <div className="stat-card">
+            <div className="cab-card p-4">
               <div className="flex items-start justify-between mb-3">
                 <p className="kicker">Коэф. завершения</p>
-                <TrendingUp className="w-4 h-4 text-green-500" strokeWidth={1.5} />
+                <TrendingUp className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
               </div>
-              <p className="heading-2 tabular">
+              <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>
                 {data?.totalOrders
                   ? Math.round(((data.completedOrders ?? 0) / data.totalOrders) * 100)
                   : 0}
@@ -279,24 +279,24 @@ export default function PartsAnalytics() {
               </p>
             </div>
 
-            <div className="stat-card">
+            <div className="cab-card p-4">
               <div className="flex items-start justify-between mb-3">
                 <p className="kicker">Средняя цена</p>
-                <Package className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
+                <Package className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
               </div>
-              <p className="heading-2 tabular">
+              <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>
                 {data?.totalSoldParts && data?.totalRevenue
                   ? formatPrice(data.totalRevenue / data.totalSoldParts, 'USD')
                   : '$0'}
               </p>
             </div>
 
-            <div className="stat-card">
+            <div className="cab-card p-4">
               <div className="flex items-start justify-between mb-3">
                 <p className="kicker">Прогресс разборки</p>
-                <Car className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
+                <Car className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
               </div>
-              <p className="heading-2 tabular">
+              <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>
                 {data?.totalVehicles
                   ? Math.round(((data.dismantledVehicles ?? 0) / data.totalVehicles) * 100)
                   : 0}

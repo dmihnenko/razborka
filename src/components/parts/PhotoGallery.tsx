@@ -14,6 +14,8 @@ interface PhotoGalleryProps {
 export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'aspect-video', objectFit = 'cover' }: PhotoGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  // HD: по умолчанию грузим облегчённое (medium/thumb), по кнопке — полное качество.
+  const [hd, setHd] = useState(false)
 
   // Touch swipe state
   const touchStartX = useRef<number | null>(null)
@@ -147,13 +149,29 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
         >
           <img
             key={photos[activeIndex].url}
-            src={photos[activeIndex].medium_url || photos[activeIndex].thumb_url || photos[activeIndex].url}
+            src={hd
+              ? (photos[activeIndex].url || photos[activeIndex].medium_url || photos[activeIndex].thumb_url)
+              : (photos[activeIndex].medium_url || photos[activeIndex].thumb_url || photos[activeIndex].url)}
             alt={`${alt} ${activeIndex + 1}`}
             className={`absolute inset-0 w-full h-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'}`}
             loading="lazy"
             decoding="async"
             draggable={false}
           />
+
+          {/* HD-переключатель: грузит полное качество в основном кадре */}
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); setHd(v => !v) }}
+            aria-pressed={hd}
+            aria-label={hd ? 'Обычное качество фото' : 'Высокое качество фото (HD)'}
+            title={hd ? 'HD включено' : 'Включить HD (полное качество)'}
+            className={`absolute top-2 left-2 z-10 text-[11px] font-bold tracking-wide px-2 h-7 rounded-md transition-colors ${
+              hd ? 'bg-white text-gray-900' : 'bg-black/55 text-white hover:bg-black/75'
+            }`}
+          >
+            HD
+          </button>
 
           {/* Zoom hint */}
           <div className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1.5 pointer-events-none">

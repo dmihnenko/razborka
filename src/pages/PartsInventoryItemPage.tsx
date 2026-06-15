@@ -67,7 +67,7 @@ function MarginRow({
             <p className="kicker mb-0.5">Закупка</p>
             <p className="text-sm font-bold text-gray-700 tabular-nums">{formatPrice(pp, currency)}</p>
           </div>
-          <div className="rounded-xl bg-primary/5 border border-primary/10 p-2.5">
+          <div className="rounded-xl bg-[color:var(--cab-surface-2)] border border-[color:var(--cab-border)] p-2.5">
             <p className="kicker mb-0.5">Цена продажи</p>
             <p className="text-sm font-bold text-primary tabular-nums">{formatPrice(sp, currency)}</p>
           </div>
@@ -168,7 +168,7 @@ export default function PartsInventoryItemPage() {
         <p className="empty-state-text">Возможно, она была удалена или перемещена</p>
         <button
           onClick={() => navigate('/parts/inventory')}
-          className="btn btn-secondary btn-sm mt-4"
+          className="cab-btn cab-btn-secondary cab-btn-sm mt-4"
         >
           Вернуться к инвентарю
         </button>
@@ -235,7 +235,7 @@ export default function PartsInventoryItemPage() {
 
       {/* ── Content ──────────────────────────────────────────────── */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-5 animate-fade-in">
-        <div className="card p-0 overflow-hidden">
+        <div className="cab-card overflow-hidden">
 
           {/* Photo gallery */}
           {photos.length > 0 ? (
@@ -284,7 +284,7 @@ export default function PartsInventoryItemPage() {
                     toast.success('Номер скопирован')
                   }}
                   title="Нажмите, чтобы скопировать"
-                  className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border-2 border-primary/25 shadow-sm hover:border-primary/50 hover:shadow-md active:scale-95 transition-all"
+                  className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-[color:var(--cab-border-strong)] hover:border-[color:var(--cab-ink-3)] active:scale-95 transition-all"
                 >
                   <span className="font-mono font-bold tracking-wider text-gray-800 uppercase tabular">
                     {item.part_number.toUpperCase()}
@@ -296,7 +296,7 @@ export default function PartsInventoryItemPage() {
 
             {/* Price + sell */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1 p-3.5 rounded-xl bg-primary/5 border border-primary/15 flex flex-col justify-center">
+              <div className="flex-1 p-3.5 rounded-xl bg-[color:var(--cab-surface-2)] border border-[color:var(--cab-border)] flex flex-col justify-center">
                 {isSold ? (
                   <>
                     <p className="kicker mb-1">Продано за</p>

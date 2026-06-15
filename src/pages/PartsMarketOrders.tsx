@@ -57,7 +57,7 @@ function MarketOrderCard({
   const telHref = `tel:${order.buyerPhone.replace(/[^\d+]/g, '')}`
 
   return (
-    <div className="card p-0 overflow-hidden animate-fade-in">
+    <div className="cab-cardp-0 overflow-hidden animate-fade-in">
       {/* Шапка: телефон + статус */}
       <div className="px-5 pt-5 pb-4 border-b border-gray-100">
         <div className="flex items-start justify-between gap-3">
@@ -88,7 +88,7 @@ function MarketOrderCard({
         <a
           href={telHref}
           onClick={(e) => e.stopPropagation()}
-          className="btn-primary mt-3 w-full sm:w-auto"
+          className="cab-btn cab-btn-primary mt-3 w-full sm:w-auto"
         >
           <Phone className="w-4 h-4" strokeWidth={1.5} />
           Позвонить
@@ -141,7 +141,7 @@ function MarketOrderCard({
         {order.convertedOrderId ? (
           <button
             onClick={() => onOpenOrder(order.convertedOrderId!)}
-            className="btn-secondary w-full justify-center"
+            className="cab-btn cab-btn-secondary w-full justify-center"
           >
             <ClipboardCheck className="w-4 h-4 text-green-600" strokeWidth={1.5} />
             Заказ оформлен — открыть
@@ -151,7 +151,7 @@ function MarketOrderCard({
           <button
             onClick={() => onConvert(order)}
             disabled={isConverting}
-            className="btn-primary w-full justify-center disabled:opacity-50"
+            className="cab-btn cab-btn-primary w-full justify-center disabled:opacity-50"
           >
             {isConverting ? (
               <Spinner size="sm" />
@@ -169,7 +169,7 @@ function MarketOrderCard({
               <button
                 onClick={() => onSetStatus(order.id, 'viewed')}
                 disabled={isUpdating}
-                className="btn-secondary btn-sm flex-1 sm:flex-none justify-center disabled:opacity-50"
+                className="cab-btn cab-btn-secondary btn-sm flex-1 sm:flex-none justify-center disabled:opacity-50"
               >
                 <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Просмотрена
@@ -179,7 +179,7 @@ function MarketOrderCard({
               <button
                 onClick={() => onSetStatus(order.id, 'closed')}
                 disabled={isUpdating}
-                className="btn-secondary btn-sm flex-1 sm:flex-none justify-center disabled:opacity-50"
+                className="cab-btn cab-btn-secondary btn-sm flex-1 sm:flex-none justify-center disabled:opacity-50"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Закрыть

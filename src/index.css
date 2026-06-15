@@ -257,6 +257,25 @@
     letter-spacing: 0.12em; color: var(--cab-ink-3); padding: 0 0.7rem;
   }
 
+  /* Кнопки страницы товара (стиль «индустриальный», токены со scoped-обёртки) */
+  .ind-btn-accent {
+    @apply inline-flex items-center justify-center gap-2 font-medium cursor-pointer;
+    min-height: 44px; padding-inline: 1rem; border-radius: 10px; font-size: .95rem;
+    color: #fff; background: var(--accent); transition: background .14s ease;
+  }
+  .ind-btn-accent:hover { background: var(--accent-hover); }
+  .ind-btn-accent:active { transform: scale(.985); }
+  .ind-btn-soft {
+    @apply inline-flex items-center justify-center gap-2 font-medium cursor-pointer;
+    min-height: 40px; padding-inline: .875rem; border-radius: 10px; font-size: .85rem;
+    color: var(--steel); background: var(--inset2); border: 0.5px solid var(--bd); transition: background .14s ease;
+  }
+  .ind-btn-soft:hover { background: var(--inset); }
+  @media (prefers-reduced-motion: reduce) {
+    .ind-btn-accent, .ind-btn-soft { transition: none; }
+    .ind-btn-accent:active { transform: none; }
+  }
+
   /* Success / green action (sell, complete) */
   .btn-success {
     @apply btn text-white px-4 py-2 text-sm min-h-[38px];

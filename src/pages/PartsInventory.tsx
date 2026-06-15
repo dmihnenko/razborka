@@ -1227,7 +1227,7 @@ export default function PartsInventory() {
                   <button
                     type="button"
                     onClick={() => setSellCurrency(c => c === 'USD' ? 'UAH' : 'USD')}
-                    className="btn-primary w-12 text-center px-0"
+                    className="cab-btn cab-btn-primary w-12 text-center px-0"
                   >
                     {sellCurrency === 'USD' ? '$' : '₴'}
                   </button>
@@ -1387,7 +1387,7 @@ export default function PartsInventory() {
                           next[idx] = { ...next[idx], currency: row.currency === 'USD' ? 'UAH' : 'USD' }
                           setBulkRows(next)
                         }}
-                        className="btn-primary btn-sm w-9 text-center px-0"
+                        className="cab-btn cab-btn-primary btn-sm w-9 text-center px-0"
                       >
                         {row.currency === 'USD' ? '$' : '₴'}
                       </button>
@@ -1966,7 +1966,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         <button
                           type="button"
                           onClick={() => setBulkShared(prev => ({ ...prev, price_currency: prev.price_currency === 'USD' ? 'UAH' : 'USD' }))}
-                          className="btn-primary btn-sm w-9 text-center px-0"
+                          className="cab-btn cab-btn-primary btn-sm w-9 text-center px-0"
                           title="Сменить валюту"
                         >
                           {bulkShared.price_currency === 'USD' ? '$' : '₴'}
@@ -2003,7 +2003,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                                 setPasteText('')
                               }
                             }}
-                            className="btn-primary btn-sm disabled:opacity-40"
+                            className="cab-btn cab-btn-primary btn-sm disabled:opacity-40"
                           >
                             Применить
                           </button>
@@ -2229,7 +2229,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, price_currency: formData.price_currency === 'USD' ? 'UAH' : 'USD' })}
-                        className="btn-primary flex-shrink-0 w-10 text-center px-0"
+                        className="cab-btn cab-btn-primary flex-shrink-0 w-10 text-center px-0"
                         title="Сменить валюту"
                       >
                         {formData.price_currency === 'USD' ? '$' : '₴'}
