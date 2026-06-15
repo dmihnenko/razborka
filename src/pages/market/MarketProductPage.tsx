@@ -40,7 +40,7 @@ function toGalleryPhotos(part: MarketPart): ImgbbPhoto[] {
 
 export default function MarketProductPage() {
   const { id } = useParams<{ id: string }>()
-  const { addItem } = useCart()
+  const { addItem, items } = useCart()
 
   useEffect(() => { window.scrollTo({ top: 0 }) }, [id])
 
@@ -75,6 +75,7 @@ export default function MarketProductPage() {
   }
 
   const photo = part.photoUrl || part.photos?.[0]?.thumb_url || part.photos?.[0]?.url || null
+  const inCart = items.some(i => i.inventoryId === part.id)
 
   const handleAddToCart = () => {
     addItem({
@@ -128,8 +129,8 @@ export default function MarketProductPage() {
             <h1 className="text-lg sm:text-xl font-extrabold leading-tight tracking-tight mb-1" style={{ color: 'var(--mk-text)' }}>{part.name}</h1>
 
             {part.partNumber && (
-              <div className="mb-3 mt-2">
-                <p className="text-[10px] uppercase font-bold tracking-widest mb-1.5 mk-meta">Оригинальный номер</p>
+              <div className="mb-3 mt-2 flex items-center gap-2 flex-wrap">
+                <p className="text-[10px] uppercase font-bold tracking-widest mk-meta">Оригинальный номер</p>
                 <button
                   type="button" onClick={copyPartNumber} title="Нажмите, чтобы скопировать"
                   aria-label={`Скопировать оригинальный номер ${part.partNumber.toUpperCase()}`}
@@ -143,18 +144,25 @@ export default function MarketProductPage() {
             )}
 
             <div className="mt-3 p-3.5 rounded-xl" style={{ background: 'var(--mk-surface-2)' }}>
-              <p className="text-[10px] uppercase tracking-widest font-bold mb-1 mk-meta">Цена</p>
-              <p className="mk-price-lg leading-none">{formatPrice(part.sellingPrice, part.priceCurrency)}</p>
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="text-[10px] uppercase tracking-widest font-bold mk-meta">Цена</p>
+                <p className="mk-price-lg leading-none">{formatPrice(part.sellingPrice, part.priceCurrency)}</p>
+              </div>
               {part.quantity > 1 && (
                 <p className="text-xs mt-1.5 mk-meta">В наличии: <span className="font-bold" style={{ color: 'var(--mk-text-2)' }}>{part.quantity} шт.</span></p>
               )}
             </div>
 
-            <div className="mt-3 space-y-2">
-              <button type="button" onClick={handleAddToCart} className="mk-btn mk-btn-accent w-full">
-                <ShoppingCart className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> Добавить в корзину
-              </button>
-              <Link to="/market/cart" className="mk-btn mk-btn-outline w-full">Перейти к корзине</Link>
+            <div className="mt-3">
+              {inCart ? (
+                <Link to="/market/cart" className="mk-btn mk-btn-accent w-full">
+                  <ShoppingCart className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> Перейти в корзину
+                </Link>
+              ) : (
+                <button type="button" onClick={handleAddToCart} className="mk-btn mk-btn-accent w-full">
+                  <ShoppingCart className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> Добавить в корзину
+                </button>
+              )}
             </div>
           </div>
 
@@ -165,7 +173,7 @@ export default function MarketProductPage() {
                 <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-2.5 mk-meta">
                   <Car className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Снята с автомобиля
                 </h2>
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <span className="mk-tile-icon flex-shrink-0"><Car className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" /></span>
                   <div>
                     <p className="text-base font-bold leading-tight" style={{ color: 'var(--mk-text)' }}>

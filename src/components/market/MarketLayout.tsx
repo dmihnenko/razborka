@@ -28,6 +28,9 @@ function MarketLayoutInner() {
   const { totalCount } = useCart()
   const [search, setSearch] = useState('')
   const isHome = location.pathname === '/market' || location.pathname === '/market/'
+  // На каталоге свой поиск (FilterBar) — поиск в шапке скрываем, чтобы не дублировать
+  const isCatalog = location.pathname.startsWith('/market/catalog')
+  const showHeaderSearch = !isHome && !isCatalog
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault()
@@ -63,7 +66,7 @@ function MarketLayoutInner() {
               </span>
             </Link>
 
-            {!isHome && (
+            {showHeaderSearch && (
               <form onSubmit={handleSearch} role="search" className="hidden md:flex flex-1 max-w-md mx-auto">
                 <div className="relative w-full">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none mk-meta" aria-hidden="true" />
@@ -100,7 +103,7 @@ function MarketLayoutInner() {
           </div>
 
           {/* Ряд 2 (мобила): поиск */}
-          {!isHome && (
+          {showHeaderSearch && (
             <form onSubmit={handleSearch} role="search" className="md:hidden pb-2.5">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none mk-meta" aria-hidden="true" />
@@ -153,7 +156,7 @@ function MarketLayoutInner() {
       <footer style={{ background: 'var(--mk-surface)', borderTop: '1px solid var(--mk-border)' }} className="mt-10">
         <div className="mk-container py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs mk-meta">Маркет запчастей · б/у и новые запчасти от авторазборок</p>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
             <Link to="/business" className="text-xs font-semibold mk-link">Открыть разборку</Link>
             <p className="text-xs mk-meta">© {new Date().getFullYear()}</p>
           </div>
