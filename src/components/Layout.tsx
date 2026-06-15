@@ -19,7 +19,7 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
 import { useAuth } from '../hooks/useAuth'
-import { getMenuForRoles } from '../config/navigation'
+import { getMenuForRoles, PARTS_NAV_GROUPS } from '../config/navigation'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { useAdminNotifications } from '../hooks/useAdminNotifications'
 import { useSubscriptionLimits } from '../hooks/useSubscription'
@@ -211,51 +211,53 @@ export default function Layout() {
 
   return (
     <div
-      className="flex flex-col md:flex-row h-dvh bg-gray-100 font-sans overscroll-none"
-      // Светлый Graphite: акцент кабинета — графит #4F5B7A (hsl 223 21% 39%).
-      // Переопределяем --primary только в обёртке кабинета: bg-primary/text-primary/фокус
-      // во всех вложенных страницах становятся графитовыми, логин/админку не задевает.
-      style={{ '--primary': '223 21% 39%' } as React.CSSProperties}
+      className="flex flex-col md:flex-row h-dvh font-sans overscroll-none"
+      // Кабинет «Ink & Signal»: акцент — чернила #16181D (hsl 223 14% 10%).
+      // Переопределяем --primary только в обёртке кабинета (bg-primary/text-primary/фокус),
+      // логин/админку не задевает. Фон — --cab-bg.
+      style={{ '--primary': '223 14% 10%', background: 'var(--cab-bg)' } as React.CSSProperties}
     >
 
       {/* ════════════════════════════════════════════
-          DESKTOP SIDEBAR — светлый Graphite, md:w-16 → lg:w-64
+          DESKTOP SIDEBAR — Ink & Signal, md:w-16 → lg:w-64
           ════════════════════════════════════════════ */}
       <aside
-        className={`${isUserCtx ? 'hidden' : 'hidden md:flex'} md:flex-col md:w-16 lg:w-64 flex-shrink-0 bg-white border-r border-gray-200`}
+        className={`${isUserCtx ? 'hidden' : 'hidden md:flex'} md:flex-col md:w-16 lg:w-64 flex-shrink-0`}
+        style={{ background: 'var(--cab-surface)', borderRight: '1px solid var(--cab-border)' }}
       >
         {/* Шапка сайдбара — ContextSwitcher */}
-        <div className="flex items-center px-2 lg:px-3 h-14 border-b border-gray-200">
-          {/* На lg — полный switcher; на md — только иконка (switcher сам адаптируется) */}
+        <div className="flex items-center px-2 lg:px-3 h-14" style={{ borderBottom: '1px solid var(--cab-border)' }}>
           <div className="w-full overflow-hidden rounded-[10px]">
             <ContextSwitcher current={currentCtx} />
           </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-          {filteredNavigation.map((item) => {
-            const Icon = item.icon
-            const isActive = item.href.includes('?')
-              ? location.pathname + location.search === item.href
-              : location.pathname === item.href
+        {/* Nav — сгруппирован: Работа / База / Система */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
+          {PARTS_NAV_GROUPS.map((grp) => {
+            const items = filteredNavigation.filter((i) => (i.group ?? 'system') === grp.id)
+            if (items.length === 0) return null
             return (
-              <Link
-                key={item.href}
-                to={item.href}
-                title={item.name}
-                className={`group flex items-center justify-center lg:justify-start gap-3 px-0 lg:px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
-                  isActive
-                    ? 'bg-[#4F5B7A] text-white font-semibold'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium active:scale-[0.98]'
-                }`}
-              >
-                <Icon
-                  className="w-[18px] h-[18px] flex-shrink-0"
-                  strokeWidth={1.5}
-                />
-                <span className="hidden lg:block truncate">{item.name}</span>
-              </Link>
+              <div key={grp.id} className="space-y-0.5">
+                <p className="cab-group-label hidden lg:block mb-1.5">{grp.label}</p>
+                {items.map((item) => {
+                  const Icon = item.icon
+                  const isActive = item.href.includes('?')
+                    ? location.pathname + location.search === item.href
+                    : location.pathname === item.href
+                  return (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      title={item.name}
+                      className={`cab-nav justify-center lg:justify-start active:scale-[0.98] ${isActive ? 'cab-nav-active' : ''}`}
+                    >
+                      <Icon className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} />
+                      <span className="hidden lg:block truncate">{item.name}</span>
+                    </Link>
+                  )
+                })}
+              </div>
             )
           })}
         </nav>
@@ -364,7 +366,7 @@ export default function Layout() {
         </div>
 
         {/* ── MAIN CONTENT ── */}
-        <div className="flex-1 bg-gray-50">
+        <div className="flex-1" style={{ background: 'var(--cab-bg)' }}>
           <div className="mx-auto max-w-[1440px] w-full px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
             <NotificationBanner userId={profile?.id} />
             <Outlet />
@@ -396,7 +398,7 @@ export default function Layout() {
                 key={item.href}
                 to={item.href}
                 className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-colors ${
-                  isActive ? 'text-[#4F5B7A]' : 'text-gray-400 hover:text-gray-600'
+                  isActive ? 'text-[#16181D]' : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
@@ -462,7 +464,7 @@ export default function Layout() {
                     onClick={() => setSheetOpen(false)}
                     className={`flex flex-col items-center justify-center gap-1.5 px-1 py-3 rounded-xl min-h-[64px] transition-colors active:scale-[0.96] ${
                       isActive
-                        ? 'bg-[#4F5B7A] text-white font-semibold'
+                        ? 'bg-[#16181D] text-white font-semibold'
                         : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                     }`}
                   >

@@ -34,6 +34,24 @@
     --popover:       0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
+    /* ═══ КАБИНЕТ РАЗБОРКИ — стиль «Ink & Signal» (2026-06) ═══════════════
+       Строгий светлый: белые карты, чёткие 1px-бордеры, плотные чёрные-чернила
+       кнопки, индиго-сигнал точечно. Используется в каркасе кабинета и новых
+       экранах через var(--cab-*). Без градиентов. */
+    --cab-bg:            #FAFAFA;   /* фон приложения */
+    --cab-surface:       #FFFFFF;   /* карты/панели */
+    --cab-surface-2:     #F4F5F7;   /* hover/заливки/зебра */
+    --cab-border:        #E4E6EA;   /* основной бордер */
+    --cab-border-strong: #D4D7DD;   /* акцентный бордер/hover */
+    --cab-ink:           #16181D;   /* текст и SOLID-кнопки */
+    --cab-ink-2:         #565B64;   /* вторичный текст */
+    --cab-ink-3:         #8B909A;   /* приглушённый текст/иконки */
+    --cab-signal:        #3538CD;   /* сигнальный акцент (индиго) */
+    --cab-signal-hover:  #2A2DA8;
+    --cab-signal-weak:   #ECEDFB;   /* фон сигнальных чипов */
+    --cab-radius:        10px;
+    --cab-radius-sm:     8px;
+
     /* ═══ ЕДИНЫЙ ИСТОЧНИК — менять цвета/размеры ТОЛЬКО здесь ═══════════════
        Правило проекта: НЕ хардкодить hex/px в компонентах. Бренд-цвет,
        градиент и базовый размер шрифта берём из этих переменных
@@ -190,6 +208,53 @@
            hover:text-gray-700 hover:bg-gray-100 transition-all duration-150 cursor-pointer;
     min-width: 30px;
     min-height: 30px;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     КАБИНЕТ РАЗБОРКИ — «Ink and Signal» (строгий светлый, без градиентов).
+     Префикс cab-. Не трогает глобальные классы btn и card (логин, админка).
+     ═══════════════════════════════════════════════════════════════ */
+  .cab-card {
+    background: var(--cab-surface);
+    border: 1px solid var(--cab-border);
+    border-radius: var(--cab-radius);
+  }
+  .cab-card-hover { transition: border-color .15s, box-shadow .15s; }
+  .cab-card-hover:hover { border-color: var(--cab-border-strong); box-shadow: 0 1px 3px rgba(22,24,29,.07); }
+
+  .cab-btn {
+    @apply inline-flex items-center justify-center gap-2 font-semibold select-none cursor-pointer whitespace-nowrap;
+    min-height: 38px; padding-inline: 0.9rem;
+    border-radius: var(--cab-radius-sm); font-size: 0.875rem; letter-spacing: -0.01em;
+    transition: background-color .15s, border-color .15s, color .15s;
+  }
+  .cab-btn:active { transform: scale(.97); }
+  .cab-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .cab-btn-primary { background: var(--cab-ink); color: #fff; border: 1px solid var(--cab-ink); }
+  .cab-btn-primary:hover { background: #000; border-color: #000; }
+  .cab-btn-secondary { background: var(--cab-surface); color: var(--cab-ink); border: 1px solid var(--cab-border-strong); }
+  .cab-btn-secondary:hover { background: var(--cab-surface-2); border-color: var(--cab-ink-3); }
+  .cab-btn-signal { background: var(--cab-signal); color: #fff; border: 1px solid var(--cab-signal); }
+  .cab-btn-signal:hover { background: var(--cab-signal-hover); border-color: var(--cab-signal-hover); }
+  .cab-btn-sm { min-height: 32px; padding-inline: .65rem; font-size: .8rem; }
+
+  .cab-chip {
+    @apply inline-flex items-center gap-1.5 font-semibold;
+    height: 22px; padding-inline: .5rem; border-radius: 6px; font-size: .72rem;
+    background: var(--cab-surface-2); color: var(--cab-ink-2); border: 1px solid var(--cab-border);
+  }
+  .cab-chip-signal { background: var(--cab-signal-weak); color: var(--cab-signal); border-color: transparent; }
+
+  /* Боковая навигация */
+  .cab-nav {
+    @apply flex items-center gap-3 w-full rounded-lg text-sm font-medium transition-colors;
+    padding: 0.5rem 0.7rem; color: var(--cab-ink-2);
+  }
+  .cab-nav:hover { background: var(--cab-surface-2); color: var(--cab-ink); }
+  .cab-nav-active, .cab-nav-active:hover { background: var(--cab-ink); color: #fff; }
+  .cab-group-label {
+    @apply text-[10px] font-bold uppercase;
+    letter-spacing: 0.12em; color: var(--cab-ink-3); padding: 0 0.7rem;
   }
 
   /* Success / green action (sell, complete) */
