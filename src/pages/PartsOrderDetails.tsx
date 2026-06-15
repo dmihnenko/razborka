@@ -22,6 +22,8 @@ import {
   createPartsCustomer, updatePartsCustomer,
 } from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
+import { useHydrateNpSettings } from '@/hooks/useHydrateNpSettings'
+import { createShipment } from '@/services/shipmentsService'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { moveToTrash } from '@/services/trashService'
@@ -47,6 +49,8 @@ export default function PartsOrderDetails() {
   const { confirm: showConfirm, dialogProps } = useConfirm()
 
   const { rate: exchangeRate } = usePartsExchangeRate()
+  // НП-настройки разборки из БД → localStorage (ключ общий для всех сотрудников)
+  useHydrateNpSettings(partsCompanyId)
 
   /* ── поля «Клиент и доставка» ───────────────────────────────── */
   const [customerFullName, setCustomerFullName] = useState('')
@@ -323,33 +327,40 @@ export default function PartsOrderDetails() {
               </span>
 
               {canManage && (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => updateStatusMutation.mutate('new')}
-                    disabled={order.status === 'new' || updateStatusMutation.isPending}
-                    className={`btn btn-xs ${
-                      order.status === 'new'
-                        ? 'btn-primary opacity-60 cursor-not-allowed'
-                        : 'btn-secondary'
-                    }`}
-                  >
-                    Новый
-                  </button>
-                  <button
-                    onClick={() => updateStatusMutation.mutate('in_progress')}
-                    disabled={order.status === 'in_progress' || updateStatusMutation.isPending}
-                    className={`btn btn-xs ${
-                      order.status === 'in_progress'
-                        ? 'bg-yellow-500 text-white opacity-60 cursor-not-allowed rounded-md px-2 py-1 text-xs font-semibold inline-flex items-center justify-center'
-                        : 'btn-secondary'
-                    }`}
-                  >
-                    В работе
-                  </button>
+                <div className="flex items-center gap-1.5">
+                  {/* Статус-степпер: продвигаем заказ одним нажатием */}
+                  <div className="inline-flex items-center p-0.5 rounded-lg"
+                    style={{ background: 'var(--cab-surface-2)', border: '1px solid var(--cab-border)' }}>
+                    {([
+                      { key: 'new', label: 'Новый' },
+                      { key: 'in_progress', label: 'В работе' },
+                      { key: 'completed', label: 'Завершён' },
+                    ] as const).map((s) => {
+                      const active = order.status === s.key
+                      return (
+                        <button
+                          key={s.key}
+                          onClick={() => {
+                            if (active) return
+                            if (s.key === 'completed') setShowCompleteModal(true)
+                            else updateStatusMutation.mutate(s.key)
+                          }}
+                          disabled={active || updateStatusMutation.isPending}
+                          className="px-2.5 h-7 rounded-md text-xs font-semibold transition-colors whitespace-nowrap"
+                          style={active
+                            ? { background: 'var(--cab-ink)', color: '#fff' }
+                            : { color: 'var(--cab-ink-2)' }}
+                        >
+                          {s.label}
+                        </button>
+                      )
+                    })}
+                  </div>
                   <button
                     onClick={() => updateStatusMutation.mutate('cancelled')}
                     disabled={order.status === 'cancelled' || updateStatusMutation.isPending}
-                    className="btn btn-xs btn-ghost"
+                    className="cab-btn cab-btn-sm cab-btn-secondary"
+                    style={{ color: '#B91C1C' }}
                   >
                     Отменить
                   </button>
@@ -401,7 +412,7 @@ export default function PartsOrderDetails() {
 
         {/* ── блок «Клиент и доставка» (редактирование) ─────────────── */}
         {canManage && (
-          <div className="card">
+          <div className="cab-card p-4">
             <div className="flex items-center gap-2 mb-4">
               <span className="icon-tile-sm bg-slate-100 text-slate-700">
                 <Truck className="w-4 h-4" />
@@ -510,7 +521,7 @@ export default function PartsOrderDetails() {
                   saveCustomerMutation.isPending ||
                   (!customerFullName.trim() && !customerPhone.trim() && !customerCity.trim() && !customerNpOffice.trim())
                 }
-                className="btn-primary disabled:opacity-50"
+                className="cab-btn cab-btn-primary disabled:opacity-50"
               >
                 {saveCustomerMutation.isPending ? 'Сохранение…' : 'Сохранить данные клиента'}
               </button>
@@ -535,9 +546,9 @@ export default function PartsOrderDetails() {
             {canManage && (
               <button
                 onClick={() => setShowAddItemModal(true)}
-                className="btn-primary btn-sm gap-1.5"
+                className="cab-btn cab-btn-primary cab-btn-sm gap-1.5"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-3.5 h-3.5" strokeWidth={2} />
                 <span className="hidden sm:inline">Добавить</span>
               </button>
             )}
@@ -553,9 +564,9 @@ export default function PartsOrderDetails() {
               {canManage && (
                 <button
                   onClick={() => setShowAddItemModal(true)}
-                  className="mt-3 btn-primary btn-sm"
+                  className="mt-3 cab-btn cab-btn-primary cab-btn-sm"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-3.5 h-3.5" strokeWidth={2} />
                   Добавить позицию
                 </button>
               )}
@@ -649,6 +660,23 @@ export default function PartsOrderDetails() {
           setTtnCreating={setTtnCreating}
           onTtnCreated={(ttn) => {
             queryClient.invalidateQueries({ queryKey: ['parts-order', id] })
+            // Регистрируем посылку для трекинга (раздел «Доставка»)
+            if (partsCompanyId) {
+              createShipment({
+                parts_company_id: partsCompanyId,
+                order_id: order.id,
+                ttn,
+                np_ref: null,
+                recipient_name: order.customer?.full_name ?? customerFullName ?? null,
+                recipient_phone: order.customer?.phone ?? customerPhone ?? null,
+                recipient_city: customerCity || null,
+                recipient_warehouse: customerNpOffice || null,
+                status: null,
+                status_code: null,
+                cod_amount: null,
+              }).catch(() => { /* трекинг опционален */ })
+            }
+            queryClient.invalidateQueries({ queryKey: ['parts-shipments', partsCompanyId] })
             toast.success(`ТТН создана: ${ttn}`)
           }}
           orderId={order.id}

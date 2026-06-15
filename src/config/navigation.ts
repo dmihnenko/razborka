@@ -12,6 +12,7 @@ import {
   CreditCard,
   Inbox,
   History,
+  Truck,
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -43,6 +44,7 @@ export const partsOwnerMenu: MenuItem[] = [
   { name: 'Пульт', href: '/parts/dashboard', icon: LayoutGrid, group: 'work' },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart, group: 'work' },
   { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox, group: 'work' },
+  { name: 'Доставка', href: '/parts/shipments', icon: Truck, group: 'work' },
   { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package, group: 'base' },
   { name: 'Магазин', href: '/parts/inventory?source=shop', icon: ShoppingBag, group: 'base' },
   { name: 'Автомобили', href: '/parts/vehicles', icon: Car, group: 'base' },
@@ -61,6 +63,7 @@ export const partsWorkerMenu: MenuItem[] = [
   { name: 'Пульт', href: '/parts/dashboard', icon: LayoutGrid, group: 'work' },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart, group: 'work' },
   { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox, group: 'work' },
+  { name: 'Доставка', href: '/parts/shipments', icon: Truck, group: 'work' },
   { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package, group: 'base' },
   { name: 'Автомобили', href: '/parts/vehicles', icon: Car, group: 'base' },
   { name: 'Клиенты', href: '/parts/customers', icon: Users, group: 'base' },

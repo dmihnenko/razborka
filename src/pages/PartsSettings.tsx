@@ -14,6 +14,8 @@ import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getImgbbKey, setImgbbKey } from '@/utils/imgbbKey'
 import { getNpApiKey, setNpApiKey } from '@/utils/npApiKey'
 import { getNpConfig, setNpConfig, NpSenderConfig } from '@/utils/npConfig'
+import { upsertNpSettings } from '@/services/npSettingsService'
+import { useHydrateNpSettings } from '@/hooks/useHydrateNpSettings'
 import { searchCities, searchWarehouses, NpCity, NpWarehouse } from '@/services/npService'
 import { toast } from 'sonner'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
@@ -76,8 +78,36 @@ export default function PartsSettings() {
     staleTime: 60_000,
   })
 
-  const handleSaveNpSender = () => {
+  // Гидрация НП-настроек из БД → localStorage + форма (общие для всех сотрудников)
+  const npDb = useHydrateNpSettings(partsCompanyId)
+  useEffect(() => {
+    if (!npDb) return
+    if (npDb.api_key && !npKeyInput) setNpKeyInput(npDb.api_key)
+    setNpSender(prev => ({
+      senderCityRef: prev.senderCityRef || npDb.sender_city_ref || '',
+      senderCityName: prev.senderCityName || npDb.sender_city_name || '',
+      senderWarehouseRef: prev.senderWarehouseRef || npDb.sender_warehouse_ref || '',
+      senderWarehouseName: prev.senderWarehouseName || npDb.sender_warehouse_name || '',
+      senderPhone: prev.senderPhone || npDb.sender_phone || '',
+      senderName: prev.senderName || npDb.sender_name || '',
+    }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [npDb])
+
+  const handleSaveNpSender = async () => {
     setNpConfig(npSender)
+    if (partsCompanyId) {
+      try {
+        await upsertNpSettings(partsCompanyId, {
+          sender_city_ref: npSender.senderCityRef ?? null,
+          sender_city_name: npSender.senderCityName ?? null,
+          sender_warehouse_ref: npSender.senderWarehouseRef ?? null,
+          sender_warehouse_name: npSender.senderWarehouseName ?? null,
+          sender_phone: npSender.senderPhone ?? null,
+          sender_name: npSender.senderName ?? null,
+        })
+      } catch { /* БД-настройки опциональны; localStorage уже сохранён */ }
+    }
     toast.success('Данные отправителя сохранены')
   }
 
@@ -151,10 +181,14 @@ export default function PartsSettings() {
     toast.success(trimmed ? 'API ключ ImgBB сохранён' : 'API ключ удалён')
   }
 
-  const handleSaveNpKey = () => {
+  const handleSaveNpKey = async () => {
     const trimmed = npKeyInput.trim()
     setNpApiKey(trimmed)
-    toast.success(trimmed ? 'API ключ Новой почты сохранён' : 'API ключ Новой почты удалён')
+    if (partsCompanyId) {
+      try { await upsertNpSettings(partsCompanyId, { api_key: trimmed || null }) }
+      catch { /* localStorage уже сохранён */ }
+    }
+    toast.success(trimmed ? 'API ключ Новой почты сохранён (для всех сотрудников)' : 'API ключ Новой почты удалён')
   }
 
   const handleFetchPrivatBank = async () => {

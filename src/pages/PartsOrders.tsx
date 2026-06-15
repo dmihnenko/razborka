@@ -72,18 +72,19 @@ function BoardCard({ order, formatUSD, computeOrderUSD, onClick, isDragging }: B
       {...attributes}
       {...listeners}
       onClick={onClick}
-      className={`card p-3 cursor-grab active:cursor-grabbing select-none ${isDragging ? 'shadow-xl ring-2 ring-primary' : 'hover:shadow-md'} transition-shadow`}
+      className="cab-card p-3 cursor-grab active:cursor-grabbing select-none transition-shadow"
+      style={isDragging ? { boxShadow: '0 8px 24px -8px rgba(22,24,29,.25)', borderColor: 'var(--cab-ink)' } : undefined}
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
-        <span className="kicker text-gray-400 truncate">{order.order_number}</span>
-        <span className="text-sm font-extrabold tabular text-primary flex-shrink-0" style={{ letterSpacing: '-0.02em' }}>
+        <span className="text-[11px] font-bold uppercase tracking-wide truncate" style={{ color: 'var(--cab-ink-3)' }}>{order.order_number}</span>
+        <span className="text-sm font-extrabold tabular-nums flex-shrink-0" style={{ color: 'var(--cab-ink)', letterSpacing: '-0.02em' }}>
           {formatUSD(computeOrderUSD(order))}
         </span>
       </div>
-      <p className="text-sm font-semibold text-gray-800 truncate mb-1">
+      <p className="text-sm font-semibold truncate mb-1" style={{ color: 'var(--cab-ink)' }}>
         {order.customer?.full_name ?? '—'}
       </p>
-      <p className="text-xs text-gray-400">{formatDate(order.order_date)}</p>
+      <p className="text-xs" style={{ color: 'var(--cab-ink-3)' }}>{formatDate(order.order_date)}</p>
     </div>
   )
 }
@@ -107,15 +108,14 @@ function BoardColumn({ status, label, dot, ring, orders, formatUSD, computeOrder
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col min-h-[200px] rounded-xl p-3 transition-colors ${
-        isOver ? 'bg-blue-50 ring-2 ring-primary/30' : 'bg-gray-100/70'
-      }`}
+      className="flex flex-col min-h-[200px] rounded-xl p-3 transition-colors"
+      style={{ background: isOver ? 'var(--cab-signal-weak)' : 'var(--cab-surface-2)', boxShadow: isOver ? '0 0 0 1px var(--cab-signal)' : undefined }}
     >
       {/* Заголовок колонки */}
       <div className="flex items-center gap-2 mb-3 px-1">
         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
-        <span className="text-sm font-bold text-gray-700">{label}</span>
-        <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ring-1 ${ring} text-gray-600 bg-white`}>
+        <span className="text-sm font-bold" style={{ color: 'var(--cab-ink)' }}>{label}</span>
+        <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ring-1 ${ring} bg-white`} style={{ color: 'var(--cab-ink-2)' }}>
           {orders.length}
         </span>
       </div>
@@ -304,7 +304,7 @@ export default function PartsOrders() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50">
+    <div className="min-h-dvh" style={{ background: 'var(--cab-bg)' }}>
       {/* Header */}
       <PartsPageHeader
         title="Заказы"
@@ -313,9 +313,9 @@ export default function PartsOrders() {
         actions={
           <button
             onClick={() => navigate('/parts/orders/create')}
-            className="btn-primary flex items-center gap-2"
+            className="cab-btn cab-btn-primary cab-btn-sm"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4" strokeWidth={2} />
             <span className="hidden sm:inline">Создать заказ</span>
           </button>
         }
@@ -327,40 +327,38 @@ export default function PartsOrders() {
         {/* Stats — фильтр-плитки */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
           {[
-            { key: 'all',         label: 'Всего',     value: stats.total,       dot: 'bg-gray-400',    text: 'text-gray-900',    ring: 'ring-primary' },
-            { key: 'new',         label: 'Новые',     value: stats.new,         dot: 'bg-blue-500',    text: 'text-blue-600',    ring: 'ring-blue-500' },
-            { key: 'in_progress', label: 'В работе',  value: stats.in_progress, dot: 'bg-amber-400',   text: 'text-amber-600',   ring: 'ring-amber-400' },
-            { key: 'completed',   label: 'Завершены', value: stats.completed,   dot: 'bg-emerald-500', text: 'text-emerald-600', ring: 'ring-emerald-500' },
-          ].map(({ key, label, value, dot, text, ring }) => (
+            { key: 'all',         label: 'Всего',     value: stats.total,       dot: '#8B909A' },
+            { key: 'new',         label: 'Новые',     value: stats.new,         dot: 'var(--cab-signal)' },
+            { key: 'in_progress', label: 'В работе',  value: stats.in_progress, dot: '#D97706' },
+            { key: 'completed',   label: 'Завершены', value: stats.completed,   dot: '#16A34A' },
+          ].map(({ key, label, value, dot }) => (
             <button
               key={key}
               onClick={() => setStatusFilter(key)}
-              className={`stat-card cursor-pointer text-left transition-all ${statusFilter === key ? `ring-2 ${ring}` : ''}`}
+              className="cab-card cab-card-hover p-4 text-left"
+              style={statusFilter === key ? { borderColor: 'var(--cab-ink)', boxShadow: '0 0 0 1px var(--cab-ink)' } : undefined}
             >
-              <div className="flex items-start justify-between mb-3">
-                <p className="kicker">{label}</p>
-                <span className={`w-2 h-2 rounded-full flex-shrink-0 mt-0.5 ${dot}`} />
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold" style={{ color: 'var(--cab-ink-2)' }}>{label}</p>
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dot }} />
               </div>
-              <p className={`text-3xl font-extrabold tabular ${text}`} style={{ letterSpacing: '-0.03em' }}>
+              <p className="text-2xl font-extrabold tabular-nums" style={{ color: 'var(--cab-ink)', letterSpacing: '-0.03em' }}>
                 {value}
               </p>
             </button>
           ))}
 
           {/* Выручка */}
-          <div className="stat-card">
-            <div className="flex items-start justify-between mb-3">
-              <p className="kicker">Выручка</p>
-              <span className="w-2 h-2 rounded-full flex-shrink-0 mt-0.5 bg-purple-400" />
-            </div>
-            <p className="text-2xl font-extrabold tabular text-purple-600" style={{ letterSpacing: '-0.03em' }}>
+          <div className="cab-card p-4">
+            <p className="text-xs font-semibold mb-2" style={{ color: 'var(--cab-ink-2)' }}>Выручка</p>
+            <p className="text-2xl font-extrabold tabular-nums" style={{ color: 'var(--cab-ink)', letterSpacing: '-0.03em' }}>
               {formatUSD(stats.totalRevenue)}
             </p>
           </div>
         </div>
 
         {/* Поиск + фильтры + переключатель вида */}
-        <div className="card p-4 mb-4">
+        <div className="cab-card p-4 mb-4">
           {/* Поиск */}
           <div className="relative mb-3">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -419,7 +417,7 @@ export default function PartsOrders() {
             <Spinner size="md" />
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="card">
+          <div className="cab-card">
             <div className="empty-state">
               <div className="empty-state-icon">
                 <ShoppingCart className="w-7 h-7 text-gray-400" />
@@ -473,17 +471,17 @@ export default function PartsOrders() {
                   {/* DragOverlay — «призрак» при перетаскивании */}
                   <DragOverlay>
                     {activeOrder ? (
-                      <div className="card p-3 shadow-2xl rotate-2 opacity-95 w-64">
+                      <div className="cab-card p-3 shadow-2xl rotate-2 opacity-95 w-64">
                         <div className="flex items-start justify-between gap-2 mb-1.5">
-                          <span className="kicker text-gray-400 truncate">{activeOrder.order_number}</span>
-                          <span className="text-sm font-extrabold tabular text-primary flex-shrink-0" style={{ letterSpacing: '-0.02em' }}>
+                          <span className="text-[11px] font-bold uppercase tracking-wide truncate" style={{ color: 'var(--cab-ink-3)' }}>{activeOrder.order_number}</span>
+                          <span className="text-sm font-extrabold tabular-nums flex-shrink-0" style={{ color: 'var(--cab-ink)', letterSpacing: '-0.02em' }}>
                             {formatUSD(computeOrderUSD(activeOrder))}
                           </span>
                         </div>
-                        <p className="text-sm font-semibold text-gray-800 truncate mb-1">
+                        <p className="text-sm font-semibold truncate mb-1" style={{ color: 'var(--cab-ink)' }}>
                           {activeOrder.customer?.full_name ?? '—'}
                         </p>
-                        <p className="text-xs text-gray-400">{formatDate(activeOrder.order_date)}</p>
+                        <p className="text-xs" style={{ color: 'var(--cab-ink-3)' }}>{formatDate(activeOrder.order_date)}</p>
                       </div>
                     ) : null}
                   </DragOverlay>
@@ -493,7 +491,7 @@ export default function PartsOrders() {
 
             {/* ── Таблица (md+, viewMode=list) — скрыта в режиме доски ── */}
             {(viewMode === 'list') && (
-              <div className="card p-0 overflow-hidden hidden md:block">
+              <div className="cab-card p-0 overflow-hidden hidden md:block">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -569,7 +567,7 @@ export default function PartsOrders() {
                   <div
                     key={order.id}
                     onClick={() => navigate(`/parts/orders/${order.id}`)}
-                    className="card card-interactive p-4"
+                    className="cab-card cab-card-hover p-4"
                   >
                     {/* Строка 1: клиент + сумма */}
                     <div className="flex items-start justify-between gap-2 mb-1.5">

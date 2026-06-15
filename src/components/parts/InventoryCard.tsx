@@ -92,10 +92,10 @@ export function InventoryCard({
   return (
     <div
       className={[
-        'card flex flex-col overflow-hidden p-0',
-        isSelected ? 'border-blue-500 ring-2 ring-blue-300' : '',
-        'card-interactive',
+        'cab-card cab-card-hover flex flex-col overflow-hidden p-0',
+        isSelected ? 'ring-2' : '',
       ].join(' ')}
+      style={isSelected ? { borderColor: 'var(--cab-ink)', boxShadow: '0 0 0 1px var(--cab-ink)' } : undefined}
     >
       {/* ── ФОТО БЛОК ───────────────────────────────────────────────────── */}
       <div

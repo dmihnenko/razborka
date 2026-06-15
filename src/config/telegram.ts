@@ -1,9 +1,9 @@
 // Имя Telegram-бота уведомлений (без «@»).
-// Получить у @BotFather после создания бота и задать в окружении сборки:
-//   VITE_TELEGRAM_BOT_USERNAME=my_razborka_bot   (Netlify env vars / .env)
-// Пока не задано — кнопка «Подключить уведомления» в настройках скрыта.
+// Дефолт — рабочий бот разборки (@avtopoisk_help_bot); можно переопределить через
+// VITE_TELEGRAM_BOT_USERNAME (Netlify env vars / .env). Username — не секрет.
 export const TELEGRAM_BOT_USERNAME =
-  (import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string | undefined)?.replace(/^@/, '') || ''
+  (import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string | undefined)?.replace(/^@/, '') ||
+  'avtopoisk_help_bot'
 
 /** Deep-link, по которому владелец привязывает свою разборку к Telegram-боту. */
 export function telegramConnectLink(companyId: string): string {

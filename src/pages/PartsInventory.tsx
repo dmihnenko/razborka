@@ -680,9 +680,9 @@ export default function PartsInventory() {
                 setEditingItem(null)
                 setIsModalOpen(true)
               }}
-              className="btn-primary btn-sm flex items-center gap-1.5"
+              className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
             >
-              <Plus className="w-4 h-4" strokeWidth={1.5} />
+              <Plus className="w-4 h-4" strokeWidth={2} />
               <span className="hidden sm:inline">Добавить</span>
             </button>
           </>
@@ -784,7 +784,7 @@ export default function PartsInventory() {
         </div>
 
         {/* Search & View Controls */}
-        <div className="card p-4 mb-4">
+        <div className="cab-card p-4 mb-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" strokeWidth={1.5} />
@@ -868,7 +868,7 @@ export default function PartsInventory() {
             <Spinner size="md" />
           </div>
         ) : filteredAndSorted.length === 0 ? (
-          <div className="card">
+          <div className="cab-card">
             <div className="empty-state">
               <div className="empty-state-icon">
                 <Package className="w-7 h-7 text-gray-400" strokeWidth={1.5} />
@@ -904,7 +904,7 @@ export default function PartsInventory() {
             ))}
           </div>
         ) : (
-          <div className="card p-0 overflow-hidden">
+          <div className="cab-card p-0 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
