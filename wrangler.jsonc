@@ -1,0 +1,15 @@
+{
+  // Cloudflare Workers + Static Assets для SPA (Vite → dist).
+  // Билд: npm run build · деплой: npx wrangler deploy
+  "name": "tsp",
+  "compatibility_date": "2024-11-01",
+  "main": "worker/index.js",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Неизвестные пути → index.html (клиентский роутинг SPA)
+    "not_found_handling": "single-page-application",
+    // Для /api/* сначала запускаем Worker (прокси PrivatBank), остальное — статика
+    "run_worker_first": ["/api/*"]
+  }
+}
