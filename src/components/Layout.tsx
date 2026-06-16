@@ -304,17 +304,19 @@ export default function Layout() {
           </div>
         )}
 
-        {/* ── DESKTOP TOP BAR (разборка): «В маркет» справа ── */}
+        {/* ── DESKTOP TOP BAR (разборка): «В маркет» справа, выровнено по main ── */}
         {currentCtx === 'parts' && (
-          <div className="hidden md:flex items-center justify-end h-12 px-4 lg:px-8 flex-shrink-0"
+          <div className="hidden md:flex h-12 flex-shrink-0"
             style={{ background: 'var(--cab-surface)', borderBottom: '1px solid var(--cab-border)' }}>
-            <Link
-              to="/market"
-              title="Открыть маркет запчастей"
-              className="market mk-btn mk-btn-outline"
-            >
-              <Store className="w-4 h-4" strokeWidth={1.5} /> В маркет
-            </Link>
+            <div className="mx-auto w-full max-w-[1920px] px-3 sm:px-5 md:px-6 lg:px-8 flex items-center justify-end">
+              <Link
+                to="/market"
+                title="Открыть маркет запчастей"
+                className="market mk-btn mk-btn-outline"
+              >
+                <Store className="w-4 h-4" strokeWidth={1.5} /> В маркет
+              </Link>
+            </div>
           </div>
         )}
 
@@ -329,9 +331,10 @@ export default function Layout() {
               <Link
                 to="/market"
                 title="Открыть маркет запчастей"
+                aria-label="В маркет"
                 className="market mk-btn mk-btn-outline flex-shrink-0"
               >
-                <Store className="w-4 h-4" strokeWidth={1.5} /> В маркет
+                <Store className="w-4 h-4" strokeWidth={1.5} /> <span className="hidden sm:inline">В маркет</span>
               </Link>
             )}
           </div>
