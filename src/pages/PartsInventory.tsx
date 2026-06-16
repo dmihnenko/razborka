@@ -763,7 +763,7 @@ export default function PartsInventory() {
                 </span>
                 <span className="text-xs text-gray-300">·</span>
                 <span className="text-xs text-gray-400 hidden sm:inline">продано</span>
-                <span className="text-sm font-bold text-blue-600">
+                <span className="text-sm font-bold text-primary">
                   {stats.soldUSD === 0 ? '—' : `$${Math.round(stats.soldUSD).toLocaleString('ru-RU')}`}
                 </span>
               </div>
@@ -772,11 +772,11 @@ export default function PartsInventory() {
                 {stats.stockUSD === 0 ? '—' : `$${Math.round(stats.stockUSD).toLocaleString('ru-RU')}`}
               </span>
             ) : statusFilter === 'sold' ? (
-              <span className="text-sm font-bold text-blue-600">
+              <span className="text-sm font-bold text-primary">
                 {stats.soldUSD === 0 ? '—' : `$${Math.round(stats.soldUSD).toLocaleString('ru-RU')}`}
               </span>
             ) : (
-              <span className="text-sm font-bold text-blue-600">
+              <span className="text-sm font-bold text-primary">
                 {stats.totalUAH === 0 && stats.totalUSD === 0 ? '—' : `$${Math.round(stats.totalUSD + stats.totalUAH / (usdRate || 41)).toLocaleString('ru-RU')}`}
               </span>
             )}
@@ -814,7 +814,7 @@ export default function PartsInventory() {
                   >
                     {label}
                     {sortField === field && (
-                      <span className="text-blue-600">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                      <span className="text-primary">{sortDir === 'asc' ? '↑' : '↓'}</span>
                     )}
                   </button>
                 ))}
@@ -980,7 +980,7 @@ export default function PartsInventory() {
                           {statusLabels[item.status]}
                         </button>
                         {item.status === 'sold' && item.sold_to_customer && (
-                          <div className="text-xs text-blue-600 mt-1 font-medium truncate max-w-[120px]">
+                          <div className="text-xs text-primary mt-1 font-medium truncate max-w-[120px]">
                             {item.sold_to_customer.full_name}
                           </div>
                         )}
@@ -1989,7 +1989,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                           className="form-input font-mono resize-none border-slate-300"
                         />
                         <div className="flex items-center justify-between mt-2">
-                          <span className="text-xs text-blue-600">
+                          <span className="text-xs text-primary">
                             {pasteText.trim() ? `${parseBulkText(pasteText).length} строк распознано` : ''}
                           </span>
                           <button

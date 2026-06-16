@@ -64,7 +64,7 @@ function MarketOrderCard({
           <div className="min-w-0">
             <a
               href={telHref}
-              className="heading-2 hover:text-blue-600 transition-colors block"
+              className="heading-2 hover:text-primary transition-colors block"
               onClick={(e) => e.stopPropagation()}
             >
               {order.buyerPhone}
@@ -134,7 +134,7 @@ function MarketOrderCard({
         {/* Сумма */}
         <div className="flex items-center justify-between pt-2 border-t border-gray-100">
           <span className="text-sm text-gray-500 font-medium">Сумма заявки</span>
-          <span className="text-lg font-extrabold text-blue-600 tabular">{formatOrderTotal(order)}</span>
+          <span className="text-lg font-extrabold text-primary tabular">{formatOrderTotal(order)}</span>
         </div>
 
         {/* Оформление заказа из заявки */}
@@ -246,7 +246,7 @@ export default function PartsMarketOrders() {
         title="Заявки с маркета"
         subtitle={
           newCount > 0
-            ? <span className="font-bold text-blue-600">{newCount} новых</span>
+            ? <span className="font-bold text-primary">{newCount} новых</span>
             : 'Новых заявок нет'
         }
         backPath="/parts/dashboard"

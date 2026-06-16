@@ -347,7 +347,7 @@ export default function PartsCustomers() {
                           <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={e => handleCopyPublicLink(customer.id, e)}
-                              className="btn-icon-sm text-blue-500"
+                              className="btn-icon-sm text-primary"
                               title="Скопировать публичную ссылку"
                             >
                               <Link2 className="w-4 h-4" strokeWidth={1.5} />
@@ -421,7 +421,7 @@ export default function PartsCustomers() {
                   <div className="border-t border-gray-100 flex divide-x divide-gray-100">
                     <button
                       onClick={e => handleCopyPublicLink(customer.id, e)}
-                      className="flex-none px-4 py-2.5 text-blue-500 hover:bg-blue-50 transition-colors"
+                      className="flex-none px-4 py-2.5 text-primary hover:bg-slate-50 transition-colors"
                       title="Публичная ссылка"
                     >
                       <Link2 className="w-4 h-4" strokeWidth={1.5} />

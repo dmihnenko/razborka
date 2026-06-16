@@ -311,8 +311,7 @@ export default function Layout() {
             <Link
               to="/market"
               title="Открыть маркет запчастей"
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-sm font-semibold transition-colors hover:bg-[var(--cab-surface-2)]"
-              style={{ color: 'var(--cab-ink)', border: '1px solid var(--cab-border-strong)', background: 'var(--cab-surface)' }}
+              className="market mk-btn mk-btn-outline"
             >
               <Store className="w-4 h-4" strokeWidth={1.5} /> В маркет
             </Link>
@@ -330,8 +329,7 @@ export default function Layout() {
               <Link
                 to="/market"
                 title="Открыть маркет запчастей"
-                className="flex-shrink-0 inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold transition-colors active:scale-[0.97]"
-                style={{ color: 'var(--cab-ink-2)', border: '1px solid var(--cab-border-strong)', background: 'var(--cab-surface)' }}
+                className="market mk-btn mk-btn-outline flex-shrink-0"
               >
                 <Store className="w-4 h-4" strokeWidth={1.5} /> В маркет
               </Link>
