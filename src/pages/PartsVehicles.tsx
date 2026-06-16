@@ -364,7 +364,7 @@ export default function PartsVehicles() {
                 </button>
                 <button
                   onClick={(e) => handleDelete(vehicle.id, e)}
-                  className="btn-danger btn-sm"
+                  className="cab-btn cab-btn-danger cab-btn-sm"
                 >
                   Удалить
                 </button>
@@ -419,13 +419,13 @@ export default function PartsVehicles() {
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={(e) => handleEdit(vehicle, e)}
-                          className="btn-ghost btn-sm"
+                          className="cab-btn cab-btn-ghost cab-btn-sm"
                         >
                           Изменить
                         </button>
                         <button
                           onClick={(e) => handleDelete(vehicle.id, e)}
-                          className="btn-ghost btn-sm text-red-600 hover:bg-red-50 hover:text-red-700"
+                          className="cab-btn cab-btn-ghost cab-btn-sm text-red-600 hover:bg-red-50 hover:text-red-700"
                         >
                           Удалить
                         </button>

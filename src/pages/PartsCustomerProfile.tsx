@@ -309,7 +309,7 @@ export default function PartsCustomerProfile() {
                 setMobileTab('parts')
                 setIsOrderModalOpen(true)
               }}
-              className="btn-success btn-sm"
+              className="cab-btn cab-btn-success cab-btn-sm"
             >
               <ShoppingCart className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Создать заказ</span>
@@ -898,7 +898,7 @@ export default function PartsCustomerProfile() {
                   <button
                     onClick={() => createOrderMutation.mutate()}
                     disabled={cart.length === 0 || createOrderMutation.isPending}
-                    className="btn-success w-full btn-lg disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="cab-btn cab-btn-success w-full cab-btn-lg disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {createOrderMutation.isPending
                       ? 'Создание...'

@@ -70,11 +70,15 @@
     --brand-800:  #0C4F92;
     --brand-gradient: linear-gradient(135deg, var(--brand-800) 0%, var(--brand-600) 55%, var(--brand-500) 100%);
 
-    /* Типографика — базовый размер (мягкий fluid, кап 16.5px чтобы не раздувать UI). */
-    --app-font-size: clamp(15.5px, 14px + 0.5vw, 16.5px);
+    /* Типографика — базовый размер (мягкий fluid). Inter крупнее по x-height,
+       поэтому база чуть ниже (15→16px), чтобы UI был плотным и аккуратным. */
+    --app-font-size: clamp(15px, 13.8px + 0.4vw, 16px);
 
-    /* Шрифты — единый источник (tailwind fontFamily читает эти переменные) */
-    --font-sans: 'Manrope', 'Manrope Variable', 'Inter', system-ui, -apple-system, sans-serif;
+    /* Шрифты — единый источник (tailwind fontFamily читает эти переменные).
+       Apple → системный SF Pro (нативный iOS-вид). Windows/Android → Inter Variable
+       (бандлится через @fontsource, чище и легче Segoe UI/Roboto). */
+    --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+                 'Inter Variable', 'Inter', system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 
@@ -236,7 +240,14 @@
   .cab-btn-secondary:hover { background: var(--cab-surface-2); border-color: var(--cab-ink-3); }
   .cab-btn-signal { background: var(--cab-signal); color: #fff; border: 1px solid var(--cab-signal); }
   .cab-btn-signal:hover { background: var(--cab-signal-hover); border-color: var(--cab-signal-hover); }
+  .cab-btn-ghost { background: transparent; color: var(--cab-ink-2); border: 1px solid transparent; }
+  .cab-btn-ghost:hover { background: var(--cab-surface-2); color: var(--cab-ink); }
+  .cab-btn-danger { background: var(--cab-surface); color: #DC2626; border: 1px solid var(--cab-border-strong); }
+  .cab-btn-danger:hover { background: #FEF2F2; border-color: #FCA5A5; }
+  .cab-btn-success { background: #059669; color: #fff; border: 1px solid #059669; }
+  .cab-btn-success:hover { background: #047857; border-color: #047857; }
   .cab-btn-sm { min-height: 32px; padding-inline: .65rem; font-size: .8rem; }
+  .cab-btn-lg { min-height: 44px; padding-inline: 1.15rem; font-size: .95rem; }
 
   .cab-chip {
     @apply inline-flex items-center gap-1.5 font-semibold;
@@ -1089,11 +1100,10 @@ svg.lucide {
 
 .modal-btn-primary {
   @apply flex-1 py-3 text-sm font-semibold text-white rounded-lg disabled:opacity-50 transition-all;
-  background-image: linear-gradient(180deg, #3B82F6 0%, #2563EB 100%);
-  box-shadow: 0 1px 2px rgba(37,99,235,0.35), 0 4px 12px -2px rgba(37,99,235,0.35);
+  background: var(--cab-ink);
 }
 .modal-btn-primary:not(:disabled):hover {
-  background-image: linear-gradient(180deg, #2F76F4 0%, #1D4ED8 100%);
+  background: #000;
 }
 
 /* ── iOS Safari: предотвращаем zoom при фокусе на input ── */

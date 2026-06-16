@@ -36,7 +36,7 @@ export default function LandingPage() {
   return (
     <div
       className="min-h-dvh flex flex-col"
-      style={{ background: '#080C14', fontFamily: "'Manrope Variable', 'Inter', system-ui, sans-serif" }}
+      style={{ background: '#080C14', fontFamily: 'var(--font-sans)' }}
     >
 
       {/* ── NAV ─────────────────────────────────────────────── */}

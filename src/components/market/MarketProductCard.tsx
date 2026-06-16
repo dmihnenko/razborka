@@ -73,7 +73,7 @@ export function MarketProductCard({ part }: MarketProductCardProps) {
               decoding="async"
               draggable={false}
               onError={() => setImgError(true)}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+              className="absolute inset-0 w-full h-full object-contain p-1.5 transition-transform duration-300 ease-out group-hover:scale-[1.03]"
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-1.5">

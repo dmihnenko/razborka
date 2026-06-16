@@ -9,9 +9,11 @@ interface PhotoGalleryProps {
   mainAspect?: string
   /** Object fit for main image. Default: 'cover' (no black bars) */
   objectFit?: 'cover' | 'contain'
+  /** Background class behind the main image (matters when objectFit='contain'). Default: dark stage. */
+  mainBgClass?: string
 }
 
-export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'aspect-video', objectFit = 'cover' }: PhotoGalleryProps) {
+export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'aspect-video', objectFit = 'cover', mainBgClass = 'bg-gray-900' }: PhotoGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   // HD: по умолчанию грузим облегчённое (medium/thumb), по кнопке — полное качество.
@@ -142,7 +144,7 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
 
         {/* Main photo */}
         <div
-          className={`relative ${mainAspect} bg-gray-900 cursor-zoom-in select-none`}
+          className={`relative ${mainAspect} ${mainBgClass} cursor-zoom-in select-none`}
           onTouchStart={onGalleryTouchStart}
           onTouchEnd={onGalleryTouchEnd}
           onClick={() => openLightbox(activeIndex)}

@@ -21,7 +21,6 @@ const FRESH_PAGE_SIZE = 12
 const MAX_CATEGORIES = 10
 const MAX_MAKES = 12
 const MAX_SUPPLIERS = 6
-const QUICK_TAGS = ['Двигатель', 'КПП', 'Фары', 'Бампер', 'Подвеска', 'Стартер']
 
 function categoryIcon(name: string): ComponentType<{ className?: string; strokeWidth?: number }> {
   const n = name.toLowerCase()
@@ -95,7 +94,7 @@ export function MarketHome() {
       {/* ── Герой: чистая панель, акцент только на кнопке ─────────────── */}
       <motion.section {...anim(0)} className="mk-card p-5 sm:p-8 text-center" aria-labelledby="mk-hero-title">
         <span className="inline-flex items-center gap-1.5 px-3 h-7 rounded-full text-xs font-semibold mb-4" style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
-          <Zap className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Запчасти напрямую от авторазборок
+          <Zap className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Б/у и новые запчасти от авторазборок — без посредников
         </span>
         <h1 id="mk-hero-title" className="mk-h1 max-w-2xl mx-auto">Найдите нужную запчасть с фото и ценой</h1>
 
@@ -112,14 +111,6 @@ export function MarketHome() {
             <button type="submit" className="mk-btn mk-btn-accent mk-btn-lg flex-shrink-0">Найти</button>
           </div>
         </form>
-
-        <div className="mt-4 flex flex-wrap justify-center gap-2">
-          {QUICK_TAGS.map(hint => (
-            <button key={hint} type="button" onClick={() => navigate(`/market/catalog?search=${encodeURIComponent(hint)}`)} className="mk-chip" aria-label={`Искать: ${hint}`}>
-              {hint}
-            </button>
-          ))}
-        </div>
       </motion.section>
 
       {/* ── Категории — плитки ───────────────────────────────────────── */}

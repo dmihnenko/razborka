@@ -98,10 +98,10 @@ export default function PartsCompanyDetail() {
             <button
               onClick={() => toggleActive.mutate()}
               disabled={toggleActive.isPending}
-              className={`btn btn-sm flex-shrink-0 ${
+              className={`btn cab-btn-sm flex-shrink-0 ${
                 company.is_active
-                  ? 'btn-secondary text-amber-700 border-amber-200 hover:border-amber-300'
-                  : 'btn-success'
+                  ? 'cab-btn cab-btn-secondary text-amber-700 border-amber-200 hover:border-amber-300'
+                  : 'cab-btn cab-btn-success'
               }`}
             >
               {company.is_active

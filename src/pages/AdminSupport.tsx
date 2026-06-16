@@ -472,7 +472,7 @@ export default function AdminSupport() {
                     {chats.find((c: AdminSupportChat) => c.id === selectedChat)?.status === 'active' ? (
                       <button
                         onClick={() => updateChatStatusMutation.mutate({ chatId: selectedChat, status: 'closed' })}
-                        className="btn-ghost btn-sm gap-1.5"
+                        className="cab-btn cab-btn-ghost cab-btn-sm gap-1.5"
                       >
                         <Archive className="w-3.5 h-3.5" strokeWidth={1.5} />
                         <span className="hidden sm:inline">Закрыть</span>
@@ -480,7 +480,7 @@ export default function AdminSupport() {
                     ) : (
                       <button
                         onClick={() => updateChatStatusMutation.mutate({ chatId: selectedChat, status: 'active' })}
-                        className="btn-ghost btn-sm text-green-700 hover:bg-green-50 hover:text-green-800"
+                        className="cab-btn cab-btn-ghost cab-btn-sm text-green-700 hover:bg-green-50 hover:text-green-800"
                       >
                         Открыть
                       </button>
@@ -606,7 +606,7 @@ export default function AdminSupport() {
                       <button
                         type="submit"
                         disabled={sendMessageMutation.isPending || !newMessage.trim()}
-                        className="btn-primary px-3 sm:px-4 flex-shrink-0"
+                        className="cab-btn cab-btn-primary px-3 sm:px-4 flex-shrink-0"
                         aria-label="Отправить"
                       >
                         <Send className="w-4 h-4" strokeWidth={1.5} />

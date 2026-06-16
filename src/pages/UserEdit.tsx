@@ -1,13 +1,16 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, User, Shield, ChevronRight, Check } from 'lucide-react'
+import { ArrowLeft, User, Shield, ChevronRight, Check, LogIn, Power, Trash2 } from 'lucide-react'
 import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useIsAdmin, useUserProfile } from '@/hooks/useUserProfile'
 import RoleSelector from '@/components/admin/RoleSelector'
-import { updateUserProfile, updateUserRoles, fetchUserProfileForEdit, fetchAllActiveRoles, adminUpdateUser } from '@/services/userService'
+import { updateUserProfile, updateUserRoles, fetchUserProfileForEdit, fetchAllActiveRoles, adminUpdateUser, toggleUserActive, softDeleteUserProfile } from '@/services/userService'
+import { startImpersonation } from '@/services/impersonationService'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface Role { id: string; name: string; display_name: string; description: string | null; is_active: boolean }
 type Step = 1 | 2 | 3
@@ -23,6 +26,7 @@ export default function UserEdit() {
   const queryClient = useQueryClient()
   const isAdmin = useIsAdmin()
   const { data: currentUserProfile } = useUserProfile()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
 
   const isPartsOwner = currentUserProfile?.roles?.some((r: any) => r.name === 'parts_owner') || false
 
@@ -110,6 +114,52 @@ export default function UserEdit() {
     onError: (e: any) => toast.error(e.message || 'Ошибка'),
   })
 
+  // ── Действия над аккаунтом (admin) ──
+  const targetIsAdmin = useMemo(
+    () => formData.role_ids.some(rid => roles.find(r => r.id === rid)?.name === 'admin'),
+    [formData.role_ids, roles],
+  )
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: () => toggleUserActive(id!, !!userProfile?.is_active),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      queryClient.invalidateQueries({ queryKey: ['user_profile', id] })
+      toast.success('Статус изменён')
+    },
+    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: () => softDeleteUserProfile(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      toast.success('Пользователь перемещён в корзину')
+      navigate(-1)
+    },
+    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+  })
+
+  const handleImpersonate = async () => {
+    const ok = await showConfirm({ message: `Войти под пользователем ${userProfile?.full_name || userProfile?.email}? Вы сможете вернуться в свой аккаунт.` })
+    if (!ok) return
+    try {
+      toast.loading('Вход...', { id: 'imp' })
+      await startImpersonation(id!)
+      toast.dismiss('imp')
+      window.location.href = '/'
+    } catch (e: any) {
+      toast.dismiss('imp')
+      toast.error(e.message || 'Не удалось войти')
+    }
+  }
+
+  const handleDelete = async () => {
+    const ok = await showConfirm({ message: `Переместить пользователя ${userProfile?.full_name || userProfile?.email} в корзину? Его можно будет восстановить.`, danger: true })
+    if (!ok) return
+    deleteMutation.mutate()
+  }
+
   const canGoNext = step === 1 ? true : step === 2 ? formData.role_ids.length > 0 : true
   const canSave = formData.role_ids.length > 0
 
@@ -123,13 +173,13 @@ export default function UserEdit() {
   }
 
   if (isLoading) return (
-    <div className="min-h-dvh bg-[#F4F6FA] flex items-center justify-center">
+    <div className="min-h-dvh bg-[#FAFAFA] flex items-center justify-center">
       <span className="w-5 h-5 border-2 border-gray-200 border-t-indigo-500 rounded-full animate-spin" />
     </div>
   )
 
   if (!userProfile) return (
-    <div className="min-h-dvh bg-[#F4F6FA] flex items-center justify-center">
+    <div className="min-h-dvh bg-[#FAFAFA] flex items-center justify-center">
       <div className="text-center">
         <p className="text-gray-500 mb-4">Пользователь не найден</p>
         <button onClick={() => navigate(-1)} className="text-indigo-600 hover:underline text-sm">← Назад</button>
@@ -140,7 +190,7 @@ export default function UserEdit() {
   const avatarLetter = (userProfile.full_name || userProfile.username || userProfile.email || '?').charAt(0).toUpperCase()
 
   return (
-    <div className="min-h-dvh bg-[#F4F6FA] flex flex-col">
+    <div className="min-h-dvh bg-[#FAFAFA] flex flex-col">
       {/* Хедер */}
       <div className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-gray-200/80 shadow-sm">
         <div className="px-4 h-14 flex items-center gap-3">
@@ -153,13 +203,13 @@ export default function UserEdit() {
           </div>
           {step === totalSteps ? (
             <button onClick={() => updateMutation.mutate()} disabled={!canSave || updateMutation.isPending}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 disabled:opacity-40 transition-colors">
+              className="cab-btn cab-btn-primary disabled:opacity-40">
               {updateMutation.isPending ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check className="w-4 h-4" strokeWidth={2} />}
               Сохранить
             </button>
           ) : (
             <button onClick={handleNext} disabled={!canGoNext}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 disabled:opacity-40 transition-colors">
+              className="cab-btn cab-btn-primary disabled:opacity-40">
               Далее <ChevronRight className="w-4 h-4" strokeWidth={2} />
             </button>
           )}
@@ -280,6 +330,32 @@ export default function UserEdit() {
           </div>
         )}
 
+        {/* ── Действия над аккаунтом ── */}
+        {isAdmin && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mt-5">
+            <div className="px-5 py-4 border-b border-gray-100">
+              <p className="text-sm font-bold text-gray-800">Действия</p>
+              <p className="text-xs text-gray-400">Управление аккаунтом</p>
+            </div>
+            <div className="p-4 flex flex-wrap gap-2">
+              {!targetIsAdmin && (
+                <button onClick={handleImpersonate} className="cab-btn cab-btn-secondary cab-btn-sm">
+                  <LogIn className="w-4 h-4" /> Войти как
+                </button>
+              )}
+              <button onClick={() => toggleActiveMutation.mutate()} disabled={toggleActiveMutation.isPending}
+                className="cab-btn cab-btn-secondary cab-btn-sm">
+                <Power className="w-4 h-4" /> {userProfile.is_active ? 'Деактивировать' : 'Активировать'}
+              </button>
+              {!targetIsAdmin && (
+                <button onClick={handleDelete} className="cab-btn cab-btn-danger cab-btn-sm">
+                  <Trash2 className="w-4 h-4" /> В корзину
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
 
       </div>
 
@@ -290,17 +366,19 @@ export default function UserEdit() {
         </button>
         {step < totalSteps ? (
           <button onClick={handleNext} disabled={!canGoNext}
-            className="flex-1 py-3 text-sm font-semibold text-white bg-indigo-600 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2">
+            className="cab-btn cab-btn-primary flex-1 disabled:opacity-40">
             Далее <ChevronRight className="w-4 h-4" strokeWidth={2} />
           </button>
         ) : (
           <button onClick={() => updateMutation.mutate()} disabled={!canSave || updateMutation.isPending}
-            className="flex-1 py-3 text-sm font-semibold text-white bg-indigo-600 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2">
+            className="cab-btn cab-btn-primary flex-1 disabled:opacity-40">
             {updateMutation.isPending ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check className="w-4 h-4" strokeWidth={2} />}
             Сохранить
           </button>
         )}
       </div>
+
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

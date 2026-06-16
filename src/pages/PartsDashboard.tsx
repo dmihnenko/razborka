@@ -113,7 +113,7 @@ export default function PartsDashboard() {
       <div className="flex items-end justify-between gap-3 flex-wrap">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: ink3 }}>Авторазборка</p>
-          <h1 className="text-2xl font-extrabold tracking-tight mt-0.5" style={{ color: ink }}>Пульт</h1>
+          <h1 className="page-title mt-0.5">Пульт</h1>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => navigate('/parts/vehicles')} className="cab-btn cab-btn-secondary cab-btn-sm hidden sm:inline-flex">

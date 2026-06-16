@@ -99,7 +99,7 @@ export default function PartsCreateOrder() {
                 <button
                   type="button"
                   onClick={() => navigate('/parts/customers')}
-                  className="btn-ghost text-xs text-primary font-medium"
+                  className="cab-btn cab-btn-ghost text-xs text-primary font-medium"
                 >
                   + Добавить клиента
                 </button>

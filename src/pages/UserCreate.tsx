@@ -192,7 +192,7 @@ export default function UserCreate() {
               <button
                 onClick={() => createMutation.mutate(formData)}
                 disabled={!isValid || createMutation.isPending}
-                className="px-5 py-2 text-sm font-semibold text-white bg-purple-700 rounded-xl hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                className="cab-btn cab-btn-primary disabled:opacity-50"
               >
                 {createMutation.isPending ? (
                   <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Создание...</>
@@ -400,7 +400,7 @@ export default function UserCreate() {
           <button
             onClick={() => createMutation.mutate(formData)}
             disabled={!isValid || createMutation.isPending}
-            className="flex-1 py-3 text-sm font-semibold text-white bg-purple-700 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
+            className="cab-btn cab-btn-primary flex-1 disabled:opacity-50"
           >
             {createMutation.isPending ? (
               <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Создание...</>

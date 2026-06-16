@@ -162,8 +162,8 @@ export default function Subscriptions() {
       {/* ── Page header ── */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Подписки</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Управление тарифами авторазборок</p>
+          <h1 className="page-title">Подписки</h1>
+          <p className="page-subtitle">Управление тарифами авторазборок</p>
         </div>
         <button onClick={() => setIsAssignOpen(true)}
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors">

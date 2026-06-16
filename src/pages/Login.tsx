@@ -230,7 +230,7 @@ export default function Login() {
     <div
       className="flex min-h-dvh"
       style={{
-        fontFamily: "'Manrope Variable', 'Inter', system-ui, sans-serif",
+        fontFamily: 'var(--font-sans)',
         paddingTop: 'env(safe-area-inset-top)',
         paddingBottom: 'env(safe-area-inset-bottom)',
         paddingLeft: 'env(safe-area-inset-left)',

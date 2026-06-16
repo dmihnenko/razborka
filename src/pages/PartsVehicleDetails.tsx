@@ -280,7 +280,7 @@ export default function PartsVehicleDetails() {
         <p className="empty-state-title">Автомобиль не найден</p>
         <button
           onClick={() => navigate('/parts/vehicles')}
-          className="mt-3 btn-ghost btn-sm"
+          className="mt-3 cab-btn cab-btn-ghost cab-btn-sm"
         >
           Вернуться к списку
         </button>
@@ -357,7 +357,7 @@ export default function PartsVehicleDetails() {
                   key={status}
                   onClick={() => statusMutation.mutate(status)}
                   disabled={statusMutation.isPending}
-                  className={`btn btn-sm transition-all ${
+                  className={`btn cab-btn-sm transition-all ${
                     vehicle.status === status
                       ? STATUS_BTN_ACTIVE[status]
                       : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 hover:border-gray-300'
@@ -755,14 +755,14 @@ export default function PartsVehicleDetails() {
                         `/parts/categories?tab=templates&brand=${encodeURIComponent(vehicle.make)}`,
                       )
                     }
-                    className="flex-1 btn btn-sm bg-indigo-700 text-white hover:bg-indigo-800"
+                    className="flex-1 cab-btn cab-btn-signal cab-btn-sm"
                   >
                     <Tag className="w-3 h-3" />
                     Импортировать
                   </button>
                   <button
                     onClick={() => navigate('/parts/categories')}
-                    className="flex-1 btn btn-sm bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                    className="flex-1 cab-btn cab-btn-secondary cab-btn-sm"
                   >
                     Создать свои
                   </button>

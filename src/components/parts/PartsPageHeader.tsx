@@ -39,7 +39,7 @@ export default function PartsPageHeader({
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{title}</h1>
+              <h1 className="page-title truncate">{title}</h1>
               {subtitle && (
                 <p className="text-sm text-gray-500 hidden sm:block">{subtitle}</p>
               )}

@@ -52,13 +52,13 @@ export default function Roles() {
   return (
     <div className="container-mobile">
       <div className="flex items-center justify-between mb-4 sm:mb-6 gap-3">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Управление ролями</h1>
+        <h1 className="page-title">Управление ролями</h1>
         <button
           onClick={() => {
             setEditingRole(null)
             setIsModalOpen(true)
           }}
-          className="btn-touch-sm bg-blue-700 text-white hover:bg-blue-800 flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
+          className="cab-btn cab-btn-primary cab-btn-sm flex-shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">Добавить</span>
@@ -241,7 +241,7 @@ function RoleModal({
               Отмена
             </button><button
               type="submit"
-              className="flex-1 bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800"
+              className="cab-btn cab-btn-primary flex-1"
             >
               Сохранить
             </button>

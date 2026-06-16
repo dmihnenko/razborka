@@ -11,17 +11,26 @@ interface Ctx {
   label: string
   icon: any
   path: string
-  cls: string       // цвет иконки/плашки
 }
 
 const CONTEXTS: Ctx[] = [
-  { id: 'admin', label: 'Админ',    icon: Shield, path: '/admin',            cls: 'bg-purple-100 text-purple-600' },
-  { id: 'parts', label: 'Разборка', icon: Store,  path: '/parts/dashboard',  cls: 'bg-orange-100 text-orange-600' },
-  { id: 'user',  label: 'Мои авто', icon: Car,    path: '/my-vehicles',      cls: 'bg-blue-100 text-blue-600' },
+  { id: 'admin', label: 'Админ',    icon: Shield, path: '/admin' },
+  { id: 'parts', label: 'Разборка', icon: Store,  path: '/parts/dashboard' },
+  { id: 'user',  label: 'Мои авто', icon: Car,    path: '/my-vehicles' },
 ]
 
-/** Переключатель контекста (лайаута): Админ / Разборка / Мои авто. */
-export default function ContextSwitcher({ current, excludeIds = [] }: { current: ContextId; excludeIds?: ContextId[] }) {
+interface Props {
+  current: ContextId
+  excludeIds?: ContextId[]
+  /** 'bar' — сегмент + отдельная кнопка «Админ» (шапки). 'sidebar' — компактно для свёрнутого сайдбара. */
+  variant?: 'bar' | 'sidebar'
+}
+
+/**
+ * Переключатель раздела: сегмент-свитчер «Разборка ↔ Мои авто»
+ * и отдельная кнопка «Админ» (только для админа).
+ */
+export default function ContextSwitcher({ current, excludeIds = [], variant = 'bar' }: Props) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
@@ -36,14 +45,12 @@ export default function ContextSwitcher({ current, excludeIds = [] }: { current:
 
   const roleNames: string[] = profile?.roles?.map((r: any) => r.name) || []
   const isAdmin = roleNames.includes('admin')
-
   const isParts = roleNames.includes('parts_owner') || roleNames.includes('parts_worker')
   const has = (id: ContextId) => {
     if (id === 'admin') return isAdmin
     if (id === 'parts') return isAdmin || isParts
     return isAdmin || roleNames.includes('user')
   }
-  const available = CONTEXTS.filter(c => has(c.id) && !excludeIds.includes(c.id))
 
   // activeRole для целевого контекста — по фактическим ролям пользователя
   const roleFor = (id: ContextId): string => {
@@ -57,41 +64,99 @@ export default function ContextSwitcher({ current, excludeIds = [] }: { current:
     if (c.id === current) return
     if (c.id === 'admin') localStorage.removeItem('activeRole')
     else localStorage.setItem('activeRole', roleFor(c.id))
-    // Сбрасываем кэш данных предыдущего раздела (как делала отдельная кнопка «Админ»)
+    // Сбрасываем кэш данных предыдущего раздела
     localStorage.removeItem('tsp_profile_cache')
     queryClient.clear()
     navigate(c.path)
   }
 
+  const toggleCtxs = CONTEXTS.filter(c => c.id !== 'admin' && has(c.id) && !excludeIds.includes(c.id))
+  const adminCtx = CONTEXTS.find(c => c.id === 'admin')!
+  const showAdminBtn = variant === 'bar' && has('admin') && !excludeIds.includes('admin')
   const cur = CONTEXTS.find(c => c.id === current)!
 
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        onClick={() => available.length > 1 && setOpen(o => !o)}
-        className="flex items-center gap-2 pl-1.5 pr-2 py-1.5 rounded-xl hover:bg-gray-100 transition-colors"
-      >
-        <span className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${cur.cls}`}>
-          <cur.icon className="w-4.5 h-4.5" strokeWidth={1.5} />
-        </span>
-        <span className="font-bold text-gray-900 text-sm sm:text-base">{cur.label}</span>
-        {available.length > 1 && <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />}
-      </button>
+  // Сегмент-переключатель Разборка ↔ Мои авто
+  const Segmented = toggleCtxs.length > 0 && (
+    <div
+      className="flex items-center gap-0.5 p-0.5 rounded-xl min-w-0"
+      style={{ background: 'var(--cab-surface-2)', border: '1px solid var(--cab-border)' }}
+    >
+      {toggleCtxs.map(c => {
+        const active = c.id === current
+        return (
+          <button
+            key={c.id}
+            onClick={() => switchTo(c)}
+            title={c.label}
+            className={`flex items-center justify-center gap-1.5 h-8 rounded-[9px] text-sm font-semibold transition-all active:scale-[0.97] whitespace-nowrap ${variant === 'sidebar' ? 'px-2 lg:px-2.5' : 'px-2.5'}`}
+            style={active
+              ? { background: 'var(--cab-surface)', color: 'var(--cab-ink)', boxShadow: '0 1px 2px rgba(16,24,40,.08)' }
+              : { color: 'var(--cab-ink-3)' }}
+          >
+            <c.icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} />
+            <span className={variant === 'sidebar' ? 'hidden lg:inline' : ''}>{c.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
 
-      {open && (
-        <div className="absolute left-0 top-full mt-1 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 p-1.5 z-50">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-2.5 py-1.5">Переключить раздел</p>
-          {available.map(c => (
-            <button key={c.id} onClick={() => switchTo(c)}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-colors ${c.id === current ? 'bg-gray-50' : 'hover:bg-gray-50'}`}>
-              <span className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${c.cls}`}>
-                <c.icon className="w-4.5 h-4.5" strokeWidth={1.5} />
-              </span>
-              <span className="flex-1 text-sm font-semibold text-gray-800">{c.label}</span>
-              {c.id === current && <Check className="w-4 h-4 text-purple-600" />}
-            </button>
-          ))}
+  // ── SIDEBAR: на lg — сегмент; на md (свёрнуто) — иконка с дропдауном (влезает в w-16) ──
+  if (variant === 'sidebar') {
+    return (
+      <div className="relative w-full min-w-0" ref={ref}>
+        <div className="hidden lg:block">{Segmented}</div>
+        <div className="lg:hidden">
+          <button
+            onClick={() => toggleCtxs.length > 1 && setOpen(o => !o)}
+            className="flex items-center justify-center gap-1 w-full h-9 rounded-xl transition-colors"
+            style={{ background: 'var(--cab-surface-2)', border: '1px solid var(--cab-border)' }}
+            title={cur.label}
+          >
+            <cur.icon className="w-[18px] h-[18px]" strokeWidth={1.6} style={{ color: 'var(--cab-ink)' }} />
+            {toggleCtxs.length > 1 && (
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} style={{ color: 'var(--cab-ink-3)' }} />
+            )}
+          </button>
+          {open && (
+            <div
+              className="absolute left-0 top-full mt-1 w-44 rounded-2xl shadow-xl p-1.5 z-50"
+              style={{ background: 'var(--cab-surface)', border: '1px solid var(--cab-border)' }}
+            >
+              {toggleCtxs.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => switchTo(c)}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-colors hover:bg-black/[0.03]"
+                >
+                  <c.icon className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} style={{ color: 'var(--cab-ink-2)' }} />
+                  <span className="flex-1 text-sm font-semibold" style={{ color: 'var(--cab-ink)' }}>{c.label}</span>
+                  {c.id === current && <Check className="w-4 h-4" style={{ color: 'var(--cab-signal)' }} />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+      </div>
+    )
+  }
+
+  // ── BAR: сегмент + отдельная кнопка «Админ» ──
+  return (
+    <div className="flex items-center gap-1.5 min-w-0">
+      {Segmented}
+      {showAdminBtn && (
+        <button
+          onClick={() => switchTo(adminCtx)}
+          title="Админ-панель"
+          className="flex items-center justify-center gap-1.5 h-9 px-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.97] flex-shrink-0"
+          style={current === 'admin'
+            ? { background: 'var(--cab-ink)', color: '#fff' }
+            : { background: 'var(--cab-surface-2)', color: 'var(--cab-ink-2)', border: '1px solid var(--cab-border)' }}
+        >
+          <Shield className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} />
+          <span className={current === 'admin' ? '' : 'hidden sm:inline'}>Админ</span>
+        </button>
       )}
     </div>
   )

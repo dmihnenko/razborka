@@ -120,7 +120,6 @@ export function MarketCatalog() {
     <div className="space-y-4">
       <div>
         <h1 className="mk-h1">Каталог запчастей</h1>
-        <p className="mk-sub mt-1">Б/у и новые запчасти от авторазборок — без посредников</p>
       </div>
 
       <FilterBar value={filters} onChange={applyFilters} categories={categories} makes={makes} />

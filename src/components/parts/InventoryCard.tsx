@@ -270,7 +270,7 @@ export function InventoryCard({
         <button
           onClick={(e) => onSell(item, e)}
           disabled={isSold}
-          className="btn btn-success btn-sm flex-1 gap-1"
+          className="cab-btn cab-btn-success cab-btn-sm flex-1 gap-1"
         >
           <ShoppingCart className="w-3.5 h-3.5" />
           Продать

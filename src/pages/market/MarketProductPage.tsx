@@ -111,7 +111,7 @@ export default function MarketProductPage() {
         {/* Фото */}
         <div className="min-w-0">
           {galleryPhotos.length > 0 ? (
-            <div className="rounded-xl overflow-hidden mk-card p-0"><PhotoGallery photos={galleryPhotos} alt={part.name} mainAspect="aspect-[4/3]" /></div>
+            <div className="rounded-xl overflow-hidden mk-card p-0"><PhotoGallery photos={galleryPhotos} alt={part.name} mainAspect="aspect-[4/3]" objectFit="contain" mainBgClass="bg-white" /></div>
           ) : (
             <div className="mk-card aspect-[4/3] flex flex-col items-center justify-center gap-3" style={{ color: 'var(--mk-text-3)' }}>
               <Package className="w-12 h-12" strokeWidth={1.5} aria-hidden="true" />

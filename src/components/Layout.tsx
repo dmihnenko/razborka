@@ -227,8 +227,8 @@ export default function Layout() {
       >
         {/* Шапка сайдбара — ContextSwitcher */}
         <div className="flex items-center px-2 lg:px-3 h-14" style={{ borderBottom: '1px solid var(--cab-border)' }}>
-          <div className="w-full overflow-hidden rounded-[10px]">
-            <ContextSwitcher current={currentCtx} />
+          <div className="w-full min-w-0">
+            <ContextSwitcher current={currentCtx} variant="sidebar" />
           </div>
         </div>
 
@@ -264,15 +264,16 @@ export default function Layout() {
 
         {/* Footer */}
         <div className="px-2 py-3 space-y-0.5 border-t border-gray-200">
-          {/* Админ-кнопка — только на md (на lg она в ContextSwitcher) */}
+          {/* Отдельная кнопка «Админ» (parts/user — свитчером в шапке) */}
           {isAdmin && (
             <Link
               to="/admin"
-              onClick={() => localStorage.removeItem('activeRole')}
-              className="lg:hidden flex items-center justify-center gap-3 w-full px-1 py-2.5 rounded-lg transition-colors text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              onClick={() => { localStorage.removeItem('activeRole'); localStorage.removeItem('tsp_profile_cache') }}
+              className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm rounded-lg transition-colors active:scale-[0.98] text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               title="Панель администратора"
             >
               <Shield className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} />
+              <span className="hidden lg:block">Админ-панель</span>
             </Link>
           )}
           <button

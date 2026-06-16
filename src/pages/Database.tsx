@@ -226,7 +226,7 @@ export default function DatabasePage() {
           <h1 className="page-title">База данных</h1>
           <p className="page-subtitle">Статистика таблиц и лимиты компаний</p>
         </div>
-        <button onClick={refreshAll} className="btn-secondary btn-sm flex items-center gap-1.5">
+        <button onClick={refreshAll} className="cab-btn cab-btn-secondary cab-btn-sm flex items-center gap-1.5">
           <RefreshCw className="w-3.5 h-3.5" />
           Обновить
         </button>
@@ -333,7 +333,7 @@ export default function DatabasePage() {
           <button
             onClick={handleClearTrash}
             disabled={clearTrashMutation.isPending || !counts?.trash_bin}
-            className="btn-danger btn-sm flex items-center gap-1.5 disabled:opacity-40"
+            className="cab-btn cab-btn-danger cab-btn-sm flex items-center gap-1.5 disabled:opacity-40"
           >
             <Trash2 className="w-3.5 h-3.5" />
             Очистить

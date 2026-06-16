@@ -354,13 +354,13 @@ export default function PartsCustomers() {
                             </button>
                             <button
                               onClick={e => handleEdit(customer, e)}
-                              className="btn-ghost btn-sm"
+                              className="cab-btn cab-btn-ghost cab-btn-sm"
                             >
                               Изменить
                             </button>
                             <button
                               onClick={e => handleDelete(customer.id, e)}
-                              className="btn-sm btn text-red-600 hover:bg-red-50 px-3 py-1.5 text-xs min-h-[30px] rounded"
+                              className="cab-btn cab-btn-sm text-red-600 hover:bg-red-50"
                             >
                               Удалить
                             </button>

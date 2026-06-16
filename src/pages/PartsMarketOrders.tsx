@@ -169,7 +169,7 @@ function MarketOrderCard({
               <button
                 onClick={() => onSetStatus(order.id, 'viewed')}
                 disabled={isUpdating}
-                className="cab-btn cab-btn-secondary btn-sm flex-1 sm:flex-none justify-center disabled:opacity-50"
+                className="cab-btn cab-btn-secondary cab-btn-sm flex-1 sm:flex-none justify-center disabled:opacity-50"
               >
                 <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Просмотрена
@@ -179,7 +179,7 @@ function MarketOrderCard({
               <button
                 onClick={() => onSetStatus(order.id, 'closed')}
                 disabled={isUpdating}
-                className="cab-btn cab-btn-secondary btn-sm flex-1 sm:flex-none justify-center disabled:opacity-50"
+                className="cab-btn cab-btn-secondary cab-btn-sm flex-1 sm:flex-none justify-center disabled:opacity-50"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Закрыть
@@ -268,7 +268,7 @@ export default function PartsMarketOrders() {
             >
               {label}
               {key === 'new' && newCount > 0 && (
-                <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${statusFilter === key ? 'bg-white/25 text-white' : 'bg-[#4F5B7A] text-white'}`}>
+                <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${statusFilter === key ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-600'}`}>
                   {newCount}
                 </span>
               )}

@@ -83,11 +83,13 @@ export default function PartsShipments() {
             { key: 'all', label: 'Все', n: counts.all },
           ] as const).map(({ key, label, n }) => (
             <button key={key} onClick={() => setTab(key)}
-              className="cab-btn cab-btn-sm"
-              style={tab === key
-                ? { background: 'var(--cab-ink)', color: '#fff', border: '1px solid var(--cab-ink)' }
-                : { background: 'var(--cab-surface)', color: ink2, border: '1px solid var(--cab-border-strong)' }}>
-              {label} <span className="tabular-nums opacity-70">{n}</span>
+              className={`chip ${tab === key ? 'chip-active' : ''}`}>
+              {label}
+              {n > 0 && (
+                <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${tab === key ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                  {n}
+                </span>
+              )}
             </button>
           ))}
         </div>

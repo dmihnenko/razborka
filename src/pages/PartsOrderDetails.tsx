@@ -689,7 +689,7 @@ export default function PartsOrderDetails() {
           >
             <button
               onClick={() => setShowCompleteModal(true)}
-              className="btn-success btn-lg gap-2 w-full sm:w-auto"
+              className="cab-btn cab-btn-success cab-btn-lg gap-2 w-full sm:w-auto"
             >
               <CheckCircle className="w-5 h-5" />
               Завершить заказ
@@ -1127,7 +1127,7 @@ function ConfirmCompleteModal({ onConfirm, onClose, isLoading }: ConfirmComplete
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className="flex-1 py-3 text-sm font-semibold text-white rounded-lg disabled:opacity-50 transition-all btn-success"
+            className="flex-1 py-3 text-sm font-semibold text-white rounded-lg disabled:opacity-50 transition-all cab-btn cab-btn-success"
             style={{ backgroundImage: 'linear-gradient(180deg, #16A34A 0%, #15803D 100%)' }}
           >
             {isLoading ? 'Завершение…' : 'Да, завершить'}
@@ -1252,7 +1252,7 @@ function NpTtnBlock({
                 navigator.clipboard.writeText(order.np_ttn)
                 toast.success('ТТН скопійовано')
               }}
-              className="cab-btn cab-btn-secondary btn-sm gap-1.5"
+              className="cab-btn cab-btn-secondary cab-btn-sm gap-1.5"
             >
               <Copy className="w-3.5 h-3.5" />
               Копировать
@@ -1261,7 +1261,7 @@ function NpTtnBlock({
               href={`https://novaposhta.ua/tracking/?cargo_number=${order.np_ttn}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-ghost btn-sm gap-1.5"
+              className="cab-btn cab-btn-ghost cab-btn-sm gap-1.5"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               Відстежити
@@ -1331,7 +1331,7 @@ function NpTtnBlock({
                 </button>
                 <button
                   onClick={() => setShowTtnForm(false)}
-                  className="btn-ghost"
+                  className="cab-btn cab-btn-ghost"
                   disabled={ttnCreating}
                 >
                   Скасувати

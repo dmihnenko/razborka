@@ -659,7 +659,7 @@ export default function PartsInventory() {
           <>
             <button
               onClick={handleExportCsv}
-              className="btn-ghost btn-sm flex items-center gap-1.5"
+              className="cab-btn cab-btn-ghost cab-btn-sm flex items-center gap-1.5"
               title="Экспорт текущего списка в CSV"
             >
               <Download className="w-4 h-4" strokeWidth={1.5} />
@@ -668,7 +668,7 @@ export default function PartsInventory() {
             {sourceFilter !== 'shop' && (
               <button
                 onClick={() => setIsConveyorOpen(true)}
-                className="btn-secondary btn-sm flex items-center gap-1.5"
+                className="cab-btn cab-btn-secondary cab-btn-sm flex items-center gap-1.5"
                 title="Быстрый ввод запчастей к авто"
               >
                 <Zap className="w-4 h-4" strokeWidth={1.5} />
@@ -879,7 +879,7 @@ export default function PartsInventory() {
               {!debouncedSearch && statusFilter === 'all' && (
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="mt-3 btn-ghost btn-sm text-primary"
+                  className="mt-3 cab-btn cab-btn-ghost cab-btn-sm text-primary"
                 >
                   Добавить первую запчасть
                 </button>
@@ -1051,7 +1051,7 @@ export default function PartsInventory() {
             <button
               onClick={() => fetchNextPage()}
               disabled={isFetchingNextPage}
-              className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50"
+              className="cab-btn cab-btn-secondary cab-btn-sm flex items-center gap-1.5 disabled:opacity-50"
             >
               {isFetchingNextPage ? <Spinner size="sm" /> : null}
               {isFetchingNextPage ? 'Загрузка...' : 'Загрузить ещё'}
@@ -1162,7 +1162,7 @@ export default function PartsInventory() {
             <button
               type="button"
               onClick={openBulkSell}
-              className="btn-success btn-sm flex items-center gap-1.5"
+              className="cab-btn cab-btn-success cab-btn-sm flex items-center gap-1.5"
             >
               <DollarSign className="w-4 h-4" strokeWidth={1.5} />
               <span className="hidden sm:inline">Продать</span>
@@ -1170,7 +1170,7 @@ export default function PartsInventory() {
             <button
               type="button"
               onClick={() => { setBulkLocationId(''); setIsBulkLocationOpen(true) }}
-              className="bg-[#4F5B7A] hover:bg-[#3E4860] text-white btn-sm flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors"
+              className="cab-btn cab-btn-secondary cab-btn-sm"
             >
               <MapPin className="w-4 h-4" strokeWidth={1.5} />
               <span className="hidden sm:inline">Место</span>
@@ -1178,7 +1178,7 @@ export default function PartsInventory() {
             <button
               type="button"
               onClick={() => { setBulkCategoryId(''); setIsBulkCategoryOpen(true) }}
-              className="bg-violet-600 hover:bg-violet-700 text-white btn-sm flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors"
+              className="cab-btn cab-btn-secondary cab-btn-sm"
             >
               <FolderOpen className="w-4 h-4" strokeWidth={1.5} />
               <span className="hidden sm:inline">Категория</span>
@@ -1187,7 +1187,7 @@ export default function PartsInventory() {
               type="button"
               onClick={handleBulkDelete}
               disabled={bulkDeleteMutation.isPending}
-              className="bg-red-600 hover:bg-red-700 text-white btn-sm flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors disabled:opacity-50"
+              className="cab-btn cab-btn-danger cab-btn-sm disabled:opacity-50"
             >
               <Trash2 className="w-4 h-4" strokeWidth={1.5} />
               <span className="hidden sm:inline">Удалить</span>
@@ -1257,7 +1257,7 @@ export default function PartsInventory() {
                     <button
                       type="button"
                       onClick={() => setShowNewCustomer(true)}
-                      className="btn-secondary px-3 flex-shrink-0"
+                      className="cab-btn cab-btn-secondary px-3 flex-shrink-0"
                       title="Новый клиент"
                     >
                       <UserPlus className="w-4 h-4" strokeWidth={1.5} />
@@ -1387,7 +1387,7 @@ export default function PartsInventory() {
                           next[idx] = { ...next[idx], currency: row.currency === 'USD' ? 'UAH' : 'USD' }
                           setBulkRows(next)
                         }}
-                        className="cab-btn cab-btn-primary btn-sm w-9 text-center px-0"
+                        className="cab-btn cab-btn-primary cab-btn-sm w-9 text-center px-0"
                       >
                         {row.currency === 'USD' ? '$' : '₴'}
                       </button>
@@ -1420,7 +1420,7 @@ export default function PartsInventory() {
                   <button
                     type="button"
                     onClick={() => setBulkShowNewCustomer(true)}
-                    className="btn-secondary px-3 flex-shrink-0"
+                    className="cab-btn cab-btn-secondary px-3 flex-shrink-0"
                     title="Новый клиент"
                   >
                     <UserPlus className="w-4 h-4" strokeWidth={1.5} />
@@ -1966,7 +1966,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         <button
                           type="button"
                           onClick={() => setBulkShared(prev => ({ ...prev, price_currency: prev.price_currency === 'USD' ? 'UAH' : 'USD' }))}
-                          className="cab-btn cab-btn-primary btn-sm w-9 text-center px-0"
+                          className="cab-btn cab-btn-primary cab-btn-sm w-9 text-center px-0"
                           title="Сменить валюту"
                         >
                           {bulkShared.price_currency === 'USD' ? '$' : '₴'}
@@ -2003,7 +2003,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                                 setPasteText('')
                               }
                             }}
-                            className="cab-btn cab-btn-primary btn-sm disabled:opacity-40"
+                            className="cab-btn cab-btn-primary cab-btn-sm disabled:opacity-40"
                           >
                             Применить
                           </button>
@@ -2091,7 +2091,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     <button
                       type="button"
                       onClick={() => setBulkItems(prev => [...prev, { name: '', selling_price: '', part_number: '', status: 'available' }])}
-                      className="mt-2 btn-ghost btn-sm flex items-center gap-1.5 text-primary"
+                      className="mt-2 cab-btn cab-btn-ghost cab-btn-sm flex items-center gap-1.5 text-primary"
                     >
                       <Plus className="w-4 h-4" />
                       Добавить строку
@@ -2261,7 +2261,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     className={`w-full py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
                       formData.status === 'sold'
                         ? 'bg-gray-800 border-gray-800 text-white'
-                        : 'btn-secondary border-2 text-gray-500 hover:border-gray-400 hover:text-gray-700'
+                        : 'cab-btn cab-btn-secondary border-2 text-gray-500 hover:border-gray-400 hover:text-gray-700'
                     }`}
                   >
                     {formData.status === 'sold' ? '✓ Продано' : 'Отметить как продано'}

@@ -628,7 +628,7 @@ export default function PartsSettings() {
                           href={partsCompanyId ? telegramConnectLink(partsCompanyId) : '#'}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="btn-ghost btn-sm"
+                          className="cab-btn cab-btn-ghost cab-btn-sm"
                         >
                           Переподключить
                         </a>

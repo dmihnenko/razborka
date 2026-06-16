@@ -360,7 +360,7 @@ export default function PartsSubscriptionPage() {
                 <button
                   onClick={() => requestMutation.mutate()}
                   disabled={requestMutation.isPending || !companyId}
-                  className="cab-btn cab-btn-primary btn-lg w-full justify-center"
+                  className="cab-btn cab-btn-primary cab-btn-lg w-full justify-center"
                 >
                   <Send className="w-4 h-4" strokeWidth={1.5} />
                   {requestMutation.isPending

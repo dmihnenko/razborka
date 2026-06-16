@@ -246,7 +246,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
             type="button"
             disabled={sellMutation.isPending}
             onClick={handleSell}
-            className="btn btn-success flex-1"
+            className="cab-btn cab-btn-success flex-1"
           >
             {sellMutation.isPending ? 'Сохранение...' : 'Продать'}
           </button>

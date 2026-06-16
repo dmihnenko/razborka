@@ -50,7 +50,7 @@ export default function PartsCompanies() {
 
   // Загрузка разборок
   const { data: companies = [], isLoading } = useQuery({
-    queryKey: ['parts_companies'],
+    queryKey: ['admin-parts-companies'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('parts_companies')
@@ -77,6 +77,7 @@ export default function PartsCompanies() {
       if (error) throw error;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-parts-companies'] });
       queryClient.invalidateQueries({ queryKey: ['parts_companies'] });
       toast.success('Разборка создана');
       setIsModalOpen(false);
@@ -103,6 +104,7 @@ export default function PartsCompanies() {
       if (error) throw error;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-parts-companies'] });
       queryClient.invalidateQueries({ queryKey: ['parts_companies'] });
       toast.success('Разборка обновлена');
       setIsModalOpen(false);
@@ -124,6 +126,7 @@ export default function PartsCompanies() {
       if (error) throw error;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-parts-companies'] });
       queryClient.invalidateQueries({ queryKey: ['parts_companies'] });
       toast.success('Разборка удалена');
     },
@@ -142,6 +145,7 @@ export default function PartsCompanies() {
       if (error) throw error;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-parts-companies'] });
       queryClient.invalidateQueries({ queryKey: ['parts_companies'] });
       toast.success('Статус разборки изменён');
     },
@@ -245,7 +249,7 @@ export default function PartsCompanies() {
             )}
           </p>
         </div>
-        <button onClick={handleCreate} className="btn-primary">
+        <button onClick={handleCreate} className="cab-btn cab-btn-primary">
           <Plus className="w-4 h-4" strokeWidth={2} />
           Создать разборку
         </button>
@@ -274,7 +278,7 @@ export default function PartsCompanies() {
             </div>
             <p className="empty-state-title">Нет разборок</p>
             <p className="empty-state-text">Создайте первую разборку, чтобы начать работу</p>
-            <button onClick={handleCreate} className="btn-primary mt-5">
+            <button onClick={handleCreate} className="cab-btn cab-btn-primary mt-5">
               <Plus className="w-4 h-4" strokeWidth={2} />
               Создать разборку
             </button>
@@ -575,14 +579,14 @@ export default function PartsCompanies() {
             >
               <button
                 onClick={() => { setIsModalOpen(false); setSelectedCompany(null); resetForm(); }}
-                className="btn-secondary flex-1"
+                className="cab-btn cab-btn-secondary flex-1"
               >
                 Отмена
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={!formData.name.trim() || isMutating}
-                className="btn-primary flex-1"
+                className="cab-btn cab-btn-primary flex-1"
               >
                 {isMutating ? 'Сохранение…' : selectedCompany ? 'Сохранить' : 'Создать'}
               </button>

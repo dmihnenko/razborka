@@ -321,7 +321,7 @@ export default function PartsInventoryItemPage() {
               {!isSold && (
                 <button
                   onClick={() => setIsSellOpen(true)}
-                  className="btn btn-success btn-lg sm:w-44 justify-center"
+                  className="cab-btn cab-btn-success cab-btn-lg sm:w-44 justify-center"
                 >
                   Продать
                 </button>

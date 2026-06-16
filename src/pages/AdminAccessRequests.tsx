@@ -213,7 +213,7 @@ export default function AdminAccessRequests() {
                             <div className="flex gap-1.5">
                               <button
                                 onClick={() => { setRejectingId(req.id); setRejectReason('') }}
-                                className="btn btn-danger btn-sm"
+                                className="cab-btn cab-btn-danger cab-btn-sm"
                               >
                                 <XCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
                                 Откл.
@@ -221,7 +221,7 @@ export default function AdminAccessRequests() {
                               <button
                                 onClick={() => approveMutation.mutate(req)}
                                 disabled={approveMutation.isPending}
-                                className="btn btn-success btn-sm"
+                                className="cab-btn cab-btn-success cab-btn-sm"
                               >
                                 {approveMutation.isPending
                                   ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -249,14 +249,14 @@ export default function AdminAccessRequests() {
                               <div className="flex gap-2 flex-shrink-0 pt-0.5">
                                 <button
                                   onClick={() => setRejectingId(null)}
-                                  className="btn btn-secondary btn-sm"
+                                  className="cab-btn cab-btn-secondary cab-btn-sm"
                                 >
                                   Отмена
                                 </button>
                                 <button
                                   onClick={() => rejectMutation.mutate({ id: req.id, reason: rejectReason })}
                                   disabled={rejectMutation.isPending}
-                                  className="btn btn-danger btn-sm"
+                                  className="cab-btn cab-btn-danger cab-btn-sm"
                                 >
                                   {rejectMutation.isPending
                                     ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -393,14 +393,14 @@ export default function AdminAccessRequests() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => setRejectingId(null)}
-                          className="btn btn-secondary flex-1"
+                          className="cab-btn cab-btn-secondary flex-1"
                         >
                           Отмена
                         </button>
                         <button
                           onClick={() => rejectMutation.mutate({ id: req.id, reason: rejectReason })}
                           disabled={rejectMutation.isPending}
-                          className="btn btn-danger flex-1"
+                          className="cab-btn cab-btn-danger flex-1"
                         >
                           {rejectMutation.isPending
                             ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -417,7 +417,7 @@ export default function AdminAccessRequests() {
                     <div className="px-4 py-3 border-t border-gray-100 dark:border-white/5 flex gap-2">
                       <button
                         onClick={() => { setRejectingId(req.id); setRejectReason('') }}
-                        className="btn btn-danger flex-1"
+                        className="cab-btn cab-btn-danger flex-1"
                       >
                         <XCircle className="w-4 h-4" strokeWidth={1.5} />
                         Отклонить
@@ -425,7 +425,7 @@ export default function AdminAccessRequests() {
                       <button
                         onClick={() => approveMutation.mutate(req)}
                         disabled={approveMutation.isPending}
-                        className="btn btn-success flex-1"
+                        className="cab-btn cab-btn-success flex-1"
                       >
                         {approveMutation.isPending
                           ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

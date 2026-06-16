@@ -27,6 +27,21 @@ import type { PartsCategory, CreatePartsCategoryInput } from '@/types/parts'
 type Tab = 'my' | 'templates'
 type AddMode = 'single' | 'list'
 
+/** Стандартный стартовый набор категорий разборки. Кнопка «Базовые» добавляет
+    недостающие из него (СТО может скопировать для быстрого старта или делать свои). */
+const BASE_CATEGORIES = [
+  'Двигатель',
+  'Коробка передач',
+  'Подвеска',
+  'Тормозная система',
+  'Электрика',
+  'Кузовные детали',
+  'Оптика',
+  'Салон',
+  'Колёса и диски',
+  'Система охлаждения',
+]
+
 export default function PartsCategories() {
   const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
@@ -69,19 +84,11 @@ export default function PartsCategories() {
     enabled: tab === 'templates',
   })
 
-  // Базовые (стандартные) шаблоны — для кнопки «Добавить базовые категории»
-  const { data: baseTemplates = [] } = useQuery({
-    queryKey: ['parts-category-base-templates'],
-    queryFn: () => getPartsCategoryTemplates(),
-    enabled: !!partsCompanyId,
-    staleTime: 10 * 60 * 1000,
-  })
-
   const existingNames = new Set(categories.map(c => c.name.toLowerCase()))
 
-  // Недостающие базовые (ещё не добавленные по имени) — копируем только их, без дублей
-  const missingBase = baseTemplates.filter(t => !existingNames.has(t.name.toLowerCase()))
-  const baseAllAdded = baseTemplates.length > 0 && missingBase.length === 0
+  // Недостающие из стандартного набора (по имени, без дублей)
+  const missingBaseNames = BASE_CATEGORIES.filter(n => !existingNames.has(n.toLowerCase()))
+  const baseAllAdded = missingBaseNames.length === 0
 
   const createMutation = useMutation({
     mutationFn: (input: CreatePartsCategoryInput) =>
@@ -104,6 +111,17 @@ export default function PartsCategories() {
       toast.success(`Добавлено ${data.length} категорий`)
       setBulkText('')
       setIsAddOpen(false)
+    },
+    onError: () => toast.error('Ошибка при добавлении'),
+  })
+
+  // Кнопка «Базовые» — добавляет недостающие из стандартного набора BASE_CATEGORIES
+  const baseBulkMutation = useMutation({
+    mutationFn: (names: string[]) => createPartsCategoriesBulk(names, partsCompanyId!),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['parts-categories'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-categories-manage'] })
+      toast.success(`Добавлено ${data.length} базовых категорий`)
     },
     onError: () => toast.error('Ошибка при добавлении'),
   })
@@ -333,14 +351,14 @@ export default function PartsCategories() {
           tab === 'my' ? (
             <>
               <button
-                onClick={() => copyMutation.mutate(missingBase.map(t => t.id))}
-                disabled={baseAllAdded || missingBase.length === 0 || copyMutation.isPending}
-                title={baseAllAdded ? 'Все базовые категории уже добавлены' : 'Добавить недостающие стандартные категории (без дублей)'}
+                onClick={() => baseBulkMutation.mutate(missingBaseNames)}
+                disabled={baseAllAdded || baseBulkMutation.isPending}
+                title={baseAllAdded ? 'Все базовые категории уже добавлены' : 'Добавить стандартный набор категорий (без дублей)'}
                 className="cab-btn cab-btn-secondary cab-btn-sm flex items-center gap-1.5"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">
-                  {baseAllAdded ? 'Базовые добавлены' : `Базовые${missingBase.length ? ` (${missingBase.length})` : ''}`}
+                  {baseAllAdded ? 'Базовые добавлены' : `Базовые${missingBaseNames.length ? ` (${missingBaseNames.length})` : ''}`}
                 </span>
               </button>
               <button
@@ -547,14 +565,14 @@ export default function PartsCategories() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setSelectedTemplateIds(new Set())}
-                      className="btn-sm rounded-lg bg-white/20 text-white hover:bg-white/30 transition-colors font-medium"
+                      className="cab-btn-sm rounded-lg bg-white/20 text-white hover:bg-white/30 transition-colors font-medium"
                     >
                       Сбросить
                     </button>
                     <button
                       onClick={() => copyMutation.mutate(Array.from(selectedTemplateIds))}
                       disabled={copyMutation.isPending}
-                      className="btn-sm rounded-lg bg-white text-primary font-semibold hover:bg-white/90 disabled:opacity-50 flex items-center gap-1.5"
+                      className="cab-btn-sm rounded-lg bg-white text-primary font-semibold hover:bg-white/90 disabled:opacity-50 flex items-center gap-1.5"
                     >
                       <Download className="w-3.5 h-3.5" />
                       {copyMutation.isPending ? 'Импорт…' : 'Импортировать'}

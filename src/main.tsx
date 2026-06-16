@@ -4,7 +4,9 @@ import { QueryClient } from '@tanstack/react-query'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
 import App from './App.tsx'
-import '@fontsource-variable/manrope'
+// Inter Variable бандлится: на Windows/Android заменяет Segoe UI/Roboto (чище и легче).
+// На Apple-устройствах первым в стеке остаётся системный SF Pro.
+import '@fontsource-variable/inter'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
 

@@ -46,7 +46,7 @@ export default function AdminAnalytics() {
             <button
               key={r.id}
               onClick={() => setMonths(r.id)}
-              className={months === r.id ? 'btn-primary btn-sm' : 'btn-secondary btn-sm'}
+              className={months === r.id ? 'cab-btn cab-btn-primary cab-btn-sm' : 'cab-btn cab-btn-secondary cab-btn-sm'}
             >
               {r.label}
             </button>

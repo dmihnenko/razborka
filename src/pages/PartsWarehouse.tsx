@@ -524,7 +524,7 @@ export default function PartsWarehouse() {
         <QrLabelModal
           title={qrNode.name}
           subtitle={qrNode.path !== qrNode.name ? qrNode.path : undefined}
-          value={qrNode.id}
+          value={`${window.location.origin}/public/parts-location/${qrNode.id}`}
           onClose={() => setQrNode(null)}
         />
       )}
