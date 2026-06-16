@@ -37,7 +37,7 @@ export default function Layout() {
     scrollRef.current?.scrollTo({ top: 0 })
   }, [location.pathname])
   const { loading: authLoading, user } = useAuth()
-  const { data: profile } = useUserProfile()
+  const { data: profile, isFetching: profileFetching } = useUserProfile()
   // Скелетон пока идёт авторизация ИЛИ пользователь есть, но профиль ещё не загружен —
   // иначе на жёстком обновлении (Ctrl+Shift+F5) мелькает экран приветствия/выбора роли.
   const showSkeleton = authLoading || (!!user && !profile)
@@ -169,8 +169,11 @@ export default function Layout() {
     return <LayoutSkeleton />
   }
 
-  // Пользователь авторизован но без роли — страница приветствия
+  // Пользователь авторизован но без роли — страница приветствия.
+  // Пока профиль ещё догружается (например, после обновления версии) — показываем
+  // скелетон, а не экран выбора роли, чтобы он не мелькал на пол-секунды.
   if (!primaryRole && filteredNavigation.length === 0) {
+    if (profileFetching) return <LayoutSkeleton />
     return (
       <WaitingAccessPage
         profile={profile}

@@ -18,6 +18,8 @@ function loadProfileFromCache(userId: string): any | null {
     const cached: CachedProfile = JSON.parse(raw)
     if (cached.userId !== userId) return null
     if (Date.now() - cached.cachedAt > PROFILE_CACHE_TTL) return null
+    // Не сидим профиль без ролей — иначе на обновлении версии мелькает экран выбора роли.
+    if (!cached.data?.roles?.length) return null
     return cached.data
   } catch {
     return null
@@ -26,6 +28,8 @@ function loadProfileFromCache(userId: string): any | null {
 
 function saveProfileToCache(userId: string, data: any) {
   try {
+    // Не кэшируем профиль без ролей — он бы провоцировал мигание экрана выбора роли.
+    if (!data?.roles?.length) return
     const cached: CachedProfile = { data, userId, cachedAt: Date.now() }
     localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(cached))
   } catch {
