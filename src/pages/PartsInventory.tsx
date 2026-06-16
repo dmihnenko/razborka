@@ -887,7 +887,7 @@ export default function PartsInventory() {
             </div>
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2.5">
             {filteredAndSorted.map((item) => (
               <InventoryCard
                 key={item.id}
@@ -1811,16 +1811,16 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   return (
     <div className="modal-overlay">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="modal-sheet sm:max-w-2xl w-full z-10 overflow-y-auto max-h-[95dvh]">
+      <div className="modal-sheet w-full max-w-none sm:max-w-5xl z-10 h-[100dvh] sm:h-[94dvh] rounded-none sm:rounded-2xl flex flex-col overflow-hidden">
         <div className="modal-handle sm:hidden" />
-        <form onSubmit={handleSubmit}>
-          <div className="modal-header">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="modal-header flex-shrink-0">
             <h3 className="text-base font-bold text-gray-900">
               {item ? 'Редактировать запчасть' : 'Добавить запчасть'}
             </h3>
           </div>
-          <div className="modal-body">
-            <div className="overflow-y-auto max-h-[60dvh] space-y-4">
+          <div className="modal-body flex-1 overflow-y-auto min-h-0">
+            <div className="space-y-4">
 
               {/* Auto-filled vehicle reminder */}
               {autoFilledVehicle && !autoHintDismissed && (() => {
@@ -2346,7 +2346,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
             </div>
 
             </div>
-          <div className="modal-footer">
+          <div className="modal-footer flex-shrink-0">
             <button
               type="button"
               onClick={onClose}

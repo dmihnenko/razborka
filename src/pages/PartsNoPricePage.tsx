@@ -150,7 +150,7 @@ export default function PartsNoPricePage() {
         maxWidth="4xl"
       />
 
-      <div className="max-w-4xl mx-auto px-3 sm:px-5 lg:px-8 py-4 sm:py-6">
+      <div className="w-full py-4 sm:py-6">
         {isLoading ? (
           <div className="empty-state">
             <Spinner size="md" className="inline-block" />

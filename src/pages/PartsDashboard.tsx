@@ -107,7 +107,7 @@ export default function PartsDashboard() {
   ]
 
   return (
-    <div className="space-y-5 animate-fade-in" style={{ color: ink }}>
+    <div className="space-y-5" style={{ color: ink }}>
 
       {/* ── Шапка ─────────────────────────────────────────── */}
       <div className="flex items-end justify-between gap-3 flex-wrap">

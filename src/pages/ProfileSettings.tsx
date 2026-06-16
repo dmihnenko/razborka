@@ -118,31 +118,10 @@ export default function ProfileSettings() {
             <p className="text-xs text-gray-500">Ваши данные для входа</p>
           </div>
         </div>
-        <div className="p-5 space-y-3">
-          <div className="flex items-center justify-between py-2 border-b border-gray-100">
-            <span className="text-sm text-gray-500">Логин</span>
-            <span className="text-sm font-medium text-gray-900 font-mono">{profile?.username || '—'}</span>
-          </div>
-          <div className="flex items-center justify-between py-2 border-b border-gray-100">
+        <div className="p-5">
+          <div className="flex items-center justify-between py-2">
             <span className="text-sm text-gray-500">Email</span>
             <span className="text-sm font-medium text-gray-900">{profile?.email || '—'}</span>
-          </div>
-          <div className="flex items-start justify-between py-2">
-            <span className="text-sm text-gray-500 flex-shrink-0">Роли</span>
-            <div className="flex flex-wrap gap-1.5 justify-end ml-3">
-              {profile?.roles && profile.roles.length > 0 ? (
-                profile.roles.map((r: any) => (
-                  <span key={r.id} className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-lg ${
-                    r.is_primary ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {r.display_name}
-                    {r.is_primary && <span className="ml-1 opacity-60">·осн</span>}
-                  </span>
-                ))
-              ) : (
-                <span className="text-sm text-gray-400">—</span>
-              )}
-            </div>
           </div>
         </div>
       </div>

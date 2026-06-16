@@ -13,6 +13,8 @@ import {
   Inbox,
   History,
   Truck,
+  FolderTree,
+  Warehouse,
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -49,6 +51,8 @@ export const partsOwnerMenu: MenuItem[] = [
   { name: 'Магазин', href: '/parts/inventory?source=shop', icon: ShoppingBag, group: 'base' },
   { name: 'Автомобили', href: '/parts/vehicles', icon: Car, group: 'base' },
   { name: 'Клиенты', href: '/parts/customers', icon: Users, group: 'base' },
+  { name: 'Категории', href: '/parts/categories', icon: FolderTree, group: 'base' },
+  { name: 'Места хранения', href: '/parts/warehouse', icon: Warehouse, group: 'base' },
   { name: 'Аналитика', href: '/parts/analytics', icon: LineChart, group: 'system' },
   { name: 'Сотрудники', href: '/parts/employees', icon: Users, group: 'system' },
   { name: 'Настройки', href: '/parts/settings', icon: SlidersHorizontal, group: 'system' },
@@ -67,6 +71,9 @@ export const partsWorkerMenu: MenuItem[] = [
   { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package, group: 'base' },
   { name: 'Автомобили', href: '/parts/vehicles', icon: Car, group: 'base' },
   { name: 'Клиенты', href: '/parts/customers', icon: Users, group: 'base' },
+  { name: 'Категории', href: '/parts/categories', icon: FolderTree, group: 'base' },
+  { name: 'Места хранения', href: '/parts/warehouse', icon: Warehouse, group: 'base' },
+  { name: 'Настройки', href: '/parts/settings', icon: SlidersHorizontal, group: 'system' },
   { name: 'Профиль', href: '/profile', icon: CircleUser, group: 'system' },
 ];
 

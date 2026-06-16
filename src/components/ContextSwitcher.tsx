@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Shield, Store, Car, ChevronDown, Check, ShoppingBag } from 'lucide-react'
+import { Shield, Store, Car, ChevronDown, Check } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useQueryClient } from '@tanstack/react-query'
 
-type ContextId = 'admin' | 'parts' | 'user' | 'market'
+type ContextId = 'admin' | 'parts' | 'user'
 
 interface Ctx {
   id: ContextId
@@ -15,10 +15,9 @@ interface Ctx {
 }
 
 const CONTEXTS: Ctx[] = [
-  { id: 'admin',  label: 'Админ',    icon: Shield,      path: '/admin',            cls: 'bg-purple-100 text-purple-600' },
-  { id: 'parts',  label: 'Разборка', icon: Store,       path: '/parts/dashboard',  cls: 'bg-orange-100 text-orange-600' },
-  { id: 'market', label: 'Маркет',   icon: ShoppingBag, path: '/market',           cls: 'bg-slate-200 text-slate-700' },
-  { id: 'user',   label: 'Мои авто', icon: Car,         path: '/my-vehicles',      cls: 'bg-blue-100 text-blue-600' },
+  { id: 'admin', label: 'Админ',    icon: Shield, path: '/admin',            cls: 'bg-purple-100 text-purple-600' },
+  { id: 'parts', label: 'Разборка', icon: Store,  path: '/parts/dashboard',  cls: 'bg-orange-100 text-orange-600' },
+  { id: 'user',  label: 'Мои авто', icon: Car,    path: '/my-vehicles',      cls: 'bg-blue-100 text-blue-600' },
 ]
 
 /** Переключатель контекста (лайаута): Админ / Разборка / Мои авто. */
@@ -42,7 +41,6 @@ export default function ContextSwitcher({ current, excludeIds = [] }: { current:
   const has = (id: ContextId) => {
     if (id === 'admin') return isAdmin
     if (id === 'parts') return isAdmin || isParts
-    if (id === 'market') return isAdmin || isParts // маркет — публичная витрина разборки
     return isAdmin || roleNames.includes('user')
   }
   const available = CONTEXTS.filter(c => has(c.id) && !excludeIds.includes(c.id))
@@ -57,8 +55,6 @@ export default function ContextSwitcher({ current, excludeIds = [] }: { current:
   const switchTo = (c: Ctx) => {
     setOpen(false)
     if (c.id === current) return
-    // Маркет — публичная витрина (отдельный layout): просто переходим, контекст разборки не меняем
-    if (c.id === 'market') { navigate('/market'); return }
     if (c.id === 'admin') localStorage.removeItem('activeRole')
     else localStorage.setItem('activeRole', roleFor(c.id))
     // Сбрасываем кэш данных предыдущего раздела (как делала отдельная кнопка «Админ»)
