@@ -262,10 +262,11 @@ export async function createPartsCategory(input: CreatePartsCategoryInput, parts
   return data as PartsCategory
 }
 
-export async function createPartsCategoriesBulk(names: string[], partsCompanyId: string) {
+export async function createPartsCategoriesBulk(names: string[], partsCompanyId: string, parentId?: string | null) {
   const rows = names.map((name, i) => ({
     name: name.trim(),
     parts_company_id: partsCompanyId,
+    parent_id: parentId ?? null,
     is_template: false,
     is_active: true,
     sort_order: i,

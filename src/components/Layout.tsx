@@ -341,9 +341,12 @@ export default function Layout() {
           </div>
         </div>
 
-        {/* ── MAIN CONTENT ── */}
+        {/* ── MAIN CONTENT — контейнер как в маркете (.mk-container): max-w 1920 + fluid-паддинг ── */}
         <div className="flex-1" style={{ background: 'var(--cab-bg)' }}>
-          <div className="mx-auto w-full max-w-[1920px] px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
+          <div
+            className="mx-auto w-full max-w-[1920px] py-3 sm:py-4 md:py-5 lg:py-6"
+            style={{ paddingInline: 'clamp(0.75rem, 0.45rem + 1.1vw, 1.4rem)' }}
+          >
             <NotificationBanner userId={profile?.id} />
             <Outlet />
           </div>
