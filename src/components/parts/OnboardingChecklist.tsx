@@ -161,13 +161,13 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
   if (loading) return null
 
   return (
-    <div className="card overflow-hidden animate-fade-in" aria-label="Чек-лист настройки разборки">
+    <div className="cab-card overflow-hidden animate-fade-in" aria-label="Чек-лист настройки разборки">
       {/* Header */}
       <div className="px-4 py-3 flex items-center gap-3 border-b border-gray-100">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">
             <p className="text-sm font-bold text-gray-800">С чего начать</p>
-            <span className="badge badge-blue text-xs">{doneCount} из {total}</span>
+            <span className="cab-chip">{doneCount} из {total}</span>
           </div>
           {/* Прогресс-бар */}
           <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden" role="progressbar" aria-valuenow={progressPct} aria-valuemin={0} aria-valuemax={100}>
@@ -208,13 +208,13 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
                   <button
                     onClick={() => addCategoriesMutation.mutate()}
                     disabled={addCategoriesMutation.isPending}
-                    className="btn-primary btn-sm"
+                    className="cab-btn cab-btn-primary cab-btn-sm"
                   >
                     {addCategoriesMutation.isPending ? 'Добавление…' : 'Добавить базовые'}
                   </button>
                   <Link
                     to="/parts/categories"
-                    className="btn-secondary btn-sm"
+                    className="cab-btn cab-btn-secondary cab-btn-sm"
                   >
                     Открыть категории
                   </Link>
@@ -235,7 +235,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
               </p>
               {!hasVehicles && (
                 <div className="mt-2">
-                  <Link to="/parts/vehicles" className="btn-secondary btn-sm">
+                  <Link to="/parts/vehicles" className="cab-btn cab-btn-secondary cab-btn-sm">
                     Добавить авто
                   </Link>
                 </div>
@@ -255,7 +255,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
               </p>
               {!hasInventory && (
                 <div className="mt-2">
-                  <Link to="/parts/inventory" className="btn-secondary btn-sm">
+                  <Link to="/parts/inventory" className="cab-btn cab-btn-secondary cab-btn-sm">
                     Открыть склад
                   </Link>
                 </div>
@@ -275,7 +275,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
               </p>
               {!hasContacts && (
                 <div className="mt-2">
-                  <Link to="/parts/settings" className="btn-secondary btn-sm">
+                  <Link to="/parts/settings" className="cab-btn cab-btn-secondary cab-btn-sm">
                     Настройки
                   </Link>
                 </div>
@@ -297,7 +297,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
                 <>
                   <p className="text-xs text-gray-500 mt-0.5">Стеллажи, полки, ячейки — чтобы знать, где лежит запчасть</p>
                   <div className="mt-2">
-                    <Link to="/parts/warehouse" className="btn-secondary btn-sm">
+                    <Link to="/parts/warehouse" className="cab-btn cab-btn-secondary cab-btn-sm">
                       Открыть склад
                     </Link>
                   </div>
@@ -320,7 +320,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
                 <>
                   <p className="text-xs text-gray-500 mt-0.5">Бесплатный ключ ImgBB — чтобы загружать фото запчастей</p>
                   <div className="mt-2">
-                    <Link to="/parts/settings" className="btn-secondary btn-sm">
+                    <Link to="/parts/settings" className="cab-btn cab-btn-secondary cab-btn-sm">
                       Настроить API
                     </Link>
                   </div>

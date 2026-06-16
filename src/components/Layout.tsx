@@ -264,33 +264,6 @@ export default function Layout() {
 
         {/* Footer */}
         <div className="px-2 py-3 space-y-0.5 border-t border-gray-200">
-          {/* В маркет — публичная витрина запчастей */}
-          {currentCtx === 'parts' && (
-            <Link
-              to="/market"
-              title="Открыть маркет запчастей"
-              className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm rounded-lg transition-colors active:scale-[0.98] text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-            >
-              <Store className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} />
-              <span className="hidden lg:block">В маркет</span>
-            </Link>
-          )}
-
-          {/* Кнопка поиска */}
-          <button
-            onClick={() => setSearchOpen(true)}
-            title="Поиск (Ctrl+K)"
-            className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm rounded-lg transition-colors active:scale-[0.98] text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-          >
-            <Search className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} />
-            <span className="hidden lg:block">Поиск</span>
-          </button>
-
-          {/* Колокол уведомлений (desktop sidebar) */}
-          <div className="flex items-center justify-center lg:justify-start w-full px-1 lg:px-2 py-1">
-            <NotificationsBell userId={profile?.id} />
-          </div>
-
           {/* Админ-кнопка — только на md (на lg она в ContextSwitcher) */}
           {isAdmin && (
             <Link
@@ -332,6 +305,21 @@ export default function Layout() {
           </div>
         )}
 
+        {/* ── DESKTOP TOP BAR (разборка): «В маркет» справа ── */}
+        {currentCtx === 'parts' && (
+          <div className="hidden md:flex items-center justify-end h-12 px-4 lg:px-8 flex-shrink-0"
+            style={{ background: 'var(--cab-surface)', borderBottom: '1px solid var(--cab-border)' }}>
+            <Link
+              to="/market"
+              title="Открыть маркет запчастей"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-sm font-medium transition-colors"
+              style={{ color: 'var(--cab-ink-2)', background: 'var(--cab-surface-2)' }}
+            >
+              <Store className="w-4 h-4" strokeWidth={1.5} /> В маркет
+            </Link>
+          </div>
+        )}
+
         {/* ── MOBILE HEADER (hidden on md+) ── */}
         <div className="md:hidden bg-white border-b border-gray-200">
           <div className="px-3 flex items-center gap-2 h-[52px]">
@@ -346,16 +334,6 @@ export default function Layout() {
               <Search className="w-4 h-4" strokeWidth={1.5} />
             </button>
             <NotificationsBell userId={profile?.id} />
-            {currentCtx === 'parts' && (
-              <Link
-                to="/market"
-                title="Открыть маркет запчастей"
-                className="flex-shrink-0 flex items-center gap-1.5 h-9 px-3 text-xs font-semibold text-slate-600 bg-gray-100 rounded-xl hover:bg-slate-200 hover:text-slate-900 transition-all active:scale-[0.97]"
-              >
-                <Store className="w-3.5 h-3.5" strokeWidth={1.5} />
-                <span>В маркет</span>
-              </Link>
-            )}
             <button onClick={handleLogout}
               className="flex-shrink-0 flex items-center gap-1.5 h-9 px-3 text-xs font-semibold text-gray-500 bg-gray-100 rounded-xl hover:bg-red-50 hover:text-red-600 transition-all active:scale-[0.97]"
             >
@@ -367,7 +345,7 @@ export default function Layout() {
 
         {/* ── MAIN CONTENT ── */}
         <div className="flex-1" style={{ background: 'var(--cab-bg)' }}>
-          <div className="mx-auto max-w-[1440px] w-full px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
+          <div className="w-full px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
             <NotificationBanner userId={profile?.id} />
             <Outlet />
           </div>
@@ -491,6 +469,25 @@ export default function Layout() {
 
       {/* FAB «+Создать» — только для контекста разборки, только на мобиле */}
       {currentCtx === 'parts' && <CreateFab />}
+
+      {/* Плавающие инструменты (десктоп, разборка): уведомления + поиск в правом нижнем углу */}
+      {currentCtx === 'parts' && (
+        <div className="hidden md:flex fixed bottom-5 right-5 z-40 items-center gap-2">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full"
+            style={{ background: 'var(--cab-surface)', border: '1px solid var(--cab-border)', boxShadow: '0 6px 20px -6px rgba(22,24,29,.20)' }}>
+            <NotificationsBell userId={profile?.id} />
+          </div>
+          <button
+            onClick={() => setSearchOpen(true)}
+            title="Поиск (Ctrl+K)"
+            aria-label="Поиск"
+            className="flex items-center justify-center w-12 h-12 rounded-full transition-colors"
+            style={{ background: 'var(--cab-ink)', color: '#fff', boxShadow: '0 6px 20px -6px rgba(22,24,29,.35)' }}
+          >
+            <Search className="w-5 h-5" strokeWidth={1.5} />
+          </button>
+        </div>
+      )}
 
       {/* Глобальный поиск */}
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />

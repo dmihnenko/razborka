@@ -173,7 +173,7 @@ export function InventoryCard({
               aria-label={isSelected ? 'Снять выбор' : 'Выбрать'}
             >
               {isSelected
-                ? <CheckSquare className="w-5 h-5 text-blue-400 drop-shadow" />
+                ? <CheckSquare className="w-5 h-5 text-white drop-shadow" />
                 : <Square className="w-5 h-5 text-white/80 drop-shadow" />
               }
             </button>
@@ -194,7 +194,7 @@ export function InventoryCard({
         )}
 
         {/* Название */}
-        <h3 className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 hover:text-blue-600 transition-colors">
+        <h3 className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 hover:text-primary transition-colors">
           {item.name}
         </h3>
 
@@ -260,7 +260,7 @@ export function InventoryCard({
         {/* Изменить */}
         <button
           onClick={(e) => onEdit(item, e)}
-          className="btn btn-secondary btn-sm flex-1 gap-1"
+          className="cab-btn cab-btn-secondary cab-btn-sm flex-1 gap-1"
         >
           <Edit2 className="w-3.5 h-3.5" />
           Изменить

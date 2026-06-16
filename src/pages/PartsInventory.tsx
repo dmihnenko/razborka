@@ -924,7 +924,7 @@ export default function PartsInventory() {
                   {filteredAndSorted.map((item) => (
                     <tr
                       key={item.id}
-                      className="hover:bg-blue-50/40 transition-colors group/row cursor-pointer"
+                      className="hover:bg-slate-50 transition-colors group/row cursor-pointer"
                       onClick={() => goToItem(item.id)}
                     >
                       <td
@@ -1011,7 +1011,7 @@ export default function PartsInventory() {
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover/row:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity">
                           <button
                             onClick={(e) => handleEdit(item, e)}
-                            className="p-1.5 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                            className="p-1.5 text-gray-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                             title="Редактировать"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
@@ -1095,7 +1095,7 @@ export default function PartsInventory() {
                         { onSuccess: () => { setStatusPickerItem(null); setPendingStatus(null) } }
                       )
                     }}
-                    className="modal-btn-primary disabled:opacity-50"
+                    className="cab-btn cab-btn-primary disabled:opacity-50"
                   >
                     {statusChangeMutation.isPending ? 'Сохранение...' : 'Подтвердить'}
                   </button>
@@ -1318,7 +1318,7 @@ export default function PartsInventory() {
                     newCustomer: showNewCustomer ? { name: newCustomerName, phone: newCustomerPhone } : undefined,
                   })
                 }}
-                className="modal-btn-primary disabled:opacity-50"
+                className="cab-btn cab-btn-primary disabled:opacity-50"
               >
                 {sellMutation.isPending ? 'Сохранение...' : 'Продать'}
               </button>
@@ -1480,7 +1480,7 @@ export default function PartsInventory() {
                     newCustomer: bulkShowNewCustomer ? { name: bulkNewCustomerName, phone: bulkNewCustomerPhone } : undefined,
                   })
                 }}
-                className="modal-btn-primary disabled:opacity-50"
+                className="cab-btn cab-btn-primary disabled:opacity-50"
               >
                 {bulkSellMutation.isPending ? 'Сохранение...' : `Продать (${bulkRows.length})`}
               </button>
@@ -1531,7 +1531,7 @@ export default function PartsInventory() {
                   ids: Array.from(selectedIds),
                   locationId: bulkLocationId || null,
                 })}
-                className="modal-btn-primary disabled:opacity-50"
+                className="cab-btn cab-btn-primary disabled:opacity-50"
               >
                 {bulkLocationMutation.isPending ? 'Сохранение...' : 'Применить'}
               </button>
@@ -1578,7 +1578,7 @@ export default function PartsInventory() {
                   ids: Array.from(selectedIds),
                   categoryId: bulkCategoryId || null,
                 })}
-                className="modal-btn-primary disabled:opacity-50"
+                className="cab-btn cab-btn-primary disabled:opacity-50"
               >
                 {bulkCategoryMutation.isPending ? 'Сохранение...' : 'Применить'}
               </button>
@@ -1953,10 +1953,10 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                             setShowPasteArea(v => !v)
                             setPasteText('')
                           }}
-                          className={`flex items-center gap-1.5 btn-sm border transition-colors ${
+                          className={`cab-btn cab-btn-sm flex items-center gap-1.5 ${
                             showPasteArea
-                              ? 'btn-primary'
-                              : 'btn-secondary'
+                              ? 'cab-btn-primary'
+                              : 'cab-btn-secondary'
                           }`}
                         >
                           <ClipboardList className="w-3.5 h-3.5" />
@@ -1976,8 +1976,8 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
 
                     {/* Paste area */}
                     {showPasteArea && (
-                      <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-xs text-blue-700 mb-2">
+                      <div className="mb-3 p-3 bg-slate-100 border border-slate-200 rounded-lg">
+                        <p className="text-xs text-slate-700 mb-2">
                           Вставьте список в формате: <span className="font-mono font-semibold">Название [Tab] Цена [Tab] Ориг.номер [Tab] Статус</span><br />
                           Цена, номер и статус — необязательны. Статус: <span className="font-mono">бронь / продано / повреждено</span> — остальное → в наличии.
                         </p>
@@ -1986,7 +1986,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                           onChange={(e) => setPasteText(e.target.value)}
                           rows={6}
                           placeholder={'Капот\t800\t\t\nКрыло\t650\t1234567-00-A\nПанорама\t750\t\tБронь\nДверь передняя\t\t\tПродано'}
-                          className="form-input font-mono resize-none border-blue-300"
+                          className="form-input font-mono resize-none border-slate-300"
                         />
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-xs text-blue-600">
@@ -2295,7 +2295,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 <div>
                   <label className="form-label">Фотографии</label>
                   <label className={`flex items-center justify-center gap-2 w-full h-11 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
-                    uploading ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-200 hover:border-primary hover:bg-primary/5'
+                    uploading ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-200 hover:border-slate-400 hover:bg-slate-50'
                   }`}>
                     <input
                       type="file"
@@ -2357,7 +2357,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
             <button
               type="submit"
               disabled={isSaving}
-              className="modal-btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+              className="cab-btn cab-btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSaving
                 ? 'Сохранение...'

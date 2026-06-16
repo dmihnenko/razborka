@@ -49,8 +49,8 @@ export default function ConfirmDialog({
       size="sm"
       hideClose
       icon={
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${danger ? 'bg-red-100' : 'bg-primary/10'}`}>
-          <Icon className={`w-5 h-5 ${danger ? 'text-red-600' : 'text-primary'}`} />
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${danger ? 'bg-red-100' : 'bg-slate-100'}`}>
+          <Icon className={`w-5 h-5 ${danger ? 'text-red-600' : 'text-slate-700'}`} />
         </div>
       }
       title={title}
@@ -64,16 +64,27 @@ export default function ConfirmDialog({
           >
             {cancelText}
           </button>
-          <button
-            ref={confirmRef}
-            type="button"
-            onClick={onConfirm}
-            disabled={loading}
-            className={`flex-1 py-2.5 text-sm font-semibold text-white rounded-lg transition-colors disabled:opacity-50
-              ${danger ? 'bg-red-600 hover:bg-red-700' : 'bg-primary hover:bg-primary/90'}`}
-          >
-            {loading ? 'Подождите…' : confirmText}
-          </button>
+          {danger ? (
+            <button
+              ref={confirmRef}
+              type="button"
+              onClick={onConfirm}
+              disabled={loading}
+              className="flex-1 py-2.5 text-sm font-semibold text-white rounded-lg transition-colors disabled:opacity-50 bg-red-600 hover:bg-red-700"
+            >
+              {loading ? 'Подождите…' : confirmText}
+            </button>
+          ) : (
+            <button
+              ref={confirmRef}
+              type="button"
+              onClick={onConfirm}
+              disabled={loading}
+              className="cab-btn cab-btn-primary flex-1 justify-center disabled:opacity-50"
+            >
+              {loading ? 'Подождите…' : confirmText}
+            </button>
+          )}
         </div>
       }
     >

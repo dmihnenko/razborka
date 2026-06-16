@@ -238,7 +238,7 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
                 <button
                   type="button"
                   onClick={() => setForm(f => ({ ...f, price_currency: f.price_currency === 'USD' ? 'UAH' : 'USD' }))}
-                  className="btn-primary w-12 text-center px-0 flex-shrink-0"
+                  className="cab-btn cab-btn-primary w-12 text-center px-0 flex-shrink-0"
                   title="Сменить валюту"
                 >
                   {form.price_currency === 'USD' ? '$' : '₴'}
@@ -279,7 +279,7 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
             <button
               type="submit"
               disabled={addMutation.isPending || !form.name.trim()}
-              className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-sm font-bold disabled:opacity-50"
+              className="cab-btn cab-btn-primary w-full flex items-center justify-center gap-2 py-3 text-sm font-bold disabled:opacity-50"
             >
               {addMutation.isPending ? (
                 <span>Сохранение...</span>
@@ -325,7 +325,7 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
           <button
             type="button"
             onClick={handleDone}
-            className="modal-btn-cancel w-full flex items-center justify-center gap-2"
+            className="cab-btn cab-btn-secondary w-full flex items-center justify-center gap-2"
           >
             <X className="w-4 h-4" strokeWidth={1.5} />
             Закрыть

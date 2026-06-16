@@ -61,8 +61,8 @@ export default function QrLabelModal({ title, subtitle, value, onClose }: Props)
       >
         {/* Шапка */}
         <div className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-100 flex-shrink-0 no-print">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <QrCode className="w-5 h-5 text-primary" />
+          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+            <QrCode className="w-5 h-5 text-slate-700" />
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-base font-bold text-gray-900 leading-tight truncate">QR-этикетка</h2>
@@ -171,7 +171,7 @@ export default function QrLabelModal({ title, subtitle, value, onClose }: Props)
             type="button"
             onClick={() => window.print()}
             disabled={!qrDataUrl && !qrError}
-            className="btn btn-primary flex-1 flex items-center justify-center gap-2"
+            className="cab-btn cab-btn-primary flex-1 flex items-center justify-center gap-2"
           >
             <Printer className="w-4 h-4" />
             Печать
@@ -179,7 +179,7 @@ export default function QrLabelModal({ title, subtitle, value, onClose }: Props)
           <button
             type="button"
             onClick={onClose}
-            className="btn btn-secondary flex items-center justify-center gap-2 px-5"
+            className="cab-btn cab-btn-secondary flex items-center justify-center gap-2 px-5"
           >
             <X className="w-4 h-4" />
             Закрыть

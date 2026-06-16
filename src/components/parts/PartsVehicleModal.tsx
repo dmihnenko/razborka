@@ -238,7 +238,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                   onClick={handleDecodeVin}
                   disabled={!formData.vin?.trim() || vinLoading}
                   title="Распознать по VIN"
-                  className="btn-secondary flex-shrink-0 flex items-center gap-1.5 px-3"
+                  className="cab-btn cab-btn-secondary flex-shrink-0 flex items-center gap-1.5 px-3"
                 >
                   {vinLoading
                     ? <Spinner size="sm" className="w-5 h-5" />
@@ -389,7 +389,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
           <button
             type="button"
             onClick={onClose}
-            className="modal-btn-cancel"
+            className="cab-btn cab-btn-secondary flex-1"
             disabled={loading}
           >
             Отмена
@@ -397,7 +397,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
           <button
             type="submit"
             form="parts-vehicle-form"
-            className="modal-btn-primary"
+            className="cab-btn cab-btn-primary flex-1"
             disabled={loading}
           >
             {loading ? 'Сохранение...' : vehicle ? 'Сохранить' : 'Добавить'}

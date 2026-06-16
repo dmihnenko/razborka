@@ -216,11 +216,12 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
               <button
                 key={i}
                 onClick={() => jumpTo(i)}
+                style={i === activeIndex ? { borderColor: 'var(--cab-ink)' } : undefined}
                 className={`
                   flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden
                   border-2 transition-all duration-150
                   ${i === activeIndex
-                    ? 'border-primary shadow-md scale-105'
+                    ? 'shadow-md scale-105'
                     : 'border-transparent opacity-70 hover:opacity-100 hover:border-gray-300'}
                 `}
                 aria-label={`Фото ${i + 1}`}

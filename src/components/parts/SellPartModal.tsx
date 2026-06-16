@@ -163,7 +163,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
               <button
                 type="button"
                 onClick={() => setSellCurrency(c => c === 'USD' ? 'UAH' : 'USD')}
-                className="btn-primary px-3 w-12 text-center font-semibold tabular-nums"
+                className="cab-btn cab-btn-primary px-3 w-12 text-center font-semibold tabular-nums"
               >
                 {sellCurrency === 'USD' ? '$' : '₴'}
               </button>
@@ -195,7 +195,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
                 <button
                   type="button"
                   onClick={() => setShowNewCustomer(true)}
-                  className="btn-secondary flex items-center gap-1 px-3 flex-shrink-0"
+                  className="cab-btn cab-btn-secondary flex items-center gap-1 px-3 flex-shrink-0"
                   title="Новый клиент"
                 >
                   <UserPlus className="w-4 h-4" />
@@ -238,7 +238,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
           <button
             type="button"
             onClick={onClose}
-            className="modal-btn-cancel"
+            className="cab-btn cab-btn-secondary flex-1"
           >
             Отмена
           </button>
@@ -246,11 +246,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
             type="button"
             disabled={sellMutation.isPending}
             onClick={handleSell}
-            className="modal-btn-primary"
-            style={{
-              backgroundImage: 'linear-gradient(180deg, #16A34A 0%, #15803D 100%)',
-              boxShadow: '0 1px 2px rgba(21,128,61,0.35), 0 4px 12px -2px rgba(21,128,61,0.35)',
-            }}
+            className="btn btn-success flex-1"
           >
             {sellMutation.isPending ? 'Сохранение...' : 'Продать'}
           </button>

@@ -109,10 +109,10 @@ export default function PartsCustomerModal({ isOpen, onClose, onSubmit, customer
 
           {/* Footer */}
           <div className="modal-footer flex gap-3">
-            <button type="button" onClick={onClose} className="modal-btn-cancel">
+            <button type="button" onClick={onClose} className="cab-btn cab-btn-secondary flex-1">
               Отмена
             </button>
-            <button type="submit" disabled={loading || !formData.full_name.trim()} className="modal-btn-primary">
+            <button type="submit" disabled={loading || !formData.full_name.trim()} className="cab-btn cab-btn-primary flex-1">
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

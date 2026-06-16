@@ -783,7 +783,7 @@ function NpCombobox({
             <li key={item.value}>
               <button
                 type="button"
-                className="w-full text-left px-4 py-2.5 text-sm text-gray-800 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 onMouseDown={e => { e.preventDefault(); onSelect(item) }}
               >
                 {item.label}
@@ -954,9 +954,10 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
                           onClick={() => setCurrency(c)}
                           className={`px-2.5 rounded-md text-sm font-bold transition-colors min-h-[38px] ${
                             currency === c
-                              ? 'btn-primary px-2.5'
+                              ? 'text-white'
                               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
+                          style={currency === c ? { background: 'var(--cab-signal)' } : undefined}
                         >
                           {c === 'UAH' ? '₴' : '$'}
                         </button>
@@ -967,7 +968,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-blue-100">
+              <div className="pt-2 border-t border-slate-200">
                 <p className="text-sm text-gray-500">
                   Итого:{' '}
                   <span className="text-base font-bold text-gray-900 tabular">
@@ -986,7 +987,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
           <button
             onClick={handleAdd}
             disabled={!selectedItem || addItemMutation.isPending || quantity <= 0 || price <= 0}
-            className="modal-btn-primary disabled:opacity-50"
+            className="cab-btn cab-btn-primary disabled:opacity-50"
           >
             {addItemMutation.isPending ? 'Добавление…' : 'Добавить'}
           </button>
@@ -1073,7 +1074,7 @@ function EditOrderModal({ order, partsCompanyId, onClose }: EditOrderModalProps)
           <button
             onClick={() => updateMutation.mutate()}
             disabled={updateMutation.isPending}
-            className="modal-btn-primary disabled:opacity-50"
+            className="cab-btn cab-btn-primary disabled:opacity-50"
           >
             {updateMutation.isPending ? 'Сохранение…' : 'Сохранить'}
           </button>
