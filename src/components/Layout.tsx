@@ -36,10 +36,11 @@ export default function Layout() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0 })
   }, [location.pathname])
-  const { loading: authLoading } = useAuth()
-  const { data: profile, isLoading } = useUserProfile()
-  // Показываем скелетон только при первой загрузке — когда auth загружается или профиль ещё не получен
-  const showSkeleton = authLoading || (isLoading && !profile)
+  const { loading: authLoading, user } = useAuth()
+  const { data: profile } = useUserProfile()
+  // Скелетон пока идёт авторизация ИЛИ пользователь есть, но профиль ещё не загружен —
+  // иначе на жёстком обновлении (Ctrl+Shift+F5) мелькает экран приветствия/выбора роли.
+  const showSkeleton = authLoading || (!!user && !profile)
   const queryClient = useQueryClient()
 
   // Шторка мобильного «Меню» (доп. пункты)

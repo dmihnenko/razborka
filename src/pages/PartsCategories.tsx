@@ -69,7 +69,19 @@ export default function PartsCategories() {
     enabled: tab === 'templates',
   })
 
+  // Базовые (стандартные) шаблоны — для кнопки «Добавить базовые категории»
+  const { data: baseTemplates = [] } = useQuery({
+    queryKey: ['parts-category-base-templates'],
+    queryFn: () => getPartsCategoryTemplates(),
+    enabled: !!partsCompanyId,
+    staleTime: 10 * 60 * 1000,
+  })
+
   const existingNames = new Set(categories.map(c => c.name.toLowerCase()))
+
+  // Недостающие базовые (ещё не добавленные по имени) — копируем только их, без дублей
+  const missingBase = baseTemplates.filter(t => !existingNames.has(t.name.toLowerCase()))
+  const baseAllAdded = baseTemplates.length > 0 && missingBase.length === 0
 
   const createMutation = useMutation({
     mutationFn: (input: CreatePartsCategoryInput) =>
@@ -203,13 +215,26 @@ export default function PartsCategories() {
         height="sm"
         actions={
           tab === 'my' ? (
-            <button
-              onClick={() => { setIsAddOpen(v => !v); setAddMode('single') }}
-              className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Добавить</span>
-            </button>
+            <>
+              <button
+                onClick={() => copyMutation.mutate(missingBase.map(t => t.id))}
+                disabled={baseAllAdded || missingBase.length === 0 || copyMutation.isPending}
+                title={baseAllAdded ? 'Все базовые категории уже добавлены' : 'Добавить недостающие стандартные категории (без дублей)'}
+                className="cab-btn cab-btn-secondary cab-btn-sm flex items-center gap-1.5"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">
+                  {baseAllAdded ? 'Базовые добавлены' : `Базовые${missingBase.length ? ` (${missingBase.length})` : ''}`}
+                </span>
+              </button>
+              <button
+                onClick={() => { setIsAddOpen(v => !v); setAddMode('single') }}
+                className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Добавить</span>
+              </button>
+            </>
           ) : undefined
         }
         footer={
