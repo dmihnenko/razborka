@@ -224,11 +224,10 @@ export default function PartsSettings() {
         title="Настройки разборки"
         backPath="/parts/dashboard"
         height="sm"
-        maxWidth="2xl"
       />
 
       <div className="page-container">
-        <div className="max-w-2xl mx-auto space-y-4 sm:space-y-5">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-5 items-start">
 
           {/* ══ Контакты разборки ══════════════════════════════════════ */}
           <div className="cab-card p-4">

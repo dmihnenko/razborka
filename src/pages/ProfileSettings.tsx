@@ -108,10 +108,10 @@ export default function ProfileSettings() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
 
       {/* Информация об аккаунте */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="cab-card overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-            <User className="w-4 h-4 text-blue-700" />
+          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+            <User className="w-4 h-4 text-slate-700" />
           </div>
           <div>
             <h2 className="text-sm font-semibold text-gray-900">Аккаунт</h2>
@@ -127,10 +127,10 @@ export default function ProfileSettings() {
       </div>
 
       {/* Редактирование профиля */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="cab-card overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-            <User className="w-4 h-4 text-purple-700" />
+          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+            <User className="w-4 h-4 text-slate-700" />
           </div>
           <div>
             <h2 className="text-sm font-semibold text-gray-900">Личные данные</h2>
@@ -162,7 +162,7 @@ export default function ProfileSettings() {
             <button
               onClick={() => updateProfileMutation.mutate()}
               disabled={updateProfileMutation.isPending}
-              className="flex items-center gap-2 px-5 py-2.5 bg-purple-700 text-white text-sm font-semibold rounded-xl hover:bg-purple-800 disabled:opacity-50 transition-colors"
+              className="cab-btn cab-btn-primary"
             >
               <Save className="w-4 h-4" />
               {updateProfileMutation.isPending ? 'Сохранение...' : 'Сохранить'}
@@ -173,10 +173,10 @@ export default function ProfileSettings() {
 
       {/* Контакты разборки — для покупателей на публичной странице */}
       {showPartsContacts && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="cab-card overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
-              <Send className="w-4 h-4 text-sky-600" />
+            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+              <Send className="w-4 h-4 text-slate-700" />
             </div>
             <div>
               <h2 className="text-sm font-semibold text-gray-900">Контакты разборки</h2>
@@ -229,7 +229,7 @@ export default function ProfileSettings() {
               <button
                 onClick={() => saveContacts.mutate()}
                 disabled={saveContacts.isPending}
-                className="flex items-center gap-2 px-5 py-2.5 bg-sky-600 text-white text-sm font-semibold rounded-xl hover:bg-sky-700 disabled:opacity-50 transition-colors"
+                className="cab-btn cab-btn-primary"
               >
                 <Save className="w-4 h-4" />
                 {saveContacts.isPending ? 'Сохранение...' : 'Сохранить контакты'}
@@ -240,10 +240,10 @@ export default function ProfileSettings() {
       )}
 
       {/* Смена пароля */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="cab-card overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-            <Lock className="w-4 h-4 text-orange-700" />
+          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+            <Lock className="w-4 h-4 text-slate-700" />
           </div>
           <div>
             <h2 className="text-sm font-semibold text-gray-900">Смена пароля</h2>
@@ -303,7 +303,7 @@ export default function ProfileSettings() {
             <button
               onClick={() => changePasswordMutation.mutate()}
               disabled={!passwordValid || changePasswordMutation.isPending}
-              className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white text-sm font-semibold rounded-xl hover:bg-orange-700 disabled:opacity-50 transition-colors"
+              className="cab-btn cab-btn-primary"
             >
               <Lock className="w-4 h-4" />
               {changePasswordMutation.isPending ? 'Сохранение...' : 'Сменить пароль'}

@@ -26,6 +26,11 @@ interface TreeNode extends StorageLocation {
   depth: number
 }
 
+/* Отступ-индент на уровень вложенности (px) */
+const INDENT = 22
+/* Метка уровня по глубине */
+const LEVEL_LABELS = ['Бокс', 'Стеллаж', 'Полка', 'Ячейка', 'Уровень 5']
+
 function buildTree(nodes: StorageLocation[], parentId: string | null = null, depth = 0): TreeNode[] {
   return nodes
     .filter(n => n.parent_id === parentId)
@@ -176,8 +181,8 @@ export default function PartsWarehouse() {
 
   if (!partsCompanyId) {
     return (
-      <div className="min-h-dvh bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Нет доступа к разборке</p>
+      <div className="min-h-dvh flex items-center justify-center" style={{ background: 'var(--cab-bg)' }}>
+        <p style={{ color: 'var(--cab-ink-3)' }}>Нет доступа к разборке</p>
       </div>
     )
   }
@@ -186,12 +191,11 @@ export default function PartsWarehouse() {
   const usedCount = Object.keys(usageMap).length
 
   return (
-    <div className="min-h-dvh bg-gray-50">
+    <div className="min-h-dvh" style={{ background: 'var(--cab-bg)' }}>
       <PartsPageHeader
         title="Места хранения"
         subtitle={totalLocations > 0 ? `${totalLocations} мест · ${usedCount} задействовано` : undefined}
         backPath="/parts/dashboard"
-        maxWidth="3xl"
         actions={
           <button
             onClick={() => { setAddingParentId(null); setAddingName('') }}
@@ -203,13 +207,13 @@ export default function PartsWarehouse() {
         }
       />
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5 space-y-4">
+      <div className="px-4 sm:px-6 py-5 space-y-4">
 
         {/* Add root form */}
         {addingParentId === null && (
           <div className="cab-card p-4 animate-slide-up">
             <p className="kicker mb-2">Место верхнего уровня</p>
-            <p className="text-xs text-gray-500 mb-3">Бокс, зона, секция…</p>
+            <p className="text-xs mb-3" style={{ color: 'var(--cab-ink-3)' }}>Бокс, зона, секция…</p>
             <form onSubmit={handleAdd} className="flex gap-2">
               <input
                 type="text"
@@ -246,14 +250,14 @@ export default function PartsWarehouse() {
           /* Empty state */
           <div className="cab-card p-4">
             <div className="empty-state">
-              <div className="empty-state-icon">
-                <Warehouse className="w-7 h-7 text-gray-400" />
+              <div className="empty-state-icon bg-slate-100 text-slate-700">
+                <Warehouse className="w-7 h-7" />
               </div>
               <p className="empty-state-title">Нет мест хранения</p>
               <p className="empty-state-text">
                 Создайте иерархию склада.<br />
                 Например:{' '}
-                <span className="text-gray-700 font-medium">
+                <span className="font-medium" style={{ color: 'var(--cab-ink)' }}>
                   Бокс 1 → Стеллаж 2 → Полка 3 → Ячейка 4
                 </span>
               </p>
@@ -270,31 +274,51 @@ export default function PartsWarehouse() {
           <>
             {/* Tree card */}
             <div className="cab-card overflow-hidden">
-              <div className="grid-hairline">
+              <div>
                 {flatList.map((node) => {
                   const usage = usageMap[node.id] || 0
                   const hasChildren = node.children.length > 0
                   const isExpanded = expanded.has(node.id)
                   const isEditing = editingId === node.id
                   const isAddingChild = addingParentId === node.id
+                  const levelLabel = LEVEL_LABELS[Math.min(node.depth, LEVEL_LABELS.length - 1)]
+                  const indent = node.depth * INDENT
 
                   return (
-                    <div key={node.id}>
+                    <div
+                      key={node.id}
+                      className="border-t first:border-t-0"
+                      style={{ borderColor: 'var(--cab-border)' }}
+                    >
                       {/* Node row */}
                       <div
-                        className="flex items-center gap-2 py-2.5 pr-3 hover:bg-gray-50 transition-colors"
-                        style={{ paddingLeft: `${12 + node.depth * 24}px` }}
+                        className="group relative flex items-center gap-2 py-2 pr-3 transition-colors"
+                        style={{
+                          paddingLeft: `${12 + indent}px`,
+                          background: isExpanded ? 'var(--cab-surface-2)' : undefined,
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--cab-surface-2)' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = isExpanded ? 'var(--cab-surface-2)' : '' }}
                       >
+                        {/* Connector lines for nesting depth */}
+                        {Array.from({ length: node.depth }).map((_, i) => (
+                          <span
+                            key={i}
+                            aria-hidden
+                            className="absolute top-0 bottom-0 pointer-events-none"
+                            style={{
+                              left: `${12 + i * INDENT + 13}px`,
+                              borderLeft: '1px solid var(--cab-border)',
+                            }}
+                          />
+                        ))}
+
                         {/* Expand toggle */}
                         <button
                           type="button"
                           onClick={() => hasChildren && toggleExpand(node.id)}
-                          className={[
-                            'w-7 h-7 flex items-center justify-center flex-shrink-0 rounded transition-colors',
-                            hasChildren
-                              ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 cursor-pointer'
-                              : 'cursor-default',
-                          ].join(' ')}
+                          className="w-6 h-6 flex items-center justify-center flex-shrink-0 rounded transition-colors"
+                          style={{ color: 'var(--cab-ink-3)', cursor: hasChildren ? 'pointer' : 'default' }}
                         >
                           {hasChildren ? (
                             isExpanded
@@ -305,14 +329,14 @@ export default function PartsWarehouse() {
                           )}
                         </button>
 
-                        {/* Folder / pin icon */}
-                        <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                        {/* Folder / pin icon tile */}
+                        <div className="w-7 h-7 flex items-center justify-center flex-shrink-0 rounded-md bg-slate-100 text-slate-700">
                           {hasChildren ? (
                             isExpanded
-                              ? <FolderOpen className="w-4 h-4 text-amber-500" />
-                              : <Folder className="w-4 h-4 text-amber-500" />
+                              ? <FolderOpen className="w-4 h-4" />
+                              : <Folder className="w-4 h-4" />
                           ) : (
-                            <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                            <MapPin className="w-3.5 h-3.5" />
                           )}
                         </div>
 
@@ -331,25 +355,37 @@ export default function PartsWarehouse() {
                             className="form-input flex-1 py-1.5 text-sm"
                           />
                         ) : (
-                          <div className="flex-1 min-w-0 flex items-baseline gap-2">
-                            <span className="font-semibold text-gray-900 text-sm truncate">
+                          <div className="flex-1 min-w-0 flex items-center gap-2">
+                            <span
+                              className="font-semibold text-sm truncate"
+                              style={{ color: 'var(--cab-ink)' }}
+                            >
                               {node.name}
                             </span>
+                            <span className="cab-chip shrink-0">{levelLabel}</span>
                             {usage > 0 && (
-                              <span className="badge badge-blue tabular shrink-0">
+                              <span className="cab-chip cab-chip-signal tabular shrink-0">
                                 {usage} запч.
                               </span>
                             )}
-                            {hasChildren && !isExpanded && (
-                              <span className="text-xs text-gray-400 shrink-0">
-                                ({node.children.length})
+                            {hasChildren && (
+                              <span
+                                className="cab-chip tabular shrink-0"
+                                title="Вложенных мест"
+                              >
+                                {node.children.length}
                               </span>
                             )}
                           </div>
                         )}
 
-                        {/* Action buttons */}
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                        {/* Action buttons — появляются по hover строки */}
+                        <div
+                          className={[
+                            'flex items-center gap-0.5 flex-shrink-0 transition-opacity',
+                            isEditing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100',
+                          ].join(' ')}
+                        >
                           {isEditing ? (
                             <>
                               <button
@@ -374,26 +410,28 @@ export default function PartsWarehouse() {
                               <button
                                 onClick={() => startAddChild(node.id)}
                                 title="Добавить вложенное место"
-                                className="btn-icon-sm hover:text-primary hover:bg-primary/5"
+                                className="btn-icon-sm"
                               >
                                 <Plus className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => setQrNode({ id: node.id, name: node.name, path: getNodePath(node.id) })}
                                 title="QR / Этикетка"
-                                className="btn-icon-sm hover:text-primary hover:bg-primary/5"
+                                className="btn-icon-sm"
                               >
                                 <QrCode className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => { setEditingId(node.id); setEditingName(node.name) }}
-                                className="btn-icon-sm hover:text-primary"
+                                title="Переименовать"
+                                className="btn-icon-sm"
                               >
                                 <Pencil className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleDelete(node)}
                                 disabled={deleteMutation.isPending}
+                                title="Удалить"
                                 className="btn-icon-sm hover:text-red-600 hover:bg-red-50"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -406,10 +444,14 @@ export default function PartsWarehouse() {
                       {/* Inline add-child form */}
                       {isAddingChild && (
                         <div
-                          className="bg-blue-50 border-t border-blue-100 px-3 py-3 animate-slide-up"
-                          style={{ paddingLeft: `${12 + (node.depth + 1) * 24 + 18}px` }}
+                          className="relative px-3 py-3 animate-slide-up"
+                          style={{
+                            background: 'var(--cab-surface-2)',
+                            borderTop: '1px solid var(--cab-border)',
+                            paddingLeft: `${12 + (node.depth + 1) * INDENT + 12}px`,
+                          }}
                         >
-                          <p className="kicker text-blue-600 mb-2">
+                          <p className="kicker mb-2" style={{ color: 'var(--cab-signal)' }}>
                             Вложенное в «{node.name}»
                           </p>
                           <form onSubmit={handleAdd} className="flex gap-2">
@@ -444,10 +486,13 @@ export default function PartsWarehouse() {
               </div>
 
               {/* Footer add button */}
-              <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/60">
+              <div
+                className="px-4 py-3"
+                style={{ borderTop: '1px solid var(--cab-border)', background: 'var(--cab-surface-2)' }}
+              >
                 <button
                   onClick={() => { setAddingParentId(null); setAddingName('') }}
-                  className="btn-ghost btn-sm flex items-center gap-1.5 text-primary hover:bg-primary/5"
+                  className="cab-btn cab-btn-secondary cab-btn-sm flex items-center gap-1.5"
                 >
                   <Plus className="w-4 h-4" />
                   Добавить место верхнего уровня
@@ -456,14 +501,14 @@ export default function PartsWarehouse() {
             </div>
 
             {/* Help hint */}
-            <div className="alert alert-info">
+            <div className="cab-card p-4 flex gap-3">
               <div className="icon-tile-sm bg-slate-100 text-slate-700 flex-shrink-0">
                 <Warehouse className="w-4 h-4" />
               </div>
               <div>
-                <p className="font-semibold text-sm mb-1">Как пользоваться</p>
-                <ul className="text-xs space-y-0.5 list-disc list-inside">
-                  <li>Нажмите <strong>+</strong> у любого места, чтобы добавить вложенное</li>
+                <p className="font-semibold text-sm mb-1" style={{ color: 'var(--cab-ink)' }}>Как пользоваться</p>
+                <ul className="text-xs space-y-0.5 list-disc list-inside" style={{ color: 'var(--cab-ink-2)' }}>
+                  <li>Наведите на место и нажмите <strong>+</strong>, чтобы добавить вложенное</li>
                   <li>При добавлении запчасти выберите место из списка</li>
                   <li>Пример: <strong>Бокс 1 → Стеллаж 3 → Полка 2 → Ячейка 5</strong></li>
                 </ul>
