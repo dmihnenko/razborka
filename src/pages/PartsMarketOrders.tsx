@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Phone, Inbox, Eye, CheckCircle2, MessageSquare, User, Store, ClipboardCheck, ArrowRight } from 'lucide-react'
+import { Phone, Inbox, Eye, CheckCircle2, MessageSquare, Store, ClipboardCheck, ArrowRight } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
@@ -57,45 +57,28 @@ function MarketOrderCard({
   const telHref = `tel:${order.buyerPhone.replace(/[^\d+]/g, '')}`
 
   return (
-    <div className="cab-cardp-0 overflow-hidden animate-fade-in">
-      {/* Шапка: телефон + статус */}
-      <div className="px-5 pt-5 pb-4 border-b border-gray-100">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+    <div className="cab-card overflow-hidden">
+      {/* Шапка: покупатель + телефон + статус */}
+      <div className="flex items-start justify-between gap-3 px-4 py-3.5 border-b border-gray-100">
+        <div className="min-w-0">
+          <p className="text-base font-bold text-gray-900 truncate">{order.buyerName || 'Покупатель'}</p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
             <a
               href={telHref}
-              className="heading-2 hover:text-primary transition-colors block"
               onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
             >
-              {order.buyerPhone}
+              <Phone className="w-3.5 h-3.5" strokeWidth={1.5} /> {order.buyerPhone}
             </a>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
-              {order.buyerName && (
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
-                  <User className="w-3.5 h-3.5 text-gray-400" strokeWidth={1.5} />
-                  {order.buyerName}
-                </span>
-              )}
-              <span className="kicker">{formatDateTime(order.createdAt)}</span>
-            </div>
+            <span className="kicker">{formatDateTime(order.createdAt)}</span>
           </div>
-          <span className={`${STATUS_BADGES[order.status]} flex-shrink-0`}>
-            {STATUS_LABELS[order.status]}
-          </span>
         </div>
-
-        {/* CTA — позвонить прямо в шапке */}
-        <a
-          href={telHref}
-          onClick={(e) => e.stopPropagation()}
-          className="cab-btn cab-btn-primary mt-3 w-full sm:w-auto"
-        >
-          <Phone className="w-4 h-4" strokeWidth={1.5} />
-          Позвонить
-        </a>
+        <span className={`${STATUS_BADGES[order.status]} flex-shrink-0`}>
+          {STATUS_LABELS[order.status]}
+        </span>
       </div>
 
-      <div className="px-5 py-4 space-y-3">
+      <div className="px-4 py-3 space-y-3">
         {/* Комментарий покупателя */}
         {order.comment && (
           <div className="alert alert-info gap-2.5">
@@ -131,62 +114,52 @@ function MarketOrderCard({
           ))}
         </div>
 
-        {/* Сумма */}
-        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-          <span className="text-sm text-gray-500 font-medium">Сумма заявки</span>
-          <span className="text-lg font-extrabold text-primary tabular">{formatOrderTotal(order)}</span>
+      </div>
+
+      {/* Футер: сумма + действия */}
+      <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/60 flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <p className="kicker">Сумма</p>
+          <p className="text-lg font-extrabold text-primary tabular leading-none">{formatOrderTotal(order)}</p>
         </div>
-
-        {/* Оформление заказа из заявки */}
-        {order.convertedOrderId ? (
-          <button
-            onClick={() => onOpenOrder(order.convertedOrderId!)}
-            className="cab-btn cab-btn-secondary w-full justify-center"
-          >
-            <ClipboardCheck className="w-4 h-4 text-green-600" strokeWidth={1.5} />
-            Заказ оформлен — открыть
-            <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
-          </button>
-        ) : (
-          <button
-            onClick={() => onConvert(order)}
-            disabled={isConverting}
-            className="cab-btn cab-btn-primary w-full justify-center disabled:opacity-50"
-          >
-            {isConverting ? (
-              <Spinner size="sm" />
-            ) : (
-              <ClipboardCheck className="w-4 h-4" strokeWidth={1.5} />
-            )}
-            Оформить заказ
-          </button>
-        )}
-
-        {/* Статусные действия */}
-        {(order.status === 'new' || order.status !== 'closed') && (
-          <div className="flex flex-wrap gap-2 pt-1">
-            {order.status === 'new' && (
-              <button
-                onClick={() => onSetStatus(order.id, 'viewed')}
-                disabled={isUpdating}
-                className="cab-btn cab-btn-secondary cab-btn-sm flex-1 sm:flex-none justify-center disabled:opacity-50"
-              >
-                <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />
-                Просмотрена
-              </button>
-            )}
-            {order.status !== 'closed' && (
-              <button
-                onClick={() => onSetStatus(order.id, 'closed')}
-                disabled={isUpdating}
-                className="cab-btn cab-btn-secondary cab-btn-sm flex-1 sm:flex-none justify-center disabled:opacity-50"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-                Закрыть
-              </button>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {order.status === 'new' && (
+            <button
+              onClick={() => onSetStatus(order.id, 'viewed')}
+              disabled={isUpdating}
+              className="cab-btn cab-btn-secondary cab-btn-sm disabled:opacity-50"
+            >
+              <Eye className="w-3.5 h-3.5" strokeWidth={1.5} /> Просмотрена
+            </button>
+          )}
+          {order.status !== 'closed' && (
+            <button
+              onClick={() => onSetStatus(order.id, 'closed')}
+              disabled={isUpdating}
+              className="cab-btn cab-btn-secondary cab-btn-sm disabled:opacity-50"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} /> Закрыть
+            </button>
+          )}
+          {order.convertedOrderId ? (
+            <button
+              onClick={() => onOpenOrder(order.convertedOrderId!)}
+              className="cab-btn cab-btn-secondary cab-btn-sm"
+            >
+              <ClipboardCheck className="w-3.5 h-3.5 text-green-600" strokeWidth={1.5} /> Открыть заказ
+              <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </button>
+          ) : (
+            <button
+              onClick={() => onConvert(order)}
+              disabled={isConverting}
+              className="cab-btn cab-btn-primary cab-btn-sm disabled:opacity-50"
+            >
+              {isConverting ? <Spinner size="sm" /> : <ClipboardCheck className="w-3.5 h-3.5" strokeWidth={1.5} />}
+              Оформить заказ
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -291,7 +264,7 @@ export default function PartsMarketOrders() {
             }
           />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 stagger-children">
+          <div className="max-w-3xl mx-auto space-y-3">
             {visibleOrders.map((order) => (
               <MarketOrderCard
                 key={order.id}

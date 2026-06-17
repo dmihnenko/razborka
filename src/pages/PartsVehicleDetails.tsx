@@ -246,21 +246,28 @@ export default function PartsVehicleDetails() {
     onError: () => toast.error('Ошибка сохранения'),
   })
 
-  // ── Profitability ─────────────────────────────────────────────────────────
-  const exchangeRate = vehicle?.exchange_rate || globalRate || 41
+  // ── Окупаемость ───────────────────────────────────────────────────────────
+  // Курс фиксируется в МОМЕНТ продажи (exchange_rate_at_sale на запчасти).
+  // Старые продажи без зафиксированного курса — фолбэк на курс авто/текущий.
+  const exchangeRate = vehicle?.exchange_rate || globalRate || 41 // курс авто (закупка)
   const purchasePrice = vehicle?.purchase_price || 0
   const purchasePriceUSD = purchasePrice / exchangeRate
-  const totalRevenue = parts
-    .filter((p: any) => p.status === 'sold')
-    .reduce((sum: number, p: any) => {
-      const price = (p.sold_price != null ? p.sold_price : p.selling_price) || 0
-      const inUAH = p.price_currency === 'UAH' ? price : price * exchangeRate
-      return sum + inUAH
-    }, 0)
-  const totalRevenueUSD = totalRevenue / exchangeRate
+  const sold = parts.filter((p: any) => p.status === 'sold')
+  const totalRevenue = sold.reduce((sum: number, p: any) => {
+    const price = (p.sold_price != null ? p.sold_price : p.selling_price) || 0
+    const rate = p.exchange_rate_at_sale || exchangeRate // зафиксированный на момент продажи
+    const inUAH = p.price_currency === 'UAH' ? price : price * rate
+    return sum + inUAH
+  }, 0)
+  const totalRevenueUSD = sold.reduce((sum: number, p: any) => {
+    const price = (p.sold_price != null ? p.sold_price : p.selling_price) || 0
+    const rate = p.exchange_rate_at_sale || exchangeRate
+    const inUSD = p.price_currency === 'UAH' ? price / rate : price
+    return sum + inUSD
+  }, 0)
   const profit = totalRevenue - purchasePrice
-  const profitUSD = profit / exchangeRate
-  const isProfitable = profit > 0
+  const profitUSD = totalRevenueUSD - purchasePriceUSD
+  const isProfitable = profitUSD > 0
 
   // ── Loading / empty states ────────────────────────────────────────────────
   if (isLoading) {

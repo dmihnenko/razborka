@@ -117,8 +117,10 @@ export interface PartsInventoryItem {
   updated_at: string
   created_by?: string
   
-  // Buyer info (set when status = 'sold')
+  // Buyer info + зафиксированные на момент продажи курс и дата
   sold_to_customer_id?: string
+  sold_at?: string
+  exchange_rate_at_sale?: number
 
   // Relations
   category?: PartsCategory

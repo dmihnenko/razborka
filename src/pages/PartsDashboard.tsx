@@ -10,6 +10,7 @@ import { formatDate } from '@/utils/date'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getPartsDashboardStats } from '@/services/partsService'
 import { supabase } from '@/lib/supabase'
+import ExchangeRateWidget from '@/components/parts/ExchangeRateWidget'
 
 // ============================================================================
 // ПУЛЬТ — операционный дашборд кабинета разборки («Ink & Signal»).
@@ -37,7 +38,7 @@ export default function PartsDashboard() {
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
-  const { rate: usdRate } = usePartsExchangeRate()
+  const { rate: usdRate, isStale: rateStale } = usePartsExchangeRate()
 
   const { data: stats } = useQuery({
     queryKey: ['parts-dashboard-stats', partsCompanyId],
@@ -95,6 +96,9 @@ export default function PartsDashboard() {
     { key: 'low-stock',  count: stats?.inventory?.lowStock ?? 0, label: 'Мало на складе',  Icon: AlertTriangle, to: '/parts/inventory?source=vehicles' },
   ].filter(a => a.count > 0)
 
+  // Курс нужно обновить, если он не на сегодня и уже утро (≥9:00)
+  const rateNeedsUpdate = rateStale && new Date().getHours() >= 9
+
   const ink = 'var(--cab-ink)'
   const ink2 = 'var(--cab-ink-2)'
   const ink3 = 'var(--cab-ink-3)'
@@ -126,9 +130,14 @@ export default function PartsDashboard() {
       </div>
 
       {/* ── Требует действия ──────────────────────────────── */}
-      {actions.length > 0 ? (
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-2" style={{ color: ink3 }}>Требует действия</p>
+      {(actions.length > 0 || rateNeedsUpdate) ? (
+        <div className="space-y-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: ink3 }}>Требует действия</p>
+
+          {/* Напоминание обновить курс — отдельно от карточек-действий */}
+          <ExchangeRateWidget />
+
+          {actions.length > 0 && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {actions.map(({ key, count, label, Icon, to }) => (
               <Link key={key} to={to} className="cab-card cab-card-hover p-4 flex items-center gap-3 group">
@@ -144,6 +153,7 @@ export default function PartsDashboard() {
               </Link>
             ))}
           </div>
+          )}
         </div>
       ) : (
         <div className="cab-card p-4 flex items-center gap-3">
