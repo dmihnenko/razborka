@@ -1,0 +1,22 @@
+# Cloudflare заголовки (перенесено с netlify.toml при переходе на Cloudflare).
+# Прокси /api и SPA-фолбэк — в wrangler.jsonc + worker/index.js.
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Хешированные ассеты — кэшируем навсегда (имя меняется при сборке)
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Service Worker и workbox — без кэша, чтобы обновления подхватывались
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/workbox-*.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/manifest.webmanifest
+  Cache-Control: public, max-age=86400
