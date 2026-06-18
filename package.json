@@ -9,7 +9,7 @@
     "build:check": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "deploy": "npm run build && netlify deploy --prod",
+    "deploy": "npm run build && wrangler deploy",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
@@ -76,6 +76,7 @@
     "vite": "^7.3.1",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.1.0",
-    "workbox-window": "^7.4.0"
+    "workbox-window": "^7.4.0",
+    "wrangler": "^4.102.0"
   }
 }
