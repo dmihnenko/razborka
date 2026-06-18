@@ -15,7 +15,7 @@ const RANGES = [
   { id: 12, label: '12 мес' },
 ] as const
 
-const PIE_COLORS = ['#6366F1', '#2563EB', '#F59E0B', '#10B981', '#EC4899', '#8B5CF6', '#64748B', '#06B6D4']
+const PIE_COLORS = ['#6366F1', '#3538CD', '#F59E0B', '#10B981', '#EC4899', '#8B5CF6', '#64748B', '#06B6D4']
 
 export default function AdminAnalytics() {
   const [months, setMonths] = useState<number>(6)

@@ -105,7 +105,7 @@ export default function VehicleAccessPage() {
                       outline: 'none',
                       transition: 'border-color 0.2s, box-shadow 0.2s',
                     }}
-                    onFocus={e => { e.currentTarget.style.borderColor = error ? '#EF4444' : '#3B82F6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)' }}
+                    onFocus={e => { e.currentTarget.style.borderColor = error ? '#EF4444' : '#4D51D4'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)' }}
                     onBlur={e => { e.currentTarget.style.borderColor = error ? '#EF4444' : 'rgba(255,255,255,0.1)'; e.currentTarget.style.boxShadow = 'none' }}
                     placeholder="0000"
                     maxLength={4}
@@ -126,7 +126,7 @@ export default function VehicleAccessPage() {
                 style={{
                   width: '100%',
                   padding: '14px',
-                  background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                  background: 'linear-gradient(135deg, #3538CD 0%, #2A2DA8 100%)',
                   color: 'white',
                   fontSize: '15px',
                   fontWeight: '600',

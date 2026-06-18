@@ -3,8 +3,9 @@ import { useQuery } from '@tanstack/react-query'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import {
   ShoppingCart, Inbox, Tag, AlertTriangle, DollarSign, Package, Car,
-  ArrowRight, ChevronRight, Plus, CheckCircle2, Boxes,
+  ArrowRight, ChevronRight, Plus, CheckCircle2, Boxes, RefreshCw,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { getPartsOrderStatusText } from '@/utils/status'
 import { formatDate } from '@/utils/date'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
@@ -38,7 +39,16 @@ export default function PartsDashboard() {
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
-  const { rate: usdRate, isStale: rateStale } = usePartsExchangeRate()
+  const { rate: usdRate, isStale: rateStale, fetching: rateFetching, fetchPrivatBank } = usePartsExchangeRate()
+
+  const handleUpdateRate = async () => {
+    try {
+      const r = await fetchPrivatBank()
+      toast.success(`Курс обновлён: ${r} ₴/$`)
+    } catch {
+      toast.error('Не удалось получить курс ПриватБанка')
+    }
+  }
 
   const { data: stats } = useQuery({
     queryKey: ['parts-dashboard-stats', partsCompanyId],
@@ -120,6 +130,16 @@ export default function PartsDashboard() {
           <h1 className="page-title mt-0.5">Пульт</h1>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleUpdateRate}
+            disabled={rateFetching}
+            title="Обновить курс доллара (ПриватБанк)"
+            className="cab-btn cab-btn-secondary cab-btn-sm"
+            style={rateStale ? { borderColor: '#F59E0B', color: '#B45309', background: '#FFFBEB' } : undefined}
+          >
+            <RefreshCw className={`w-4 h-4 ${rateFetching ? 'animate-spin' : ''}`} strokeWidth={1.5} />
+            <span className="tabular-nums">{usdRate} ₴/$</span>
+          </button>
           <button onClick={() => navigate('/parts/vehicles')} className="cab-btn cab-btn-secondary cab-btn-sm hidden sm:inline-flex">
             <Car className="w-4 h-4" strokeWidth={1.5} /> Авто
           </button>

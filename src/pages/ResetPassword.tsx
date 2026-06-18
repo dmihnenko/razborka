@@ -62,10 +62,10 @@ export default function ResetPassword() {
     <div className="login-root flex min-h-dvh items-center justify-center px-4" style={{ background: '#0D1117' }}>
       <style>{`.login-root{font-family:'DM Sans',system-ui,sans-serif}.brand-font{font-family:'Bebas Neue',sans-serif}
         .input-dark{background:rgba(255,255,255,0.07);border:1px solid rgba(148,163,184,0.22);color:#F1F5F9;width:100%;height:48px;padding-left:44px}
-        .input-dark::placeholder{color:#64748B}.input-dark:focus{outline:none;border-color:#3B82F6;box-shadow:0 0 0 3px rgba(59,130,246,0.18)}`}</style>
+        .input-dark::placeholder{color:#64748B}.input-dark:focus{outline:none;border-color:#4D51D4;box-shadow:0 0 0 3px rgba(59,130,246,0.18)}`}</style>
       <div style={{ width: '100%', maxWidth: '360px' }}>
         <div className="flex items-center justify-center gap-2 mb-8">
-          <div style={{ width: '36px', height: '36px', background: '#2563EB', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '36px', height: '36px', background: '#3538CD', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Wrench size={18} color="white" />
           </div>
           <span className="brand-font text-white" style={{ fontSize: '22px', letterSpacing: '3px' }}>{BRAND.name}</span>
@@ -120,12 +120,12 @@ export default function ResetPassword() {
               type="submit"
               disabled={loading}
               className="w-full py-3 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg,#2563EB 0%,#1D4ED8 100%)', letterSpacing: '0.4px' }}
+              style={{ background: 'linear-gradient(135deg,#3538CD 0%,#2A2DA8 100%)', letterSpacing: '0.4px' }}
             >
               {loading ? 'Сохранение…' : 'Сохранить пароль'}
             </button>
             <button type="button" onClick={() => navigate('/login')}
-              style={{ color: '#3B82F6', fontSize: '13px', background: 'none', border: 'none', cursor: 'pointer' }}>
+              style={{ color: '#4D51D4', fontSize: '13px', background: 'none', border: 'none', cursor: 'pointer' }}>
               Вернуться ко входу
             </button>
           </form>

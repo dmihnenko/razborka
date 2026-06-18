@@ -4,8 +4,9 @@
 
 /* ═══════════════════════════════════════════════════════════════
    DESIGN TOKENS — CSS custom properties
-   Дизайн-язык v2: сталисто-синие нейтральные, бренд #1173D4 (azure),
-   шрифт Manrope Variable, крупные радиусы, многоуровневые тени.
+   Схема «Ink & Signal»: primary — чернила #16181D, акцент/бренд —
+   индиго-сигнал #3538CD. (Старая azure-схема сохранена — см. память
+   old-azure-scheme для отката.)
    ═══════════════════════════════════════════════════════════════ */
 @layer base {
   :root {
@@ -18,7 +19,7 @@
     --foreground:    222 47% 11%;
     --card:          0 0% 100%;
     --card-foreground: 222 47% 11%;
-    --primary:       210 85% 45%;
+    --primary:       223 14% 10%;   /* Ink #16181D (было azure 210 85% 45%) */
     --primary-foreground: 0 0% 100%;
     --secondary:     214 32% 91%;
     --secondary-foreground: 222 47% 11%;
@@ -28,7 +29,7 @@
     --destructive-foreground: 0 0% 100%;
     --border:        215 25% 89%;
     --input:         215 25% 89%;
-    --ring:          210 85% 45%;
+    --ring:          239 60% 51%;   /* индиго-сигнал #3538CD */
     --accent:        214 32% 91%;
     --accent-foreground: 222 47% 11%;
     --popover:       0 0% 100%;
@@ -59,15 +60,15 @@
         и т.п.). Tailwind-утилиты на rem (text-, p- и пр.) масштабируются
        от --app-font-size автоматически. */
 
-    /* Бренд — синий рамп (azure, hue ~210) */
-    --brand-50:   #EAF4FE;
-    --brand-100:  #D2E7FC;
-    --brand-200:  #A6CFF9;
-    --brand-400:  #4DA1EE;
-    --brand-500:  #1E86E5;
-    --brand-600:  #1173D4;   /* основной primary */
-    --brand-700:  #0E5FB0;
-    --brand-800:  #0C4F92;
+    /* Бренд — индиго-сигнал рамп (Ink & Signal, акцент #3538CD) */
+    --brand-50:   #ECEDFB;
+    --brand-100:  #D8DAF7;
+    --brand-200:  #B7BAF0;
+    --brand-400:  #6E72DE;
+    --brand-500:  #4D51D4;
+    --brand-600:  #3538CD;   /* акцент/бренд */
+    --brand-700:  #2A2DA8;
+    --brand-800:  #212391;
     --brand-gradient: linear-gradient(135deg, var(--brand-800) 0%, var(--brand-600) 55%, var(--brand-500) 100%);
 
     /* Типографика — базовый размер (мягкий fluid). Inter крупнее по x-height,
@@ -156,14 +157,14 @@
   .btn-primary {
     @apply btn text-white px-4 py-2 text-sm min-h-[38px];
     background-image: linear-gradient(180deg, var(--brand-500) 0%, var(--brand-600) 100%);
-    box-shadow: 0 1px 2px rgba(37,99,235,0.35),
-                0 4px 12px -2px rgba(37,99,235,0.35),
+    box-shadow: 0 1px 2px rgba(53,56,205,0.35),
+                0 4px 12px -2px rgba(53,56,205,0.35),
                 inset 0 1px 0 rgba(255,255,255,0.18);
   }
   .btn-primary:hover {
     background-image: linear-gradient(180deg, var(--brand-500) 0%, var(--brand-700) 100%);
-    box-shadow: 0 2px 4px rgba(37,99,235,0.35),
-                0 8px 20px -4px rgba(37,99,235,0.45),
+    box-shadow: 0 2px 4px rgba(53,56,205,0.35),
+                0 8px 20px -4px rgba(53,56,205,0.45),
                 inset 0 1px 0 rgba(255,255,255,0.18);
   }
 
@@ -1099,7 +1100,7 @@ svg.lucide {
          transition-all;
 }
 .modal-input:focus {
-  box-shadow: 0 0 0 2px var(--brand-600, #2563EB), 0 0 0 4px rgba(37,99,235,0.15);
+  box-shadow: 0 0 0 2px var(--brand-600, #3538CD), 0 0 0 4px rgba(53,56,205,0.15);
 }
 
 /* Кнопки в модалках */

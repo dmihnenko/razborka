@@ -16,7 +16,7 @@ export function PublicBrandHeader({ subtitle }: Props) {
           style={{
             width: '30px',
             height: '30px',
-            background: '#2563EB',
+            background: '#3538CD',
             borderRadius: '7px',
             display: 'flex',
             alignItems: 'center',

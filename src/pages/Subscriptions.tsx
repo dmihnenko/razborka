@@ -176,7 +176,7 @@ export default function Subscriptions() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
           { label: 'Активных',   value: stats?.total_active || 0,   icon: CheckCircle2, color: '#16A34A', bg: '#F0FDF4' },
-          { label: 'Месячных',   value: stats?.total_monthly || 0,  icon: Calendar,     color: '#2563EB', bg: '#EFF6FF' },
+          { label: 'Месячных',   value: stats?.total_monthly || 0,  icon: Calendar,     color: '#3538CD', bg: '#EFF6FF' },
           { label: 'Годовых',    value: stats?.total_yearly || 0,   icon: TrendingUp,   color: '#7C3AED', bg: '#F5F3FF' },
           { label: 'Бессрочных', value: stats?.total_lifetime || 0, icon: Infinity,     color: '#D97706', bg: '#FFFBEB' },
           { label: 'Доход/мес',  value: `₴${(stats?.revenue_this_month || 0).toLocaleString()}`, icon: CreditCard, color: '#059669', bg: '#F0FDF4' },

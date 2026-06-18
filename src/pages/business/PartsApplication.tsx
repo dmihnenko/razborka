@@ -38,7 +38,7 @@ function LoginRequired() {
   return (
     <div className="min-h-dvh bg-gray-50 flex flex-col items-center justify-center px-4">
       <motion.div {...FADE_UP} className="card max-w-sm w-full text-center">
-        <span className="icon-tile-lg bg-blue-50 text-blue-600 mx-auto mb-4">
+        <span className="icon-tile-lg bg-indigo-50 text-indigo-600 mx-auto mb-4">
           <LogIn className="w-6 h-6" strokeWidth={1.5} />
         </span>
         <h1 className="heading-3 mb-2">Войдите, чтобы создать разборку</h1>
@@ -199,7 +199,7 @@ export function PartsApplication() {
 
           {/* Заголовок формы */}
           <div className="text-center mb-8">
-            <span className="icon-tile-lg bg-blue-50 text-blue-600 mx-auto mb-3">
+            <span className="icon-tile-lg bg-indigo-50 text-indigo-600 mx-auto mb-3">
               <Building2 className="w-6 h-6" strokeWidth={1.5} />
             </span>
             <h1 className="heading-2">Создать авторазборку</h1>

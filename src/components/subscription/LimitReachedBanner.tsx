@@ -34,7 +34,7 @@ export default function LimitReachedBanner({ used, max, label, ctaHref }: LimitR
       <Link
         to={ctaHref}
         className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white rounded-xl transition-colors"
-        style={{ backgroundColor: '#2563EB' }}
+        style={{ backgroundColor: '#3538CD' }}
       >
         Повысить тариф
         <ArrowUpRight className="w-4 h-4" strokeWidth={1.5} />

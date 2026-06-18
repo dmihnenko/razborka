@@ -43,7 +43,7 @@ export function Logo({ size = 'md', withText = true, className = '' }: LogoProps
         className={`${s.tile} flex items-center justify-center flex-shrink-0`}
         style={{
           background: 'var(--brand-gradient)',
-          boxShadow: '0 2px 8px -2px rgba(37,99,235,0.55), inset 0 1px 0 rgba(255,255,255,0.18)',
+          boxShadow: '0 2px 8px -2px rgba(53,56,205,0.55), inset 0 1px 0 rgba(255,255,255,0.18)',
         }}
       >
         <Car className={`${s.icon} text-white`} strokeWidth={1.5} />

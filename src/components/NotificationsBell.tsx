@@ -106,7 +106,7 @@ export default function NotificationsBell({ userId }: Props) {
         {unreadCount > 0 && (
           <span
             aria-hidden="true"
-            className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] px-[3px] flex items-center justify-center rounded-full bg-[#2563EB] text-white font-bold leading-none"
+            className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] px-[3px] flex items-center justify-center rounded-full bg-[#3538CD] text-white font-bold leading-none"
             style={{ fontSize: '10px' }}
           >
             {badgeLabel}
@@ -156,7 +156,7 @@ export default function NotificationsBell({ userId }: Props) {
                   <button
                     type="button"
                     onClick={() => markAllRead()}
-                    className="flex items-center gap-1 text-xs font-medium text-[#2563EB] hover:text-blue-800 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50 active:scale-[0.97]"
+                    className="flex items-center gap-1 text-xs font-medium text-[#3538CD] hover:text-blue-800 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50 active:scale-[0.97]"
                   >
                     <CheckCheck className="w-3.5 h-3.5" />
                     Прочитать все

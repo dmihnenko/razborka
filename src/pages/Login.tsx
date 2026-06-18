@@ -373,7 +373,7 @@ export default function Login() {
                             type="button"
                             onClick={() => setIsForgotMode(true)}
                             disabled={loading}
-                            className="text-xs font-semibold text-primary hover:text-blue-700 transition-colors duration-150 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                            className="text-xs font-semibold text-[var(--cab-signal)] hover:text-[var(--cab-signal-hover)] transition-colors duration-150 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                             style={{ padding: '2px 4px', minHeight: '28px' }}
                           >
                             Забыли пароль?
@@ -497,7 +497,7 @@ export default function Login() {
                     <button
                       type="button"
                       onClick={() => setIsForgotMode(false)}
-                      className="inline-flex items-center justify-center min-h-[44px] px-2 text-sm font-semibold text-primary hover:text-blue-700 transition-colors duration-150 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                      className="inline-flex items-center justify-center min-h-[44px] px-2 text-sm font-semibold text-[var(--cab-signal)] hover:text-[var(--cab-signal-hover)] transition-colors duration-150 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                     >
                       ← Вернуться ко входу
                     </button>
@@ -509,7 +509,7 @@ export default function Login() {
                         setEmail('')
                         setConfirmPassword('')
                       }}
-                      className="inline-flex items-center justify-center min-h-[44px] px-2 text-sm font-semibold text-primary hover:text-blue-700 transition-colors duration-150 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                      className="inline-flex items-center justify-center min-h-[44px] px-2 text-sm font-semibold text-[var(--cab-signal)] hover:text-[var(--cab-signal-hover)] transition-colors duration-150 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                     >
                       {isRegisterMode ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
                     </button>

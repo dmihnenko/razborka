@@ -16,7 +16,7 @@ const FEATURES_PARTS = [
 ]
 
 const HIGHLIGHTS = [
-  { icon: ShieldCheck, title: 'Безопасно',   desc: 'Supabase RLS — каждая компания видит только свои данные', color: 'bg-blue-50 text-blue-600' },
+  { icon: ShieldCheck, title: 'Безопасно',   desc: 'Supabase RLS — каждая компания видит только свои данные', color: 'bg-indigo-50 text-indigo-600' },
   { icon: Smartphone,  title: 'Мобильный',   desc: 'PWA — работает как приложение на iOS и Android',          color: 'bg-green-50 text-green-600' },
   { icon: BarChart3,   title: 'Аналитика',   desc: 'Графики доходов, статистика по клиентам и услугам',       color: 'bg-purple-50 text-purple-600' },
   { icon: Users,       title: 'Мультироль',  desc: 'Администратор, менеджер, механик — у каждого свой доступ', color: 'bg-orange-50 text-orange-600' },
@@ -54,7 +54,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2.5">
             <div
               className="w-8 h-8 flex items-center justify-center flex-shrink-0 rounded-xl"
-              style={{ background: 'linear-gradient(180deg,#3B82F6 0%,#2563EB 100%)', boxShadow: '0 2px 8px -2px rgba(37,99,235,0.55)' }}
+              style={{ background: 'linear-gradient(180deg,#4D51D4 0%,#3538CD 100%)', boxShadow: '0 2px 8px -2px rgba(37,99,235,0.55)' }}
             >
               <Wrench size={15} color="white" strokeWidth={2} />
             </div>
@@ -62,7 +62,7 @@ export default function LandingPage() {
               className="font-extrabold tracking-tight"
               style={{ color: '#F1F5F9', fontSize: '17px', letterSpacing: '-0.02em' }}
             >
-              {BRAND.wordmark.lead}<span style={{ color: '#3B82F6' }}>{BRAND.wordmark.accent}</span>
+              {BRAND.wordmark.lead}<span style={{ color: '#4D51D4' }}>{BRAND.wordmark.accent}</span>
             </span>
           </div>
 
@@ -81,7 +81,7 @@ export default function LandingPage() {
               onClick={() => navigate('/login')}
               className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl text-white transition-all duration-200 active:scale-[0.97]"
               style={{
-                background: 'linear-gradient(180deg,#3B82F6 0%,#2563EB 100%)',
+                background: 'linear-gradient(180deg,#4D51D4 0%,#3538CD 100%)',
                 boxShadow: '0 1px 2px rgba(37,99,235,0.35), 0 4px 12px -2px rgba(37,99,235,0.35)',
                 border: 'none',
               }}
@@ -140,7 +140,7 @@ export default function LandingPage() {
             >
               <span
                 className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                style={{ background: '#3B82F6', boxShadow: '0 0 6px #3B82F6' }}
+                style={{ background: '#4D51D4', boxShadow: '0 0 6px #4D51D4' }}
               />
               CRM для автобизнеса
             </span>
@@ -181,7 +181,7 @@ export default function LandingPage() {
               onClick={() => navigate('/login')}
               className="inline-flex items-center justify-center gap-2 font-semibold text-white text-sm rounded-xl px-7 py-3.5 active:scale-[0.97] transition-all duration-200"
               style={{
-                background: 'linear-gradient(135deg,#3B82F6 0%,#2563EB 55%,#1D4ED8 100%)',
+                background: 'linear-gradient(135deg,#4D51D4 0%,#3538CD 55%,#2A2DA8 100%)',
                 boxShadow: '0 2px 4px rgba(37,99,235,0.35),0 8px 20px -4px rgba(37,99,235,0.5)',
                 minWidth: 'min(240px,80vw)',
                 border: 'none',
@@ -373,7 +373,7 @@ export default function LandingPage() {
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5"
               style={{
-                background: 'linear-gradient(180deg,#3B82F6 0%,#2563EB 100%)',
+                background: 'linear-gradient(180deg,#4D51D4 0%,#3538CD 100%)',
                 boxShadow: '0 4px 16px -4px rgba(37,99,235,0.6)',
               }}
             >
@@ -394,7 +394,7 @@ export default function LandingPage() {
               onClick={() => navigate('/login')}
               className="inline-flex items-center justify-center gap-2 text-white font-semibold rounded-xl px-8 py-3.5 active:scale-[0.97] transition-all duration-200"
               style={{
-                background: 'linear-gradient(135deg,#3B82F6 0%,#2563EB 55%,#1D4ED8 100%)',
+                background: 'linear-gradient(135deg,#4D51D4 0%,#3538CD 55%,#2A2DA8 100%)',
                 boxShadow: '0 2px 4px rgba(37,99,235,0.35),0 8px 24px -4px rgba(37,99,235,0.55)',
                 border: 'none',
                 minWidth: 'min(220px,80vw)',
@@ -415,7 +415,7 @@ export default function LandingPage() {
         <div className="inline-flex items-center gap-2 mb-2">
           <div
             className="w-5 h-5 rounded-md flex items-center justify-center"
-            style={{ background: 'linear-gradient(180deg,#3B82F6 0%,#2563EB 100%)' }}
+            style={{ background: 'linear-gradient(180deg,#4D51D4 0%,#3538CD 100%)' }}
           >
             <Wrench size={11} color="white" strokeWidth={2} />
           </div>

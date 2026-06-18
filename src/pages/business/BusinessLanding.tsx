@@ -39,7 +39,7 @@ const FADE_UP = (delay = 0) => ({
 const FEATURES = [
   {
     icon: Car,
-    color: 'text-blue-600 bg-blue-50',
+    color: 'text-indigo-600 bg-indigo-50',
     title: 'Учёт автомобилей',
     desc: 'Добавляйте б/у авто на разборку: VIN, марка, состояние — всё в одном месте.',
   },
@@ -96,7 +96,7 @@ function TariffCard({
           <div
             className="text-[10px] font-bold text-white px-3 py-1 rounded-bl-xl"
             style={{
-              background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+              background: 'linear-gradient(135deg, #3538CD 0%, #2A2DA8 100%)',
             }}
           >
             Рекомендуем
@@ -127,7 +127,7 @@ function TariffCard({
 
         <ul className="space-y-2">
           <li className="flex items-center gap-2 text-sm text-gray-700">
-            <Car className="w-4 h-4 text-blue-500 flex-shrink-0" strokeWidth={1.5} />
+            <Car className="w-4 h-4 text-indigo-500 flex-shrink-0" strokeWidth={1.5} />
             {tariff.maxVehicles === null ? 'Авто — без лимита' : `До ${tariff.maxVehicles} авто`}
           </li>
           <li className="flex items-center gap-2 text-sm text-gray-700">
@@ -241,7 +241,7 @@ export function BusinessLanding() {
           {...FADE_UP(0)}
           className="relative overflow-hidden"
           style={{
-            background: 'linear-gradient(135deg, #0F172A 0%, #1E3A6E 40%, #1E40AF 75%, #2563EB 100%)',
+            background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 40%, #212391 75%, #3538CD 100%)',
           }}
         >
           {/* Декоративные кружки */}
@@ -265,10 +265,10 @@ export function BusinessLanding() {
             <h1 className="text-3xl sm:text-5xl font-extrabold text-white leading-tight tracking-tight">
               Управляй разборкой{' '}
               <br className="hidden sm:block" />
-              <span className="text-blue-300">умнее и быстрее</span>
+              <span className="text-indigo-300">умнее и быстрее</span>
             </h1>
 
-            <p className="mt-4 text-base sm:text-lg text-blue-100/80 max-w-2xl mx-auto leading-relaxed">
+            <p className="mt-4 text-base sm:text-lg text-indigo-100/80 max-w-2xl mx-auto leading-relaxed">
               Учёт авто и запчастей, CRM для клиентов, встроенный маркетплейс — всё в одном месте.
               Начните бесплатно, без сложных настроек.
             </p>
@@ -343,13 +343,13 @@ export function BusinessLanding() {
             </div>
 
             {/* Демо-блок */}
-            <div className="mb-8 rounded-2xl border border-blue-200/60 bg-blue-50 px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <span className="icon-tile bg-blue-100 text-blue-600 flex-shrink-0">
+            <div className="mb-8 rounded-2xl border border-indigo-200/60 bg-indigo-50 px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <span className="icon-tile bg-indigo-100 text-indigo-600 flex-shrink-0">
                 <Zap className="w-5 h-5" strokeWidth={1.5} />
               </span>
               <div className="flex-1">
-                <p className="font-bold text-blue-800 text-sm">Бесплатный демо-режим</p>
-                <p className="text-xs text-blue-600 mt-0.5">
+                <p className="font-bold text-indigo-800 text-sm">Бесплатный демо-режим</p>
+                <p className="text-xs text-indigo-600 mt-0.5">
                   После одобрения заявки: {DEMO_LIMITS.vehicles} авто, {DEMO_LIMITS.parts} запчастей,{' '}
                   {DEMO_LIMITS.workers} сотрудника (включая вас). Без ограничений по времени.
                 </p>
