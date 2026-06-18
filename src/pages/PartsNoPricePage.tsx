@@ -68,16 +68,19 @@ export default function PartsNoPricePage() {
     enabled: !!partsCompanyId,
   })
 
-  const noPriceItems: PartsInventoryItem[] = inventory.filter((i: PartsInventoryItem) => !i.selling_price)
+  // «Требует заполнения» = нет цены ИЛИ нет оригинального номера (проданные не считаем)
+  const noPriceItems: PartsInventoryItem[] = inventory.filter(
+    (i: PartsInventoryItem) => i.status !== 'sold' && (!i.selling_price || !i.part_number?.trim())
+  )
 
-  // Initialize edit state for each no-price item
+  // Initialize edit state for each item that needs filling
   useEffect(() => {
     setEditState(prev => {
       const next = { ...prev }
       noPriceItems.forEach(item => {
         if (!next[item.id]) {
           next[item.id] = {
-            selling_price: '',
+            selling_price: item.selling_price ? String(item.selling_price) : '',
             price_currency: (item.price_currency as 'USD' | 'UAH') || 'USD',
             part_number: item.part_number || '',
             category_id: item.category_id || '',
@@ -144,7 +147,7 @@ export default function PartsNoPricePage() {
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-slate-950">
       <PartsPageHeader
-        title="Запчасти без цены"
+        title="Без цены или номера"
         subtitle={!isLoading ? `${noPriceItems.length} позиций требуют заполнения` : undefined}
         backPath="/parts/inventory"
         maxWidth="4xl"
@@ -163,7 +166,7 @@ export default function PartsNoPricePage() {
                 <CheckCircle2 className="w-8 h-8 text-green-500" />
               </div>
               <p className="empty-state-title">Всё заполнено!</p>
-              <p className="empty-state-text">У всех запчастей указана цена.</p>
+              <p className="empty-state-text">У всех запчастей указаны цена и оригинальный номер.</p>
               <button
                 onClick={() => navigate('/parts/inventory')}
                 className="cab-btn cab-btn-primary mt-6"
@@ -180,8 +183,8 @@ export default function PartsNoPricePage() {
                 <thead>
                   <tr>
                     <th className="table-header-cell">Название</th>
-                    <th className="table-header-cell">Кол-во / Сост.</th>
-                    <th className="table-header-cell w-52">Цена</th>
+                    <th className="table-header-cell w-44">Цена</th>
+                    <th className="table-header-cell w-52">Ориг. номер</th>
                     <th className="table-header-cell w-10"></th>
                     <th className="table-header-cell w-28"></th>
                   </tr>
@@ -193,6 +196,8 @@ export default function PartsNoPricePage() {
                     const isExpanded = expanded.has(item.id)
                     const isSaved = saved.has(item.id)
                     const isSaving = updateMutation.isPending && updateMutation.variables?.id === item.id
+                    const needsPrice = !item.selling_price
+                    const needsNumber = !item.part_number?.trim()
 
                     return (
                       <>
@@ -201,48 +206,66 @@ export default function PartsNoPricePage() {
                           <td className="table-cell">
                             <div className="flex items-center gap-2 flex-wrap min-w-0">
                               <span className="font-semibold text-gray-900 truncate">{item.name}</span>
-                              {item.part_number && (
-                                <span className="kicker">{item.part_number}</span>
-                              )}
                               {item.category && (
                                 <span className="badge badge-gray">{item.category.name}</span>
                               )}
+                              {!item.selling_price && <span className="badge badge-yellow">нет цены</span>}
+                              {!item.part_number?.trim() && <span className="badge badge-yellow">нет номера</span>}
                               {isSaved && (
                                 <span className="badge badge-green flex items-center gap-1">
                                   <CheckCircle2 className="w-3 h-3" /> Сохранено
                                 </span>
                               )}
                             </div>
+                            <p className="text-xs text-gray-400 mt-0.5 tabular-nums">
+                              {item.quantity} шт
+                              <span className="mx-1 text-gray-300">·</span>
+                              {item.condition === 'new' ? 'Новая' : item.condition === 'used' ? 'Б/У' : 'Повреждена'}
+                            </p>
                           </td>
 
-                          {/* Qty / condition */}
-                          <td className="table-cell tabular-nums text-gray-500">
-                            {item.quantity} шт
-                            <span className="mx-1 text-gray-300">·</span>
-                            {item.condition === 'new' ? 'Новая' : item.condition === 'used' ? 'Б/У' : 'Повреждена'}
-                          </td>
-
-                          {/* Price input */}
+                          {/* Price — input только если не заполнена */}
                           <td className="table-cell">
-                            <div className="flex items-center border border-amber-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-amber-400 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700">
-                              <Tag className="w-3.5 h-3.5 text-amber-500 ml-2 flex-shrink-0" />
+                            {needsPrice ? (
+                              <div className="flex items-center border rounded-lg overflow-hidden focus-within:ring-2 border-amber-300 focus-within:ring-amber-400 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700">
+                                <Tag className="w-3.5 h-3.5 ml-2 flex-shrink-0 text-amber-500" />
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={row.selling_price}
+                                  onChange={(e) => setField(item.id, 'selling_price', e.target.value)}
+                                  placeholder="Цена"
+                                  className="flex-1 min-w-0 pl-1.5 pr-1 py-1.5 text-sm border-0 focus:outline-none focus:ring-0 bg-transparent tabular-nums"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setField(item.id, 'price_currency', row.price_currency === 'USD' ? 'UAH' : 'USD')}
+                                  className="px-2 py-1.5 text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors border-l border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600"
+                                >
+                                  {row.price_currency === 'USD' ? '$' : '₴'}
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-sm font-semibold text-gray-700 tabular-nums">
+                                {Number(item.selling_price).toLocaleString('ru-RU')} {item.price_currency === 'UAH' ? '₴' : '$'}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Ориг. номер — input только если не заполнен */}
+                          <td className="table-cell">
+                            {needsNumber ? (
                               <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={row.selling_price}
-                                onChange={(e) => setField(item.id, 'selling_price', e.target.value)}
-                                placeholder="Цена"
-                                className="flex-1 min-w-0 pl-1.5 pr-1 py-1.5 text-sm border-0 focus:outline-none focus:ring-0 bg-transparent tabular-nums"
+                                type="text"
+                                value={row.part_number}
+                                onChange={(e) => setField(item.id, 'part_number', e.target.value)}
+                                placeholder="Ориг. номер"
+                                className="w-full px-2.5 py-1.5 text-sm font-mono rounded-lg border focus:outline-none focus:ring-2 border-amber-300 focus:ring-amber-400 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700"
                               />
-                              <button
-                                type="button"
-                                onClick={() => setField(item.id, 'price_currency', row.price_currency === 'USD' ? 'UAH' : 'USD')}
-                                className="px-2 py-1.5 text-xs font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors border-l border-amber-300 dark:bg-amber-800/40 dark:text-amber-300 dark:border-amber-700 dark:hover:bg-amber-800/60"
-                              >
-                                {row.price_currency === 'USD' ? '$' : '₴'}
-                              </button>
-                            </div>
+                            ) : (
+                              <span className="text-sm font-mono text-gray-700">{item.part_number}</span>
+                            )}
                           </td>
 
                           {/* Expand toggle */}
@@ -275,17 +298,7 @@ export default function PartsNoPricePage() {
                         {isExpanded && (
                           <tr key={`${item.id}-expanded`} className="bg-gray-50 dark:bg-slate-900/50">
                             <td colSpan={5} className="px-4 py-3">
-                              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                <div>
-                                  <label className="form-label text-xs">Оригинальный номер</label>
-                                  <input
-                                    type="text"
-                                    value={row.part_number}
-                                    onChange={(e) => setField(item.id, 'part_number', e.target.value)}
-                                    placeholder="Не указан"
-                                    className="form-input py-2 text-sm"
-                                  />
-                                </div>
+                              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                                 <div>
                                   <label className="form-label text-xs">Категория</label>
                                   <select
@@ -343,6 +356,8 @@ export default function PartsNoPricePage() {
                 const isExpanded = expanded.has(item.id)
                 const isSaved = saved.has(item.id)
                 const isSaving = updateMutation.isPending && updateMutation.variables?.id === item.id
+                const needsPrice = !item.selling_price
+                const needsNumber = !item.part_number?.trim()
 
                 return (
                   <div
@@ -356,6 +371,8 @@ export default function PartsNoPricePage() {
                           <span className="font-semibold text-gray-900 dark:text-slate-100 truncate">
                             {item.name}
                           </span>
+                          {!item.selling_price && <span className="badge badge-yellow">нет цены</span>}
+                          {!item.part_number?.trim() && <span className="badge badge-yellow">нет номера</span>}
                           {isSaved && (
                             <span className="badge badge-green flex items-center gap-1">
                               <CheckCircle2 className="w-3 h-3" /> Сохранено
@@ -364,40 +381,55 @@ export default function PartsNoPricePage() {
                         </div>
                         <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 tabular-nums">
                           {item.quantity} шт
-                          {item.part_number && (
-                            <><span className="mx-1">·</span><span className="kicker">{item.part_number}</span></>
-                          )}
+                          <span className="mx-1 text-gray-300">·</span>
+                          {item.condition === 'new' ? 'Новая' : item.condition === 'used' ? 'Б/У' : 'Повреждена'}
                           {item.category && (
                             <><span className="mx-1">·</span>{item.category.name}</>
                           )}
                         </p>
-                        <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
-                          {item.condition === 'new' ? 'Новая' : item.condition === 'used' ? 'Б/У' : 'Повреждена'}
-                        </p>
                       </div>
                     </div>
 
+                    {/* Ориг. номер — только если не заполнен */}
+                    {needsNumber && (
+                      <div className="px-4 pb-2">
+                        <input
+                          type="text"
+                          value={row.part_number}
+                          onChange={(e) => setField(item.id, 'part_number', e.target.value)}
+                          placeholder="Оригинальный номер"
+                          className="w-full px-3 py-2 text-sm font-mono rounded-lg border focus:outline-none focus:ring-2 border-amber-300 focus:ring-amber-400 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700"
+                        />
+                      </div>
+                    )}
+
                     {/* Price row */}
                     <div className="flex items-center gap-2 px-4 pb-3">
-                      <div className="flex-1 flex items-center border border-amber-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-amber-400 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700">
-                        <Tag className="w-3.5 h-3.5 text-amber-500 ml-2 flex-shrink-0" />
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={row.selling_price}
-                          onChange={(e) => setField(item.id, 'selling_price', e.target.value)}
-                          placeholder="Цена"
-                          className="flex-1 min-w-0 pl-1.5 pr-1 py-2 text-sm border-0 focus:outline-none focus:ring-0 bg-transparent tabular-nums"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setField(item.id, 'price_currency', row.price_currency === 'USD' ? 'UAH' : 'USD')}
-                          className="px-2 py-2 text-xs font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors border-l border-amber-300 dark:bg-amber-800/40 dark:text-amber-300 dark:border-amber-700 dark:hover:bg-amber-800/60"
-                        >
-                          {row.price_currency === 'USD' ? '$' : '₴'}
-                        </button>
-                      </div>
+                      {needsPrice ? (
+                        <div className="flex-1 flex items-center border rounded-lg overflow-hidden focus-within:ring-2 border-amber-300 focus-within:ring-amber-400 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700">
+                          <Tag className="w-3.5 h-3.5 ml-2 flex-shrink-0 text-amber-500" />
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={row.selling_price}
+                            onChange={(e) => setField(item.id, 'selling_price', e.target.value)}
+                            placeholder="Цена"
+                            className="flex-1 min-w-0 pl-1.5 pr-1 py-2 text-sm border-0 focus:outline-none focus:ring-0 bg-transparent tabular-nums"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setField(item.id, 'price_currency', row.price_currency === 'USD' ? 'UAH' : 'USD')}
+                            className="px-2 py-2 text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors border-l border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600"
+                          >
+                            {row.price_currency === 'USD' ? '$' : '₴'}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="flex-1 text-sm font-semibold text-gray-700 tabular-nums">
+                          {Number(item.selling_price).toLocaleString('ru-RU')} {item.price_currency === 'UAH' ? '₴' : '$'}
+                        </span>
+                      )}
 
                       <button
                         type="button"
@@ -422,16 +454,6 @@ export default function PartsNoPricePage() {
                     {/* Expanded extra fields */}
                     {isExpanded && (
                       <div className="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3 grid grid-cols-1 gap-3 bg-gray-50 dark:bg-slate-900/50 rounded-b-xl">
-                        <div>
-                          <label className="form-label text-xs">Оригинальный номер</label>
-                          <input
-                            type="text"
-                            value={row.part_number}
-                            onChange={(e) => setField(item.id, 'part_number', e.target.value)}
-                            placeholder="Не указан"
-                            className="form-input"
-                          />
-                        </div>
                         <div>
                           <label className="form-label text-xs">Категория</label>
                           <select

@@ -308,12 +308,13 @@ const INVENTORY_SELECT = `
   *,
   category:parts_categories(id, name),
   vehicle:parts_vehicles!vehicle_id(id, make, model, year, vin),
+  storage_location:parts_storage_locations!storage_location_id(id, name),
   sold_to_customer:parts_customers!sold_to_customer_id(id, full_name, phone)
 `
 
 export interface PartsDashboardStats {
   vehicles: { total: number; awaiting: number; in_progress: number; dismantled: number }
-  inventory: { total: number; available: number; lowStock: number; noPrice: number; valueUSD: number; valueUAH: number; fromVehicles: number; fromShop: number }
+  inventory: { total: number; available: number; lowStock: number; needsFill: number; valueUSD: number; valueUAH: number; fromVehicles: number; fromShop: number }
   orders: { total: number; new: number; in_progress: number; completed: number }
   revenueUSD: number
   customers: { total: number; withOrders: number }

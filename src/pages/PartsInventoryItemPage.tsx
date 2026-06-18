@@ -198,7 +198,7 @@ export default function PartsInventoryItemPage() {
             {item.name}
           </h1>
 
-          {/* Actions */}
+          {/* Actions — в шапке только Поделиться и QR */}
           <div className="flex items-center gap-1 flex-shrink-0">
             <button
               onClick={() => setShareOpen(true)}
@@ -214,21 +214,6 @@ export default function PartsInventoryItemPage() {
             >
               <QrCode className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => navigate('/parts/inventory', { state: { editItemId: id } })}
-              className="btn-icon"
-              title="Редактировать"
-            >
-              <Edit2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              className="btn-icon text-red-500 hover:bg-red-50 hover:text-red-600"
-              title="Удалить"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </div>
@@ -243,7 +228,8 @@ export default function PartsInventoryItemPage() {
               photos={photos as any[]}
               alt={item.name}
               mainAspect="aspect-[16/10] sm:aspect-[16/9]"
-              objectFit="cover"
+              objectFit="contain"
+              mainBgClass="bg-white"
             />
           ) : (
             <div className="aspect-[16/10] bg-gray-50 flex flex-col items-center justify-center gap-2 text-gray-300 border-b border-gray-100">
@@ -467,6 +453,23 @@ export default function PartsInventoryItemPage() {
             </div>
           )}
 
+        </div>
+
+        {/* Управление позицией */}
+        <div className="cab-card p-3 mt-4 flex items-center gap-2">
+          <button
+            onClick={() => navigate('/parts/inventory', { state: { editItemId: id } })}
+            className="cab-btn cab-btn-secondary cab-btn-sm flex-1 gap-1.5"
+          >
+            <Edit2 className="w-4 h-4" /> Редактировать
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
+            className="cab-btn cab-btn-danger cab-btn-sm gap-1.5"
+          >
+            <Trash2 className="w-4 h-4" /> Удалить
+          </button>
         </div>
       </div>
 

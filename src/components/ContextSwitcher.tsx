@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Shield, Store, Car, ChevronDown, Check } from 'lucide-react'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { Shield, Store, Car } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -22,26 +22,20 @@ const CONTEXTS: Ctx[] = [
 interface Props {
   current: ContextId
   excludeIds?: ContextId[]
-  /** 'bar' — сегмент + отдельная кнопка «Админ» (шапки). 'sidebar' — компактно для свёрнутого сайдбара. */
+  /** 'bar' — переключатель + кнопка «Админ» (шапки). 'sidebar' — компактно для свёрнутого сайдбара. */
   variant?: 'bar' | 'sidebar'
 }
 
 /**
- * Переключатель раздела: сегмент-свитчер «Разборка ↔ Мои авто»
- * и отдельная кнопка «Админ» (только для админа).
+ * Переключатель раздела. Показывает кнопку ПРОТИВОПОЛОЖНОГО контекста
+ * (Разборка → «Мои авто», Мои авто → «Разборка»), а кнопка «Админ» видна
+ * в обоих. Плавность переходов — framer-motion.
  */
 export default function ContextSwitcher({ current, excludeIds = [], variant = 'bar' }: Props) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
-    document.addEventListener('mousedown', onDoc)
-    return () => document.removeEventListener('mousedown', onDoc)
-  }, [])
+  const reduce = useReducedMotion()
 
   const roleNames: string[] = profile?.roles?.map((r: any) => r.name) || []
   const isAdmin = roleNames.includes('admin')
@@ -52,7 +46,6 @@ export default function ContextSwitcher({ current, excludeIds = [], variant = 'b
     return isAdmin || roleNames.includes('user')
   }
 
-  // activeRole для целевого контекста — по фактическим ролям пользователя
   const roleFor = (id: ContextId): string => {
     if (id === 'parts') return roleNames.includes('parts_worker') && !roleNames.includes('parts_owner') ? 'parts_worker' : 'parts_owner'
     if (id === 'admin') return 'admin'
@@ -60,103 +53,94 @@ export default function ContextSwitcher({ current, excludeIds = [], variant = 'b
   }
 
   const switchTo = (c: Ctx) => {
-    setOpen(false)
     if (c.id === current) return
     if (c.id === 'admin') localStorage.removeItem('activeRole')
     else localStorage.setItem('activeRole', roleFor(c.id))
-    // Сбрасываем кэш данных предыдущего раздела
     localStorage.removeItem('tsp_profile_cache')
     queryClient.clear()
     navigate(c.path)
   }
 
-  const toggleCtxs = CONTEXTS.filter(c => c.id !== 'admin' && has(c.id) && !excludeIds.includes(c.id))
+  // Кнопки переключения = доступные контексты Разборка/Мои авто, КРОМЕ текущего.
+  const togglables = CONTEXTS.filter(c => c.id !== 'admin' && c.id !== current && has(c.id) && !excludeIds.includes(c.id))
   const adminCtx = CONTEXTS.find(c => c.id === 'admin')!
-  const showAdminBtn = variant === 'bar' && has('admin') && !excludeIds.includes('admin')
-  const cur = CONTEXTS.find(c => c.id === current)!
+  const showAdminBtn = has('admin') && !excludeIds.includes('admin')
 
-  // Сегмент-переключатель Разборка ↔ Мои авто
-  const Segmented = toggleCtxs.length > 0 && (
-    <div
-      className="flex items-center gap-0.5 p-0.5 rounded-xl min-w-0"
-      style={{ background: 'var(--cab-surface-2)', border: '1px solid var(--cab-border)' }}
-    >
-      {toggleCtxs.map(c => {
-        const active = c.id === current
-        return (
-          <button
-            key={c.id}
-            onClick={() => switchTo(c)}
-            title={c.label}
-            className={`flex items-center justify-center gap-1.5 h-8 rounded-[9px] text-sm font-semibold transition-all active:scale-[0.97] whitespace-nowrap ${variant === 'sidebar' ? 'px-2 lg:px-2.5' : 'px-2.5'}`}
-            style={active
-              ? { background: 'var(--cab-surface)', color: 'var(--cab-ink)', boxShadow: '0 1px 2px rgba(16,24,40,.08)' }
-              : { color: 'var(--cab-ink-3)' }}
-          >
-            <c.icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} />
-            <span className={variant === 'sidebar' ? 'hidden lg:inline' : ''}>{c.label}</span>
-          </button>
-        )
-      })}
-    </div>
-  )
+  const spring = { duration: 0.22, ease: [0.16, 1, 0.3, 1] as const }
 
-  // ── SIDEBAR: на lg — сегмент; на md (свёрнуто) — иконка с дропдауном (влезает в w-16) ──
+  const pillStyle = {
+    background: 'var(--cab-surface-2)',
+    color: 'var(--cab-ink-2)',
+    border: '1px solid var(--cab-border)',
+  }
+
+  // ── SIDEBAR: компактный переключатель (иконки на md, ярлык на lg) ──────────
   if (variant === 'sidebar') {
     return (
-      <div className="relative w-full min-w-0" ref={ref}>
-        <div className="hidden lg:block">{Segmented}</div>
-        <div className="lg:hidden">
-          <button
-            onClick={() => toggleCtxs.length > 1 && setOpen(o => !o)}
-            className="flex items-center justify-center gap-1 w-full h-9 rounded-xl transition-colors"
-            style={{ background: 'var(--cab-surface-2)', border: '1px solid var(--cab-border)' }}
-            title={cur.label}
-          >
-            <cur.icon className="w-[18px] h-[18px]" strokeWidth={1.6} style={{ color: 'var(--cab-ink)' }} />
-            {toggleCtxs.length > 1 && (
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} style={{ color: 'var(--cab-ink-3)' }} />
-            )}
-          </button>
-          {open && (
-            <div
-              className="absolute left-0 top-full mt-1 w-44 rounded-2xl shadow-xl p-1.5 z-50"
-              style={{ background: 'var(--cab-surface)', border: '1px solid var(--cab-border)' }}
+      <div className="flex items-center gap-1 w-full min-w-0">
+        <AnimatePresence mode="popLayout" initial={false}>
+          {togglables.map(c => (
+            <motion.button
+              key={c.id}
+              layout
+              initial={reduce ? false : { opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={reduce ? undefined : { opacity: 0, scale: 0.9 }}
+              transition={spring}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => switchTo(c)}
+              title={`Перейти: ${c.label}`}
+              className="flex items-center justify-center lg:justify-start gap-2 h-9 px-2 lg:px-2.5 rounded-xl text-sm font-semibold flex-1 min-w-0"
+              style={pillStyle}
             >
-              {toggleCtxs.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => switchTo(c)}
-                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-colors hover:bg-black/[0.03]"
-                >
-                  <c.icon className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} style={{ color: 'var(--cab-ink-2)' }} />
-                  <span className="flex-1 text-sm font-semibold" style={{ color: 'var(--cab-ink)' }}>{c.label}</span>
-                  {c.id === current && <Check className="w-4 h-4" style={{ color: 'var(--cab-signal)' }} />}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+              <c.icon className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.6} />
+              <span className="hidden lg:block truncate">{c.label}</span>
+            </motion.button>
+          ))}
+        </AnimatePresence>
       </div>
     )
   }
 
-  // ── BAR: сегмент + отдельная кнопка «Админ» ──
+  // ── BAR: переключатель противоположного контекста + кнопка «Админ» ─────────
   return (
     <div className="flex items-center gap-1.5 min-w-0">
-      {Segmented}
+      <AnimatePresence mode="popLayout" initial={false}>
+        {togglables.map(c => (
+          <motion.button
+            key={c.id}
+            layout
+            initial={reduce ? false : { opacity: 0, scale: 0.9, x: -6 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={reduce ? undefined : { opacity: 0, scale: 0.9, x: -6 }}
+            transition={spring}
+            whileTap={{ scale: 0.96 }}
+            onClick={() => switchTo(c)}
+            title={`Перейти: ${c.label}`}
+            className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-sm font-semibold flex-shrink-0 whitespace-nowrap"
+            style={pillStyle}
+          >
+            <c.icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} />
+            <span className={togglables.length > 1 ? 'hidden sm:inline' : ''}>{c.label}</span>
+          </motion.button>
+        ))}
+      </AnimatePresence>
+
       {showAdminBtn && (
-        <button
+        <motion.button
+          layout
+          whileTap={{ scale: 0.96 }}
+          transition={spring}
           onClick={() => switchTo(adminCtx)}
           title="Админ-панель"
-          className="flex items-center justify-center gap-1.5 h-9 px-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.97] flex-shrink-0"
+          className="flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-sm font-semibold flex-shrink-0 whitespace-nowrap"
           style={current === 'admin'
             ? { background: 'var(--cab-ink)', color: '#fff' }
-            : { background: 'var(--cab-surface-2)', color: 'var(--cab-ink-2)', border: '1px solid var(--cab-border)' }}
+            : pillStyle}
         >
           <Shield className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} />
           <span className={current === 'admin' ? '' : 'hidden sm:inline'}>Админ</span>
-        </button>
+        </motion.button>
       )}
     </div>
   )

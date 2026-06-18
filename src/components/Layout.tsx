@@ -23,6 +23,7 @@ import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { useAdminNotifications } from '../hooks/useAdminNotifications'
 import { useSubscriptionLimits } from '../hooks/useSubscription'
 import NotificationBanner from './NotificationBanner'
+import { BRAND } from '@/config/brand'
 
 export default function Layout() {
   useAdminNotifications()
@@ -228,11 +229,15 @@ export default function Layout() {
         className={`${isUserCtx ? 'hidden' : 'hidden md:flex'} md:flex-col md:w-16 lg:w-64 flex-shrink-0`}
         style={{ background: 'var(--cab-surface)', borderRight: '1px solid var(--cab-border)' }}
       >
-        {/* Шапка сайдбара — ContextSwitcher */}
+        {/* Шапка сайдбара — бренд (переключение разделов — в верхнем баре) */}
         <div className="flex items-center px-2 lg:px-3 h-14" style={{ borderBottom: '1px solid var(--cab-border)' }}>
-          <div className="w-full min-w-0">
-            <ContextSwitcher current={currentCtx} variant="sidebar" />
-          </div>
+          <Link to="/parts/dashboard" className="flex items-center gap-2 min-w-0 mx-auto lg:mx-0" title={BRAND.name}>
+            <span className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-extrabold flex-shrink-0"
+              style={{ background: 'var(--cab-ink)' }}>
+              {BRAND.name.charAt(0)}
+            </span>
+            <span className="hidden lg:block font-extrabold truncate" style={{ color: 'var(--cab-ink)' }}>{BRAND.name}</span>
+          </Link>
         </div>
 
         {/* Nav — сгруппирован: Работа / База / Система */}
@@ -267,18 +272,7 @@ export default function Layout() {
 
         {/* Footer */}
         <div className="px-2 py-3 space-y-0.5 border-t border-gray-200">
-          {/* Отдельная кнопка «Админ» (parts/user — свитчером в шапке) */}
-          {isAdmin && (
-            <Link
-              to="/admin"
-              onClick={() => { localStorage.removeItem('activeRole'); localStorage.removeItem('tsp_profile_cache') }}
-              className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm rounded-lg transition-colors active:scale-[0.98] text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              title="Панель администратора"
-            >
-              <Shield className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} />
-              <span className="hidden lg:block">Админ-панель</span>
-            </Link>
-          )}
+          {/* «Админ» — в верхнем баре (ContextSwitcher) */}
           <button
             onClick={handleLogout}
             className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm rounded-lg transition-colors active:scale-[0.98] text-slate-600 hover:bg-red-50 hover:text-red-600"
@@ -309,11 +303,12 @@ export default function Layout() {
           </div>
         )}
 
-        {/* ── DESKTOP TOP BAR (разборка): «В маркет» справа, выровнено по main ── */}
+        {/* ── DESKTOP TOP BAR (разборка): свитчер+Админ слева, «В маркет» справа ── */}
         {currentCtx === 'parts' && (
-          <div className="hidden md:flex h-12 flex-shrink-0"
+          <div className="hidden md:flex h-14 flex-shrink-0"
             style={{ background: 'var(--cab-surface)', borderBottom: '1px solid var(--cab-border)' }}>
-            <div className="mx-auto w-full max-w-[1920px] px-3 sm:px-5 md:px-6 lg:px-8 flex items-center justify-end">
+            <div className="mk-container flex items-center justify-between gap-3">
+              <ContextSwitcher current={currentCtx} />
               <Link
                 to="/market"
                 title="Открыть маркет запчастей"
@@ -345,12 +340,9 @@ export default function Layout() {
           </div>
         </div>
 
-        {/* ── MAIN CONTENT — контейнер как в маркете (.mk-container): max-w 1920 + fluid-паддинг ── */}
+        {/* ── MAIN CONTENT — тот же контейнер, что и в маркете (.mk-container) ── */}
         <div className="flex-1" style={{ background: 'var(--cab-bg)' }}>
-          <div
-            className="mx-auto w-full max-w-[1920px] py-3 sm:py-4 md:py-5 lg:py-6"
-            style={{ paddingInline: 'clamp(0.75rem, 0.45rem + 1.1vw, 1.4rem)' }}
-          >
+          <div className="mk-container py-3 sm:py-4 md:py-5 lg:py-6">
             <NotificationBanner userId={profile?.id} />
             <Outlet />
           </div>

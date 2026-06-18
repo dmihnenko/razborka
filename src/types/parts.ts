@@ -125,6 +125,7 @@ export interface PartsInventoryItem {
   // Relations
   category?: PartsCategory
   vehicle?: PartsVehicle
+  storage_location?: { id: string; name: string } | null
   sold_to_customer?: Pick<PartsCustomer, 'id' | 'full_name' | 'phone'>
 }
 

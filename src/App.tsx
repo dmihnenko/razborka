@@ -54,6 +54,7 @@ const DatabasePage = lazy(() => import('./pages/Database'))
 const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'))
 const AdminSettings = lazy(() => import('./pages/AdminSettings'))
 const AdminAccessRequests = lazy(() => import('./pages/AdminAccessRequests'))
+const AdminCarModels = lazy(() => import('./pages/AdminCarModels'))
 const PartsSubscriptionPage = lazy(() => import('./pages/PartsSubscriptionPage'))
 const PartsMarketOrders = lazy(() => import('./pages/PartsMarketOrders'))
 const PartsShipments = lazy(() => import('./pages/PartsShipments'))
@@ -260,6 +261,7 @@ function App() {
           <Route path="support" element={<AdminSupport />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="access-requests" element={<AdminAccessRequests />} />
+          <Route path="car-models" element={<AdminCarModels />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="database" element={<DatabasePage />} />
         </Route>

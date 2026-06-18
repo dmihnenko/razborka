@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Car, ChevronRight, Copy, FileText, Package, ShoppingCart, Tag } from 'lucide-react'
+import { Car, ChevronRight, Copy, FileText, Package, ShoppingCart, Tag, Truck } from 'lucide-react'
 import { toast } from 'sonner'
 import { getMarketPart, getRelatedParts } from '@/services/marketplaceService'
 import type { MarketPart } from '@/types/marketplace'
@@ -42,6 +42,7 @@ function toGalleryPhotos(part: MarketPart): ImgbbPhoto[] {
 
 export default function MarketProductPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const { addItem, items } = useCart()
 
   useEffect(() => { window.scrollTo({ top: 0 }) }, [id])
@@ -87,6 +88,11 @@ export default function MarketProductPage() {
     toast.success('Добавлено в корзину')
   }
 
+  const handleBuyNow = () => {
+    if (!inCart) handleAddToCart()
+    navigate('/market/cart')
+  }
+
   const copyPartNumber = () => {
     if (!part.partNumber) return
     navigator.clipboard.writeText(part.partNumber.toUpperCase())
@@ -125,6 +131,8 @@ export default function MarketProductPage() {
           <div className="mk-card p-4">
             <div className="flex flex-wrap gap-1.5 mb-2.5">
               {conditionBadge(part.condition)}
+              <span className="mk-badge mk-badge-neutral">Оригинал</span>
+              {part.quantity > 0 && <span className="mk-badge mk-badge-new">В наличии</span>}
               {part.categoryName && (
                 <span className="mk-badge mk-badge-neutral"><Tag className="w-3 h-3" strokeWidth={1.5} aria-hidden="true" /> {part.categoryName}</span>
               )}
@@ -158,17 +166,28 @@ export default function MarketProductPage() {
               )}
             </div>
 
-            {/* CTA — Купить / Перейти в корзину */}
-            <div className="mt-3">
+            {/* CTA — В корзину + Купить сейчас */}
+            <div className="mt-3 grid grid-cols-2 gap-2">
               {inCart ? (
-                <Link to="/market/cart" className="mk-btn mk-btn-accent mk-btn-lg w-full">
+                <Link to="/market/cart" className="mk-btn mk-btn-accent mk-btn-lg w-full col-span-2">
                   <ShoppingCart className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> Перейти в корзину
                 </Link>
               ) : (
-                <button type="button" onClick={handleAddToCart} className="mk-btn mk-btn-accent mk-btn-lg w-full">
-                  <ShoppingCart className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> Купить
-                </button>
+                <>
+                  <button type="button" onClick={handleAddToCart} className="mk-btn mk-btn-accent mk-btn-lg w-full">
+                    <ShoppingCart className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> В корзину
+                  </button>
+                  <button type="button" onClick={handleBuyNow} className="mk-btn mk-btn-brand mk-btn-lg w-full">
+                    Купить сейчас
+                  </button>
+                </>
               )}
+            </div>
+
+            {/* Доставка */}
+            <div className="mt-3 flex items-center gap-2 text-xs mk-meta">
+              <Truck className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
+              <span>Доставка Новой Почтой · возврат 14 дней на проверку</span>
             </div>
 
             {/* Авто-донор — в той же карточке через разделитель */}

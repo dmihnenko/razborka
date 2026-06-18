@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Shield, Users, Settings, BarChart2, LogOut, ClipboardList,
   Store, CreditCard, MessageCircle, LayoutGrid, Database,
-  MoreHorizontal, X,
+  MoreHorizontal, X, Car,
 } from 'lucide-react'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
 import { useAuth } from '../hooks/useAuth'
@@ -24,6 +24,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     { name: 'Владельцы разборок', href: '/admin/parts-companies', icon: Store },
     { name: 'Подписки',           href: '/admin/subscriptions',   icon: CreditCard },
     { name: 'Заявки на доступ',    href: '/admin/access-requests', icon: ClipboardList },
+    { name: 'Каталог авто',        href: '/admin/car-models',      icon: Car },
   ]},
   { title: 'Пользователи', items: [
     { name: 'Пользователи', href: '/admin/users', icon: Users },

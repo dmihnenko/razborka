@@ -28,8 +28,10 @@ interface TreeNode extends StorageLocation {
 
 /* Отступ-индент на уровень вложенности (px) */
 const INDENT = 22
+/* Максимум уровней вложенности склада */
+const MAX_DEPTH = 4
 /* Метка уровня по глубине */
-const LEVEL_LABELS = ['Бокс', 'Стеллаж', 'Полка', 'Ячейка', 'Уровень 5']
+const LEVEL_LABELS = ['Бокс', 'Стеллаж', 'Полка', 'Ячейка']
 
 function buildTree(nodes: StorageLocation[], parentId: string | null = null, depth = 0): TreeNode[] {
   return nodes
@@ -407,13 +409,15 @@ export default function PartsWarehouse() {
                             </>
                           ) : (
                             <>
-                              <button
-                                onClick={() => startAddChild(node.id)}
-                                title="Добавить вложенное место"
-                                className="btn-icon-sm"
-                              >
-                                <Plus className="w-4 h-4" />
-                              </button>
+                              {node.depth < MAX_DEPTH - 1 && (
+                                <button
+                                  onClick={() => startAddChild(node.id)}
+                                  title="Добавить вложенное место"
+                                  className="btn-icon-sm"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </button>
+                              )}
                               <button
                                 onClick={() => setQrNode({ id: node.id, name: node.name, path: getNodePath(node.id) })}
                                 title="QR / Этикетка"

@@ -93,6 +93,16 @@ export function MarketProductCard({ part }: MarketProductCardProps) {
           <h3 className="text-sm font-semibold leading-snug line-clamp-2" style={{ color: 'var(--mk-text)' }}>
             {part.name}
           </h3>
+          {part.partNumber && (
+            <span
+              className="inline-flex items-center gap-1 w-fit text-[11px] font-mono px-1.5 py-0.5 rounded-md"
+              style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}
+              title={`Оригинальный номер: ${part.partNumber}`}
+            >
+              <span className="font-sans" style={{ color: 'var(--mk-text-3)' }}>OEM</span>
+              {part.partNumber}
+            </span>
+          )}
           {vehicleStr && (
             <p className="flex items-center gap-1.5 text-xs min-w-0 mk-meta">
               <Car className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />

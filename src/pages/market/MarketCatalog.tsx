@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, PackageSearch } from 'lucide-react'
 import type { MarketCondition, MarketFilters, MarketSort } from '@/types/marketplace'
-import { getMarketCategories, getMarketMakes, getMarketParts, MARKET_PAGE_SIZE } from '@/services/marketplaceService'
+import { getMarketCategories, getMarketCarCatalog, getMarketParts, MARKET_PAGE_SIZE } from '@/services/marketplaceService'
 import { FilterBar } from '@/components/market/FilterBar'
 import { MarketProductCard } from '@/components/market/MarketProductCard'
 import EmptyState from '@/components/ui/EmptyState'
@@ -20,10 +20,13 @@ function filtersFromParams(params: URLSearchParams): MarketFilters {
   const condition = params.get('condition') as MarketCondition | null
   const sort = params.get('sort') as MarketSort | null
   const page = parseInt(params.get('page') ?? '', 10)
+  const year = parseInt(params.get('year') ?? '', 10)
   return {
     search: params.get('search')?.trim() || undefined,
     categoryId: params.get('category') || undefined,
     make: params.get('make') || undefined,
+    model: params.get('model') || undefined,
+    year: Number.isFinite(year) && year > 0 ? year : undefined,
     condition: condition && CONDITIONS.includes(condition) ? condition : undefined,
     sort: sort && SORTS.includes(sort) ? sort : undefined,
     page: Number.isFinite(page) && page > 1 ? page : 1,
@@ -36,6 +39,8 @@ function paramsFromFilters(f: MarketFilters): Record<string, string> {
   if (f.search) out.search = f.search
   if (f.categoryId) out.category = f.categoryId
   if (f.make) out.make = f.make
+  if (f.model) out.model = f.model
+  if (f.year) out.year = String(f.year)
   if (f.condition) out.condition = f.condition
   if (f.sort && f.sort !== 'new') out.sort = f.sort
   if (f.page && f.page > 1) out.page = String(f.page)
@@ -71,7 +76,8 @@ export function MarketCatalog() {
     setFilters(prev => {
       const changed =
         prev.search !== next.search || prev.categoryId !== next.categoryId ||
-        prev.make !== next.make || prev.condition !== next.condition ||
+        prev.make !== next.make || prev.model !== next.model || prev.year !== next.year ||
+        prev.condition !== next.condition ||
         prev.sort !== next.sort || (prev.page ?? 1) !== (next.page ?? 1)
       return changed ? { ...prev, ...next } : prev
     })
@@ -94,7 +100,7 @@ export function MarketCatalog() {
     placeholderData: keepPreviousData,
   })
   const { data: categories = [] } = useQuery({ queryKey: ['market-categories'], queryFn: getMarketCategories, staleTime: 5 * 60 * 1000 })
-  const { data: makes = [] } = useQuery({ queryKey: ['market-makes'], queryFn: getMarketMakes, staleTime: 5 * 60 * 1000 })
+  const { data: carCatalog = [] } = useQuery({ queryKey: ['market-car-catalog'], queryFn: getMarketCarCatalog, staleTime: 5 * 60 * 1000 })
 
   const items = data?.items ?? []
   const total = data?.total ?? 0
@@ -108,7 +114,7 @@ export function MarketCatalog() {
   }, [total, totalPages, page, isLoading, isPlaceholderData])
 
   const hasActiveFilters = useMemo(
-    () => Boolean(filters.search || filters.categoryId || filters.make || filters.condition || filters.minPrice || filters.maxPrice),
+    () => Boolean(filters.search || filters.categoryId || filters.make || filters.model || filters.year || filters.condition || filters.minPrice || filters.maxPrice),
     [filters]
   )
 
@@ -122,7 +128,7 @@ export function MarketCatalog() {
         <h1 className="mk-h1">Каталог запчастей</h1>
       </div>
 
-      <FilterBar value={filters} onChange={applyFilters} categories={categories} makes={makes} />
+      <FilterBar value={filters} onChange={applyFilters} categories={categories} carCatalog={carCatalog} />
 
       <div className="flex items-center gap-2 min-h-[20px]" aria-live="polite">
         {!isLoading && !isError && total > 0 && (

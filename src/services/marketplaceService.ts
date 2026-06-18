@@ -3,6 +3,7 @@ import type {
   MarketPart,
   MarketSupplier,
   MarketCategory,
+  MarketMakeFacet,
   MarketFilters,
   MarketPhoto,
   MarketplaceOrder,
@@ -87,8 +88,8 @@ export async function getMarketParts(
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
 
-  // make-фильтр требует inner-join по авто (иначе «магазинные» позиции без авто отвалятся зря)
-  const needVehicleInner = !!f.make?.trim()
+  // фильтры по авто требуют inner-join (иначе «магазинные» позиции без авто отвалятся зря)
+  const needVehicleInner = !!f.make?.trim() || !!f.model?.trim() || f.year != null
 
   let query = supabase
     .from('parts_inventory')
@@ -108,7 +109,9 @@ export async function getMarketParts(
   if (f.categoryId) query = query.eq('category_id', f.categoryId)
   if (f.condition) query = query.eq('condition', f.condition)
   if (f.companyId) query = query.eq('parts_company_id', f.companyId)
-  if (needVehicleInner) query = query.ilike('vehicle.make', `%${f.make!.trim()}%`)
+  if (f.make?.trim()) query = query.eq('vehicle.make', f.make.trim())
+  if (f.model?.trim()) query = query.eq('vehicle.model', f.model.trim())
+  if (f.year != null) query = query.eq('vehicle.year', f.year)
   if (f.minPrice != null && f.minPrice > 0) query = query.gte('selling_price', f.minPrice)
   if (f.maxPrice != null && f.maxPrice > 0) query = query.lte('selling_price', f.maxPrice)
 
@@ -287,6 +290,48 @@ export async function getMarketMakes(): Promise<string[]> {
     return [...seen.values()].sort((a, b) => a.localeCompare(b, 'ru'))
   } catch {
     return []
+  }
+}
+
+/**
+ * Справочный каталог авто для каскадных фильтров: Марка → Модель → Год.
+ * Источник марок/моделей — таблица car_models; годы/счётчики — из доступных запчастей.
+ */
+export async function getMarketCarCatalog(): Promise<MarketMakeFacet[]> {
+  try {
+    const { data, error } = await supabase.rpc('get_market_car_catalog')
+    if (error) throw error
+    return (Array.isArray(data) ? data : []) as MarketMakeFacet[]
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Предложить новую марку/модель в общий каталог авто (на утверждение админу).
+ * Пишет pending-запись в car_models; дубли (already approved/pending) игнорируются.
+ * Не бросает ошибку — заведение авто не должно падать из-за заявки в каталог.
+ */
+export async function suggestCarModel(
+  make: string,
+  model: string,
+  partsCompanyId?: string | null
+): Promise<void> {
+  const mk = make.trim()
+  const md = model.trim()
+  if (!mk || !md) return
+  try {
+    const { data: auth } = await supabase.auth.getUser()
+    const uid = auth?.user?.id
+    if (!uid) return
+    await supabase
+      .from('car_models')
+      .upsert(
+        { make: mk, model: md, status: 'pending', is_active: false, suggested_by: uid, parts_company_id: partsCompanyId ?? null },
+        { onConflict: 'make,model', ignoreDuplicates: true }
+      )
+  } catch {
+    /* заявка в каталог — не критично */
   }
 }
 

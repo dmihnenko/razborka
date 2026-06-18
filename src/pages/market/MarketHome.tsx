@@ -1,13 +1,10 @@
-import { useState, type FormEvent, type ComponentType } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion, useReducedMotion } from 'framer-motion'
+import { ArrowRight, Car, Package, Search, Store, Zap } from 'lucide-react'
 import {
-  Armchair, ArrowRight, Car, Cog, Disc3, Gauge, Lightbulb, Package, Search,
-  Settings2, Store, Tag, Wind, Zap,
-} from 'lucide-react'
-import {
-  getMarketCategories, getMarketMakes, getMarketParts, getMarketSuppliers,
+  getMarketMakes, getMarketParts, getMarketSuppliers,
 } from '@/services/marketplaceService'
 import { MarketProductCard } from '@/components/market/MarketProductCard'
 import { SupplierCard } from '@/components/market/SupplierCard'
@@ -18,23 +15,8 @@ import EmptyState from '@/components/ui/EmptyState'
 // ============================================================================
 
 const FRESH_PAGE_SIZE = 12
-const MAX_CATEGORIES = 10
 const MAX_MAKES = 12
 const MAX_SUPPLIERS = 6
-
-function categoryIcon(name: string): ComponentType<{ className?: string; strokeWidth?: number }> {
-  const n = name.toLowerCase()
-  if (/двиг|мотор|engine/.test(n)) return Cog
-  if (/кпп|коробк|трансм|gearbox/.test(n)) return Settings2
-  if (/фар|оптик|свет|light|лампа/.test(n)) return Lightbulb
-  if (/кузов|бампер|дверь|капот|крыл/.test(n)) return Car
-  if (/электр|провод|датчик|стартер|генератор/.test(n)) return Zap
-  if (/тормоз|диск|колод|brake/.test(n)) return Disc3
-  if (/подвеск|амортиз|рычаг|suspension/.test(n)) return Gauge
-  if (/салон|сидень|кресл|интерьер/.test(n)) return Armchair
-  if (/кондиц|охлажд|радиат|печк|вентил/.test(n)) return Wind
-  return Tag
-}
 
 function SectionHead({ title, to, linkLabel, id }: { title: string; to: string; linkLabel: string; id: string }) {
   return (
@@ -74,7 +56,6 @@ export function MarketHome() {
     queryFn: () => getMarketParts({ sort: 'new', pageSize: FRESH_PAGE_SIZE }),
     staleTime: 60_000,
   })
-  const { data: categories = [] } = useQuery({ queryKey: ['market', 'categories'], queryFn: getMarketCategories, staleTime: 5 * 60_000 })
   const { data: makes = [] } = useQuery({ queryKey: ['market', 'makes'], queryFn: getMarketMakes, staleTime: 5 * 60_000 })
   const { data: suppliers, isLoading: suppliersLoading } = useQuery({ queryKey: ['market', 'suppliers'], queryFn: getMarketSuppliers, staleTime: 5 * 60_000 })
 
@@ -84,7 +65,6 @@ export function MarketHome() {
     navigate(q ? `/market/catalog?search=${encodeURIComponent(q)}` : '/market/catalog')
   }
 
-  const topCategories = categories.slice(0, MAX_CATEGORIES)
   const topMakes = makes.slice(0, MAX_MAKES)
   const topSuppliers = (suppliers ?? []).slice(0, MAX_SUPPLIERS)
 
@@ -112,25 +92,6 @@ export function MarketHome() {
           </div>
         </form>
       </motion.section>
-
-      {/* ── Категории — плитки ───────────────────────────────────────── */}
-      {topCategories.length > 0 && (
-        <motion.section {...anim(0.08)} aria-labelledby="mk-cats-title">
-          <SectionHead id="mk-cats-title" title="Категории" to="/market/catalog" linkLabel="Весь каталог" />
-          <div className="mk-scroller sm:grid sm:grid-cols-4 lg:grid-cols-5 sm:overflow-visible pb-1 -mb-1">
-            {topCategories.map(cat => {
-              const Icon = categoryIcon(cat.name)
-              return (
-                <Link key={cat.id} to={`/market/catalog?categoryId=${encodeURIComponent(cat.id)}`} className="mk-tile w-[124px] sm:w-auto" aria-label={`${cat.name}${cat.count > 0 ? `, ${cat.count} товаров` : ''}`}>
-                  <span className="mk-tile-icon"><Icon className="w-5 h-5" strokeWidth={1.5} /></span>
-                  <span className="text-xs font-semibold leading-tight line-clamp-2" style={{ color: 'var(--mk-text)' }}>{cat.name}</span>
-                  {cat.count > 0 && <span className="text-[10px] font-bold mk-meta">{cat.count}</span>}
-                </Link>
-              )
-            })}
-          </div>
-        </motion.section>
-      )}
 
       {/* ── Марки авто — чипы ─────────────────────────────────────────── */}
       {topMakes.length > 0 && (

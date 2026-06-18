@@ -99,7 +99,7 @@ export function InventoryCard({
     >
       {/* ── ФОТО БЛОК ───────────────────────────────────────────────────── */}
       <div
-        className="relative aspect-[4/3] bg-gray-100 overflow-hidden cursor-pointer flex-shrink-0"
+        className="relative aspect-[4/3] bg-white overflow-hidden cursor-pointer flex-shrink-0"
         onClick={() => onNavigate(item.id)}
       >
         {hasPhotos ? (
@@ -117,7 +117,7 @@ export function InventoryCard({
               onLoad={() => setImgLoaded(true)}
               onError={() => setImgError(true)}
               className={[
-                'absolute inset-0 w-full h-full object-cover transition-opacity duration-300',
+                'absolute inset-0 w-full h-full object-contain p-1.5 transition-opacity duration-300',
                 imgLoaded ? 'opacity-100' : 'opacity-0',
               ].join(' ')}
             />
@@ -156,29 +156,19 @@ export function InventoryCard({
           </span>
         )}
 
-        {/* Действия — absolute top-right */}
-        <div className="absolute top-2 right-2 flex items-center gap-1">
+        {/* Выбор — absolute top-right */}
+        {selectable && (
           <button
-            onClick={handleShare}
-            className="btn-icon-sm bg-black/40 text-white backdrop-blur-sm hover:bg-black/60"
-            aria-label="Поделиться"
-            title="Поделиться"
+            onClick={(e) => { e.stopPropagation(); onToggleSelect!(item.id, e) }}
+            className="absolute top-2 right-2 p-1 rounded-md bg-white/85 backdrop-blur-sm shadow-sm transition-opacity hover:opacity-90"
+            aria-label={isSelected ? 'Снять выбор' : 'Выбрать'}
           >
-            <Share2 className="w-3.5 h-3.5 drop-shadow" />
+            {isSelected
+              ? <CheckSquare className="w-4 h-4" style={{ color: 'var(--cab-signal)' }} />
+              : <Square className="w-4 h-4 text-gray-400" />
+            }
           </button>
-          {selectable && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggleSelect!(item.id, e) }}
-              className="p-0.5 rounded transition-opacity hover:opacity-90"
-              aria-label={isSelected ? 'Снять выбор' : 'Выбрать'}
-            >
-              {isSelected
-                ? <CheckSquare className="w-5 h-5 text-white drop-shadow" />
-                : <Square className="w-5 h-5 text-white/80 drop-shadow" />
-              }
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {/* ── КОНТЕНТ ─────────────────────────────────────────────────────── */}
@@ -274,6 +264,17 @@ export function InventoryCard({
         >
           <ShoppingCart className="w-3.5 h-3.5" />
           Продать
+        </button>
+
+        {/* Поделиться (цветом — видно) */}
+        <button
+          onClick={handleShare}
+          aria-label="Поделиться"
+          title="Поделиться"
+          className="btn-icon-sm flex-shrink-0 hover:bg-[var(--cab-signal-weak)]"
+          style={{ color: 'var(--cab-signal)' }}
+        >
+          <Share2 className="w-3.5 h-3.5" />
         </button>
 
         {/* Удалить */}

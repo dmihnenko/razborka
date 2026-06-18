@@ -92,7 +92,7 @@ export default function PartsDashboard() {
   const actions = [
     { key: 'new-orders', count: stats?.orders?.new ?? 0,     label: 'Новые заказы',    Icon: ShoppingCart, to: '/parts/orders' },
     { key: 'market',     count: stats?.marketOrders ?? 0,    label: 'Заявки с маркета', Icon: Inbox,        to: '/parts/market-orders' },
-    { key: 'no-price',   count: stats?.inventory?.noPrice ?? 0, label: 'Запчасти без цены', Icon: Tag,      to: '/parts/inventory/no-price' },
+    { key: 'needs-fill', count: stats?.inventory?.needsFill ?? 0, label: 'Без цены или номера', Icon: Tag,    to: '/parts/inventory/no-price' },
     { key: 'low-stock',  count: stats?.inventory?.lowStock ?? 0, label: 'Мало на складе',  Icon: AlertTriangle, to: '/parts/inventory?source=vehicles' },
   ].filter(a => a.count > 0)
 

@@ -570,8 +570,15 @@
     box-shadow: 0 0 0 2px var(--mk-accent), 0 0 0 4px var(--mk-focus) !important;
   }
 
-  /* Контейнер: fluid, центр, на больших экранах до --mk-maxw */
-  .mk-container { width: 100%; max-width: var(--mk-maxw); margin-inline: auto; padding-inline: var(--mk-pad); }
+  /* Контейнер: fluid, центр, на больших экранах до --mk-maxw.
+     Фолбэки нужны вне .market (кабинет), где --mk-* не объявлены — иначе контейнер
+     растягивается на всю ширину. Значения совпадают с токенами .market. */
+  .mk-container {
+    width: 100%;
+    max-width: var(--mk-maxw, 1920px);
+    margin-inline: auto;
+    padding-inline: var(--mk-pad, clamp(0.75rem, 0.45rem + 1.1vw, 1.4rem));
+  }
 
   /* Поверхность-карточка */
   .mk-card { background: var(--mk-surface); border: 1px solid var(--mk-border); border-radius: var(--mk-r-lg); box-shadow: var(--mk-shadow); }
@@ -601,6 +608,8 @@
   .mk-btn-outline:hover { border-color: var(--mk-border-2); color: var(--mk-text); }
   .mk-btn-ghost   { background: transparent; color: var(--mk-text-2); }
   .mk-btn-ghost:hover { background: var(--mk-surface-2); color: var(--mk-text); }
+  .mk-btn-brand   { background: var(--brand-600); color: #fff; }
+  .mk-btn-brand:hover { background: var(--brand-700); }
   .mk-btn-lg { min-height:var(--mk-control-h-lg); padding-inline:1.1rem; font-size:.9rem; }
 
   /* Иконочная кнопка */

@@ -231,7 +231,7 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
                 <img
                   src={photo.thumb_url || photo.url}
                   alt={`${alt} ${i + 1}`}
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full ${objectFit === 'contain' ? 'object-contain bg-white' : 'object-cover'}`}
                   draggable={false}
                 />
               </button>
@@ -335,7 +335,7 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
                   <img
                     src={photo.thumb_url || photo.url}
                     alt={`${alt} ${i + 1}`}
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full ${objectFit === 'contain' ? 'object-contain bg-white' : 'object-cover'}`}
                     draggable={false}
                   />
                 </button>

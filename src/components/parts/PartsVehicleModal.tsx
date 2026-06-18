@@ -1,13 +1,18 @@
-import { useState } from 'react'
-import { X, Plus, Trash2, ScanLine } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { X, Plus, Trash2, ScanLine, Pencil } from 'lucide-react'
 import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
 import type { PartsVehicle, CreatePartsVehicleInput } from '@/types/parts'
 import { formatCurrency } from '@/utils/currency'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
+import { useUserProfile } from '@/hooks/useUserProfile'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
 import { decodeVin } from '@/services/vinService'
+import { getMarketCarCatalog, suggestCarModel } from '@/services/marketplaceService'
 import { Spinner } from '@/components/ui/Spinner'
+
+const OTHER = '__other__'
 
 interface PriceRow {
   id: number
@@ -75,6 +80,53 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
   const [vinLoading, setVinLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // ── Каталог авто: выбор марки/модели из справочника либо ручной ввод ───────
+  const { data: profile } = useUserProfile()
+  const { data: carCatalog = [] } = useQuery({ queryKey: ['market-car-catalog'], queryFn: getMarketCarCatalog, staleTime: 5 * 60_000 })
+
+  const [manualMake, setManualMake] = useState(false)   // ручной ввод марки + модели
+  const [manualModel, setManualModel] = useState(false) // марка из каталога, модель вручную
+  const initRef = useRef(false)
+
+  const makeFacet = carCatalog.find(c => c.make.toLowerCase() === (formData.make || '').toLowerCase())
+  const catalogModels = makeFacet?.models ?? []
+
+  // При редактировании: если марки/модели нет в каталоге — открыть ручной ввод
+  useEffect(() => {
+    if (initRef.current || carCatalog.length === 0) return
+    initRef.current = true
+    const mk = (formData.make || '').trim()
+    if (!mk) return
+    const facet = carCatalog.find(c => c.make.toLowerCase() === mk.toLowerCase())
+    if (!facet) { setManualMake(true); return }
+    const md = (formData.model || '').trim()
+    if (md && !facet.models.some(m => m.model.toLowerCase() === md.toLowerCase())) setManualModel(true)
+  }, [carCatalog, formData.make, formData.model])
+
+  const onMakeSelect = (val: string) => {
+    if (val === OTHER) { setManualMake(true); setManualModel(false); setFormData(prev => ({ ...prev, make: '', model: '' })); return }
+    setManualMake(false); setManualModel(false)
+    setFormData(prev => ({ ...prev, make: val, model: '' }))
+  }
+  const onModelSelect = (val: string) => {
+    if (val === OTHER) { setManualModel(true); setFormData(prev => ({ ...prev, model: '' })); return }
+    setManualModel(false)
+    setFormData(prev => ({ ...prev, model: val }))
+  }
+  const backToCatalog = () => {
+    setManualMake(false); setManualModel(false)
+    setFormData(prev => ({ ...prev, make: '', model: '' }))
+  }
+
+  // Пара марка+модель отсутствует в утверждённом каталоге → нужна заявка админу
+  const isPairNew = () => {
+    const mk = (formData.make || '').trim().toLowerCase()
+    const md = (formData.model || '').trim().toLowerCase()
+    if (!mk || !md) return false
+    const facet = carCatalog.find(c => c.make.toLowerCase() === mk)
+    return !facet || !facet.models.some(m => m.model.toLowerCase() === md)
+  }
+
   const { totalUSD, totalUAH } = calcTotals(priceRows, exchangeRate)
 
   if (!isOpen) return null
@@ -89,12 +141,20 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
         toast.info('Не удалось распознать VIN')
         return
       }
+      const nextMake = formData.make || result.make || ''
+      const nextModel = formData.model || result.model || ''
       setFormData(prev => ({
         ...prev,
         make: prev.make || result.make || prev.make,
         model: prev.model || result.model || prev.model,
         year: prev.year || result.year || prev.year,
       }))
+      // Распознанные марка/модель могут быть вне каталога — включаем ручной режим
+      if (nextMake) {
+        const facet = carCatalog.find(c => c.make.toLowerCase() === nextMake.toLowerCase())
+        if (!facet) setManualMake(true)
+        else if (nextModel && !facet.models.some(m => m.model.toLowerCase() === nextModel.toLowerCase())) setManualModel(true)
+      }
       toast.success('Данные по VIN подставлены')
     } catch {
       toast.error('Сервис VIN недоступен')
@@ -122,6 +182,13 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
       }
 
       await onSubmit(cleanData)
+
+      // Новые марка/модель — заявка в общий каталог на утверждение админу
+      if (isPairNew()) {
+        void suggestCarModel(cleanData.make, cleanData.model, profile?.parts_company_id)
+        toast.info('Новые марка и модель отправлены администратору на утверждение')
+      }
+
       onClose()
     } catch (err: any) {
       const msg = err?.message || err?.details || 'Ошибка при сохранении'
@@ -176,15 +243,28 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
               <label className="form-label">
                 Марка <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                name="make"
-                value={formData.make}
-                onChange={handleChange}
-                required
-                className="form-input"
-                placeholder="Toyota, BMW..."
-              />
+              {manualMake || carCatalog.length === 0 ? (
+                <input
+                  type="text"
+                  name="make"
+                  value={formData.make}
+                  onChange={handleChange}
+                  required
+                  className="form-input"
+                  placeholder="Toyota, BMW..."
+                />
+              ) : (
+                <select
+                  value={formData.make}
+                  onChange={e => onMakeSelect(e.target.value)}
+                  required
+                  className="form-select"
+                >
+                  <option value="" disabled>Выберите марку</option>
+                  {carCatalog.map(c => <option key={c.make} value={c.make}>{c.make}</option>)}
+                  <option value={OTHER}>✏️ Другая марка…</option>
+                </select>
+              )}
             </div>
 
             {/* Модель */}
@@ -192,16 +272,45 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
               <label className="form-label">
                 Модель <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                name="model"
-                value={formData.model}
-                onChange={handleChange}
-                required
-                className="form-input"
-                placeholder="Camry, X5..."
-              />
+              {manualMake || manualModel || carCatalog.length === 0 ? (
+                <input
+                  type="text"
+                  name="model"
+                  value={formData.model}
+                  onChange={handleChange}
+                  required
+                  className="form-input"
+                  placeholder="Camry, X5..."
+                />
+              ) : (
+                <select
+                  value={formData.model}
+                  onChange={e => onModelSelect(e.target.value)}
+                  required
+                  disabled={!formData.make}
+                  className="form-select disabled:opacity-60"
+                >
+                  <option value="" disabled>{formData.make ? 'Выберите модель' : 'Сначала марка'}</option>
+                  {catalogModels.map(m => <option key={m.model} value={m.model}>{m.model}</option>)}
+                  <option value={OTHER}>✏️ Другая модель…</option>
+                </select>
+              )}
             </div>
+
+            {/* Подсказка про ручной ввод (новые марка/модель уходят на утверждение) */}
+            {(manualMake || manualModel) && carCatalog.length > 0 && (
+              <div className="sm:col-span-2 -mt-1">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-xs text-amber-600 flex items-start gap-1.5">
+                    <Pencil className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                    Новые марка и модель уйдут администратору на утверждение для общего каталога.
+                  </p>
+                  <button type="button" onClick={backToCatalog} className="text-xs font-medium text-primary hover:underline whitespace-nowrap flex-shrink-0">
+                    Выбрать из каталога
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Год */}
             <div>

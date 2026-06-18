@@ -71,6 +71,20 @@ export interface MarketCategory {
   count: number
 }
 
+/** Модель авто в дереве фасетов (доступные годы для каскада) */
+export interface MarketModelFacet {
+  model: string
+  count: number
+  years: number[]
+}
+
+/** Марка авто в дереве фасетов каталога (get_market_vehicle_facets) */
+export interface MarketMakeFacet {
+  make: string
+  count: number
+  models: MarketModelFacet[]
+}
+
 /** Позиция корзины (хранится в localStorage, ключ 'tsp_market_cart') */
 export interface CartItem {
   inventoryId: string
@@ -117,6 +131,8 @@ export interface MarketFilters {
   condition?: MarketCondition
   companyId?: string
   make?: string
+  model?: string
+  year?: number
   minPrice?: number
   maxPrice?: number
   sort?: MarketSort

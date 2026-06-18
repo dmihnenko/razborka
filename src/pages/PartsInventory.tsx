@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
-import { Plus, Search, Package, Grid, List, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, Download, Zap, MapPin, FolderOpen } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, ChevronRight, Download, Zap, MapPin, FolderOpen } from 'lucide-react'
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -65,7 +65,11 @@ export default function PartsInventory() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('available')
   const [vehicleFilter, setVehicleFilter] = useState<string>('all') // vehicle_id or 'all'
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  // По умолчанию — компактный список; выбор (список/плитка) запоминается.
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    () => ((typeof localStorage !== 'undefined' && localStorage.getItem('parts_inventory_view')) as ViewMode) || 'list'
+  )
+  useEffect(() => { try { localStorage.setItem('parts_inventory_view', viewMode) } catch { /* ignore */ } }, [viewMode])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<PartsInventoryItem | null>(null)
   const [sellingItem, setSellingItem] = useState<PartsInventoryItem | null>(null)
@@ -354,7 +358,7 @@ export default function PartsInventory() {
     reserved: inventory.filter((i: PartsInventoryItem) => i.status === 'reserved').length,
     sold: inventory.filter((i: PartsInventoryItem) => i.status === 'sold').length,
     lowStock: inventory.filter((i: PartsInventoryItem) => !i.vehicle_id && i.quantity <= 2 && i.status === 'available').length,
-    noPrice: inventory.filter((i: PartsInventoryItem) => !i.selling_price).length,
+    needsFill: inventory.filter((i: PartsInventoryItem) => i.status !== 'sold' && (!i.selling_price || !i.part_number?.trim())).length,
     totalUAH: inventory.reduce((sum: number, item: PartsInventoryItem) => {
       const price = item.status === 'sold' ? (item.sold_price ?? item.selling_price ?? 0) : (item.selling_price || 0)
       return item.price_currency === 'UAH' ? sum + price * item.quantity : sum
@@ -703,16 +707,16 @@ export default function PartsInventory() {
           </div>
         )}
 
-        {/* No-price banner */}
-        {stats.noPrice > 0 && (
+        {/* Needs-fill banner: нет цены или оригинального номера */}
+        {stats.needsFill > 0 && (
           <div className="mb-4 flex items-center justify-between gap-3 bg-amber-50 border border-amber-200/60 rounded-2xl px-4 py-3">
             <div className="flex items-center gap-2.5">
               <div className="icon-tile-sm bg-amber-100 text-amber-600 flex-shrink-0">
                 <Tag className="w-3.5 h-3.5" strokeWidth={1.5} />
               </div>
               <span className="text-sm text-amber-800">
-                <span className="font-bold">{stats.noPrice}</span>
-                {' '}запчаст{stats.noPrice === 1 ? 'ь' : stats.noPrice < 5 ? 'и' : 'ей'} без цены
+                <span className="font-bold">{stats.needsFill}</span>
+                {' '}запчаст{stats.needsFill === 1 ? 'ь' : stats.needsFill < 5 ? 'и' : 'ей'} без цены или номера
               </span>
             </div>
             <button
@@ -904,20 +908,45 @@ export default function PartsInventory() {
             ))}
           </div>
         ) : (
-          <div className="cab-card p-0 overflow-hidden">
+          <>
+          {/* Мобильный компактный список — название · ориг. номер · цена (всё остальное в карточке) */}
+          <div className="cab-card p-0 overflow-hidden sm:hidden divide-y divide-gray-100">
+            {filteredAndSorted.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => goToItem(item.id)}
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left active:bg-slate-50 transition-colors"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-gray-900 truncate">{item.name}</div>
+                  <div className="text-xs font-mono text-gray-400 truncate mt-0.5">
+                    {item.part_number || 'без номера'}
+                  </div>
+                </div>
+                <span className="flex-shrink-0 text-sm font-bold text-primary tabular whitespace-nowrap">
+                  {item.selling_price
+                    ? formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')
+                    : <span className="text-amber-500 text-xs font-semibold">нет цены</span>}
+                </span>
+                <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
+              </button>
+            ))}
+          </div>
+
+          {/* Таблица — планшет/десктоп */}
+          <div className="cab-card p-0 overflow-hidden hidden sm:block">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full table-fixed min-w-[640px]">
                 <thead>
                   <tr>
-                    <th className="table-header-cell w-8"></th>
-                    <th className="table-header-cell">Запчасть</th>
-                    <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Категория</th>
-                    <th className="hidden xl:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Артикул</th>
-                    <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Машина</th>
-                    <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Статус</th>
-                    <th className={`hidden sm:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200${sourceFilter === 'vehicles' ? ' !hidden' : ''}`} style={{ letterSpacing: '0.06em' }}>Кол-во</th>
-                    <th className="table-header-cell">Цена</th>
-                    <th className="table-header-cell text-right">Действия</th>
+                    <th className="table-header-cell px-2" style={{ width: '38px' }}></th>
+                    <th className="table-header-cell" style={{ width: '26%' }}>Название</th>
+                    <th className="table-header-cell hidden sm:table-cell" style={{ width: '15%' }}>Ориг. номер</th>
+                    <th className="table-header-cell whitespace-nowrap" style={{ width: '9%' }}>Цена</th>
+                    <th className="table-header-cell whitespace-nowrap" style={{ width: '13%' }}>Наличие</th>
+                    <th className="table-header-cell hidden md:table-cell" style={{ width: '15%' }}>Авто</th>
+                    <th className="table-header-cell hidden lg:table-cell" style={{ width: '11%' }}>Категория</th>
+                    <th className="table-header-cell hidden xl:table-cell" style={{ width: '11%' }}>Склад</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -927,10 +956,8 @@ export default function PartsInventory() {
                       className="hover:bg-slate-50 transition-colors group/row cursor-pointer"
                       onClick={() => goToItem(item.id)}
                     >
-                      <td
-                        className="px-3 py-3 w-8"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      {/* Выбор */}
+                      <td className="w-8 px-2 py-2" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={selectedIds.has(item.id)}
@@ -939,99 +966,59 @@ export default function PartsInventory() {
                           className="w-4 h-4 accent-blue-600 cursor-pointer"
                         />
                       </td>
-                      <td className="table-cell">
-                        <div>
-                          <div className="font-semibold text-gray-900 group-hover/row:text-primary transition-colors leading-tight">
-                            {item.name}
-                          </div>
-                          {item.category && (
-                            <div className="text-xs text-gray-400 mt-0.5 md:hidden">{item.category.name}</div>
-                          )}
-                          {item.location && (
-                            <div className="text-xs text-gray-400 mt-0.5">📍 {item.location}</div>
-                          )}
+                      {/* Название */}
+                      <td className="px-3 py-2">
+                        <div className="font-semibold text-gray-900 group-hover/row:text-primary transition-colors truncate">
+                          {item.name}
                         </div>
                       </td>
-                      <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
-                        {item.category ? (
-                          <span className="text-sm text-gray-600">{item.category.name}</span>
-                        ) : (
-                          <span className="text-gray-300 text-sm">—</span>
-                        )}
-                      </td>
-                      <td className="hidden xl:table-cell px-4 py-3 text-sm text-gray-500 font-mono border-b border-gray-100">
+                      {/* Оригинальный номер */}
+                      <td className="hidden sm:table-cell px-3 py-2 text-sm text-gray-500 font-mono truncate">
                         {item.part_number || <span className="text-gray-300">—</span>}
                       </td>
-                      <td className="hidden lg:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
+                      {/* Цена */}
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="text-sm font-bold text-primary tabular">
+                          {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
+                        </span>
+                      </td>
+                      {/* Наличие — статус + кол-во */}
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleStatusClick(item, e) }}
+                          className={`${statusColors[item.status]} cursor-pointer hover:opacity-80 transition-opacity`}
+                        >
+                          {statusLabels[item.status]}
+                        </button>
+                        {!item.vehicle_id && (
+                          <span className={`ml-1.5 text-xs font-semibold tabular ${item.quantity <= 2 ? 'text-red-600' : 'text-gray-500'}`}>
+                            {item.quantity} шт{item.quantity <= 2 && item.status === 'available'
+                              ? <AlertTriangle className="inline w-3 h-3 ml-0.5 -mt-0.5 text-red-500" />
+                              : null}
+                          </span>
+                        )}
+                      </td>
+                      {/* Авто */}
+                      <td className="hidden md:table-cell px-3 py-2 text-sm text-gray-700">
                         {item.vehicle ? (
-                          <div>
-                            <div className="text-sm font-medium text-gray-700">{item.vehicle.make} {item.vehicle.model}</div>
-                            <div className="text-xs text-gray-400">{item.vehicle.year} · {item.vehicle.vin?.slice(-6) ?? ''}</div>
+                          <div className="leading-tight min-w-0">
+                            <div className="text-sm font-medium text-gray-700 truncate">{item.vehicle.make} {item.vehicle.model}</div>
+                            {item.vehicle.year && <div className="text-[11px] text-gray-400">{item.vehicle.year}</div>}
                           </div>
                         ) : (
                           <span className="text-xs text-gray-400">Магазин</span>
                         )}
                       </td>
-                      <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100 whitespace-nowrap">
-                        <button
-                          onClick={(e) => handleStatusClick(item, e)}
-                          className={`${statusColors[item.status]} cursor-pointer hover:opacity-80 transition-opacity`}
-                        >
-                          {statusLabels[item.status]}
-                        </button>
-                        {item.status === 'sold' && item.sold_to_customer && (
-                          <div className="text-xs text-primary mt-1 font-medium truncate max-w-[120px]">
-                            {item.sold_to_customer.full_name}
-                          </div>
-                        )}
+                      {/* Категория */}
+                      <td className="hidden lg:table-cell px-3 py-2 text-sm text-gray-600">
+                        <div className="truncate">
+                          {item.category ? item.category.name : <span className="text-gray-300">—</span>}
+                        </div>
                       </td>
-                      <td className={`hidden sm:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100 whitespace-nowrap tabular${sourceFilter === 'vehicles' ? ' !hidden' : ''}`}>
-                        {item.vehicle_id ? (
-                          <span className="text-sm text-gray-300">—</span>
-                        ) : (
-                          <div className="flex items-center gap-1.5">
-                            <span className={`text-sm font-bold tabular ${item.quantity <= 2 ? 'text-red-600' : 'text-gray-900'}`}>
-                              {item.quantity}
-                            </span>
-                            {item.reserved_quantity > 0 && (
-                              <span className="text-xs text-yellow-600 font-medium">({item.reserved_quantity} рез.)</span>
-                            )}
-                            {item.quantity <= 2 && item.status === 'available' && (
-                              <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td className="table-cell whitespace-nowrap tabular">
-                        <span className="text-sm font-semibold text-primary tabular">
-                          {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover/row:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => handleEdit(item, e)}
-                            className="p-1.5 text-gray-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-                            title="Редактировать"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                          </button>
-                          {item.status !== 'sold' && (
-                            <button
-                              onClick={(e) => handleSell(item, e)}
-                              className="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
-                              title="Продать"
-                            >
-                              <DollarSign className="w-4 h-4" />
-                            </button>
-                          )}
-                          <button
-                            onClick={(e) => handleDelete(item, e)}
-                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Удалить"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                      {/* Склад */}
+                      <td className="hidden xl:table-cell px-3 py-2 text-sm text-gray-600">
+                        <div className="truncate">
+                          {item.storage_location?.name || item.location || <span className="text-gray-300">—</span>}
                         </div>
                       </td>
                     </tr>
@@ -1040,6 +1027,7 @@ export default function PartsInventory() {
               </table>
             </div>
           </div>
+          </>
         )}
 
         {/* Load more */}
