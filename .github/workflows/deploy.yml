@@ -1,0 +1,49 @@
+name: Deploy to Cloudflare
+
+# Автодеплой razborka.net по пушу в master.
+# Сборка (Vite) требует VITE_*-секретов, деплой (wrangler) — CLOUDFLARE_API_TOKEN.
+# Все секреты заданы в Settings → Secrets and variables → Actions.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch: {}
+
+# Минимальные права токена workflow.
+permissions:
+  contents: read
+
+# Не запускать параллельные деплои одного и того же ref.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build & deploy
+        run: npm run deploy
+        env:
+          # Build-time (Vite)
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_IMGBB_API_KEY: ${{ secrets.VITE_IMGBB_API_KEY }}
+          # Хеш сборки → /version.json (vite.config читает WORKERS_CI_COMMIT_SHA)
+          WORKERS_CI_COMMIT_SHA: ${{ github.sha }}
+          # Deploy-time (wrangler)
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
