@@ -1,9 +1,9 @@
 // Имя Telegram-бота уведомлений (без «@»).
-// Дефолт — рабочий бот разборки (@avtopoisk_help_bot); можно переопределить через
+// Дефолт — рабочий бот разборки (@razborka_info_bot); можно переопределить через
 // VITE_TELEGRAM_BOT_USERNAME (Cloudflare env vars / .env). Username — не секрет.
 export const TELEGRAM_BOT_USERNAME =
   (import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string | undefined)?.replace(/^@/, '') ||
-  'avtopoisk_help_bot'
+  'razborka_info_bot'
 
 /** Deep-link, по которому владелец привязывает свою разборку к Telegram-боту. */
 export function telegramConnectLink(companyId: string): string {

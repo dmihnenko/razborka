@@ -240,8 +240,8 @@ export default function Login() {
 
       {/* ─── Форма входа ─────────────────────────────────────── */}
       <div
-        className="flex-1 flex flex-col overflow-y-auto bg-gray-50"
-        style={{ minWidth: 0 }}
+        className="flex-1 flex flex-col overflow-y-auto"
+        style={{ minWidth: 0, background: 'var(--cab-bg)' }}
       >
         <div
           className="m-auto w-full"
@@ -256,10 +256,13 @@ export default function Login() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="flex items-center justify-center mb-8"
+              className="flex items-center justify-center mb-6"
             >
               <Logo size="md" withText />
             </motion.div>
+
+            {/* Карточка формы — единый стиль Ink & Signal */}
+            <div className="cab-card p-5 sm:p-6">
 
             {/* Form heading — только для регистрации/восстановления (для входа лишнее) */}
             {(isForgotMode || isRegisterMode) && (
@@ -457,7 +460,7 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="btn-primary btn-touch w-full rounded-xl font-semibold active:scale-[0.97] transition-transform duration-150 mt-2"
+                  className="cab-btn cab-btn-primary cab-btn-lg w-full mt-2"
                   style={{ letterSpacing: '-0.01em' }}
                 >
                   {loading
@@ -478,7 +481,7 @@ export default function Login() {
                       onClick={handleGoogleLogin}
                       disabled={loading}
                       aria-label="Войти через Google"
-                      className="btn-secondary btn-touch w-full"
+                      className="cab-btn cab-btn-secondary cab-btn-lg w-full"
                     >
                       <svg width="17" height="17" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
                         <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
@@ -517,6 +520,9 @@ export default function Login() {
                 </div>
               </motion.form>
             </AnimatePresence>
+
+            </div>
+            {/* /карточка формы */}
 
         </div>
       </div>
