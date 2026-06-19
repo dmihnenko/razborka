@@ -1,0 +1,18 @@
+# Netlify — ТОЛЬКО редирект-заглушка для уходящего домена tsp.pp.ua.
+# Боевой хостинг проекта — Cloudflare (см. wrangler.jsonc / worker/index.js).
+# Cloudflare/wrangler этот файл НЕ читают, поэтому петли на razborka.net не будет.
+#
+# Старый Netlify-сайт (tsp.pp.ua и *.netlify.app) на любой путь отвечает
+# 301 → https://razborka.net/<тот же путь>. force=true перебивает любые
+# реальные файлы, query-строка сохраняется автоматически.
+
+# Без пересборки приложения: уходящий домен ничего не показывает, кроме редиректа.
+[build]
+  command = ""
+  publish = "public"
+
+[[redirects]]
+  from = "/*"
+  to = "https://razborka.net/:splat"
+  status = 301
+  force = true
