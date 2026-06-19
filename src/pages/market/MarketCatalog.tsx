@@ -81,7 +81,7 @@ export function MarketCatalog() {
         prev.sort !== next.sort || (prev.page ?? 1) !== (next.page ?? 1)
       return changed ? { ...prev, ...next } : prev
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [searchParams])
 
   const applyFilters = (next: MarketFilters) => {
@@ -110,7 +110,7 @@ export function MarketCatalog() {
 
   useEffect(() => {
     if (!isLoading && !isPlaceholderData && total > 0 && page > totalPages) setPage(1)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [total, totalPages, page, isLoading, isPlaceholderData])
 
   const hasActiveFilters = useMemo(

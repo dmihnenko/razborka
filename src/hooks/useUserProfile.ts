@@ -40,7 +40,9 @@ function saveProfileToCache(userId: string, data: any) {
 function clearProfileCache() {
   try {
     localStorage.removeItem(PROFILE_CACHE_KEY)
-  } catch {}
+  } catch {
+    // ignore storage errors
+  }
 }
 
 export function useUserProfile() {

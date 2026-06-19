@@ -138,7 +138,7 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }) // eslint-disable-line react-hooks/exhaustive-deps
+  })  
 
   return (
     <div className="modal-overlay">

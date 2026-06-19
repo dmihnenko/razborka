@@ -464,7 +464,6 @@ export default function Subscriptions() {
       {isAssignOpen && (
         <AssignModal
           plans={filteredPlans}
-          allPlans={plans}
           companies={companies}
           form={assignForm}
           onFormChange={setAssignForm}
@@ -538,7 +537,7 @@ function RenewModal({ sub, onClose, onConfirm, isPending }: { sub: CompanySubscr
 
 // ─── Assign Modal ─────────────────────────────────────────────────────────────
 
-function AssignModal({ plans, allPlans, companies, form, onFormChange, onSubmit, onClose, isPending, selectedPlan }: any) {
+function AssignModal({ plans, companies, form, onFormChange, onSubmit, onClose, isPending, selectedPlan }: any) {
   useBlockScroll(true)
 
   const endDatePreview = (() => {

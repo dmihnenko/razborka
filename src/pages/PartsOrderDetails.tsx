@@ -156,7 +156,7 @@ export default function PartsOrderDetails() {
   const isOwner   = useHasRole('parts_owner') || isAdmin
   const canManage = Boolean(order) && (!!canEdit || isOwner)
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     if (order?.customer) {
       setCustomerFullName(order.customer.full_name || '')
@@ -173,7 +173,7 @@ export default function PartsOrderDetails() {
       setNpCityRef((order.customer as any).np_city_ref || '')
       setNpWarehouseRef((order.customer as any).np_warehouse_ref || '')
     }
-  }, [order?.customer?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [order?.customer?.id])  
 
   /* ── вычисляем итог на клиенте ──────────────────────────────── */
   const getItemCurrency = (item: any): 'UAH' | 'USD' =>

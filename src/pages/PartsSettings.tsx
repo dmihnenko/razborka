@@ -103,7 +103,7 @@ export default function PartsSettings() {
       senderPhone: prev.senderPhone || npDb.sender_phone || '',
       senderName: prev.senderName || npDb.sender_name || '',
     }))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [npDb])
 
   const handleSaveNpSender = async () => {

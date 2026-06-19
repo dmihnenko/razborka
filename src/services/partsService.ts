@@ -809,7 +809,7 @@ export async function duplicatePartsInventoryItem(
     .single()
   if (fetchErr) throw fetchErr
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const { id: _id, created_at: _ca, updated_at: _ua, sold_price: _sp, sold_to_customer_id: _stc, reserved_quantity: _rq, ...rest } = src as any
 
   const copy: CreatePartsInventoryInput & Record<string, unknown> = {

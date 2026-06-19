@@ -17,7 +17,7 @@ const buildHash = (
 const versionJsonPlugin = {
   name: 'version-json',
   generateBundle() {
-    // @ts-ignore
+    // @ts-expect-error this — контекст Rollup-плагина, emitFile не типизирован в литерале
     this.emitFile({
       type: 'asset',
       fileName: 'version.json',

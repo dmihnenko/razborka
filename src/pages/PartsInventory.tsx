@@ -152,7 +152,7 @@ export default function PartsInventory() {
       const el = scrollEl()
       if (el) el.scrollTop = Number(saved)
     })
-  }, [isLoading]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLoading])  
 
   // Auto-open edit modal when navigated back with editItemId in state
   useEffect(() => {
@@ -166,7 +166,7 @@ export default function PartsInventory() {
     // Чистим состояние через роутер, иначе после сохранения refetch
     // снова триггерит эффект и модалка открывается повторно
     navigate(location.pathname + location.search, { replace: true, state: null })
-  }, [location.state?.editItemId, inventory.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.state?.editItemId, inventory.length])  
 
   // Auto-open sell modal when navigated with sellItemId in state (from item page)
   useEffect(() => {
@@ -183,7 +183,7 @@ export default function PartsInventory() {
       setNewCustomerPhone('')
     }
     navigate(location.pathname + location.search, { replace: true, state: null })
-  }, [location.state?.sellItemId, inventory.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.state?.sellItemId, inventory.length])  
 
   // Reset filters when switching between Разборка / Магазин
   useEffect(() => {
@@ -537,7 +537,7 @@ export default function PartsInventory() {
     setBulkNewCustomerName('')
     setBulkNewCustomerPhone('')
     setIsBulkSellOpen(true)
-  }, [inventory, selectedIds]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [inventory, selectedIds])  
 
   const handleEdit = (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
