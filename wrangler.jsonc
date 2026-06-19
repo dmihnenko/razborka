@@ -8,14 +8,19 @@
   // (зона razborka.net должна быть в этом же аккаунте Cloudflare).
   "routes": [
     { "pattern": "razborka.net", "custom_domain": true },
-    { "pattern": "www.razborka.net", "custom_domain": true }
+    { "pattern": "www.razborka.net", "custom_domain": true },
+    // Старый домен: ловим трафик на зоне tsp.pp.ua и 301-редиректим (логика в worker/index.js).
+    { "pattern": "tsp.pp.ua/*", "zone_name": "tsp.pp.ua" },
+    { "pattern": "www.tsp.pp.ua/*", "zone_name": "tsp.pp.ua" }
   ],
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
     // Неизвестные пути → index.html (клиентский роутинг SPA)
     "not_found_handling": "single-page-application",
-    // Для /api/* сначала запускаем Worker (прокси PrivatBank), остальное — статика
-    "run_worker_first": ["/api/*"]
+    // Worker запускается первым для ВСЕХ запросов: ему нужен контроль, чтобы
+    // 301-редиректить старый домен tsp.pp.ua. Для обычных путей он отдаёт
+    // статику через env.ASSETS (прокси PrivatBank — для /api/privatbank-rate).
+    "run_worker_first": true
   }
 }
