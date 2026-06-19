@@ -17,7 +17,7 @@ React 18 + TypeScript + Vite · TanStack Query · Supabase (Postgres + Auth + Ed
 | Производительность: бандл, запросы, рендер | `perf` |
 | Тесты: Vitest (unit) / Playwright (e2e) | `qa-tester` |
 | Релиз/деплой/версия | `release` |
-| Пайплайны/Netlify/заголовки/CI | `ci-cd` |
+| Пайплайны/Cloudflare/заголовки/CI | `ci-cd` |
 | Аудит безопасности: RLS, auth, Edge Functions, секреты | `security-auditor` |
 | Доступность UI: контраст, ARIA, фокус, клавиатура | `accessibility` |
 
@@ -27,7 +27,7 @@ React 18 + TypeScript + Vite · TanStack Query · Supabase (Postgres + Auth + Ed
 - `npm run build` — сборка · `npm run build:check` — `tsc && vite build` (строже, для проверки перед пушем)
 - `npm run lint` — eslint (`--max-warnings 0`)
 - `npm test` — Vitest · `npm run e2e` — Playwright
-- `npm run deploy` — ручной прод-деплой на Netlify (обычно деплоит сам Netlify по пушу в `master`)
+- `npm run deploy` — ручной прод-деплой на Cloudflare (`npm run build && wrangler deploy`; обычно деплоит сам Cloudflare по пушу в `master`)
 
 ## Конвенции (кратко)
 

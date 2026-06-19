@@ -4,8 +4,14 @@ import path from 'path'
 import { VitePWA } from 'vite-plugin-pwa'
 /// <reference types="vitest" />
 
-// Build hash: prefer git SHA from Netlify CI, fallback to timestamp
-const buildHash = (process.env.COMMIT_REF ?? '').slice(0, 8) || Date.now().toString(36)
+// Build hash: prefer git SHA from Cloudflare Workers Builds CI, fallback to timestamp.
+// CF Workers Builds → WORKERS_CI_COMMIT_SHA · CF Pages → CF_PAGES_COMMIT_SHA · legacy Netlify → COMMIT_REF.
+const buildHash = (
+  process.env.WORKERS_CI_COMMIT_SHA ??
+  process.env.CF_PAGES_COMMIT_SHA ??
+  process.env.COMMIT_REF ??
+  ''
+).slice(0, 8) || Date.now().toString(36)
 
 // Plugin: write /version.json into the output bundle
 const versionJsonPlugin = {

@@ -1,11 +1,11 @@
-# Run TSP - автоматический деплой на Netlify
+# Run razborka - автоматический деплой на Cloudflare (Workers + Static Assets)
 # Использование: .\run-tsp.ps1 "commit message"
 
 param(
     [string]$message = "Update"
 )
 
-Write-Host "🚀 Run TSP - Deploy Script" -ForegroundColor Cyan
+Write-Host "🚀 razborka - Deploy Script" -ForegroundColor Cyan
 Write-Host ""
 
 # Проверяем изменения
@@ -27,13 +27,13 @@ npm run build
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ Сборка успешна" -ForegroundColor Green
     Write-Host ""
-    Write-Host "🌐 Деплой на Netlify..." -ForegroundColor Yellow
-    netlify deploy --prod
-    
+    Write-Host "🌐 Деплой на Cloudflare..." -ForegroundColor Yellow
+    npx wrangler deploy
+
     if ($LASTEXITCODE -eq 0) {
         Write-Host ""
         Write-Host "🎉 Деплой завершен успешно!" -ForegroundColor Green
-        Write-Host "🔗 Сайт доступен: https://tsp.pp.ua" -ForegroundColor Cyan
+        Write-Host "🔗 Сайт доступен: https://razborka.net" -ForegroundColor Cyan
     } else {
         Write-Host ""
         Write-Host "❌ Ошибка деплоя" -ForegroundColor Red

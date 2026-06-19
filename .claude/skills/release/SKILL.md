@@ -1,15 +1,15 @@
 ---
 name: release
-description: Выпуск и деплой этого проекта — бамп версии, сборка, публикация на Netlify, проверка PWA-обновления. Используй, когда нужно подготовить релиз, выкатить изменения в прод или разобраться с процессом деплоя/версионирования.
+description: Выпуск и деплой этого проекта — бамп версии, сборка, публикация на Cloudflare, проверка PWA-обновления. Используй, когда нужно подготовить релиз, выкатить изменения в прод или разобраться с процессом деплоя/версионирования.
 ---
 
 # Release / деплой (этот проект)
 
 ## Как деплоится
-- Хостинг — **Netlify**. Build-команда (`netlify.toml`): `npm install --include=dev --legacy-peer-deps && npm run build`, publish — `dist`, Node 20.
-- **Авто-деплой по пушу** в `master` (если репозиторий подключён к Netlify) — обычно достаточно `git push`.
-- Ручной деплой: `npm run deploy` (= `npm run build && netlify deploy --prod`).
-- SPA-роутинг и заголовки безопасности заданы в `netlify.toml` (редирект `/* → /index.html`). Прокси курса ПриватБанка — там же.
+- Хостинг — **Cloudflare** (Workers + Static Assets). Конфиг — `wrangler.jsonc` (биндинг `ASSETS` → `dist`, SPA-фолбэк `not_found_handling: single-page-application`), Worker — `worker/index.js`.
+- **Авто-деплой по пушу** в `master` (если репозиторий подключён к Cloudflare Workers Builds) — обычно достаточно `git push`.
+- Ручной деплой: `npm run deploy` (= `npm run build && wrangler deploy`).
+- SPA-роутинг — через `not_found_handling` в `wrangler.jsonc`. Заголовки безопасности/кеша — в `public/_headers`. Прокси курса ПриватБанка (`/api/privatbank-rate`) — в `worker/index.js`.
 
 ## Версия и PWA-обновление
 - `package.json` → `"version"` — обнови при значимом релизе (semver: patch/minor/major).

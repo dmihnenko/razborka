@@ -2,7 +2,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
 const ALLOWED_ORIGINS = [
-  'https://tsp.pp.ua',
+  'https://razborka.net',
+  'https://www.razborka.net',
   'http://localhost:5173',
   'http://localhost:4173',
 ]
