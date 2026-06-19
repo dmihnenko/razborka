@@ -4,6 +4,12 @@
   "name": "razborka",
   "compatibility_date": "2024-11-01",
   "main": "worker/index.js",
+  // Кастомные домены: при `wrangler deploy` Cloudflare сам создаёт привязку и DNS-записи
+  // (зона razborka.net должна быть в этом же аккаунте Cloudflare).
+  "routes": [
+    { "pattern": "razborka.net", "custom_domain": true },
+    { "pattern": "www.razborka.net", "custom_domain": true }
+  ],
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
