@@ -111,7 +111,7 @@ export function FilterBar({ value, onChange, categories = [], carCatalog = [] }:
               <select id="mf-make" value={value.make ?? ''} onChange={e => onMakeChange(e.target.value)} className="mk-input">
                 <option value="">Все марки</option>
                 {carCatalog.map(m => (
-                  <option key={m.make} value={m.make}>{m.make}{m.count ? ` (${m.count})` : ''}</option>
+                  <option key={m.make} value={m.make}>{m.make}</option>
                 ))}
               </select>
             </div>

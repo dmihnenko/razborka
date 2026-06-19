@@ -72,11 +72,10 @@ export function MarketHome() {
     <div className="space-y-6 sm:space-y-8">
 
       {/* ── Герой: чистая панель, акцент только на кнопке ─────────────── */}
-      <motion.section {...anim(0)} className="mk-card p-5 sm:p-8 text-center" aria-labelledby="mk-hero-title">
-        <span className="inline-flex items-center gap-1.5 px-3 h-7 rounded-full text-xs font-semibold mb-4" style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
+      <motion.section {...anim(0)} className="mk-card p-5 sm:p-8 text-center">
+        <span className="inline-flex items-center gap-1.5 px-3 h-7 rounded-full text-xs font-semibold" style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
           <Zap className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Б/у и новые запчасти от авторазборок — без посредников
         </span>
-        <h1 id="mk-hero-title" className="mk-h1 max-w-2xl mx-auto">Найдите нужную запчасть с фото и ценой</h1>
 
         <form onSubmit={handleSearch} role="search" className="mt-6 max-w-xl mx-auto">
           <div className="flex gap-2">
