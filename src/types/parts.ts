@@ -97,6 +97,8 @@ export interface PartsInventoryItem {
   category_id: string
   vehicle_id?: string
   name: string
+  /** Внутренний артикул (SKU) — автогенерируется, уникальный; для поиска сотрудниками */
+  article?: string
   part_number?: string
   description?: string
   condition: string
@@ -121,6 +123,8 @@ export interface PartsInventoryItem {
   sold_to_customer_id?: string
   sold_at?: string
   exchange_rate_at_sale?: number
+
+  storage_location_id?: string | null
 
   // Relations
   category?: PartsCategory

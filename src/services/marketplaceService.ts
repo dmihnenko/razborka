@@ -25,11 +25,11 @@ export const MARKET_PAGE_SIZE = 24
 
 /** Безопасные публичные поля запчасти */
 const PART_FIELDS = `
-  id, name, part_number, description, condition, quantity, reserved_quantity,
+  id, name, article, part_number, description, condition, quantity, reserved_quantity,
   selling_price, price_currency, photo_url, photos, status, created_at
 `
 
-const COMPANY_JOIN = `company:parts_companies!inner(id, name, phone, telegram, address, email, description, is_active)`
+const COMPANY_JOIN = `company:parts_companies!inner(id, name, phone, telegram, address, email, description, is_active, ship_speed, warranty_enabled, warranty_days)`
 const CATEGORY_JOIN = `category:parts_categories(id, name)`
 
 function vehicleJoin(inner: boolean) {
@@ -44,6 +44,7 @@ function mapPartRow(row: any): MarketPart {
   return {
     id: row.id,
     name: row.name,
+    article: row.article ?? null,
     partNumber: row.part_number ?? null,
     description: row.description ?? null,
     condition: row.condition,
@@ -69,6 +70,9 @@ function mapPartRow(row: any): MarketPart {
       address: row.company?.address ?? null,
       email: row.company?.email ?? null,
       description: row.company?.description ?? null,
+      shipSpeed: row.company?.ship_speed ?? 'today',
+      warrantyEnabled: row.company?.warranty_enabled ?? false,
+      warrantyDays: row.company?.warranty_days ?? null,
     },
   }
 }

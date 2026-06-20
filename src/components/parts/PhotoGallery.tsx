@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ChevronLeft, ChevronRight, X, ZoomIn } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 
 interface PhotoGalleryProps {
@@ -161,31 +161,19 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
             draggable={false}
           />
 
-          {/* HD-переключатель: грузит полное качество в основном кадре */}
+          {/* HD-переключатель — справа сверху (вместо лупы) */}
           <button
             type="button"
             onClick={e => { e.stopPropagation(); setHd(v => !v) }}
             aria-pressed={hd}
             aria-label={hd ? 'Обычное качество фото' : 'Высокое качество фото (HD)'}
             title={hd ? 'HD включено' : 'Включить HD (полное качество)'}
-            className={`absolute top-2 left-2 z-10 text-[11px] font-bold tracking-wide px-2 h-7 rounded-md transition-colors ${
+            className={`absolute top-2 right-2 z-10 text-[11px] font-bold tracking-wide px-2 h-7 rounded-md transition-colors ${
               hd ? 'bg-white text-gray-900' : 'bg-black/55 text-white hover:bg-black/75'
             }`}
           >
             HD
           </button>
-
-          {/* Zoom hint */}
-          <div className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1.5 pointer-events-none">
-            <ZoomIn className="w-4 h-4" />
-          </div>
-
-          {/* Counter badge */}
-          {photos.length > 1 && (
-            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs font-medium px-2 py-0.5 rounded-full pointer-events-none">
-              {activeIndex + 1} / {photos.length}
-            </div>
-          )}
 
           {/* Desktop side arrows inside main photo */}
           {photos.length > 1 && (

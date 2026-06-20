@@ -259,6 +259,22 @@ export default function PartsInventoryItemPage() {
             {/* Name */}
             <h2 className="heading-2 leading-tight mb-3">{item.name}</h2>
 
+            {/* Артикул (внутренний SKU — для поиска сотрудниками) */}
+            {item.article && (
+              <div className="mb-4">
+                <p className="kicker mb-1.5">Артикул</p>
+                <button
+                  type="button"
+                  onClick={() => { navigator.clipboard.writeText(item.article!); toast.success('Артикул скопирован') }}
+                  title="Нажмите, чтобы скопировать"
+                  className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-[color:var(--cab-border-strong)] hover:border-[color:var(--cab-ink-3)] active:scale-95 transition-all"
+                >
+                  <span className="font-mono font-bold tracking-wider text-gray-800 tabular">{item.article}</span>
+                  <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-primary transition-colors" />
+                </button>
+              </div>
+            )}
+
             {/* Part number */}
             {item.part_number && (
               <div className="mb-4">

@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Car, ChevronRight, Copy, FileText, Package, ShoppingCart, Tag, Truck } from 'lucide-react'
+import { ChevronRight, Copy, FileText, Package, ShoppingCart, Tag } from 'lucide-react'
 import { toast } from 'sonner'
 import { getMarketPart, getRelatedParts } from '@/services/marketplaceService'
 import type { MarketPart } from '@/types/marketplace'
@@ -99,8 +99,9 @@ export default function MarketProductPage() {
     toast.success('Номер скопирован')
   }
 
+
   return (
-    <div className="max-w-[960px]">
+    <div>
       {/* Хлебные крошки */}
       <nav aria-label="Хлебные крошки" className="mb-4">
         <ol className="flex items-center gap-1 text-xs sm:text-sm min-w-0 mk-meta">
@@ -112,8 +113,8 @@ export default function MarketProductPage() {
         </ol>
       </nav>
 
-      {/* 2 колонки: фото (гибкое ≤560) + инфо (фикс 360) */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,560px)_360px] gap-4 lg:gap-5 items-start">
+      {/* ПК — 3 колонки (фото · цена+инфо · разборка); мобайл — вертикально */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px_300px] gap-4 lg:gap-5 items-start">
         {/* Фото */}
         <div className="min-w-0">
           {galleryPhotos.length > 0 ? (
@@ -126,9 +127,8 @@ export default function MarketProductPage() {
           )}
         </div>
 
-        {/* Инфо-колонка */}
-        <div className="space-y-3">
-          <div className="mk-card p-4">
+        {/* Цена + характеристики */}
+        <div className="mk-card p-4">
             <div className="flex flex-wrap gap-1.5 mb-2.5">
               {conditionBadge(part.condition)}
               <span className="mk-badge mk-badge-neutral">Оригинал</span>
@@ -138,95 +138,90 @@ export default function MarketProductPage() {
               )}
             </div>
 
-            <h1 className="text-lg sm:text-xl font-extrabold leading-tight tracking-tight mb-1" style={{ color: 'var(--mk-text)' }}>{part.name}</h1>
+            <h1 className="text-[17px] font-extrabold leading-snug tracking-tight mb-1" style={{ color: 'var(--mk-text)' }}>{part.name}</h1>
 
-            {part.partNumber && (
-              <div className="mt-2 mb-3 flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] uppercase font-bold tracking-widest mk-meta">Оригинальный номер</span>
-                <button
-                  type="button" onClick={copyPartNumber} title="Нажмите, чтобы скопировать"
-                  aria-label={`Скопировать оригинальный номер ${part.partNumber.toUpperCase()}`}
-                  className="group inline-flex items-center gap-2 min-h-[40px] px-3 rounded-xl transition-colors"
-                  style={{ background: 'var(--mk-surface-2)', border: '1px solid var(--mk-border)' }}
-                >
-                  <span className="font-mono font-bold tracking-wider uppercase text-sm" style={{ color: 'var(--mk-text)' }}>{part.partNumber.toUpperCase()}</span>
-                  <Copy className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
-                </button>
-              </div>
-            )}
-
-            {/* Цена */}
-            <div className="mt-3 p-3.5 rounded-xl" style={{ background: 'var(--mk-surface-2)' }}>
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[10px] uppercase tracking-widest font-bold mk-meta">Цена</span>
-                <span className="mk-price-lg leading-none">{formatPrice(part.sellingPrice, part.priceCurrency)}</span>
-              </div>
-              {part.quantity > 1 && (
-                <p className="text-xs mt-1.5 mk-meta">В наличии: <span className="font-bold" style={{ color: 'var(--mk-text-2)' }}>{part.quantity} шт.</span></p>
+            {/* Коды: артикул (всегда) + OEM (если есть) — без фона, номер кликабелен (копирует) */}
+            <div className="mt-2 mb-3 space-y-0.5 text-sm" style={{ color: 'var(--mk-text-2)' }}>
+              {part.article && (
+                <p>
+                  Артикул:{' '}
+                  <span className="font-mono font-bold" style={{ color: 'var(--mk-text)' }}>{part.article}</span>
+                </p>
+              )}
+              {part.partNumber && (
+                <p>
+                  OEM:{' '}
+                  <button
+                    type="button" onClick={copyPartNumber} title="Нажмите, чтобы скопировать"
+                    aria-label={`Скопировать оригинальный номер ${part.partNumber.toUpperCase()}`}
+                    className="font-mono font-bold uppercase inline-flex items-center gap-1 hover:underline"
+                    style={{ color: 'var(--mk-text)' }}
+                  >
+                    {part.partNumber.toUpperCase()}
+                    <Copy className="w-3 h-3" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
+                  </button>
+                </p>
               )}
             </div>
 
-            {/* CTA — В корзину + Купить сейчас */}
+            {/* Цена — в строку, компактно */}
+            <div className="mt-3 px-3.5 py-2.5 rounded-xl flex items-baseline gap-2 flex-wrap" style={{ background: 'var(--mk-surface-2)' }}>
+              <span className="text-[10px] uppercase tracking-widest font-bold mk-meta">Цена</span>
+              <span className="mk-price-lg leading-none">{formatPrice(part.sellingPrice, part.priceCurrency)}</span>
+              {part.quantity > 1 && (
+                <span className="text-xs mk-meta ml-auto">в наличии {part.quantity} шт.</span>
+              )}
+            </div>
+
+            {/* CTA — в один ряд, компактные */}
             <div className="mt-3 grid grid-cols-2 gap-2">
               {inCart ? (
-                <Link to="/market/cart" className="mk-btn mk-btn-accent mk-btn-lg w-full col-span-2">
+                <Link to="/market/cart" className="mk-btn mk-btn-accent w-full col-span-2">
                   <ShoppingCart className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> Перейти в корзину
                 </Link>
               ) : (
                 <>
-                  <button type="button" onClick={handleAddToCart} className="mk-btn mk-btn-accent mk-btn-lg w-full">
+                  <button type="button" onClick={handleAddToCart} className="mk-btn mk-btn-accent w-full">
                     <ShoppingCart className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> В корзину
                   </button>
-                  <button type="button" onClick={handleBuyNow} className="mk-btn mk-btn-brand mk-btn-lg w-full">
+                  <button type="button" onClick={handleBuyNow} className="mk-btn mk-btn-brand w-full">
                     Купить сейчас
                   </button>
                 </>
               )}
             </div>
 
-            {/* Доставка */}
-            <div className="mt-3 flex items-center gap-2 text-xs mk-meta">
-              <Truck className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
-              <span>Доставка Новой Почтой · возврат 14 дней на проверку</span>
-            </div>
-
             {/* Авто-донор — в той же карточке через разделитель */}
             {part.vehicle && (
               <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--mk-border)' }}>
-                <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-2 mk-meta">
-                  <Car className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Снята с автомобиля
-                </p>
-                <div className="flex items-center gap-3">
-                  <span className="mk-tile-icon flex-shrink-0"><Car className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" /></span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold leading-tight" style={{ color: 'var(--mk-text)' }}>
-                      {part.vehicle.make} {part.vehicle.model}
-                      {part.vehicle.year && <span className="font-normal ml-1.5 text-sm mk-meta">{part.vehicle.year} г.</span>}
-                    </p>
-                    {part.vehicle.vin && <p className="text-[11px] font-mono mt-0.5 select-all mk-meta">VIN: {part.vehicle.vin}</p>}
-                  </div>
+                <p className="text-xs font-bold uppercase tracking-widest mb-2 mk-meta">Снята с автомобиля</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold leading-snug" style={{ color: 'var(--mk-text)' }}>
+                    {[part.vehicle.make, part.vehicle.model].filter(Boolean).join(' ')}
+                    {part.vehicle.year && <span className="font-medium mk-meta"> · {part.vehicle.year} г.</span>}
+                  </p>
+                  {part.vehicle.vin && <p className="text-[11px] font-mono mt-0.5 select-all mk-meta">VIN: {part.vehicle.vin}</p>}
                 </div>
               </div>
             )}
           </div>
 
-          {/* Продавец */}
-          <SellerContactCard
-            company={part.company}
-            hideCallButton
-            telegramMessage={
-              `Здравствуйте! Интересует запчасть:\n«${part.name}»` +
-              (part.vehicle ? `\nАвто: ${part.vehicle.make} ${part.vehicle.model}${part.vehicle.year ? ` ${part.vehicle.year}` : ''}` : '') +
-              (part.partNumber ? `\nОриг. номер: ${part.partNumber.toUpperCase()}` : '') +
-              `\n${typeof window !== 'undefined' ? window.location.href : ''}`
-            }
-          />
-        </div>
+        {/* Разборка (продавец) — отдельная колонка (доставка/гарантия — внутри карточки) */}
+        <SellerContactCard
+          company={part.company}
+          hideCallButton
+          telegramMessage={
+            `Здравствуйте! Интересует запчасть:\n«${part.name}»` +
+            (part.vehicle ? `\nАвто: ${part.vehicle.make} ${part.vehicle.model}${part.vehicle.year ? ` ${part.vehicle.year}` : ''}` : '') +
+            (part.partNumber ? `\nОриг. номер: ${part.partNumber.toUpperCase()}` : '') +
+            `\n${typeof window !== 'undefined' ? window.location.href : ''}`
+          }
+        />
       </div>
 
-      {/* Описание */}
-      {part.description && (
-        <div className="mk-card p-4 mt-4 sm:mt-5 max-w-3xl">
+      {/* Описание — под колонками (авто / доставка / гарантия); скрыто, если описания нет */}
+      {part.description?.trim() && (
+        <div className="mk-card p-4 mt-4 sm:mt-5">
           <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-3 mk-meta">
             <FileText className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Описание
           </h2>

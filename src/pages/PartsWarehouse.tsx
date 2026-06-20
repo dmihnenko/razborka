@@ -1,12 +1,9 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import {
-  Plus, ChevronRight, ChevronDown,
-  Pencil, Trash2, Warehouse, Check, X,
-  FolderOpen, Folder, MapPin, QrCode,
-} from 'lucide-react'
+import { Plus, Pencil, Trash2, Warehouse, Check, X, QrCode, ChevronLeft, ChevronRight, FolderTree, GripVertical } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import QrLabelModal from '@/components/parts/QrLabelModal'
 import { useUserProfile } from '@/hooks/useUserProfile'
@@ -17,59 +14,57 @@ import {
   updateStorageLocation,
   deleteStorageLocation,
 } from '@/services/partsService'
+import { formatPrice } from '@/utils/currency'
 import type { StorageLocation } from '@/types/parts'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
-interface TreeNode extends StorageLocation {
-  children: TreeNode[]
-  depth: number
-}
+interface FlatNode extends StorageLocation { depth: number; childCount: number }
 
-/* Отступ-индент на уровень вложенности (px) */
-const INDENT = 22
-/* Максимум уровней вложенности склада */
+const INDENT = 16
 const MAX_DEPTH = 4
-/* Метка уровня по глубине */
 const LEVEL_LABELS = ['Бокс', 'Стеллаж', 'Полка', 'Ячейка']
 
-function buildTree(nodes: StorageLocation[], parentId: string | null = null, depth = 0): TreeNode[] {
-  return nodes
-    .filter(n => n.parent_id === parentId)
-    .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
-    .map(n => ({
-      ...n,
-      children: buildTree(nodes, n.id, depth + 1),
-      depth,
-    }))
-}
-
-function flattenTree(nodes: TreeNode[], expanded: Set<string>): TreeNode[] {
-  const result: TreeNode[] = []
-  for (const node of nodes) {
-    result.push(node)
-    if (expanded.has(node.id) && node.children.length > 0) {
-      result.push(...flattenTree(node.children, expanded))
-    }
+/** Плоский список мест с глубиной (DFS, сохраняет порядок). Дети свёрнутых узлов скрыты. */
+function flatten(nodes: StorageLocation[], collapsed: Set<string>): FlatNode[] {
+  const childrenOf = (id: string | null) =>
+    nodes.filter(n => n.parent_id === id)
+      .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
+  const out: FlatNode[] = []
+  const walk = (n: StorageLocation, depth: number) => {
+    const kids = childrenOf(n.id)
+    out.push({ ...n, depth, childCount: kids.length })
+    if (!collapsed.has(n.id)) kids.forEach(k => walk(k, depth + 1))
   }
-  return result
+  childrenOf(null).forEach(r => walk(r, 0))
+  return out
 }
 
 export default function PartsWarehouse() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
   const { confirm: showConfirm, dialogProps } = useConfirm()
 
-  // QR-этикетка: { id, name, path }
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [qrNode, setQrNode] = useState<{ id: string; name: string; path: string } | null>(null)
-
-  // undefined = not adding; null = adding at root; string = adding as child of that id
-  const [addingParentId, setAddingParentId] = useState<string | null | undefined>(undefined)
+  const [addingParentId, setAddingParentId] = useState<string | null | undefined>(undefined) // undefined=нет, null=корень, id=вложенное
   const [addingName, setAddingName] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [structMode, setStructMode] = useState(false) // перетаскивание структуры (только для основной категории)
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [dropId, setDropId] = useState<string | null>(null)
+  const didInitCollapse = useRef(false)
+
+  const toggleCollapse = (id: string) =>
+    setCollapsed(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
 
   const { data: locations = [], isLoading } = useQuery({
     queryKey: ['parts-storage-locations', partsCompanyId],
@@ -87,70 +82,145 @@ export default function PartsWarehouse() {
         .not('storage_location_id', 'is', null)
       const map: Record<string, number> = {}
       ;(data || []).forEach((row: { storage_location_id: string | null }) => {
-        if (row.storage_location_id)
-          map[row.storage_location_id] = (map[row.storage_location_id] || 0) + 1
+        if (row.storage_location_id) map[row.storage_location_id] = (map[row.storage_location_id] || 0) + 1
       })
       return map
     },
     enabled: !!partsCompanyId,
   })
 
-  const tree = useMemo(() => buildTree(locations as StorageLocation[]), [locations])
-  const flatList = useMemo(() => flattenTree(tree, expanded), [tree, expanded])
+  // Позиции выбранного места
+  const { data: items = [], isLoading: itemsLoading } = useQuery<any[]>({
+    queryKey: ['parts-location-items', selectedId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('parts_inventory')
+        .select('id, name, article, part_number, selling_price, price_currency, quantity, status')
+        .eq('parts_company_id', partsCompanyId!)
+        .eq('storage_location_id', selectedId!)
+        .order('name')
+      return data || []
+    },
+    enabled: !!partsCompanyId && !!selectedId,
+  })
 
-  /* Полный путь узла (Бокс 1 / Стеллаж 2 / Полка 3) */
+  const flat = useMemo(() => flatten(locations as StorageLocation[], collapsed), [locations, collapsed])
+  const allFlat = useMemo(() => flatten(locations as StorageLocation[], new Set<string>()), [locations])
+  const selected = allFlat.find(n => n.id === selectedId) || null
+  const depthOf = (id: string) => allFlat.find(n => n.id === id)?.depth ?? 0
+
+  const childrenMap = useMemo(() => {
+    const m = new Map<string | null, StorageLocation[]>()
+    for (const l of locations as StorageLocation[]) {
+      const k = l.parent_id
+      if (!m.has(k)) m.set(k, [])
+      m.get(k)!.push(l)
+    }
+    return m
+  }, [locations])
+
+  // Высота поддерева (0 — лист)
+  const subtreeHeight = (id: string): number => {
+    const kids = childrenMap.get(id) || []
+    return kids.length ? 1 + Math.max(...kids.map(k => subtreeHeight(k.id))) : 0
+  }
+  // target внутри поддерева src? (защита от цикла)
+  const isDescendant = (srcId: string, targetId: string): boolean => {
+    const stack = [...(childrenMap.get(srcId) || [])]
+    while (stack.length) {
+      const n = stack.pop()!
+      if (n.id === targetId) return true
+      stack.push(...(childrenMap.get(n.id) || []))
+    }
+    return false
+  }
+  // Можно ли переместить src внутрь target как ребёнка
+  const canDrop = (srcId: string, targetId: string): boolean => {
+    if (srcId === targetId) return false
+    const src = (locations as StorageLocation[]).find(l => l.id === srcId)
+    if (!src) return false
+    if (src.parent_id === targetId) return false // уже там
+    if (isDescendant(srcId, targetId)) return false // цикл
+    // глубина после перемещения не должна превышать лимит
+    if (depthOf(targetId) + 1 + subtreeHeight(srcId) > MAX_DEPTH - 1) return false
+    return true
+  }
+
+  // Дефолт: подкатегории свёрнуты (свернуть все узлы с детьми один раз при загрузке)
+  useEffect(() => {
+    if (!didInitCollapse.current && locations.length) {
+      const parents = new Set<string>()
+      for (const l of locations as StorageLocation[]) if (l.parent_id) parents.add(l.parent_id)
+      setCollapsed(parents)
+      didInitCollapse.current = true
+    }
+  }, [locations])
+
+  // Десктоп: авто-выбор первого места, если выбора нет
+  useEffect(() => {
+    if (!selectedId && flat.length && window.matchMedia('(min-width:640px)').matches) {
+      setSelectedId(flat[0].id)
+    }
+  }, [flat, selectedId])
+
+  // Структурный режим доступен только для основной (корневой) категории
+  const structActive = structMode && selected?.depth === 0
+
   const getNodePath = (nodeId: string): string => {
     const byId = new Map((locations as StorageLocation[]).map(l => [l.id, l]))
     const parts: string[] = []
     let cur: StorageLocation | undefined = byId.get(nodeId)
     let guard = 0
-    while (cur && guard++ < 20) {
-      parts.unshift(cur.name)
-      cur = cur.parent_id ? byId.get(cur.parent_id) : undefined
-    }
+    while (cur && guard++ < 20) { parts.unshift(cur.name); cur = cur.parent_id ? byId.get(cur.parent_id) : undefined }
     return parts.join(' / ')
   }
 
   const createMutation = useMutation({
     mutationFn: ({ name, parentId }: { name: string; parentId: string | null }) =>
       createStorageLocation({ name, parent_id: parentId, parts_company_id: partsCompanyId! }),
-    onSuccess: (_, vars) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-storage-locations'] })
       toast.success('Место добавлено')
-      setAddingParentId(undefined)
-      setAddingName('')
-      if (vars.parentId) setExpanded(prev => new Set([...prev, vars.parentId!]))
+      setAddingParentId(undefined); setAddingName('')
     },
     onError: () => toast.error('Ошибка при создании'),
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) =>
-      updateStorageLocation(id, { name }),
+    mutationFn: ({ id, name }: { id: string; name: string }) => updateStorageLocation(id, { name }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-storage-locations'] })
-      toast.success('Обновлено')
-      setEditingId(null)
+      toast.success('Обновлено'); setEditingId(null)
     },
     onError: () => toast.error('Ошибка при обновлении'),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteStorageLocation(id),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['parts-storage-locations'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       toast.success('Удалено')
+      if (selectedId === id) setSelectedId(null)
     },
     onError: () => toast.error('Ошибка при удалении'),
   })
 
-  const toggleExpand = (id: string) => {
-    setExpanded(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
+  const moveMutation = useMutation({
+    mutationFn: ({ id, parentId, sortOrder }: { id: string; parentId: string; sortOrder: number }) =>
+      updateStorageLocation(id, { parent_id: parentId, sort_order: sortOrder }),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['parts-storage-locations'] })
+      setCollapsed(prev => { const n = new Set(prev); n.delete(vars.parentId); return n }) // раскрыть цель
+      toast.success('Перемещено')
+    },
+    onError: () => toast.error('Не удалось переместить'),
+  })
+
+  const handleDrop = (srcId: string, targetId: string) => {
+    if (!canDrop(srcId, targetId)) return
+    const sortOrder = (childrenMap.get(targetId) || []).length
+    moveMutation.mutate({ id: srcId, parentId: targetId, sortOrder })
   }
 
   const handleAdd = (e: React.FormEvent) => {
@@ -159,26 +229,13 @@ export default function PartsWarehouse() {
     createMutation.mutate({ name: addingName.trim(), parentId: addingParentId ?? null })
   }
 
-  const startAddChild = (nodeId: string) => {
-    setAddingParentId(nodeId)
-    setAddingName('')
-    setExpanded(prev => new Set([...prev, nodeId]))
-  }
-
-  const cancelAdd = () => {
-    setAddingParentId(undefined)
-    setAddingName('')
-  }
-
-  const handleDelete = async (node: TreeNode) => {
+  const handleDelete = async (node: FlatNode) => {
     const usage = usageMap[node.id] || 0
-    const hasChildren = node.children.length > 0
     let msg = `Удалить «${node.name}»?`
-    if (hasChildren) msg = `«${node.name}» содержит вложенные места — они тоже будут удалены. Продолжить?`
+    if (node.childCount > 0) msg = `«${node.name}» содержит вложенные места — они тоже будут удалены. Продолжить?`
     else if (usage > 0) msg = `В «${node.name}» хранится ${usage} запч. — они потеряют привязку. Продолжить?`
     const ok = await showConfirm({ message: msg, danger: true })
-    if (!ok) return
-    deleteMutation.mutate(node.id)
+    if (ok) deleteMutation.mutate(node.id)
   }
 
   if (!partsCompanyId) {
@@ -199,327 +256,192 @@ export default function PartsWarehouse() {
         subtitle={totalLocations > 0 ? `${totalLocations} мест · ${usedCount} задействовано` : undefined}
         backPath="/parts/dashboard"
         actions={
-          <button
-            onClick={() => { setAddingParentId(null); setAddingName('') }}
-            className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Добавить</span>
+          <button onClick={() => { setAddingParentId(null); setAddingName('') }} className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5">
+            <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Место</span>
           </button>
         }
       />
 
-      <div className="px-4 sm:px-6 py-5 space-y-4">
-
-        {/* Add root form */}
-        {addingParentId === null && (
-          <div className="cab-card p-4 animate-slide-up">
-            <p className="kicker mb-2">Место верхнего уровня</p>
-            <p className="text-xs mb-3" style={{ color: 'var(--cab-ink-3)' }}>Бокс, зона, секция…</p>
-            <form onSubmit={handleAdd} className="flex gap-2">
-              <input
-                type="text"
-                autoFocus
-                value={addingName}
-                onChange={e => setAddingName(e.target.value)}
-                placeholder="Например: Бокс 1"
-                className="form-input flex-1"
-              />
-              <button
-                type="submit"
-                disabled={!addingName.trim() || createMutation.isPending}
-                className="cab-btn cab-btn-primary px-3 min-h-[40px]"
-              >
-                <Check className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={cancelAdd}
-                className="cab-btn cab-btn-secondary px-3 min-h-[40px]"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* Main content */}
+      <div className="px-4 sm:px-6 py-5">
         {isLoading ? (
-          <div className="flex justify-center py-16">
-            <Spinner size="xl" />
-          </div>
+          <div className="flex justify-center py-16"><Spinner size="xl" /></div>
         ) : locations.length === 0 && addingParentId === undefined ? (
-          /* Empty state */
           <div className="cab-card p-4">
             <div className="empty-state">
-              <div className="empty-state-icon bg-slate-100 text-slate-700">
+              <div className="empty-state-icon" style={{ background: 'var(--cab-surface-2)', color: 'var(--cab-ink-2)' }}>
                 <Warehouse className="w-7 h-7" />
               </div>
               <p className="empty-state-title">Нет мест хранения</p>
               <p className="empty-state-text">
-                Создайте иерархию склада.<br />
-                Например:{' '}
-                <span className="font-medium" style={{ color: 'var(--cab-ink)' }}>
-                  Бокс 1 → Стеллаж 2 → Полка 3 → Ячейка 4
-                </span>
+                Создайте иерархию склада. Например:{' '}
+                <span className="font-medium" style={{ color: 'var(--cab-ink)' }}>Бокс 1 → Стеллаж 2 → Полка 3 → Ячейка 4</span>
               </p>
-              <button
-                onClick={() => { setAddingParentId(null); setAddingName('') }}
-                className="cab-btn cab-btn-primary mt-5"
-              >
-                <Plus className="w-4 h-4" />
-                Создать первое место
+              <button onClick={() => { setAddingParentId(null); setAddingName('') }} className="cab-btn cab-btn-primary mt-5">
+                <Plus className="w-4 h-4" /> Создать первое место
               </button>
             </div>
           </div>
-        ) : locations.length > 0 ? (
-          <>
-            {/* Tree card */}
-            <div className="cab-card overflow-hidden">
-              <div>
-                {flatList.map((node) => {
-                  const usage = usageMap[node.id] || 0
-                  const hasChildren = node.children.length > 0
-                  const isExpanded = expanded.has(node.id)
-                  const isEditing = editingId === node.id
-                  const isAddingChild = addingParentId === node.id
-                  const levelLabel = LEVEL_LABELS[Math.min(node.depth, LEVEL_LABELS.length - 1)]
-                  const indent = node.depth * INDENT
+        ) : (
+          <div className="cab-card overflow-hidden">
+            <div className="flex flex-col sm:flex-row min-h-[60vh] sm:min-h-[440px]">
 
-                  return (
-                    <div
-                      key={node.id}
-                      className="border-t first:border-t-0"
-                      style={{ borderColor: 'var(--cab-border)' }}
-                    >
-                      {/* Node row */}
-                      <div
-                        className="group relative flex items-center gap-2 py-2 pr-3 transition-colors"
+              {/* ── Левая: места хранения ── */}
+              <div className={`${selectedId ? 'hidden sm:flex' : 'flex'} flex-col w-full sm:w-72 sm:flex-shrink-0`}
+                style={{ background: 'var(--cab-surface-2)', borderRight: '1px solid var(--cab-border)' }}>
+                {/* Форма добавления корневого места */}
+                {addingParentId === null && (
+                  <form onSubmit={handleAdd} className="p-2.5 flex gap-2" style={{ borderBottom: '1px solid var(--cab-border)' }}>
+                    <input autoFocus value={addingName} onChange={e => setAddingName(e.target.value)} placeholder="Напр.: Бокс 1" className="form-input flex-1 py-1.5 text-sm" />
+                    <button type="submit" disabled={!addingName.trim() || createMutation.isPending} className="cab-btn cab-btn-primary px-2.5 min-h-[36px]"><Check className="w-4 h-4" /></button>
+                    <button type="button" onClick={() => { setAddingParentId(undefined); setAddingName('') }} className="cab-btn cab-btn-secondary px-2.5 min-h-[36px]"><X className="w-4 h-4" /></button>
+                  </form>
+                )}
+                {structActive && (
+                  <p className="px-3 py-2 text-[11px] flex items-center gap-1.5" style={{ background: 'var(--cab-signal-weak)', color: 'var(--cab-signal)', borderBottom: '1px solid var(--cab-border)' }}>
+                    <GripVertical className="w-3.5 h-3.5 flex-shrink-0" /> Перетащите подкатегорию в другую категорию
+                  </p>
+                )}
+                <div className="overflow-y-auto p-2 max-h-[62vh] sm:max-h-none">
+                  {flat.map(node => {
+                    const active = selectedId === node.id
+                    const count = usageMap[node.id] || 0
+                    const hasKids = node.childCount > 0
+                    const isCollapsed = collapsed.has(node.id)
+                    const draggable = structActive && node.depth > 0
+                    const isDragging = dragId === node.id
+                    const isDropTarget = dropId === node.id
+                    return (
+                      <div key={node.id}
+                        draggable={draggable}
+                        onDragStart={draggable ? (e => { setDragId(node.id); e.dataTransfer.effectAllowed = 'move' }) : undefined}
+                        onDragEnd={() => { setDragId(null); setDropId(null) }}
+                        onDragOver={structActive && dragId && canDrop(dragId, node.id) ? (e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropId(node.id) }) : undefined}
+                        onDragLeave={() => setDropId(prev => (prev === node.id ? null : prev))}
+                        onDrop={structActive && dragId ? (e => { e.preventDefault(); handleDrop(dragId, node.id); setDragId(null); setDropId(null) }) : undefined}
                         style={{
-                          paddingLeft: `${12 + indent}px`,
-                          background: isExpanded ? 'var(--cab-surface-2)' : undefined,
+                          paddingLeft: 8 + node.depth * INDENT,
+                          background: isDropTarget ? 'var(--cab-signal-weak)' : active ? 'var(--cab-surface)' : undefined,
+                          opacity: isDragging ? 0.4 : 1,
+                          boxShadow: isDropTarget ? 'inset 0 0 0 1.5px var(--cab-signal)' : undefined,
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--cab-surface-2)' }}
-                        onMouseLeave={e => { e.currentTarget.style.background = isExpanded ? 'var(--cab-surface-2)' : '' }}
-                      >
-                        {/* Connector lines for nesting depth */}
-                        {Array.from({ length: node.depth }).map((_, i) => (
-                          <span
-                            key={i}
-                            aria-hidden
-                            className="absolute top-0 bottom-0 pointer-events-none"
-                            style={{
-                              left: `${12 + i * INDENT + 13}px`,
-                              borderLeft: '1px solid var(--cab-border)',
-                            }}
-                          />
-                        ))}
-
-                        {/* Expand toggle */}
-                        <button
-                          type="button"
-                          onClick={() => hasChildren && toggleExpand(node.id)}
-                          className="w-6 h-6 flex items-center justify-center flex-shrink-0 rounded transition-colors"
-                          style={{ color: 'var(--cab-ink-3)', cursor: hasChildren ? 'pointer' : 'default' }}
-                        >
-                          {hasChildren ? (
-                            isExpanded
-                              ? <ChevronDown className="w-4 h-4" />
-                              : <ChevronRight className="w-4 h-4" />
-                          ) : (
-                            <span className="w-4 h-4" />
-                          )}
-                        </button>
-
-                        {/* Folder / pin icon tile */}
-                        <div className="w-7 h-7 flex items-center justify-center flex-shrink-0 rounded-md bg-slate-100 text-slate-700">
-                          {hasChildren ? (
-                            isExpanded
-                              ? <FolderOpen className="w-4 h-4" />
-                              : <Folder className="w-4 h-4" />
-                          ) : (
-                            <MapPin className="w-3.5 h-3.5" />
-                          )}
-                        </div>
-
-                        {/* Name or inline edit */}
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            autoFocus
-                            value={editingName}
-                            onChange={e => setEditingName(e.target.value)}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter' && editingName.trim())
-                                updateMutation.mutate({ id: node.id, name: editingName.trim() })
-                              if (e.key === 'Escape') setEditingId(null)
-                            }}
-                            className="form-input flex-1 py-1.5 text-sm"
-                          />
+                        className={`relative flex items-center rounded-lg pr-2 mb-0.5 transition-colors ${active && !isDropTarget ? 'shadow-sm' : ''} ${!active && !isDropTarget ? 'hover:bg-[var(--cab-surface)]/70' : ''} ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}>
+                        {active && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full" style={{ background: 'var(--cab-signal)' }} />}
+                        {draggable && <GripVertical className="flex-shrink-0 w-3.5 h-3.5 mr-0.5" style={{ color: 'var(--cab-ink-3)' }} />}
+                        {hasKids ? (
+                          <button onClick={() => toggleCollapse(node.id)}
+                            className="flex-shrink-0 p-1 rounded-md hover:bg-black/5" aria-label={isCollapsed ? 'Развернуть' : 'Свернуть'}>
+                            <ChevronRight className={`w-3.5 h-3.5 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} style={{ color: 'var(--cab-ink-3)' }} />
+                          </button>
                         ) : (
-                          <div className="flex-1 min-w-0 flex items-center gap-2">
-                            <span
-                              className="font-semibold text-sm truncate"
-                              style={{ color: 'var(--cab-ink)' }}
-                            >
-                              {node.name}
-                            </span>
-                            <span className="cab-chip shrink-0">{levelLabel}</span>
-                            {usage > 0 && (
-                              <span className="cab-chip cab-chip-signal tabular shrink-0">
-                                {usage} запч.
-                              </span>
-                            )}
-                            {hasChildren && (
-                              <span
-                                className="cab-chip tabular shrink-0"
-                                title="Вложенных мест"
-                              >
-                                {node.children.length}
-                              </span>
-                            )}
-                          </div>
+                          <span className="flex-shrink-0 w-[26px]" />
                         )}
-
-                        {/* Action buttons — появляются по hover строки */}
-                        <div
-                          className={[
-                            'flex items-center gap-0.5 flex-shrink-0 transition-opacity',
-                            isEditing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100',
-                          ].join(' ')}
-                        >
-                          {isEditing ? (
-                            <>
-                              <button
-                                onClick={() =>
-                                  editingName.trim() &&
-                                  updateMutation.mutate({ id: node.id, name: editingName.trim() })
-                                }
-                                disabled={updateMutation.isPending}
-                                className="btn-icon-sm text-green-600 hover:bg-green-50"
-                              >
-                                <Check className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => setEditingId(null)}
-                                className="btn-icon-sm"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              {node.depth < MAX_DEPTH - 1 && (
-                                <button
-                                  onClick={() => startAddChild(node.id)}
-                                  title="Добавить вложенное место"
-                                  className="btn-icon-sm"
-                                >
-                                  <Plus className="w-4 h-4" />
-                                </button>
-                              )}
-                              <button
-                                onClick={() => setQrNode({ id: node.id, name: node.name, path: getNodePath(node.id) })}
-                                title="QR / Этикетка"
-                                className="btn-icon-sm"
-                              >
-                                <QrCode className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => { setEditingId(node.id); setEditingName(node.name) }}
-                                title="Переименовать"
-                                className="btn-icon-sm"
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(node)}
-                                disabled={deleteMutation.isPending}
-                                title="Удалить"
-                                className="btn-icon-sm hover:text-red-600 hover:bg-red-50"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        <button onClick={() => setSelectedId(node.id)}
+                          className={`flex-1 min-w-0 text-left flex items-center gap-2 py-2.5 text-sm ${active ? 'font-semibold' : ''}`}>
+                          <span className="flex-1 truncate" style={{ color: active ? 'var(--cab-ink)' : 'var(--cab-ink-2)' }}>{node.name}</span>
+                          {count > 0 && <span className="text-xs tabular-nums flex-shrink-0" style={{ color: 'var(--cab-ink-3)' }}>{count}</span>}
+                        </button>
                       </div>
+                    )
+                  })}
+                  {flat.length === 0 && (
+                    <p className="px-3 py-8 text-center text-sm" style={{ color: 'var(--cab-ink-3)' }}>Нет мест — добавьте первое</p>
+                  )}
+                </div>
+              </div>
 
-                      {/* Inline add-child form */}
-                      {isAddingChild && (
-                        <div
-                          className="relative px-3 py-3 animate-slide-up"
-                          style={{
-                            background: 'var(--cab-surface-2)',
-                            borderTop: '1px solid var(--cab-border)',
-                            paddingLeft: `${12 + (node.depth + 1) * INDENT + 12}px`,
-                          }}
-                        >
-                          <p className="kicker mb-2" style={{ color: 'var(--cab-signal)' }}>
-                            Вложенное в «{node.name}»
+              {/* ── Правая: позиции выбранного места ── */}
+              <div className={`${selectedId ? 'flex' : 'hidden sm:flex'} flex-col flex-1 min-w-0`} style={{ background: 'var(--cab-surface)' }}>
+                {selected ? (
+                  <>
+                    {/* Шапка выбранного места */}
+                    <div className="flex items-center gap-2 px-3 sm:px-4 h-14 flex-shrink-0" style={{ borderBottom: '1px solid var(--cab-border)' }}>
+                      <button onClick={() => setSelectedId(null)} className="sm:hidden -ml-1 btn-icon" aria-label="Назад"><ChevronLeft className="w-5 h-5" /></button>
+                      {editingId === selected.id ? (
+                        <input autoFocus value={editingName} onChange={e => setEditingName(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter' && editingName.trim()) updateMutation.mutate({ id: selected.id, name: editingName.trim() }); if (e.key === 'Escape') setEditingId(null) }}
+                          className="form-input flex-1 py-1.5 text-sm" />
+                      ) : (
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-sm truncate" style={{ color: 'var(--cab-ink)' }}>{selected.name}</p>
+                          <p className="text-[11px] truncate" style={{ color: 'var(--cab-ink-3)' }}>
+                            {LEVEL_LABELS[Math.min(selected.depth, LEVEL_LABELS.length - 1)]}
+                            {selected.depth > 0 && ` · ${getNodePath(selected.id)}`}
                           </p>
-                          <form onSubmit={handleAdd} className="flex gap-2">
-                            <input
-                              type="text"
-                              autoFocus
-                              value={addingName}
-                              onChange={e => setAddingName(e.target.value)}
-                              placeholder="Название…"
-                              className="form-input flex-1 py-1.5 text-sm"
-                            />
-                            <button
-                              type="submit"
-                              disabled={!addingName.trim() || createMutation.isPending}
-                              className="cab-btn cab-btn-primary px-3 min-h-[40px]"
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={cancelAdd}
-                              className="cab-btn cab-btn-secondary px-3 min-h-[40px]"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </form>
                         </div>
                       )}
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                        {editingId === selected.id ? (
+                          <>
+                            <button onClick={() => editingName.trim() && updateMutation.mutate({ id: selected.id, name: editingName.trim() })} className="btn-icon-sm text-green-600 hover:bg-green-50"><Check className="w-4 h-4" /></button>
+                            <button onClick={() => setEditingId(null)} className="btn-icon-sm"><X className="w-4 h-4" /></button>
+                          </>
+                        ) : (
+                          <>
+                            {selected.depth === 0 && (
+                              <button onClick={() => setStructMode(s => !s)} title="Перетаскивание подкатегорий"
+                                className="btn-icon-sm" style={structActive ? { color: 'var(--cab-signal)', background: 'var(--cab-signal-weak)' } : undefined}>
+                                <FolderTree className="w-4 h-4" />
+                              </button>
+                            )}
+                            {selected.depth < MAX_DEPTH - 1 && (
+                              <button onClick={() => { setAddingParentId(selected.id); setAddingName('') }} title="Вложенное место" className="btn-icon-sm"><Plus className="w-4 h-4" /></button>
+                            )}
+                            <button onClick={() => setQrNode({ id: selected.id, name: selected.name, path: getNodePath(selected.id) })} title="QR / этикетка" className="btn-icon-sm"><QrCode className="w-4 h-4" /></button>
+                            <button onClick={() => { setEditingId(selected.id); setEditingName(selected.name) }} title="Переименовать" className="btn-icon-sm"><Pencil className="w-4 h-4" /></button>
+                            <button onClick={() => handleDelete(selected)} disabled={deleteMutation.isPending} title="Удалить" className="btn-icon-sm hover:text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" /></button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  )
-                })}
-              </div>
 
-              {/* Footer add button */}
-              <div
-                className="px-4 py-3"
-                style={{ borderTop: '1px solid var(--cab-border)', background: 'var(--cab-surface-2)' }}
-              >
-                <button
-                  onClick={() => { setAddingParentId(null); setAddingName('') }}
-                  className="cab-btn cab-btn-secondary cab-btn-sm flex items-center gap-1.5"
-                >
-                  <Plus className="w-4 h-4" />
-                  Добавить место верхнего уровня
-                </button>
+                    {/* Форма вложенного места */}
+                    {addingParentId === selected.id && (
+                      <form onSubmit={handleAdd} className="flex gap-2 px-3 sm:px-4 py-2.5" style={{ background: 'var(--cab-surface-2)', borderBottom: '1px solid var(--cab-border)' }}>
+                        <input autoFocus value={addingName} onChange={e => setAddingName(e.target.value)} placeholder={`Вложенное в «${selected.name}»…`} className="form-input flex-1 py-1.5 text-sm" />
+                        <button type="submit" disabled={!addingName.trim() || createMutation.isPending} className="cab-btn cab-btn-primary px-2.5 min-h-[36px]"><Check className="w-4 h-4" /></button>
+                        <button type="button" onClick={() => { setAddingParentId(undefined); setAddingName('') }} className="cab-btn cab-btn-secondary px-2.5 min-h-[36px]"><X className="w-4 h-4" /></button>
+                      </form>
+                    )}
+
+                    {/* Позиции */}
+                    {itemsLoading ? (
+                      <div className="flex justify-center py-12"><Spinner size="md" /></div>
+                    ) : items.length === 0 ? (
+                      <p className="px-4 py-12 text-center text-sm" style={{ color: 'var(--cab-ink-3)' }}>В этом месте пока нет запчастей</p>
+                    ) : (
+                      <div className="overflow-y-auto" style={{ borderColor: 'var(--cab-border)' }}>
+                        {items.map(it => (
+                          <button key={it.id} onClick={() => navigate(`/parts/inventory/${it.id}`)}
+                            className="w-full text-left flex items-center gap-3 px-3 sm:px-4 py-3 transition-colors hover:bg-[var(--cab-surface-2)]"
+                            style={{ borderTop: '1px solid var(--cab-border)' }}>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm font-medium truncate block" style={{ color: 'var(--cab-ink)' }}>{it.name}</span>
+                              <span className="text-xs truncate block" style={{ color: 'var(--cab-ink-3)' }}>
+                                Артикул {it.article}{it.part_number ? ` · OEM ${String(it.part_number).toUpperCase()}` : ''}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              {it.quantity > 1 && <span className="text-xs tabular-nums" style={{ color: 'var(--cab-ink-3)' }}>{it.quantity} шт</span>}
+                              {it.selling_price != null && (
+                                <span className="text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: 'var(--cab-ink)' }}>
+                                  {formatPrice(it.selling_price, (it.price_currency as 'UAH' | 'USD') || 'USD')}
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="hidden sm:flex flex-1 items-center justify-center text-sm" style={{ color: 'var(--cab-ink-3)' }}>
+                    Выберите место хранения слева
+                  </div>
+                )}
               </div>
             </div>
-
-            {/* Help hint */}
-            <div className="cab-card p-4 flex gap-3">
-              <div className="icon-tile-sm bg-slate-100 text-slate-700 flex-shrink-0">
-                <Warehouse className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm mb-1" style={{ color: 'var(--cab-ink)' }}>Как пользоваться</p>
-                <ul className="text-xs space-y-0.5 list-disc list-inside" style={{ color: 'var(--cab-ink-2)' }}>
-                  <li>Наведите на место и нажмите <strong>+</strong>, чтобы добавить вложенное</li>
-                  <li>При добавлении запчасти выберите место из списка</li>
-                  <li>Пример: <strong>Бокс 1 → Стеллаж 3 → Полка 2 → Ячейка 5</strong></li>
-                </ul>
-              </div>
-            </div>
-          </>
-        ) : null}
+          </div>
+        )}
       </div>
 
       <ConfirmDialog {...dialogProps} />

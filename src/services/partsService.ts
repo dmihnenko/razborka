@@ -391,7 +391,7 @@ export async function getPartsInventoryPaged(
   }
   if (search?.trim()) {
     const s = sanitizeInventorySearch(search)
-    query = query.or(`name.ilike.%${s}%,part_number.ilike.%${s}%`)
+    query = query.or(`name.ilike.%${s}%,part_number.ilike.%${s}%,article.ilike.%${s}%`)
   }
 
   const from = (page - 1) * pageSize
@@ -645,7 +645,7 @@ export async function createStorageLocation(input: {
   return data
 }
 
-export async function updateStorageLocation(id: string, updates: { name?: string; sort_order?: number }) {
+export async function updateStorageLocation(id: string, updates: { name?: string; sort_order?: number; parent_id?: string | null }) {
   const { data, error } = await supabase
     .from('parts_storage_locations')
     .update({ ...updates, updated_at: new Date().toISOString() })

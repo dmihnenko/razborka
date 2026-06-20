@@ -24,6 +24,12 @@ export interface MarketCompanyContact {
   address?: string | null
   email?: string | null
   description?: string | null
+  /** Скорость отправки: 'today' — сегодня · 'days12' — 1–2 дня */
+  shipSpeed?: 'today' | 'days12' | string | null
+  /** Гарантия включена продавцом */
+  warrantyEnabled?: boolean
+  /** Дней гарантии (если включена) */
+  warrantyDays?: number | null
 }
 
 export interface MarketPartVehicle {
@@ -37,6 +43,8 @@ export interface MarketPartVehicle {
 export interface MarketPart {
   id: string
   name: string
+  /** Внутренний артикул (SKU) разборки — для поиска сотрудниками */
+  article?: string | null
   partNumber?: string | null
   description?: string | null
   condition: MarketCondition | string

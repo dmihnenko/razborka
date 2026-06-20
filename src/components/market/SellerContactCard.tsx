@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Mail, MapPin, Phone, Store } from 'lucide-react'
+import { Mail, MapPin, Phone, Store, Truck, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import type { MarketCompanyContact } from '@/types/marketplace'
 
@@ -90,6 +90,24 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
             </span>
             <span className="truncate">{company.email}</span>
           </a>
+        )}
+      </div>
+
+      {/* Доставка и гарантия — отдельными пунктами */}
+      <div className="space-y-1 mb-3 -mx-1.5 pt-2" style={{ borderTop: '1px solid var(--mk-border)' }}>
+        <div className="flex items-center gap-2.5 px-1.5 py-1.5 text-sm" style={{ color: 'var(--mk-text-2)' }}>
+          <span className={TILE} style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
+            <Truck className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
+          </span>
+          <span>Новой Почтой · {company.shipSpeed === 'days12' ? '1–2 дня' : 'сегодня'}</span>
+        </div>
+        {company.warrantyEnabled && (company.warrantyDays ?? 0) > 0 && (
+          <div className="flex items-center gap-2.5 px-1.5 py-1.5 text-sm" style={{ color: 'var(--mk-text-2)' }}>
+            <span className={TILE} style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
+              <ShieldCheck className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
+            </span>
+            <span>Гарантия {company.warrantyDays} дней</span>
+          </div>
         )}
       </div>
 

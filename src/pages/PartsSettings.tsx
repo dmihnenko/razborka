@@ -130,7 +130,7 @@ export default function PartsSettings() {
     queryFn: async () => {
       const { data } = await supabase
         .from('parts_companies')
-        .select('name, phone, address, email, telegram, description, telegram_chat_id')
+        .select('name, phone, address, email, telegram, description, telegram_chat_id, ship_speed, warranty_enabled, warranty_days')
         .eq('id', partsCompanyId)
         .single()
       return data
@@ -140,6 +140,7 @@ export default function PartsSettings() {
 
   const [contacts, setContacts] = useState({
     name: '', phone: '', address: '', email: '', telegram: '', description: '',
+    shipSpeed: 'today', warrantyEnabled: true, warrantyDays: '14',
   })
 
   useEffect(() => {
@@ -151,6 +152,9 @@ export default function PartsSettings() {
         email: company.email || '',
         telegram: (company as any).telegram || '',
         description: (company as any).description || '',
+        shipSpeed: (company as any).ship_speed || 'today',
+        warrantyEnabled: (company as any).warranty_enabled ?? true,
+        warrantyDays: String((company as any).warranty_days ?? 14),
       })
     }
   }, [company])
@@ -166,6 +170,9 @@ export default function PartsSettings() {
           email: contacts.email.trim(),
           telegram: contacts.telegram.trim() || null,
           description: contacts.description.trim() || null,
+          ship_speed: contacts.shipSpeed === 'days12' ? 'days12' : 'today',
+          warranty_enabled: contacts.warrantyEnabled,
+          warranty_days: Math.max(1, Number(contacts.warrantyDays) || 14),
         })
         .eq('id', partsCompanyId)
       if (error) throw error
@@ -184,7 +191,10 @@ export default function PartsSettings() {
     contacts.address !== (company.address || '') ||
     contacts.email !== (company.email || '') ||
     contacts.telegram !== ((company as any).telegram || '') ||
-    contacts.description !== ((company as any).description || '')
+    contacts.description !== ((company as any).description || '') ||
+    contacts.shipSpeed !== ((company as any).ship_speed || 'today') ||
+    contacts.warrantyEnabled !== ((company as any).warranty_enabled ?? true) ||
+    contacts.warrantyDays !== String((company as any).warranty_days ?? 14)
   )
 
   const handleSaveImgbbKey = () => {
@@ -317,8 +327,32 @@ export default function PartsSettings() {
               <label className="form-label">Описание разборки <span className="text-gray-400 font-normal ml-1">(видят покупатели)</span></label>
               <textarea value={contacts.description} onChange={e => setContacts(p => ({ ...p, description: e.target.value }))} placeholder="Кратко о разборке: специализация, регион, условия..." rows={3} className="form-input resize-none" />
             </div>
+
+            {/* Доставка и гарантия — видно покупателям на странице товара */}
+            <div className="pt-3 mt-1 border-t border-gray-100 dark:border-slate-700 space-y-3">
+              <p className="text-sm font-semibold text-gray-800 dark:text-slate-200">Доставка и гарантия</p>
+              <div>
+                <label className="form-label">Скорость отправки</label>
+                <select value={contacts.shipSpeed} onChange={e => setContacts(p => ({ ...p, shipSpeed: e.target.value }))} className="form-select">
+                  <option value="today">Отправка сегодня</option>
+                  <option value="days12">Отправка 1–2 дня</option>
+                </select>
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Показывается на странице товара (доставка Новой Почтой).</p>
+              </div>
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input type="checkbox" checked={contacts.warrantyEnabled} onChange={e => setContacts(p => ({ ...p, warrantyEnabled: e.target.checked }))} className="w-4 h-4 accent-[var(--cab-signal)]" />
+                <span className="text-sm text-gray-700 dark:text-slate-300">Показывать гарантию на проверку</span>
+              </label>
+              {contacts.warrantyEnabled && (
+                <div>
+                  <label className="form-label">Дней гарантии</label>
+                  <input type="number" min={1} max={365} value={contacts.warrantyDays} onChange={e => setContacts(p => ({ ...p, warrantyDays: e.target.value }))} className="form-input w-32" placeholder="14" />
+                </div>
+              )}
+            </div>
+
             <button onClick={() => saveContactsMutation.mutate()} disabled={saveContactsMutation.isPending || !contactsDirty} className="cab-btn cab-btn-primary w-full">
-              <Save className="w-4 h-4" /> Сохранить контакты
+              <Save className="w-4 h-4" /> Сохранить
             </button>
           </div>
         )
