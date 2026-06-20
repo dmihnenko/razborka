@@ -14,9 +14,9 @@
 
 export const BRAND = {
   /** Полное имя/вордмарк одной строкой (шапки, копирайт, alt). */
-  name: 'AutoRozborka',
-  /** Двухцветный вордмарк для <Logo/>: основная часть + акцентная (градиент). */
-  wordmark: { lead: 'Auto', accent: 'Rozborka' },
-  /** Подпись под логотипом. */
-  tagline: 'CRM для авторазборок',
+  name: 'Razborka.net',
+  /** Вордмарк-эмблема <Logo/>: крупная часть (lead) + уголок «.net» (accent). */
+  wordmark: { lead: 'RAZBORKA', accent: '.net' },
+  /** Подпись под логотипом (таглайн в эмблеме). */
+  tagline: 'маркет · запчастей',
 } as const

@@ -7,6 +7,8 @@ import App from './App.tsx'
 // Inter Variable бандлится: на Windows/Android заменяет Segoe UI/Roboto (чище и легче).
 // На Apple-устройствах первым в стеке остаётся системный SF Pro.
 import '@fontsource-variable/inter'
+// Montserrat 700 — только для логотипа-эмблемы (вордмарк «RAZBORKA»).
+import '@fontsource/montserrat/700.css'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
 

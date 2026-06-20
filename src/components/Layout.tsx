@@ -23,6 +23,7 @@ import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { useAdminNotifications } from '../hooks/useAdminNotifications'
 import { useSubscriptionLimits } from '../hooks/useSubscription'
 import NotificationBanner from './NotificationBanner'
+import { Logo } from './brand/Logo'
 import { BRAND } from '@/config/brand'
 
 export default function Layout() {
@@ -148,6 +149,16 @@ export default function Layout() {
   // «Мои авто»: меню из одного пункта — сайдбар не нужен, выход выносим вверх справа
   const isUserCtx = currentCtx === 'user'
 
+  // Сколько разделов доступно (для шапки сайдбара: несколько → свитчер, один → лого)
+  const ctxRoles = profile?.roles?.map((r: any) => r.name) || []
+  const ctxAdmin = ctxRoles.includes('admin')
+  const availableCtx = [
+    ctxAdmin || ctxRoles.includes('parts_owner') || ctxRoles.includes('parts_worker'),
+    ctxAdmin || ctxRoles.includes('user'),
+    ctxAdmin,
+  ].filter(Boolean).length
+  const multiCtx = availableCtx > 1
+
   const filteredNavigation = getMenuForRoles(roleNames).filter((item) => {
     if (item.href === '/parts/analytics') return hasAnalytics
     return true
@@ -229,15 +240,17 @@ export default function Layout() {
         className={`${isUserCtx ? 'hidden' : 'hidden md:flex'} md:flex-col md:w-16 lg:w-64 flex-shrink-0`}
         style={{ background: 'var(--cab-surface)', borderRight: '1px solid var(--cab-border)' }}
       >
-        {/* Шапка сайдбара — бренд (переключение разделов — в верхнем баре) */}
-        <div className="flex items-center px-2 lg:px-3 h-14" style={{ borderBottom: '1px solid var(--cab-border)' }}>
-          <Link to="/parts/dashboard" className="flex items-center gap-2 min-w-0 mx-auto lg:mx-0" title={BRAND.name}>
-            <span className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-extrabold flex-shrink-0"
-              style={{ background: 'var(--cab-ink)' }}>
-              {BRAND.name.charAt(0)}
-            </span>
-            <span className="hidden lg:block font-extrabold truncate" style={{ color: 'var(--cab-ink)' }}>{BRAND.name}</span>
-          </Link>
+        {/* Шапка сайдбара — свитчер ролей (если их несколько) или лого */}
+        <div className="flex items-center justify-center lg:justify-start px-2 lg:px-3 h-14" style={{ borderBottom: '1px solid var(--cab-border)' }}>
+          {multiCtx ? (
+            <div className="w-full min-w-0">
+              <ContextSwitcher current={currentCtx} variant="sidebar" />
+            </div>
+          ) : (
+            <Link to="/parts/dashboard" aria-label={BRAND.name}>
+              <Logo size="sm" withText={false} />
+            </Link>
+          )}
         </div>
 
         {/* Nav — сгруппирован: Работа / База / Система */}
@@ -303,12 +316,11 @@ export default function Layout() {
           </div>
         )}
 
-        {/* ── DESKTOP TOP BAR (разборка): свитчер+Админ слева, «В маркет» справа ── */}
+        {/* ── DESKTOP TOP BAR (разборка): «В маркет» справа (свитчер — в шапке сайдбара) ── */}
         {currentCtx === 'parts' && (
           <div className="hidden md:flex h-14 flex-shrink-0"
             style={{ background: 'var(--cab-surface)', borderBottom: '1px solid var(--cab-border)' }}>
-            <div className="mk-container flex items-center justify-between gap-3">
-              <ContextSwitcher current={currentCtx} />
+            <div className="mk-container flex items-center justify-end gap-3">
               <Link
                 to="/market"
                 title="Открыть маркет запчастей"

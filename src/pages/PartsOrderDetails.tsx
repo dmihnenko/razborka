@@ -328,42 +328,35 @@ export default function PartsOrderDetails() {
 
               {canManage && (
                 <div className="flex items-center gap-1.5">
-                  {/* Статус-степпер: продвигаем заказ одним нажатием */}
-                  <div className="inline-flex items-center p-0.5 rounded-lg"
-                    style={{ background: 'var(--cab-surface-2)', border: '1px solid var(--cab-border)' }}>
-                    {([
-                      { key: 'new', label: 'Новый' },
-                      { key: 'in_progress', label: 'В работе' },
-                      { key: 'completed', label: 'Завершён' },
-                    ] as const).map((s) => {
-                      const active = order.status === s.key
-                      return (
-                        <button
-                          key={s.key}
-                          onClick={() => {
-                            if (active) return
-                            if (s.key === 'completed') setShowCompleteModal(true)
-                            else updateStatusMutation.mutate(s.key)
-                          }}
-                          disabled={active || updateStatusMutation.isPending}
-                          className="px-2.5 h-7 rounded-md text-xs font-semibold transition-colors whitespace-nowrap"
-                          style={active
-                            ? { background: 'var(--cab-ink)', color: '#fff' }
-                            : { color: 'var(--cab-ink-2)' }}
-                        >
-                          {s.label}
-                        </button>
-                      )
-                    })}
-                  </div>
-                  <button
-                    onClick={() => updateStatusMutation.mutate('cancelled')}
-                    disabled={order.status === 'cancelled' || updateStatusMutation.isPending}
-                    className="cab-btn cab-btn-sm cab-btn-secondary"
-                    style={{ color: '#B91C1C' }}
-                  >
-                    Отменить
-                  </button>
+                  {/* Один шаг вперёд: новый → в работе → завершён (не показываем все статусы сразу) */}
+                  {order.status === 'new' && (
+                    <button
+                      onClick={() => updateStatusMutation.mutate('in_progress')}
+                      disabled={updateStatusMutation.isPending}
+                      className="cab-btn cab-btn-sm cab-btn-primary"
+                    >
+                      В работу
+                    </button>
+                  )}
+                  {order.status === 'in_progress' && (
+                    <button
+                      onClick={() => setShowCompleteModal(true)}
+                      disabled={updateStatusMutation.isPending}
+                      className="cab-btn cab-btn-sm cab-btn-primary"
+                    >
+                      Завершить
+                    </button>
+                  )}
+                  {(order.status === 'new' || order.status === 'in_progress') && (
+                    <button
+                      onClick={() => updateStatusMutation.mutate('cancelled')}
+                      disabled={updateStatusMutation.isPending}
+                      className="cab-btn cab-btn-sm cab-btn-secondary"
+                      style={{ color: '#B91C1C' }}
+                    >
+                      Отменить
+                    </button>
+                  )}
                 </div>
               )}
 
