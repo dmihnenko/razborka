@@ -80,7 +80,8 @@ function MarketLayoutInner() {
         <div className="mk-container">
           {/* Ряд 1 */}
           <div className="flex items-center gap-3 h-16">
-            <Link to="/market" className="flex items-center gap-3 flex-shrink-0 min-w-0" aria-label="Razborka.net — маркет запчастей, на главную">
+            {/* Лого скрыто на мобиле — освобождаем место под поиск/категории */}
+            <Link to="/market" className="hidden md:flex items-center gap-3 flex-shrink-0 min-w-0" aria-label="Razborka.net — маркет запчастей, на главную">
               <Logo size="sm" withText className="flex-shrink-0" />
               <span className="hidden md:block text-[13px] font-semibold tracking-tight truncate mk-meta">
                 маркет&nbsp;запчастей
@@ -127,7 +128,16 @@ function MarketLayoutInner() {
             </div>
           </div>
 
-          {/* Ряд 2 (мобила): поиск */}
+          {/* Навигация — на мобиле всегда; на десктопе только когда табы не в первом ряду.
+              На мобиле идёт НАД поиском (поиск показываем под категориями/разборками). */}
+          <nav
+            className={`${showHeaderSearch ? 'flex' : 'flex md:hidden'} items-center justify-center pb-2.5`}
+            aria-label="Разделы маркета"
+          >
+            {navTabs}
+          </nav>
+
+          {/* Поиск (мобила) — под категориями/разборками */}
           {showHeaderSearch && (
             <form onSubmit={handleSearch} role="search" className="md:hidden pb-2.5">
               <div className="relative">
@@ -143,14 +153,6 @@ function MarketLayoutInner() {
               </div>
             </form>
           )}
-
-          {/* Ряд 3: навигация — на мобиле всегда; на десктопе только когда табы не в первом ряду */}
-          <nav
-            className={`${showHeaderSearch ? 'flex' : 'flex md:hidden'} items-center justify-center pb-2.5`}
-            aria-label="Разделы маркета"
-          >
-            {navTabs}
-          </nav>
         </div>
       </header>
 

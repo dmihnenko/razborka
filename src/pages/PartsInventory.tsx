@@ -13,8 +13,8 @@ import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { getPartsInventoryPaged, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
-import { uploadToImgbb, deletePhotosFromImgbb } from '@/services/imgbbService'
-import { getImgbbKey } from '@/utils/imgbbKey'
+import { deletePhotosFromImgbb } from '@/services/imgbbService'
+import { uploadPhoto, PhotoProviderNotConfigured } from '@/services/photoStorage'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/utils/currency'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
@@ -1780,22 +1780,26 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
       toast.error(`Можно добавить ещё ${remaining} (максимум ${MAX_PHOTOS} фото на товар)`)
       files = files.slice(0, remaining)
     }
-    const apiKey = getImgbbKey()
-    if (!apiKey) {
-      toast.error('Укажите API ключ ImgBB в Настройках')
-      return
-    }
     setUploading(true)
     try {
-      // Грузим ВСЕ выбранные/снятые фото параллельно (а не по одному), сохраняя порядок.
-      const results = await Promise.allSettled(files.map(file => uploadToImgbb(file, apiKey)))
+      // Грузим ВСЕ выбранные/снятые фото параллельно через выбранный провайдер
+      // (imgbb | cloudinary | r2), сохраняя порядок.
+      const results = await Promise.allSettled(files.map(file => uploadPhoto(file)))
       const uploaded = results
         .filter((r): r is PromiseFulfilledResult<ImgbbPhoto> => r.status === 'fulfilled')
         .map(r => r.value)
       const failed = results.length - uploaded.length
+      // Провайдер не настроен → понятная подсказка вместо «не загрузилось»
+      const notConfigured = results.find(
+        (r): r is PromiseRejectedResult => r.status === 'rejected' && r.reason instanceof PhotoProviderNotConfigured
+      )
+      if (!uploaded.length && notConfigured) {
+        toast.error((notConfigured.reason as Error).message)
+        return
+      }
       if (uploaded.length) setPhotos(prev => [...prev, ...uploaded])
       if (uploaded.length) toast.success(`${uploaded.length} фото загружено`)
-      if (failed > 0) toast.error(`${failed} фото не загрузилось — попробуйте ещё раз`)
+      if (failed > 0 && uploaded.length) toast.error(`${failed} фото не загрузилось — попробуйте ещё раз`)
     } catch {
       toast.error('Ошибка загрузки фото')
     } finally {
