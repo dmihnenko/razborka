@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
-import { getUserRolesWithNames, getEmailByUsername } from '@/services/userService'
+import { getUserRolesWithNames } from '@/services/userService'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { getDefaultRouteForRoles } from '../config/navigation'
@@ -112,14 +112,7 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
 
-    let loginEmail = emailOrUsername.trim()
-
-    // Фолбэк для старых аккаунтов, у которых вместо email — логин:
-    // резолвим реальный email из профиля.
-    if (!loginEmail.includes('@')) {
-      const storedEmail = await getEmailByUsername(loginEmail)
-      if (storedEmail) loginEmail = storedEmail
-    }
+    const loginEmail = emailOrUsername.trim()
 
     const { error } = await supabase.auth.signInWithPassword({
       email: loginEmail,
@@ -156,18 +149,10 @@ export default function Login() {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault()
-    let target = emailOrUsername.trim()
+    const target = emailOrUsername.trim()
     if (!target) {
       toast.error('Введите email')
       return
-    }
-    if (!target.includes('@')) {
-      const resolved = await getEmailByUsername(target)
-      if (!resolved) {
-        toast.error('Для этого логина не найден email. Обратитесь к администратору.')
-        return
-      }
-      target = resolved
     }
     if (/@internal\.|@sto-worker\.local|@example\.com/.test(target)) {
       toast.error('У этого пользователя нет реальной почты. Администратор должен задать email.')
