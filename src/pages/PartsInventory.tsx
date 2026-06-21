@@ -261,13 +261,30 @@ export default function PartsInventory() {
   })
 
   const saveMutation = useMutation({
-    mutationFn: async (data: CreatePartsInventoryInput) => {
+    mutationFn: async ({ data, pending }: { data: CreatePartsInventoryInput; pending?: Promise<ImgbbPhoto>[] }) => {
+      let saved: any
       if (editingItem) {
-        return updatePartsInventoryItem(editingItem.id, data)
+        saved = await updatePartsInventoryItem(editingItem.id, data)
       } else {
         if (!canCreate.part()) throw new Error('Достигнут лимит запчастей по тарифу. Повысьте тариф в разделе «Тариф разборки».')
-        return createPartsInventoryItem(data, partsCompanyId!)
+        saved = await createPartsInventoryItem(data, partsCompanyId!)
       }
+      // Фото, которые ещё грузились на момент сохранения — дописываем в товар в ФОНЕ
+      // (пользователь не ждал выгрузку). fire-and-forget, мутация уже завершилась.
+      if (pending && pending.length && saved?.id) {
+        const basePhotos = ((data.photos as ImgbbPhoto[] | undefined) ?? [])
+        const savedId = saved.id
+        Promise.allSettled(pending).then(results => {
+          const extra = results
+            .filter((r): r is PromiseFulfilledResult<ImgbbPhoto> => r.status === 'fulfilled')
+            .map(r => r.value)
+          if (!extra.length) return
+          updatePartsInventoryItem(savedId, { photos: [...basePhotos, ...extra] })
+            .then(() => queryClient.invalidateQueries({ queryKey: ['parts-inventory'] }))
+            .catch(() => { /* фон — не критично */ })
+        })
+      }
+      return saved
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
@@ -1608,7 +1625,7 @@ export default function PartsInventory() {
             setIsModalOpen(false)
             setEditingItem(null)
           }}
-          onSave={(data) => saveMutation.mutate(data)}
+          onSave={(data, pending) => saveMutation.mutate({ data, pending })}
           onSaveBulk={(items) => saveBulkMutation.mutate(items)}
           isSaving={saveMutation.isPending || saveBulkMutation.isPending}
           photoCfg={photoCfg}
@@ -1731,7 +1748,7 @@ interface PartsInventoryModalProps {
   vehicles: any[]
   storageLocations: StorageLocation[]
   onClose: () => void
-  onSave: (data: CreatePartsInventoryInput) => void
+  onSave: (data: CreatePartsInventoryInput, pendingPhotos?: Promise<ImgbbPhoto>[]) => void
   onSaveBulk?: (items: CreatePartsInventoryInput[]) => void
   isSaving?: boolean
   initialVehicleId?: string
@@ -1776,8 +1793,10 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     storage_location_id: (item as any)?.storage_location_id || initialStorageLocationId || '',
   })
   const [photos, setPhotos] = useState<ImgbbPhoto[]>((item?.photos as ImgbbPhoto[]) || [])
-  // Фото, которые ещё грузятся в ФОНЕ: показываем превью сразу (localUrl), без задержки.
-  const [pendingPhotos, setPendingPhotos] = useState<{ id: string; localUrl: string }[]>([])
+  // Фото, которые ещё грузятся в ФОНЕ: превью сразу (localUrl) + промис выгрузки.
+  // Можно «Сохранить» не дожидаясь — оставшиеся промисы передаём в onSave,
+  // родитель допишет их в товар после создания.
+  const [pendingPhotos, setPendingPhotos] = useState<{ id: string; localUrl: string; promise: Promise<ImgbbPhoto> }[]>([])
   const uploading = pendingPhotos.length > 0
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1796,15 +1815,14 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
       files = files.slice(0, remaining)
     }
 
-    // Превью показываем мгновенно, выгрузка идёт в ФОНЕ — пользователь не ждёт.
+    // Превью мгновенно, выгрузка в ФОНЕ — пользователь не ждёт (можно сразу сохранять).
     for (const file of files) {
       const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
       const localUrl = URL.createObjectURL(file)
-      setPendingPhotos(prev => [...prev, { id, localUrl }])
-      uploadPhoto(file, photoCfg ?? null)
-        .then(uploaded => {
-          setPhotos(prev => [...prev, uploaded])
-        })
+      const promise = uploadPhoto(file, photoCfg ?? null)
+      setPendingPhotos(prev => [...prev, { id, localUrl, promise }])
+      promise
+        .then(uploaded => { setPhotos(prev => [...prev, uploaded]) })
         .catch(err => {
           if (err instanceof PhotoProviderNotConfigured) toast.error(err.message)
           else toast.error('Не удалось загрузить фото')
@@ -1855,7 +1873,10 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
         status: r.status,
       })))
     } else {
-      onSave({ ...formData, part_number: formData.part_number?.trim().toUpperCase() || '', photos })
+      // Можно сохранять не дожидаясь выгрузки: передаём готовые фото + промисы
+      // ещё грузящихся — родитель допишет их в товар в фоне.
+      const inFlight = pendingPhotos.map(p => p.promise)
+      onSave({ ...formData, part_number: formData.part_number?.trim().toUpperCase() || '', photos }, inFlight)
     }
   }
 
@@ -2428,7 +2449,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     </div>
                   )}
                   {uploading && (
-                    <p className="mt-1.5 text-xs text-gray-400">Фото догружаются в фоне — можно продолжать заполнять карточку.</p>
+                    <p className="mt-1.5 text-xs text-gray-400">Фото догружаются в фоне — можно сразу сохранять, они допишутся в товар.</p>
                   )}
                 </div>
 
@@ -2456,16 +2477,14 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
             </button>
             <button
               type="submit"
-              disabled={isSaving || (!bulkMode && uploading)}
+              disabled={isSaving}
               className="cab-btn cab-btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSaving
                 ? 'Сохранение...'
-                : (!bulkMode && uploading)
-                  ? 'Загрузка фото…'
-                  : bulkMode
-                    ? `Добавить ${bulkItems.filter(r => r.name.trim()).length || ''} запчастей`
-                    : item ? 'Сохранить' : 'Добавить'}
+                : bulkMode
+                  ? `Добавить ${bulkItems.filter(r => r.name.trim()).length || ''} запчастей`
+                  : item ? 'Сохранить' : 'Добавить'}
             </button>
           </div>
         </form>

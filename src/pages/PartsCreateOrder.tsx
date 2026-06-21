@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
@@ -6,7 +6,7 @@ import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { CreatePartsOrderInput } from '@/types/parts'
 import { createPartsOrder } from '@/services/partsService'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Info } from 'lucide-react'
+import { Plus, Info, Search, X, User } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 
 export default function PartsCreateOrder() {
@@ -19,6 +19,19 @@ export default function PartsCreateOrder() {
     customer_id: undefined,
     notes: '',
   })
+
+  // Поиск/выбор клиента (по имени или телефону)
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [customerOpen, setCustomerOpen] = useState(false)
+  const customerRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!customerOpen) return
+    const onDoc = (e: MouseEvent) => {
+      if (customerRef.current && !customerRef.current.contains(e.target as Node)) setCustomerOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [customerOpen])
 
   // Получить список клиентов
   const { data: customers = [], isLoading: customersLoading } = useQuery({
@@ -60,6 +73,18 @@ export default function PartsCreateOrder() {
     return <PartsAccessDenied />
   }
 
+  const selectedCustomer = customers.find((c) => c.id === formData.customer_id) || null
+  const cq = customerSearch.trim().toLowerCase()
+  const filteredCustomers = cq
+    ? customers.filter((c) =>
+        (c.full_name || '').toLowerCase().includes(cq) || (c.phone || '').toLowerCase().includes(cq))
+    : customers
+  const selectCustomer = (cid: string | null) => {
+    setFormData((f) => ({ ...f, customer_id: cid || undefined }))
+    setCustomerOpen(false)
+    setCustomerSearch('')
+  }
+
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-950">
       <PartsPageHeader title="Создание заказа" backPath="/parts/orders" maxWidth="3xl" />
@@ -75,24 +100,67 @@ export default function PartsCreateOrder() {
               </label>
               {customersLoading ? (
                 <p className="text-sm text-gray-500 py-2">Загрузка клиентов…</p>
+              ) : selectedCustomer ? (
+                /* Выбранный клиент — чип с возможностью сбросить */
+                <div className="flex items-center justify-between gap-2 form-input">
+                  <span className="inline-flex items-center gap-2 min-w-0">
+                    <User className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                    <span className="truncate">
+                      {selectedCustomer.full_name}
+                      {selectedCustomer.phone && <span className="text-gray-400"> · {selectedCustomer.phone}</span>}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => selectCustomer(null)}
+                    className="text-gray-400 hover:text-red-500 flex-shrink-0"
+                    aria-label="Сбросить клиента"
+                  >
+                    <X className="w-4 h-4" strokeWidth={1.5} />
+                  </button>
+                </div>
               ) : (
-                <select
-                  id="customer_id"
-                  value={formData.customer_id || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, customer_id: e.target.value || undefined })
-                  }
-                  className="form-select"
-                >
-                  <option value="">Без клиента (розничная продажа)</option>
-                  {customers.map((customer) => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.full_name}
-                      {customer.phone && ` • ${customer.phone}`}
-                      {customer.email && ` • ${customer.email}`}
-                    </option>
-                  ))}
-                </select>
+                /* Поиск клиента по имени или телефону + выбор из списка */
+                <div className="relative" ref={customerRef}>
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" strokeWidth={1.5} />
+                  <input
+                    type="text"
+                    value={customerSearch}
+                    onChange={(e) => { setCustomerSearch(e.target.value); setCustomerOpen(true) }}
+                    onFocus={() => setCustomerOpen(true)}
+                    placeholder="Поиск по имени или телефону…"
+                    className="form-input pl-9"
+                  />
+                  {customerOpen && (
+                    <div className="absolute z-20 mt-1 w-full max-h-60 overflow-auto rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg">
+                      <button
+                        type="button"
+                        onClick={() => selectCustomer(null)}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-500"
+                      >
+                        Без клиента (розничная продажа)
+                      </button>
+                      {filteredCustomers.map((customer) => (
+                        <button
+                          key={customer.id}
+                          type="button"
+                          onClick={() => selectCustomer(customer.id)}
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 border-t border-gray-50 dark:border-slate-700/50"
+                        >
+                          <span className="block text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{customer.full_name}</span>
+                          {(customer.phone || customer.email) && (
+                            <span className="block text-xs text-gray-400 truncate">
+                              {[customer.phone, customer.email].filter(Boolean).join(' · ')}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                      {filteredCustomers.length === 0 && (
+                        <p className="px-3 py-3 text-sm text-gray-400">Клиент не найден</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
               <div className="flex items-center justify-between mt-1.5">
                 <p className="text-xs text-gray-400">Необязательно</p>
