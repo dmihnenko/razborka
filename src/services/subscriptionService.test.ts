@@ -18,6 +18,9 @@ function makePlan(override?: Partial<Subscription>): Subscription {
     description: null,
     company_type: 'parts',
     is_active: true,
+    max_customers: null,
+    max_workers: null,
+    duration_months: null,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
     ...override,
@@ -47,7 +50,7 @@ describe('createSubscriptionPlan', () => {
   })
 
   it('вызывает from("subscriptions").insert', async () => {
-    const newPlan = { name: 'Pro', type: 'monthly' as const, price: 1999, description: null, company_type: 'parts' as const, is_active: true }
+    const newPlan = { name: 'Pro', type: 'monthly' as const, price: 1999, description: null, company_type: 'parts' as const, is_active: true, max_customers: null, max_workers: null, duration_months: null }
     await createSubscriptionPlan(newPlan)
     expect(mockSupabase.from).toHaveBeenCalledWith('subscriptions')
   })

@@ -68,12 +68,14 @@ function BoardCard({ order, formatUSD, computeOrderUSD, onClick, isDragging }: B
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        ...(isDragging ? { boxShadow: '0 8px 24px -8px rgba(22,24,29,.25)', borderColor: 'var(--cab-ink)' } : {}),
+      }}
       {...attributes}
       {...listeners}
       onClick={onClick}
       className="cab-card p-3 cursor-grab active:cursor-grabbing select-none transition-shadow"
-      style={isDragging ? { boxShadow: '0 8px 24px -8px rgba(22,24,29,.25)', borderColor: 'var(--cab-ink)' } : undefined}
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <span className="text-[11px] font-bold uppercase tracking-wide truncate" style={{ color: 'var(--cab-ink-3)' }}>{order.order_number}</span>

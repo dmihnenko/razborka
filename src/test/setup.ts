@@ -6,6 +6,21 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
+// Полифилл localStorage (в этой конфигурации jsdom отсутствует)
+if (typeof window.localStorage === 'undefined') {
+  const store = new Map<string, string>()
+  const localStorageMock: Storage = {
+    getItem: (key) => (store.has(key) ? store.get(key)! : null),
+    setItem: (key, value) => { store.set(key, String(value)) },
+    removeItem: (key) => { store.delete(key) },
+    clear: () => { store.clear() },
+    key: (i) => Array.from(store.keys())[i] ?? null,
+    get length() { return store.size },
+  }
+  Object.defineProperty(window, 'localStorage', { writable: true, value: localStorageMock })
+  Object.defineProperty(globalThis, 'localStorage', { writable: true, value: localStorageMock })
+}
+
 // Мок window.matchMedia (не реализовано в jsdom)
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

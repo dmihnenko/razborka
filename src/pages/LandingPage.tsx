@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import type { Variants } from 'framer-motion'
 import { BRAND } from '@/config/brand'
 import {
   Wrench, Car, Package, Users, BarChart3, ShieldCheck,
@@ -22,11 +23,11 @@ const HIGHLIGHTS = [
   { icon: Users,       title: 'Мультироль',  desc: 'Администратор, менеджер, механик — у каждого свой доступ', color: 'bg-orange-50 text-orange-600' },
 ]
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden:  { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
 }
-const stagger = {
+const stagger: Variants = {
   visible: { transition: { staggerChildren: 0.07 } },
 }
 

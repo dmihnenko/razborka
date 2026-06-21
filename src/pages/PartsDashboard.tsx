@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getPartsOrderStatusText } from '@/utils/status'
+import type { PartsOrderStatus } from '@/utils/status'
 import { formatDate } from '@/utils/date'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getPartsDashboardStats } from '@/services/partsService'
@@ -30,7 +31,7 @@ const STATUS_CHIP: Record<string, { bg: string; color: string }> = {
   cancelled:   { bg: '#F3F4F6', color: '#6B7280' },
 }
 
-function StatusChip({ status }: { status: string }) {
+function StatusChip({ status }: { status: PartsOrderStatus }) {
   const s = STATUS_CHIP[status] ?? STATUS_CHIP.cancelled
   return (
     <span className="cab-chip" style={{ background: s.bg, color: s.color, borderColor: 'transparent' }}>

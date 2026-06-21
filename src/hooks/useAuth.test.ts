@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import '../test/mocks/supabase'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth, __resetAuthCacheForTests } from '@/hooks/useAuth'
 import { mockSupabase } from '../test/mocks/supabase'
 
 describe('useAuth', () => {
   beforeEach(() => {
+    // Сбрасываем модульный кэш auth, иначе состояние течёт между тестами
+    __resetAuthCacheForTests()
     // По умолчанию — нет сессии
     mockSupabase.auth.getSession.mockResolvedValue({ data: { session: null } })
     mockSupabase.auth.onAuthStateChange.mockImplementation((_cb: unknown) => ({

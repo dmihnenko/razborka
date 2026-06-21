@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../test/mocks/supabase'
 import Login from '@/pages/Login'
+import { BRAND } from '@/config/brand'
 import { mockSupabase } from '../test/mocks/supabase'
 
 // Мок навигации
@@ -36,32 +37,35 @@ function renderLogin() {
 }
 
 describe('Login — рендер', () => {
-  it('отображает заголовок "CRM"', () => {
+  it('отображает логотип бренда', () => {
     renderLogin()
-    expect(screen.getByText('CRM')).toBeInTheDocument()
+    // <Logo withText> рендерит вордмарк (BRAND.wordmark.lead)
+    expect(screen.getByText(BRAND.wordmark.lead)).toBeInTheDocument()
   })
 
-  it('отображает поле ввода "Email или Username"', () => {
+  it('отображает поле ввода email', () => {
     renderLogin()
-    expect(screen.getByPlaceholderText(/email@example.com или username/i)).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/email@example.com/i)).toBeInTheDocument()
   })
 
   it('отображает поле ввода пароля', () => {
     renderLogin()
-    expect(screen.getByLabelText(/пароль/i)).toBeInTheDocument()
+    // /^пароль$/i — точное совпадение с лейблом, а не с кнопкой «Показать пароль»
+    expect(screen.getByLabelText(/^пароль$/i)).toBeInTheDocument()
   })
 
   it('отображает кнопку "Войти"', () => {
     renderLogin()
-    expect(screen.getByRole('button', { name: /войти/i })).toBeInTheDocument()
+    // Точное имя, чтобы не зацепить «Войти через Google»
+    expect(screen.getByRole('button', { name: 'Войти' })).toBeInTheDocument()
   })
 
-  it('переключается в режим регистрации', () => {
+  it('переключается в режим регистрации', async () => {
     renderLogin()
-    const toggleBtn = screen.getByRole('button', { name: /зарегистрироваться/i })
-    fireEvent.click(toggleBtn)
-    expect(screen.getByText('Регистрация')).toBeInTheDocument()
-    expect(screen.getByLabelText(/username/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /зарегистрироваться/i }))
+    // AnimatePresence mode="wait" — поля появляются асинхронно
+    expect(await screen.findByText('Создать аккаунт')).toBeInTheDocument()
+    expect(await screen.findByLabelText(/повторите пароль/i)).toBeInTheDocument()
   })
 })
 
@@ -92,16 +96,16 @@ describe('Login — форма входа', () => {
 
     renderLogin()
 
-    fireEvent.change(screen.getByPlaceholderText(/email@example.com или username/i), {
+    fireEvent.change(screen.getByPlaceholderText(/email@example.com/i), {
       target: { value: 'test@test.com' },
     })
-    fireEvent.change(screen.getByLabelText(/пароль/i), {
+    fireEvent.change(screen.getByLabelText(/^пароль$/i), {
       target: { value: 'wrongpassword' },
     })
-    fireEvent.click(screen.getByRole('button', { name: /войти/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Войти' }))
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('Ошибка входа'))
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('Неверный email или пароль'))
     })
   })
 })
@@ -114,13 +118,14 @@ describe('Login — валидация регистрации', () => {
     // Переходим в режим регистрации
     fireEvent.click(screen.getByRole('button', { name: /зарегистрироваться/i }))
 
-    fireEvent.change(screen.getByLabelText(/username/i), {
-      target: { value: 'testuser' },
+    const confirm = await screen.findByLabelText(/повторите пароль/i)
+    fireEvent.change(screen.getByLabelText(/^email$/i), {
+      target: { value: 'test@test.com' },
     })
     fireEvent.change(screen.getByLabelText(/^пароль$/i), {
       target: { value: 'password123' },
     })
-    fireEvent.change(screen.getByLabelText(/подтверждение пароля/i), {
+    fireEvent.change(confirm, {
       target: { value: 'password456' },
     })
 
@@ -132,19 +137,20 @@ describe('Login — валидация регистрации', () => {
     })
   })
 
-  it('показывает ошибку при невалидном username', async () => {
+  it('показывает ошибку при невалидном email', async () => {
     const { toast } = await import('sonner')
     renderLogin()
 
     fireEvent.click(screen.getByRole('button', { name: /зарегистрироваться/i }))
 
-    fireEvent.change(screen.getByLabelText(/username/i), {
-      target: { value: 'ab' }, // слишком короткий (< 3 символов)
+    const confirm = await screen.findByLabelText(/повторите пароль/i)
+    fireEvent.change(screen.getByLabelText(/^email$/i), {
+      target: { value: 'not-an-email' }, // невалидный email
     })
     fireEvent.change(screen.getByLabelText(/^пароль$/i), {
       target: { value: 'password123' },
     })
-    fireEvent.change(screen.getByLabelText(/подтверждение пароля/i), {
+    fireEvent.change(confirm, {
       target: { value: 'password123' },
     })
 
@@ -153,7 +159,7 @@ describe('Login — валидация регистрации', () => {
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith(
-        expect.stringContaining('Username должен содержать')
+        expect.stringContaining('Введите корректный адрес')
       )
     })
   })

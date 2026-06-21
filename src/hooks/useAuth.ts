@@ -9,6 +9,12 @@ import { User } from '@supabase/supabase-js'
 let cachedUser: User | null = null
 let authResolved = false
 
+/** Только для тестов: сбросить модульный кэш auth между прогонами. */
+export function __resetAuthCacheForTests() {
+  cachedUser = null
+  authResolved = false
+}
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(cachedUser)
   const [loading, setLoading] = useState(!authResolved)
