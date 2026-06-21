@@ -657,7 +657,15 @@ export default function PartsInventory() {
   })
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: (ids: string[]) => bulkDeleteInventory(ids),
+    mutationFn: async (ids: string[]) => {
+      // Сначала удаляем фото с хранилища у удаляемых позиций, потом сами позиции
+      const idSet = new Set(ids)
+      const photos = inventory
+        .filter((i: PartsInventoryItem) => idSet.has(i.id))
+        .flatMap((i: PartsInventoryItem) => ((i.photos as ImgbbPhoto[] | undefined) ?? []))
+      if (photos.length) await deletePhotosFromImgbb(photos)
+      await bulkDeleteInventory(ids)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       toast.success(`Удалено ${selectedIds.size} позиций`)

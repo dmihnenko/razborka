@@ -3,9 +3,6 @@ import { uploadToImgbb, deleteFromImgbb } from './imgbbService'
 import { uploadToCloudinary } from './cloudinaryService'
 import { uploadToFreeimage } from './freeimageService'
 import type { PhotoStorageConfig } from './photoStorageConfig'
-// Легаси-фолбэк (per-device), пока у компании не настроено своё хранилище
-import { getPhotoProvider, getCloudinaryConfig } from '@/utils/photoProvider'
-import { getImgbbKey } from '@/utils/imgbbKey'
 
 /** Ошибка «провайдер не настроен» — UI показывает подсказку, куда идти. */
 export class PhotoProviderNotConfigured extends Error {
@@ -15,42 +12,36 @@ export class PhotoProviderNotConfigured extends Error {
   }
 }
 
-/** Конфиг компании отсутствует (миграция не применена / не настроено) → берём
- *  локальный (per-device) конфиг, чтобы поведение не ломалось. */
-function legacyConfig(): PhotoStorageConfig {
-  const provider = getPhotoProvider()
-  if (provider === 'cloudinary') {
-    const c = getCloudinaryConfig()
-    return { provider: 'cloudinary', cloudinary: { cloudName: c.cloudName, preset: c.preset } }
-  }
-  return { provider: 'imgbb', imgbb: { key: getImgbbKey() } }
-}
+const NOT_CONFIGURED = 'Хранилище фото не настроено — выберите сервис и добавьте ключ в Настройках → «Хранилище фото»'
 
 /**
  * Загрузка одного фото через хранилище КОМПАНИИ (imgbb | cloudinary | freeimage).
- * cfg — конфиг компании; если null, откатываемся на локальный (легаси) конфиг.
+ * Строго per-company: используется ТОЛЬКО ключ самой разборки. Никаких локальных
+ * (per-device) фолбэков — чтобы компания без ключа НЕ грузила в чужой аккаунт.
  */
 export async function uploadPhoto(file: File, cfg: PhotoStorageConfig | null): Promise<ImgbbPhoto> {
-  const c = cfg ?? legacyConfig()
+  if (!cfg) {
+    throw new PhotoProviderNotConfigured('none', NOT_CONFIGURED)
+  }
 
-  if (c.provider === 'cloudinary') {
-    if (!c.cloudinary?.cloudName || !c.cloudinary?.preset) {
-      throw new PhotoProviderNotConfigured('cloudinary', 'Cloudinary не настроен — укажите cloud name и upload preset в Настройках → Хранилище фото')
+  if (cfg.provider === 'cloudinary') {
+    if (!cfg.cloudinary?.cloudName || !cfg.cloudinary?.preset) {
+      throw new PhotoProviderNotConfigured('cloudinary', 'Cloudinary не настроен — укажите cloud name и upload preset в Настройках → «Хранилище фото»')
     }
-    return uploadToCloudinary(file, c.cloudinary.cloudName, c.cloudinary.preset)
+    return uploadToCloudinary(file, cfg.cloudinary.cloudName, cfg.cloudinary.preset)
   }
 
-  if (c.provider === 'freeimage') {
-    if (!c.freeimage?.key) {
-      throw new PhotoProviderNotConfigured('freeimage', 'freeimage.host не настроен — укажите API ключ в Настройках → Хранилище фото')
+  if (cfg.provider === 'freeimage') {
+    if (!cfg.freeimage?.key) {
+      throw new PhotoProviderNotConfigured('freeimage', 'freeimage.host не настроен — укажите API ключ в Настройках → «Хранилище фото»')
     }
-    return uploadToFreeimage(file, c.freeimage.key)
+    return uploadToFreeimage(file, cfg.freeimage.key)
   }
 
-  if (!c.imgbb?.key) {
-    throw new PhotoProviderNotConfigured('imgbb', 'Хранилище фото не настроено — выберите сервис и добавьте ключ в Настройках → Хранилище фото')
+  if (!cfg.imgbb?.key) {
+    throw new PhotoProviderNotConfigured('imgbb', NOT_CONFIGURED)
   }
-  return uploadToImgbb(file, c.imgbb.key)
+  return uploadToImgbb(file, cfg.imgbb.key)
 }
 
 /**

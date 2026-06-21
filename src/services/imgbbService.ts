@@ -8,12 +8,9 @@ export interface ImgbbPhoto {
 
 /**
  * Сжатие/оптимизация файла через Canvas перед загрузкой:
- *  - ужимаем по БОЛЬШЕЙ стороне (раньше ограничивалась только ширина —
- *    вертикальные фото оставались огромными);
- *  - выводим WebP (≈на 25-35% меньше JPEG при том же визуальном качестве),
- *    с откатом на JPEG, если браузер не умеет webp-вывод.
- * Так максимально уменьшаем размер без заметной потери качества и не упираемся
- * в лимиты хранилища.
+ *  - ужимаем по БОЛЬШЕЙ стороне (вертикальные фото тоже уменьшаются);
+ *  - выводим JPEG (универсально принимается всеми хостингами, включая ImgBB API;
+ *    WebP-вывод ImgBB по API отвергал — фото «не загружались»).
  */
 export async function compressImage(file: File, maxSize = 1600, quality = 0.82): Promise<Blob> {
   return new Promise((resolve) => {
@@ -29,15 +26,7 @@ export async function compressImage(file: File, maxSize = 1600, quality = 0.82):
         canvas.height = h
         const ctx = canvas.getContext('2d')!
         ctx.drawImage(img, 0, 0, w, h)
-        canvas.toBlob(
-          (webp) => {
-            if (webp && webp.type === 'image/webp') { resolve(webp); return }
-            // браузер не дал webp → JPEG
-            canvas.toBlob((jpeg) => resolve(jpeg || file), 'image/jpeg', quality)
-          },
-          'image/webp',
-          quality
-        )
+        canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', quality)
       }
       img.onerror = () => resolve(file)
       img.src = e.target?.result as string

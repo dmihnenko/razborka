@@ -9,6 +9,19 @@ import { useNavigate } from 'react-router-dom'
 import { Plus, Info, Search, X, User } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 
+/** Совпадение телефона по цифрам: запрос — подпоследовательность цифр номера.
+ *  «355253» найдёт «0953552553» (цифры по порядку, можно пропускать). */
+function phoneDigitsMatch(phone: string, queryDigits: string): boolean {
+  if (!queryDigits) return false
+  const digits = (phone || '').replace(/\D/g, '')
+  if (digits.includes(queryDigits)) return true
+  let i = 0
+  for (let k = 0; k < digits.length && i < queryDigits.length; k++) {
+    if (digits[k] === queryDigits[i]) i++
+  }
+  return i === queryDigits.length
+}
+
 export default function PartsCreateOrder() {
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
@@ -75,9 +88,14 @@ export default function PartsCreateOrder() {
 
   const selectedCustomer = customers.find((c) => c.id === formData.customer_id) || null
   const cq = customerSearch.trim().toLowerCase()
+  const cqDigits = cq.replace(/\D/g, '') // только цифры — для поиска по части номера
   const filteredCustomers = cq
-    ? customers.filter((c) =>
-        (c.full_name || '').toLowerCase().includes(cq) || (c.phone || '').toLowerCase().includes(cq))
+    ? customers.filter((c) => {
+        const nameMatch = (c.full_name || '').toLowerCase().includes(cq)
+        // Телефон: по цифрам как подпоследовательность («355253» → «0953552553»)
+        const phoneMatch = cqDigits.length > 0 && phoneDigitsMatch(c.phone || '', cqDigits)
+        return nameMatch || phoneMatch
+      })
     : customers
   const selectCustomer = (cid: string | null) => {
     setFormData((f) => ({ ...f, customer_id: cid || undefined }))
