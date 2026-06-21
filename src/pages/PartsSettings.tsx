@@ -11,8 +11,7 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { formatDate } from '@/utils/date'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
-import { getImgbbKey, setImgbbKey } from '@/utils/imgbbKey'
-import { getPhotoProvider, setPhotoProvider, getCloudinaryConfig, setCloudinaryConfig, type PhotoProvider } from '@/utils/photoProvider'
+import { PHOTO_SERVICES, getCompanyPhotoStorage, saveCompanyPhotoStorage, isProviderConfigured, type PhotoStorageConfig, type PhotoProvider } from '@/services/photoStorageConfig'
 import { getNpApiKey, setNpApiKey } from '@/utils/npApiKey'
 import { getNpConfig, setNpConfig, NpSenderConfig } from '@/utils/npConfig'
 import { upsertNpSettings } from '@/services/npSettingsService'
@@ -52,12 +51,15 @@ export default function PartsSettings() {
 
   const [manualInput, setManualInput] = useState<string>(String(rate))
   const [rateMode, setRateMode] = useState<'privat' | 'manual'>('privat')
-  const [imgbbKeyInput, setImgbbKeyInput] = useState<string>(getImgbbKey)
   const [npKeyInput, setNpKeyInput] = useState<string>(getNpApiKey)
 
-  /* ── Хранилище фото: выбор провайдера + конфиг Cloudinary ─────── */
-  const [photoProvider, setPhotoProviderState] = useState<PhotoProvider>(getPhotoProvider)
-  const [cloudinaryCfg, setCloudinaryCfg] = useState(getCloudinaryConfig)
+  /* ── Хранилище фото (per-company): провайдер + ключи ───────────── */
+  const [photoCfg, setPhotoCfg] = useState<PhotoStorageConfig>({ provider: 'imgbb' })
+  const [savingPhoto, setSavingPhoto] = useState(false)
+  useEffect(() => {
+    if (!partsCompanyId) return
+    getCompanyPhotoStorage(partsCompanyId).then(cfg => { if (cfg) setPhotoCfg(cfg) })
+  }, [partsCompanyId])
 
   /* ── НП: конфиг отправителя ──────────────────────────────────── */
   const [npSender, setNpSender] = useState<Partial<NpSenderConfig>>(() => getNpConfig())
@@ -202,21 +204,32 @@ export default function PartsSettings() {
     contacts.warrantyDays !== String((company as any).warranty_days ?? 14)
   )
 
-  const handleSaveImgbbKey = () => {
-    const trimmed = imgbbKeyInput.trim()
-    setImgbbKey(trimmed)
-    toast.success(trimmed ? 'API ключ ImgBB сохранён' : 'API ключ удалён')
+  // Чтение/запись поля выбранного провайдера в общий photoCfg
+  const getProviderField = (field: 'key' | 'cloudName' | 'preset'): string => {
+    if (photoCfg.provider === 'cloudinary') return (photoCfg.cloudinary as any)?.[field] || ''
+    if (photoCfg.provider === 'freeimage') return (photoCfg.freeimage as any)?.[field] || ''
+    return (photoCfg.imgbb as any)?.[field] || ''
+  }
+  const setProviderField = (field: 'key' | 'cloudName' | 'preset', value: string) => {
+    setPhotoCfg(c => {
+      if (c.provider === 'cloudinary') return { ...c, cloudinary: { cloudName: '', preset: '', ...c.cloudinary, [field]: value } }
+      if (c.provider === 'freeimage') return { ...c, freeimage: { key: '', ...c.freeimage, [field]: value } }
+      return { ...c, imgbb: { key: '', ...c.imgbb, [field]: value } }
+    })
   }
 
-  const handleChangeProvider = (p: PhotoProvider) => {
-    setPhotoProviderState(p)
-    setPhotoProvider(p)
-  }
-
-  const handleSaveCloudinary = () => {
-    setCloudinaryConfig(cloudinaryCfg)
-    toast.success(cloudinaryCfg.cloudName.trim() && cloudinaryCfg.preset.trim()
-      ? 'Cloudinary сохранён' : 'Конфиг Cloudinary очищен')
+  const handleSavePhotoStorage = async () => {
+    if (!partsCompanyId) return
+    setSavingPhoto(true)
+    try {
+      await saveCompanyPhotoStorage(partsCompanyId, photoCfg)
+      queryClient.invalidateQueries({ queryKey: ['parts-company-photo-storage', partsCompanyId] })
+      toast.success('Хранилище фото сохранено')
+    } catch {
+      toast.error('Не удалось сохранить. Возможно, не применена миграция БД (photo_provider/photo_config).')
+    } finally {
+      setSavingPhoto(false)
+    }
   }
 
   const handleSaveNpKey = async () => {
@@ -252,9 +265,7 @@ export default function PartsSettings() {
   if (!partsCompanyId) return <PartsAccessDenied />
 
   /* ── статусы интеграций ── */
-  const imgbbConnected = photoProvider === 'cloudinary'
-    ? Boolean(cloudinaryCfg.cloudName.trim() && cloudinaryCfg.preset.trim())
-    : Boolean(imgbbKeyInput.trim())
+  const imgbbConnected = isProviderConfigured(photoCfg)
   const npConnected = Boolean(npKeyInput.trim())
   const tgConnected = Boolean((company as any)?.telegram_chat_id)
 
@@ -285,7 +296,7 @@ export default function PartsSettings() {
     },
     {
       id: 'imgbb', Icon: Key, iconBg: 'bg-purple-100 dark:bg-purple-900/40', iconColor: 'text-purple-600 dark:text-purple-400',
-      title: 'Фотографии', sub: photoProvider === 'cloudinary' ? 'Cloudinary' : 'ImgBB', badge: imgbbConnected ? connectedBadge : notSetBadge,
+      title: 'Фотографии', sub: PHOTO_SERVICES.find(s => s.id === photoCfg.provider)?.name || 'Хранилище', badge: imgbbConnected ? connectedBadge : notSetBadge,
       onClick: () => setPanel('imgbb'),
     },
     {
@@ -428,52 +439,67 @@ export default function PartsSettings() {
           </div>
         )
 
-      case 'imgbb':
+      case 'imgbb': {
+        const svc = PHOTO_SERVICES.find(s => s.id === photoCfg.provider) ?? PHOTO_SERVICES[0]
         return (
           <div className="space-y-4">
-            <p className="text-sm text-gray-500 dark:text-slate-400">Где хранятся фотографии запчастей. Фото сжимаются (WebP) перед загрузкой.</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Каждая разборка подключает <b>своё</b> хранилище фото. Выберите сервис, добавьте ключ — фото запчастей будут грузиться туда (со сжатием в WebP).
+            </p>
 
-            {/* Выбор провайдера */}
-            <div>
-              <label className="form-label">Сервис хранения</label>
-              <select value={photoProvider} onChange={e => handleChangeProvider(e.target.value as PhotoProvider)} className="form-select">
-                <option value="imgbb">ImgBB (по умолчанию)</option>
-                <option value="cloudinary">Cloudinary (25 ГБ, авто-оптимизация)</option>
-              </select>
+            {/* Выбор сервиса — карточки с лимитами */}
+            <div className="grid grid-cols-1 gap-2">
+              {PHOTO_SERVICES.map(s => {
+                const active = photoCfg.provider === s.id
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setPhotoCfg(c => ({ ...c, provider: s.id as PhotoProvider }))}
+                    className={`text-left p-3 rounded-xl border-2 transition-colors ${active ? 'border-primary bg-primary/5' : 'border-gray-200 dark:border-slate-700 hover:border-gray-300'}`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{s.name}</span>
+                      {active && <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />}
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{s.limits}</p>
+                  </button>
+                )
+              })}
             </div>
 
-            {photoProvider === 'imgbb' && (
-              <div className="space-y-2 pt-1">
-                <label className="form-label">API ключ ImgBB</label>
-                <div className="flex gap-2">
-                  <input type="text" value={imgbbKeyInput} onChange={e => setImgbbKeyInput(e.target.value)} className="form-input flex-1 font-mono" placeholder="Вставьте ключ API..." />
-                  <button onClick={handleSaveImgbbKey} className="cab-btn cab-btn-primary flex-shrink-0"><Save className="w-4 h-4" /> Сохранить</button>
-                </div>
-                <a href="https://api.imgbb.com/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline">
-                  <ExternalLink className="w-3.5 h-3.5" /> Получить бесплатный ключ на imgbb.com
-                </a>
-              </div>
-            )}
+            {/* Инструкция для выбранного сервиса */}
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3">
+              <p className="text-xs font-semibold text-gray-700 dark:text-slate-200 mb-1.5">Как подключить {svc.name}:</p>
+              <ol className="space-y-1 text-xs text-gray-600 dark:text-slate-300 list-decimal list-inside">
+                {svc.steps.map((st, i) => <li key={i}>{st}</li>)}
+              </ol>
+              <a href={svc.signupUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-2">
+                <ExternalLink className="w-3.5 h-3.5" /> Открыть {svc.name}
+              </a>
+            </div>
 
-            {photoProvider === 'cloudinary' && (
-              <div className="space-y-2 pt-1">
-                <label className="form-label">Cloud name</label>
-                <input type="text" value={cloudinaryCfg.cloudName} onChange={e => setCloudinaryCfg(c => ({ ...c, cloudName: e.target.value }))} className="form-input font-mono" placeholder="например: my-razborka" />
-                <label className="form-label">Upload preset (unsigned)</label>
-                <div className="flex gap-2">
-                  <input type="text" value={cloudinaryCfg.preset} onChange={e => setCloudinaryCfg(c => ({ ...c, preset: e.target.value }))} className="form-input flex-1 font-mono" placeholder="имя unsigned-пресета" />
-                  <button onClick={handleSaveCloudinary} className="cab-btn cab-btn-primary flex-shrink-0"><Save className="w-4 h-4" /> Сохранить</button>
+            {/* Поля ключей выбранного сервиса */}
+            <div className="space-y-2">
+              {svc.fields.map(f => (
+                <div key={f.key}>
+                  <label className="form-label">{f.label}</label>
+                  <input
+                    type="text"
+                    value={getProviderField(f.key)}
+                    onChange={e => setProviderField(f.key, e.target.value)}
+                    className="form-input font-mono"
+                    placeholder={f.placeholder}
+                  />
                 </div>
-                <p className="text-xs text-gray-500 dark:text-slate-400">
-                  В Cloudinary: Settings → Upload → Add upload preset → Signing mode: <b>Unsigned</b>. Скопируйте имя пресета и Cloud name (Dashboard).
-                </p>
-                <a href="https://cloudinary.com/users/register_free" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline">
-                  <ExternalLink className="w-3.5 h-3.5" /> Бесплатный аккаунт Cloudinary
-                </a>
-              </div>
-            )}
+              ))}
+              <button onClick={handleSavePhotoStorage} disabled={savingPhoto} className="cab-btn cab-btn-primary w-full disabled:opacity-60">
+                <Save className="w-4 h-4" /> {savingPhoto ? 'Сохранение...' : 'Сохранить хранилище'}
+              </button>
+            </div>
           </div>
         )
+      }
 
       case 'np':
         return (

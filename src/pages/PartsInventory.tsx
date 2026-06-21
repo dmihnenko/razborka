@@ -15,6 +15,7 @@ import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatu
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { deletePhotosFromImgbb } from '@/services/imgbbService'
 import { uploadPhoto, PhotoProviderNotConfigured } from '@/services/photoStorage'
+import { getCompanyPhotoStorage, type PhotoStorageConfig } from '@/services/photoStorageConfig'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/utils/currency'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
@@ -241,6 +242,15 @@ export default function PartsInventory() {
     queryKey: ['parts-storage-locations', partsCompanyId],
     queryFn: () => getStorageLocations(partsCompanyId!),
     enabled: !!partsCompanyId && (isModalOpen || isBulkLocationOpen),
+  })
+
+  // Конфиг хранилища фото компании (per-company). null до применения миграции —
+  // тогда uploadPhoto откатится на локальный конфиг.
+  const { data: photoCfg = null } = useQuery({
+    queryKey: ['parts-company-photo-storage', partsCompanyId],
+    queryFn: () => getCompanyPhotoStorage(partsCompanyId!),
+    enabled: !!partsCompanyId,
+    staleTime: 1000 * 60 * 5,
   })
 
   // Get customers for sell modal
@@ -1601,6 +1611,7 @@ export default function PartsInventory() {
           onSave={(data) => saveMutation.mutate(data)}
           onSaveBulk={(items) => saveBulkMutation.mutate(items)}
           isSaving={saveMutation.isPending || saveBulkMutation.isPending}
+          photoCfg={photoCfg}
           initialVehicleId={editingItem ? undefined : lastVehicleId}
           onVehicleChange={(id) => {
             setLastVehicleId(id)
@@ -1727,9 +1738,10 @@ interface PartsInventoryModalProps {
   onVehicleChange?: (id: string) => void
   initialStorageLocationId?: string
   onStorageChange?: (id: string) => void
+  photoCfg?: PhotoStorageConfig | null
 }
 
-export function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange, initialStorageLocationId, onStorageChange }: PartsInventoryModalProps) {
+export function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange, initialStorageLocationId, onStorageChange, photoCfg }: PartsInventoryModalProps) {
   const [bulkMode, setBulkMode] = useState(false)
   const [showPasteArea, setShowPasteArea] = useState(false)
   const [pasteText, setPasteText] = useState('')
@@ -1784,7 +1796,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     try {
       // Грузим ВСЕ выбранные/снятые фото параллельно через выбранный провайдер
       // (imgbb | cloudinary | r2), сохраняя порядок.
-      const results = await Promise.allSettled(files.map(file => uploadPhoto(file)))
+      const results = await Promise.allSettled(files.map(file => uploadPhoto(file, photoCfg ?? null)))
       const uploaded = results
         .filter((r): r is PromiseFulfilledResult<ImgbbPhoto> => r.status === 'fulfilled')
         .map(r => r.value)
