@@ -16,9 +16,7 @@ import {
   getPartsCategoryTemplates,
   copyTemplateCategories,
   getPartsCategoriesUsage,
-  getPartsCategoryById,
 } from '@/services/partsService'
-import { moveToTrash } from '@/services/trashService'
 
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -182,17 +180,9 @@ export default function PartsCategories() {
   })
 
   const deleteMutation = useMutation({
+    // Категории удаляем СРАЗУ, без корзины (по запросу). Подкатегории уходят
+    // каскадом (FK parent_id ON DELETE CASCADE).
     mutationFn: async (id: string) => {
-      const category = await getPartsCategoryById(id).catch(() => null)
-      if (category) {
-        await moveToTrash({
-          entityType: 'parts_category',
-          entityId: id,
-          entityLabel: category.name || 'Категория',
-          entityData: category,
-          partsCompanyId,
-        })
-      }
       await deletePartsCategory(id)
     },
     onSuccess: () => {
@@ -237,10 +227,11 @@ export default function PartsCategories() {
 
   const handleDelete = async (cat: PartsCategory) => {
     const count = usageMap[cat.id] || 0
-    const msg = count > 0
-      ? `Категория используется в ${count} запчастях. Продолжить?`
-      : `Удалить категорию "${cat.name}"?`
-    const ok = await showConfirm({ message: msg, danger: true })
+    const childCount = categories.filter(c => c.parent_id === cat.id).length
+    const parts: string[] = [`Удалить категорию «${cat.name}» навсегда (без корзины)?`]
+    if (childCount > 0) parts.push(`Будут удалены и подкатегории: ${childCount}.`)
+    if (count > 0) parts.push(`Используется в запчастях: ${count}.`)
+    const ok = await showConfirm({ message: parts.join(' '), danger: true })
     if (!ok) return
     deleteMutation.mutate(cat.id)
   }
