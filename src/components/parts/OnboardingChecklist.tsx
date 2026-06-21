@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { createPartsCategoriesBulk } from '@/services/partsService'
-import { getImgbbKey } from '@/utils/imgbbKey'
+import { getCompanyPhotoStorage, isProviderConfigured } from '@/services/photoStorageConfig'
 
 const DEFAULT_CATEGORIES = [
   'Двигатель',
@@ -77,7 +77,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
     queryFn: async () => {
       const { data } = await supabase
         .from('parts_companies')
-        .select('phone, telegram, address')
+        .select('phone, telegram, address, telegram_chat_id')
         .eq('id', partsCompanyId)
         .single()
       return data
@@ -100,8 +100,17 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
     staleTime: 2 * 60 * 1000,
   })
 
-  // 6. Хранилище фото (ImgBB API-ключ хранится в localStorage)
-  const hasImgbb = !!getImgbbKey()
+  // 6. Хранилище фото — per-company конфиг (provider + ключи в parts_companies)
+  const { data: photoCfg = null } = useQuery({
+    queryKey: ['onboarding-photo-storage', partsCompanyId],
+    queryFn: () => getCompanyPhotoStorage(partsCompanyId),
+    enabled: !!partsCompanyId,
+    staleTime: 2 * 60 * 1000,
+  })
+  const hasPhoto = isProviderConfigured(photoCfg)
+
+  // 7. Telegram-уведомления (бот привязан → telegram_chat_id)
+  const hasTelegram = !!(companyContacts as any)?.telegram_chat_id
 
   const addCategoriesMutation = useMutation({
     mutationFn: () => createPartsCategoriesBulk(DEFAULT_CATEGORIES, partsCompanyId),
@@ -132,8 +141,8 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
     !!companyContacts?.phone &&
     !!(companyContacts?.telegram || companyContacts?.address)
 
-  const doneCount = [hasCats, hasStorage, hasImgbb, hasVehicles, hasInventory, hasContacts].filter(Boolean).length
-  const total = 6
+  const doneCount = [hasCats, hasStorage, hasPhoto, hasVehicles, hasInventory, hasContacts, hasTelegram].filter(Boolean).length
+  const total = 7
   const allDone = doneCount === total
   const progressPct = Math.round((doneCount / total) * 100)
 
@@ -306,22 +315,45 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
             </div>
           </li>
 
-          {/* 6. Хранилище фото (ImgBB) */}
+          {/* 6. Хранилище фото (per-company) */}
           <li className="flex items-start gap-3 px-4 py-3">
-            {hasImgbb
+            {hasPhoto
               ? <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" strokeWidth={1.5} aria-hidden="true" />
               : <Circle className="w-5 h-5 text-gray-300 flex-shrink-0 mt-0.5" strokeWidth={1.5} aria-hidden="true" />
             }
             <div className="flex-1 min-w-0">
-              <p className={`text-sm font-semibold ${hasImgbb ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+              <p className={`text-sm font-semibold ${hasPhoto ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
                 Подключите хранилище фото
               </p>
-              {!hasImgbb && (
+              {!hasPhoto && (
                 <>
-                  <p className="text-xs text-gray-500 mt-0.5">Бесплатный ключ ImgBB — чтобы загружать фото запчастей</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Выберите сервис (ImgBB / Cloudinary / freeimage) и добавьте ключ — чтобы загружать фото запчастей</p>
                   <div className="mt-2">
                     <Link to="/parts/settings" className="cab-btn cab-btn-secondary cab-btn-sm">
-                      Настроить API
+                      Настроить хранилище
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
+          </li>
+
+          {/* 7. Telegram-уведомления */}
+          <li className="flex items-start gap-3 px-4 py-3">
+            {hasTelegram
+              ? <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" strokeWidth={1.5} aria-hidden="true" />
+              : <Circle className="w-5 h-5 text-gray-300 flex-shrink-0 mt-0.5" strokeWidth={1.5} aria-hidden="true" />
+            }
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-semibold ${hasTelegram ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+                Подключите Telegram-уведомления
+              </p>
+              {!hasTelegram && (
+                <>
+                  <p className="text-xs text-gray-500 mt-0.5">Заявки с маркета и новые заказы будут приходить в Telegram</p>
+                  <div className="mt-2">
+                    <Link to="/parts/settings" className="cab-btn cab-btn-secondary cab-btn-sm">
+                      Подключить Telegram
                     </Link>
                   </div>
                 </>

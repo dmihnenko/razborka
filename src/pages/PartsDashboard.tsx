@@ -15,6 +15,7 @@ import { getPartsDashboardStats } from '@/services/partsService'
 import { supabase } from '@/lib/supabase'
 import { telegramConnectLink } from '@/config/telegram'
 import ExchangeRateWidget from '@/components/parts/ExchangeRateWidget'
+import OnboardingChecklist from '@/components/parts/OnboardingChecklist'
 
 const tgDismissKey = (companyId: string) => `tsp_tg_promo_dismissed_${companyId}`
 
@@ -187,6 +188,9 @@ export default function PartsDashboard() {
           </button>
         </div>
       </div>
+
+      {/* ── Чек-лист настройки разборки (категории, авто, фото, Telegram и т.д.) ─ */}
+      {partsCompanyId && <OnboardingChecklist partsCompanyId={partsCompanyId} />}
 
       {/* ── Промо: подключить Telegram (скрывается при подключении или закрытии) ─ */}
       {showTgPromo && (

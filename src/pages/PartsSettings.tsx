@@ -225,6 +225,7 @@ export default function PartsSettings() {
       await saveCompanyPhotoStorage(partsCompanyId, photoCfg)
       queryClient.invalidateQueries({ queryKey: ['parts-company-photo-storage', partsCompanyId] })
       toast.success('Хранилище фото сохранено')
+      setPanel(null) // закрываем панель после сохранения (как у Telegram и др.)
     } catch {
       toast.error('Не удалось сохранить. Возможно, не применена миграция БД (photo_provider/photo_config).')
     } finally {
