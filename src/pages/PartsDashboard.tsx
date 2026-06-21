@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import {
   ShoppingCart, Inbox, Tag, AlertTriangle, DollarSign, Package, Car,
-  ArrowRight, ChevronRight, Plus, CheckCircle2, Boxes, RefreshCw, Send, X,
+  ArrowRight, ChevronRight, Plus, CheckCircle2, Boxes, RefreshCw,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getPartsOrderStatusText } from '@/utils/status'
@@ -13,11 +12,9 @@ import { formatDate } from '@/utils/date'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getPartsDashboardStats } from '@/services/partsService'
 import { supabase } from '@/lib/supabase'
-import { telegramConnectLink } from '@/config/telegram'
 import ExchangeRateWidget from '@/components/parts/ExchangeRateWidget'
 import OnboardingChecklist from '@/components/parts/OnboardingChecklist'
 
-const tgDismissKey = (companyId: string) => `tsp_tg_promo_dismissed_${companyId}`
 
 // ============================================================================
 // ПУЛЬТ — операционный дашборд кабинета разборки («Ink & Signal»).
@@ -62,40 +59,6 @@ export default function PartsDashboard() {
     enabled: !!partsCompanyId,
     staleTime: 5 * 60 * 1000,
   })
-
-  // Статус подключения Telegram (для промо-баннера).
-  // Подключение происходит ВНЕ приложения (в Telegram), поэтому глобальный
-  // staleTime/refetchOnWindowFocus=false тут не годится — иначе баннер «висит»
-  // после подключения. Перечитываем при возврате во вкладку и при заходе на Пульт.
-  const { data: tgCompany } = useQuery({
-    queryKey: ['parts-company-tg', partsCompanyId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('parts_companies')
-        .select('telegram_chat_id')
-        .eq('id', partsCompanyId!)
-        .single()
-      return data
-    },
-    enabled: !!partsCompanyId,
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-  })
-  const tgConnected = Boolean((tgCompany as any)?.telegram_chat_id)
-
-  const [tgDismissed, setTgDismissed] = useState(true) // скрыто, пока не прочитаем localStorage
-  useEffect(() => {
-    if (!partsCompanyId) return
-    try { setTgDismissed(!!localStorage.getItem(tgDismissKey(partsCompanyId))) } catch { setTgDismissed(false) }
-  }, [partsCompanyId])
-
-  const dismissTg = () => {
-    if (partsCompanyId) { try { localStorage.setItem(tgDismissKey(partsCompanyId), '1') } catch { /* ignore */ } }
-    setTgDismissed(true)
-  }
-  // Показываем только когда компания загружена, не подключено и не закрыто
-  const showTgPromo = Boolean(partsCompanyId) && tgCompany !== undefined && !tgConnected && !tgDismissed
 
   const { data: recentOrders } = useQuery({
     queryKey: ['parts-recent-activity', partsCompanyId],
@@ -191,28 +154,6 @@ export default function PartsDashboard() {
 
       {/* ── Чек-лист настройки разборки (категории, авто, фото, Telegram и т.д.) ─ */}
       {partsCompanyId && <OnboardingChecklist partsCompanyId={partsCompanyId} />}
-
-      {/* ── Промо: подключить Telegram (скрывается при подключении или закрытии) ─ */}
-      {showTgPromo && (
-        <div className="cab-card p-4 flex items-center gap-3">
-          <span className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: 'var(--cab-signal-weak)', color: 'var(--cab-signal)' }}>
-            <Send className="w-5 h-5" strokeWidth={1.5} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold" style={{ color: ink }}>Подключите Telegram-уведомления</p>
-            <p className="text-xs mt-0.5" style={{ color: ink2 }}>Заявки с маркета и напоминания будут приходить прямо в Telegram.</p>
-          </div>
-          <a href={telegramConnectLink(partsCompanyId!)} target="_blank" rel="noopener noreferrer"
-            className="cab-btn cab-btn-primary cab-btn-sm flex-shrink-0">
-            <Send className="w-4 h-4" strokeWidth={1.5} /> <span className="hidden sm:inline">Подключить</span>
-          </a>
-          <button onClick={dismissTg} aria-label="Скрыть, оставить только в настройках"
-            className="btn-icon-sm flex-shrink-0" style={{ color: ink3 }}>
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       {/* ── Требует действия ──────────────────────────────── */}
       {(actions.length > 0 || rateNeedsUpdate) ? (
