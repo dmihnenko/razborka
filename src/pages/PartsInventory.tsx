@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
-import { Plus, Search, Package, Grid, List, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, ChevronRight, Download, Zap, MapPin, FolderOpen } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, ChevronRight, Download, Zap, MapPin, FolderOpen, Copy, Check } from 'lucide-react'
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -81,6 +81,9 @@ export default function PartsInventory() {
   const [newCustomerPhone, setNewCustomerPhone] = useState('')
   const [lastVehicleId, setLastVehicleId] = useState<string>(
     () => sessionStorage.getItem('parts_last_vehicle_id') || ''
+  )
+  const [lastStorageLocationId, setLastStorageLocationId] = useState<string>(
+    () => sessionStorage.getItem('parts_last_storage_location_id') || ''
   )
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isBulkSellOpen, setIsBulkSellOpen] = useState(false)
@@ -1598,6 +1601,15 @@ export default function PartsInventory() {
               sessionStorage.removeItem('parts_last_vehicle_id')
             }
           }}
+          initialStorageLocationId={editingItem ? undefined : lastStorageLocationId}
+          onStorageChange={(id) => {
+            setLastStorageLocationId(id)
+            if (id) {
+              sessionStorage.setItem('parts_last_storage_location_id', id)
+            } else {
+              sessionStorage.removeItem('parts_last_storage_location_id')
+            }
+          }}
         />
       )}
       {/* Конвейер */}
@@ -1704,20 +1716,24 @@ interface PartsInventoryModalProps {
   isSaving?: boolean
   initialVehicleId?: string
   onVehicleChange?: (id: string) => void
+  initialStorageLocationId?: string
+  onStorageChange?: (id: string) => void
 }
 
-export function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange }: PartsInventoryModalProps) {
+export function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange, initialStorageLocationId, onStorageChange }: PartsInventoryModalProps) {
   const [bulkMode, setBulkMode] = useState(false)
   const [showPasteArea, setShowPasteArea] = useState(false)
   const [pasteText, setPasteText] = useState('')
   const [bulkItems, setBulkItems] = useState<ModalBulkRow[]>([{ name: '', selling_price: '', part_number: '', status: 'available' }])
   const autoFilledVehicle = !item && !!initialVehicleId
+  const autoFilledStorage = !item && !!initialStorageLocationId
   const [autoHintDismissed, setAutoHintDismissed] = useState(false)
+  const [oemCopied, setOemCopied] = useState(false)
   const [bulkShared, setBulkShared] = useState({
     category_id: '',
     vehicle_id: initialVehicleId || '',
     condition: 'used',
-    storage_location_id: '',
+    storage_location_id: initialStorageLocationId || '',
     price_currency: 'USD' as 'UAH' | 'USD',
   })
 
@@ -1736,7 +1752,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     shelf: item?.shelf || '',
     bin: item?.bin || '',
     notes: item?.notes || '',
-    storage_location_id: (item as any)?.storage_location_id || '',
+    storage_location_id: (item as any)?.storage_location_id || initialStorageLocationId || '',
   })
   const [photos, setPhotos] = useState<ImgbbPhoto[]>((item?.photos as ImgbbPhoto[]) || [])
   const [uploading, setUploading] = useState(false)
@@ -1770,6 +1786,19 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     setPhotos(prev => prev.filter((_, i) => i !== index))
   }
 
+  const copyOem = async () => {
+    const val = (formData.part_number || '').trim()
+    if (!val) return
+    try {
+      await navigator.clipboard.writeText(val)
+      setOemCopied(true)
+      toast.success('Артикул скопирован')
+      setTimeout(() => setOemCopied(false), 1500)
+    } catch {
+      toast.error('Не удалось скопировать')
+    }
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (bulkMode) {
@@ -1781,7 +1810,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
       onSaveBulk?.(valid.map(r => ({
         name: r.name.trim(),
         selling_price: Number(r.selling_price) || undefined,
-        part_number: r.part_number.trim() || undefined,
+        part_number: r.part_number.trim().toUpperCase() || undefined,
         category_id: bulkShared.category_id || undefined,
         vehicle_id: bulkShared.vehicle_id || undefined,
         condition: bulkShared.condition,
@@ -1792,7 +1821,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
         status: r.status,
       })))
     } else {
-      onSave({ ...formData, photos })
+      onSave({ ...formData, part_number: formData.part_number?.trim().toUpperCase() || '', photos })
     }
   }
 
@@ -1810,14 +1839,18 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
           <div className="modal-body flex-1 overflow-y-auto min-h-0">
             <div className="space-y-4">
 
-              {/* Auto-filled vehicle reminder */}
-              {autoFilledVehicle && !autoHintDismissed && (() => {
+              {/* Auto-filled reminder — последнее авто и/или место хранения */}
+              {(autoFilledVehicle || autoFilledStorage) && !autoHintDismissed && (() => {
                 const v = (vehicles as any[]).find(x => x.id === (bulkMode ? bulkShared.vehicle_id : formData.vehicle_id))
-                if (!v) return null
+                const loc = buildLocationOptions(storageLocations).find(o => o.id === (bulkMode ? bulkShared.storage_location_id : formData.storage_location_id))
+                if (!v && !loc) return null
                 return (
                   <div className="flex items-center justify-between gap-2 px-3 py-2 bg-amber-50 border border-amber-200/60 rounded-xl text-sm text-amber-800">
                     <span>
-                      Авто-выбрано последнее: <strong>{v.make} {v.model} {v.year}</strong>
+                      Подставлено последнее:{' '}
+                      {v && <strong>{v.make} {v.model} {v.year}</strong>}
+                      {v && loc && <span className="text-amber-400"> · </span>}
+                      {loc && <strong>{loc.label}</strong>}
                     </span>
                     <button type="button" onClick={() => setAutoHintDismissed(true)} className="text-amber-600 hover:text-amber-700 text-xs font-semibold shrink-0">
                       Ок
@@ -1909,7 +1942,10 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       {storageLocations.length > 0 ? (
                         <select
                           value={bulkShared.storage_location_id}
-                          onChange={(e) => setBulkShared({ ...bulkShared, storage_location_id: e.target.value })}
+                          onChange={(e) => {
+                            setBulkShared({ ...bulkShared, storage_location_id: e.target.value })
+                            onStorageChange?.(e.target.value)
+                          }}
                           className="form-select"
                         >
                           <option value="">Не указано</option>
@@ -2036,13 +2072,16 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                             <input
                               type="text"
                               value={row.part_number}
+                              autoCapitalize="characters"
+                              autoCorrect="off"
+                              spellCheck={false}
                               onChange={(e) => {
                                 const next = [...bulkItems]
-                                next[idx] = { ...next[idx], part_number: e.target.value }
+                                next[idx] = { ...next[idx], part_number: e.target.value.toUpperCase() }
                                 setBulkItems(next)
                               }}
                               placeholder="Ориг. номер"
-                              className="w-full pr-2 py-1.5 text-sm border-0 border-l border-gray-200 pl-2 focus:outline-none focus:ring-0"
+                              className="w-full pr-2 py-1.5 text-sm border-0 border-l border-gray-200 pl-2 focus:outline-none focus:ring-0 font-mono uppercase"
                             />
                             <select
                               value={row.status}
@@ -2151,14 +2190,31 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="form-label">
-                      Артикул
+                      Артикул (OEM)
                     </label>
-                    <input
-                      type="text"
-                      value={formData.part_number}
-                      onChange={(e) => setFormData({ ...formData, part_number: e.target.value })}
-                      className="form-input"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        inputMode="text"
+                        autoCapitalize="characters"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        value={formData.part_number}
+                        onChange={(e) => setFormData({ ...formData, part_number: e.target.value.toUpperCase() })}
+                        placeholder="Напр. 1K0615301"
+                        className="form-input flex-1 min-w-0 font-mono uppercase tracking-wide"
+                      />
+                      <button
+                        type="button"
+                        onClick={copyOem}
+                        disabled={!formData.part_number?.trim()}
+                        className="cab-btn cab-btn-secondary flex-shrink-0 w-11 px-0 flex items-center justify-center disabled:opacity-40"
+                        title="Скопировать артикул"
+                        aria-label="Скопировать артикул"
+                      >
+                        {oemCopied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   <div>
@@ -2261,7 +2317,10 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   {storageLocations.length > 0 ? (
                     <select
                       value={formData.storage_location_id || ''}
-                      onChange={(e) => setFormData({ ...formData, storage_location_id: e.target.value || undefined })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, storage_location_id: e.target.value || undefined })
+                        onStorageChange?.(e.target.value)
+                      }}
                       className="form-select"
                     >
                       <option value="">Не указано</option>
