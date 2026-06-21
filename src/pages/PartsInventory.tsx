@@ -1798,7 +1798,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
 
   return (
     <div className="modal-overlay">
-      <div className="absolute inset-0" onClick={onClose} />
+      <div className="absolute inset-0" />
       <div className="modal-sheet w-full max-w-none sm:max-w-5xl z-10 h-[100dvh] sm:h-[94dvh] rounded-none sm:rounded-2xl flex flex-col overflow-hidden">
         <div className="modal-handle sm:hidden" />
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">

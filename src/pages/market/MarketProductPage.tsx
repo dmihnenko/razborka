@@ -113,8 +113,9 @@ export default function MarketProductPage() {
         </ol>
       </nav>
 
-      {/* ПК — 3 колонки (фото · цена+инфо · разборка); мобайл — вертикально */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px_300px] gap-4 lg:gap-5 items-start">
+      {/* ПК — 3 колонки (фото · цена+инфо · разборка); мобайл — вертикально.
+          Ширина блока ограничена, чтобы фото не растягивалось на пол-экрана. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,420px)_minmax(300px,360px)_minmax(280px,320px)] gap-4 lg:gap-5 items-start lg:justify-start">
         {/* Фото */}
         <div className="min-w-0">
           {galleryPhotos.length > 0 ? (

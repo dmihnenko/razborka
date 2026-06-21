@@ -16,7 +16,7 @@ interface ModalProps {
   /** Контент липкого футера (обычно кнопки действий) */
   footer?: ReactNode
   children: ReactNode
-  /** Закрывать по клику на фон (по умолчанию true) */
+  /** Закрывать по клику на фон (по умолчанию false — стандарт: не терять введённые данные) */
   closeOnOverlay?: boolean
   /** Закрывать по Escape (по умолчанию true) */
   closeOnEsc?: boolean
@@ -39,11 +39,12 @@ const SIZE: Record<ModalSize, string> = {
  * Мобайл — top-sheet (выезжает сверху, отступ + safe-area-top, без «ручки»),
  * десктоп — карточка по центру с лёгким pop-in.
  * При открытии ставит фокус на диалог. Блокирует скролл фона,
- * закрывается по Escape и клику на фон.
+ * закрывается по Escape, крестиком и кнопками. По клику на фон НЕ закрывается
+ * (стандарт для диалогов с контентом) — включается опцией closeOnOverlay.
  */
 export default function Modal({
   isOpen, onClose, title, subtitle, icon, size = 'md', footer, children,
-  closeOnOverlay = true, closeOnEsc = true, hideClose = false, bare = false, className = '',
+  closeOnOverlay = false, closeOnEsc = true, hideClose = false, bare = false, className = '',
 }: ModalProps) {
   useBlockScroll(isOpen)
   const dialogRef = useRef<HTMLDivElement>(null)

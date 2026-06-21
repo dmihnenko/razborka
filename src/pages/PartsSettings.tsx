@@ -548,7 +548,7 @@ export default function PartsSettings() {
 
       {/* ── Модалка раздела (top-sheet) ── */}
       {panel && (
-        <div className="modal-overlay" onClick={() => setPanel(null)}>
+        <div className="modal-overlay">
           <div className="modal-sheet sm:max-w-lg" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2 className="heading-3">{PANEL_TITLES[panel]}</h2>

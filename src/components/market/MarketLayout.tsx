@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Boxes, LayoutDashboard, LogIn, Search, ShoppingCart } from 'lucide-react'
+import { LayoutDashboard, LogIn, Search, ShoppingCart } from 'lucide-react'
+import { Logo } from '@/components/brand/Logo'
 import { CartProvider, useCart } from '@/hooks/useCart'
 import { useAuth } from '@/hooks/useAuth'
 import { useUserProfile } from '@/hooks/useUserProfile'
@@ -78,21 +79,11 @@ function MarketLayoutInner() {
       >
         <div className="mk-container">
           {/* Ряд 1 */}
-          <div className="flex items-center gap-3 h-14">
-            <Link to="/market" className="flex items-center gap-2.5 flex-shrink-0 min-w-0" aria-label="Маркет запчастей — на главную">
-              <span
-                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'var(--mk-accent-weak)', color: 'var(--mk-accent)' }}
-              >
-                <Boxes className="w-5 h-5" aria-hidden="true" />
-              </span>
-              <span className="flex flex-col leading-none min-w-0">
-                <span className="font-bold tracking-tight text-sm sm:text-[15px] truncate" style={{ color: 'var(--mk-text)' }}>
-                  Маркет запчастей
-                </span>
-                <span className="hidden sm:block text-[11px] mt-0.5 truncate mk-meta">
-                  от авторазборок
-                </span>
+          <div className="flex items-center gap-3 h-16">
+            <Link to="/market" className="flex items-center gap-3 flex-shrink-0 min-w-0" aria-label="Razborka.net — маркет запчастей, на главную">
+              <Logo size="sm" withText className="flex-shrink-0" />
+              <span className="hidden md:block text-[13px] font-semibold tracking-tight truncate mk-meta">
+                маркет&nbsp;запчастей
               </span>
             </Link>
 

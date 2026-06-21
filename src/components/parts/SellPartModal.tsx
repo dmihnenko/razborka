@@ -123,7 +123,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal-sheet sm:max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="modal-handle" />
 

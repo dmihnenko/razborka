@@ -855,7 +855,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div
         className="modal-sheet sm:max-w-2xl animate-slide-up"
         onClick={(e) => e.stopPropagation()}
@@ -1019,7 +1019,7 @@ function EditOrderModal({ order, partsCompanyId, onClose }: EditOrderModalProps)
   })
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div
         className="modal-sheet animate-slide-up"
         onClick={(e) => e.stopPropagation()}
@@ -1088,7 +1088,7 @@ interface ConfirmCompleteModalProps {
 
 function ConfirmCompleteModal({ onConfirm, onClose, isLoading }: ConfirmCompleteModalProps) {
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div
         className="modal-sheet animate-slide-up"
         onClick={(e) => e.stopPropagation()}

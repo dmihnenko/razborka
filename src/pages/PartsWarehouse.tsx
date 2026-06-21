@@ -89,26 +89,6 @@ export default function PartsWarehouse() {
     enabled: !!partsCompanyId,
   })
 
-  // Позиции выбранного места
-  const { data: items = [], isLoading: itemsLoading } = useQuery<any[]>({
-    queryKey: ['parts-location-items', selectedId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('parts_inventory')
-        .select('id, name, article, part_number, selling_price, price_currency, quantity, status')
-        .eq('parts_company_id', partsCompanyId!)
-        .eq('storage_location_id', selectedId!)
-        .order('name')
-      return data || []
-    },
-    enabled: !!partsCompanyId && !!selectedId,
-  })
-
-  const flat = useMemo(() => flatten(locations as StorageLocation[], collapsed), [locations, collapsed])
-  const allFlat = useMemo(() => flatten(locations as StorageLocation[], new Set<string>()), [locations])
-  const selected = allFlat.find(n => n.id === selectedId) || null
-  const depthOf = (id: string) => allFlat.find(n => n.id === id)?.depth ?? 0
-
   const childrenMap = useMemo(() => {
     const m = new Map<string | null, StorageLocation[]>()
     for (const l of locations as StorageLocation[]) {
@@ -118,6 +98,44 @@ export default function PartsWarehouse() {
     }
     return m
   }, [locations])
+
+  const locNameById = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const l of locations as StorageLocation[]) m.set(l.id, l.name)
+    return m
+  }, [locations])
+
+  // Выбранное место + все вложенные (товары показываем рекурсивно из подкатегорий)
+  const subtreeIds = useMemo(() => {
+    if (!selectedId) return [] as string[]
+    const ids = [selectedId]
+    const stack = [selectedId]
+    while (stack.length) {
+      const cur = stack.pop()!
+      for (const k of childrenMap.get(cur) || []) { ids.push(k.id); stack.push(k.id) }
+    }
+    return ids
+  }, [selectedId, childrenMap])
+
+  // Позиции выбранного места и всех вложенных подкатегорий
+  const { data: items = [], isLoading: itemsLoading } = useQuery<any[]>({
+    queryKey: ['parts-location-items', subtreeIds],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('parts_inventory')
+        .select('id, name, article, part_number, selling_price, price_currency, quantity, status, storage_location_id')
+        .eq('parts_company_id', partsCompanyId!)
+        .in('storage_location_id', subtreeIds)
+        .order('name')
+      return data || []
+    },
+    enabled: !!partsCompanyId && subtreeIds.length > 0,
+  })
+
+  const flat = useMemo(() => flatten(locations as StorageLocation[], collapsed), [locations, collapsed])
+  const allFlat = useMemo(() => flatten(locations as StorageLocation[], new Set<string>()), [locations])
+  const selected = allFlat.find(n => n.id === selectedId) || null
+  const depthOf = (id: string) => allFlat.find(n => n.id === id)?.depth ?? 0
 
   // Высота поддерева (0 — лист)
   const subtreeHeight = (id: string): number => {
@@ -366,6 +384,7 @@ export default function PartsWarehouse() {
                           <p className="text-[11px] truncate" style={{ color: 'var(--cab-ink-3)' }}>
                             {LEVEL_LABELS[Math.min(selected.depth, LEVEL_LABELS.length - 1)]}
                             {selected.depth > 0 && ` · ${getNodePath(selected.id)}`}
+                            {items.length > 0 && ` · ${items.length} поз.`}
                           </p>
                         </div>
                       )}
@@ -416,8 +435,13 @@ export default function PartsWarehouse() {
                             style={{ borderTop: '1px solid var(--cab-border)' }}>
                             <div className="flex-1 min-w-0">
                               <span className="text-sm font-medium truncate block" style={{ color: 'var(--cab-ink)' }}>{it.name}</span>
-                              <span className="text-xs truncate block" style={{ color: 'var(--cab-ink-3)' }}>
-                                Артикул {it.article}{it.part_number ? ` · OEM ${String(it.part_number).toUpperCase()}` : ''}
+                              <span className="text-xs truncate flex items-center gap-1.5" style={{ color: 'var(--cab-ink-3)' }}>
+                                <span className="truncate">Артикул {it.article}{it.part_number ? ` · OEM ${String(it.part_number).toUpperCase()}` : ''}</span>
+                                {it.storage_location_id && it.storage_location_id !== selectedId && (
+                                  <span className="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: 'var(--cab-surface-2)', color: 'var(--cab-ink-2)' }}>
+                                    {locNameById.get(it.storage_location_id) || '—'}
+                                  </span>
+                                )}
                               </span>
                             </div>
                             <div className="flex items-center gap-3 flex-shrink-0">

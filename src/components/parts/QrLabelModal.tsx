@@ -48,7 +48,6 @@ export default function QrLabelModal({ title, subtitle, value, onClose }: Props)
     <div
       className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/40 backdrop-blur-[2px] px-3 py-3 sm:p-4 animate-fade-in"
       style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}
-      onClick={onClose}
     >
       {/* Панель */}
       <div

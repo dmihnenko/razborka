@@ -46,7 +46,7 @@ export default function PartsCustomerModal({ isOpen, onClose, onSubmit, customer
   }
 
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay">
       <div className="modal-sheet">
         {/* Handle */}
         <div className="modal-handle" />

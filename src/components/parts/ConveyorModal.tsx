@@ -142,7 +142,7 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
 
   return (
     <div className="modal-overlay">
-      <div className="absolute inset-0" onClick={handleDone} />
+      <div className="absolute inset-0" />
       <div className="modal-sheet sm:max-w-lg w-full z-10 overflow-y-auto max-h-[95dvh]">
         <div className="modal-handle sm:hidden" />
 
