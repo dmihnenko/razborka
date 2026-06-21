@@ -62,7 +62,10 @@ export default function PartsDashboard() {
     staleTime: 5 * 60 * 1000,
   })
 
-  // Статус подключения Telegram (для промо-баннера)
+  // Статус подключения Telegram (для промо-баннера).
+  // Подключение происходит ВНЕ приложения (в Telegram), поэтому глобальный
+  // staleTime/refetchOnWindowFocus=false тут не годится — иначе баннер «висит»
+  // после подключения. Перечитываем при возврате во вкладку и при заходе на Пульт.
   const { data: tgCompany } = useQuery({
     queryKey: ['parts-company-tg', partsCompanyId],
     queryFn: async () => {
@@ -74,6 +77,9 @@ export default function PartsDashboard() {
       return data
     },
     enabled: !!partsCompanyId,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   })
   const tgConnected = Boolean((tgCompany as any)?.telegram_chat_id)
 

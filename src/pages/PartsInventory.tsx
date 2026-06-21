@@ -94,8 +94,9 @@ export default function PartsInventory() {
   const [bulkNewCustomerPhone, setBulkNewCustomerPhone] = useState('')
   const [statusPickerItem, setStatusPickerItem] = useState<PartsInventoryItem | null>(null)
   const [pendingStatus, setPendingStatus] = useState<PartsInventoryStatus | null>(null)
-  const [sortField, setSortField] = useState<'name' | 'status' | 'price'>('name')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  // По умолчанию — по дате добавления, новые сверху (удобно отслеживать последнее добавленное)
+  const [sortField, setSortField] = useState<'date' | 'name' | 'status' | 'price'>('date')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [isConveyorOpen, setIsConveyorOpen] = useState(false)
   const [isBulkLocationOpen, setIsBulkLocationOpen] = useState(false)
   const [isBulkCategoryOpen, setIsBulkCategoryOpen] = useState(false)
@@ -341,7 +342,11 @@ export default function PartsInventory() {
       return tb - ta
     }
     let cmp = 0
-    if (sortField === 'name') {
+    if (sortField === 'date') {
+      const ta = new Date(a.created_at).getTime()
+      const tb = new Date(b.created_at).getTime()
+      cmp = ta - tb // asc = старые сверху; sortDir='desc' (по умолчанию) → новые сверху
+    } else if (sortField === 'name') {
       cmp = a.name.localeCompare(b.name, 'ru')
     } else if (sortField === 'status') {
       cmp = statusOrder[a.status] - statusOrder[b.status]
@@ -807,14 +812,15 @@ export default function PartsInventory() {
             <div className="flex gap-2">
               {/* Sort controls */}
               <div className="flex bg-gray-100 rounded-xl p-1 gap-0.5">
-                {([['name', 'АЯ'], ['status', 'Ст'], ['price', 'Це']] as const).map(([field, label]) => (
+                {([['date', 'Дата'], ['name', 'АЯ'], ['status', 'Ст'], ['price', 'Це']] as const).map(([field, label]) => (
                   <button
                     key={field}
                     onClick={() => {
                       if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
-                      else { setSortField(field); setSortDir('asc') }
+                      // дата по умолчанию — новые сверху (desc); остальные — по возрастанию (asc)
+                      else { setSortField(field); setSortDir(field === 'date' ? 'desc' : 'asc') }
                     }}
-                    title={field === 'name' ? 'По алфавиту' : field === 'status' ? 'По статусу' : 'По цене'}
+                    title={field === 'date' ? 'По дате добавления (новые сверху)' : field === 'name' ? 'По алфавиту' : field === 'status' ? 'По статусу' : 'По цене'}
                     className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-0.5 ${
                       sortField === field ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
                     }`}

@@ -64,7 +64,14 @@ async function recoverFromChunkFailure() {
       if ('caches' in window) {
         const keys = await caches.keys()
         await Promise.all(
-          keys.filter(k => !k.includes('google-fonts') && !k.includes('imgbb')).map(k => caches.delete(k))
+          // ВАЖНО: НЕ удаляем workbox-precache — иначе если снимаемый SW успеет
+          // обработать ещё одну навигацию (гонка между unregister и reload),
+          // его navigateFallback '/index.html' упрётся в пустой precache и
+          // навигация упадёт с ERR_FAILED (особенно на ленивых маршрутах вроде
+          // /admin). SW всё равно снимается → следующая загрузка придёт из сети.
+          keys
+            .filter(k => !k.includes('google-fonts') && !k.includes('imgbb') && !k.includes('precache'))
+            .map(k => caches.delete(k))
         )
       }
     } catch { /* ignore */ }
