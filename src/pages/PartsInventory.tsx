@@ -27,6 +27,9 @@ import { ConveyorModal } from '@/components/parts/ConveyorModal'
 
 type ViewMode = 'grid' | 'list'
 
+// Лимит фотографий на один товар
+const MAX_PHOTOS = 5
+
 interface BulkRow {
   item: PartsInventoryItem
   quantity: number
@@ -1764,8 +1767,19 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   const [uploading, setUploading] = useState(false)
 
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
+    let files = Array.from(e.target.files || [])
     if (!files.length) return
+    // Лимит 5 фото на товар
+    const remaining = MAX_PHOTOS - photos.length
+    if (remaining <= 0) {
+      toast.error(`Максимум ${MAX_PHOTOS} фото на товар`)
+      e.target.value = ''
+      return
+    }
+    if (files.length > remaining) {
+      toast.error(`Можно добавить ещё ${remaining} (максимум ${MAX_PHOTOS} фото на товар)`)
+      files = files.slice(0, remaining)
+    }
     const apiKey = getImgbbKey()
     if (!apiKey) {
       toast.error('Укажите API ключ ImgBB в Настройках')
@@ -2348,7 +2362,12 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 </div>
 
                 <div>
-                  <label className="form-label">Фотографии</label>
+                  <label className="form-label">Фотографии <span className="text-gray-400 font-normal">({photos.length}/{MAX_PHOTOS})</span></label>
+                  {photos.length >= MAX_PHOTOS ? (
+                    <div className="flex items-center justify-center gap-2 w-full h-11 border-2 border-dashed border-gray-200 bg-gray-50 rounded-xl text-sm font-medium text-gray-400">
+                      Достигнут лимит {MAX_PHOTOS} фото
+                    </div>
+                  ) : (
                   <label className={`flex items-center justify-center gap-2 w-full h-11 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
                     uploading ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-200 hover:border-slate-400 hover:bg-slate-50'
                   }`}>
@@ -2362,9 +2381,10 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     />
                     <Camera className={`w-4 h-4 ${uploading ? 'text-gray-300' : 'text-gray-400'}`} />
                     <span className={`text-sm font-medium ${uploading ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {uploading ? 'Загрузка...' : 'Добавить фото (можно несколько)'}
+                      {uploading ? 'Загрузка...' : `Добавить фото (можно несколько, ещё ${MAX_PHOTOS - photos.length})`}
                     </span>
                   </label>
+                  )}
                   {photos.length > 0 && (
                     <div className="mt-2 flex gap-2 flex-wrap">
                       {photos.map((photo, i) => (

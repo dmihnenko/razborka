@@ -6,14 +6,22 @@ export interface ImgbbPhoto {
   delete_url: string
 }
 
-/** Сжатие файла через Canvas перед загрузкой */
-export async function compressImage(file: File, maxWidth = 1200, quality = 0.82): Promise<Blob> {
+/**
+ * Сжатие/оптимизация файла через Canvas перед загрузкой:
+ *  - ужимаем по БОЛЬШЕЙ стороне (раньше ограничивалась только ширина —
+ *    вертикальные фото оставались огромными);
+ *  - выводим WebP (≈на 25-35% меньше JPEG при том же визуальном качестве),
+ *    с откатом на JPEG, если браузер не умеет webp-вывод.
+ * Так максимально уменьшаем размер без заметной потери качества и не упираемся
+ * в лимиты хранилища.
+ */
+export async function compressImage(file: File, maxSize = 1600, quality = 0.82): Promise<Blob> {
   return new Promise((resolve) => {
     const img = new Image()
     const reader = new FileReader()
     reader.onload = (e) => {
       img.onload = () => {
-        const scale = Math.min(1, maxWidth / img.width)
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height))
         const w = Math.round(img.width * scale)
         const h = Math.round(img.height * scale)
         const canvas = document.createElement('canvas')
@@ -22,13 +30,19 @@ export async function compressImage(file: File, maxWidth = 1200, quality = 0.82)
         const ctx = canvas.getContext('2d')!
         ctx.drawImage(img, 0, 0, w, h)
         canvas.toBlob(
-          (blob) => resolve(blob || file),
-          'image/jpeg',
+          (webp) => {
+            if (webp && webp.type === 'image/webp') { resolve(webp); return }
+            // браузер не дал webp → JPEG
+            canvas.toBlob((jpeg) => resolve(jpeg || file), 'image/jpeg', quality)
+          },
+          'image/webp',
           quality
         )
       }
+      img.onerror = () => resolve(file)
       img.src = e.target?.result as string
     }
+    reader.onerror = () => resolve(file)
     reader.readAsDataURL(file)
   })
 }
@@ -36,9 +50,10 @@ export async function compressImage(file: File, maxWidth = 1200, quality = 0.82)
 /** Загрузка на ImgBB с предварительным сжатием */
 export async function uploadToImgbb(file: File, apiKey: string): Promise<ImgbbPhoto> {
   const compressed = await compressImage(file)
+  const ext = compressed.type === 'image/webp' ? '.webp' : '.jpg'
   const form = new FormData()
   form.append('key', apiKey)
-  form.append('image', compressed, file.name.replace(/\.[^.]+$/, '.jpg'))
+  form.append('image', compressed, file.name.replace(/\.[^.]+$/, ext))
 
   const res = await fetch('https://api.imgbb.com/1/upload', {
     method: 'POST',
