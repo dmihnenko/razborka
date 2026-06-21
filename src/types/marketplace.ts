@@ -115,6 +115,10 @@ export interface MarketplaceOrderItem {
   photoUrl?: string | null
   /** Ссылка на позицию склада (для конвертации заявки в заказ) */
   inventoryId?: string | null
+  /** Из какой машины снята (для удобной сборки заказа) */
+  vehicleName?: string | null
+  /** Где лежит на складе (место хранения) */
+  storageName?: string | null
 }
 
 /** Заявка покупателя (marketplace_orders) — для кабинета разборки */

@@ -1776,47 +1776,43 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     storage_location_id: (item as any)?.storage_location_id || initialStorageLocationId || '',
   })
   const [photos, setPhotos] = useState<ImgbbPhoto[]>((item?.photos as ImgbbPhoto[]) || [])
-  const [uploading, setUploading] = useState(false)
+  // Фото, которые ещё грузятся в ФОНЕ: показываем превью сразу (localUrl), без задержки.
+  const [pendingPhotos, setPendingPhotos] = useState<{ id: string; localUrl: string }[]>([])
+  const uploading = pendingPhotos.length > 0
 
-  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     let files = Array.from(e.target.files || [])
+    e.target.value = ''
     if (!files.length) return
-    // Лимит 5 фото на товар
-    const remaining = MAX_PHOTOS - photos.length
+    // Лимит 5 фото на товар (учитываем загруженные + те, что в процессе)
+    const used = photos.length + pendingPhotos.length
+    const remaining = MAX_PHOTOS - used
     if (remaining <= 0) {
       toast.error(`Максимум ${MAX_PHOTOS} фото на товар`)
-      e.target.value = ''
       return
     }
     if (files.length > remaining) {
       toast.error(`Можно добавить ещё ${remaining} (максимум ${MAX_PHOTOS} фото на товар)`)
       files = files.slice(0, remaining)
     }
-    setUploading(true)
-    try {
-      // Грузим ВСЕ выбранные/снятые фото параллельно через выбранный провайдер
-      // (imgbb | cloudinary | r2), сохраняя порядок.
-      const results = await Promise.allSettled(files.map(file => uploadPhoto(file, photoCfg ?? null)))
-      const uploaded = results
-        .filter((r): r is PromiseFulfilledResult<ImgbbPhoto> => r.status === 'fulfilled')
-        .map(r => r.value)
-      const failed = results.length - uploaded.length
-      // Провайдер не настроен → понятная подсказка вместо «не загрузилось»
-      const notConfigured = results.find(
-        (r): r is PromiseRejectedResult => r.status === 'rejected' && r.reason instanceof PhotoProviderNotConfigured
-      )
-      if (!uploaded.length && notConfigured) {
-        toast.error((notConfigured.reason as Error).message)
-        return
-      }
-      if (uploaded.length) setPhotos(prev => [...prev, ...uploaded])
-      if (uploaded.length) toast.success(`${uploaded.length} фото загружено`)
-      if (failed > 0 && uploaded.length) toast.error(`${failed} фото не загрузилось — попробуйте ещё раз`)
-    } catch {
-      toast.error('Ошибка загрузки фото')
-    } finally {
-      setUploading(false)
-      e.target.value = ''
+
+    // Превью показываем мгновенно, выгрузка идёт в ФОНЕ — пользователь не ждёт.
+    for (const file of files) {
+      const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
+      const localUrl = URL.createObjectURL(file)
+      setPendingPhotos(prev => [...prev, { id, localUrl }])
+      uploadPhoto(file, photoCfg ?? null)
+        .then(uploaded => {
+          setPhotos(prev => [...prev, uploaded])
+        })
+        .catch(err => {
+          if (err instanceof PhotoProviderNotConfigured) toast.error(err.message)
+          else toast.error('Не удалось загрузить фото')
+        })
+        .finally(() => {
+          setPendingPhotos(prev => prev.filter(p => p.id !== id))
+          URL.revokeObjectURL(localUrl)
+        })
     }
   }
 
@@ -2378,30 +2374,27 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 </div>
 
                 <div>
-                  <label className="form-label">Фотографии <span className="text-gray-400 font-normal">({photos.length}/{MAX_PHOTOS})</span></label>
-                  {photos.length >= MAX_PHOTOS ? (
+                  <label className="form-label">Фотографии <span className="text-gray-400 font-normal">({photos.length + pendingPhotos.length}/{MAX_PHOTOS})</span></label>
+                  {(photos.length + pendingPhotos.length) >= MAX_PHOTOS ? (
                     <div className="flex items-center justify-center gap-2 w-full h-11 border-2 border-dashed border-gray-200 bg-gray-50 rounded-xl text-sm font-medium text-gray-400">
                       Достигнут лимит {MAX_PHOTOS} фото
                     </div>
                   ) : (
-                  <label className={`flex items-center justify-center gap-2 w-full h-11 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
-                    uploading ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-200 hover:border-slate-400 hover:bg-slate-50'
-                  }`}>
+                  <label className="flex items-center justify-center gap-2 w-full h-11 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer transition-colors hover:border-slate-400 hover:bg-slate-50">
                     <input
                       type="file"
                       accept="image/*"
                       multiple
-                      disabled={uploading}
                       onChange={handlePhotoSelect}
                       className="sr-only"
                     />
-                    <Camera className={`w-4 h-4 ${uploading ? 'text-gray-300' : 'text-gray-400'}`} />
-                    <span className={`text-sm font-medium ${uploading ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {uploading ? 'Загрузка...' : `Добавить фото (можно несколько, ещё ${MAX_PHOTOS - photos.length})`}
+                    <Camera className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm font-medium text-gray-500">
+                      Добавить фото (можно несколько, ещё {MAX_PHOTOS - photos.length - pendingPhotos.length})
                     </span>
                   </label>
                   )}
-                  {photos.length > 0 && (
+                  {(photos.length > 0 || pendingPhotos.length > 0) && (
                     <div className="mt-2 flex gap-2 flex-wrap">
                       {photos.map((photo, i) => (
                         <div key={i} className="relative group">
@@ -2419,7 +2412,23 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                           </button>
                         </div>
                       ))}
+                      {/* Превью фото, которые ещё грузятся в фоне */}
+                      {pendingPhotos.map((p) => (
+                        <div key={p.id} className="relative">
+                          <img
+                            src={p.localUrl}
+                            alt="Загрузка…"
+                            className="w-16 h-16 object-cover rounded-xl border border-gray-200 opacity-50"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Spinner size="sm" />
+                          </div>
+                        </div>
+                      ))}
                     </div>
+                  )}
+                  {uploading && (
+                    <p className="mt-1.5 text-xs text-gray-400">Фото догружаются в фоне — можно продолжать заполнять карточку.</p>
                   )}
                 </div>
 
@@ -2447,14 +2456,16 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
             </button>
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || (!bulkMode && uploading)}
               className="cab-btn cab-btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSaving
                 ? 'Сохранение...'
-                : bulkMode
-                  ? `Добавить ${bulkItems.filter(r => r.name.trim()).length || ''} запчастей`
-                  : item ? 'Сохранить' : 'Добавить'}
+                : (!bulkMode && uploading)
+                  ? 'Загрузка фото…'
+                  : bulkMode
+                    ? `Добавить ${bulkItems.filter(r => r.name.trim()).length || ''} запчастей`
+                    : item ? 'Сохранить' : 'Добавить'}
             </button>
           </div>
         </form>

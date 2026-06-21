@@ -85,7 +85,7 @@ export default function MarketProductPage() {
       inventoryId: part.id, name: part.name, sellingPrice: part.sellingPrice, priceCurrency: part.priceCurrency,
       photoUrl: photo, quantity: 1, companyId: part.company.id, companyName: part.company.name, condition: part.condition,
     })
-    toast.success('Добавлено в корзину')
+    toast.success('Добавлено в корзину', { position: 'top-center' })
   }
 
   const handleBuyNow = () => {
@@ -117,7 +117,7 @@ export default function MarketProductPage() {
           Ширина блока ограничена, чтобы фото не растягивалось на пол-экрана. */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,420px)_minmax(300px,360px)_minmax(280px,320px)] gap-4 lg:gap-5 items-start lg:justify-start">
         {/* Фото */}
-        <div className="min-w-0">
+        <div className="min-w-0 order-1">
           {galleryPhotos.length > 0 ? (
             <div className="rounded-xl overflow-hidden mk-card p-0"><PhotoGallery photos={galleryPhotos} alt={part.name} mainAspect="aspect-[4/3]" objectFit="contain" mainBgClass="bg-white" /></div>
           ) : (
@@ -129,7 +129,7 @@ export default function MarketProductPage() {
         </div>
 
         {/* Цена + характеристики */}
-        <div className="mk-card p-4">
+        <div className="mk-card p-4 order-2">
             <div className="flex flex-wrap gap-1.5 mb-2.5">
               {conditionBadge(part.condition)}
               <span className="mk-badge mk-badge-neutral">Оригинал</span>
@@ -207,28 +207,30 @@ export default function MarketProductPage() {
             )}
           </div>
 
-        {/* Разборка (продавец) — отдельная колонка (доставка/гарантия — внутри карточки) */}
-        <SellerContactCard
-          company={part.company}
-          hideCallButton
-          telegramMessage={
-            `Здравствуйте! Интересует запчасть:\n«${part.name}»` +
-            (part.vehicle ? `\nАвто: ${part.vehicle.make} ${part.vehicle.model}${part.vehicle.year ? ` ${part.vehicle.year}` : ''}` : '') +
-            (part.partNumber ? `\nОриг. номер: ${part.partNumber.toUpperCase()}` : '') +
-            `\n${typeof window !== 'undefined' ? window.location.href : ''}`
-          }
-        />
-      </div>
+        {/* Описание — на мобиле под ценой (order-3), на ПК — полная ширина под колонками (order-4) */}
+        {part.description?.trim() && (
+          <div className="mk-card p-4 order-3 lg:order-4 lg:col-span-3">
+            <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-3 mk-meta">
+              <FileText className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Описание
+            </h2>
+            <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--mk-text-2)' }}>{part.description}</p>
+          </div>
+        )}
 
-      {/* Описание — под колонками (авто / доставка / гарантия); скрыто, если описания нет */}
-      {part.description?.trim() && (
-        <div className="mk-card p-4 mt-4 sm:mt-5">
-          <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-3 mk-meta">
-            <FileText className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Описание
-          </h2>
-          <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--mk-text-2)' }}>{part.description}</p>
+        {/* Разборка (продавец) — на мобиле под описанием (order-4), на ПК — 3-я колонка (order-3) */}
+        <div className="min-w-0 order-4 lg:order-3">
+          <SellerContactCard
+            company={part.company}
+            hideCallButton
+            telegramMessage={
+              `Здравствуйте! Интересует запчасть:\n«${part.name}»` +
+              (part.vehicle ? `\nАвто: ${part.vehicle.make} ${part.vehicle.model}${part.vehicle.year ? ` ${part.vehicle.year}` : ''}` : '') +
+              (part.partNumber ? `\nОриг. номер: ${part.partNumber.toUpperCase()}` : '') +
+              `\n${typeof window !== 'undefined' ? window.location.href : ''}`
+            }
+          />
         </div>
-      )}
+      </div>
 
       {related.length > 0 && (
         <section className="mt-8 sm:mt-10">

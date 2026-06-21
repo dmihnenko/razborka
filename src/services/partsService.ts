@@ -526,8 +526,8 @@ export async function getPartsOrder(id: string) {
       )
     `)
     .eq('id', id)
-    .single()
-  
+    .maybeSingle()  // не .single(): удалённый/несуществующий заказ → null, а не 406
+
   if (error) throw error
   return data as PartsOrder
 }

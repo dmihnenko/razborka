@@ -380,15 +380,23 @@ function mapOrderRow(row: any): MarketplaceOrder {
     totalAmount: row.total_amount ?? 0,
     createdAt: row.created_at,
     convertedOrderId: row.converted_order_id ?? null,
-    items: ((row.items || []) as any[]).map(it => ({
-      id: it.id,
-      name: it.name,
-      sellingPrice: it.selling_price ?? null,
-      priceCurrency: it.price_currency === 'USD' ? 'USD' : 'UAH',
-      quantity: it.quantity ?? 1,
-      photoUrl: it.photo_url ?? null,
-      inventoryId: it.inventory_id ?? null,
-    })),
+    items: ((row.items || []) as any[]).map(it => {
+      const inv = it.inventory
+      const v = inv?.vehicle
+      const vehicleName = v ? [v.make, v.model, v.year].filter(Boolean).join(' ') : null
+      const storageName = inv?.storage_location?.name || inv?.location || null
+      return {
+        id: it.id,
+        name: it.name,
+        sellingPrice: it.selling_price ?? null,
+        priceCurrency: it.price_currency === 'USD' ? 'USD' : 'UAH',
+        quantity: it.quantity ?? 1,
+        photoUrl: it.photo_url ?? null,
+        inventoryId: it.inventory_id ?? null,
+        vehicleName,
+        storageName,
+      }
+    }),
   }
 }
 
@@ -398,7 +406,14 @@ export async function getMarketplaceOrders(companyId: string): Promise<Marketpla
     .from('marketplace_orders')
     .select(
       `id, parts_company_id, buyer_name, buyer_phone, comment, status, total_amount, created_at, converted_order_id,
-       items:marketplace_order_items(id, name, selling_price, price_currency, quantity, photo_url, inventory_id)`
+       items:marketplace_order_items(
+         id, name, selling_price, price_currency, quantity, photo_url, inventory_id,
+         inventory:parts_inventory!inventory_id(
+           location,
+           vehicle:parts_vehicles!vehicle_id(make, model, year),
+           storage_location:parts_storage_locations!storage_location_id(name)
+         )
+       )`
     )
     .eq('parts_company_id', companyId)
     .order('created_at', { ascending: false })

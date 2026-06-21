@@ -55,7 +55,7 @@ export function MarketProductCard({ part }: MarketProductCardProps) {
       companyName: part.company.name,
       condition: part.condition,
     })
-    toast.success('Добавлено в корзину')
+    toast.success('Добавлено в корзину', { position: 'top-center' })
   }
 
   return (

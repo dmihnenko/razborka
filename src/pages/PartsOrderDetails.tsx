@@ -144,6 +144,9 @@ export default function PartsOrderDetails() {
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
       queryClient.invalidateQueries({ queryKey: ['parts-recent-activity'] })
       queryClient.invalidateQueries({ queryKey: ['parts-orders-stats'] })
+      // Заявка с маркета теряет ссылку на заказ (FK SET NULL) → вернётся в «Активные»
+      queryClient.invalidateQueries({ queryKey: ['marketplace-orders'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       queryClient.invalidateQueries({ queryKey: ['trash'] })
       toast.success('Заказ перемещён в корзину')

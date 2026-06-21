@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { Suspense, useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, LogIn, Search, ShoppingCart } from 'lucide-react'
 import { Logo } from '@/components/brand/Logo'
+import { Spinner } from '@/components/ui/Spinner'
 import { CartProvider, useCart } from '@/hooks/useCart'
 import { useAuth } from '@/hooks/useAuth'
 import { useUserProfile } from '@/hooks/useUserProfile'
@@ -162,7 +163,12 @@ function MarketLayoutInner() {
       {/* ── Контент ────────────────────────────────────────────────────── */}
       <main className="flex-1 w-full">
         <div className="mk-container py-4 sm:py-5">
-          <Outlet />
+          {/* Свой Suspense для маркета: при переходах между ленивыми страницами
+              НЕ мигает скелетон кабинета (LayoutSkeleton из общего Suspense) —
+              шапка маркета остаётся, в контенте лишь короткий спиннер. */}
+          <Suspense fallback={<div className="flex items-center justify-center py-24"><Spinner size="lg" /></div>}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
 

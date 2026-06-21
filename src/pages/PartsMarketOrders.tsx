@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Phone, Inbox, MessageSquare, Store, ClipboardCheck, ArrowRight, Trash2 } from 'lucide-react'
+import { Phone, Inbox, MessageSquare, Store, ClipboardCheck, ArrowRight, Trash2, Car, MapPin } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
@@ -32,6 +32,23 @@ const STATUS_BADGES: Record<MarketplaceOrderStatus, string> = {
   new: 'badge badge-blue',
   viewed: 'badge badge-yellow',
   closed: 'badge badge-gray',
+}
+
+/** Группируем позиции по авто (с какой машины) — удобно собирать заказ */
+function groupItemsByVehicle(items: MarketplaceOrder['items']) {
+  const groups: { key: string; vehicleName: string | null; items: MarketplaceOrder['items'] }[] = []
+  const index = new Map<string, number>()
+  for (const it of items) {
+    const key = it.vehicleName || '__none__'
+    let i = index.get(key)
+    if (i === undefined) {
+      i = groups.length
+      index.set(key, i)
+      groups.push({ key, vehicleName: it.vehicleName || null, items: [] })
+    }
+    groups[i].items.push(it)
+  }
+  return groups
 }
 
 /** Сумма заявки: если все позиции в одной валюте — показываем её, иначе UAH по умолчанию */
@@ -89,29 +106,47 @@ function MarketOrderCard({
           </div>
         )}
 
-        {/* Позиции */}
-        <div className="divide-y divide-gray-100">
-          {order.items.map((item) => (
-            <div key={item.id} className="flex items-center gap-3 py-2.5">
-              {item.photoUrl ? (
-                <img
-                  src={item.photoUrl}
-                  alt=""
-                  className="w-11 h-11 rounded-xl object-cover bg-gray-100 flex-shrink-0"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="icon-tile bg-gray-100 text-gray-300 flex-shrink-0">
-                  <Store className="w-5 h-5" strokeWidth={1.5} />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 line-clamp-2">{item.name}</p>
-                <p className="text-xs text-gray-400 mt-0.5">× {item.quantity}</p>
+        {/* Позиции — сгруппированы по авто (удобно собирать заказ) */}
+        <div className="space-y-3">
+          {groupItemsByVehicle(order.items).map((g) => (
+            <div key={g.key}>
+              {/* Заголовок: с какой машины */}
+              <div className="flex items-center gap-1.5 mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+                <Car className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
+                <span className="truncate">{g.vehicleName || 'Магазин / без авто'}</span>
               </div>
-              <p className="text-sm font-extrabold text-gray-900 whitespace-nowrap tabular">
-                {formatPrice(item.sellingPrice, item.priceCurrency)}
-              </p>
+              <div className="divide-y divide-gray-100">
+                {g.items.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3 py-2.5">
+                    {item.photoUrl ? (
+                      <img
+                        src={item.photoUrl}
+                        alt=""
+                        className="w-11 h-11 rounded-xl object-cover bg-gray-100 flex-shrink-0"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="icon-tile bg-gray-100 text-gray-300 flex-shrink-0">
+                        <Store className="w-5 h-5" strokeWidth={1.5} />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 line-clamp-2">{item.name}</p>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5 text-xs text-gray-400">
+                        <span>× {item.quantity}</span>
+                        {item.storageName && (
+                          <span className="inline-flex items-center gap-1 text-gray-600 font-medium">
+                            <MapPin className="w-3 h-3 flex-shrink-0" strokeWidth={1.5} /> {item.storageName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-sm font-extrabold text-gray-900 whitespace-nowrap tabular">
+                      {formatPrice(item.sellingPrice, item.priceCurrency)}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
