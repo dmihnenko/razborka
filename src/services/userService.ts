@@ -310,12 +310,10 @@ export async function getUserByUsername(username: string): Promise<{ id: string 
 
 /** Разрешает логин в email авторизации: ищет сохранённый email по username. */
 export async function getEmailByUsername(username: string): Promise<string | null> {
-  const { data } = await supabase
-    .from('user_profiles')
-    .select('email')
-    .eq('username', username.toLowerCase())
-    .maybeSingle()
-  return data?.email ?? null
+  // Через SECURITY DEFINER RPC: anon при логине не читает таблицу user_profiles напрямую
+  // (там plain_password/email всех пользователей), а получает только нужный email.
+  const { data } = await supabase.rpc('get_email_by_username', { p_username: username.toLowerCase() })
+  return (data as string | null) ?? null
 }
 
 /** Полное редактирование пользователя админом (email/пароль/профиль) через Edge Function. */
