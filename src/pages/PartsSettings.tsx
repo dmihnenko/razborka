@@ -20,6 +20,7 @@ import { searchCities, searchWarehouses, NpCity, NpWarehouse } from '@/services/
 import { toast } from 'sonner'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { TELEGRAM_BOT_USERNAME, telegramConnectLink } from '@/config/telegram'
+import { manualVersionCheck } from '@/components/VersionChecker'
 
 type PanelId = 'contacts' | 'rate' | 'imgbb' | 'np' | 'telegram'
 
@@ -37,6 +38,15 @@ export default function PartsSettings() {
   const partsCompanyId = profile?.parts_company_id
 
   const [panel, setPanel] = useState<PanelId | null>(null)
+
+  const [checkingUpdate, setCheckingUpdate] = useState(false)
+  const handleCheckUpdates = async () => {
+    setCheckingUpdate(true)
+    const r = await manualVersionCheck()
+    setCheckingUpdate(false)
+    if (r === 'current') toast.success('У вас последняя версия')
+    // 'updated' — VersionChecker сам покажет toast с кнопкой «Обновить»
+  }
 
   const {
     rate,
@@ -631,6 +641,17 @@ export default function PartsSettings() {
               </div>
             </button>
           ))}
+        </div>
+
+        {/* Обновления приложения — ручная проверка (авто-проверка раз в 12 ч + при возврате на вкладку) */}
+        <div className="cab-card p-4 mt-3 sm:mt-4 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-gray-900 dark:text-slate-100">Обновления</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 truncate">Проверить, доступна ли новая версия приложения</p>
+          </div>
+          <button onClick={handleCheckUpdates} disabled={checkingUpdate} className="cab-btn cab-btn-secondary cab-btn-sm flex-shrink-0">
+            <RefreshCw className={`w-4 h-4 ${checkingUpdate ? 'animate-spin' : ''}`} strokeWidth={1.5} /> Проверить
+          </button>
         </div>
       </div>
 

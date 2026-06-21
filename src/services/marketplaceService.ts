@@ -103,17 +103,15 @@ export async function getMarketParts(
   const needVehicleInner = !!f.make?.trim() || !!f.model?.trim() || f.year != null
 
   let query = supabase
-    .from('parts_inventory')
+    // market_inventory — view с safe-полями (published+available, без закупочных колонок):
+    // и анонимы, и залогиненные читают витрину через неё, не получая чужой purchase_price.
+    .from('market_inventory')
     .select(
       `${PART_LIST_FIELDS}, ${COMPANY_JOIN}, ${CATEGORY_JOIN}, ${vehicleJoin(needVehicleInner)}`,
       // estimated: точный COUNT для малых выборок, оценочный (по планировщику) для
       // больших — чтобы не считать 1M строк на каждой странице каталога.
       { count: 'estimated' }
     )
-    .eq('status', 'available')
-    .gt('selling_price', 0)
-    .eq('company.is_active', true)
-    .eq('company.market_published', true)
 
   if (f.search?.trim()) {
     const s = sanitizeSearch(f.search)
@@ -148,11 +146,9 @@ export async function getMarketParts(
 
 export async function getMarketPart(id: string): Promise<MarketPart | null> {
   const { data, error } = await supabase
-    .from('parts_inventory')
+    .from('market_inventory')
     .select(`${PART_FIELDS}, ${COMPANY_JOIN}, ${CATEGORY_JOIN}, ${vehicleJoin(false)}`)
     .eq('id', id)
-    .eq('company.is_active', true)
-    .eq('company.market_published', true)
     .maybeSingle()
 
   if (error) throw error
@@ -165,13 +161,9 @@ export async function getRelatedParts(
   limit = 8
 ): Promise<MarketPart[]> {
   const { data, error } = await supabase
-    .from('parts_inventory')
+    .from('market_inventory')
     .select(`${PART_LIST_FIELDS}, ${COMPANY_JOIN}, ${CATEGORY_JOIN}, ${vehicleJoin(false)}`)
     .eq('parts_company_id', companyId)
-    .eq('status', 'available')
-    .gt('selling_price', 0)
-    .eq('company.is_active', true)
-    .eq('company.market_published', true)
     .neq('id', excludeId)
     .order('created_at', { ascending: false })
     .limit(limit)
@@ -233,14 +225,8 @@ export async function getMarketSupplier(id: string): Promise<MarketSupplier | nu
 export async function getMarketCategories(): Promise<MarketCategory[]> {
   try {
     const { data, error } = await supabase
-      .from('parts_inventory')
-      .select(
-        `category_id, category:parts_categories!inner(id, name), company:parts_companies!inner(is_active)`
-      )
-      .eq('status', 'available')
-      .gt('selling_price', 0)
-      .eq('company.is_active', true)
-      .eq('company.market_published', true)
+      .from('market_inventory')
+      .select(`category_id, category:parts_categories!inner(id, name)`)
       .not('category_id', 'is', null)
       .limit(5000)
 

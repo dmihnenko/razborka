@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 
 const VERSION_KEY    = 'tsp_app_version'
-const INTERVAL_MS    = 15 * 60 * 1000  // 15 мин
+const INTERVAL_MS    = 12 * 60 * 60 * 1000  // 12 ч (реже бьём origin; обновление ловится по visibilitychange + ручная кнопка в кабинете)
 const REVISIT_GAP_MS =  5 * 60 * 1000  // минимум между проверками при visibilitychange
 const REDISPLAY_MS   =  5 * 60 * 1000  // переспросить если пользователь закрыл toast
 
@@ -57,41 +57,55 @@ function showUpdateToast() {
 }
 
 // ── Проверка версии по version.json ──────────────────────────────────────────
-async function checkVersion(): Promise<void> {
-  if (isChecking) return
-  isChecking = true
-
+/** Тянет актуальный hash версии (или '' при ошибке/без сети). */
+async function fetchVersionHash(): Promise<string> {
   try {
     const res = await fetch(`/version.json?t=${Date.now()}`, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
     })
-    if (!res.ok) return
-
+    if (!res.ok) return ''
     const data = await res.json()
-    const newHash: string = data?.hash || data?.version || ''
+    return data?.hash || data?.version || ''
+  } catch { return '' }
+}
+
+async function checkVersion(): Promise<void> {
+  if (isChecking) return
+  isChecking = true
+  try {
+    const newHash = await fetchVersionHash()
     if (!newHash) return
-
     const stored = localStorage.getItem(VERSION_KEY)
-
     if (!stored) {
       // Первый запуск — запомнить текущую версию, не показывать toast
       localStorage.setItem(VERSION_KEY, newHash)
       return
     }
-
     if (newHash !== stored && newHash !== pendingHash) {
-      // Новая версия обнаружена:
-      // - записываем в localStorage сразу (чтобы не спамить при следующих проверках)
-      // - держим pendingHash чтобы не показывать toast дважды если
-      //   пользователь закрыл его, а следующая проверка вернёт тот же hash
+      // Новая версия: пишем сразу (чтобы не спамить) + pendingHash против повторного toast
       pendingHash = newHash
       localStorage.setItem(VERSION_KEY, newHash)
       showUpdateToast()
     }
-  } catch { /* нет сети — ок */ } finally {
+  } finally {
     isChecking = false
   }
+}
+
+/** Ручная проверка из кабинета (кнопка). Возвращает 'updated' | 'current'. */
+export async function manualVersionCheck(): Promise<'updated' | 'current'> {
+  const newHash = await fetchVersionHash()
+  if (!newHash) return 'current' // нет сети/ошибка — трактуем как «актуально»
+  const stored = localStorage.getItem(VERSION_KEY)
+  if (stored && newHash !== stored) {
+    pendingHash = newHash
+    localStorage.setItem(VERSION_KEY, newHash)
+    showUpdateToast()
+    return 'updated'
+  }
+  if (!stored) localStorage.setItem(VERSION_KEY, newHash)
+  return 'current'
 }
 
 // ── Компонент ─────────────────────────────────────────────────────────────────

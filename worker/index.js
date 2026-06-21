@@ -1,15 +1,9 @@
 // Worker для Cloudflare Static Assets.
-// Обрабатывает /api/privatbank-rate (прокси курса PrivatBank, обход CORS),
-// всё остальное отдаёт статике (SPA) через биндинг ASSETS.
+// Запускается ТОЛЬКО для /api/* (run_worker_first в wrangler.jsonc): обрабатывает
+// /api/privatbank-rate (прокси курса PrivatBank, обход CORS); остальное отдаёт статика.
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
-
-    // 301 со старого домена tsp.pp.ua (и www) на новый razborka.net, путь+query сохраняем.
-    // Netlify-сайт TSP при переезде удалён, поэтому редирект делаем на edge этим воркером.
-    if (url.hostname === 'tsp.pp.ua' || url.hostname === 'www.tsp.pp.ua') {
-      return Response.redirect(`https://razborka.net${url.pathname}${url.search}`, 301)
-    }
 
     if (url.pathname === '/api/privatbank-rate') {
       try {

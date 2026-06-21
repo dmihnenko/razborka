@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Сайт переехал — Razborka.net</title>
+  <meta name="robots" content="noindex" />
+  <!-- Мягкий авто-переход на новый адрес (для людей; поисковикам лучше 301 на хостинге) -->
+  <meta http-equiv="refresh" content="3; url=https://razborka.net/" />
+  <link rel="canonical" href="https://razborka.net/" />
+  <style>
+    :root { --ink:#16181D; --net:#0D9488; --muted:#8B909A; }
+    * { box-sizing:border-box; }
+    html,body { height:100%; margin:0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+      background:#FAFAFA; color:var(--ink);
+      display:flex; align-items:center; justify-content:center; padding:24px; text-align:center;
+    }
+    .card { max-width:420px; }
+    .mark { width:84px; height:84px; margin:0 auto 22px; display:block; }
+    h1 { font-size:22px; font-weight:800; letter-spacing:-0.02em; margin:0 0 8px; }
+    p { color:var(--muted); font-size:15px; line-height:1.5; margin:0 0 24px; }
+    a.btn {
+      display:inline-block; text-decoration:none; font-weight:700; font-size:15px;
+      color:#fff; background:var(--ink); padding:13px 26px; border-radius:12px;
+    }
+    a.btn:hover { background:#000; }
+    .addr { margin-top:18px; font-size:13px; color:var(--muted); }
+    .addr b { color:var(--net); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <svg class="mark" viewBox="0 0 512 512" aria-hidden="true">
+      <rect width="512" height="512" rx="116" fill="#16181D"/>
+      <g fill="none" stroke="#FFFFFF" stroke-width="46" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M190 150V362"/><path d="M190 150h62a54 54 0 0 1 0 108h-62"/><path d="M206 252 306 362"/>
+      </g>
+      <circle cx="372" cy="372" r="30" fill="#0D9488"/>
+    </svg>
+    <h1>Мы переехали</h1>
+    <p>Сайт авторазборки теперь по новому адресу. Сейчас вы будете перенаправлены автоматически.</p>
+    <a class="btn" href="https://razborka.net/">Перейти на Razborka.net</a>
+    <div class="addr">Новый адрес: <b>razborka.net</b></div>
+  </div>
+</body>
+</html>
