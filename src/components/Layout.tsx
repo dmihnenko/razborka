@@ -141,6 +141,17 @@ export default function Layout() {
     roleNames = [profile.roles?.[0]?.name]
   }
 
+  // Контекст следует за МАРШРУТОМ (источник правды): на /parts всегда показываем
+  // кабинет разборки, на /my-vehicles — «Мои авто». Иначе у админа/мультироли с
+  // activeRole='user' пропадало нижнее меню при заходе на /parts/* напрямую.
+  const userRoleSet = new Set((profile?.roles || []).map((r: any) => r.name))
+  const canParts = userRoleSet.has('parts_owner') || userRoleSet.has('parts_worker') || userRoleSet.has('admin')
+  if (location.pathname.startsWith('/parts') && canParts) {
+    roleNames = [userRoleSet.has('parts_worker') && !userRoleSet.has('parts_owner') ? 'parts_worker' : 'parts_owner']
+  } else if (location.pathname.startsWith('/my-vehicles')) {
+    roleNames = ['user']
+  }
+
   const activeRoleName = roleNames[0] || primaryRole?.name || ''
 
   // Текущий контекст для переключателя разделов (Админ исключаем — у него своя кнопка)

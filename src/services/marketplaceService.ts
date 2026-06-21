@@ -420,6 +420,27 @@ export async function updateMarketplaceOrderStatus(
 }
 
 /**
+ * Удаление неоформленной заявки с маркета.
+ * Снимает бронь с привязанных позиций (reserved → available) — товар возвращается
+ * в маркет. items удаляются каскадом (FK order_id ON DELETE CASCADE).
+ */
+export async function deleteMarketplaceOrder(order: MarketplaceOrder): Promise<void> {
+  const invIds = order.items.map(i => i.inventoryId).filter(Boolean) as string[]
+  if (invIds.length) {
+    await supabase
+      .from('parts_inventory')
+      .update({ status: 'available' })
+      .in('id', invIds)
+      .eq('status', 'reserved')
+  }
+  const { error } = await supabase
+    .from('marketplace_orders')
+    .delete()
+    .eq('id', order.id)
+  if (error) throw error
+}
+
+/**
  * Конвертирует заявку покупателя с маркета в полноценный заказ разборки за 1 клик:
  * 1) находит клиента по телефону (или заводит нового),
  * 2) создаёт parts_order с позициями из заявки,

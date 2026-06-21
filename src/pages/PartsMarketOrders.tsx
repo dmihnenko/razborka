@@ -2,23 +2,25 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Phone, Inbox, Eye, CheckCircle2, MessageSquare, Store, ClipboardCheck, ArrowRight } from 'lucide-react'
+import { Phone, Inbox, MessageSquare, Store, ClipboardCheck, ArrowRight, Trash2 } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { Spinner } from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { formatPrice } from '@/utils/currency'
 import { formatDateTime } from '@/utils/date'
 import {
   getMarketplaceOrders,
-  updateMarketplaceOrderStatus,
+  deleteMarketplaceOrder,
   convertMarketplaceOrderToPartsOrder,
 } from '@/services/marketplaceService'
 import type { MarketplaceOrder, MarketplaceOrderStatus } from '@/types/marketplace'
 
-type StatusFilter = 'new' | 'all'
+type StatusFilter = 'active' | 'archive'
 
 const STATUS_LABELS: Record<MarketplaceOrderStatus, string> = {
   new: 'Новая',
@@ -41,15 +43,15 @@ function formatOrderTotal(order: MarketplaceOrder): string {
 
 function MarketOrderCard({
   order,
-  onSetStatus,
-  isUpdating,
+  onDelete,
+  isDeleting,
   onConvert,
   onOpenOrder,
   isConverting,
 }: {
   order: MarketplaceOrder
-  onSetStatus: (id: string, status: MarketplaceOrderStatus) => void
-  isUpdating: boolean
+  onDelete: (order: MarketplaceOrder) => void
+  isDeleting: boolean
   onConvert: (order: MarketplaceOrder) => void
   onOpenOrder: (orderId: string) => void
   isConverting: boolean
@@ -116,31 +118,13 @@ function MarketOrderCard({
 
       </div>
 
-      {/* Футер: сумма + действия */}
-      <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/60 flex items-center justify-between gap-3 flex-wrap">
-        <div>
+      {/* Футер: сумма + действия (в одну строку) */}
+      <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/60 flex items-center justify-between gap-2">
+        <div className="min-w-0">
           <p className="kicker">Сумма</p>
           <p className="text-lg font-extrabold text-primary tabular leading-none">{formatOrderTotal(order)}</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          {order.status === 'new' && (
-            <button
-              onClick={() => onSetStatus(order.id, 'viewed')}
-              disabled={isUpdating}
-              className="cab-btn cab-btn-secondary cab-btn-sm disabled:opacity-50"
-            >
-              <Eye className="w-3.5 h-3.5" strokeWidth={1.5} /> Просмотрена
-            </button>
-          )}
-          {order.status !== 'closed' && (
-            <button
-              onClick={() => onSetStatus(order.id, 'closed')}
-              disabled={isUpdating}
-              className="cab-btn cab-btn-secondary cab-btn-sm disabled:opacity-50"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} /> Закрыть
-            </button>
-          )}
+        <div className="flex items-center gap-2 justify-end flex-shrink-0">
           {order.convertedOrderId ? (
             <button
               onClick={() => onOpenOrder(order.convertedOrderId!)}
@@ -150,14 +134,25 @@ function MarketOrderCard({
               <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
             </button>
           ) : (
-            <button
-              onClick={() => onConvert(order)}
-              disabled={isConverting}
-              className="cab-btn cab-btn-primary cab-btn-sm disabled:opacity-50"
-            >
-              {isConverting ? <Spinner size="sm" /> : <ClipboardCheck className="w-3.5 h-3.5" strokeWidth={1.5} />}
-              Оформить заказ
-            </button>
+            <>
+              <button
+                onClick={() => onDelete(order)}
+                disabled={isDeleting}
+                className="cab-btn cab-btn-ghost cab-btn-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                title="Удалить заявку (товар вернётся в маркет)"
+              >
+                {isDeleting ? <Spinner size="sm" /> : <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />}
+                <span className="hidden sm:inline">Удалить</span>
+              </button>
+              <button
+                onClick={() => onConvert(order)}
+                disabled={isConverting}
+                className="cab-btn cab-btn-primary cab-btn-sm disabled:opacity-50"
+              >
+                {isConverting ? <Spinner size="sm" /> : <ClipboardCheck className="w-3.5 h-3.5" strokeWidth={1.5} />}
+                Оформить заказ
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -171,8 +166,9 @@ export default function PartsMarketOrders() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { rate } = usePartsExchangeRate()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
 
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('new')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('active')
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['marketplace-orders', partsCompanyId],
@@ -180,16 +176,25 @@ export default function PartsMarketOrders() {
     enabled: !!partsCompanyId,
   })
 
-  const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: MarketplaceOrderStatus }) =>
-      updateMarketplaceOrderStatus(id, status),
+  const deleteMutation = useMutation({
+    mutationFn: (order: MarketplaceOrder) => deleteMarketplaceOrder(order),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['marketplace-orders', partsCompanyId] })
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      toast.success('Заявка удалена, товар возвращён в маркет')
     },
     onError: () => {
-      toast.error('Не удалось обновить статус заявки')
+      toast.error('Не удалось удалить заявку')
     },
   })
+
+  const handleDelete = async (order: MarketplaceOrder) => {
+    const ok = await showConfirm({
+      message: `Удалить заявку от «${order.buyerName || order.buyerPhone}»? Забронированный товар вернётся в маркет.`,
+      danger: true,
+    })
+    if (ok) deleteMutation.mutate(order)
+  }
 
   const convertMutation = useMutation({
     mutationFn: (order: MarketplaceOrder) =>
@@ -210,28 +215,31 @@ export default function PartsMarketOrders() {
     return <PartsAccessDenied />
   }
 
-  const newCount = orders.filter((o) => o.status === 'new').length
-  const visibleOrders = statusFilter === 'new' ? orders.filter((o) => o.status === 'new') : orders
+  // Активные = неоформленные (без созданного заказа); Архив = оформленные
+  const activeCount = orders.filter((o) => !o.convertedOrderId).length
+  const visibleOrders = statusFilter === 'active'
+    ? orders.filter((o) => !o.convertedOrderId)
+    : orders.filter((o) => o.convertedOrderId)
 
   return (
     <div className="min-h-dvh bg-gray-50">
       <PartsPageHeader
         title="Заявки с маркета"
         subtitle={
-          newCount > 0
-            ? <span className="font-bold text-primary">{newCount} новых</span>
-            : 'Новых заявок нет'
+          activeCount > 0
+            ? <span className="font-bold text-primary">{activeCount} активных</span>
+            : 'Активных заявок нет'
         }
         backPath="/parts/dashboard"
       />
 
       <div className="page-container">
-        {/* Фильтр по статусу */}
+        {/* Фильтр: Активные / Архив */}
         <div className="flex gap-2 mb-4">
           {(
             [
-              { key: 'new', label: 'Новые' },
-              { key: 'all', label: 'Все' },
+              { key: 'active', label: 'Активные' },
+              { key: 'archive', label: 'Архив' },
             ] as { key: StatusFilter; label: string }[]
           ).map(({ key, label }) => (
             <button
@@ -240,9 +248,9 @@ export default function PartsMarketOrders() {
               className={`chip ${statusFilter === key ? 'chip-active' : ''}`}
             >
               {label}
-              {key === 'new' && newCount > 0 && (
+              {key === 'active' && activeCount > 0 && (
                 <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${statusFilter === key ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-600'}`}>
-                  {newCount}
+                  {activeCount}
                 </span>
               )}
             </button>
@@ -256,11 +264,11 @@ export default function PartsMarketOrders() {
         ) : visibleOrders.length === 0 ? (
           <EmptyState
             icon={Inbox}
-            title={statusFilter === 'new' ? 'Новых заявок нет' : 'Заявок пока нет'}
+            title={statusFilter === 'active' ? 'Активных заявок нет' : 'Архив пуст'}
             description={
-              statusFilter === 'new'
-                ? 'Все заявки обработаны. Посмотреть историю можно во вкладке «Все».'
-                : 'Когда покупатели на маркетплейсе отправят заявку на ваши запчасти, она появится здесь.'
+              statusFilter === 'active'
+                ? 'Когда покупатели на маркетплейсе отправят заявку на ваши запчасти, она появится здесь.'
+                : 'Оформленные заявки переезжают сюда.'
             }
           />
         ) : (
@@ -269,9 +277,9 @@ export default function PartsMarketOrders() {
               <MarketOrderCard
                 key={order.id}
                 order={order}
-                onSetStatus={(id, status) => statusMutation.mutate({ id, status })}
-                isUpdating={
-                  statusMutation.isPending && statusMutation.variables?.id === order.id
+                onDelete={handleDelete}
+                isDeleting={
+                  deleteMutation.isPending && deleteMutation.variables?.id === order.id
                 }
                 onConvert={(o) => convertMutation.mutate(o)}
                 onOpenOrder={(orderId) => navigate(`/parts/orders/${orderId}`)}
@@ -283,6 +291,7 @@ export default function PartsMarketOrders() {
           </div>
         )}
       </div>
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

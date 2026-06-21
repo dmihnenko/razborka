@@ -88,6 +88,9 @@ function MarketLayoutInner() {
               </span>
             </Link>
 
+            {/* Мобила: Каталог/Разборки в первом ряду рядом с корзиной/входом */}
+            <div className="md:hidden">{navTabs}</div>
+
             {showHeaderSearch && (
               <form onSubmit={handleSearch} role="search" className="hidden md:flex flex-1 max-w-md mx-auto">
                 <div className="relative w-full">
@@ -128,10 +131,10 @@ function MarketLayoutInner() {
             </div>
           </div>
 
-          {/* Навигация — на мобиле всегда; на десктопе только когда табы не в первом ряду.
-              На мобиле идёт НАД поиском (поиск показываем под категориями/разборками). */}
+          {/* Навигация: на мобиле табы теперь в первом ряду (см. выше). Здесь —
+              только десктоп, когда в первом ряду стоит поиск. */}
           <nav
-            className={`${showHeaderSearch ? 'flex' : 'flex md:hidden'} items-center justify-center pb-2.5`}
+            className={`${showHeaderSearch ? 'hidden md:flex' : 'hidden'} items-center justify-center pb-2.5`}
             aria-label="Разделы маркета"
           >
             {navTabs}
