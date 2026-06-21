@@ -39,7 +39,10 @@ function MarketLayoutInner() {
   // Когда поиска нет, табы «Каталог/Разборки» поднимаем в первый ряд (десктоп).
   const isCatalog = location.pathname.startsWith('/market/catalog')
   const isSupplier = location.pathname.startsWith('/market/supplier')
-  const showHeaderSearch = !isHome && !isCatalog && !isSupplier
+  const isProduct = location.pathname.startsWith('/market/part')
+  // Поиск в шапке — только на страницах без собственного поиска. На карточке товара
+  // (как на главной/каталоге/разборках) шапка БЕЗ поиска — иначе он встаёт над табами.
+  const showHeaderSearch = !isHome && !isCatalog && !isSupplier && !isProduct
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault()

@@ -23,13 +23,19 @@ import {
 
 export const MARKET_PAGE_SIZE = 24
 
-/** Безопасные публичные поля запчасти */
+/** Безопасные публичные поля запчасти (полные — для страницы товара: с галереей photos) */
 const PART_FIELDS = `
   id, name, article, part_number, description, condition, quantity, reserved_quantity,
   selling_price, price_currency, photo_url, photos, status, created_at
 `
 
-const COMPANY_JOIN = `company:parts_companies!inner(id, name, phone, telegram, address, email, description, is_active, ship_speed, warranty_enabled, warranty_days)`
+/** Лёгкие поля для списков/карточек — без тяжёлого photos jsonb (тумба берётся из photo_url) */
+const PART_LIST_FIELDS = `
+  id, name, article, part_number, description, condition, quantity, reserved_quantity,
+  selling_price, price_currency, photo_url, status, created_at
+`
+
+const COMPANY_JOIN = `company:parts_companies!inner(id, name, phone, telegram, address, city, email, description, is_active, ship_speed, warranty_enabled, warranty_days)`
 const CATEGORY_JOIN = `category:parts_categories(id, name)`
 
 function vehicleJoin(inner: boolean) {
@@ -68,6 +74,7 @@ function mapPartRow(row: any): MarketPart {
       phone: row.company?.phone ?? null,
       telegram: row.company?.telegram ?? null,
       address: row.company?.address ?? null,
+      city: row.company?.city ?? null,
       email: row.company?.email ?? null,
       description: row.company?.description ?? null,
       shipSpeed: row.company?.ship_speed ?? 'today',
@@ -98,8 +105,10 @@ export async function getMarketParts(
   let query = supabase
     .from('parts_inventory')
     .select(
-      `${PART_FIELDS}, ${COMPANY_JOIN}, ${CATEGORY_JOIN}, ${vehicleJoin(needVehicleInner)}`,
-      { count: 'exact' }
+      `${PART_LIST_FIELDS}, ${COMPANY_JOIN}, ${CATEGORY_JOIN}, ${vehicleJoin(needVehicleInner)}`,
+      // estimated: точный COUNT для малых выборок, оценочный (по планировщику) для
+      // больших — чтобы не считать 1M строк на каждой странице каталога.
+      { count: 'estimated' }
     )
     .eq('status', 'available')
     .gt('selling_price', 0)
@@ -157,7 +166,7 @@ export async function getRelatedParts(
 ): Promise<MarketPart[]> {
   const { data, error } = await supabase
     .from('parts_inventory')
-    .select(`${PART_FIELDS}, ${COMPANY_JOIN}, ${CATEGORY_JOIN}, ${vehicleJoin(false)}`)
+    .select(`${PART_LIST_FIELDS}, ${COMPANY_JOIN}, ${CATEGORY_JOIN}, ${vehicleJoin(false)}`)
     .eq('parts_company_id', companyId)
     .eq('status', 'available')
     .gt('selling_price', 0)
@@ -173,7 +182,7 @@ export async function getRelatedParts(
 
 // ── Разборки (поставщики) ───────────────────────────────────────────────────
 
-const SUPPLIER_FIELDS = 'id, name, phone, telegram, address, email, description'
+const SUPPLIER_FIELDS = 'id, name, phone, telegram, address, city, email, description'
 
 function mapSupplierRow(row: any, availableParts: number): MarketSupplier {
   return {
@@ -182,6 +191,7 @@ function mapSupplierRow(row: any, availableParts: number): MarketSupplier {
     phone: row.phone ?? null,
     telegram: row.telegram ?? null,
     address: row.address ?? null,
+    city: row.city ?? null,
     email: row.email ?? null,
     description: row.description ?? null,
     availableParts,
@@ -189,30 +199,11 @@ function mapSupplierRow(row: any, availableParts: number): MarketSupplier {
 }
 
 export async function getMarketSuppliers(): Promise<MarketSupplier[]> {
-  const { data, error } = await supabase
-    .from('parts_companies')
-    .select(SUPPLIER_FIELDS)
-    .eq('is_active', true)
-    .eq('market_published', true)
-    .order('name')
-
+  // Один серверный запрос (RPC get_market_suppliers) вместо 1 + N count-запросов:
+  // публикованные разборки + число доступных позиций агрегатом GROUP BY.
+  const { data, error } = await supabase.rpc('get_market_suppliers')
   if (error) throw error
-  const companies = data || []
-  if (companies.length === 0) return []
-
-  // Число доступных товаров — head-count на компанию (компаний немного)
-  const counts = await Promise.all(
-    companies.map(c =>
-      supabase
-        .from('parts_inventory')
-        .select('id', { count: 'exact', head: true })
-        .eq('parts_company_id', c.id)
-        .eq('status', 'available')
-        .gt('selling_price', 0)
-    )
-  )
-
-  return companies.map((c, i) => mapSupplierRow(c, counts[i].count ?? 0))
+  return (data || []).map((r: any) => mapSupplierRow(r, Number(r.available_parts) || 0))
 }
 
 export async function getMarketSupplier(id: string): Promise<MarketSupplier | null> {

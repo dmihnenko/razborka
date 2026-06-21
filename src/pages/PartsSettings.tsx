@@ -137,7 +137,7 @@ export default function PartsSettings() {
     queryFn: async () => {
       const { data } = await supabase
         .from('parts_companies')
-        .select('name, phone, address, email, telegram, description, telegram_chat_id, ship_speed, warranty_enabled, warranty_days')
+        .select('name, phone, address, city, email, telegram, description, telegram_chat_id, ship_speed, warranty_enabled, warranty_days')
         .eq('id', partsCompanyId)
         .single()
       return data
@@ -146,7 +146,7 @@ export default function PartsSettings() {
   })
 
   const [contacts, setContacts] = useState({
-    name: '', phone: '', address: '', email: '', telegram: '', description: '',
+    name: '', phone: '', address: '', city: '', email: '', telegram: '', description: '',
     shipSpeed: 'today', warrantyEnabled: true, warrantyDays: '14',
   })
 
@@ -156,6 +156,7 @@ export default function PartsSettings() {
         name: company.name || '',
         phone: company.phone || '',
         address: company.address || '',
+        city: (company as any).city || '',
         email: company.email || '',
         telegram: (company as any).telegram || '',
         description: (company as any).description || '',
@@ -174,6 +175,7 @@ export default function PartsSettings() {
           name: contacts.name.trim(),
           phone: contacts.phone.trim(),
           address: contacts.address.trim(),
+          city: contacts.city.trim() || null,
           email: contacts.email.trim(),
           telegram: contacts.telegram.trim() || null,
           description: contacts.description.trim() || null,
@@ -196,6 +198,7 @@ export default function PartsSettings() {
     contacts.name !== (company.name || '') ||
     contacts.phone !== (company.phone || '') ||
     contacts.address !== (company.address || '') ||
+    contacts.city !== ((company as any).city || '') ||
     contacts.email !== (company.email || '') ||
     contacts.telegram !== ((company as any).telegram || '') ||
     contacts.description !== ((company as any).description || '') ||
@@ -344,9 +347,16 @@ export default function PartsSettings() {
                 <input type="email" value={contacts.email} onChange={e => setContacts(p => ({ ...p, email: e.target.value }))} placeholder="email@example.com" className="form-input" />
               </div>
             </div>
-            <div>
-              <label className="form-label">Адрес</label>
-              <input type="text" value={contacts.address} onChange={e => setContacts(p => ({ ...p, address: e.target.value }))} placeholder="Адрес" className="form-input" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="form-label">Город</label>
+                <input type="text" value={contacts.city} onChange={e => setContacts(p => ({ ...p, city: e.target.value }))} placeholder="Напр.: Киев" className="form-input" />
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">По нему покупатели фильтруют разборки</p>
+              </div>
+              <div>
+                <label className="form-label">Адрес</label>
+                <input type="text" value={contacts.address} onChange={e => setContacts(p => ({ ...p, address: e.target.value }))} placeholder="Улица, дом" className="form-input" />
+              </div>
             </div>
             <div>
               <label className="form-label">Telegram-ссылка (для маркета)</label>

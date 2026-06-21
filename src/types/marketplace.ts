@@ -22,6 +22,7 @@ export interface MarketCompanyContact {
   phone?: string | null
   telegram?: string | null
   address?: string | null
+  city?: string | null
   email?: string | null
   description?: string | null
   /** Скорость отправки: 'today' — сегодня · 'days12' — 1–2 дня */
@@ -67,6 +68,7 @@ export interface MarketSupplier {
   phone?: string | null
   telegram?: string | null
   address?: string | null
+  city?: string | null
   email?: string | null
   description?: string | null
   /** Число доступных к продаже товаров */

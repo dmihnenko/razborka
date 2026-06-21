@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 190" width="440" height="190">
+  <!-- Эмблема Razborka.net (ink-монохром + бирюзовый .net). Шрифт — Montserrat 700;
+       при отсутствии шрифта подставится системный гротеск. Для печати лучше перевести текст в кривые. -->
+  <rect x="26" y="38" width="388" height="116" rx="18" fill="#F4F5F7" stroke="#16181D" stroke-width="2.5"/>
+  <text x="220" y="98" text-anchor="middle" font-family="Montserrat, 'Segoe UI', Arial, sans-serif" font-weight="700" font-size="48" letter-spacing="-1.2" fill="#16181D">RAZBORKA</text>
+  <text x="220" y="131" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-weight="700" font-size="12.5" letter-spacing="4.2" fill="#8B909A">МАРКЕТ · ЗАПЧАСТЕЙ</text>
+  <g transform="rotate(8 366 44)">
+    <rect x="334" y="27" width="64" height="34" rx="9" fill="#0D9488" stroke="#FFFFFF" stroke-width="2.5"/>
+    <text x="366" y="50" text-anchor="middle" font-family="Montserrat, 'Segoe UI', Arial, sans-serif" font-weight="700" font-size="19" fill="#FFFFFF">.net</text>
+  </g>
+</svg>

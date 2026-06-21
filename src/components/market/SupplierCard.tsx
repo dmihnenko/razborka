@@ -50,10 +50,14 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
           </p>
         )}
 
-        {supplier.address && (
+        {(supplier.city || supplier.address) && (
           <p className="flex items-center gap-1.5 text-xs mt-1 truncate mk-meta">
             <MapPin className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
-            <span className="truncate">{supplier.address}</span>
+            <span className="truncate">
+              {supplier.city && <span className="font-semibold" style={{ color: 'var(--mk-text-2)' }}>{supplier.city}</span>}
+              {supplier.city && supplier.address && ' · '}
+              {supplier.address}
+            </span>
           </p>
         )}
       </div>
