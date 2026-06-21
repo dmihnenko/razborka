@@ -243,12 +243,12 @@ export default function PartsNoPricePage() {
                                   onClick={() => setField(item.id, 'price_currency', row.price_currency === 'USD' ? 'UAH' : 'USD')}
                                   className="px-2 py-1.5 text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors border-l border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600"
                                 >
-                                  {row.price_currency === 'USD' ? '$' : '₴'}
+                                  {row.price_currency === 'USD' ? '$' : 'грн'}
                                 </button>
                               </div>
                             ) : (
                               <span className="text-sm font-semibold text-gray-700 tabular-nums">
-                                {Number(item.selling_price).toLocaleString('ru-RU')} {item.price_currency === 'UAH' ? '₴' : '$'}
+                                {Number(item.selling_price).toLocaleString('ru-RU')} {item.price_currency === 'UAH' ? 'грн' : '$'}
                               </span>
                             )}
                           </td>
@@ -422,12 +422,12 @@ export default function PartsNoPricePage() {
                             onClick={() => setField(item.id, 'price_currency', row.price_currency === 'USD' ? 'UAH' : 'USD')}
                             className="px-2 py-2 text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors border-l border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600"
                           >
-                            {row.price_currency === 'USD' ? '$' : '₴'}
+                            {row.price_currency === 'USD' ? '$' : 'грн'}
                           </button>
                         </div>
                       ) : (
                         <span className="flex-1 text-sm font-semibold text-gray-700 tabular-nums">
-                          {Number(item.selling_price).toLocaleString('ru-RU')} {item.price_currency === 'UAH' ? '₴' : '$'}
+                          {Number(item.selling_price).toLocaleString('ru-RU')} {item.price_currency === 'UAH' ? 'грн' : '$'}
                         </span>
                       )}
 

@@ -9,7 +9,7 @@ export function formatCurrency(amount?: number | null): string {
   return new Intl.NumberFormat('ru-RU', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount) + ' ₴'
+  }).format(amount) + ' грн.'
 }
 
 /**
@@ -21,5 +21,5 @@ export function formatPrice(amount?: number | null, currency: PriceCurrency = 'U
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount)
-  return currency === 'USD' ? `$${formatted}` : `${formatted} ₴`
+  return currency === 'USD' ? `$${formatted}` : `${formatted} грн.`
 }

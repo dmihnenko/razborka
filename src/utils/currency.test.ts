@@ -14,21 +14,22 @@ describe('formatCurrency', () => {
     expect(formatCurrency(0)).toBe('—')
   })
 
-  it('форматирует целое число с символом гривны', () => {
+  it('форматирует целое число с гривной (грн.)', () => {
     const result = formatCurrency(1000)
-    expect(result).toContain('₴')
+    expect(result).toContain('грн.')
     expect(result).toContain('1')
   })
 
   it('форматирует большое число', () => {
     const result = formatCurrency(50000)
-    expect(result).toContain('₴')
+    expect(result).toContain('грн.')
     expect(result).toContain('50')
   })
 
   it('не добавляет дробную часть', () => {
     const result = formatCurrency(1500.75)
-    expect(result).not.toContain('.')
+    expect(result).not.toContain('75')
+    expect(result).not.toMatch(/[.,]\d/) // нет дробных цифр (точка только в «грн.»)
   })
 })
 
@@ -47,18 +48,18 @@ describe('formatPrice', () => {
 
   it('форматирует UAH по умолчанию', () => {
     const result = formatPrice(500)
-    expect(result).toContain('₴')
+    expect(result).toContain('грн.')
   })
 
   it('форматирует USD со знаком доллара', () => {
     const result = formatPrice(100, 'USD')
     expect(result).toContain('$')
-    expect(result).not.toContain('₴')
+    expect(result).not.toContain('грн')
   })
 
   it('форматирует позитивную UAH сумму', () => {
     const result = formatPrice(1234, 'UAH')
-    expect(result).toContain('₴')
+    expect(result).toContain('грн.')
     expect(result).toContain('1')
   })
 

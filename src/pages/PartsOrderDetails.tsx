@@ -952,7 +952,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
                           }`}
                           style={currency === c ? { background: 'var(--cab-signal)' } : undefined}
                         >
-                          {c === 'UAH' ? '₴' : '$'}
+                          {c === 'UAH' ? 'грн' : '$'}
                         </button>
                       ))}
                     </div>
@@ -1288,7 +1288,7 @@ function NpTtnBlock({
                   />
                 </div>
                 <div>
-                  <label className="form-label">Оценочная стоимость (₴)</label>
+                  <label className="form-label">Оценочная стоимость (грн.)</label>
                   <input
                     type="number"
                     min="0"

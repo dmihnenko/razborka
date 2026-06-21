@@ -1226,7 +1226,7 @@ export default function PartsInventory() {
                     onClick={() => setSellCurrency(c => c === 'USD' ? 'UAH' : 'USD')}
                     className="cab-btn cab-btn-primary w-12 text-center px-0"
                   >
-                    {sellCurrency === 'USD' ? '$' : '₴'}
+                    {sellCurrency === 'USD' ? '$' : 'грн'}
                   </button>
                 </div>
               </div>
@@ -1386,7 +1386,7 @@ export default function PartsInventory() {
                         }}
                         className="cab-btn cab-btn-primary cab-btn-sm w-9 text-center px-0"
                       >
-                        {row.currency === 'USD' ? '$' : '₴'}
+                        {row.currency === 'USD' ? '$' : 'грн'}
                       </button>
                     </div>
                   </div>
@@ -1999,7 +1999,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                           className="cab-btn cab-btn-primary cab-btn-sm w-9 text-center px-0"
                           title="Сменить валюту"
                         >
-                          {bulkShared.price_currency === 'USD' ? '$' : '₴'}
+                          {bulkShared.price_currency === 'USD' ? '$' : 'грн'}
                         </button>
                       </div>
                     </div>
@@ -2282,7 +2282,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         className="cab-btn cab-btn-primary flex-shrink-0 w-10 text-center px-0"
                         title="Сменить валюту"
                       >
-                        {formData.price_currency === 'USD' ? '$' : '₴'}
+                        {formData.price_currency === 'USD' ? '$' : 'грн'}
                       </button>
                     </div>
                   </div>

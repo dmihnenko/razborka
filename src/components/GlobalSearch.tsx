@@ -143,7 +143,7 @@ export default function GlobalSearch({ open, onClose }: GlobalSearchProps) {
                       </div>
                       {item.selling_price != null && (
                         <span className="text-sm font-semibold text-gray-700 flex-shrink-0">
-                          {item.selling_price.toLocaleString('ru-RU')} {item.price_currency === 'USD' ? '$' : '₴'}
+                          {item.selling_price.toLocaleString('ru-RU')} {item.price_currency === 'USD' ? '$' : 'грн.'}
                         </span>
                       )}
                     </button>
@@ -200,7 +200,7 @@ export default function GlobalSearch({ open, onClose }: GlobalSearchProps) {
                       </div>
                       {o.total_amount != null && (
                         <span className="text-sm font-semibold text-gray-700 flex-shrink-0">
-                          {o.total_amount.toLocaleString('ru-RU')} ₴
+                          {o.total_amount.toLocaleString('ru-RU')} грн.
                         </span>
                       )}
                     </button>

@@ -179,7 +179,7 @@ export default function Subscriptions() {
           { label: 'Месячных',   value: stats?.total_monthly || 0,  icon: Calendar,     color: '#3538CD', bg: '#EFF6FF' },
           { label: 'Годовых',    value: stats?.total_yearly || 0,   icon: TrendingUp,   color: '#7C3AED', bg: '#F5F3FF' },
           { label: 'Бессрочных', value: stats?.total_lifetime || 0, icon: Infinity,     color: '#D97706', bg: '#FFFBEB' },
-          { label: 'Доход/мес',  value: `₴${(stats?.revenue_this_month || 0).toLocaleString()}`, icon: CreditCard, color: '#059669', bg: '#F0FDF4' },
+          { label: 'Доход/мес',  value: `${(stats?.revenue_this_month || 0).toLocaleString()} грн.`, icon: CreditCard, color: '#059669', bg: '#F0FDF4' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: bg }}>
@@ -339,7 +339,7 @@ export default function Subscriptions() {
 
                       {/* Price */}
                       <div className="hidden sm:block text-right flex-shrink-0 mr-2">
-                        <p className="text-sm font-bold text-gray-900">₴{sub.subscription?.price?.toLocaleString() || 0}</p>
+                        <p className="text-sm font-bold text-gray-900">{sub.subscription?.price?.toLocaleString() || 0} грн.</p>
                       </div>
 
                       {/* Actions */}
@@ -400,7 +400,7 @@ export default function Subscriptions() {
                         {/* Price */}
                         <div className="mb-4">
                           <span className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
-                            ₴{plan.price.toLocaleString()}
+                            {plan.price.toLocaleString()} грн.
                           </span>
                           <span className="text-sm text-gray-500 ml-1">
                             {plan.type === 'lifetime' ? 'навсегда' : plan.price === 0 ? '' : '/мес'}
@@ -584,7 +584,7 @@ function AssignModal({ plans, companies, form, onFormChange, onSubmit, onClose, 
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0 ml-3">
-                      <p className="text-sm font-bold text-gray-900">₴{p.price.toLocaleString()}</p>
+                      <p className="text-sm font-bold text-gray-900">{p.price.toLocaleString()} грн.</p>
                       {isSelected && <CheckCircle2 className="w-4 h-4 text-primary ml-auto mt-0.5" />}
                     </div>
                   </button>
@@ -701,7 +701,7 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
         <div className="p-5 space-y-4 overflow-y-auto flex-1">
           {field('Название', 'name')}
           {field('Описание', 'description')}
-          {field('Цена (₴/мес)', 'price', 'number')}
+          {field('Цена (грн./мес)', 'price', 'number')}
           <div className="grid grid-cols-2 gap-2">
             {field('Машины', 'max_vehicles', 'number')}
             {field('Запчасти', 'max_parts', 'number')}

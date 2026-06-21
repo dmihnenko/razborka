@@ -53,5 +53,5 @@ export function discountPct(months: number): number {
 }
 
 export function fmtPrice(n: number): string {
-  return `₴${n.toLocaleString('ru-RU')}`
+  return `${n.toLocaleString('ru-RU')} грн.`
 }

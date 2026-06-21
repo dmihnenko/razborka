@@ -442,7 +442,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                           onClick={() => setPriceRows(rows => rows.map(r => r.id === row.id ? { ...r, currency: 'UAH' } : r))}
                           className={`px-2.5 py-2 text-sm font-medium transition-colors ${row.currency === 'UAH' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
                         >
-                          ₴
+                          грн
                         </button>
                       </div>
                       {priceRows.length > 1 && (

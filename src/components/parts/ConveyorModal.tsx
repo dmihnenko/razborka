@@ -241,7 +241,7 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
                   className="cab-btn cab-btn-primary w-12 text-center px-0 flex-shrink-0"
                   title="Сменить валюту"
                 >
-                  {form.price_currency === 'USD' ? '$' : '₴'}
+                  {form.price_currency === 'USD' ? '$' : 'грн'}
                 </button>
               </div>
             </div>

@@ -679,7 +679,7 @@ export default function PartsVehicleDetails() {
                     </div>
                     {purchasePrice > 0 && (
                       <div className="text-xs text-gray-400 tabular">
-                        {purchasePrice.toLocaleString('ru-RU')} ₴
+                        {purchasePrice.toLocaleString('ru-RU')} грн.
                       </div>
                     )}
                   </div>
@@ -694,7 +694,7 @@ export default function PartsVehicleDetails() {
                     </div>
                     {totalRevenue > 0 && (
                       <div className="text-xs text-gray-400 tabular">
-                        {totalRevenue.toLocaleString('ru-RU')} ₴
+                        {totalRevenue.toLocaleString('ru-RU')} грн.
                       </div>
                     )}
                   </div>
@@ -723,7 +723,7 @@ export default function PartsVehicleDetails() {
                           isProfitable ? 'text-green-500' : 'text-red-400'
                         }`}
                       >
-                        {profit > 0 ? '+' : ''}{profit.toLocaleString('ru-RU')} ₴
+                        {profit > 0 ? '+' : ''}{profit.toLocaleString('ru-RU')} грн.
                         {recoveryPct && <span className="ml-1 text-gray-400">· {recoveryPct}%</span>}
                       </div>
                     </div>

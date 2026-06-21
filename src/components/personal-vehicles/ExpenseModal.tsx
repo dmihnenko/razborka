@@ -266,7 +266,7 @@ export default function ExpenseModal({ isOpen, onClose, category, editItem, onSa
                           }`}
                         >
                           <span className="hidden sm:inline">UAH</span>
-                          <span className="sm:hidden">₴</span>
+                          <span className="sm:hidden">грн</span>
                         </button>
                       </div>
                     </div>

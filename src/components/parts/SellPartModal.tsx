@@ -165,7 +165,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
                 onClick={() => setSellCurrency(c => c === 'USD' ? 'UAH' : 'USD')}
                 className="cab-btn cab-btn-primary px-3 w-12 text-center font-semibold tabular-nums"
               >
-                {sellCurrency === 'USD' ? '$' : '₴'}
+                {sellCurrency === 'USD' ? '$' : 'грн'}
               </button>
             </div>
           </div>
