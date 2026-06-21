@@ -6,34 +6,56 @@ export interface ImgbbPhoto {
   delete_url: string
 }
 
+function blobFromCanvas(canvas: HTMLCanvasElement, quality: number, fallback: Blob): Promise<Blob> {
+  return new Promise((resolve) => canvas.toBlob((b) => resolve(b || fallback), 'image/jpeg', quality))
+}
+
 /**
- * Сжатие/оптимизация файла через Canvas перед загрузкой:
- *  - ужимаем по БОЛЬШЕЙ стороне (вертикальные фото тоже уменьшаются);
- *  - выводим JPEG (универсально принимается всеми хостингами, включая ImgBB API;
- *    WebP-вывод ImgBB по API отвергал — фото «не загружались»).
+ * Сжатие/оптимизация файла перед загрузкой. Вывод — JPEG (универсально принимается,
+ * включая ImgBB API; WebP он отвергал). Ужимаем по БОЛЬШЕЙ стороне.
+ *
+ * Быстрый путь — createImageBitmap: нативное декодирование без чтения файла в
+ * base64 (FileReader.readAsDataURL грузил весь снимок в память и декодировал в
+ * главном потоке → подвисание/задержка при добавлении из медиатеки). Плюс
+ * imageOrientation:'from-image' чинит поворот фото с телефона. Фолбэк — старый путь.
  */
 export async function compressImage(file: File, maxSize = 1600, quality = 0.82): Promise<Blob> {
-  return new Promise((resolve) => {
-    const img = new Image()
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      img.onload = () => {
-        const scale = Math.min(1, maxSize / Math.max(img.width, img.height))
-        const w = Math.round(img.width * scale)
-        const h = Math.round(img.height * scale)
-        const canvas = document.createElement('canvas')
-        canvas.width = w
-        canvas.height = h
-        const ctx = canvas.getContext('2d')!
-        ctx.drawImage(img, 0, 0, w, h)
-        canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', quality)
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' } as ImageBitmapOptions)
+    const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height))
+    const w = Math.round(bitmap.width * scale)
+    const h = Math.round(bitmap.height * scale)
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')!
+    ctx.drawImage(bitmap, 0, 0, w, h)
+    bitmap.close()
+    return await blobFromCanvas(canvas, quality, file)
+  } catch {
+    // Фолбэк (старые браузеры / неподдерживаемый формат): FileReader + Image
+    return await new Promise<Blob>((resolve) => {
+      const img = new Image()
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        img.onload = () => {
+          const scale = Math.min(1, maxSize / Math.max(img.width, img.height))
+          const w = Math.round(img.width * scale)
+          const h = Math.round(img.height * scale)
+          const canvas = document.createElement('canvas')
+          canvas.width = w
+          canvas.height = h
+          const ctx = canvas.getContext('2d')!
+          ctx.drawImage(img, 0, 0, w, h)
+          canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', quality)
+        }
+        img.onerror = () => resolve(file)
+        img.src = e.target?.result as string
       }
-      img.onerror = () => resolve(file)
-      img.src = e.target?.result as string
-    }
-    reader.onerror = () => resolve(file)
-    reader.readAsDataURL(file)
-  })
+      reader.onerror = () => resolve(file)
+      reader.readAsDataURL(file)
+    })
+  }
 }
 
 /** Загрузка на ImgBB с предварительным сжатием */
