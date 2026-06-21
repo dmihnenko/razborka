@@ -16,7 +16,7 @@ import { getDefaultRouteForRoles } from '@/config/navigation'
 
 function navTab({ isActive }: { isActive: boolean }) {
   return [
-    'inline-flex items-center justify-center min-w-[92px] h-8 px-4 rounded-[7px] text-sm transition-colors',
+    'inline-flex items-center justify-center min-w-0 sm:min-w-[92px] h-8 px-3 sm:px-4 rounded-[7px] text-sm whitespace-nowrap transition-colors',
     isActive ? 'font-semibold' : 'font-medium',
   ].join(' ')
 }
@@ -80,16 +80,15 @@ function MarketLayoutInner() {
       >
         <div className="mk-container">
           {/* Ряд 1 */}
-          <div className="flex items-center gap-3 h-16">
-            {/* Лого скрыто на мобиле — освобождаем место под поиск/категории */}
-            <Link to="/market" className="hidden md:flex items-center gap-3 flex-shrink-0 min-w-0" aria-label="Razborka.net — маркет запчастей, на главную">
-              <Logo size="sm" withText className="flex-shrink-0" />
-              <span className="hidden md:block text-[13px] font-semibold tracking-tight truncate mk-meta">
-                маркет&nbsp;запчастей
-              </span>
+          <div className="flex items-center gap-2 sm:gap-3 h-14 sm:h-16">
+            {/* Лого: на мобиле компактный знак (в размер кнопок Каталог/Разборки),
+                на десктопе — полная эмблема с дескриптором */}
+            <Link to="/market" className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0 min-w-0" aria-label="Razborka.net — маркет запчастей, на главную">
+              <Logo size="sm" withText={false} className="md:hidden flex-shrink-0" />
+              <Logo size="sm" withText className="hidden md:inline-flex flex-shrink-0" />
             </Link>
 
-            {/* Мобила: Каталог/Разборки в первом ряду рядом с корзиной/входом */}
+            {/* Мобила: Каталог/Разборки в первом ряду рядом со знаком, корзиной и входом */}
             <div className="md:hidden">{navTabs}</div>
 
             {showHeaderSearch && (

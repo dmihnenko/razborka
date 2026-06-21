@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion, useReducedMotion } from 'framer-motion'
-import { ArrowRight, Car, Package, Search, Store, Zap } from 'lucide-react'
+import { ArrowRight, Car, Package, Search, Store } from 'lucide-react'
 import {
   getMarketMakes, getMarketParts, getMarketSuppliers,
 } from '@/services/marketplaceService'
@@ -73,11 +73,7 @@ export function MarketHome() {
 
       {/* ── Герой: чистая панель, акцент только на кнопке ─────────────── */}
       <motion.section {...anim(0)} className="mk-card p-5 sm:p-8 text-center">
-        <span className="inline-flex items-center gap-1.5 px-3 h-7 rounded-full text-xs font-semibold" style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
-          <Zap className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Б/у и новые запчасти от авторазборок — без посредников
-        </span>
-
-        <form onSubmit={handleSearch} role="search" className="mt-6 max-w-xl mx-auto">
+        <form onSubmit={handleSearch} role="search" className="max-w-xl mx-auto">
           <div className="flex gap-2">
             <div className="relative flex-1 min-w-0">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none mk-meta" strokeWidth={1.5} aria-hidden="true" />

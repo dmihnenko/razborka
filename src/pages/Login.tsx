@@ -256,7 +256,7 @@ export default function Login() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="flex items-center justify-center mb-6"
+              className="flex items-center justify-center mb-4"
             >
               <Logo size="md" withText />
             </motion.div>
