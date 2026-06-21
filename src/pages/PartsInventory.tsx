@@ -1773,13 +1773,15 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     }
     setUploading(true)
     try {
-      const uploaded: ImgbbPhoto[] = []
-      for (const file of files) {
-        const photo = await uploadToImgbb(file, apiKey)
-        uploaded.push(photo)
-      }
-      setPhotos(prev => [...prev, ...uploaded])
-      toast.success(`${uploaded.length} фото загружено`)
+      // Грузим ВСЕ выбранные/снятые фото параллельно (а не по одному), сохраняя порядок.
+      const results = await Promise.allSettled(files.map(file => uploadToImgbb(file, apiKey)))
+      const uploaded = results
+        .filter((r): r is PromiseFulfilledResult<ImgbbPhoto> => r.status === 'fulfilled')
+        .map(r => r.value)
+      const failed = results.length - uploaded.length
+      if (uploaded.length) setPhotos(prev => [...prev, ...uploaded])
+      if (uploaded.length) toast.success(`${uploaded.length} фото загружено`)
+      if (failed > 0) toast.error(`${failed} фото не загрузилось — попробуйте ещё раз`)
     } catch {
       toast.error('Ошибка загрузки фото')
     } finally {
@@ -2360,7 +2362,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     />
                     <Camera className={`w-4 h-4 ${uploading ? 'text-gray-300' : 'text-gray-400'}`} />
                     <span className={`text-sm font-medium ${uploading ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {uploading ? 'Загрузка...' : 'Добавить фото'}
+                      {uploading ? 'Загрузка...' : 'Добавить фото (можно несколько)'}
                     </span>
                   </label>
                   {photos.length > 0 && (
