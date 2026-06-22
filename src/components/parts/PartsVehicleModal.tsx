@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { X, Plus, Trash2, ScanLine, Pencil } from 'lucide-react'
 import { IMaskInput } from 'react-imask'
@@ -50,6 +51,7 @@ interface PartsVehicleModalProps {
 }
 
 export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }: PartsVehicleModalProps) {
+  const { t } = useTranslation('cabinet')
   const { rate: globalRate } = usePartsExchangeRate()
   useBlockScroll(isOpen)
   const [formData, setFormData] = useState<CreatePartsVehicleInput>({
@@ -138,7 +140,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
     try {
       const result = await decodeVin(vin)
       if (!result.make && !result.model && !result.year && !result.engine) {
-        toast.info('Не удалось распознать VIN')
+        toast.info(t('vehicleModal.toastVinFailed'))
         return
       }
       const nextMake = formData.make || result.make || ''
@@ -155,9 +157,9 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
         if (!facet) setManualMake(true)
         else if (nextModel && !facet.models.some(m => m.model.toLowerCase() === nextModel.toLowerCase())) setManualModel(true)
       }
-      toast.success('Данные по VIN подставлены')
+      toast.success(t('vehicleModal.toastVinFilled'))
     } catch {
-      toast.error('Сервис VIN недоступен')
+      toast.error(t('vehicleModal.toastVinUnavailable'))
     } finally {
       setVinLoading(false)
     }
@@ -186,12 +188,12 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
       // Новые марка/модель — заявка в общий каталог на утверждение админу
       if (isPairNew()) {
         void suggestCarModel(cleanData.make, cleanData.model, profile?.parts_company_id)
-        toast.info('Новые марка и модель отправлены администратору на утверждение')
+        toast.info(t('vehicleModal.toastNewPairSent'))
       }
 
       onClose()
     } catch (err: any) {
-      const msg = err?.message || err?.details || 'Ошибка при сохранении'
+      const msg = err?.message || err?.details || t('vehicleModal.errorSave')
       setError(msg)
       console.error('Error submitting vehicle:', err)
     } finally {
@@ -216,7 +218,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
 
         <div className="modal-header">
           <h2 className="heading-3">
-            {vehicle ? 'Редактировать' : 'Добавить авто'}
+            {vehicle ? t('vehicleModal.titleEdit') : t('vehicleModal.titleAdd')}
           </h2>
           <button
             type="button"
@@ -225,7 +227,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
               onClose();
             }}
             className="btn-icon"
-            aria-label="Закрыть"
+            aria-label={t('vehicleModal.close')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -241,7 +243,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
             {/* Марка */}
             <div>
               <label className="form-label">
-                Марка <span className="text-red-500">*</span>
+                {t('vehicleModal.make')} <span className="text-red-500">*</span>
               </label>
               {manualMake || carCatalog.length === 0 ? (
                 <input
@@ -251,7 +253,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                   onChange={handleChange}
                   required
                   className="form-input"
-                  placeholder="Toyota, BMW..."
+                  placeholder={t('vehicleModal.makePlaceholder')}
                 />
               ) : (
                 <select
@@ -260,9 +262,9 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                   required
                   className="form-select"
                 >
-                  <option value="" disabled>Выберите марку</option>
+                  <option value="" disabled>{t('vehicleModal.selectMake')}</option>
                   {carCatalog.map(c => <option key={c.make} value={c.make}>{c.make}</option>)}
-                  <option value={OTHER}>✏️ Другая марка…</option>
+                  <option value={OTHER}>{t('vehicleModal.otherMake')}</option>
                 </select>
               )}
             </div>
@@ -270,7 +272,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
             {/* Модель */}
             <div>
               <label className="form-label">
-                Модель <span className="text-red-500">*</span>
+                {t('vehicleModal.model')} <span className="text-red-500">*</span>
               </label>
               {manualMake || manualModel || carCatalog.length === 0 ? (
                 <input
@@ -280,7 +282,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                   onChange={handleChange}
                   required
                   className="form-input"
-                  placeholder="Camry, X5..."
+                  placeholder={t('vehicleModal.modelPlaceholder')}
                 />
               ) : (
                 <select
@@ -290,9 +292,9 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                   disabled={!formData.make}
                   className="form-select disabled:opacity-60"
                 >
-                  <option value="" disabled>{formData.make ? 'Выберите модель' : 'Сначала марка'}</option>
+                  <option value="" disabled>{formData.make ? t('vehicleModal.selectModel') : t('vehicleModal.selectMakeFirst')}</option>
                   {catalogModels.map(m => <option key={m.model} value={m.model}>{m.model}</option>)}
-                  <option value={OTHER}>✏️ Другая модель…</option>
+                  <option value={OTHER}>{t('vehicleModal.otherModel')}</option>
                 </select>
               )}
             </div>
@@ -303,10 +305,10 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                 <div className="flex items-start justify-between gap-3">
                   <p className="text-xs text-amber-600 flex items-start gap-1.5">
                     <Pencil className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                    Новые марка и модель уйдут администратору на утверждение для общего каталога.
+                    {t('vehicleModal.newPairHint')}
                   </p>
                   <button type="button" onClick={backToCatalog} className="text-xs font-medium text-primary hover:underline whitespace-nowrap flex-shrink-0">
-                    Выбрать из каталога
+                    {t('vehicleModal.chooseFromCatalog')}
                   </button>
                 </div>
               </div>
@@ -315,7 +317,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
             {/* Год */}
             <div>
               <label className="form-label">
-                Год выпуска
+                {t('vehicleModal.year')}
               </label>
               <IMaskInput
                 mask={Number}
@@ -331,7 +333,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
             {/* VIN */}
             <div>
               <label className="form-label">
-                VIN номер
+                {t('vehicleModal.vin')}
               </label>
               <div className="flex gap-2">
                 <IMaskInput
@@ -340,34 +342,34 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                   value={formData.vin || ''}
                   onAccept={(value: string) => setFormData(prev => ({ ...prev, vin: value }))}
                   className="form-input min-w-0 flex-1 font-mono tracking-widest"
-                  placeholder="17 символов"
+                  placeholder={t('vehicleModal.vinPlaceholder')}
                 />
                 <button
                   type="button"
                   onClick={handleDecodeVin}
                   disabled={!formData.vin?.trim() || vinLoading}
-                  title="Распознать по VIN"
+                  title={t('vehicleModal.decodeVinTitle')}
                   className="cab-btn cab-btn-secondary flex-shrink-0 flex items-center gap-1.5 px-3"
                 >
                   {vinLoading
                     ? <Spinner size="sm" className="w-5 h-5" />
                     : <ScanLine className="w-5 h-5" strokeWidth={1.5} />
                   }
-                  <span className="hidden sm:inline">Распознать</span>
+                  <span className="hidden sm:inline">{t('vehicleModal.decode')}</span>
                 </button>
               </div>
               {formData.vin && (
                 <p className={`text-xs mt-1 ${formData.vin.length === 17 ? 'text-green-600' : 'text-gray-400'}`}>
-                  {formData.vin.length}/17 символов
+                  {t('vehicleModal.vinCounter', { count: formData.vin.length })}
                 </p>
               )}
-              <p className="text-xs text-gray-400 mt-1">Авто и европейские VIN распознаются не всегда</p>
+              <p className="text-xs text-gray-400 mt-1">{t('vehicleModal.vinNotice')}</p>
             </div>
 
             {/* Цвет */}
             <div>
               <label className="form-label">
-                Цвет
+                {t('vehicleModal.color')}
               </label>
               <input
                 type="text"
@@ -381,7 +383,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
             {/* Пробег */}
             <div>
               <label className="form-label">
-                Пробег (км)
+                {t('vehicleModal.mileage')}
               </label>
               <input
                 type="number"
@@ -397,9 +399,9 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
             {vehicle && (
               <div className="sm:col-span-2">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="form-label mb-0">Цена покупки</label>
+                  <label className="form-label mb-0">{t('vehicleModal.purchasePrice')}</label>
                   <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                    <span>Курс:</span>
+                    <span>{t('vehicleModal.rate')}</span>
                     <input
                       type="number"
                       value={exchangeRate}
@@ -419,7 +421,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                         value={row.label}
                         onChange={e => setPriceRows(rows => rows.map(r => r.id === row.id ? { ...r, label: e.target.value } : r))}
                         className="form-input flex-1 min-w-0 text-sm py-2"
-                        placeholder="Описание (необязательно)"
+                        placeholder={t('vehicleModal.priceLabelPlaceholder')}
                       />
                       <input
                         type="number"
@@ -442,7 +444,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                           onClick={() => setPriceRows(rows => rows.map(r => r.id === row.id ? { ...r, currency: 'UAH' } : r))}
                           className={`px-2.5 py-2 text-sm font-medium transition-colors ${row.currency === 'UAH' ? 'bg-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
                         >
-                          грн
+                          {t('vehicleModal.uah')}
                         </button>
                       </div>
                       {priceRows.length > 1 && (
@@ -464,12 +466,12 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                   className="mt-2 flex items-center gap-1.5 text-sm text-primary hover:underline"
                 >
                   <Plus className="w-4 h-4" />
-                  Добавить строку
+                  {t('vehicleModal.addRow')}
                 </button>
 
                 {totalUSD > 0 && (
                   <p className="mt-2 text-sm text-gray-700">
-                    Итого: <span className="font-semibold text-green-700">${totalUSD.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
+                    {t('vehicleModal.total')} <span className="font-semibold text-green-700">${totalUSD.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
                     {' = '}
                     <span className="font-semibold">{formatCurrency(totalUAH)}</span>
                   </p>
@@ -481,7 +483,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
           {/* Примечания */}
           <div className="mt-4 sm:mt-5">
             <label className="form-label">
-              Примечания
+              {t('vehicleModal.notes')}
             </label>
             <textarea
               name="notes"
@@ -489,7 +491,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
               onChange={handleChange}
               rows={3}
               className="form-input"
-              placeholder="Дополнительная информация..."
+              placeholder={t('vehicleModal.notesPlaceholder')}
             />
           </div>
         </form>
@@ -501,7 +503,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
             className="cab-btn cab-btn-secondary flex-1"
             disabled={loading}
           >
-            Отмена
+            {t('vehicleModal.cancel')}
           </button>
           <button
             type="submit"
@@ -509,7 +511,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
             className="cab-btn cab-btn-primary flex-1"
             disabled={loading}
           >
-            {loading ? 'Сохранение...' : vehicle ? 'Сохранить' : 'Добавить'}
+            {loading ? t('vehicleModal.saving') : vehicle ? t('vehicleModal.save') : t('vehicleModal.add')}
           </button>
         </div>
       </div>

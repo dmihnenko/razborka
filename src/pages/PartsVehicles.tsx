@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '@/i18n'
 import { Spinner } from '@/components/ui/Spinner'
 import { Plus, Search, Car, Filter, Grid, List } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -18,9 +20,9 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import type { PartsVehicle, CreatePartsVehicleInput, PartsVehicleStatus } from '@/types/parts'
 
 const statusLabels: Record<PartsVehicleStatus, string> = {
-  awaiting: 'Ожидает разборки',
-  in_progress: 'В процессе',
-  dismantled: 'Разобран',
+  awaiting: i18n.t('cabinet:vehiclesPage.statusAwaiting'),
+  in_progress: i18n.t('cabinet:vehiclesPage.statusInProgress'),
+  dismantled: i18n.t('cabinet:vehiclesPage.statusDismantled'),
 }
 
 const statusBadge: Record<PartsVehicleStatus, string> = {
@@ -38,6 +40,7 @@ const statusDot: Record<PartsVehicleStatus, string> = {
 type ViewMode = 'grid' | 'list'
 
 export default function PartsVehicles() {
+  const { t } = useTranslation('cabinet')
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const { rate: globalRate } = usePartsExchangeRate()
@@ -72,23 +75,23 @@ export default function PartsVehicles() {
       if (selectedVehicle) {
         return updatePartsVehicle(selectedVehicle.id, data)
       } else {
-        if (!canCreate.vehicle()) throw new Error('Достигнут лимит машин по тарифу. Повысьте тариф в разделе «Тариф разборки».')
+        if (!canCreate.vehicle()) throw new Error(t('vehiclesPage.limitReachedError'))
         return createPartsVehicle(data, partsCompanyId!)
       }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['parts-vehicles'] })
-      toast.success(selectedVehicle ? 'Автомобиль обновлён' : 'Автомобиль добавлен')
+      toast.success(selectedVehicle ? t('vehiclesPage.vehicleUpdated') : t('vehiclesPage.vehicleAdded'))
       setIsModalOpen(false)
       // Check for brand templates when creating new vehicle
       if (!selectedVehicle && data?.make) {
         const make = data.make
         getPartsCategoryTemplates(make).then(templates => {
           if (templates.length > 0) {
-            toast(`${templates.length} стандартных категорий для ${make}`, {
-              description: 'Импортируйте или создайте свои — удобнее сортировать запчасти',
+            toast(t('vehiclesPage.templatesFound', { n: templates.length, make }), {
+              description: t('vehiclesPage.templatesDescription'),
               action: {
-                label: 'Открыть',
+                label: t('vehiclesPage.open'),
                 onClick: () => navigate(`/parts/categories?tab=templates&brand=${encodeURIComponent(make)}`),
               },
               duration: 9000,
@@ -99,7 +102,7 @@ export default function PartsVehicles() {
       setSelectedVehicle(null)
     },
     onError: (error: any) => {
-      const msg = error?.message || error?.details || 'Ошибка при сохранении'
+      const msg = error?.message || error?.details || t('vehiclesPage.saveError')
       toast.error(msg)
       console.error(error)
     }
@@ -114,7 +117,7 @@ export default function PartsVehicles() {
         await moveToTrash({
           entityType: 'parts_vehicle',
           entityId: vehicleId,
-          entityLabel: `${vehicle.make || ''} ${vehicle.model || ''}`.trim() || 'Авто',
+          entityLabel: `${vehicle.make || ''} ${vehicle.model || ''}`.trim() || t('vehiclesPage.entityFallback'),
           entityData: { vehicle, parts: parts || [] },
           partsCompanyId,
         })
@@ -123,10 +126,10 @@ export default function PartsVehicles() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-vehicles'] })
-      toast.success('Автомобиль удалён')
+      toast.success(t('vehiclesPage.vehicleDeleted'))
     },
     onError: () => {
-      toast.error('Ошибка при удалении')
+      toast.error(t('vehiclesPage.deleteError'))
     }
   })
 
@@ -159,7 +162,7 @@ export default function PartsVehicles() {
 
   const handleDelete = async (vehicleId: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    const ok = await showConfirm({ message: 'Удалить автомобиль? Это действие нельзя отменить.', danger: true })
+    const ok = await showConfirm({ message: t('vehiclesPage.deleteConfirm'), danger: true })
     if (!ok) return
     deleteMutation.mutate(vehicleId)
   }
@@ -172,8 +175,8 @@ export default function PartsVehicles() {
     <div className="min-h-dvh bg-gray-50">
       {/* Header */}
       <PartsPageHeader
-        title="Автомобили"
-        subtitle={`Всего: ${stats.total}`}
+        title={i18n.t('cabinet:pages.vehicles')}
+        subtitle={i18n.t('cabinet:pages.totalN', { n: stats.total })}
         backPath="/parts/dashboard"
         actions={
           <button
@@ -184,7 +187,7 @@ export default function PartsVehicles() {
             className="cab-btn cab-btn-primary"
           >
             <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Добавить</span>
+            <span className="hidden sm:inline">{t('vehiclesPage.add')}</span>
           </button>
         }
       />
@@ -197,7 +200,7 @@ export default function PartsVehicles() {
           <LimitReachedBanner
             used={usage.vehicles}
             max={limits.maxVehicles}
-            label="Автомобили"
+            label={t('vehiclesPage.vehiclesLabel')}
             ctaHref="/parts/subscription"
           />
         </div>
@@ -206,10 +209,10 @@ export default function PartsVehicles() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         {([
-          { key: 'all',         label: 'Всего',    value: stats.total,       dotCls: 'bg-gray-400',   ringCls: 'ring-primary' },
-          { key: 'awaiting',    label: 'Ожидают',  value: stats.awaiting,    dotCls: statusDot.awaiting,    ringCls: 'ring-yellow-500' },
-          { key: 'in_progress', label: 'В работе', value: stats.in_progress, dotCls: statusDot.in_progress, ringCls: 'ring-blue-500' },
-          { key: 'dismantled',  label: 'Разобраны',value: stats.dismantled,  dotCls: statusDot.dismantled,  ringCls: 'ring-green-500' },
+          { key: 'all',         label: t('vehiclesPage.statTotal'),    value: stats.total,       dotCls: 'bg-gray-400',   ringCls: 'ring-primary' },
+          { key: 'awaiting',    label: t('vehiclesPage.statAwaiting'),  value: stats.awaiting,    dotCls: statusDot.awaiting,    ringCls: 'ring-yellow-500' },
+          { key: 'in_progress', label: t('vehiclesPage.statInProgress'), value: stats.in_progress, dotCls: statusDot.in_progress, ringCls: 'ring-blue-500' },
+          { key: 'dismantled',  label: t('vehiclesPage.statDismantled'),value: stats.dismantled,  dotCls: statusDot.dismantled,  ringCls: 'ring-green-500' },
         ] as const).map(({ key, label, value, dotCls, ringCls }) => (
           <button
             key={key}
@@ -235,7 +238,7 @@ export default function PartsVehicles() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="Поиск по марке, модели, VIN, номеру…"
+              placeholder={t('vehiclesPage.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="form-input pl-9"
@@ -247,14 +250,14 @@ export default function PartsVehicles() {
             <button
               onClick={() => setViewMode('grid')}
               className={`btn-icon-sm ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-              title="Сетка"
+              title={t('vehiclesPage.gridView')}
             >
               <Grid className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('list')}
               className={`btn-icon-sm ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-              title="Список"
+              title={t('vehiclesPage.listView')}
             >
               <List className="w-4 h-4" />
             </button>
@@ -265,13 +268,13 @@ export default function PartsVehicles() {
           <div className="mt-3 flex items-center gap-2 flex-wrap">
             <Filter className="w-3.5 h-3.5 text-gray-400" />
             <span className="text-sm text-gray-500">
-              Фильтр: <span className="font-semibold text-gray-700">{statusLabels[statusFilter as PartsVehicleStatus]}</span>
+              {t('vehiclesPage.filterLabel')} <span className="font-semibold text-gray-700">{statusLabels[statusFilter as PartsVehicleStatus]}</span>
             </span>
             <button
               onClick={() => setStatusFilter('all')}
               className="text-sm text-primary hover:underline font-medium"
             >
-              Сбросить
+              {t('vehiclesPage.reset')}
             </button>
           </div>
         )}
@@ -289,17 +292,17 @@ export default function PartsVehicles() {
               <Car className="w-8 h-8 text-gray-400" />
             </div>
             <p className="empty-state-title">
-              {searchQuery || statusFilter !== 'all' ? 'Автомобили не найдены' : 'Нет автомобилей'}
+              {searchQuery || statusFilter !== 'all' ? t('vehiclesPage.notFound') : t('vehiclesPage.empty')}
             </p>
             {!searchQuery && statusFilter === 'all' && (
               <>
-                <p className="empty-state-text">Добавьте первый автомобиль для разборки</p>
+                <p className="empty-state-text">{t('vehiclesPage.emptyText')}</p>
                 <button
                   onClick={() => setIsModalOpen(true)}
                   className="cab-btn cab-btn-primary mt-5"
                 >
                   <Plus className="w-4 h-4" />
-                  Добавить автомобиль
+                  {t('vehiclesPage.addVehicle')}
                 </button>
               </>
             )}
@@ -328,7 +331,7 @@ export default function PartsVehicles() {
                   {vehicle.make} {vehicle.model}
                 </h3>
                 {vehicle.year && (
-                  <p className="text-sm text-gray-500 tabular-nums">{vehicle.year} г.</p>
+                  <p className="text-sm text-gray-500 tabular-nums">{vehicle.year} {t('vehiclesPage.yearSuffix')}</p>
                 )}
 
                 {/* Details */}
@@ -341,13 +344,13 @@ export default function PartsVehicles() {
                   )}
                   {vehicle.color && (
                     <div className="flex items-baseline gap-1.5 text-gray-600">
-                      <span className="kicker shrink-0">Цвет</span>
+                      <span className="kicker shrink-0">{t('vehiclesPage.color')}</span>
                       <span>{vehicle.color}</span>
                     </div>
                   )}
                   {vehicle.purchase_price && (
                     <div className="flex items-baseline gap-1.5">
-                      <span className="kicker shrink-0">Покупка</span>
+                      <span className="kicker shrink-0">{t('vehiclesPage.purchase')}</span>
                       <span className="font-semibold text-gray-900 tabular-nums">{formatPriceUSD(vehicle)}</span>
                     </div>
                   )}
@@ -360,13 +363,13 @@ export default function PartsVehicles() {
                   onClick={(e) => handleEdit(vehicle, e)}
                   className="cab-btn cab-btn-secondary cab-btn-sm flex-1"
                 >
-                  Редактировать
+                  {t('vehiclesPage.edit')}
                 </button>
                 <button
                   onClick={(e) => handleDelete(vehicle.id, e)}
                   className="cab-btn cab-btn-danger cab-btn-sm"
                 >
-                  Удалить
+                  {t('vehiclesPage.delete')}
                 </button>
               </div>
             </div>
@@ -379,11 +382,11 @@ export default function PartsVehicles() {
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="table-header-cell">Автомобиль</th>
+                  <th className="table-header-cell">{t('vehiclesPage.colVehicle')}</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200 hidden lg:table-cell" style={{ letterSpacing: '0.06em' }}>VIN</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200 hidden md:table-cell" style={{ letterSpacing: '0.06em' }}>Статус</th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200 hidden sm:table-cell" style={{ letterSpacing: '0.06em' }}>Цена покупки</th>
-                  <th className="table-header-cell text-right">Действия</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200 hidden md:table-cell" style={{ letterSpacing: '0.06em' }}>{t('vehiclesPage.colStatus')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200 hidden sm:table-cell" style={{ letterSpacing: '0.06em' }}>{t('vehiclesPage.colPurchasePrice')}</th>
+                  <th className="table-header-cell text-right">{t('vehiclesPage.colActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -421,13 +424,13 @@ export default function PartsVehicles() {
                           onClick={(e) => handleEdit(vehicle, e)}
                           className="cab-btn cab-btn-ghost cab-btn-sm"
                         >
-                          Изменить
+                          {t('vehiclesPage.change')}
                         </button>
                         <button
                           onClick={(e) => handleDelete(vehicle.id, e)}
                           className="cab-btn cab-btn-ghost cab-btn-sm text-red-600 hover:bg-red-50 hover:text-red-700"
                         >
-                          Удалить
+                          {t('vehiclesPage.delete')}
                         </button>
                       </div>
                     </td>

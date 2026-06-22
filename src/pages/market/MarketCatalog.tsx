@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, PackageSearch } from 'lucide-react'
@@ -47,11 +48,11 @@ function paramsFromFilters(f: MarketFilters): Record<string, string> {
   return out
 }
 
-function pluralizeResults(n: number): string {
+function pluralizeResults(n: number, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const mod10 = n % 10, mod100 = n % 100
-  if (mod10 === 1 && mod100 !== 11) return `${n} товар`
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} товара`
-  return `${n} товаров`
+  if (mod10 === 1 && mod100 !== 11) return t('catalogPage.resultsOne', { n })
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return t('catalogPage.resultsFew', { n })
+  return t('catalogPage.resultsMany', { n })
 }
 
 function SkeletonCard() {
@@ -68,6 +69,7 @@ function SkeletonCard() {
 }
 
 export function MarketCatalog() {
+  const { t } = useTranslation('market')
   const [searchParams, setSearchParams] = useSearchParams()
   const [filters, setFilters] = useState<MarketFilters>(() => filtersFromParams(searchParams))
 
@@ -125,14 +127,14 @@ export function MarketCatalog() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="mk-h1">Каталог запчастей</h1>
+        <h1 className="mk-h1">{t('catalogPage.title')}</h1>
       </div>
 
       <FilterBar value={filters} onChange={applyFilters} categories={categories} carCatalog={carCatalog} />
 
       <div className="flex items-center gap-2 min-h-[20px]" aria-live="polite">
         {!isLoading && !isError && total > 0 && (
-          <p className="text-sm mk-meta">Найдено: <span className="font-bold" style={{ color: 'var(--mk-text)' }}>{pluralizeResults(total)}</span></p>
+          <p className="text-sm mk-meta">{t('catalogPage.found')}: <span className="font-bold" style={{ color: 'var(--mk-text)' }}>{pluralizeResults(total, t)}</span></p>
         )}
         {isFetching && !isLoading && <Spinner size="sm" className="!h-4 !w-4" />}
       </div>
@@ -140,14 +142,14 @@ export function MarketCatalog() {
       {isLoading ? (
         <div className="mk-grid">{Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)}</div>
       ) : isError ? (
-        <EmptyState icon={PackageSearch} title="Не удалось загрузить каталог" description="Проверьте подключение к интернету и попробуйте обновить страницу." />
+        <EmptyState icon={PackageSearch} title={t('catalogPage.errorTitle')} description={t('catalogPage.errorDesc')} />
       ) : items.length === 0 ? (
         <EmptyState
           icon={PackageSearch}
-          title="Ничего не найдено"
-          description={hasActiveFilters ? 'Попробуйте изменить запрос или сбросить фильтры.' : 'В каталоге пока нет доступных запчастей — загляните позже.'}
+          title={t('catalogPage.emptyTitle')}
+          description={hasActiveFilters ? t('catalogPage.emptyFiltered') : t('catalogPage.emptyAll')}
           action={hasActiveFilters ? (
-            <button type="button" onClick={() => applyFilters({ sort: filters.sort, page: 1, pageSize })} className="mk-btn mk-btn-outline">Сбросить фильтры</button>
+            <button type="button" onClick={() => applyFilters({ sort: filters.sort, page: 1, pageSize })} className="mk-btn mk-btn-outline">{t('catalogPage.resetFilters')}</button>
           ) : undefined}
         />
       ) : (
@@ -157,20 +159,20 @@ export function MarketCatalog() {
           </div>
 
           {totalPages > 1 && (
-            <nav className="flex items-center justify-center gap-2 pt-6 pb-2" aria-label="Постраничная навигация">
-              <button type="button" onClick={() => setPage(page - 1)} disabled={page <= 1 || isPlaceholderData} className="mk-page-btn" aria-label="Предыдущая страница">
+            <nav className="flex items-center justify-center gap-2 pt-6 pb-2" aria-label={t('catalogPage.paginationNav')}>
+              <button type="button" onClick={() => setPage(page - 1)} disabled={page <= 1 || isPlaceholderData} className="mk-page-btn" aria-label={t('catalogPage.prevPage')}>
                 <ChevronLeft className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
-                <span className="hidden sm:inline">Назад</span>
+                <span className="hidden sm:inline">{t('catalogPage.back')}</span>
               </button>
               <div className="flex items-center gap-1">
                 {pageNumbers.map(n => (
-                  <button key={n} type="button" onClick={() => setPage(n)} disabled={isPlaceholderData} className={`mk-page-btn !px-0 w-11 ${n === page ? 'active' : ''}`} aria-label={`Страница ${n}`} aria-current={n === page ? 'page' : undefined}>
+                  <button key={n} type="button" onClick={() => setPage(n)} disabled={isPlaceholderData} className={`mk-page-btn !px-0 w-11 ${n === page ? 'active' : ''}`} aria-label={t('catalogPage.pageN', { n })} aria-current={n === page ? 'page' : undefined}>
                     {n}
                   </button>
                 ))}
               </div>
-              <button type="button" onClick={() => setPage(page + 1)} disabled={page >= totalPages || isPlaceholderData} className="mk-page-btn" aria-label="Следующая страница">
-                <span className="hidden sm:inline">Вперёд</span>
+              <button type="button" onClick={() => setPage(page + 1)} disabled={page >= totalPages || isPlaceholderData} className="mk-page-btn" aria-label={t('catalogPage.nextPage')}>
+                <span className="hidden sm:inline">{t('catalogPage.forward')}</span>
                 <ChevronRight className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
               </button>
             </nav>

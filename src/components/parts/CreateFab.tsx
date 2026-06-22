@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Plus, Car, Package, ShoppingCart } from 'lucide-react'
 
 interface FabItem {
@@ -10,6 +11,7 @@ interface FabItem {
 
 export default function CreateFab() {
   const navigate = useNavigate()
+  const { t } = useTranslation('cabinet')
   const [open, setOpen] = useState(false)
 
   const close = useCallback(() => setOpen(false), [])
@@ -27,17 +29,17 @@ export default function CreateFab() {
   const items: FabItem[] = [
     {
       icon: Car,
-      label: 'Авто',
+      label: t('createFab.vehicle'),
       onClick: () => { navigate('/parts/vehicles'); close() },
     },
     {
       icon: Package,
-      label: 'Запчасть',
+      label: t('createFab.part'),
       onClick: () => { navigate('/parts/inventory?source=vehicles'); close() },
     },
     {
       icon: ShoppingCart,
-      label: 'Заказ',
+      label: t('createFab.order'),
       onClick: () => { navigate('/parts/orders/create'); close() },
     },
   ]
@@ -109,7 +111,7 @@ export default function CreateFab() {
         {/* Главная FAB-кнопка */}
         <button
           onClick={() => setOpen(prev => !prev)}
-          aria-label={open ? 'Закрыть меню создания' : 'Создать'}
+          aria-label={open ? t('createFab.closeMenuAria') : t('createFab.createAria')}
           aria-expanded={open}
           className="w-14 h-14 rounded-full flex items-center justify-center text-white active:scale-95"
           style={{

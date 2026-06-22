@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   LogOut,
   Shield,
@@ -13,6 +14,7 @@ import { LayoutSkeleton } from './LayoutSkeleton'
 import WaitingAccessPage from './WaitingAccessPage'
 import OwnerSetupPage from './OwnerSetupPage'
 import ContextSwitcher from './ContextSwitcher'
+import LanguageSwitcher from './LanguageSwitcher'
 import NotificationsBell from './NotificationsBell'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -26,8 +28,32 @@ import NotificationBanner from './NotificationBanner'
 import { Logo } from './brand/Logo'
 import { BRAND } from '@/config/brand'
 
+// Ключи перевода названий пунктов меню (по href) — чтобы не менять navigation.ts.
+const NAV_KEY: Record<string, string> = {
+  '/parts/dashboard': 'nav.dashboard',
+  '/parts/orders': 'nav.orders',
+  '/parts/market-orders': 'nav.marketOrders',
+  '/parts/shipments': 'nav.shipments',
+  '/parts/inventory?source=vehicles': 'nav.inventory',
+  '/parts/inventory?source=shop': 'nav.shop',
+  '/parts/vehicles': 'nav.vehicles',
+  '/parts/customers': 'nav.customers',
+  '/parts/categories': 'nav.categories',
+  '/parts/warehouse': 'nav.warehouse',
+  '/parts/analytics': 'nav.analytics',
+  '/parts/employees': 'nav.employees',
+  '/parts/settings': 'nav.settings',
+  '/parts/subscription': 'nav.subscription',
+  '/parts/activity': 'nav.activity',
+  '/support': 'nav.support',
+  '/profile': 'nav.profile',
+  '/parts/trash': 'nav.trash',
+  '/my-vehicles': 'nav.myVehicles',
+}
+
 export default function Layout() {
   useAdminNotifications()
+  const { t } = useTranslation('cabinet')
   const location = useLocation()
   const { hasAnalytics } = useSubscriptionLimits()
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -175,6 +201,10 @@ export default function Layout() {
     return true
   })
 
+  // Название пункта меню с переводом (fallback — русское имя из конфига).
+  const navLabel = (item: { href: string; name: string }) =>
+    t(NAV_KEY[item.href] ?? '', { defaultValue: item.name })
+
   const handleLogout = async () => {
     // Очищаем весь кэш React Query перед выходом
     queryClient.clear()
@@ -266,7 +296,7 @@ export default function Layout() {
             if (items.length === 0) return null
             return (
               <div key={grp.id} className="space-y-0.5">
-                <p className="cab-group-label hidden lg:block mb-1.5">{grp.label}</p>
+                <p className="cab-group-label hidden lg:block mb-1.5">{t(`groups.${grp.id}`)}</p>
                 {items.map((item) => {
                   const Icon = item.icon
                   const isActive = item.href.includes('?')
@@ -276,11 +306,11 @@ export default function Layout() {
                     <Link
                       key={item.href}
                       to={item.href}
-                      title={item.name}
+                      title={navLabel(item)}
                       className={`cab-nav justify-center lg:justify-start active:scale-[0.98] ${isActive ? 'cab-nav-active' : ''}`}
                     >
                       <Icon className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} />
-                      <span className="hidden lg:block truncate">{item.name}</span>
+                      <span className="hidden lg:block truncate">{navLabel(item)}</span>
                     </Link>
                   )
                 })}
@@ -297,7 +327,7 @@ export default function Layout() {
             className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm rounded-lg transition-colors active:scale-[0.98] text-slate-600 hover:bg-red-50 hover:text-red-600"
           >
             <LogOut className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} />
-            <span className="hidden lg:block">Выход</span>
+            <span className="hidden lg:block">{t('chrome.logout')}</span>
           </button>
         </div>
       </aside>
@@ -316,7 +346,7 @@ export default function Layout() {
               <button onClick={handleLogout}
                 className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-500 bg-gray-100 rounded-xl hover:bg-red-50 hover:text-red-600 transition-all active:scale-[0.97]"
               >
-                <LogOut className="w-4 h-4" strokeWidth={1.5} /> Выход
+                <LogOut className="w-4 h-4" strokeWidth={1.5} /> {t('chrome.logout')}
               </button>
             </div>
           </div>
@@ -331,13 +361,16 @@ export default function Layout() {
               <div className="min-w-0">
                 {multiCtx && <ContextSwitcher current={currentCtx} />}
               </div>
-              <Link
-                to="/market"
-                title="Открыть маркет запчастей"
-                className="market mk-btn mk-btn-outline flex-shrink-0"
-              >
-                <Store className="w-4 h-4" strokeWidth={1.5} /> В маркет
-              </Link>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <LanguageSwitcher />
+                <Link
+                  to="/market"
+                  title={t('chrome.openMarket')}
+                  className="market mk-btn mk-btn-outline"
+                >
+                  <Store className="w-4 h-4" strokeWidth={1.5} /> {t('chrome.toMarket')}
+                </Link>
+              </div>
             </div>
           </div>
         )}
@@ -352,11 +385,11 @@ export default function Layout() {
             {currentCtx === 'parts' && (
               <Link
                 to="/market"
-                title="Открыть маркет запчастей"
+                title={t('chrome.openMarket')}
                 aria-label="В маркет"
                 className="market mk-btn mk-btn-outline flex-shrink-0"
               >
-                <Store className="w-4 h-4" strokeWidth={1.5} /> <span className="hidden sm:inline">В маркет</span>
+                <Store className="w-4 h-4" strokeWidth={1.5} /> <span className="hidden sm:inline">{t('chrome.toMarket')}</span>
               </Link>
             )}
           </div>
@@ -400,7 +433,7 @@ export default function Layout() {
               >
                 <Icon className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
                 <span className="text-center leading-tight" style={{ fontSize: '11px' }}>
-                  {item.name}
+                  {navLabel(item)}
                 </span>
               </Link>
             )
@@ -413,7 +446,7 @@ export default function Layout() {
               className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-gray-400 hover:text-gray-600 transition-colors"
             >
               <Menu className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
-              <span className="text-center leading-tight" style={{ fontSize: '11px' }}>Меню</span>
+              <span className="text-center leading-tight" style={{ fontSize: '11px' }}>{t('chrome.menu')}</span>
             </button>
           )}
         </nav>
@@ -438,7 +471,7 @@ export default function Layout() {
             </div>
             {/* Шапка шторки */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
-              <span className="text-sm font-semibold text-gray-700">Меню</span>
+              <span className="text-sm font-semibold text-gray-700">{t('chrome.menu')}</span>
               <button
                 onClick={() => setSheetOpen(false)}
                 className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"
@@ -466,7 +499,7 @@ export default function Layout() {
                     }`}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
-                    <span className="text-center text-[11px] font-medium leading-tight line-clamp-2">{item.name}</span>
+                    <span className="text-center text-[11px] font-medium leading-tight line-clamp-2">{navLabel(item)}</span>
                   </Link>
                 )
               })}
@@ -478,7 +511,7 @@ export default function Layout() {
                   className="flex flex-col items-center justify-center gap-1.5 px-1 py-3 rounded-xl min-h-[64px] bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors active:scale-[0.96]"
                 >
                   <Shield className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
-                  <span className="text-center text-[11px] font-medium leading-tight">Админ</span>
+                  <span className="text-center text-[11px] font-medium leading-tight">{t('chrome.admin')}</span>
                 </Link>
               )}
             </div>
@@ -488,13 +521,13 @@ export default function Layout() {
                 onClick={() => { setSheetOpen(false); setSearchOpen(true) }}
                 className="flex-1 inline-flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors active:scale-[0.98]"
               >
-                <Search className="w-4 h-4" strokeWidth={1.5} /> Поиск
+                <Search className="w-4 h-4" strokeWidth={1.5} /> {t('chrome.search')}
               </button>
               <button
                 onClick={() => { setSheetOpen(false); handleLogout() }}
                 className="flex-1 inline-flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors active:scale-[0.98]"
               >
-                <LogOut className="w-4 h-4" strokeWidth={1.5} /> Выйти
+                <LogOut className="w-4 h-4" strokeWidth={1.5} /> {t('chrome.logoutFull')}
               </button>
             </div>
           </div>

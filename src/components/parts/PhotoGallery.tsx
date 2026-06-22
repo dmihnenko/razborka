@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 
@@ -13,7 +14,9 @@ interface PhotoGalleryProps {
   mainBgClass?: string
 }
 
-export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'aspect-video', objectFit = 'cover', mainBgClass = 'bg-gray-900' }: PhotoGalleryProps) {
+export default function PhotoGallery({ photos, alt: altProp, mainAspect = 'aspect-video', objectFit = 'cover', mainBgClass = 'bg-gray-900' }: PhotoGalleryProps) {
+  const { t } = useTranslation('cabinet')
+  const alt = altProp ?? t('photoGallery.altDefault')
   const [activeIndex, setActiveIndex] = useState(0)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   // HD: по умолчанию грузим облегчённое (medium/thumb), по кнопке — полное качество.
@@ -166,8 +169,8 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
             type="button"
             onClick={e => { e.stopPropagation(); setHd(v => !v) }}
             aria-pressed={hd}
-            aria-label={hd ? 'Обычное качество фото' : 'Высокое качество фото (HD)'}
-            title={hd ? 'HD включено' : 'Включить HD (полное качество)'}
+            aria-label={hd ? t('photoGallery.hdOffAria') : t('photoGallery.hdOnAria')}
+            title={hd ? t('photoGallery.hdOnTitle') : t('photoGallery.hdOffTitle')}
             className={`absolute top-2 right-2 z-10 text-[11px] font-bold tracking-wide px-2 h-7 rounded-md transition-colors ${
               hd ? 'bg-white text-gray-900' : 'bg-black/55 text-white hover:bg-black/75'
             }`}
@@ -181,14 +184,14 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
               <button
                 onClick={e => { e.stopPropagation(); prev('gallery') }}
                 className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 items-center justify-center bg-black/40 hover:bg-black/70 text-white rounded-full transition-colors"
-                aria-label="Предыдущее фото"
+                aria-label={t('photoGallery.prevPhoto')}
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={e => { e.stopPropagation(); next('gallery') }}
                 className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 items-center justify-center bg-black/40 hover:bg-black/70 text-white rounded-full transition-colors"
-                aria-label="Следующее фото"
+                aria-label={t('photoGallery.nextPhoto')}
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -214,7 +217,7 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
                     ? 'shadow-md scale-105'
                     : 'border-transparent opacity-70 hover:opacity-100 hover:border-gray-300'}
                 `}
-                aria-label={`Фото ${i + 1}`}
+                aria-label={t('photoGallery.photoN', { n: i + 1 })}
               >
                 <img
                   src={photo.thumb_url || photo.url}
@@ -243,7 +246,7 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
             <button
               onClick={closeLightbox}
               className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-              aria-label="Закрыть"
+              aria-label={t('photoGallery.close')}
             >
               <X className="w-6 h-6" />
             </button>
@@ -277,7 +280,7 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
                            text-white rounded-full
                            transition-colors duration-150
                            touch-manipulation"
-                aria-label="Предыдущее фото"
+                aria-label={t('photoGallery.prevPhoto')}
               >
                 <ChevronLeft className="w-6 h-6 sm:w-7 sm:h-7" />
               </button>
@@ -294,7 +297,7 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
                            text-white rounded-full
                            transition-colors duration-150
                            touch-manipulation"
-                aria-label="Следующее фото"
+                aria-label={t('photoGallery.nextPhoto')}
               >
                 <ChevronRight className="w-6 h-6 sm:w-7 sm:h-7" />
               </button>
@@ -318,7 +321,7 @@ export default function PhotoGallery({ photos, alt = 'Фото', mainAspect = 'a
                       ? 'border-white scale-110 shadow-lg'
                       : 'border-transparent opacity-50 hover:opacity-80'}
                   `}
-                  aria-label={`Перейти к фото ${i + 1}`}
+                  aria-label={t('photoGallery.goToPhotoN', { n: i + 1 })}
                 >
                   <img
                     src={photo.thumb_url || photo.url}

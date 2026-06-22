@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRightLeft, Tag, History, User } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import i18n from '@/i18n'
 import { Spinner } from '@/components/ui/Spinner'
 import { getActivityLog } from '@/services/activityLogService'
 import type { ActivityLogEntry } from '@/services/activityLogService'
@@ -12,8 +14,8 @@ import { formatDateTime } from '@/utils/date'
 // ─── Вспомогательные функции ───────────────────────────────────────────────
 
 function entityTypeLabel(type: string): string {
-  if (type === 'order') return 'Заказ'
-  if (type === 'inventory') return 'Запчасть'
+  if (type === 'order') return i18n.t('cabinet:activityPage.entityOrder')
+  if (type === 'inventory') return i18n.t('cabinet:activityPage.entityInventory')
   return type
 }
 
@@ -44,8 +46,8 @@ function ActionIcon({ action }: ActionIconProps) {
 }
 
 function actionLabel(action: string): string {
-  if (action === 'status_change') return 'Смена статуса'
-  if (action === 'price_change') return 'Изменение цены'
+  if (action === 'status_change') return i18n.t('cabinet:activityPage.actionStatusChange')
+  if (action === 'price_change') return i18n.t('cabinet:activityPage.actionPriceChange')
   return action
 }
 
@@ -89,6 +91,7 @@ function LogItem({ entry }: { entry: ActivityLogEntry }) {
 const PAGE_SIZE = 50
 
 export default function PartsActivityLog() {
+  const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
   const isOwner = profile?.roles?.some((r: any) => r.name === 'parts_owner')
@@ -126,14 +129,17 @@ export default function PartsActivityLog() {
 
   return (
     <div className="min-h-dvh bg-gray-50">
-      <PartsPageHeader title="История изменений" backPath="/parts/dashboard" />
+      <PartsPageHeader title={i18n.t('cabinet:pages.activity')} backPath="/parts/dashboard" />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
         {/* Счётчик */}
         {total > 0 && (
           <p className="text-sm text-gray-500 mb-4">
-            Показано <span className="font-medium text-gray-700">{allItems.length}</span> из{' '}
-            <span className="font-medium text-gray-700">{total}</span> записей
+            {t('activityPage.shownPrefix')}{' '}
+            <span className="font-medium text-gray-700">{allItems.length}</span>{' '}
+            {t('activityPage.shownOf')}{' '}
+            <span className="font-medium text-gray-700">{total}</span>{' '}
+            {t('activityPage.shownSuffix')}
           </p>
         )}
 
@@ -145,9 +151,9 @@ export default function PartsActivityLog() {
         ) : allItems.length === 0 ? (
           <div className="cab-card p-4 text-center py-16">
             <History className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">Пока нет записей</p>
+            <p className="text-gray-500 font-medium">{t('activityPage.empty')}</p>
             <p className="text-sm text-gray-400 mt-1">
-              История будет появляться по мере изменений в заказах и запчастях
+              {t('activityPage.emptyHint')}
             </p>
           </div>
         ) : (
@@ -169,10 +175,10 @@ export default function PartsActivityLog() {
               {isFetching ? (
                 <span className="flex items-center gap-2">
                   <Spinner size="sm" />
-                  Загрузка…
+                  {t('activityPage.loading')}
                 </span>
               ) : (
-                `Загрузить ещё (осталось ${total - allItems.length})`
+                t('activityPage.loadMore', { n: total - allItems.length })
               )}
             </button>
           </div>

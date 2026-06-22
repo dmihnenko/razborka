@@ -5,6 +5,7 @@ import {
   Phone, Send, Info, Truck, MapPin, X,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
@@ -19,21 +20,23 @@ import { useHydrateNpSettings } from '@/hooks/useHydrateNpSettings'
 import { searchCities, searchWarehouses, NpCity, NpWarehouse } from '@/services/npService'
 import { toast } from 'sonner'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import i18n from '@/i18n'
 import { TELEGRAM_BOT_USERNAME, telegramConnectLink } from '@/config/telegram'
 import { manualVersionCheck } from '@/components/VersionChecker'
 
 type PanelId = 'contacts' | 'rate' | 'imgbb' | 'np' | 'telegram'
 
-const PANEL_TITLES: Record<PanelId, string> = {
-  contacts: 'Настройки разборки',
-  rate: 'Курс доллара',
-  imgbb: 'Хранилище фото',
-  np: 'Новая почта',
-  telegram: 'Telegram-уведомления',
+const PANEL_TITLE_KEYS: Record<PanelId, string> = {
+  contacts: 'settingsPage.panelContacts',
+  rate: 'settingsPage.panelRate',
+  imgbb: 'settingsPage.panelImgbb',
+  np: 'settingsPage.panelNp',
+  telegram: 'settingsPage.panelTelegram',
 }
 
 export default function PartsSettings() {
   const navigate = useNavigate()
+  const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
 
@@ -44,7 +47,7 @@ export default function PartsSettings() {
     setCheckingUpdate(true)
     const r = await manualVersionCheck()
     setCheckingUpdate(false)
-    if (r === 'current') toast.success('У вас последняя версия')
+    if (r === 'current') toast.success(t('settingsPage.toastLatestVersion'))
     // 'updated' — VersionChecker сам покажет toast с кнопкой «Обновить»
   }
 
@@ -137,7 +140,7 @@ export default function PartsSettings() {
         })
       } catch { /* БД-настройки опциональны; localStorage уже сохранён */ }
     }
-    toast.success('Данные отправителя сохранены')
+    toast.success(t('settingsPage.toastSenderSaved'))
   }
 
   /* ── Контакты разборки ────────────────────────────────────────── */
@@ -199,9 +202,9 @@ export default function PartsSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts_company_settings'] })
       queryClient.invalidateQueries({ queryKey: ['company-contacts-check'] })
-      toast.success('Контакты сохранены')
+      toast.success(t('settingsPage.toastContactsSaved'))
     },
-    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+    onError: (e: any) => toast.error(e.message || t('settingsPage.toastError')),
   })
 
   const contactsDirty = !!company && (
@@ -237,10 +240,10 @@ export default function PartsSettings() {
     try {
       await saveCompanyPhotoStorage(partsCompanyId, photoCfg)
       queryClient.invalidateQueries({ queryKey: ['parts-company-photo-storage', partsCompanyId] })
-      toast.success('Хранилище фото сохранено')
+      toast.success(t('settingsPage.toastPhotoSaved'))
       setPanel(null) // закрываем панель после сохранения (как у Telegram и др.)
     } catch {
-      toast.error('Не удалось сохранить. Возможно, не применена миграция БД (photo_provider/photo_config).')
+      toast.error(t('settingsPage.toastPhotoSaveError'))
     } finally {
       setSavingPhoto(false)
     }
@@ -253,27 +256,27 @@ export default function PartsSettings() {
       try { await upsertNpSettings(partsCompanyId, { api_key: trimmed || null }) }
       catch { /* localStorage уже сохранён */ }
     }
-    toast.success(trimmed ? 'API ключ Новой почты сохранён (для всех сотрудников)' : 'API ключ Новой почты удалён')
+    toast.success(trimmed ? t('settingsPage.toastNpKeySaved') : t('settingsPage.toastNpKeyRemoved'))
   }
 
   const handleFetchPrivatBank = async () => {
     try {
       const fetched = await fetchPrivatBank()
       setManualInput(String(fetched))
-      toast.success(`Курс ПриватБанка получен: ${fetched} ₴/$`)
+      toast.success(t('settingsPage.toastPrivatRate', { rate: fetched }))
     } catch {
-      toast.error(fetchError || 'Не удалось получить курс')
+      toast.error(fetchError || t('settingsPage.toastRateFetchError'))
     }
   }
 
   const handleSaveManual = () => {
     const val = parseFloat(manualInput.replace(',', '.'))
     if (!val || val <= 0) {
-      toast.error('Введите корректный курс')
+      toast.error(t('settingsPage.toastInvalidRate'))
       return
     }
     setManualRate(val)
-    toast.success(`Курс установлен: ${val} ₴/$`)
+    toast.success(t('settingsPage.toastRateSet', { rate: val }))
   }
 
   if (!partsCompanyId) return <PartsAccessDenied />
@@ -283,8 +286,8 @@ export default function PartsSettings() {
   const npConnected = Boolean(npKeyInput.trim())
   const tgConnected = Boolean((company as any)?.telegram_chat_id)
 
-  const connectedBadge = { cls: 'badge badge-green', text: 'Подключено' }
-  const notSetBadge = { cls: 'badge badge-gray', text: 'Не задан' }
+  const connectedBadge = { cls: 'badge badge-green', text: t('settingsPage.badgeConnected') }
+  const notSetBadge = { cls: 'badge badge-gray', text: t('settingsPage.badgeNotSet') }
 
   type CardDef = {
     id: string
@@ -300,40 +303,40 @@ export default function PartsSettings() {
   const cards: CardDef[] = [
     {
       id: 'contacts', Icon: Phone, iconBg: 'bg-emerald-100 dark:bg-emerald-900/40', iconColor: 'text-emerald-600 dark:text-emerald-400',
-      title: 'Настройки разборки', sub: 'Название, телефон, адрес, описание', onClick: () => setPanel('contacts'),
+      title: t('settingsPage.cardContactsTitle'), sub: t('settingsPage.cardContactsSub'), onClick: () => setPanel('contacts'),
     },
     {
       id: 'rate', Icon: DollarSign, iconBg: 'bg-green-100 dark:bg-green-900/40', iconColor: 'text-green-600 dark:text-green-400',
-      title: 'Курс доллара', sub: `${rate} ₴/$ · ${isStale ? 'требует обновления' : 'актуальный'}`,
-      badge: isStale ? { cls: 'badge badge-yellow', text: 'Обновить' } : { cls: 'badge badge-green', text: 'Сегодня' },
+      title: t('settingsPage.cardRateTitle'), sub: `${rate} ₴/$ · ${isStale ? t('settingsPage.cardRateSubStale') : t('settingsPage.cardRateSubFresh')}`,
+      badge: isStale ? { cls: 'badge badge-yellow', text: t('settingsPage.badgeUpdate') } : { cls: 'badge badge-green', text: t('settingsPage.badgeToday') },
       onClick: () => setPanel('rate'),
     },
     {
       id: 'imgbb', Icon: Key, iconBg: 'bg-purple-100 dark:bg-purple-900/40', iconColor: 'text-purple-600 dark:text-purple-400',
-      title: 'Фотографии', sub: PHOTO_SERVICES.find(s => s.id === photoCfg.provider)?.name || 'Хранилище', badge: imgbbConnected ? connectedBadge : notSetBadge,
+      title: t('settingsPage.cardPhotoTitle'), sub: PHOTO_SERVICES.find(s => s.id === photoCfg.provider)?.name || t('settingsPage.cardPhotoSubFallback'), badge: imgbbConnected ? connectedBadge : notSetBadge,
       onClick: () => setPanel('imgbb'),
     },
     {
       id: 'np', Icon: Truck, iconBg: 'bg-red-100 dark:bg-red-900/40', iconColor: 'text-red-600 dark:text-red-400',
-      title: 'Новая почта', sub: 'Города и отделения при доставке', badge: npConnected ? connectedBadge : notSetBadge,
+      title: t('settingsPage.cardNpTitle'), sub: t('settingsPage.cardNpSub'), badge: npConnected ? connectedBadge : notSetBadge,
       onClick: () => setPanel('np'),
     },
     ...(TELEGRAM_BOT_USERNAME ? [{
       id: 'telegram', Icon: Send, iconBg: 'bg-sky-100 dark:bg-sky-900/40', iconColor: 'text-sky-600 dark:text-sky-400',
-      title: 'Telegram-уведомления', sub: 'Заявки с маркета и напоминания', badge: tgConnected ? connectedBadge : notSetBadge,
+      title: t('settingsPage.cardTelegramTitle'), sub: t('settingsPage.cardTelegramSub'), badge: tgConnected ? connectedBadge : notSetBadge,
       onClick: () => setPanel('telegram'),
     } as CardDef] : []),
     {
       id: 'categories', Icon: Tag, iconBg: 'bg-orange-100 dark:bg-orange-900/40', iconColor: 'text-orange-600 dark:text-orange-400',
-      title: 'Категории запчастей', sub: 'Категории и шаблоны', onClick: () => navigate('/parts/categories'),
+      title: t('settingsPage.cardCategoriesTitle'), sub: t('settingsPage.cardCategoriesSub'), onClick: () => navigate('/parts/categories'),
     },
     {
       id: 'warehouse', Icon: Warehouse, iconBg: 'bg-indigo-100 dark:bg-indigo-900/40', iconColor: 'text-indigo-600 dark:text-indigo-400',
-      title: 'Места хранения', sub: 'Стеллажи, полки, ячейки склада', onClick: () => navigate('/parts/warehouse'),
+      title: t('settingsPage.cardWarehouseTitle'), sub: t('settingsPage.cardWarehouseSub'), onClick: () => navigate('/parts/warehouse'),
     },
     {
       id: 'trash', Icon: Trash2, iconBg: 'bg-red-100 dark:bg-red-900/40', iconColor: 'text-red-600 dark:text-red-400',
-      title: 'Корзина', sub: 'Удалённые объекты — 7 дней', onClick: () => navigate('/parts/trash'),
+      title: t('settingsPage.cardTrashTitle'), sub: t('settingsPage.cardTrashSub'), onClick: () => navigate('/parts/trash'),
     },
   ]
 
@@ -344,65 +347,65 @@ export default function PartsSettings() {
         return (
           <div className="space-y-3">
             <div>
-              <label className="form-label">Название разборки</label>
-              <input type="text" value={contacts.name} onChange={e => setContacts(p => ({ ...p, name: e.target.value }))} placeholder="Название разборки" className="form-input" />
+              <label className="form-label">{t('settingsPage.fieldName')}</label>
+              <input type="text" value={contacts.name} onChange={e => setContacts(p => ({ ...p, name: e.target.value }))} placeholder={t('settingsPage.fieldNamePlaceholder')} className="form-input" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="form-label">Телефон</label>
+                <label className="form-label">{t('settingsPage.fieldPhone')}</label>
                 <input type="tel" value={contacts.phone} onChange={e => setContacts(p => ({ ...p, phone: e.target.value }))} placeholder="+380 XX XXX-XX-XX" className="form-input" />
               </div>
               <div>
-                <label className="form-label">Email</label>
+                <label className="form-label">{t('settingsPage.fieldEmail')}</label>
                 <input type="email" value={contacts.email} onChange={e => setContacts(p => ({ ...p, email: e.target.value }))} placeholder="email@example.com" className="form-input" />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="form-label">Город</label>
-                <input type="text" value={contacts.city} onChange={e => setContacts(p => ({ ...p, city: e.target.value }))} placeholder="Напр.: Киев" className="form-input" />
-                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">По нему покупатели фильтруют разборки</p>
+                <label className="form-label">{t('settingsPage.fieldCity')}</label>
+                <input type="text" value={contacts.city} onChange={e => setContacts(p => ({ ...p, city: e.target.value }))} placeholder={t('settingsPage.fieldCityPlaceholder')} className="form-input" />
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{t('settingsPage.fieldCityHint')}</p>
               </div>
               <div>
-                <label className="form-label">Адрес</label>
-                <input type="text" value={contacts.address} onChange={e => setContacts(p => ({ ...p, address: e.target.value }))} placeholder="Улица, дом" className="form-input" />
+                <label className="form-label">{t('settingsPage.fieldAddress')}</label>
+                <input type="text" value={contacts.address} onChange={e => setContacts(p => ({ ...p, address: e.target.value }))} placeholder={t('settingsPage.fieldAddressPlaceholder')} className="form-input" />
               </div>
             </div>
             <div>
-              <label className="form-label">Telegram-ссылка (для маркета)</label>
-              <input type="text" value={contacts.telegram} onChange={e => setContacts(p => ({ ...p, telegram: e.target.value }))} placeholder="@username или https://t.me/..." className="form-input" />
-              <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Ссылка на канал или чат — видна покупателям</p>
+              <label className="form-label">{t('settingsPage.fieldTelegram')}</label>
+              <input type="text" value={contacts.telegram} onChange={e => setContacts(p => ({ ...p, telegram: e.target.value }))} placeholder={t('settingsPage.fieldTelegramPlaceholder')} className="form-input" />
+              <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{t('settingsPage.fieldTelegramHint')}</p>
             </div>
             <div>
-              <label className="form-label">Описание разборки <span className="text-gray-400 font-normal ml-1">(видят покупатели)</span></label>
-              <textarea value={contacts.description} onChange={e => setContacts(p => ({ ...p, description: e.target.value }))} placeholder="Кратко о разборке: специализация, регион, условия..." rows={3} className="form-input resize-none" />
+              <label className="form-label">{t('settingsPage.fieldDescription')} <span className="text-gray-400 font-normal ml-1">{t('settingsPage.fieldDescriptionNote')}</span></label>
+              <textarea value={contacts.description} onChange={e => setContacts(p => ({ ...p, description: e.target.value }))} placeholder={t('settingsPage.fieldDescriptionPlaceholder')} rows={3} className="form-input resize-none" />
             </div>
 
             {/* Доставка и гарантия — видно покупателям на странице товара */}
             <div className="pt-3 mt-1 border-t border-gray-100 dark:border-slate-700 space-y-3">
-              <p className="text-sm font-semibold text-gray-800 dark:text-slate-200">Доставка и гарантия</p>
+              <p className="text-sm font-semibold text-gray-800 dark:text-slate-200">{t('settingsPage.deliveryWarranty')}</p>
               <div>
-                <label className="form-label">Скорость отправки</label>
+                <label className="form-label">{t('settingsPage.shipSpeed')}</label>
                 <select value={contacts.shipSpeed} onChange={e => setContacts(p => ({ ...p, shipSpeed: e.target.value }))} className="form-select">
-                  <option value="today">Отправка сегодня</option>
-                  <option value="days12">Отправка 1–2 дня</option>
+                  <option value="today">{t('settingsPage.shipToday')}</option>
+                  <option value="days12">{t('settingsPage.shipDays12')}</option>
                 </select>
-                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Показывается на странице товара (доставка Новой Почтой).</p>
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{t('settingsPage.shipSpeedHint')}</p>
               </div>
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <input type="checkbox" checked={contacts.warrantyEnabled} onChange={e => setContacts(p => ({ ...p, warrantyEnabled: e.target.checked }))} className="w-4 h-4 accent-[var(--cab-signal)]" />
-                <span className="text-sm text-gray-700 dark:text-slate-300">Показывать гарантию на проверку</span>
+                <span className="text-sm text-gray-700 dark:text-slate-300">{t('settingsPage.warrantyShow')}</span>
               </label>
               {contacts.warrantyEnabled && (
                 <div>
-                  <label className="form-label">Дней гарантии</label>
+                  <label className="form-label">{t('settingsPage.warrantyDays')}</label>
                   <input type="number" min={1} max={365} value={contacts.warrantyDays} onChange={e => setContacts(p => ({ ...p, warrantyDays: e.target.value }))} className="form-input w-32" placeholder="14" />
                 </div>
               )}
             </div>
 
             <button onClick={() => saveContactsMutation.mutate()} disabled={saveContactsMutation.isPending || !contactsDirty} className="cab-btn cab-btn-primary w-full">
-              <Save className="w-4 h-4" /> Сохранить
+              <Save className="w-4 h-4" /> {t('settingsPage.save')}
             </button>
           </div>
         )
@@ -413,29 +416,29 @@ export default function PartsSettings() {
             <div className={`alert mb-4 ${isStale ? 'alert-warning' : 'alert-success'}`}>
               {isStale ? <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" /> : <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />}
               <div>
-                <p className="text-sm font-semibold">Текущий курс: <span className="tabular text-base font-bold">{rate} ₴/$</span></p>
+                <p className="text-sm font-semibold">{t('settingsPage.currentRate')} <span className="tabular text-base font-bold">{rate} ₴/$</span></p>
                 {date && (
                   <p className="text-xs mt-0.5 opacity-80">
-                    {isStale ? `Установлен ${formatDate(date)} — вчерашний, до обновления` : `Сегодня ${formatDate(date)} · ${source === 'privatbank' ? 'ПриватБанк' : 'вручную'}`}
+                    {isStale ? t('settingsPage.rateSetStale', { date: formatDate(date) }) : t('settingsPage.rateSetToday', { date: formatDate(date), source: source === 'privatbank' ? t('settingsPage.sourcePrivat') : t('settingsPage.sourceManual') })}
                   </p>
                 )}
-                {!date && <p className="text-xs mt-0.5 opacity-80">Курс по умолчанию — обновите для точных расчётов</p>}
+                {!date && <p className="text-xs mt-0.5 opacity-80">{t('settingsPage.rateDefault')}</p>}
               </div>
             </div>
 
             <div className="flex gap-2 mb-3">
-              <button type="button" onClick={() => setRateMode('privat')} className={`chip${rateMode === 'privat' ? ' active' : ''}`}>ПриватБанк</button>
-              <button type="button" onClick={() => setRateMode('manual')} className={`chip${rateMode === 'manual' ? ' active' : ''}`}>Вручную</button>
+              <button type="button" onClick={() => setRateMode('privat')} className={`chip${rateMode === 'privat' ? ' active' : ''}`}>{t('settingsPage.modePrivat')}</button>
+              <button type="button" onClick={() => setRateMode('manual')} className={`chip${rateMode === 'manual' ? ' active' : ''}`}>{t('settingsPage.modeManual')}</button>
             </div>
 
             {rateMode === 'privat' ? (
               <div>
                 <button onClick={handleFetchPrivatBank} disabled={fetching} className="cab-btn cab-btn-primary w-full">
                   <RefreshCw className={`w-4 h-4 ${fetching ? 'animate-spin' : ''}`} />
-                  {fetching ? 'Получаем курс...' : 'Получить курс ПриватБанка'}
+                  {fetching ? t('settingsPage.fetchingRate') : t('settingsPage.fetchPrivatRate')}
                 </button>
                 {fetchError && <p className="form-error mt-1.5">{fetchError}</p>}
-                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1.5">Курс продажи USD/UAH на сегодня</p>
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1.5">{t('settingsPage.rateUsdUahHint')}</p>
               </div>
             ) : (
               <div className="flex gap-2">
@@ -443,18 +446,18 @@ export default function PartsSettings() {
                   <input type="number" value={manualInput} onChange={e => setManualInput(e.target.value)} min="1" step="0.01" className="form-input tabular pr-10" placeholder="41.50" />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">₴/$</span>
                 </div>
-                <button onClick={handleSaveManual} className="cab-btn cab-btn-primary flex-shrink-0"><Save className="w-4 h-4" /> Сохранить</button>
+                <button onClick={handleSaveManual} className="cab-btn cab-btn-primary flex-shrink-0"><Save className="w-4 h-4" /> {t('settingsPage.save')}</button>
               </div>
             )}
 
             <details className="mt-3">
               <summary className="text-xs text-primary cursor-pointer select-none hover:underline inline-flex items-center gap-1">
-                <Info className="w-3.5 h-3.5" /> Как работает курс?
+                <Info className="w-3.5 h-3.5" /> {t('settingsPage.howRateWorks')}
               </summary>
               <ul className="mt-2 space-y-1 list-disc list-inside text-xs text-gray-500 dark:text-slate-400">
-                <li>Если запчасть продана в гривне — доход в $ считается по этому курсу</li>
-                <li>Каждый автомобиль может иметь свой курс (указывается при редактировании авто)</li>
-                <li>Если курс не обновлялся сегодня — используется последний установленный</li>
+                <li>{t('settingsPage.rateInfo1')}</li>
+                <li>{t('settingsPage.rateInfo2')}</li>
+                <li>{t('settingsPage.rateInfo3')}</li>
               </ul>
             </details>
           </div>
@@ -465,7 +468,7 @@ export default function PartsSettings() {
         return (
           <div className="space-y-4">
             <p className="text-sm text-gray-500 dark:text-slate-400">
-              Каждая разборка подключает <b>своё</b> хранилище фото. Выберите сервис, добавьте ключ — фото запчастей будут грузиться туда (со сжатием в WebP).
+              {t('settingsPage.photoIntro1')} <b>{t('settingsPage.photoIntroOwn')}</b> {t('settingsPage.photoIntro2')}
             </p>
 
             {/* Выбор сервиса — карточки с лимитами */}
@@ -491,12 +494,12 @@ export default function PartsSettings() {
 
             {/* Инструкция для выбранного сервиса */}
             <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3">
-              <p className="text-xs font-semibold text-gray-700 dark:text-slate-200 mb-1.5">Как подключить {svc.name}:</p>
+              <p className="text-xs font-semibold text-gray-700 dark:text-slate-200 mb-1.5">{t('settingsPage.howToConnect', { name: svc.name })}</p>
               <ol className="space-y-1 text-xs text-gray-600 dark:text-slate-300 list-decimal list-inside">
                 {svc.steps.map((st, i) => <li key={i}>{st}</li>)}
               </ol>
               <a href={svc.signupUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-2">
-                <ExternalLink className="w-3.5 h-3.5" /> Открыть {svc.name}
+                <ExternalLink className="w-3.5 h-3.5" /> {t('settingsPage.openService', { name: svc.name })}
               </a>
             </div>
 
@@ -515,7 +518,7 @@ export default function PartsSettings() {
                 </div>
               ))}
               <button onClick={handleSavePhotoStorage} disabled={savingPhoto} className="cab-btn cab-btn-primary w-full disabled:opacity-60">
-                <Save className="w-4 h-4" /> {savingPhoto ? 'Сохранение...' : 'Сохранить хранилище'}
+                <Save className="w-4 h-4" /> {savingPhoto ? t('settingsPage.saving') : t('settingsPage.savePhotoStorage')}
               </button>
             </div>
           </div>
@@ -526,26 +529,26 @@ export default function PartsSettings() {
         return (
           <div className="space-y-3">
             <div className="flex gap-2">
-              <input type="text" value={npKeyInput} onChange={e => setNpKeyInput(e.target.value)} className="form-input flex-1 font-mono" placeholder="Вставьте API-ключ Новой почты..." />
-              <button onClick={handleSaveNpKey} className="cab-btn cab-btn-primary flex-shrink-0"><Save className="w-4 h-4" /> Сохранить</button>
+              <input type="text" value={npKeyInput} onChange={e => setNpKeyInput(e.target.value)} className="form-input flex-1 font-mono" placeholder={t('settingsPage.npKeyPlaceholder')} />
+              <button onClick={handleSaveNpKey} className="cab-btn cab-btn-primary flex-shrink-0"><Save className="w-4 h-4" /> {t('settingsPage.save')}</button>
             </div>
             <a href="https://new.novaposhta.ua/dashboard/settings/developers" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline">
-              <ExternalLink className="w-3.5 h-3.5" /> Получить API-ключ в кабинете Новой почты
+              <ExternalLink className="w-3.5 h-3.5" /> {t('settingsPage.npGetKey')}
             </a>
 
             {npKeyInput && (
               <div className="pt-3 border-t border-gray-100 dark:border-slate-700 space-y-3">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0" />
-                  <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">Отправитель</span>
+                  <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">{t('settingsPage.sender')}</span>
                 </div>
 
                 <div>
-                  <label className="form-label">Город отправления</label>
+                  <label className="form-label">{t('settingsPage.senderCity')}</label>
                   <NpSettingsCombobox
                     value={npCityInput}
                     onChange={(v) => { setNpCityInput(v); setShowNpCityList(true) }}
-                    placeholder="Введіть місто..."
+                    placeholder={t('settingsPage.cityPlaceholder')}
                     items={npSettingsCities.map(c => ({ value: c.ref, label: c.name }))}
                     open={showNpCityList}
                     onOpen={() => setShowNpCityList(true)}
@@ -561,11 +564,11 @@ export default function PartsSettings() {
                 </div>
 
                 <div>
-                  <label className="form-label">Отделение отправителя</label>
+                  <label className="form-label">{t('settingsPage.senderWarehouse')}</label>
                   <NpSettingsCombobox
                     value={npWarehouseInput}
                     onChange={(v) => { setNpWarehouseInput(v); setShowNpWarehouseList(true) }}
-                    placeholder={npCityRef ? 'Введіть відділення...' : 'Спочатку оберіть місто'}
+                    placeholder={npCityRef ? t('settingsPage.warehousePlaceholder') : t('settingsPage.warehousePlaceholderNoCity')}
                     disabled={!npCityRef}
                     items={npSettingsWarehouses.map(w => ({ value: w.ref, label: w.description }))}
                     open={showNpWarehouseList}
@@ -580,16 +583,16 @@ export default function PartsSettings() {
                 </div>
 
                 <div>
-                  <label className="form-label">Телефон отправителя</label>
+                  <label className="form-label">{t('settingsPage.senderPhone')}</label>
                   <input type="tel" value={npSender.senderPhone || ''} onChange={e => setNpSender(p => ({ ...p, senderPhone: e.target.value }))} placeholder="+380XXXXXXXXX" className="form-input" />
                 </div>
 
                 <div>
-                  <label className="form-label">Ім'я / контактна особа</label>
-                  <input type="text" value={npSender.senderName || ''} onChange={e => setNpSender(p => ({ ...p, senderName: e.target.value }))} placeholder="Іванов Іван" className="form-input" />
+                  <label className="form-label">{t('settingsPage.senderName')}</label>
+                  <input type="text" value={npSender.senderName || ''} onChange={e => setNpSender(p => ({ ...p, senderName: e.target.value }))} placeholder={t('settingsPage.senderNamePlaceholder')} className="form-input" />
                 </div>
 
-                <button onClick={handleSaveNpSender} className="cab-btn cab-btn-primary w-full"><Save className="w-4 h-4" /> Сохранить отправителя</button>
+                <button onClick={handleSaveNpSender} className="cab-btn cab-btn-primary w-full"><Save className="w-4 h-4" /> {t('settingsPage.saveSender')}</button>
               </div>
             )}
           </div>
@@ -598,15 +601,15 @@ export default function PartsSettings() {
       case 'telegram':
         return (
           <div className="space-y-3">
-            <p className="text-sm text-gray-500 dark:text-slate-400">Бот пришлёт уведомления о заявках с маркета и напоминания прямо в Telegram.</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">{t('settingsPage.telegramIntro')}</p>
             {tgConnected ? (
               <div className="flex items-center justify-between gap-2">
-                <span className="badge badge-green"><CheckCircle className="w-3.5 h-3.5" /> Уведомления подключены</span>
-                <a href={partsCompanyId ? telegramConnectLink(partsCompanyId) : '#'} target="_blank" rel="noopener noreferrer" className="cab-btn cab-btn-ghost cab-btn-sm">Переподключить</a>
+                <span className="badge badge-green"><CheckCircle className="w-3.5 h-3.5" /> {t('settingsPage.telegramConnected')}</span>
+                <a href={partsCompanyId ? telegramConnectLink(partsCompanyId) : '#'} target="_blank" rel="noopener noreferrer" className="cab-btn cab-btn-ghost cab-btn-sm">{t('settingsPage.telegramReconnect')}</a>
               </div>
             ) : (
               <a href={partsCompanyId ? telegramConnectLink(partsCompanyId) : '#'} target="_blank" rel="noopener noreferrer" className="cab-btn cab-btn-primary inline-flex w-full justify-center">
-                <Send className="w-4 h-4" /> Подключить уведомления
+                <Send className="w-4 h-4" /> {t('settingsPage.telegramConnect')}
               </a>
             )}
           </div>
@@ -619,7 +622,7 @@ export default function PartsSettings() {
 
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-slate-950">
-      <PartsPageHeader title="Настройки разборки" backPath="/parts/dashboard" height="sm" />
+      <PartsPageHeader title={i18n.t('cabinet:pages.settings')} backPath="/parts/dashboard" height="sm" />
 
       <div className="page-container">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -646,11 +649,11 @@ export default function PartsSettings() {
         {/* Обновления приложения — ручная проверка (авто-проверка раз в 12 ч + при возврате на вкладку) */}
         <div className="cab-card p-4 mt-3 sm:mt-4 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-bold text-gray-900 dark:text-slate-100">Обновления</p>
-            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 truncate">Проверить, доступна ли новая версия приложения</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-slate-100">{t('settingsPage.updates')}</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 truncate">{t('settingsPage.updatesSub')}</p>
           </div>
           <button onClick={handleCheckUpdates} disabled={checkingUpdate} className="cab-btn cab-btn-secondary cab-btn-sm flex-shrink-0">
-            <RefreshCw className={`w-4 h-4 ${checkingUpdate ? 'animate-spin' : ''}`} strokeWidth={1.5} /> Проверить
+            <RefreshCw className={`w-4 h-4 ${checkingUpdate ? 'animate-spin' : ''}`} strokeWidth={1.5} /> {t('settingsPage.checkUpdates')}
           </button>
         </div>
       </div>
@@ -660,8 +663,8 @@ export default function PartsSettings() {
         <div className="modal-overlay">
           <div className="modal-sheet sm:max-w-lg" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="heading-3">{PANEL_TITLES[panel]}</h2>
-              <button type="button" onClick={() => setPanel(null)} className="btn-icon" aria-label="Закрыть"><X className="w-5 h-5" /></button>
+              <h2 className="heading-3">{t(PANEL_TITLE_KEYS[panel])}</h2>
+              <button type="button" onClick={() => setPanel(null)} className="btn-icon" aria-label={t('settingsPage.close')}><X className="w-5 h-5" /></button>
             </div>
             <div className="modal-body">{renderPanel()}</div>
           </div>

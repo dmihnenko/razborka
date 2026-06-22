@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export default function OnboardingChecklist({ partsCompanyId }: Props) {
+  const { t } = useTranslation('cabinet')
   const queryClient = useQueryClient()
   const [dismissed, setDismissed] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
@@ -118,10 +120,10 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['onboarding-categories', partsCompanyId] })
       queryClient.invalidateQueries({ queryKey: ['parts-categories'] })
       queryClient.invalidateQueries({ queryKey: ['parts-categories-manage'] })
-      toast.success('Базовые категории добавлены')
+      toast.success(t('onboarding.toastCatsAdded'))
     },
     onError: () => {
-      toast.error('Не удалось добавить категории')
+      toast.error(t('onboarding.toastCatsError'))
     },
   })
 
@@ -154,10 +156,10 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
     return (
       <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-green-50 border border-green-200/70 animate-fade-in">
         <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" strokeWidth={1.5} />
-        <span className="text-sm font-semibold text-green-700 flex-1">Всё настроено</span>
+        <span className="text-sm font-semibold text-green-700 flex-1">{t('onboarding.allDone')}</span>
         <button
           onClick={() => setDismissed(true)}
-          aria-label="Скрыть"
+          aria-label={t('onboarding.hide')}
           className="p-1 rounded-lg hover:bg-green-100 transition-colors text-green-500"
         >
           <X className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -170,13 +172,13 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
   if (loading) return null
 
   return (
-    <div className="cab-card overflow-hidden animate-fade-in" aria-label="Чек-лист настройки разборки">
+    <div className="cab-card overflow-hidden animate-fade-in" aria-label={t('onboarding.checklistAria')}>
       {/* Header */}
       <div className="px-4 py-3 flex items-center gap-3 border-b border-gray-100">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">
-            <p className="text-sm font-bold text-gray-800">С чего начать</p>
-            <span className="cab-chip">{doneCount} из {total}</span>
+            <p className="text-sm font-bold text-gray-800">{t('onboarding.title')}</p>
+            <span className="cab-chip">{t('onboarding.progress', { done: doneCount, total })}</span>
           </div>
           {/* Прогресс-бар */}
           <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden" role="progressbar" aria-valuenow={progressPct} aria-valuemin={0} aria-valuemax={100}>
@@ -189,7 +191,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
         <button
           onClick={() => setCollapsed(v => !v)}
           aria-expanded={!collapsed}
-          aria-label={collapsed ? 'Развернуть чек-лист' : 'Свернуть чек-лист'}
+          aria-label={collapsed ? t('onboarding.expand') : t('onboarding.collapse')}
           className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 flex-shrink-0"
         >
           {collapsed
@@ -210,7 +212,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
             }
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-semibold ${hasCats ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                Добавьте категории запчастей
+                {t('onboarding.step1Title')}
               </p>
               {!hasCats && (
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -219,13 +221,13 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
                     disabled={addCategoriesMutation.isPending}
                     className="cab-btn cab-btn-primary cab-btn-sm"
                   >
-                    {addCategoriesMutation.isPending ? 'Добавление…' : 'Добавить базовые'}
+                    {addCategoriesMutation.isPending ? t('onboarding.adding') : t('onboarding.addBasic')}
                   </button>
                   <Link
                     to="/parts/categories"
                     className="cab-btn cab-btn-secondary cab-btn-sm"
                   >
-                    Открыть категории
+                    {t('onboarding.openCategories')}
                   </Link>
                 </div>
               )}
@@ -240,12 +242,12 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
             }
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-semibold ${hasVehicles ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                Добавьте первое авто
+                {t('onboarding.step2Title')}
               </p>
               {!hasVehicles && (
                 <div className="mt-2">
                   <Link to="/parts/vehicles" className="cab-btn cab-btn-secondary cab-btn-sm">
-                    Добавить авто
+                    {t('onboarding.addVehicle')}
                   </Link>
                 </div>
               )}
@@ -260,12 +262,12 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
             }
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-semibold ${hasInventory ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                Добавьте запчасти на склад
+                {t('onboarding.step3Title')}
               </p>
               {!hasInventory && (
                 <div className="mt-2">
                   <Link to="/parts/inventory" className="cab-btn cab-btn-secondary cab-btn-sm">
-                    Открыть склад
+                    {t('onboarding.openInventory')}
                   </Link>
                 </div>
               )}
@@ -280,12 +282,12 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
             }
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-semibold ${hasContacts ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                Заполните контакты разборки
+                {t('onboarding.step4Title')}
               </p>
               {!hasContacts && (
                 <div className="mt-2">
                   <Link to="/parts/settings" className="cab-btn cab-btn-secondary cab-btn-sm">
-                    Настройки
+                    {t('onboarding.settings')}
                   </Link>
                 </div>
               )}
@@ -300,14 +302,14 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
             }
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-semibold ${hasStorage ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                Настройте места хранения
+                {t('onboarding.step5Title')}
               </p>
               {!hasStorage && (
                 <>
-                  <p className="text-xs text-gray-500 mt-0.5">Стеллажи, полки, ячейки — чтобы знать, где лежит запчасть</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{t('onboarding.step5Desc')}</p>
                   <div className="mt-2">
                     <Link to="/parts/warehouse" className="cab-btn cab-btn-secondary cab-btn-sm">
-                      Открыть склад
+                      {t('onboarding.openWarehouse')}
                     </Link>
                   </div>
                 </>
@@ -323,14 +325,14 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
             }
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-semibold ${hasPhoto ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                Подключите хранилище фото
+                {t('onboarding.step6Title')}
               </p>
               {!hasPhoto && (
                 <>
-                  <p className="text-xs text-gray-500 mt-0.5">Выберите сервис (ImgBB / Cloudinary / freeimage) и добавьте ключ — чтобы загружать фото запчастей</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{t('onboarding.step6Desc')}</p>
                   <div className="mt-2">
                     <Link to="/parts/settings" className="cab-btn cab-btn-secondary cab-btn-sm">
-                      Настроить хранилище
+                      {t('onboarding.setupStorage')}
                     </Link>
                   </div>
                 </>
@@ -346,14 +348,14 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
             }
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-semibold ${hasTelegram ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                Подключите Telegram-уведомления
+                {t('onboarding.step7Title')}
               </p>
               {!hasTelegram && (
                 <>
-                  <p className="text-xs text-gray-500 mt-0.5">Заявки с маркета и новые заказы будут приходить в Telegram</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{t('onboarding.step7Desc')}</p>
                   <div className="mt-2">
                     <Link to="/parts/settings" className="cab-btn cab-btn-secondary cab-btn-sm">
-                      Подключить Telegram
+                      {t('onboarding.connectTelegram')}
                     </Link>
                   </div>
                 </>

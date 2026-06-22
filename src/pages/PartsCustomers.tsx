@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '@/i18n'
 import { Spinner } from '@/components/ui/Spinner'
 import { Plus, Search, Users, Phone, TrendingUp, DollarSign, Link2 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -39,6 +41,7 @@ function avatarColor(name: string): string {
 }
 
 export default function PartsCustomers() {
+  const { t } = useTranslation('cabinet')
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -65,12 +68,12 @@ export default function PartsCustomers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
-      toast.success(selectedCustomer ? 'Клиент обновлён' : 'Клиент добавлен')
+      toast.success(selectedCustomer ? t('customersPage.toastUpdated') : t('customersPage.toastAdded'))
       setIsModalOpen(false)
       setSelectedCustomer(null)
     },
     onError: () => {
-      toast.error('Ошибка при сохранении')
+      toast.error(t('customersPage.toastSaveError'))
     },
   })
 
@@ -81,7 +84,7 @@ export default function PartsCustomers() {
         await moveToTrash({
           entityType: 'parts_customer',
           entityId: customerId,
-          entityLabel: customer.full_name || 'Клиент',
+          entityLabel: customer.full_name || t('customersPage.entityLabel'),
           entityData: customer,
           partsCompanyId,
         })
@@ -90,11 +93,11 @@ export default function PartsCustomers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
-      toast.success('Клиент удалён')
+      toast.success(t('customersPage.toastDeleted'))
     },
     onError: (error: any) => {
       console.error('Delete parts customer mutation error:', error)
-      toast.error('Ошибка при удалении: ' + (error.message || 'Недостаточно прав'))
+      toast.error(t('customersPage.toastDeleteError') + (error.message || t('customersPage.noRights')))
     },
   })
 
@@ -127,7 +130,7 @@ export default function PartsCustomers() {
 
   const handleDelete = async (customerId: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    const ok = await showConfirm({ message: 'Удалить клиента? Это действие нельзя отменить.', danger: true })
+    const ok = await showConfirm({ message: t('customersPage.confirmDelete'), danger: true })
     if (!ok) return
     deleteMutation.mutate(customerId)
   }
@@ -137,9 +140,9 @@ export default function PartsCustomers() {
     const publicUrl = `${window.location.origin}/public/parts-customer/${customerId}`
     try {
       await navigator.clipboard.writeText(publicUrl)
-      toast.success('Публичная ссылка скопирована в буфер обмена', { duration: 2000 })
+      toast.success(t('customersPage.toastLinkCopied'), { duration: 2000 })
     } catch {
-      toast.error('Не удалось скопировать ссылку')
+      toast.error(t('customersPage.toastLinkCopyError'))
     }
   }
 
@@ -156,8 +159,8 @@ export default function PartsCustomers() {
     <div className="min-h-dvh bg-gray-50">
       {/* Header */}
       <PartsPageHeader
-        title="Клиенты"
-        subtitle={`Всего: ${stats.total}`}
+        title={i18n.t('cabinet:pages.customers')}
+        subtitle={i18n.t('cabinet:pages.totalN', { n: stats.total })}
         backPath="/parts/dashboard"
         actions={
           <button
@@ -168,7 +171,7 @@ export default function PartsCustomers() {
             className="cab-btn cab-btn-primary"
           >
             <Plus className="w-4 h-4" strokeWidth={1.5} />
-            <span className="hidden sm:inline">Добавить</span>
+            <span className="hidden sm:inline">{t('customersPage.add')}</span>
           </button>
         }
       />
@@ -180,7 +183,7 @@ export default function PartsCustomers() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 sm:mb-6">
           <div className="cab-card p-4">
             <div className="flex items-start justify-between mb-3">
-              <p className="kicker">Клиентов</p>
+              <p className="kicker">{t('customersPage.statCustomers')}</p>
               <Users className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
             </div>
             <p className="text-3xl font-extrabold text-gray-900 tabular" style={{ letterSpacing: '-0.03em' }}>
@@ -190,7 +193,7 @@ export default function PartsCustomers() {
 
           <div className="cab-card p-4">
             <div className="flex items-start justify-between mb-3">
-              <p className="kicker">С заказами</p>
+              <p className="kicker">{t('customersPage.statWithOrders')}</p>
               <TrendingUp className="w-4 h-4 text-emerald-500" strokeWidth={1.5} />
             </div>
             <p className="text-3xl font-extrabold text-emerald-600 tabular" style={{ letterSpacing: '-0.03em' }}>
@@ -200,7 +203,7 @@ export default function PartsCustomers() {
 
           <div className="cab-card p-4">
             <div className="flex items-start justify-between mb-3">
-              <p className="kicker">Выручка</p>
+              <p className="kicker">{t('customersPage.statRevenue')}</p>
               <DollarSign className="w-4 h-4 text-primary" strokeWidth={1.5} />
             </div>
             <p className="text-xl font-extrabold text-primary tabular" style={{ letterSpacing: '-0.025em' }}>
@@ -210,7 +213,7 @@ export default function PartsCustomers() {
 
           <div className="cab-card p-4">
             <div className="flex items-start justify-between mb-3">
-              <p className="kicker">Средний чек</p>
+              <p className="kicker">{t('customersPage.statAvgCheck')}</p>
               <DollarSign className="w-4 h-4 text-violet-500" strokeWidth={1.5} />
             </div>
             <p className="text-xl font-extrabold text-violet-600 tabular" style={{ letterSpacing: '-0.025em' }}>
@@ -228,7 +231,7 @@ export default function PartsCustomers() {
             />
             <input
               type="text"
-              placeholder="Поиск по имени, телефону, email..."
+              placeholder={t('customersPage.searchPlaceholder')}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="form-input pl-10"
@@ -248,11 +251,11 @@ export default function PartsCustomers() {
                 <Users className="w-7 h-7 text-gray-400" strokeWidth={1.5} />
               </div>
               <p className="empty-state-title">
-                {searchQuery ? 'Клиенты не найдены' : 'Нет клиентов'}
+                {searchQuery ? t('customersPage.emptyNotFound') : t('customersPage.emptyNone')}
               </p>
               {!searchQuery && (
                 <p className="empty-state-text">
-                  Добавьте первого клиента, чтобы начать работу
+                  {t('customersPage.emptyHint')}
                 </p>
               )}
               {!searchQuery && (
@@ -261,7 +264,7 @@ export default function PartsCustomers() {
                   className="cab-btn cab-btn-primary mt-4"
                 >
                   <Plus className="w-4 h-4" strokeWidth={1.5} />
-                  Добавить клиента
+                  {t('customersPage.addCustomer')}
                 </button>
               )}
             </div>
@@ -274,11 +277,11 @@ export default function PartsCustomers() {
                 <table className="w-full">
                   <thead>
                     <tr>
-                      <th className="table-header-cell">Клиент</th>
-                      <th className="table-header-cell">Телефон</th>
-                      <th className="table-header-cell text-right">Заказов</th>
-                      <th className="table-header-cell text-right">Потрачено</th>
-                      <th className="table-header-cell text-right">Действия</th>
+                      <th className="table-header-cell">{t('customersPage.thCustomer')}</th>
+                      <th className="table-header-cell">{t('customersPage.thPhone')}</th>
+                      <th className="table-header-cell text-right">{t('customersPage.thOrders')}</th>
+                      <th className="table-header-cell text-right">{t('customersPage.thSpent')}</th>
+                      <th className="table-header-cell text-right">{t('customersPage.thActions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -302,7 +305,7 @@ export default function PartsCustomers() {
                               </p>
                               {customer.discount_percent > 0 && (
                                 <span className="badge badge-green">
-                                  Скидка {customer.discount_percent}%
+                                  {t('customersPage.discount', { n: customer.discount_percent })}
                                 </span>
                               )}
                             </div>
@@ -348,7 +351,7 @@ export default function PartsCustomers() {
                             <button
                               onClick={e => handleCopyPublicLink(customer.id, e)}
                               className="btn-icon-sm text-primary"
-                              title="Скопировать публичную ссылку"
+                              title={t('customersPage.copyLinkTitle')}
                             >
                               <Link2 className="w-4 h-4" strokeWidth={1.5} />
                             </button>
@@ -356,13 +359,13 @@ export default function PartsCustomers() {
                               onClick={e => handleEdit(customer, e)}
                               className="cab-btn cab-btn-ghost cab-btn-sm"
                             >
-                              Изменить
+                              {t('customersPage.edit')}
                             </button>
                             <button
                               onClick={e => handleDelete(customer.id, e)}
                               className="cab-btn cab-btn-sm text-red-600 hover:bg-red-50"
                             >
-                              Удалить
+                              {t('customersPage.delete')}
                             </button>
                           </div>
                         </td>
@@ -398,7 +401,7 @@ export default function PartsCustomers() {
                         {[
                           customer.phone,
                           customer.total_orders > 0
-                            ? `${customer.total_orders} заказ${customer.total_orders === 1 ? '' : customer.total_orders < 5 ? 'а' : 'ов'}`
+                            ? t('customersPage.ordersCount', { count: customer.total_orders })
                             : null,
                           customer.total_spent > 0
                             ? formatCurrency(customer.total_spent)
@@ -422,7 +425,7 @@ export default function PartsCustomers() {
                     <button
                       onClick={e => handleCopyPublicLink(customer.id, e)}
                       className="flex-none px-4 py-2.5 text-primary hover:bg-slate-50 transition-colors"
-                      title="Публичная ссылка"
+                      title={t('customersPage.publicLink')}
                     >
                       <Link2 className="w-4 h-4" strokeWidth={1.5} />
                     </button>
@@ -430,13 +433,13 @@ export default function PartsCustomers() {
                       onClick={e => handleEdit(customer, e)}
                       className="flex-1 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
                     >
-                      Изменить
+                      {t('customersPage.edit')}
                     </button>
                     <button
                       onClick={e => handleDelete(customer.id, e)}
                       className="flex-1 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors"
                     >
-                      Удалить
+                      {t('customersPage.delete')}
                     </button>
                   </div>
                 </div>

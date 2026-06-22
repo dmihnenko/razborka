@@ -1,6 +1,7 @@
 /**
- * Shared date formatting utilities — ru-RU locale
+ * Shared date formatting utilities — локаль по текущему языку интерфейса (ru/uk).
  */
+import { intlLocale } from '@/i18n'
 
 /**
  * Format a date string as DD.MM.YYYY
@@ -8,7 +9,7 @@
  */
 export function formatDate(date: string | null | undefined): string {
   if (!date) return '-'
-  return new Date(date).toLocaleDateString('ru-RU', {
+  return new Date(date).toLocaleDateString(intlLocale(), {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -21,7 +22,7 @@ export function formatDate(date: string | null | undefined): string {
  */
 export function formatDateTime(date: string | null | undefined): string {
   if (!date) return '-'
-  return new Date(date).toLocaleDateString('ru-RU', {
+  return new Date(date).toLocaleDateString(intlLocale(), {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

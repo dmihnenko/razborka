@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { RotateCcw, Search, SlidersHorizontal, X } from 'lucide-react'
 import type { MarketCategory, MarketCondition, MarketFilters, MarketMakeFacet, MarketSort } from '@/types/marketplace'
 import { PARTS_CONDITION_LABELS } from '@/utils/status'
@@ -16,15 +17,16 @@ export interface FilterBarProps {
   carCatalog?: MarketMakeFacet[]
 }
 
-const SORT_OPTIONS: { value: MarketSort; label: string }[] = [
-  { value: 'new', label: 'Сначала новые' },
-  { value: 'price_asc', label: 'Дешевле' },
-  { value: 'price_desc', label: 'Дороже' },
+const SORT_OPTIONS: { value: MarketSort; labelKey: string }[] = [
+  { value: 'new', labelKey: 'sortNew' },
+  { value: 'price_asc', labelKey: 'sortPriceAsc' },
+  { value: 'price_desc', labelKey: 'sortPriceDesc' },
 ]
 
 const FIELD_LABEL = 'block text-xs font-semibold mb-1.5'
 
 export function FilterBar({ value, onChange, categories = [], carCatalog = [] }: FilterBarProps) {
+  const { t } = useTranslation('market')
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState(value.search ?? '')
 
@@ -67,16 +69,16 @@ export function FilterBar({ value, onChange, categories = [], carCatalog = [] }:
             value={search}
             onChange={e => setSearch(e.target.value)}
             onBlur={applyText}
-            placeholder="Название, артикул, описание…"
+            placeholder={t('filterBar.searchPlaceholder')}
             className="mk-input mk-search"
-            aria-label="Поиск по каталогу"
+            aria-label={t('filterBar.searchAria')}
           />
           {search && (
             <button
               type="button"
               onClick={() => { setSearch(''); patch({ search: undefined }) }}
               className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full inline-flex items-center justify-center mk-meta transition-colors hover:bg-[var(--mk-surface-2)]"
-              aria-label="Очистить поиск"
+              aria-label={t('filterBar.clearSearch')}
             >
               <X className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
             </button>
@@ -92,7 +94,7 @@ export function FilterBar({ value, onChange, categories = [], carCatalog = [] }:
           aria-controls="mk-filter-panel"
         >
           <SlidersHorizontal className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
-          Фильтры
+          {t('filterBar.filters')}
           {activeCount > 0 && (
             <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center" style={{ background: 'var(--mk-accent)', color: 'var(--mk-on-accent)' }}>
               {activeCount}
@@ -107,9 +109,9 @@ export function FilterBar({ value, onChange, categories = [], carCatalog = [] }:
           {/* Марка */}
           {carCatalog.length > 0 && (
             <div>
-              <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-make">Марка</label>
+              <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-make">{t('filterBar.make')}</label>
               <select id="mf-make" value={value.make ?? ''} onChange={e => onMakeChange(e.target.value)} className="mk-input">
-                <option value="">Все марки</option>
+                <option value="">{t('filterBar.allMakes')}</option>
                 {carCatalog.map(m => (
                   <option key={m.make} value={m.make}>{m.make}</option>
                 ))}
@@ -120,9 +122,9 @@ export function FilterBar({ value, onChange, categories = [], carCatalog = [] }:
           {/* Модель — только при выбранной марке */}
           {value.make && models.length > 0 && (
             <div>
-              <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-model">Модель</label>
+              <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-model">{t('filterBar.model')}</label>
               <select id="mf-model" value={value.model ?? ''} onChange={e => onModelChange(e.target.value)} className="mk-input">
-                <option value="">Все модели</option>
+                <option value="">{t('filterBar.allModels')}</option>
                 {models.map(m => (
                   <option key={m.model} value={m.model}>{m.model}{m.count ? ` (${m.count})` : ''}</option>
                 ))}
@@ -133,9 +135,9 @@ export function FilterBar({ value, onChange, categories = [], carCatalog = [] }:
           {/* Год — только при выбранной модели с доступными годами */}
           {value.model && years.length > 0 && (
             <div>
-              <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-year">Год</label>
+              <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-year">{t('filterBar.year')}</label>
               <select id="mf-year" value={value.year ?? ''} onChange={e => onYearChange(e.target.value)} className="mk-input">
-                <option value="">Любой год</option>
+                <option value="">{t('filterBar.anyYear')}</option>
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
@@ -144,9 +146,9 @@ export function FilterBar({ value, onChange, categories = [], carCatalog = [] }:
           {/* Категория */}
           {categories.length > 0 && (
             <div>
-              <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-category">Категория</label>
+              <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-category">{t('filterBar.category')}</label>
               <select id="mf-category" value={value.categoryId ?? ''} onChange={e => patch({ categoryId: e.target.value || undefined })} className="mk-input">
-                <option value="">Все категории</option>
+                <option value="">{t('filterBar.allCategories')}</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({c.count})</option>)}
               </select>
             </div>
@@ -154,18 +156,18 @@ export function FilterBar({ value, onChange, categories = [], carCatalog = [] }:
 
           {/* Состояние */}
           <div>
-            <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-condition">Состояние</label>
+            <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-condition">{t('filterBar.condition')}</label>
             <select id="mf-condition" value={value.condition ?? ''} onChange={e => patch({ condition: (e.target.value || undefined) as MarketCondition | undefined })} className="mk-input">
-              <option value="">Любое</option>
+              <option value="">{t('filterBar.anyCondition')}</option>
               {(['new', 'used', 'damaged'] as const).map(c => <option key={c} value={c}>{PARTS_CONDITION_LABELS[c]}</option>)}
             </select>
           </div>
 
           {/* Сортировка */}
           <div>
-            <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-sort">Сортировка</label>
+            <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-sort">{t('filterBar.sort')}</label>
             <select id="mf-sort" value={value.sort ?? 'new'} onChange={e => patch({ sort: e.target.value as MarketSort })} className="mk-input">
-              {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{t(`filterBar.${o.labelKey}`)}</option>)}
             </select>
           </div>
         </div>
@@ -173,7 +175,7 @@ export function FilterBar({ value, onChange, categories = [], carCatalog = [] }:
         {activeCount > 0 && (
           <button type="button" onClick={reset} className="mt-3 inline-flex items-center gap-1.5 px-2.5 h-9 -mx-2.5 rounded-lg text-xs font-semibold mk-meta transition-colors hover:text-[var(--mk-text)] hover:bg-[var(--mk-surface-2)]">
             <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" />
-            Сбросить фильтры ({activeCount})
+            {t('filterBar.reset', { n: activeCount })}
           </button>
         )}
       </div>

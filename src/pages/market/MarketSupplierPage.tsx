@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { AlertCircle, ArrowLeft, ChevronLeft, ChevronRight, MapPin, Package, Phone, Search, SearchX, Store } from 'lucide-react'
@@ -24,6 +25,7 @@ function TelegramIcon({ className }: { className?: string }) {
 const TILE = 'inline-flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0'
 
 export function MarketSupplierPage() {
+  const { t } = useTranslation('market')
   const { id } = useParams<{ id: string }>()
   const [page, setPage] = useState(1)
   const [searchInput, setSearchInput] = useState('')
@@ -47,7 +49,7 @@ export function MarketSupplierPage() {
   const goToPage = (p: number) => { setPage(Math.min(Math.max(1, p), totalPages)); window.scrollTo({ top: 0, behavior: 'smooth' }) }
 
   if (!id || supplierError) {
-    return <EmptyState icon={AlertCircle} title="Не удалось загрузить разборку" description="Проверьте соединение и обновите страницу" action={<Link to="/market/suppliers" className="mk-btn mk-btn-accent">К списку разборок</Link>} />
+    return <EmptyState icon={AlertCircle} title={t('supplierPage.loadError')} description={t('supplierPage.loadErrorDesc')} action={<Link to="/market/suppliers" className="mk-btn mk-btn-accent">{t('supplierPage.toSuppliersList')}</Link>} />
   }
 
   if (supplierLoading) {
@@ -61,7 +63,7 @@ export function MarketSupplierPage() {
   }
 
   if (!supplier) {
-    return <EmptyState icon={SearchX} title="Разборка не найдена" description="Возможно, она отключена или ссылка устарела" action={<Link to="/market/suppliers" className="mk-btn mk-btn-accent">К списку разборок</Link>} />
+    return <EmptyState icon={SearchX} title={t('supplierPage.notFound')} description={t('supplierPage.notFoundDesc')} action={<Link to="/market/suppliers" className="mk-btn mk-btn-accent">{t('supplierPage.toSuppliersList')}</Link>} />
   }
 
   const phoneRaw = supplier.phone ? cleanPhone(supplier.phone) : null
@@ -70,7 +72,7 @@ export function MarketSupplierPage() {
   return (
     <div className="space-y-5">
       <Link to="/market/suppliers" className="inline-flex items-center gap-1.5 min-h-[44px] text-sm font-semibold mk-link">
-        <ArrowLeft className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> Все разборки
+        <ArrowLeft className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> {t('supplierPage.allSuppliers')}
       </Link>
 
       {/* Шапка разборки */}
@@ -81,14 +83,14 @@ export function MarketSupplierPage() {
             <h1 className="text-lg sm:text-xl font-extrabold leading-snug tracking-tight" style={{ color: 'var(--mk-text)' }}>{supplier.name}</h1>
             <p className="flex items-center gap-1.5 text-sm mt-1" style={{ color: supplier.availableParts > 0 ? 'var(--mk-text-2)' : 'var(--mk-text-3)' }}>
               <Package className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
-              <span className="font-semibold">{supplier.availableParts > 0 ? `${pluralizeParts(supplier.availableParts)} в наличии` : 'Нет товаров в наличии'}</span>
+              <span className="font-semibold">{supplier.availableParts > 0 ? `${pluralizeParts(supplier.availableParts)} ${t('supplierPage.inStock')}` : t('supplierPage.noStock')}</span>
             </p>
           </div>
         </div>
 
         <div className="mt-4 space-y-2 text-sm">
           {supplier.phone && phoneRaw && (
-            <a href={`tel:${phoneRaw}`} className="flex items-center gap-2 transition-colors" style={{ color: 'var(--mk-text-2)' }} aria-label={`Позвонить ${supplier.phone}`}>
+            <a href={`tel:${phoneRaw}`} className="flex items-center gap-2 transition-colors" style={{ color: 'var(--mk-text-2)' }} aria-label={t('supplierPage.callAria', { phone: supplier.phone })}>
               <span className={TILE} style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}><Phone className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /></span>
               <span className="font-bold" style={{ color: 'var(--mk-text)' }}>{supplier.phone}</span>
             </a>
@@ -108,12 +110,12 @@ export function MarketSupplierPage() {
         {(phoneRaw || tgHref) && (
           <div className="mt-4 flex flex-wrap gap-2">
             {phoneRaw && (
-              <a href={`tel:${phoneRaw}`} className="mk-btn mk-btn-accent flex-1 sm:flex-none min-w-[140px]" aria-label={`Позвонить ${supplier.phone}`}>
-                <Phone className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> Позвонить
+              <a href={`tel:${phoneRaw}`} className="mk-btn mk-btn-accent flex-1 sm:flex-none min-w-[140px]" aria-label={t('supplierPage.callAria', { phone: supplier.phone })}>
+                <Phone className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> {t('supplierPage.call')}
               </a>
             )}
             {tgHref && (
-              <a href={tgHref} target="_blank" rel="noopener noreferrer" className="mk-btn mk-btn-outline flex-1 sm:flex-none min-w-[140px]" aria-label="Открыть Telegram разборки">
+              <a href={tgHref} target="_blank" rel="noopener noreferrer" className="mk-btn mk-btn-outline flex-1 sm:flex-none min-w-[140px]" aria-label={t('supplierPage.openTelegram')}>
                 <TelegramIcon className="w-4 h-4 fill-current" /> Telegram
               </a>
             )}
@@ -124,7 +126,7 @@ export function MarketSupplierPage() {
       {/* Товары */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <h2 className="mk-title flex-shrink-0">
-          Товары{total > 0 ? <span className="ml-2 text-base font-semibold mk-meta">({total})</span> : ''}
+          {t('supplierPage.products')}{total > 0 ? <span className="ml-2 text-base font-semibold mk-meta">({total})</span> : ''}
         </h2>
         <form onSubmit={applySearch} role="search" className="relative w-full sm:max-w-xs sm:ml-auto">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none mk-meta" strokeWidth={1.5} aria-hidden="true" />
@@ -132,7 +134,7 @@ export function MarketSupplierPage() {
             type="search" value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             onBlur={() => { const q = searchInput.trim(); if (q !== search) { setSearch(q); setPage(1) } }}
-            placeholder="Поиск по товарам разборки…" className="mk-input mk-search" aria-label="Поиск по товарам разборки"
+            placeholder={t('supplierPage.searchPlaceholder')} className="mk-input mk-search" aria-label={t('supplierPage.searchAria')}
           />
         </form>
       </div>
@@ -140,7 +142,7 @@ export function MarketSupplierPage() {
       {partsLoading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : items.length === 0 ? (
-        <EmptyState icon={Package} title={search ? 'Ничего не найдено' : 'Товаров пока нет'} description={search ? 'Попробуйте изменить запрос' : 'Доступные запчасти этой разборки появятся здесь'} />
+        <EmptyState icon={Package} title={search ? t('supplierPage.emptySearch') : t('supplierPage.emptyTitle')} description={search ? t('supplierPage.emptySearchDesc') : t('supplierPage.emptyDesc')} />
       ) : (
         <>
           <div className={`mk-grid transition-opacity ${partsFetching ? 'opacity-60 pointer-events-none' : ''}`}>
@@ -148,14 +150,14 @@ export function MarketSupplierPage() {
           </div>
 
           {totalPages > 1 && (
-            <nav className="flex items-center justify-center gap-3 pt-4" aria-label="Постраничная навигация">
-              <button type="button" onClick={() => goToPage(page - 1)} disabled={page <= 1} className="mk-page-btn !px-0" aria-label="Предыдущая страница">
+            <nav className="flex items-center justify-center gap-3 pt-4" aria-label={t('supplierPage.pagination')}>
+              <button type="button" onClick={() => goToPage(page - 1)} disabled={page <= 1} className="mk-page-btn !px-0" aria-label={t('supplierPage.prevPage')}>
                 <ChevronLeft className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
               </button>
               <span className="text-sm font-semibold px-2 tabular-nums" style={{ color: 'var(--mk-text-2)' }}>
                 <span style={{ color: 'var(--mk-text)' }}>{page}</span> <span className="mk-meta">/</span> {totalPages}
               </span>
-              <button type="button" onClick={() => goToPage(page + 1)} disabled={page >= totalPages} className="mk-page-btn !px-0" aria-label="Следующая страница">
+              <button type="button" onClick={() => goToPage(page + 1)} disabled={page >= totalPages} className="mk-page-btn !px-0" aria-label={t('supplierPage.nextPage')}>
                 <ChevronRight className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
               </button>
             </nav>

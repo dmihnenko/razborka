@@ -5,6 +5,7 @@ import { ArrowLeft, Trash2, RotateCcw, Car, Package, Tag, Users, ShoppingCart } 
 import { toast } from 'sonner'
 import { formatDistanceToNow, differenceInDays } from 'date-fns'
 import { ru } from 'date-fns/locale'
+import { useTranslation } from 'react-i18next'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -38,6 +39,7 @@ function daysUntilExpiry(expiresAt: string): number {
 }
 
 export default function Trash() {
+  const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
   const queryClient = useQueryClient()
   const { confirm: showConfirm, dialogProps } = useConfirm()
@@ -60,10 +62,10 @@ export default function Trash() {
       queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
       queryClient.invalidateQueries({ queryKey: ['parts-categories'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success('Объект восстановлен')
+      toast.success(t('trashPage.restored'))
     },
     onError: (err: any) => {
-      toast.error('Ошибка при восстановлении: ' + (err.message || 'Неизвестная ошибка'))
+      toast.error(t('trashPage.restoreError', { error: err.message || t('trashPage.unknownError') }))
     },
   })
 
@@ -71,14 +73,14 @@ export default function Trash() {
     mutationFn: (trashId: string) => permanentlyDelete(trashId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trash'] })
-      toast.success('Объект удалён навсегда')
+      toast.success(t('trashPage.deletedForever'))
     },
-    onError: () => toast.error('Ошибка при удалении'),
+    onError: () => toast.error(t('trashPage.deleteError')),
   })
 
   const handleRestore = async (item: TrashItem) => {
     const ok = await showConfirm({
-      message: `Восстановить "${item.entity_label}"?`,
+      message: t('trashPage.confirmRestore', { label: item.entity_label }),
       danger: false,
     })
     if (!ok) return
@@ -87,7 +89,7 @@ export default function Trash() {
 
   const handlePermanentDelete = async (item: TrashItem) => {
     const ok = await showConfirm({
-      message: `Навсегда удалить "${item.entity_label}"? Восстановление будет невозможно.`,
+      message: t('trashPage.confirmDelete', { label: item.entity_label }),
       danger: true,
     })
     if (!ok) return
@@ -113,9 +115,9 @@ export default function Trash() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="heading-mobile-1">Корзина</h1>
+          <h1 className="heading-mobile-1">{t('trashPage.title')}</h1>
           <p className="text-mobile-sm text-gray-500">
-            Удалённые объекты хранятся 7 дней
+            {t('trashPage.subtitle')}
           </p>
         </div>
       </div>
@@ -125,8 +127,8 @@ export default function Trash() {
           <div className="p-5 bg-gray-100 rounded-full mb-4">
             <Trash2 className="w-10 h-10 text-gray-400" />
           </div>
-          <p className="text-xl font-semibold text-gray-700 mb-1">Корзина пуста</p>
-          <p className="text-sm text-gray-500">Удалённые объекты будут появляться здесь</p>
+          <p className="text-xl font-semibold text-gray-700 mb-1">{t('trashPage.empty')}</p>
+          <p className="text-sm text-gray-500">{t('trashPage.emptyHint')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -161,7 +163,7 @@ export default function Trash() {
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 mb-1">
-                      Удалён{' '}
+                      {t('trashPage.deletedAt')}{' '}
                       {formatDistanceToNow(new Date(item.deleted_at), {
                         addSuffix: true,
                         locale: ru,
@@ -173,8 +175,8 @@ export default function Trash() {
                       }`}
                     >
                       {daysLeft <= 0
-                        ? 'Истекает сегодня'
-                        : `Осталось ${daysLeft} дн.`}
+                        ? t('trashPage.expiresToday')
+                        : t('trashPage.daysLeft', { count: daysLeft })}
                     </p>
                   </div>
 
@@ -186,7 +188,7 @@ export default function Trash() {
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 rounded-lg transition-colors disabled:opacity-50"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
-                      Восстановить
+                      {t('trashPage.restore')}
                     </button>
                     <button
                       onClick={() => handlePermanentDelete(item)}
@@ -194,7 +196,7 @@ export default function Trash() {
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 rounded-lg transition-colors disabled:opacity-50"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      Удалить навсегда
+                      {t('trashPage.deleteForever')}
                     </button>
                   </div>
                 </div>

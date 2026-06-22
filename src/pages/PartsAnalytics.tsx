@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { formatPrice } from '@/utils/currency'
@@ -16,8 +17,10 @@ import { Link } from 'react-router-dom'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { useSubscriptionLimits } from '@/hooks/useSubscription'
+import i18n from '@/i18n'
 
 export default function PartsAnalytics() {
+  const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
   const { rate: globalRate } = usePartsExchangeRate()
@@ -48,8 +51,8 @@ export default function PartsAnalytics() {
     <div className="min-h-dvh bg-gray-50">
       {/* Header */}
       <PartsPageHeader
-        title="Аналитика"
-        subtitle="Статистика разборки"
+        title={i18n.t('cabinet:pages.analytics')}
+        subtitle={i18n.t('cabinet:pages.analyticsSub')}
         backPath="/parts/dashboard"
       />
 
@@ -64,14 +67,14 @@ export default function PartsAnalytics() {
                 <Lock className="w-6 h-6 text-primary" strokeWidth={1.5} />
               </div>
               <div>
-                <p className="page-title text-lg">Аналитика и окупаемость</p>
+                <p className="page-title text-lg">{t('analyticsPage.paywallTitle')}</p>
                 <p className="page-subtitle mt-2">
-                  Подробная статистика, топ запчастей и история выручки доступны в тарифе{' '}
-                  <span className="font-semibold text-gray-700">Профи</span> и выше.
+                  {t('analyticsPage.paywallTextBefore')}{' '}
+                  <span className="font-semibold text-gray-700">{t('analyticsPage.paywallPlan')}</span> {t('analyticsPage.paywallTextAfter')}
                 </p>
               </div>
               <Link to="/parts/subscription" className="cab-btn cab-btn-primary w-full text-center justify-center">
-                Открыть аналитику
+                {t('analyticsPage.openAnalytics')}
               </Link>
             </div>
           </div>
@@ -89,12 +92,12 @@ export default function PartsAnalytics() {
                   <TrendingUp className="w-5 h-5" strokeWidth={1.5} />
                 </div>
               </div>
-              <p className="kicker mb-1">Общая выручка</p>
+              <p className="kicker mb-1">{t('analyticsPage.totalRevenue')}</p>
               <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>
                 {formatPrice(data?.totalRevenue ?? 0, 'USD')}
               </p>
               <p className="text-mobile-sm text-gray-500 mt-2">
-                {data?.completedOrders ?? 0} завершённых заказов
+                {t('analyticsPage.completedOrders', { n: data?.completedOrders ?? 0 })}
               </p>
             </div>
 
@@ -104,12 +107,12 @@ export default function PartsAnalytics() {
                   <BarChart3 className="w-5 h-5" strokeWidth={1.5} />
                 </div>
               </div>
-              <p className="kicker mb-1">Средний чек</p>
+              <p className="kicker mb-1">{t('analyticsPage.avgCheck')}</p>
               <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>
                 {formatPrice(data?.avgCheck ?? 0, 'USD')}
               </p>
               <p className="text-mobile-sm text-gray-500 mt-2">
-                На основе {data?.completedOrders ?? 0} заказов
+                {t('analyticsPage.basedOnOrders', { n: data?.completedOrders ?? 0 })}
               </p>
             </div>
 
@@ -119,10 +122,10 @@ export default function PartsAnalytics() {
                   <Package className="w-5 h-5" strokeWidth={1.5} />
                 </div>
               </div>
-              <p className="kicker mb-1">Продано запчастей</p>
+              <p className="kicker mb-1">{t('analyticsPage.soldParts')}</p>
               <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>{data?.totalSoldParts ?? 0}</p>
               <p className="text-mobile-sm text-gray-500 mt-2">
-                Склад: {formatPrice(data?.inventoryValue ?? 0, 'USD')}
+                {t('analyticsPage.inventoryLabel')} {formatPrice(data?.inventoryValue ?? 0, 'USD')}
               </p>
             </div>
 
@@ -132,10 +135,10 @@ export default function PartsAnalytics() {
                   <Calendar className="w-5 h-5" strokeWidth={1.5} />
                 </div>
               </div>
-              <p className="kicker mb-1">Разобрано авто</p>
+              <p className="kicker mb-1">{t('analyticsPage.dismantledVehicles')}</p>
               <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>{data?.dismantledVehicles ?? 0}</p>
               <p className="text-mobile-sm text-gray-500 mt-2">
-                Из {data?.totalVehicles ?? 0} всего
+                {t('analyticsPage.outOfTotal', { n: data?.totalVehicles ?? 0 })}
               </p>
             </div>
           </div>
@@ -147,9 +150,9 @@ export default function PartsAnalytics() {
                 <TrendingUp className="w-5 h-5" strokeWidth={1.5} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="kicker mb-0.5">Потенциальная маржа склада</p>
+                <p className="kicker mb-0.5">{t('analyticsPage.potentialMargin')}</p>
                 <p className="text-mobile-sm text-gray-500">
-                  По позициям, у которых указана закупочная цена
+                  {t('analyticsPage.potentialMarginHint')}
                 </p>
               </div>
               <p className={`heading-2 tabular flex-shrink-0 ${(data?.potentialMargin ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
@@ -166,8 +169,8 @@ export default function PartsAnalytics() {
             <div className="cab-card p-4">
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <p className="kicker mb-1">Динамика</p>
-                  <h2 className="heading-3">Выручка по месяцам</h2>
+                  <p className="kicker mb-1">{t('analyticsPage.dynamicsKicker')}</p>
+                  <h2 className="heading-3">{t('analyticsPage.revenueByMonth')}</h2>
                 </div>
                 <div className="icon-tile bg-slate-100 text-slate-700">
                   <BarChart3 className="w-5 h-5" strokeWidth={1.5} />
@@ -189,7 +192,7 @@ export default function PartsAnalytics() {
                           <div
                             className="w-full bg-primary hover:bg-blue-400 rounded-t transition-colors cursor-default"
                             style={{ height: `${Math.max(heightPercent, 4)}%` }}
-                            title={`${month}: ${formatPrice(mdata.revenue, 'USD')} · ${mdata.orders} зак.`}
+                            title={`${month}: ${formatPrice(mdata.revenue, 'USD')} · ${t('analyticsPage.ordersShort', { n: mdata.orders })}`}
                           />
                         </div>
                         <span className="text-xs text-gray-500 leading-none truncate w-full text-center">{month.replace(' г.', '')}</span>
@@ -203,8 +206,8 @@ export default function PartsAnalytics() {
                   <div className="empty-state-icon">
                     <BarChart3 className="w-7 h-7 text-gray-400" strokeWidth={1.5} />
                   </div>
-                  <p className="empty-state-title">Нет данных о продажах</p>
-                  <p className="empty-state-text">Завершите первые заказы, чтобы увидеть динамику</p>
+                  <p className="empty-state-title">{t('analyticsPage.noSalesData')}</p>
+                  <p className="empty-state-text">{t('analyticsPage.noSalesDataHint')}</p>
                 </div>
               )}
             </div>
@@ -213,8 +216,8 @@ export default function PartsAnalytics() {
             <div className="cab-card p-4">
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <p className="kicker mb-1">Рейтинг</p>
-                  <h2 className="heading-3">Топ запчастей</h2>
+                  <p className="kicker mb-1">{t('analyticsPage.ratingKicker')}</p>
+                  <h2 className="heading-3">{t('analyticsPage.topParts')}</h2>
                 </div>
                 <div className="icon-tile bg-slate-100 text-slate-700">
                   <Package className="w-5 h-5" strokeWidth={1.5} />
@@ -230,14 +233,14 @@ export default function PartsAnalytics() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-900 truncate">{part.name}</p>
-                        <p className="text-mobile-sm text-gray-500">Продано: {part.sold_quantity} шт</p>
+                        <p className="text-mobile-sm text-gray-500">{t('analyticsPage.soldQty', { n: part.sold_quantity })}</p>
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="text-sm font-bold text-gray-900 tabular">
                           {formatPrice(part.revenue, 'USD')}
                         </p>
                         <p className="text-mobile-sm text-gray-500 tabular">
-                          {formatPrice(part.sold_quantity > 0 ? part.revenue / part.sold_quantity : 0, 'USD')}/шт
+                          {formatPrice(part.sold_quantity > 0 ? part.revenue / part.sold_quantity : 0, 'USD')}{t('analyticsPage.perPiece')}
                         </p>
                       </div>
                     </div>
@@ -248,8 +251,8 @@ export default function PartsAnalytics() {
                   <div className="empty-state-icon">
                     <Package className="w-7 h-7 text-gray-400" strokeWidth={1.5} />
                   </div>
-                  <p className="empty-state-title">Нет проданных запчастей</p>
-                  <p className="empty-state-text">Статистика появится после первых продаж</p>
+                  <p className="empty-state-title">{t('analyticsPage.noSoldParts')}</p>
+                  <p className="empty-state-text">{t('analyticsPage.noSoldPartsHint')}</p>
                 </div>
               )}
             </div>
@@ -260,7 +263,7 @@ export default function PartsAnalytics() {
 
             <div className="cab-card p-4">
               <div className="flex items-start justify-between mb-3">
-                <p className="kicker">Всего заказов</p>
+                <p className="kicker">{t('analyticsPage.totalOrders')}</p>
                 <ShoppingCart className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
               </div>
               <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>{data?.totalOrders ?? 0}</p>
@@ -268,7 +271,7 @@ export default function PartsAnalytics() {
 
             <div className="cab-card p-4">
               <div className="flex items-start justify-between mb-3">
-                <p className="kicker">Коэф. завершения</p>
+                <p className="kicker">{t('analyticsPage.completionRate')}</p>
                 <TrendingUp className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
               </div>
               <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>
@@ -281,7 +284,7 @@ export default function PartsAnalytics() {
 
             <div className="cab-card p-4">
               <div className="flex items-start justify-between mb-3">
-                <p className="kicker">Средняя цена</p>
+                <p className="kicker">{t('analyticsPage.avgPrice')}</p>
                 <Package className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
               </div>
               <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>
@@ -293,7 +296,7 @@ export default function PartsAnalytics() {
 
             <div className="cab-card p-4">
               <div className="flex items-start justify-between mb-3">
-                <p className="kicker">Прогресс разборки</p>
+                <p className="kicker">{t('analyticsPage.dismantlingProgress')}</p>
                 <Car className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
               </div>
               <p className="heading-2 tabular" style={{ color: 'var(--cab-ink)' }}>

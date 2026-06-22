@@ -4,12 +4,14 @@ import { Plus, Search, Package, Grid, List, AlertTriangle, Camera, X, Tag, Clipb
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { InventoryCard } from '@/components/parts/InventoryCard'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import i18n from '@/i18n'
 import { getPartsInventoryPaged, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
@@ -38,12 +40,7 @@ interface BulkRow {
   currency: 'UAH' | 'USD'
 }
 
-const statusLabels: Record<PartsInventoryStatus, string> = {
-  available: 'В наличии',
-  reserved: 'Зарезервировано',
-  sold: 'Продано',
-  damaged: 'Повреждено'
-}
+const statusLabel = (s: PartsInventoryStatus): string => i18n.t(`inventoryPage.status_${s}`, { ns: 'cabinet' })
 
 const statusColors: Record<PartsInventoryStatus, string> = {
   available: 'badge badge-green',
@@ -53,6 +50,7 @@ const statusColors: Record<PartsInventoryStatus, string> = {
 }
 
 export default function PartsInventory() {
+  const { t } = useTranslation('cabinet')
   const navigate = useNavigate()
   const location = useLocation()
   const rootRef = useRef<HTMLDivElement>(null)
@@ -266,7 +264,7 @@ export default function PartsInventory() {
       if (editingItem) {
         saved = await updatePartsInventoryItem(editingItem.id, data)
       } else {
-        if (!canCreate.part()) throw new Error('Достигнут лимит запчастей по тарифу. Повысьте тариф в разделе «Тариф разборки».')
+        if (!canCreate.part()) throw new Error(t('inventoryPage.limitReachedError'))
         saved = await createPartsInventoryItem(data, partsCompanyId!)
       }
       // Фото, которые ещё грузились на момент сохранения — дописываем в товар в ФОНЕ
@@ -288,12 +286,12 @@ export default function PartsInventory() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success(editingItem ? 'Запчасть обновлена' : 'Запчасть добавлена')
+      toast.success(editingItem ? t('inventoryPage.toastUpdated') : t('inventoryPage.toastAdded'))
       setIsModalOpen(false)
       setEditingItem(null)
     },
     onError: () => {
-      toast.error('Ошибка при сохранении')
+      toast.error(t('inventoryPage.toastSaveError'))
     }
   })
 
@@ -305,11 +303,11 @@ export default function PartsInventory() {
     },
     onSuccess: (_, items) => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success(`Добавлено ${items.length} запчастей`)
+      toast.success(t('inventoryPage.toastBulkAdded', { n: items.length }))
       setIsModalOpen(false)
     },
     onError: () => {
-      toast.error('Ошибка при сохранении')
+      toast.error(t('inventoryPage.toastSaveError'))
     }
   })
 
@@ -330,13 +328,13 @@ export default function PartsInventory() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       queryClient.invalidateQueries({ queryKey: ['trash'] })
-      toast.success('Запчасть перемещена в корзину')
+      toast.success(t('inventoryPage.toastMovedToTrash'))
     },
     onError: (error: any) => {
       if (error?.status === 409 || error?.code === '23503') {
-        toast.error('Нельзя удалить: запчасть входит в заказ. Сначала удалите её из заказа.')
+        toast.error(t('inventoryPage.toastDeleteInOrder'))
       } else {
-        toast.error('Ошибка при удалении')
+        toast.error(t('inventoryPage.toastDeleteError'))
       }
     }
   })
@@ -477,7 +475,7 @@ export default function PartsInventory() {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
-      toast.success('Запчасть продана, заказ создан')
+      toast.success(t('inventoryPage.toastSold'))
       setSellingItem(null)
       setSellPrice('')
       setSellCustomerId('')
@@ -488,7 +486,7 @@ export default function PartsInventory() {
     onError: (err: any) => {
       console.error('Sell error:', err)
       const msg = err?.message || err?.error_description || JSON.stringify(err)
-      toast.error(`Ошибка при сохранении: ${msg}`)
+      toast.error(t('inventoryPage.toastSaveErrorMsg', { msg }))
     },
   })
 
@@ -536,7 +534,7 @@ export default function PartsInventory() {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
-      toast.success(`Продано ${bulkRows.length} запч., заказ создан`)
+      toast.success(t('inventoryPage.toastBulkSold', { n: bulkRows.length }))
       setIsBulkSellOpen(false)
       setSelectedIds(new Set())
       setBulkRows([])
@@ -548,7 +546,7 @@ export default function PartsInventory() {
     onError: (err: any) => {
       console.error('Bulk sell error:', err)
       const msg = err?.message || err?.error_description || JSON.stringify(err)
-      toast.error(`Ошибка при продаже: ${msg}`)
+      toast.error(t('inventoryPage.toastBulkSellErrorMsg', { msg }))
     },
   })
 
@@ -599,9 +597,9 @@ export default function PartsInventory() {
       updatePartsInventoryItem(id, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success('Статус обновлён')
+      toast.success(t('inventoryPage.toastStatusUpdated'))
     },
-    onError: () => toast.error('Ошибка при изменении статуса'),
+    onError: () => toast.error(t('inventoryPage.toastStatusError')),
   })
 
   const handleExportCsv = () => {
@@ -621,8 +619,8 @@ export default function PartsInventory() {
     const csv = buildCsv(rows)
     const date = new Date().toISOString().slice(0, 10)
     downloadCsv(csv, `sklad_${date}.csv`)
-    const note = totalCount > rows.length ? ` (загружено ${rows.length} из ${totalCount} — для полного экспорта загрузите все)` : ''
-    toast.success(`Экспортировано ${rows.length} позиций${note}`)
+    const note = totalCount > rows.length ? t('inventoryPage.exportNote', { loaded: rows.length, total: totalCount }) : ''
+    toast.success(t('inventoryPage.exportDone', { n: rows.length, note }))
   }
 
   const handleStatusClick = (item: PartsInventoryItem, e: React.MouseEvent) => {
@@ -635,12 +633,12 @@ export default function PartsInventory() {
       bulkUpdateInventory(ids, { storage_location_id: locationId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success(`Место хранения обновлено для ${selectedIds.size} позиций`)
+      toast.success(t('inventoryPage.toastBulkLocation', { n: selectedIds.size }))
       setSelectedIds(new Set())
       setIsBulkLocationOpen(false)
       setBulkLocationId('')
     },
-    onError: () => toast.error('Ошибка при обновлении места хранения'),
+    onError: () => toast.error(t('inventoryPage.toastBulkLocationError')),
   })
 
   const bulkCategoryMutation = useMutation({
@@ -648,12 +646,12 @@ export default function PartsInventory() {
       bulkUpdateInventory(ids, { category_id: categoryId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success(`Категория обновлена для ${selectedIds.size} позиций`)
+      toast.success(t('inventoryPage.toastBulkCategory', { n: selectedIds.size }))
       setSelectedIds(new Set())
       setIsBulkCategoryOpen(false)
       setBulkCategoryId('')
     },
-    onError: () => toast.error('Ошибка при обновлении категории'),
+    onError: () => toast.error(t('inventoryPage.toastBulkCategoryError')),
   })
 
   const bulkDeleteMutation = useMutation({
@@ -668,16 +666,16 @@ export default function PartsInventory() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success(`Удалено ${selectedIds.size} позиций`)
+      toast.success(t('inventoryPage.toastBulkDeleted', { n: selectedIds.size }))
       setSelectedIds(new Set())
     },
-    onError: () => toast.error('Ошибка при удалении'),
+    onError: () => toast.error(t('inventoryPage.toastDeleteError')),
   })
 
   const handleBulkDelete = async () => {
     const count = selectedIds.size
     const ok = await showConfirm({
-      message: `Удалить ${count} позиц${count === 1 ? 'ию' : count < 5 ? 'ии' : 'ий'} со склада? Это действие нельзя отменить.`,
+      message: t('inventoryPage.confirmBulkDelete', { count }),
       danger: true,
     })
     if (!ok) return
@@ -687,8 +685,8 @@ export default function PartsInventory() {
   const handleDelete = async (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
     const message = item.status === 'sold'
-      ? 'Удалить проданную запчасть? Она будет убрана из заказа, а сумма заказа пересчитается. Если это единственная позиция — заказ удалится.'
-      : 'Удалить запчасть? Это действие нельзя отменить.'
+      ? t('inventoryPage.confirmDeleteSold')
+      : t('inventoryPage.confirmDelete')
     const ok = await showConfirm({ message, danger: true })
     if (!ok) return
     deleteMutation.mutate(item)
@@ -702,15 +700,17 @@ export default function PartsInventory() {
     <div ref={rootRef} className="min-h-dvh bg-gray-50">
       {/* Header */}
       <PartsPageHeader
-        title={sourceFilter === 'shop' ? 'Магазин' : 'Запчасти'}
-        subtitle={`Загружено: ${inventory.length}${totalCount > inventory.length ? ` из ${totalCount}` : ` (всего ${totalCount})`}`}
+        title={i18n.t(sourceFilter === 'shop' ? 'cabinet:pages.shop' : 'cabinet:pages.inventory')}
+        subtitle={totalCount > inventory.length
+          ? t('inventoryPage.subtitleOf', { loaded: inventory.length, total: totalCount })
+          : t('inventoryPage.subtitleTotal', { loaded: inventory.length, total: totalCount })}
         backPath="/parts"
         actions={
           <>
             <button
               onClick={handleExportCsv}
               className="cab-btn cab-btn-ghost cab-btn-sm flex items-center gap-1.5"
-              title="Экспорт текущего списка в CSV"
+              title={t('inventoryPage.exportCsvTitle')}
             >
               <Download className="w-4 h-4" strokeWidth={1.5} />
               <span className="hidden md:inline">CSV</span>
@@ -719,10 +719,10 @@ export default function PartsInventory() {
               <button
                 onClick={() => setIsConveyorOpen(true)}
                 className="cab-btn cab-btn-secondary cab-btn-sm flex items-center gap-1.5"
-                title="Быстрый ввод запчастей к авто"
+                title={t('inventoryPage.conveyorTitle')}
               >
                 <Zap className="w-4 h-4" strokeWidth={1.5} />
-                <span className="hidden sm:inline">Конвейер</span>
+                <span className="hidden sm:inline">{t('inventoryPage.conveyor')}</span>
               </button>
             )}
             <button
@@ -733,7 +733,7 @@ export default function PartsInventory() {
               className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" strokeWidth={2} />
-              <span className="hidden sm:inline">Добавить</span>
+              <span className="hidden sm:inline">{t('inventoryPage.add')}</span>
             </button>
           </>
         }
@@ -747,7 +747,7 @@ export default function PartsInventory() {
             <LimitReachedBanner
               used={usage.parts}
               max={limits.maxParts}
-              label="Запчасти"
+              label={t('inventoryPage.partsLabel')}
               ctaHref="/parts/subscription"
             />
           </div>
@@ -762,14 +762,14 @@ export default function PartsInventory() {
               </div>
               <span className="text-sm text-amber-800">
                 <span className="font-bold">{stats.needsFill}</span>
-                {' '}запчаст{stats.needsFill === 1 ? 'ь' : stats.needsFill < 5 ? 'и' : 'ей'} без цены или номера
+                {' '}{t('inventoryPage.needsFillText', { count: stats.needsFill })}
               </span>
             </div>
             <button
               onClick={() => navigate('/parts/inventory/no-price')}
               className="flex-shrink-0 px-3 py-1.5 text-xs font-bold bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition-colors"
             >
-              Заполнить
+              {t('inventoryPage.fill')}
             </button>
           </div>
         )}
@@ -782,37 +782,37 @@ export default function PartsInventory() {
               onClick={() => setStatusFilter('all')}
               className={`chip flex-shrink-0 ${statusFilter === 'all' ? 'chip-active' : ''}`}
             >
-              Всего ({sourceFilter === 'vehicles' ? stats.total : stats.totalQuantity})
+              {t('inventoryPage.chipAll')} ({sourceFilter === 'vehicles' ? stats.total : stats.totalQuantity})
             </button>
             <button
               onClick={() => setStatusFilter('available')}
               className={`chip flex-shrink-0 ${statusFilter === 'available' ? 'chip-active' : ''}`}
             >
-              В наличии ({stats.available})
+              {t('inventoryPage.chipAvailable')} ({stats.available})
             </button>
             <button
               onClick={() => setStatusFilter('reserved')}
               className={`chip flex-shrink-0 ${statusFilter === 'reserved' ? 'chip-active' : ''}`}
             >
-              Зарезервировано ({stats.reserved})
+              {t('inventoryPage.chipReserved')} ({stats.reserved})
             </button>
             <button
               onClick={() => setStatusFilter(statusFilter === 'sold' ? 'all' : 'sold')}
               className={`chip flex-shrink-0 ${statusFilter === 'sold' ? 'chip-active' : ''}`}
             >
-              Продано ({stats.sold})
+              {t('inventoryPage.chipSold')} ({stats.sold})
             </button>
           </div>
           {/* Стоимость */}
           <div className="flex-shrink-0 text-right">
             {statusFilter === 'all' ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 hidden sm:inline">склад</span>
+                <span className="text-xs text-gray-400 hidden sm:inline">{t('inventoryPage.costStock')}</span>
                 <span className="text-sm font-bold text-green-600">
                   {stats.stockUSD === 0 ? '—' : `$${Math.round(stats.stockUSD).toLocaleString('ru-RU')}`}
                 </span>
                 <span className="text-xs text-gray-300">·</span>
-                <span className="text-xs text-gray-400 hidden sm:inline">продано</span>
+                <span className="text-xs text-gray-400 hidden sm:inline">{t('inventoryPage.costSold')}</span>
                 <span className="text-sm font-bold text-primary">
                   {stats.soldUSD === 0 ? '—' : `$${Math.round(stats.soldUSD).toLocaleString('ru-RU')}`}
                 </span>
@@ -840,7 +840,7 @@ export default function PartsInventory() {
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" strokeWidth={1.5} />
               <input
                 type="text"
-                placeholder="Поиск по названию, артикулу, описанию..."
+                placeholder={t('inventoryPage.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="form-input pl-10"
@@ -850,7 +850,7 @@ export default function PartsInventory() {
             <div className="flex gap-2">
               {/* Sort controls */}
               <div className="flex bg-gray-100 rounded-xl p-1 gap-0.5">
-                {([['date', 'Дата'], ['name', 'АЯ'], ['status', 'Ст'], ['price', 'Це']] as const).map(([field, label]) => (
+                {([['date', t('inventoryPage.sortDate')], ['name', t('inventoryPage.sortName')], ['status', t('inventoryPage.sortStatus')], ['price', t('inventoryPage.sortPrice')]] as const).map(([field, label]) => (
                   <button
                     key={field}
                     onClick={() => {
@@ -858,7 +858,7 @@ export default function PartsInventory() {
                       // дата по умолчанию — новые сверху (desc); остальные — по возрастанию (asc)
                       else { setSortField(field); setSortDir(field === 'date' ? 'desc' : 'asc') }
                     }}
-                    title={field === 'date' ? 'По дате добавления (новые сверху)' : field === 'name' ? 'По алфавиту' : field === 'status' ? 'По статусу' : 'По цене'}
+                    title={field === 'date' ? t('inventoryPage.sortDateTitle') : field === 'name' ? t('inventoryPage.sortNameTitle') : field === 'status' ? t('inventoryPage.sortStatusTitle') : t('inventoryPage.sortPriceTitle')}
                     className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-0.5 ${
                       sortField === field ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
                     }`}
@@ -876,14 +876,14 @@ export default function PartsInventory() {
                 <button
                   onClick={() => setViewMode('list')}
                   className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-                  title="Список (таблица)"
+                  title={t('inventoryPage.viewList')}
                 >
                   <List className="w-4 h-4" strokeWidth={1.5} />
                 </button>
                 <button
                   onClick={() => setViewMode('grid')}
                   className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-                  title="Карточки"
+                  title={t('inventoryPage.viewGrid')}
                 >
                   <Grid className="w-4 h-4" strokeWidth={1.5} />
                 </button>
@@ -898,7 +898,7 @@ export default function PartsInventory() {
                 onClick={() => setVehicleFilter('all')}
                 className={`chip ${effectiveVehicleFilter === 'all' ? 'chip-active' : ''}`}
               >
-                Все машины
+                {t('inventoryPage.allVehicles')}
               </button>
               {uniqueVehicles.map((v: any) => (
                 <button
@@ -925,14 +925,14 @@ export default function PartsInventory() {
                 <Package className="w-7 h-7 text-gray-400" strokeWidth={1.5} />
               </div>
               <p className="empty-state-title">
-                {debouncedSearch || statusFilter !== 'all' ? 'Запчасти не найдены' : 'Нет запчастей'}
+                {debouncedSearch || statusFilter !== 'all' ? t('inventoryPage.emptyNotFound') : t('inventoryPage.emptyNoParts')}
               </p>
               {!debouncedSearch && statusFilter === 'all' && (
                 <button
                   onClick={() => setIsModalOpen(true)}
                   className="mt-3 cab-btn cab-btn-ghost cab-btn-sm text-primary"
                 >
-                  Добавить первую запчасть
+                  {t('inventoryPage.addFirst')}
                 </button>
               )}
             </div>
@@ -967,13 +967,13 @@ export default function PartsInventory() {
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold text-gray-900 truncate">{item.name}</div>
                   <div className="text-xs font-mono text-gray-400 truncate mt-0.5">
-                    {item.part_number || 'без номера'}
+                    {item.part_number || t('inventoryPage.noNumber')}
                   </div>
                 </div>
                 <span className="flex-shrink-0 text-sm font-bold text-primary tabular whitespace-nowrap">
                   {item.selling_price
                     ? formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')
-                    : <span className="text-amber-500 text-xs font-semibold">нет цены</span>}
+                    : <span className="text-amber-500 text-xs font-semibold">{t('inventoryPage.noPrice')}</span>}
                 </span>
                 <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
               </button>
@@ -987,13 +987,13 @@ export default function PartsInventory() {
                 <thead>
                   <tr>
                     <th className="table-header-cell px-2" style={{ width: '38px' }}></th>
-                    <th className="table-header-cell" style={{ width: '26%' }}>Название</th>
-                    <th className="table-header-cell hidden sm:table-cell" style={{ width: '15%' }}>Ориг. номер</th>
-                    <th className="table-header-cell whitespace-nowrap" style={{ width: '9%' }}>Цена</th>
-                    <th className="table-header-cell whitespace-nowrap" style={{ width: '13%' }}>Наличие</th>
-                    <th className="table-header-cell hidden md:table-cell" style={{ width: '15%' }}>Авто</th>
-                    <th className="table-header-cell hidden lg:table-cell" style={{ width: '11%' }}>Категория</th>
-                    <th className="table-header-cell hidden xl:table-cell" style={{ width: '11%' }}>Склад</th>
+                    <th className="table-header-cell" style={{ width: '26%' }}>{t('inventoryPage.colName')}</th>
+                    <th className="table-header-cell hidden sm:table-cell" style={{ width: '15%' }}>{t('inventoryPage.colOem')}</th>
+                    <th className="table-header-cell whitespace-nowrap" style={{ width: '9%' }}>{t('inventoryPage.colPrice')}</th>
+                    <th className="table-header-cell whitespace-nowrap" style={{ width: '13%' }}>{t('inventoryPage.colStatus')}</th>
+                    <th className="table-header-cell hidden md:table-cell" style={{ width: '15%' }}>{t('inventoryPage.colVehicle')}</th>
+                    <th className="table-header-cell hidden lg:table-cell" style={{ width: '11%' }}>{t('inventoryPage.colCategory')}</th>
+                    <th className="table-header-cell hidden xl:table-cell" style={{ width: '11%' }}>{t('inventoryPage.colStorage')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -1035,11 +1035,11 @@ export default function PartsInventory() {
                           onClick={(e) => { e.stopPropagation(); handleStatusClick(item, e) }}
                           className={`${statusColors[item.status]} cursor-pointer hover:opacity-80 transition-opacity`}
                         >
-                          {statusLabels[item.status]}
+                          {statusLabel(item.status)}
                         </button>
                         {!item.vehicle_id && (
                           <span className={`ml-1.5 text-xs font-semibold tabular ${item.quantity <= 2 ? 'text-red-600' : 'text-gray-500'}`}>
-                            {item.quantity} шт{item.quantity <= 2 && item.status === 'available'
+                            {t('inventoryPage.qtyPcs', { n: item.quantity })}{item.quantity <= 2 && item.status === 'available'
                               ? <AlertTriangle className="inline w-3 h-3 ml-0.5 -mt-0.5 text-red-500" />
                               : null}
                           </span>
@@ -1053,7 +1053,7 @@ export default function PartsInventory() {
                             {item.vehicle.year && <div className="text-[11px] text-gray-400">{item.vehicle.year}</div>}
                           </div>
                         ) : (
-                          <span className="text-xs text-gray-400">Магазин</span>
+                          <span className="text-xs text-gray-400">{t('inventoryPage.shopLabel')}</span>
                         )}
                       </td>
                       {/* Категория */}
@@ -1081,7 +1081,7 @@ export default function PartsInventory() {
         {hasNextPage && (
           <div className="mt-4 flex items-center justify-center gap-3">
             <span className="text-sm text-gray-400">
-              Загружено {inventory.length} из {totalCount}
+              {t('inventoryPage.loadedOf', { loaded: inventory.length, total: totalCount })}
             </span>
             <button
               onClick={() => fetchNextPage()}
@@ -1089,7 +1089,7 @@ export default function PartsInventory() {
               className="cab-btn cab-btn-secondary cab-btn-sm flex items-center gap-1.5 disabled:opacity-50"
             >
               {isFetchingNextPage ? <Spinner size="sm" /> : null}
-              {isFetchingNextPage ? 'Загрузка...' : 'Загрузить ещё'}
+              {isFetchingNextPage ? t('inventoryPage.loading') : t('inventoryPage.loadMore')}
             </button>
           </div>
         )}
@@ -1104,23 +1104,23 @@ export default function PartsInventory() {
             {pendingStatus ? (
               <>
                 <div className="modal-header">
-                  <h3 className="text-base font-bold text-gray-900">Подтвердите изменение</h3>
+                  <h3 className="text-base font-bold text-gray-900">{t('inventoryPage.confirmChange')}</h3>
                   <p className="text-sm text-gray-500 line-clamp-1 mt-0.5">{statusPickerItem.name}</p>
                 </div>
                 <div className="modal-body">
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                     <span className={`badge ${statusColors[statusPickerItem.status]}`}>
-                      {statusLabels[statusPickerItem.status]}
+                      {statusLabel(statusPickerItem.status)}
                     </span>
                     <span className="text-gray-400 text-sm">→</span>
                     <span className={`badge ${statusColors[pendingStatus]}`}>
-                      {statusLabels[pendingStatus]}
+                      {statusLabel(pendingStatus)}
                     </span>
                   </div>
                 </div>
                 <div className="modal-footer">
                   <button onClick={() => setPendingStatus(null)} className="modal-btn-cancel">
-                    Назад
+                    {t('inventoryPage.back')}
                   </button>
                   <button
                     disabled={statusChangeMutation.isPending}
@@ -1132,18 +1132,18 @@ export default function PartsInventory() {
                     }}
                     className="cab-btn cab-btn-primary disabled:opacity-50"
                   >
-                    {statusChangeMutation.isPending ? 'Сохранение...' : 'Подтвердить'}
+                    {statusChangeMutation.isPending ? t('inventoryPage.saving') : t('inventoryPage.confirm')}
                   </button>
                 </div>
               </>
             ) : (
               <>
                 <div className="modal-header">
-                  <h3 className="text-base font-bold text-gray-900">Изменить статус</h3>
+                  <h3 className="text-base font-bold text-gray-900">{t('inventoryPage.changeStatus')}</h3>
                   <p className="text-sm text-gray-500 line-clamp-1 mt-0.5">{statusPickerItem.name}</p>
                 </div>
                 <div className="modal-body space-y-2">
-                  {(Object.keys(statusLabels) as PartsInventoryStatus[]).map(s => (
+                  {(Object.keys(statusColors) as PartsInventoryStatus[]).map(s => (
                     <button
                       key={s}
                       disabled={s === statusPickerItem.status}
@@ -1159,9 +1159,9 @@ export default function PartsInventory() {
                         s === 'reserved' ? 'bg-yellow-500' :
                         s === 'sold' ? 'bg-gray-400' : 'bg-red-500'
                       }`} />
-                      {statusLabels[s]}
+                      {statusLabel(s)}
                       {s === statusPickerItem.status && (
-                        <span className="ml-auto text-xs font-normal text-gray-400">Текущий</span>
+                        <span className="ml-auto text-xs font-normal text-gray-400">{t('inventoryPage.statusCurrent')}</span>
                       )}
                     </button>
                   ))}
@@ -1171,7 +1171,7 @@ export default function PartsInventory() {
                     onClick={() => setStatusPickerItem(null)}
                     className="modal-btn-cancel w-full"
                   >
-                    Отмена
+                    {t('inventoryPage.cancel')}
                   </button>
                 </div>
               </>
@@ -1184,14 +1184,14 @@ export default function PartsInventory() {
       {selectedIds.size > 0 && (
         <div className="fixed bottom-[calc(1rem+64px+env(safe-area-inset-bottom,0px))] md:bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center gap-2 bg-gray-900 text-white rounded-2xl px-4 py-3 shadow-lg animate-slide-up max-w-[calc(100vw-2rem)]">
           <span className="text-sm font-semibold whitespace-nowrap">
-            Выбрано: {selectedIds.size}
+            {t('inventoryPage.selectedCount', { n: selectedIds.size })}
           </span>
           <button
             type="button"
             onClick={() => setSelectedIds(new Set())}
             className="text-gray-400 hover:text-white transition-colors text-xs font-medium underline whitespace-nowrap"
           >
-            Сбросить
+            {t('inventoryPage.reset')}
           </button>
           <div className="flex items-center gap-1.5 flex-wrap">
             <button
@@ -1200,7 +1200,7 @@ export default function PartsInventory() {
               className="cab-btn cab-btn-success cab-btn-sm flex items-center gap-1.5"
             >
               <DollarSign className="w-4 h-4" strokeWidth={1.5} />
-              <span className="hidden sm:inline">Продать</span>
+              <span className="hidden sm:inline">{t('inventoryPage.sell')}</span>
             </button>
             <button
               type="button"
@@ -1208,7 +1208,7 @@ export default function PartsInventory() {
               className="cab-btn cab-btn-secondary cab-btn-sm"
             >
               <MapPin className="w-4 h-4" strokeWidth={1.5} />
-              <span className="hidden sm:inline">Место</span>
+              <span className="hidden sm:inline">{t('inventoryPage.location')}</span>
             </button>
             <button
               type="button"
@@ -1216,7 +1216,7 @@ export default function PartsInventory() {
               className="cab-btn cab-btn-secondary cab-btn-sm"
             >
               <FolderOpen className="w-4 h-4" strokeWidth={1.5} />
-              <span className="hidden sm:inline">Категория</span>
+              <span className="hidden sm:inline">{t('inventoryPage.category')}</span>
             </button>
             <button
               type="button"
@@ -1225,7 +1225,7 @@ export default function PartsInventory() {
               className="cab-btn cab-btn-danger cab-btn-sm disabled:opacity-50"
             >
               <Trash2 className="w-4 h-4" strokeWidth={1.5} />
-              <span className="hidden sm:inline">Удалить</span>
+              <span className="hidden sm:inline">{t('inventoryPage.delete')}</span>
             </button>
           </div>
         </div>
@@ -1238,15 +1238,15 @@ export default function PartsInventory() {
           <div className="modal-sheet sm:max-w-sm w-full z-10">
             <div className="modal-handle sm:hidden" />
             <div className="modal-header">
-              <h3 className="text-base font-bold text-gray-900">Продать запчасть</h3>
+              <h3 className="text-base font-bold text-gray-900">{t('inventoryPage.sellPart')}</h3>
               <p className="text-sm text-gray-500 line-clamp-1 mt-0.5">{sellingItem.name}</p>
             </div>
             <div className="modal-body space-y-4">
               {/* Price */}
               <div>
-                <label className="form-label">Цена продажи</label>
+                <label className="form-label">{t('inventoryPage.sellPrice')}</label>
                 {sellingItem.selling_price && (
-                  <p className="text-xs text-gray-400 mb-2">Объявленная: {formatPrice(sellingItem.selling_price, (sellingItem.price_currency as 'UAH' | 'USD') || 'USD')}</p>
+                  <p className="text-xs text-gray-400 mb-2">{t('inventoryPage.announcedPrice')}: {formatPrice(sellingItem.selling_price, (sellingItem.price_currency as 'UAH' | 'USD') || 'USD')}</p>
                 )}
                 <div className="flex gap-2">
                   <input
@@ -1271,7 +1271,7 @@ export default function PartsInventory() {
 
               {/* Customer selection */}
               <div>
-                <label className="form-label">Клиент <span className="text-gray-400 font-normal">(необязательно)</span></label>
+                <label className="form-label">{t('inventoryPage.customer')} <span className="text-gray-400 font-normal">{t('inventoryPage.optional')}</span></label>
                 {!showNewCustomer ? (
                   <div className="flex gap-2">
                     <div className="relative flex-1">
@@ -1280,7 +1280,7 @@ export default function PartsInventory() {
                         onChange={(e) => setSellCustomerId(e.target.value)}
                         className="form-select"
                       >
-                        <option value="">— Без клиента —</option>
+                        <option value="">{t('inventoryPage.noCustomer')}</option>
                         {customers.map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.full_name}{c.phone ? ` (${c.phone})` : ''}
@@ -1293,7 +1293,7 @@ export default function PartsInventory() {
                       type="button"
                       onClick={() => setShowNewCustomer(true)}
                       className="cab-btn cab-btn-secondary px-3 flex-shrink-0"
-                      title="Новый клиент"
+                      title={t('inventoryPage.newCustomer')}
                     >
                       <UserPlus className="w-4 h-4" strokeWidth={1.5} />
                     </button>
@@ -1301,7 +1301,7 @@ export default function PartsInventory() {
                 ) : (
                   <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-gray-700">Новый клиент</span>
+                      <span className="text-xs font-semibold text-gray-700">{t('inventoryPage.newCustomer')}</span>
                       <button type="button" onClick={() => setShowNewCustomer(false)} className="btn-icon-sm">
                         <X className="w-3.5 h-3.5" strokeWidth={1.5} />
                       </button>
@@ -1310,14 +1310,14 @@ export default function PartsInventory() {
                       type="text"
                       value={newCustomerName}
                       onChange={(e) => setNewCustomerName(e.target.value)}
-                      placeholder="Имя *"
+                      placeholder={t('inventoryPage.namePlaceholder')}
                       className="form-input"
                     />
                     <input
                       type="text"
                       value={newCustomerPhone}
                       onChange={(e) => setNewCustomerPhone(e.target.value)}
-                      placeholder="Телефон"
+                      placeholder={t('inventoryPage.phonePlaceholder')}
                       className="form-input"
                     />
                   </div>
@@ -1330,7 +1330,7 @@ export default function PartsInventory() {
                 onClick={() => setSellingItem(null)}
                 className="modal-btn-cancel"
               >
-                Отмена
+                {t('inventoryPage.cancel')}
               </button>
               <button
                 type="button"
@@ -1338,11 +1338,11 @@ export default function PartsInventory() {
                 onClick={() => {
                   const price = parseFloat(sellPrice)
                   if (isNaN(price) || price < 0) {
-                    toast.error('Введите корректную сумму')
+                    toast.error(t('inventoryPage.invalidAmount'))
                     return
                   }
                   if (showNewCustomer && !newCustomerName.trim()) {
-                    toast.error('Введите имя клиента')
+                    toast.error(t('inventoryPage.enterCustomerName'))
                     return
                   }
                   sellMutation.mutate({
@@ -1355,7 +1355,7 @@ export default function PartsInventory() {
                 }}
                 className="cab-btn cab-btn-primary disabled:opacity-50"
               >
-                {sellMutation.isPending ? 'Сохранение...' : 'Продать'}
+                {sellMutation.isPending ? t('inventoryPage.saving') : t('inventoryPage.sell')}
               </button>
             </div>
           </div>
@@ -1369,8 +1369,8 @@ export default function PartsInventory() {
           <div className="modal-sheet sm:max-w-lg w-full z-10">
             <div className="modal-handle sm:hidden" />
             <div className="modal-header">
-              <h3 className="text-base font-bold text-gray-900">Продать зарезервированные запчасти</h3>
-              <p className="text-sm text-gray-500 mt-0.5">Укажите количество и цену продажи для каждой позиции</p>
+              <h3 className="text-base font-bold text-gray-900">{t('inventoryPage.bulkSellTitle')}</h3>
+              <p className="text-sm text-gray-500 mt-0.5">{t('inventoryPage.bulkSellSubtitle')}</p>
             </div>
             <div className="modal-body">
 
@@ -1386,7 +1386,7 @@ export default function PartsInventory() {
                     </div>
                     {/* Quantity */}
                     <div className="flex items-center gap-1">
-                      <span className="text-xs font-medium text-gray-400">кол:</span>
+                      <span className="text-xs font-medium text-gray-400">{t('inventoryPage.qtyShort')}</span>
                       <input
                         type="number"
                         min="1"
@@ -1412,7 +1412,7 @@ export default function PartsInventory() {
                           next[idx] = { ...next[idx], price: e.target.value }
                           setBulkRows(next)
                         }}
-                        placeholder="Цена"
+                        placeholder={t('inventoryPage.pricePlaceholder')}
                         className="w-20 form-input px-2 py-1.5 text-sm"
                       />
                       <button
@@ -1433,7 +1433,7 @@ export default function PartsInventory() {
 
               {/* Customer */}
               <label className="form-label">
-                Клиент <span className="text-gray-400 font-normal">(необязательно)</span>
+                {t('inventoryPage.customer')} <span className="text-gray-400 font-normal">{t('inventoryPage.optional')}</span>
               </label>
               {!bulkShowNewCustomer ? (
                 <div className="flex gap-2 mb-5">
@@ -1443,7 +1443,7 @@ export default function PartsInventory() {
                       onChange={(e) => setBulkCustomerId(e.target.value)}
                       className="form-select"
                     >
-                      <option value="">— Без клиента —</option>
+                      <option value="">{t('inventoryPage.noCustomer')}</option>
                       {customers.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.full_name}{c.phone ? ` (${c.phone})` : ''}
@@ -1456,7 +1456,7 @@ export default function PartsInventory() {
                     type="button"
                     onClick={() => setBulkShowNewCustomer(true)}
                     className="cab-btn cab-btn-secondary px-3 flex-shrink-0"
-                    title="Новый клиент"
+                    title={t('inventoryPage.newCustomer')}
                   >
                     <UserPlus className="w-4 h-4" strokeWidth={1.5} />
                   </button>
@@ -1464,7 +1464,7 @@ export default function PartsInventory() {
               ) : (
                 <div className="mb-5 p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-gray-700">Новый клиент</span>
+                    <span className="text-xs font-semibold text-gray-700">{t('inventoryPage.newCustomer')}</span>
                     <button type="button" onClick={() => setBulkShowNewCustomer(false)} className="btn-icon-sm">
                       <X className="w-3.5 h-3.5" strokeWidth={1.5} />
                     </button>
@@ -1473,14 +1473,14 @@ export default function PartsInventory() {
                     type="text"
                     value={bulkNewCustomerName}
                     onChange={(e) => setBulkNewCustomerName(e.target.value)}
-                    placeholder="Имя *"
+                    placeholder={t('inventoryPage.namePlaceholder')}
                     className="form-input"
                   />
                   <input
                     type="text"
                     value={bulkNewCustomerPhone}
                     onChange={(e) => setBulkNewCustomerPhone(e.target.value)}
-                    placeholder="Телефон"
+                    placeholder={t('inventoryPage.phonePlaceholder')}
                     className="form-input"
                   />
                 </div>
@@ -1492,7 +1492,7 @@ export default function PartsInventory() {
                 onClick={() => setIsBulkSellOpen(false)}
                 className="modal-btn-cancel"
               >
-                Отмена
+                {t('inventoryPage.cancel')}
               </button>
               <button
                 type="button"
@@ -1501,12 +1501,12 @@ export default function PartsInventory() {
                   for (const row of bulkRows) {
                     const price = parseFloat(row.price)
                     if (isNaN(price) || price < 0) {
-                      toast.error(`Укажите цену для: ${row.item.name}`)
+                      toast.error(t('inventoryPage.enterPriceFor', { name: row.item.name }))
                       return
                     }
                   }
                   if (bulkShowNewCustomer && !bulkNewCustomerName.trim()) {
-                    toast.error('Введите имя клиента')
+                    toast.error(t('inventoryPage.enterCustomerName'))
                     return
                   }
                   bulkSellMutation.mutate({
@@ -1517,7 +1517,7 @@ export default function PartsInventory() {
                 }}
                 className="cab-btn cab-btn-primary disabled:opacity-50"
               >
-                {bulkSellMutation.isPending ? 'Сохранение...' : `Продать (${bulkRows.length})`}
+                {bulkSellMutation.isPending ? t('inventoryPage.saving') : t('inventoryPage.sellWithCount', { n: bulkRows.length })}
               </button>
             </div>
           </div>
@@ -1531,11 +1531,11 @@ export default function PartsInventory() {
           <div className="modal-sheet sm:max-w-xs w-full z-10">
             <div className="modal-handle sm:hidden" />
             <div className="modal-header">
-              <h3 className="text-base font-bold text-gray-900">Сменить место хранения</h3>
-              <p className="text-sm text-gray-500 mt-0.5">Для {selectedIds.size} позиций</p>
+              <h3 className="text-base font-bold text-gray-900">{t('inventoryPage.changeLocation')}</h3>
+              <p className="text-sm text-gray-500 mt-0.5">{t('inventoryPage.forNItems', { n: selectedIds.size })}</p>
             </div>
             <div className="modal-body">
-              <label className="form-label">Место хранения</label>
+              <label className="form-label">{t('inventoryPage.storageLocation')}</label>
               {storageLocations.length > 0 ? (
                 <div className="relative">
                   <select
@@ -1544,7 +1544,7 @@ export default function PartsInventory() {
                     className="form-select"
                     autoFocus
                   >
-                    <option value="">— Не указано —</option>
+                    <option value="">{t('inventoryPage.notSpecifiedDash')}</option>
                     {buildLocationOptions(storageLocations as StorageLocation[]).map(opt => (
                       <option key={opt.id} value={opt.id}>{opt.label}</option>
                     ))}
@@ -1552,12 +1552,12 @@ export default function PartsInventory() {
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" strokeWidth={1.5} />
                 </div>
               ) : (
-                <p className="text-sm text-gray-400 py-2">Места хранения не настроены. Настройте их в разделе Склад.</p>
+                <p className="text-sm text-gray-400 py-2">{t('inventoryPage.noLocationsConfigured')}</p>
               )}
             </div>
             <div className="modal-footer">
               <button type="button" onClick={() => setIsBulkLocationOpen(false)} className="modal-btn-cancel">
-                Отмена
+                {t('inventoryPage.cancel')}
               </button>
               <button
                 type="button"
@@ -1568,7 +1568,7 @@ export default function PartsInventory() {
                 })}
                 className="cab-btn cab-btn-primary disabled:opacity-50"
               >
-                {bulkLocationMutation.isPending ? 'Сохранение...' : 'Применить'}
+                {bulkLocationMutation.isPending ? t('inventoryPage.saving') : t('inventoryPage.apply')}
               </button>
             </div>
           </div>
@@ -1582,11 +1582,11 @@ export default function PartsInventory() {
           <div className="modal-sheet sm:max-w-xs w-full z-10">
             <div className="modal-handle sm:hidden" />
             <div className="modal-header">
-              <h3 className="text-base font-bold text-gray-900">Сменить категорию</h3>
-              <p className="text-sm text-gray-500 mt-0.5">Для {selectedIds.size} позиций</p>
+              <h3 className="text-base font-bold text-gray-900">{t('inventoryPage.changeCategory')}</h3>
+              <p className="text-sm text-gray-500 mt-0.5">{t('inventoryPage.forNItems', { n: selectedIds.size })}</p>
             </div>
             <div className="modal-body">
-              <label className="form-label">Категория</label>
+              <label className="form-label">{t('inventoryPage.category')}</label>
               <div className="relative">
                 <select
                   value={bulkCategoryId}
@@ -1594,7 +1594,7 @@ export default function PartsInventory() {
                   className="form-select"
                   autoFocus
                 >
-                  <option value="">— Без категории —</option>
+                  <option value="">{t('inventoryPage.noCategoryDash')}</option>
                   {categories.map((cat: any) => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
@@ -1604,7 +1604,7 @@ export default function PartsInventory() {
             </div>
             <div className="modal-footer">
               <button type="button" onClick={() => setIsBulkCategoryOpen(false)} className="modal-btn-cancel">
-                Отмена
+                {t('inventoryPage.cancel')}
               </button>
               <button
                 type="button"
@@ -1615,7 +1615,7 @@ export default function PartsInventory() {
                 })}
                 className="cab-btn cab-btn-primary disabled:opacity-50"
               >
-                {bulkCategoryMutation.isPending ? 'Сохранение...' : 'Применить'}
+                {bulkCategoryMutation.isPending ? t('inventoryPage.saving') : t('inventoryPage.apply')}
               </button>
             </div>
           </div>
@@ -1767,6 +1767,7 @@ interface PartsInventoryModalProps {
 }
 
 export function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange, initialStorageLocationId, onStorageChange, photoCfg }: PartsInventoryModalProps) {
+  const { t } = useTranslation('cabinet')
   const [bulkMode, setBulkMode] = useState(false)
   const [showPasteArea, setShowPasteArea] = useState(false)
   const [pasteText, setPasteText] = useState('')
@@ -1815,11 +1816,11 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     const used = photos.length + pendingPhotos.length
     const remaining = MAX_PHOTOS - used
     if (remaining <= 0) {
-      toast.error(`Максимум ${MAX_PHOTOS} фото на товар`)
+      toast.error(t('inventoryPage.maxPhotos', { max: MAX_PHOTOS }))
       return
     }
     if (files.length > remaining) {
-      toast.error(`Можно добавить ещё ${remaining} (максимум ${MAX_PHOTOS} фото на товар)`)
+      toast.error(t('inventoryPage.canAddMorePhotos', { remaining, max: MAX_PHOTOS }))
       files = files.slice(0, remaining)
     }
 
@@ -1833,7 +1834,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
         .then(uploaded => { setPhotos(prev => [...prev, uploaded]) })
         .catch(err => {
           if (err instanceof PhotoProviderNotConfigured) toast.error(err.message)
-          else toast.error('Не удалось загрузить фото')
+          else toast.error(t('inventoryPage.photoUploadError'))
         })
         .finally(() => {
           setPendingPhotos(prev => prev.filter(p => p.id !== id))
@@ -1852,10 +1853,10 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     try {
       await navigator.clipboard.writeText(val)
       setOemCopied(true)
-      toast.success('Артикул скопирован')
+      toast.success(t('inventoryPage.oemCopied'))
       setTimeout(() => setOemCopied(false), 1500)
     } catch {
-      toast.error('Не удалось скопировать')
+      toast.error(t('inventoryPage.copyError'))
     }
   }
 
@@ -1864,7 +1865,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     if (bulkMode) {
       const valid = bulkItems.filter(r => r.name.trim())
       if (!valid.length) {
-        toast.error('Добавьте хотя бы одну запчасть с названием')
+        toast.error(t('inventoryPage.addAtLeastOne'))
         return
       }
       onSaveBulk?.(valid.map(r => ({
@@ -1896,7 +1897,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <div className="modal-header flex-shrink-0">
             <h3 className="text-base font-bold text-gray-900">
-              {item ? 'Редактировать запчасть' : 'Добавить запчасть'}
+              {item ? t('inventoryPage.editPart') : t('inventoryPage.addPart')}
             </h3>
           </div>
           <div className="modal-body flex-1 overflow-y-auto min-h-0">
@@ -1910,13 +1911,13 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 return (
                   <div className="flex items-center justify-between gap-2 px-3 py-2 bg-amber-50 border border-amber-200/60 rounded-xl text-sm text-amber-800">
                     <span>
-                      Подставлено последнее:{' '}
+                      {t('inventoryPage.autoFilledLast')}{' '}
                       {v && <strong>{v.make} {v.model} {v.year}</strong>}
                       {v && loc && <span className="text-amber-400"> · </span>}
                       {loc && <strong>{loc.label}</strong>}
                     </span>
                     <button type="button" onClick={() => setAutoHintDismissed(true)} className="text-amber-600 hover:text-amber-700 text-xs font-semibold shrink-0">
-                      Ок
+                      {t('inventoryPage.ok')}
                     </button>
                   </div>
                 )
@@ -1933,7 +1934,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    Одна запчасть
+                    {t('inventoryPage.singlePart')}
                   </button>
                   <button
                     type="button"
@@ -1944,7 +1945,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    Списком
+                    {t('inventoryPage.bulkList')}
                   </button>
                 </div>
               )}
@@ -1953,7 +1954,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="form-label">Автомобиль-источник</label>
+                      <label className="form-label">{t('inventoryPage.sourceVehicle')}</label>
                       <select
                         value={bulkShared.vehicle_id}
                         onChange={(e) => {
@@ -1962,7 +1963,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       }}
                         className="form-select"
                       >
-                        <option value="">Не привязано</option>
+                        <option value="">{t('inventoryPage.notLinked')}</option>
                         {(vehicles as any[]).map((vehicle) => (
                           <option key={vehicle.id} value={vehicle.id}>
                             {vehicle.make} {vehicle.model} {vehicle.year}
@@ -1971,13 +1972,13 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       </select>
                     </div>
                     <div>
-                      <label className="form-label">Категория</label>
+                      <label className="form-label">{t('inventoryPage.category')}</label>
                       <select
                         value={bulkShared.category_id}
                         onChange={(e) => setBulkShared({ ...bulkShared, category_id: e.target.value })}
                         className="form-select"
                       >
-                        <option value="">Без категории</option>
+                        <option value="">{t('inventoryPage.noCategory')}</option>
                         {(bulkShared.vehicle_id
                           ? getCategoriesForVehicle(bulkShared.vehicle_id, vehicles, categories)
                           : categories
@@ -1989,19 +1990,19 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="form-label">Состояние</label>
+                      <label className="form-label">{t('inventoryPage.condition')}</label>
                       <select
                         value={bulkShared.condition}
                         onChange={(e) => setBulkShared({ ...bulkShared, condition: e.target.value })}
                         className="form-select"
                       >
-                        <option value="new">Новая</option>
-                        <option value="used">Б/У хорошее</option>
-                        <option value="damaged">Повреждена</option>
+                        <option value="new">{t('inventoryPage.conditionNew')}</option>
+                        <option value="used">{t('inventoryPage.conditionUsed')}</option>
+                        <option value="damaged">{t('inventoryPage.conditionDamaged')}</option>
                       </select>
                     </div>
                     <div>
-                      <label className="form-label">Место хранения</label>
+                      <label className="form-label">{t('inventoryPage.storageLocation')}</label>
                       {storageLocations.length > 0 ? (
                         <select
                           value={bulkShared.storage_location_id}
@@ -2011,7 +2012,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                           }}
                           className="form-select"
                         >
-                          <option value="">Не указано</option>
+                          <option value="">{t('inventoryPage.notSpecified')}</option>
                           {buildLocationOptions(storageLocations).map(opt => (
                             <option key={opt.id} value={opt.id}>{opt.label}</option>
                           ))}
@@ -2019,7 +2020,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       ) : (
                         <input
                           type="text"
-                          placeholder="Например: Бокс 1, Полка 3..."
+                          placeholder={t('inventoryPage.storagePlaceholder')}
                           className="form-input bg-gray-50 cursor-not-allowed"
                           disabled
                         />
@@ -2031,7 +2032,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="form-label">
-                        Список запчастей
+                        {t('inventoryPage.partsList')}
                       </label>
                       <div className="flex items-center gap-2">
                         <button
@@ -2047,14 +2048,14 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                           }`}
                         >
                           <ClipboardList className="w-3.5 h-3.5" />
-                          Вставить списком
+                          {t('inventoryPage.pasteList')}
                         </button>
-                        <span className="kicker">Валюта:</span>
+                        <span className="kicker">{t('inventoryPage.currency')}</span>
                         <button
                           type="button"
                           onClick={() => setBulkShared(prev => ({ ...prev, price_currency: prev.price_currency === 'USD' ? 'UAH' : 'USD' }))}
                           className="cab-btn cab-btn-primary cab-btn-sm w-9 text-center px-0"
-                          title="Сменить валюту"
+                          title={t('inventoryPage.changeCurrency')}
                         >
                           {bulkShared.price_currency === 'USD' ? '$' : 'грн'}
                         </button>
@@ -2065,8 +2066,8 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     {showPasteArea && (
                       <div className="mb-3 p-3 bg-slate-100 border border-slate-200 rounded-lg">
                         <p className="text-xs text-slate-700 mb-2">
-                          Вставьте список в формате: <span className="font-mono font-semibold">Название [Tab] Цена [Tab] Ориг.номер [Tab] Статус</span><br />
-                          Цена, номер и статус — необязательны. Статус: <span className="font-mono">бронь / продано / повреждено</span> — остальное → в наличии.
+                          {t('inventoryPage.pasteFormatPrefix')} <span className="font-mono font-semibold">{t('inventoryPage.pasteFormatCols')}</span><br />
+                          {t('inventoryPage.pasteFormatHint1')} <span className="font-mono">{t('inventoryPage.pasteFormatStatuses')}</span> {t('inventoryPage.pasteFormatHint2')}
                         </p>
                         <textarea
                           value={pasteText}
@@ -2077,7 +2078,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         />
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-xs text-primary">
-                            {pasteText.trim() ? `${parseBulkText(pasteText).length} строк распознано` : ''}
+                            {pasteText.trim() ? t('inventoryPage.linesRecognized', { n: parseBulkText(pasteText).length }) : ''}
                           </span>
                           <button
                             type="button"
@@ -2092,17 +2093,17 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                             }}
                             className="cab-btn cab-btn-primary cab-btn-sm disabled:opacity-40"
                           >
-                            Применить
+                            {t('inventoryPage.apply')}
                           </button>
                         </div>
                       </div>
                     )}
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
                       <div className="grid gap-0 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 border-b border-gray-200" style={{ gridTemplateColumns: '1fr 80px 110px 108px 32px' }}>
-                        <span>Название *</span>
-                        <span>Цена</span>
-                        <span>Ориг. номер</span>
-                        <span>Статус</span>
+                        <span>{t('inventoryPage.colNameReq')}</span>
+                        <span>{t('inventoryPage.colPrice')}</span>
+                        <span>{t('inventoryPage.colOem')}</span>
+                        <span>{t('inventoryPage.colStatus')}</span>
                         <span></span>
                       </div>
                       <div className="divide-y divide-gray-100">
@@ -2116,7 +2117,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                                 next[idx] = { ...next[idx], name: e.target.value }
                                 setBulkItems(next)
                               }}
-                              placeholder="Название"
+                              placeholder={t('inventoryPage.namePlaceholderShort')}
                               className="w-full pr-2 py-1.5 text-sm border-0 focus:outline-none focus:ring-0"
                             />
                             <input
@@ -2143,7 +2144,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                                 next[idx] = { ...next[idx], part_number: e.target.value.toUpperCase() }
                                 setBulkItems(next)
                               }}
-                              placeholder="Ориг. номер"
+                              placeholder={t('inventoryPage.oemPlaceholder')}
                               className="w-full pr-2 py-1.5 text-sm border-0 border-l border-gray-200 pl-2 focus:outline-none focus:ring-0 font-mono uppercase"
                             />
                             <select
@@ -2160,10 +2161,10 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                                                             'text-red-700 bg-red-50'
                               }`}
                             >
-                              <option value="available">В наличии</option>
-                              <option value="reserved">Бронь</option>
-                              <option value="sold">Продано</option>
-                              <option value="damaged">Повреждено</option>
+                              <option value="available">{t('inventoryPage.status_available')}</option>
+                              <option value="reserved">{t('inventoryPage.statusReservedShort')}</option>
+                              <option value="sold">{t('inventoryPage.status_sold')}</option>
+                              <option value="damaged">{t('inventoryPage.status_damaged')}</option>
                             </select>
                             <button
                               type="button"
@@ -2184,7 +2185,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       className="mt-2 cab-btn cab-btn-ghost cab-btn-sm flex items-center gap-1.5 text-primary"
                     >
                       <Plus className="w-4 h-4" />
-                      Добавить строку
+                      {t('inventoryPage.addRow')}
                     </button>
                   </div>
                 </div>
@@ -2193,7 +2194,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="form-label">
-                      Автомобиль-источник
+                      {t('inventoryPage.sourceVehicle')}
                     </label>
                     <select
                       value={formData.vehicle_id || ''}
@@ -2205,7 +2206,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       }}
                       className="form-select"
                     >
-                      <option value="">Не привязано к автомобилю</option>
+                      <option value="">{t('inventoryPage.notLinkedToVehicle')}</option>
                       {(vehicles as any[]).map((vehicle) => (
                         <option key={vehicle.id} value={vehicle.id}>
                           {vehicle.make} {vehicle.model} {vehicle.year}
@@ -2213,20 +2214,20 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       ))}
                     </select>
                     <p className="mt-1 text-xs text-gray-500">
-                      Укажите автомобиль, из которого снята эта запчасть
+                      {t('inventoryPage.sourceVehicleHint')}
                     </p>
                   </div>
 
                   <div>
                     <label className="form-label">
-                      Категория
+                      {t('inventoryPage.category')}
                     </label>
                     <select
                       value={formData.category_id}
                       onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                       className="form-select"
                     >
-                      <option value="">Без категории</option>
+                      <option value="">{t('inventoryPage.noCategory')}</option>
                       {(formData.vehicle_id
                         ? getCategoriesForVehicle(formData.vehicle_id, vehicles, categories)
                         : categories
@@ -2239,7 +2240,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
 
                 <div>
                   <label className="form-label">
-                    Название *
+                    {t('inventoryPage.nameReq')}
                   </label>
                   <input
                     type="text"
@@ -2253,7 +2254,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="form-label">
-                      Артикул (OEM)
+                      {t('inventoryPage.oemLabel')}
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -2264,7 +2265,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         spellCheck={false}
                         value={formData.part_number}
                         onChange={(e) => setFormData({ ...formData, part_number: e.target.value.toUpperCase() })}
-                        placeholder="Напр. 1K0615301"
+                        placeholder={t('inventoryPage.oemExample')}
                         className="form-input flex-1 min-w-0 font-mono uppercase tracking-wide"
                       />
                       <button
@@ -2272,8 +2273,8 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         onClick={copyOem}
                         disabled={!formData.part_number?.trim()}
                         className="cab-btn cab-btn-secondary flex-shrink-0 w-11 px-0 flex items-center justify-center disabled:opacity-40"
-                        title="Скопировать артикул"
-                        aria-label="Скопировать артикул"
+                        title={t('inventoryPage.copyOemTitle')}
+                        aria-label={t('inventoryPage.copyOemTitle')}
                       >
                         {oemCopied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                       </button>
@@ -2282,7 +2283,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
 
                   <div>
                     <label className="form-label">
-                      Состояние *
+                      {t('inventoryPage.conditionReq')}
                     </label>
                     <select
                       required
@@ -2290,16 +2291,16 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
                       className="form-select"
                     >
-                      <option value="new">Новая</option>
-                      <option value="used">Б/У хорошее</option>
-                      <option value="damaged">Повреждена</option>
+                      <option value="new">{t('inventoryPage.conditionNew')}</option>
+                      <option value="used">{t('inventoryPage.conditionUsed')}</option>
+                      <option value="damaged">{t('inventoryPage.conditionDamaged')}</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
                   <label className="form-label">
-                    Описание
+                    {t('inventoryPage.description')}
                   </label>
                   <textarea
                     value={formData.description}
@@ -2312,7 +2313,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 <div className="grid grid-cols-2 gap-4">
                   {!formData.vehicle_id && (
                     <div>
-                      <label className="form-label">Количество</label>
+                      <label className="form-label">{t('inventoryPage.quantity')}</label>
                       <input
                         type="number"
                         min="1"
@@ -2323,7 +2324,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     </div>
                   )}
                   <div>
-                    <label className="form-label">Цена продажи</label>
+                    <label className="form-label">{t('inventoryPage.sellPrice')}</label>
                     <div className="flex gap-2">
                       <input
                         type="number"
@@ -2337,7 +2338,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         type="button"
                         onClick={() => setFormData({ ...formData, price_currency: formData.price_currency === 'USD' ? 'UAH' : 'USD' })}
                         className="cab-btn cab-btn-primary flex-shrink-0 w-10 text-center px-0"
-                        title="Сменить валюту"
+                        title={t('inventoryPage.changeCurrency')}
                       >
                         {formData.price_currency === 'USD' ? '$' : 'грн'}
                       </button>
@@ -2347,7 +2348,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
 
                 <div>
                   <label className="form-label">
-                    Закупочная цена <span className="text-gray-400 font-normal">(для окупаемости)</span>
+                    {t('inventoryPage.purchasePrice')} <span className="text-gray-400 font-normal">{t('inventoryPage.purchasePriceHint')}</span>
                   </label>
                   <input
                     type="number"
@@ -2355,7 +2356,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     step="0.01"
                     value={formData.purchase_price ?? ''}
                     onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value ? Number(e.target.value) : undefined })}
-                    placeholder="Не обязательно"
+                    placeholder={t('inventoryPage.optionalPlaceholder')}
                     className="form-input tabular"
                   />
                 </div>
@@ -2371,12 +2372,12 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         : 'cab-btn cab-btn-secondary border-2 text-gray-500 hover:border-gray-400 hover:text-gray-700'
                     }`}
                   >
-                    {formData.status === 'sold' ? '✓ Продано' : 'Отметить как продано'}
+                    {formData.status === 'sold' ? t('inventoryPage.soldCheck') : t('inventoryPage.markAsSold')}
                   </button>
                 )}
 
                 <div>
-                  <label className="form-label">Место хранения</label>
+                  <label className="form-label">{t('inventoryPage.storageLocation')}</label>
                   {storageLocations.length > 0 ? (
                     <select
                       value={formData.storage_location_id || ''}
@@ -2386,7 +2387,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       }}
                       className="form-select"
                     >
-                      <option value="">Не указано</option>
+                      <option value="">{t('inventoryPage.notSpecified')}</option>
                       {buildLocationOptions(storageLocations).map(opt => (
                         <option key={opt.id} value={opt.id}>{opt.label}</option>
                       ))}
@@ -2396,17 +2397,17 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       type="text"
                       value={formData.location || ''}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      placeholder="Например: Бокс 1, Полка 3..."
+                      placeholder={t('inventoryPage.storagePlaceholder')}
                       className="form-input"
                     />
                   )}
                 </div>
 
                 <div>
-                  <label className="form-label">Фотографии <span className="text-gray-400 font-normal">({photos.length + pendingPhotos.length}/{MAX_PHOTOS})</span></label>
+                  <label className="form-label">{t('inventoryPage.photos')} <span className="text-gray-400 font-normal">({photos.length + pendingPhotos.length}/{MAX_PHOTOS})</span></label>
                   {(photos.length + pendingPhotos.length) >= MAX_PHOTOS ? (
                     <div className="flex items-center justify-center gap-2 w-full h-11 border-2 border-dashed border-gray-200 bg-gray-50 rounded-xl text-sm font-medium text-gray-400">
-                      Достигнут лимит {MAX_PHOTOS} фото
+                      {t('inventoryPage.photoLimitReached', { max: MAX_PHOTOS })}
                     </div>
                   ) : (
                   <label className="flex items-center justify-center gap-2 w-full h-11 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer transition-colors hover:border-slate-400 hover:bg-slate-50">
@@ -2419,7 +2420,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     />
                     <Camera className="w-4 h-4 text-gray-400" />
                     <span className="text-sm font-medium text-gray-500">
-                      Добавить фото (можно несколько, ещё {MAX_PHOTOS - photos.length - pendingPhotos.length})
+                      {t('inventoryPage.addPhoto', { remaining: MAX_PHOTOS - photos.length - pendingPhotos.length })}
                     </span>
                   </label>
                   )}
@@ -2429,7 +2430,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         <div key={i} className="relative group">
                           <img
                             src={photo.thumb_url || photo.url}
-                            alt={`Фото ${i + 1}`}
+                            alt={t('inventoryPage.photoAlt', { n: i + 1 })}
                             className="w-16 h-16 object-cover rounded-xl border border-gray-200"
                           />
                           <button
@@ -2446,7 +2447,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         <div key={p.id} className="relative">
                           <img
                             src={p.localUrl}
-                            alt="Загрузка…"
+                            alt={t('inventoryPage.uploadingAlt')}
                             className="w-16 h-16 object-cover rounded-xl border border-gray-200 opacity-50"
                           />
                           <div className="absolute inset-0 flex items-center justify-center">
@@ -2457,12 +2458,12 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     </div>
                   )}
                   {uploading && (
-                    <p className="mt-1.5 text-xs text-gray-400">Фото догружаются в фоне — можно сразу сохранять, они допишутся в товар.</p>
+                    <p className="mt-1.5 text-xs text-gray-400">{t('inventoryPage.photosUploadingHint')}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="form-label">Примечания</label>
+                  <label className="form-label">{t('inventoryPage.notes')}</label>
                   <textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -2481,7 +2482,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
               onClick={onClose}
               className="modal-btn-cancel"
             >
-              Отмена
+              {t('inventoryPage.cancel')}
             </button>
             <button
               type="submit"
@@ -2489,10 +2490,10 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
               className="cab-btn cab-btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSaving
-                ? 'Сохранение...'
+                ? t('inventoryPage.saving')
                 : bulkMode
-                  ? `Добавить ${bulkItems.filter(r => r.name.trim()).length || ''} запчастей`
-                  : item ? 'Сохранить' : 'Добавить'}
+                  ? t('inventoryPage.addNParts', { n: bulkItems.filter(r => r.name.trim()).length || '' })
+                  : item ? t('inventoryPage.save') : t('inventoryPage.add')}
             </button>
           </div>
         </form>

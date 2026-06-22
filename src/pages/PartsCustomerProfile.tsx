@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Spinner } from '@/components/ui/Spinner'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -56,6 +57,7 @@ function avatarColor(name: string): string {
 }
 
 export default function PartsCustomerProfile() {
+  const { t } = useTranslation('cabinet')
   const { id } = useParams<{ id: string }>()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
@@ -73,9 +75,9 @@ export default function PartsCustomerProfile() {
     const publicUrl = `${window.location.origin}/public/parts-customer/${id}`
     try {
       await navigator.clipboard.writeText(publicUrl)
-      toast.success('Публичная ссылка скопирована в буфер обмена', { duration: 2000 })
+      toast.success(t('customerProfilePage.linkCopied'), { duration: 2000 })
     } catch {
-      toast.error('Не удалось скопировать ссылку')
+      toast.error(t('customerProfilePage.linkCopyError'))
     }
   }
 
@@ -233,7 +235,7 @@ export default function PartsCustomerProfile() {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       queryClient.invalidateQueries({ queryKey: ['parts-customer-orders', id] })
       queryClient.invalidateQueries({ queryKey: ['parts-customer', id] })
-      toast.success(`Заказ ${order.order_number} создан`)
+      toast.success(t('customerProfilePage.orderCreated', { number: order.order_number }))
       setIsOrderModalOpen(false)
       setCart([])
       setOrderNotes('')
@@ -241,7 +243,7 @@ export default function PartsCustomerProfile() {
       setSelectedModel(null)
       setPartsSearch('')
     },
-    onError: () => toast.error('Ошибка при создании заказа'),
+    onError: () => toast.error(t('customerProfilePage.orderCreateError')),
   })
 
   // ── Loading / not found ───────────────────────────────────────────────
@@ -259,11 +261,11 @@ export default function PartsCustomerProfile() {
         <div className="empty-state-icon">
           <User className="w-7 h-7 text-gray-400" />
         </div>
-        <p className="empty-state-title">Клиент не найден</p>
-        <p className="empty-state-text">Профиль не существует или был удалён</p>
+        <p className="empty-state-title">{t('customerProfilePage.notFoundTitle')}</p>
+        <p className="empty-state-text">{t('customerProfilePage.notFoundText')}</p>
         <Link to="/parts/customers" className="cab-btn cab-btn-secondary cab-btn-sm mt-4">
           <ArrowLeft className="w-3.5 h-3.5" />
-          К клиентам
+          {t('customerProfilePage.toCustomers')}
         </Link>
       </div>
     )
@@ -282,23 +284,23 @@ export default function PartsCustomerProfile() {
             <Link
               to="/parts/customers"
               className="btn-icon flex-shrink-0"
-              aria-label="Назад к клиентам"
+              aria-label={t('customerProfilePage.backToCustomers')}
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <div className="min-w-0">
               <h1 className="page-title truncate">{customer.full_name}</h1>
-              <p className="page-subtitle hidden sm:block">Профиль клиента</p>
+              <p className="page-subtitle hidden sm:block">{t('customerProfilePage.title')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={handleCopyPublicLink}
               className="cab-btn cab-btn-secondary cab-btn-sm"
-              title="Скопировать публичную ссылку"
+              title={t('customerProfilePage.copyPublicLink')}
             >
               <Link2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Ссылка</span>
+              <span className="hidden sm:inline">{t('customerProfilePage.link')}</span>
             </button>
             <button
               onClick={() => {
@@ -312,7 +314,7 @@ export default function PartsCustomerProfile() {
               className="cab-btn cab-btn-success cab-btn-sm"
             >
               <ShoppingCart className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Создать заказ</span>
+              <span className="hidden sm:inline">{t('customerProfilePage.createOrder')}</span>
             </button>
           </div>
         </div>
@@ -329,7 +331,7 @@ export default function PartsCustomerProfile() {
             <h2 className="heading-3 truncate">{customer.full_name}</h2>
             {customer.discount_percent > 0 && (
               <span className="badge badge-green mt-1">
-                Скидка {customer.discount_percent}%
+                {t('customerProfilePage.discount', { percent: customer.discount_percent })}
               </span>
             )}
           </div>
@@ -379,7 +381,7 @@ export default function PartsCustomerProfile() {
         <div className="section-divider" />
         <p className="text-sm text-gray-600 tabular-nums">
           <span className="font-bold text-gray-900">{customer.total_orders || 0}</span>
-          {' '}{(customer.total_orders || 0) === 1 ? 'заказ' : (customer.total_orders || 0) < 5 ? 'заказа' : 'заказов'}
+          {' '}{(customer.total_orders || 0) === 1 ? t('customerProfilePage.orderOne') : (customer.total_orders || 0) < 5 ? t('customerProfilePage.orderFew') : t('customerProfilePage.orderMany')}
           {(customer.total_spent || 0) > 0 && (
             <>
               {' · '}
@@ -388,7 +390,7 @@ export default function PartsCustomerProfile() {
           )}
           {(customer.total_orders || 0) > 0 && (customer.total_spent || 0) > 0 && (
             <>
-              {' · ср. '}
+              {' · ' + t('customerProfilePage.avgPrefix') + ' '}
               <span className="font-bold text-gray-900">
                 {formatCurrency((customer.total_spent || 0) / customer.total_orders)}
               </span>
@@ -405,9 +407,9 @@ export default function PartsCustomerProfile() {
             <Package className="w-5 h-5" />
           </span>
           <div>
-            <h2 className="heading-3">Заказы клиента</h2>
+            <h2 className="heading-3">{t('customerProfilePage.customerOrders')}</h2>
             <p className="page-subtitle">
-              {ordersLoading ? '…' : `${orders?.length || 0} записей`}
+              {ordersLoading ? '…' : t('customerProfilePage.recordsCount', { count: orders?.length || 0 })}
             </p>
           </div>
         </div>
@@ -423,11 +425,11 @@ export default function PartsCustomerProfile() {
               <table className="w-full min-w-[560px]">
                 <thead>
                   <tr>
-                    <th className="table-header-cell">Заказ</th>
-                    <th className="table-header-cell">Дата</th>
-                    <th className="table-header-cell">Позиции</th>
-                    <th className="table-header-cell">Статус</th>
-                    <th className="table-header-cell text-right">Сумма</th>
+                    <th className="table-header-cell">{t('customerProfilePage.colOrder')}</th>
+                    <th className="table-header-cell">{t('customerProfilePage.colDate')}</th>
+                    <th className="table-header-cell">{t('customerProfilePage.colItems')}</th>
+                    <th className="table-header-cell">{t('customerProfilePage.colStatus')}</th>
+                    <th className="table-header-cell text-right">{t('customerProfilePage.colTotal')}</th>
                   </tr>
                 </thead>
                 <tbody className="grid-hairline">
@@ -445,7 +447,7 @@ export default function PartsCustomerProfile() {
                         {new Date(order.order_date).toLocaleDateString('ru-RU')}
                       </td>
                       <td className="table-cell text-gray-500">
-                        {order.items?.length || 0} шт.
+                        {t('customerProfilePage.itemsPcs', { count: order.items?.length || 0 })}
                       </td>
                       <td className="table-cell">
                         <span className={`badge ${getPartsOrderStatusColor(order.status)}`}>
@@ -496,7 +498,7 @@ export default function PartsCustomerProfile() {
                       {order.items.map((item: any) => (
                         <div key={item.id} className="flex justify-between text-xs text-gray-600">
                           <span className="truncate flex-1 mr-2">
-                            {item.inventory_item?.name || 'Запчасть'}
+                            {item.inventory_item?.name || t('customerProfilePage.part')}
                             {item.inventory_item?.part_number && (
                               <span className="text-gray-400 font-mono ml-1">
                                 #{item.inventory_item.part_number}
@@ -523,8 +525,8 @@ export default function PartsCustomerProfile() {
             <div className="empty-state-icon">
               <Package className="w-7 h-7 text-gray-400" />
             </div>
-            <p className="empty-state-title">Заказов пока нет</p>
-            <p className="empty-state-text">Создайте первый заказ для этого клиента</p>
+            <p className="empty-state-title">{t('customerProfilePage.emptyOrdersTitle')}</p>
+            <p className="empty-state-text">{t('customerProfilePage.emptyOrdersText')}</p>
             <button
               onClick={() => {
                 setCart([])
@@ -537,7 +539,7 @@ export default function PartsCustomerProfile() {
               className="cab-btn cab-btn-primary cab-btn-sm mt-4"
             >
               <ShoppingCart className="w-3.5 h-3.5" />
-              Создать заказ
+              {t('customerProfilePage.createOrder')}
             </button>
           </div>
         )}
@@ -567,7 +569,7 @@ export default function PartsCustomerProfile() {
                       : 'text-gray-500'
                   }`}
                 >
-                  Запчасти
+                  {t('customerProfilePage.tabParts')}
                 </button>
                 <button
                   onClick={() => setMobileTab('cart')}
@@ -577,7 +579,7 @@ export default function PartsCustomerProfile() {
                       : 'text-gray-500'
                   }`}
                 >
-                  Корзина
+                  {t('customerProfilePage.tabCart')}
                   {cart.length > 0 && (
                     <span className="badge badge-green min-w-[20px] h-5 px-1.5">
                       {cart.length}
@@ -587,14 +589,14 @@ export default function PartsCustomerProfile() {
               </div>
               {/* Desktop: title */}
               <div className="hidden md:flex flex-col">
-                <span className="text-sm font-bold text-gray-900">Новый заказ</span>
+                <span className="text-sm font-bold text-gray-900">{t('customerProfilePage.newOrder')}</span>
                 <span className="kicker">{customer.full_name}</span>
               </div>
               <div className="hidden md:block ml-auto" />
               <button
                 onClick={() => setIsOrderModalOpen(false)}
                 className="btn-icon flex-shrink-0"
-                aria-label="Закрыть"
+                aria-label={t('customerProfilePage.close')}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -609,10 +611,10 @@ export default function PartsCustomerProfile() {
                 {selectedMake === null && (
                   <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     <div>
-                      <p className="kicker mb-3">Марка автомобиля</p>
+                      <p className="kicker mb-3">{t('customerProfilePage.carMake')}</p>
                       {makes.length === 0 ? (
                         <div className="empty-state py-10">
-                          <p className="empty-state-text">Нет запчастей в наличии</p>
+                          <p className="empty-state-text">{t('customerProfilePage.noPartsAvailable')}</p>
                         </div>
                       ) : (
                         <div className="grid grid-cols-2 gap-2.5">
@@ -624,7 +626,7 @@ export default function PartsCustomerProfile() {
                             >
                               <Car className="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors mb-0.5" />
                               <span className="font-semibold text-gray-900 text-sm leading-tight">{make}</span>
-                              <span className="kicker">{count} авт.</span>
+                              <span className="kicker">{t('customerProfilePage.carsCount', { count })}</span>
                             </button>
                           ))}
                         </div>
@@ -634,7 +636,7 @@ export default function PartsCustomerProfile() {
                       onClick={() => { setSelectedMake('__all__'); setSelectedModel('__all__'); setPartsSearch('') }}
                       className="w-full py-3 rounded-xl border-2 border-dashed border-gray-200 text-sm font-semibold text-gray-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
                     >
-                      Показать все запчасти без фильтра
+                      {t('customerProfilePage.showAllParts')}
                     </button>
                   </div>
                 )}
@@ -647,13 +649,13 @@ export default function PartsCustomerProfile() {
                         onClick={() => { setSelectedMake(null); setSelectedModel(null) }}
                         className="text-primary hover:underline font-semibold"
                       >
-                        Марка
+                        {t('customerProfilePage.crumbMake')}
                       </button>
                       <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
                       <span className="font-bold text-gray-900">{selectedMake}</span>
                     </div>
                     <div>
-                      <p className="kicker mb-3">Модель</p>
+                      <p className="kicker mb-3">{t('customerProfilePage.model')}</p>
                       <div className="grid grid-cols-2 gap-2.5">
                         {models.map(({ model, count }) => (
                           <button
@@ -662,7 +664,7 @@ export default function PartsCustomerProfile() {
                             className="group flex flex-col items-start gap-1 p-4 rounded-xl border-2 border-gray-100 hover:border-primary hover:bg-primary/5 active:scale-[0.97] transition-all text-left"
                           >
                             <span className="font-semibold text-gray-900 text-sm leading-tight">{model}</span>
-                            <span className="kicker">{count} авт.</span>
+                            <span className="kicker">{t('customerProfilePage.carsCount', { count })}</span>
                           </button>
                         ))}
                       </div>
@@ -671,7 +673,7 @@ export default function PartsCustomerProfile() {
                       onClick={() => { setSelectedModel('__all__'); setPartsSearch('') }}
                       className="w-full py-3 rounded-xl border-2 border-dashed border-gray-200 text-sm font-semibold text-gray-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
                     >
-                      Все модели {selectedMake}
+                      {t('customerProfilePage.allModels', { make: selectedMake })}
                     </button>
                   </div>
                 )}
@@ -685,7 +687,7 @@ export default function PartsCustomerProfile() {
                           onClick={() => { setSelectedMake(null); setSelectedModel(null); setPartsSearch('') }}
                           className="text-primary hover:underline font-semibold"
                         >
-                          Марка
+                          {t('customerProfilePage.crumbMake')}
                         </button>
                         {selectedMake !== '__all__' && (
                           <>
@@ -698,15 +700,15 @@ export default function PartsCustomerProfile() {
                             </button>
                             <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
                             <span className="font-bold text-gray-900 truncate">
-                              {selectedModel === '__all__' ? 'Все модели' : selectedModel}
+                              {selectedModel === '__all__' ? t('customerProfilePage.allModelsShort') : selectedModel}
                             </span>
                           </>
                         )}
                         {selectedMake === '__all__' && (
-                          <span className="font-bold text-gray-900">Все запчасти</span>
+                          <span className="font-bold text-gray-900">{t('customerProfilePage.allParts')}</span>
                         )}
                         <span className="ml-auto flex-shrink-0 badge badge-gray">
-                          {filteredInventory.length} шт.
+                          {t('customerProfilePage.itemsPcs', { count: filteredInventory.length })}
                         </span>
                       </div>
                       <div className="relative">
@@ -715,7 +717,7 @@ export default function PartsCustomerProfile() {
                           type="text"
                           value={partsSearch}
                           onChange={e => setPartsSearch(e.target.value)}
-                          placeholder="Поиск по названию или артикулу..."
+                          placeholder={t('customerProfilePage.searchPlaceholder')}
                           className="form-input pl-9 pr-9"
                           autoFocus
                         />
@@ -734,7 +736,7 @@ export default function PartsCustomerProfile() {
                       {filteredInventory.length === 0 ? (
                         <div className="empty-state py-10">
                           <p className="empty-state-text">
-                            {partsSearch ? 'Ничего не найдено' : 'Нет запчастей в наличии'}
+                            {partsSearch ? t('customerProfilePage.nothingFound') : t('customerProfilePage.noPartsAvailable')}
                           </p>
                         </div>
                       ) : (
@@ -807,7 +809,7 @@ export default function PartsCustomerProfile() {
                       <div className="empty-state-icon">
                         <ShoppingCart className="w-6 h-6 text-gray-400" />
                       </div>
-                      <p className="empty-state-text">Добавьте запчасти из списка</p>
+                      <p className="empty-state-text">{t('customerProfilePage.cartEmpty')}</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -861,7 +863,7 @@ export default function PartsCustomerProfile() {
                   <textarea
                     value={orderNotes}
                     onChange={(e) => setOrderNotes(e.target.value)}
-                    placeholder="Примечания к заказу..."
+                    placeholder={t('customerProfilePage.notesPlaceholder')}
                     rows={2}
                     className="form-input resize-none placeholder:text-gray-400"
                   />
@@ -871,7 +873,7 @@ export default function PartsCustomerProfile() {
                         <>
                           {hasUSD && (
                             <div className="flex justify-between items-center text-xs text-gray-400">
-                              <span>Долларовые позиции ×{usdRate}</span>
+                              <span>{t('customerProfilePage.usdItems', { rate: usdRate })}</span>
                               <span className="tabular-nums">
                                 {formatCurrency(cart.filter(i => i.currency === 'USD').reduce((s, i) => s + i.price * i.quantity, 0) * usdRate)}
                               </span>
@@ -879,7 +881,7 @@ export default function PartsCustomerProfile() {
                           )}
                           {hasUAH && (
                             <div className="flex justify-between items-center text-xs text-gray-400">
-                              <span>Гривневые позиции</span>
+                              <span>{t('customerProfilePage.uahItems')}</span>
                               <span className="tabular-nums">
                                 {formatCurrency(cart.filter(i => i.currency === 'UAH').reduce((s, i) => s + i.price * i.quantity, 0))}
                               </span>
@@ -888,7 +890,7 @@ export default function PartsCustomerProfile() {
                         </>
                       )}
                       <div className="flex justify-between items-center pt-1 border-t border-gray-200">
-                        <span className="text-sm font-semibold text-gray-500">Итого</span>
+                        <span className="text-sm font-semibold text-gray-500">{t('customerProfilePage.total')}</span>
                         <span className="text-lg font-extrabold text-primary tabular-nums">
                           {formatCurrency(cartTotalUAH)}
                         </span>
@@ -901,10 +903,10 @@ export default function PartsCustomerProfile() {
                     className="cab-btn cab-btn-success w-full cab-btn-lg disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {createOrderMutation.isPending
-                      ? 'Создание...'
+                      ? t('customerProfilePage.creating')
                       : cart.length === 0
-                        ? 'Корзина пуста'
-                        : `Создать заказ · ${cart.length} поз.`
+                        ? t('customerProfilePage.cartEmptyBtn')
+                        : t('customerProfilePage.createOrderCount', { count: cart.length })
                     }
                   </button>
                 </div>

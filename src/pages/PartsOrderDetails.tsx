@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useUserProfile, useHasRole, useIsAdmin } from '@/hooks/useUserProfile'
@@ -37,6 +38,7 @@ const STATUS_BADGE: Record<string, string> = {
 }
 
 export default function PartsOrderDetails() {
+  const { t } = useTranslation('cabinet')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
@@ -96,9 +98,9 @@ export default function PartsOrderDetails() {
       if (id) await updatePartsOrderTotal(id, exchangeRate)
       queryClient.invalidateQueries({ queryKey: ['parts-order', id] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success('Позиция удалена')
+      toast.success(t('orderDetailsPage.itemDeleted'))
     },
-    onError: () => toast.error('Ошибка при удалении позиции'),
+    onError: () => toast.error(t('orderDetailsPage.itemDeleteError')),
   })
 
   /* ── изменить статус ────────────────────────────────────────── */
@@ -115,10 +117,10 @@ export default function PartsOrderDetails() {
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       setShowCompleteModal(false)
-      toast.success('Статус обновлён')
+      toast.success(t('orderDetailsPage.statusUpdated'))
     },
     onError: (err: any) => {
-      toast.error(err?.message || 'Ошибка обновления статуса')
+      toast.error(err?.message || t('orderDetailsPage.statusUpdateError'))
     },
   })
 
@@ -149,7 +151,7 @@ export default function PartsOrderDetails() {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       queryClient.invalidateQueries({ queryKey: ['trash'] })
-      toast.success('Заказ перемещён в корзину')
+      toast.success(t('orderDetailsPage.orderMovedToTrash'))
       navigate('/parts/orders')
     },
   })
@@ -243,7 +245,7 @@ export default function PartsOrderDetails() {
   /* ── сохранение данных клиента ──────────────────────────────── */
   const saveCustomerMutation = useMutation({
     mutationFn: async () => {
-      if (!order) throw new Error('Нет заказа')
+      if (!order) throw new Error(t('orderDetailsPage.noOrderError'))
       if (order.customer_id) {
         const phoneUpdate = customerPhone.trim() ? { phone: customerPhone.trim() } : {}
         await updatePartsCustomer(order.customer_id, {
@@ -263,9 +265,9 @@ export default function PartsOrderDetails() {
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
       queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
       queryClient.invalidateQueries({ queryKey: ['parts-customers-dropdown'] })
-      toast.success('Данные клиента сохранены')
+      toast.success(t('orderDetailsPage.customerSaved'))
     },
-    onError: (err: any) => toast.error(err?.message || 'Ошибка сохранения данных клиента'),
+    onError: (err: any) => toast.error(err?.message || t('orderDetailsPage.customerSaveError')),
   })
 
   /* ── guard: нет компании ────────────────────────────────────── */
@@ -285,12 +287,12 @@ export default function PartsOrderDetails() {
     return (
       <div className="min-h-dvh bg-gray-50 flex flex-col items-center justify-center gap-3 p-4">
         <Package className="w-12 h-12 text-gray-300" />
-        <p className="text-gray-500">Заказ не найден</p>
+        <p className="text-gray-500">{t('orderDetailsPage.orderNotFound')}</p>
         <button
           onClick={() => navigate('/parts/orders')}
           className="text-primary text-sm hover:underline"
         >
-          Вернуться к заказам
+          {t('orderDetailsPage.backToOrders')}
         </button>
       </div>
     )
@@ -311,7 +313,7 @@ export default function PartsOrderDetails() {
               <button
                 onClick={() => navigate('/parts/orders')}
                 className="btn-icon flex-shrink-0"
-                aria-label="Назад"
+                aria-label={t('orderDetailsPage.back')}
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
@@ -338,7 +340,7 @@ export default function PartsOrderDetails() {
                       disabled={updateStatusMutation.isPending}
                       className="cab-btn cab-btn-sm cab-btn-primary"
                     >
-                      В работу
+                      {t('orderDetailsPage.toWork')}
                     </button>
                   )}
                   {order.status === 'in_progress' && (
@@ -347,7 +349,7 @@ export default function PartsOrderDetails() {
                       disabled={updateStatusMutation.isPending}
                       className="cab-btn cab-btn-sm cab-btn-primary"
                     >
-                      Завершить
+                      {t('orderDetailsPage.complete')}
                     </button>
                   )}
                   {(order.status === 'new' || order.status === 'in_progress') && (
@@ -357,7 +359,7 @@ export default function PartsOrderDetails() {
                       className="cab-btn cab-btn-sm cab-btn-secondary"
                       style={{ color: '#B91C1C' }}
                     >
-                      Отменить
+                      {t('orderDetailsPage.cancel')}
                     </button>
                   )}
                 </div>
@@ -367,7 +369,7 @@ export default function PartsOrderDetails() {
                 <button
                   onClick={() => setShowEditModal(true)}
                   className="btn-icon"
-                  aria-label="Редактировать"
+                  aria-label={t('orderDetailsPage.edit')}
                 >
                   <Edit2 className="w-4 h-4" />
                 </button>
@@ -377,7 +379,7 @@ export default function PartsOrderDetails() {
                 <button
                   onClick={async () => {
                     const ok = await showConfirm({
-                      message: `Удалить заказ ${order.order_number}? Забронированные запчасти вернутся в статус «В наличии».`,
+                      message: t('orderDetailsPage.deleteOrderConfirm', { num: order.order_number }),
                       danger: true,
                     })
                     if (!ok) return
@@ -385,7 +387,7 @@ export default function PartsOrderDetails() {
                   }}
                   disabled={deleteOrderMutation.isPending}
                   className="btn-icon text-red-500 hover:bg-red-50"
-                  aria-label="Удалить заказ"
+                  aria-label={t('orderDetailsPage.deleteOrder')}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -413,22 +415,22 @@ export default function PartsOrderDetails() {
               <span className="icon-tile-sm bg-slate-100 text-slate-700">
                 <Truck className="w-4 h-4" />
               </span>
-              <h2 className="heading-3">Клиент и доставка</h2>
+              <h2 className="heading-3">{t('orderDetailsPage.customerAndDelivery')}</h2>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="form-label">ФИО клиента</label>
+                <label className="form-label">{t('orderDetailsPage.customerFullName')}</label>
                 <input
                   type="text"
                   value={customerFullName}
                   onChange={(e) => setCustomerFullName(e.target.value)}
-                  placeholder="Иванов Иван Иванович"
+                  placeholder={t('orderDetailsPage.customerFullNamePlaceholder')}
                   className="form-input"
                 />
               </div>
               <div>
-                <label className="form-label">Телефон</label>
+                <label className="form-label">{t('orderDetailsPage.phone')}</label>
                 {order.customer?.phone && !customerPhone ? (
                   <input
                     type="tel"
@@ -447,12 +449,12 @@ export default function PartsOrderDetails() {
                 )}
               </div>
               <div>
-                <label className="form-label">Город</label>
+                <label className="form-label">{t('orderDetailsPage.city')}</label>
                 {npApiKeySet ? (
                   <NpCombobox
                     value={cityInputValue}
                     onChange={setCityInputValue}
-                    placeholder="Введите город..."
+                    placeholder={t('orderDetailsPage.cityPlaceholder')}
                     items={npCities.map(c => ({ value: c.ref, label: c.name }))}
                     open={showCityList}
                     onOpen={() => setShowCityList(true)}
@@ -474,18 +476,18 @@ export default function PartsOrderDetails() {
                     type="text"
                     value={customerCity}
                     onChange={(e) => setCustomerCity(e.target.value)}
-                    placeholder="Киев"
+                    placeholder={t('orderDetailsPage.cityExample')}
                     className="form-input"
                   />
                 )}
               </div>
               <div>
-                <label className="form-label">Отделение Новой почты</label>
+                <label className="form-label">{t('orderDetailsPage.npOffice')}</label>
                 {npApiKeySet ? (
                   <NpCombobox
                     value={warehouseInputValue}
                     onChange={setWarehouseInputValue}
-                    placeholder={cityRef ? 'Введите отделение...' : 'Сначала выберите город'}
+                    placeholder={cityRef ? t('orderDetailsPage.warehousePlaceholder') : t('orderDetailsPage.selectCityFirst')}
                     disabled={!cityRef}
                     items={npWarehouses.map(w => ({ value: w.ref, label: w.description }))}
                     open={showWarehouseList}
@@ -519,7 +521,7 @@ export default function PartsOrderDetails() {
                 }
                 className="cab-btn cab-btn-primary disabled:opacity-50"
               >
-                {saveCustomerMutation.isPending ? 'Сохранение…' : 'Сохранить данные клиента'}
+                {saveCustomerMutation.isPending ? t('orderDetailsPage.saving') : t('orderDetailsPage.saveCustomer')}
               </button>
             </div>
           </div>
@@ -533,7 +535,7 @@ export default function PartsOrderDetails() {
                 <Package className="w-4 h-4" />
               </span>
               <h2 className="heading-3">
-                Позиции
+                {t('orderDetailsPage.items')}
                 <span className="ml-1.5 text-gray-400 font-normal text-base">
                   ({order.items?.length || 0})
                 </span>
@@ -545,7 +547,7 @@ export default function PartsOrderDetails() {
                 className="cab-btn cab-btn-primary cab-btn-sm gap-1.5"
               >
                 <Plus className="w-3.5 h-3.5" strokeWidth={2} />
-                <span className="hidden sm:inline">Добавить</span>
+                <span className="hidden sm:inline">{t('orderDetailsPage.add')}</span>
               </button>
             )}
           </div>
@@ -555,15 +557,15 @@ export default function PartsOrderDetails() {
               <div className="empty-state-icon">
                 <Package className="w-7 h-7 text-gray-400" />
               </div>
-              <p className="empty-state-title">Нет позиций</p>
-              <p className="empty-state-text">Добавьте первую позицию в заказ</p>
+              <p className="empty-state-title">{t('orderDetailsPage.noItems')}</p>
+              <p className="empty-state-text">{t('orderDetailsPage.noItemsHint')}</p>
               {canManage && (
                 <button
                   onClick={() => setShowAddItemModal(true)}
                   className="mt-3 cab-btn cab-btn-primary cab-btn-sm"
                 >
                   <Plus className="w-3.5 h-3.5" strokeWidth={2} />
-                  Добавить позицию
+                  {t('orderDetailsPage.addItem')}
                 </button>
               )}
             </div>
@@ -579,7 +581,7 @@ export default function PartsOrderDetails() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 leading-snug">
                       {item.inventory_item?.name ?? (
-                        <span className="italic text-gray-400">Запчасть удалена</span>
+                        <span className="italic text-gray-400">{t('orderDetailsPage.partDeleted')}</span>
                       )}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
@@ -589,14 +591,14 @@ export default function PartsOrderDetails() {
                       {item.inventory_item?.category && (
                         <span>{item.inventory_item.category.name} · </span>
                       )}
-                      <span>{item.quantity} шт.</span>
+                      <span>{t('orderDetailsPage.pcs', { n: item.quantity })}</span>
                     </p>
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <div className="text-right">
                       <p className="text-xs text-gray-400 tabular">
-                        {formatPrice(item.price_at_sale, getItemCurrency(item))} / шт.
+                        {formatPrice(item.price_at_sale, getItemCurrency(item))} {t('orderDetailsPage.perPcs')}
                       </p>
                       <p className="text-sm font-bold text-gray-900 tabular">
                         {formatPrice(
@@ -608,7 +610,7 @@ export default function PartsOrderDetails() {
                     {canManage && (
                       <button
                         onClick={async () => {
-                          const ok = await showConfirm({ message: 'Удалить позицию из заказа?', danger: true })
+                          const ok = await showConfirm({ message: t('orderDetailsPage.deleteItemConfirm'), danger: true })
                           if (!ok) return
                           deleteItemMutation.mutate({
                             itemId: item.id,
@@ -616,7 +618,7 @@ export default function PartsOrderDetails() {
                           })
                         }}
                         className="btn-icon-sm text-red-400 hover:text-red-600 hover:bg-red-50"
-                        aria-label="Удалить позицию"
+                        aria-label={t('orderDetailsPage.deleteItem')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -627,7 +629,7 @@ export default function PartsOrderDetails() {
 
               {/* строка итого */}
               <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-100">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Итого</span>
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('orderDetailsPage.total')}</span>
                 <span className="text-base font-extrabold text-primary tabular">
                   {formatCurrency(computedTotalUAH)}
                 </span>
@@ -673,7 +675,7 @@ export default function PartsOrderDetails() {
               }).catch(() => { /* трекинг опционален */ })
             }
             queryClient.invalidateQueries({ queryKey: ['parts-shipments', partsCompanyId] })
-            toast.success(`ТТН создана: ${ttn}`)
+            toast.success(t('orderDetailsPage.ttnCreated', { ttn }))
           }}
           orderId={order.id}
         />
@@ -688,7 +690,7 @@ export default function PartsOrderDetails() {
               className="cab-btn cab-btn-success cab-btn-lg gap-2 w-full sm:w-auto"
             >
               <CheckCircle className="w-5 h-5" />
-              Завершить заказ
+              {t('orderDetailsPage.completeOrder')}
             </button>
           </div>
         )}
@@ -802,6 +804,7 @@ interface AddItemModalProps {
 }
 
 function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
+  const { t } = useTranslation('cabinet')
   const queryClient = useQueryClient()
   const { rate: exchangeRate } = usePartsExchangeRate()
   const [searchQuery, setSearchQuery] = useState('')
@@ -846,7 +849,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
   const handleAdd = () => {
     if (!selectedItem || quantity <= 0 || price <= 0) return
     if (quantity > selectedItem.quantity) {
-      toast.error(`Недостаточно запчастей. Доступно: ${selectedItem.quantity}`)
+      toast.error(t('orderDetailsPage.notEnoughParts', { n: selectedItem.quantity }))
       return
     }
     addItemMutation.mutate({
@@ -866,8 +869,8 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
         <div className="modal-handle" />
 
         <div className="modal-header">
-          <h3 className="heading-3">Добавить позицию</h3>
-          <button onClick={onClose} className="btn-icon-sm" aria-label="Закрыть"><X className="w-4 h-4" /></button>
+          <h3 className="heading-3">{t('orderDetailsPage.addItemModalTitle')}</h3>
+          <button onClick={onClose} className="btn-icon-sm" aria-label={t('orderDetailsPage.close')}><X className="w-4 h-4" /></button>
         </div>
 
         <div className="modal-body space-y-4">
@@ -876,7 +879,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Поиск запчасти…"
+              placeholder={t('orderDetailsPage.searchPartPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="modal-input pl-9"
@@ -886,7 +889,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
           {/* список инвентаря */}
           <div className="max-h-56 overflow-y-auto rounded-lg border border-gray-100 grid-hairline">
             {filteredInventory.length === 0 ? (
-              <div className="py-6 text-center text-sm text-gray-500">Запчасти не найдены</div>
+              <div className="py-6 text-center text-sm text-gray-500">{t('orderDetailsPage.partsNotFound')}</div>
             ) : (
               filteredInventory.map((item) => (
                 <button
@@ -900,7 +903,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
                   <p className="text-xs text-gray-500 mt-0.5">
                     {item.part_number && <span>{item.part_number} · </span>}
                     {(item.category as any)?.name && <span>{(item.category as any).name} · </span>}
-                    <span>В наличии: {item.quantity} шт. · </span>
+                    <span>{t('orderDetailsPage.inStock', { n: item.quantity })} · </span>
                     <span className="font-semibold text-gray-700">
                       {formatPrice(item.selling_price || 0, (item.price_currency || 'USD') as 'UAH' | 'USD')}
                     </span>
@@ -914,12 +917,12 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
           {selectedItem && (
             <div className="rounded-xl bg-slate-100/70 border border-slate-200 p-4 space-y-4">
               <p className="text-sm font-semibold text-gray-800">
-                Выбрано: {selectedItem.name}
+                {t('orderDetailsPage.selected')} {selectedItem.name}
               </p>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="form-label">Количество *</label>
+                  <label className="form-label">{t('orderDetailsPage.quantity')}</label>
                   <input
                     type="number"
                     min="1"
@@ -928,11 +931,11 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
                     onChange={(e) => setQuantity(Number(e.target.value))}
                     className="form-input"
                   />
-                  <p className="text-xs text-gray-400 mt-1">Макс: {selectedItem.quantity}</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('orderDetailsPage.max', { n: selectedItem.quantity })}</p>
                 </div>
 
                 <div>
-                  <label className="form-label">Цена продажи *</label>
+                  <label className="form-label">{t('orderDetailsPage.sellingPrice')}</label>
                   <div className="flex gap-2">
                     <input
                       type="number"
@@ -960,13 +963,13 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
                       ))}
                     </div>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">Из прайса, можно изменить</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('orderDetailsPage.fromPriceHint')}</p>
                 </div>
               </div>
 
               <div className="pt-2 border-t border-slate-200">
                 <p className="text-sm text-gray-500">
-                  Итого:{' '}
+                  {t('orderDetailsPage.totalLabel')}{' '}
                   <span className="text-base font-bold text-gray-900 tabular">
                     {formatPrice(quantity * price, currency)}
                   </span>
@@ -978,14 +981,14 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
 
         <div className="modal-footer">
           <button type="button" onClick={onClose} className="modal-btn-cancel">
-            Отмена
+            {t('orderDetailsPage.cancelBtn')}
           </button>
           <button
             onClick={handleAdd}
             disabled={!selectedItem || addItemMutation.isPending || quantity <= 0 || price <= 0}
             className="cab-btn cab-btn-primary disabled:opacity-50"
           >
-            {addItemMutation.isPending ? 'Добавление…' : 'Добавить'}
+            {addItemMutation.isPending ? t('orderDetailsPage.adding') : t('orderDetailsPage.add')}
           </button>
         </div>
       </div>
@@ -1003,6 +1006,7 @@ interface EditOrderModalProps {
 }
 
 function EditOrderModal({ order, partsCompanyId, onClose }: EditOrderModalProps) {
+  const { t } = useTranslation('cabinet')
   const queryClient = useQueryClient()
   const [customerId, setCustomerId] = useState(order.customer_id || '')
   const [notes, setNotes] = useState(order.notes || '')
@@ -1030,19 +1034,19 @@ function EditOrderModal({ order, partsCompanyId, onClose }: EditOrderModalProps)
         <div className="modal-handle" />
 
         <div className="modal-header">
-          <h3 className="heading-3">Редактировать заказ</h3>
-          <button onClick={onClose} className="btn-icon-sm" aria-label="Закрыть"><X className="w-4 h-4" /></button>
+          <h3 className="heading-3">{t('orderDetailsPage.editOrderTitle')}</h3>
+          <button onClick={onClose} className="btn-icon-sm" aria-label={t('orderDetailsPage.close')}><X className="w-4 h-4" /></button>
         </div>
 
         <div className="modal-body space-y-4">
           <div>
-            <label className="form-label">Клиент</label>
+            <label className="form-label">{t('orderDetailsPage.customer')}</label>
             <select
               value={customerId}
               onChange={(e) => setCustomerId(e.target.value)}
               className="form-select"
             >
-              <option value="">Без клиента</option>
+              <option value="">{t('orderDetailsPage.noCustomer')}</option>
               {customers.map((customer) => (
                 <option key={customer.id} value={customer.id}>
                   {customer.full_name}
@@ -1053,7 +1057,7 @@ function EditOrderModal({ order, partsCompanyId, onClose }: EditOrderModalProps)
           </div>
 
           <div>
-            <label className="form-label">Примечание</label>
+            <label className="form-label">{t('orderDetailsPage.notes')}</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -1065,14 +1069,14 @@ function EditOrderModal({ order, partsCompanyId, onClose }: EditOrderModalProps)
 
         <div className="modal-footer">
           <button onClick={onClose} className="modal-btn-cancel">
-            Отмена
+            {t('orderDetailsPage.cancelBtn')}
           </button>
           <button
             onClick={() => updateMutation.mutate()}
             disabled={updateMutation.isPending}
             className="cab-btn cab-btn-primary disabled:opacity-50"
           >
-            {updateMutation.isPending ? 'Сохранение…' : 'Сохранить'}
+            {updateMutation.isPending ? t('orderDetailsPage.saving') : t('orderDetailsPage.save')}
           </button>
         </div>
       </div>
@@ -1090,6 +1094,7 @@ interface ConfirmCompleteModalProps {
 }
 
 function ConfirmCompleteModal({ onConfirm, onClose, isLoading }: ConfirmCompleteModalProps) {
+  const { t } = useTranslation('cabinet')
   return (
     <div className="modal-overlay">
       <div
@@ -1103,22 +1108,21 @@ function ConfirmCompleteModal({ onConfirm, onClose, isLoading }: ConfirmComplete
             <span className="icon-tile bg-green-100 text-green-700">
               <CheckCircle className="w-5 h-5" />
             </span>
-            <h3 className="heading-3">Завершить заказ?</h3>
+            <h3 className="heading-3">{t('orderDetailsPage.completeOrderQuestion')}</h3>
           </div>
         </div>
 
         <div className="modal-body">
           <div className="alert alert-warning">
             <p>
-              При завершении заказа количество запчастей в инвентаре будет автоматически уменьшено.
-              Это действие нельзя отменить.
+              {t('orderDetailsPage.completeWarning')}
             </p>
           </div>
         </div>
 
         <div className="modal-footer">
           <button onClick={onClose} className="modal-btn-cancel">
-            Отмена
+            {t('orderDetailsPage.cancelBtn')}
           </button>
           <button
             onClick={onConfirm}
@@ -1126,7 +1130,7 @@ function ConfirmCompleteModal({ onConfirm, onClose, isLoading }: ConfirmComplete
             className="flex-1 py-3 text-sm font-semibold text-white rounded-lg disabled:opacity-50 transition-all cab-btn cab-btn-success"
             style={{ backgroundImage: 'linear-gradient(180deg, #16A34A 0%, #15803D 100%)' }}
           >
-            {isLoading ? 'Завершение…' : 'Да, завершить'}
+            {isLoading ? t('orderDetailsPage.completing') : t('orderDetailsPage.yesComplete')}
           </button>
         </div>
       </div>
@@ -1177,6 +1181,7 @@ function NpTtnBlock({
   onTtnCreated,
   orderId,
 }: NpTtnBlockProps) {
+  const { t } = useTranslation('cabinet')
   const npApiKeySet = Boolean(getNpApiKey())
 
   const hasTtn = Boolean(order.np_ttn)
@@ -1215,7 +1220,7 @@ function NpTtnBlock({
       setShowTtnForm(false)
       onTtnCreated(result.ttn)
     } catch (err: any) {
-      toast.error(err?.message || 'Помилка створення ТТН')
+      toast.error(err?.message || t('orderDetailsPage.ttnCreateError'))
     } finally {
       setTtnCreating(false)
     }
@@ -1227,7 +1232,7 @@ function NpTtnBlock({
         <span className="icon-tile-sm bg-red-50 text-red-600">
           <Truck className="w-4 h-4" />
         </span>
-        <h2 className="heading-3">Доставка Новою поштою</h2>
+        <h2 className="heading-3">{t('orderDetailsPage.npDelivery')}</h2>
       </div>
 
       {hasTtn ? (
@@ -1236,7 +1241,7 @@ function NpTtnBlock({
           <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800">
             <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-green-700 dark:text-green-400 font-medium">Номер ТТН</p>
+              <p className="text-xs text-green-700 dark:text-green-400 font-medium">{t('orderDetailsPage.ttnNumber')}</p>
               <p className="text-base font-bold text-green-900 dark:text-green-300 tabular tracking-wide">
                 {order.np_ttn}
               </p>
@@ -1246,12 +1251,12 @@ function NpTtnBlock({
             <button
               onClick={() => {
                 navigator.clipboard.writeText(order.np_ttn)
-                toast.success('ТТН скопійовано')
+                toast.success(t('orderDetailsPage.ttnCopied'))
               }}
               className="cab-btn cab-btn-secondary cab-btn-sm gap-1.5"
             >
               <Copy className="w-3.5 h-3.5" />
-              Копировать
+              {t('orderDetailsPage.copy')}
             </button>
             <a
               href={`https://novaposhta.ua/tracking/?cargo_number=${order.np_ttn}`}
@@ -1260,7 +1265,7 @@ function NpTtnBlock({
               className="cab-btn cab-btn-ghost cab-btn-sm gap-1.5"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              Відстежити
+              {t('orderDetailsPage.track')}
             </a>
           </div>
         </div>
@@ -1273,13 +1278,13 @@ function NpTtnBlock({
               className="cab-btn cab-btn-primary gap-1.5"
             >
               <Truck className="w-4 h-4" />
-              Создать ТТН
+              {t('orderDetailsPage.createTtn')}
             </button>
           ) : (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="form-label">Вес (кг)</label>
+                  <label className="form-label">{t('orderDetailsPage.weight')}</label>
                   <input
                     type="number"
                     min="0.1"
@@ -1291,7 +1296,7 @@ function NpTtnBlock({
                   />
                 </div>
                 <div>
-                  <label className="form-label">Оценочная стоимость (грн.)</label>
+                  <label className="form-label">{t('orderDetailsPage.estimatedCost')}</label>
                   <input
                     type="number"
                     min="0"
@@ -1303,13 +1308,13 @@ function NpTtnBlock({
                 </div>
               </div>
               <div>
-                <label className="form-label">Описание груза</label>
+                <label className="form-label">{t('orderDetailsPage.cargoDescription')}</label>
                 <input
                   type="text"
                   value={ttnDescription}
                   onChange={e => setTtnDescription(e.target.value)}
                   className="form-input"
-                  placeholder="Автозапчастини"
+                  placeholder={t('orderDetailsPage.cargoDescriptionPlaceholder')}
                 />
               </div>
               <div className="flex gap-2">
@@ -1318,10 +1323,10 @@ function NpTtnBlock({
                   disabled={ttnCreating}
                   className="cab-btn cab-btn-primary gap-1.5 disabled:opacity-60"
                 >
-                  {ttnCreating ? 'Создание…' : (
+                  {ttnCreating ? t('orderDetailsPage.creating') : (
                     <>
                       <CheckCircle className="w-4 h-4" />
-                      Підтвердити
+                      {t('orderDetailsPage.confirm')}
                     </>
                   )}
                 </button>
@@ -1330,7 +1335,7 @@ function NpTtnBlock({
                   className="cab-btn cab-btn-ghost"
                   disabled={ttnCreating}
                 >
-                  Скасувати
+                  {t('orderDetailsPage.cancelBtn2')}
                 </button>
               </div>
             </div>
@@ -1342,8 +1347,8 @@ function NpTtnBlock({
           <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-gray-500 dark:text-slate-400">
             {!npApiKeySet
-              ? 'Укажите API-ключ Новой почты в Настройках'
-              : 'Сохраните город, отделение и телефон клиента для создания ТТН'}
+              ? t('orderDetailsPage.noApiKeyHint')
+              : t('orderDetailsPage.noDataHint')}
           </p>
         </div>
       )}

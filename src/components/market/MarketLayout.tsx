@@ -1,7 +1,9 @@
 import { Suspense, useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { LayoutDashboard, LogIn, Search, ShoppingCart } from 'lucide-react'
 import { Logo } from '@/components/brand/Logo'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { Spinner } from '@/components/ui/Spinner'
 import { CartProvider, useCart } from '@/hooks/useCart'
 import { useAuth } from '@/hooks/useAuth'
@@ -24,6 +26,7 @@ function navTab({ isActive }: { isActive: boolean }) {
 function MarketLayoutInner() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { t } = useTranslation('market')
   const { user } = useAuth()
   const { data: profile } = useUserProfile()
   const roleNames = (profile?.roles || []).map((r: any) => r.name)
@@ -59,7 +62,7 @@ function MarketLayoutInner() {
           ? { background: 'var(--mk-surface)', color: 'var(--mk-text)', boxShadow: 'var(--mk-shadow)' }
           : { color: 'var(--mk-text-2)' }}
       >
-        Каталог
+        {t('header.catalog')}
       </NavLink>
       <NavLink
         to="/market/suppliers"
@@ -68,7 +71,7 @@ function MarketLayoutInner() {
           ? { background: 'var(--mk-surface)', color: 'var(--mk-text)', boxShadow: 'var(--mk-shadow)' }
           : { color: 'var(--mk-text-2)' }}
       >
-        Разборки
+        {t('header.suppliers')}
       </NavLink>
     </div>
   )
@@ -102,9 +105,9 @@ function MarketLayoutInner() {
                     type="search"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    placeholder="Поиск запчасти или артикула…"
+                    placeholder={t('header.searchPlaceholder')}
                     className="mk-input mk-search"
-                    aria-label="Поиск по каталогу запчастей"
+                    aria-label={t('header.searchPlaceholder')}
                   />
                 </div>
               </form>
@@ -128,8 +131,8 @@ function MarketLayoutInner() {
               </Link>
               <Link to={user ? dashboardHref : '/login'} className="mk-btn mk-btn-outline">
                 {user
-                  ? <><LayoutDashboard className="w-4 h-4" aria-hidden="true" /><span className="hidden sm:inline">В кабинет</span></>
-                  : <><LogIn className="w-4 h-4" aria-hidden="true" /><span className="hidden sm:inline">Войти</span></>}
+                  ? <><LayoutDashboard className="w-4 h-4" aria-hidden="true" /><span className="hidden sm:inline">{t('header.toCabinet')}</span></>
+                  : <><LogIn className="w-4 h-4" aria-hidden="true" /><span className="hidden sm:inline">{t('header.login')}</span></>}
               </Link>
             </div>
           </div>
@@ -154,7 +157,7 @@ function MarketLayoutInner() {
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Поиск запчасти или артикула…"
                   className="mk-input mk-search !rounded-full"
-                  aria-label="Поиск по каталогу запчастей"
+                  aria-label={t('header.searchPlaceholder')}
                 />
               </div>
             </form>
@@ -177,9 +180,10 @@ function MarketLayoutInner() {
       {/* ── Подвал ─────────────────────────────────────────────────────── */}
       <footer style={{ background: 'var(--mk-surface)', borderTop: '1px solid var(--mk-border)' }} className="mt-10">
         <div className="mk-container py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs mk-meta">Маркет запчастей · б/у и новые запчасти от авторазборок</p>
+          <p className="text-xs mk-meta">{t('footer.tagline')}</p>
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
-            <Link to="/business" className="text-xs font-semibold mk-link">Открыть разборку</Link>
+            <LanguageSwitcher />
+            <Link to="/business" className="text-xs font-semibold mk-link">{t('footer.openBusiness')}</Link>
             <p className="text-xs mk-meta">© {new Date().getFullYear()}</p>
           </div>
         </div>

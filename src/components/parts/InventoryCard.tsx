@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Package, ImageIcon, Trash2, Car, Edit2, ShoppingCart, CheckSquare, Square, Share2 } from 'lucide-react'
 import ShareModal from '@/components/ui/ShareModal'
 import type { PartsInventoryItem, PartsInventoryStatus } from '@/types/parts'
@@ -7,11 +8,11 @@ import { PARTS_CONDITION_LABELS } from '@/utils/status'
 
 // ── Status config ────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<PartsInventoryStatus, { label: string; className: string }> = {
-  available: { label: 'В наличии', className: 'badge badge-green' },
-  reserved:  { label: 'Резерв',    className: 'badge badge-yellow' },
-  sold:      { label: 'Продано',   className: 'badge badge-gray' },
-  damaged:   { label: 'Брак',      className: 'badge badge-red' },
+const STATUS_CLASSNAMES: Record<PartsInventoryStatus, string> = {
+  available: 'badge badge-green',
+  reserved:  'badge badge-yellow',
+  sold:      'badge badge-gray',
+  damaged:   'badge badge-red',
 }
 
 // ── Props ────────────────────────────────────────────────────────────────────
@@ -41,6 +42,7 @@ export function InventoryCard({
   onNavigate,
   onToggleSelect,
 }: InventoryCardProps) {
+  const { t } = useTranslation('cabinet')
   const [imgLoaded, setImgLoaded] = useState(false)
   const [imgError, setImgError] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
@@ -52,10 +54,15 @@ export function InventoryCard({
   const photoCount = photos.length
 
   // Status
-  const statusCfg = STATUS_CONFIG[item.status] ?? {
-    label: item.status,
-    className: 'badge badge-gray',
+  const statusLabels: Record<PartsInventoryStatus, string> = {
+    available: t('inventoryCard.statusAvailable'),
+    reserved: t('inventoryCard.statusReserved'),
+    sold: t('inventoryCard.statusSold'),
+    damaged: t('inventoryCard.statusDamaged'),
   }
+  const statusCfg = STATUS_CLASSNAMES[item.status]
+    ? { label: statusLabels[item.status], className: STATUS_CLASSNAMES[item.status] }
+    : { label: item.status, className: 'badge badge-gray' }
 
   // Condition
   const conditionLabel = PARTS_CONDITION_LABELS[item.condition] ?? item.condition
@@ -126,7 +133,7 @@ export function InventoryCard({
           /* Placeholder */
           <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gray-50">
             <Package className="w-12 h-12 text-gray-300" strokeWidth={1.5} />
-            <span className="text-xs text-gray-400">Нет фото</span>
+            <span className="text-xs text-gray-400">{t('inventoryCard.noPhoto')}</span>
           </div>
         )}
 
@@ -152,7 +159,7 @@ export function InventoryCard({
         {/* Мало в наличии — absolute bottom-left */}
         {lowStock && (
           <span className="absolute bottom-2 left-2 badge badge-red pointer-events-none">
-            Мало
+            {t('inventoryCard.lowStock')}
           </span>
         )}
 
@@ -161,7 +168,7 @@ export function InventoryCard({
           <button
             onClick={(e) => { e.stopPropagation(); onToggleSelect!(item.id, e) }}
             className="absolute top-2 right-2 p-1 rounded-md bg-white/85 backdrop-blur-sm shadow-sm transition-opacity hover:opacity-90"
-            aria-label={isSelected ? 'Снять выбор' : 'Выбрать'}
+            aria-label={isSelected ? t('inventoryCard.deselect') : t('inventoryCard.select')}
           >
             {isSelected
               ? <CheckSquare className="w-4 h-4" style={{ color: 'var(--cab-signal)' }} />
@@ -218,7 +225,7 @@ export function InventoryCard({
               lowStock ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-600',
             ].join(' ')}
           >
-            {item.quantity ?? 1} шт.
+            {t('inventoryCard.quantityPcs', { count: item.quantity ?? 1 })}
           </span>
           {item.location && (
             <span className="text-[10px] text-gray-400 truncate">
@@ -231,13 +238,13 @@ export function InventoryCard({
         <div className="mt-auto pt-1.5">
           {isSold && item.sold_price != null ? (
             <div>
-              <p className="text-[10px] text-gray-400 leading-none mb-0.5">Продано за</p>
+              <p className="text-[10px] text-gray-400 leading-none mb-0.5">{t('inventoryCard.soldFor')}</p>
               <p className="text-base font-bold text-gray-500 tabular">{priceDisplay}</p>
             </div>
           ) : priceDisplay ? (
             <p className="text-lg font-bold text-primary leading-tight tabular">{priceDisplay}</p>
           ) : (
-            <p className="text-xs text-amber-600 font-medium">Цена не указана</p>
+            <p className="text-xs text-amber-600 font-medium">{t('inventoryCard.priceNotSet')}</p>
           )}
         </div>
       </div>
@@ -253,7 +260,7 @@ export function InventoryCard({
           className="cab-btn cab-btn-secondary cab-btn-sm flex-1 gap-1"
         >
           <Edit2 className="w-3.5 h-3.5" />
-          Изменить
+          {t('inventoryCard.edit')}
         </button>
 
         {/* Продать */}
@@ -263,14 +270,14 @@ export function InventoryCard({
           className="cab-btn cab-btn-success cab-btn-sm flex-1 gap-1"
         >
           <ShoppingCart className="w-3.5 h-3.5" />
-          Продать
+          {t('inventoryCard.sell')}
         </button>
 
         {/* Поделиться (цветом — видно) */}
         <button
           onClick={handleShare}
-          aria-label="Поделиться"
-          title="Поделиться"
+          aria-label={t('inventoryCard.share')}
+          title={t('inventoryCard.share')}
           className="btn-icon-sm flex-shrink-0 hover:bg-[var(--cab-signal-weak)]"
           style={{ color: 'var(--cab-signal)' }}
         >
@@ -280,7 +287,7 @@ export function InventoryCard({
         {/* Удалить */}
         <button
           onClick={(e) => onDelete(item, e)}
-          aria-label="Удалить"
+          aria-label={t('inventoryCard.delete')}
           className="btn-icon-sm text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0"
         >
           <Trash2 className="w-3.5 h-3.5" />
@@ -293,8 +300,8 @@ export function InventoryCard({
             isOpen={shareOpen}
             onClose={() => setShareOpen(false)}
             url={shareUrl}
-            title="Поделиться запчастью"
-            subtitle="Ссылка открывает карточку запчасти"
+            title={t('inventoryCard.shareModalTitle')}
+            subtitle={t('inventoryCard.shareModalSubtitle')}
             shareTitle={item.name}
             shareText={shareText}
           />

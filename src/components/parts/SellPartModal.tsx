@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { UserPlus, X, ChevronDown } from 'lucide-react'
@@ -28,6 +29,7 @@ interface SellPartModalProps {
  * Используется и в списке запчастей, и на карточке товара — без редиректа.
  */
 export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPartModalProps) {
+  const { t } = useTranslation('cabinet')
   const queryClient = useQueryClient()
   const { rate: usdRate } = usePartsExchangeRate()
 
@@ -92,7 +94,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
       queryClient.invalidateQueries({ queryKey: ['parts-inventory-item', item.id] })
       queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
-      toast.success('Запчасть продана, заказ создан')
+      toast.success(t('sellPartModal.toastSold'))
       onSold?.()
       onClose()
     },
@@ -100,18 +102,18 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
       console.error('Sell error:', err)
       const e = err as { message?: string; error_description?: string }
       const msg = e?.message || e?.error_description || JSON.stringify(err)
-      toast.error(`Ошибка при сохранении: ${msg}`)
+      toast.error(t('sellPartModal.toastSaveError', { msg }))
     },
   })
 
   const handleSell = () => {
     const price = parseFloat(sellPrice)
     if (isNaN(price) || price < 0) {
-      toast.error('Введите корректную сумму')
+      toast.error(t('sellPartModal.toastInvalidAmount'))
       return
     }
     if (showNewCustomer && !newCustomerName.trim()) {
-      toast.error('Введите имя клиента')
+      toast.error(t('sellPartModal.toastEnterName'))
       return
     }
     sellMutation.mutate({
@@ -129,7 +131,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
 
         <div className="modal-header">
           <div className="min-w-0">
-            <h3 className="text-base font-semibold text-gray-900 leading-tight">Продать запчасть</h3>
+            <h3 className="text-base font-semibold text-gray-900 leading-tight">{t('sellPartModal.title')}</h3>
             <p className="text-xs text-gray-500 mt-0.5 truncate">{item.name}</p>
           </div>
           <button type="button" onClick={onClose} className="btn-icon btn-icon-sm ml-3 flex-shrink-0">
@@ -140,10 +142,10 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
         <div className="modal-body space-y-4">
           {/* Цена */}
           <div>
-            <label className="form-label">Цена продажи</label>
+            <label className="form-label">{t('sellPartModal.priceLabel')}</label>
             {item.selling_price && (
               <p className="text-xs text-gray-400 mb-2">
-                Объявленная:{' '}
+                {t('sellPartModal.announced')}{' '}
                 <span className="tabular-nums">
                   {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
                 </span>
@@ -165,7 +167,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
                 onClick={() => setSellCurrency(c => c === 'USD' ? 'UAH' : 'USD')}
                 className="cab-btn cab-btn-primary px-3 w-12 text-center font-semibold tabular-nums"
               >
-                {sellCurrency === 'USD' ? '$' : 'грн'}
+                {sellCurrency === 'USD' ? '$' : t('sellPartModal.uah')}
               </button>
             </div>
           </div>
@@ -173,7 +175,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
           {/* Клиент */}
           <div>
             <label className="form-label">
-              Клиент <span className="text-gray-400 font-normal">(необязательно)</span>
+              {t('sellPartModal.customer')} <span className="text-gray-400 font-normal">{t('sellPartModal.optional')}</span>
             </label>
             {!showNewCustomer ? (
               <div className="flex gap-2">
@@ -183,7 +185,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
                     onChange={(e) => setSellCustomerId(e.target.value)}
                     className="form-select pr-8"
                   >
-                    <option value="">— Без клиента —</option>
+                    <option value="">{t('sellPartModal.noCustomer')}</option>
                     {customers.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.full_name}{c.phone ? ` (${c.phone})` : ''}
@@ -196,7 +198,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
                   type="button"
                   onClick={() => setShowNewCustomer(true)}
                   className="cab-btn cab-btn-secondary flex items-center gap-1 px-3 flex-shrink-0"
-                  title="Новый клиент"
+                  title={t('sellPartModal.newCustomer')}
                 >
                   <UserPlus className="w-4 h-4" />
                 </button>
@@ -204,7 +206,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
             ) : (
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                 <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-xs font-semibold text-gray-700">Новый клиент</span>
+                  <span className="text-xs font-semibold text-gray-700">{t('sellPartModal.newCustomer')}</span>
                   <button
                     type="button"
                     onClick={() => setShowNewCustomer(false)}
@@ -218,14 +220,14 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
                     type="text"
                     value={newCustomerName}
                     onChange={(e) => setNewCustomerName(e.target.value)}
-                    placeholder="Имя *"
+                    placeholder={t('sellPartModal.namePlaceholder')}
                     className="form-input"
                   />
                   <input
                     type="text"
                     value={newCustomerPhone}
                     onChange={(e) => setNewCustomerPhone(e.target.value)}
-                    placeholder="Телефон"
+                    placeholder={t('sellPartModal.phonePlaceholder')}
                     className="form-input"
                   />
                 </div>
@@ -240,7 +242,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
             onClick={onClose}
             className="cab-btn cab-btn-secondary flex-1"
           >
-            Отмена
+            {t('sellPartModal.cancel')}
           </button>
           <button
             type="button"
@@ -248,7 +250,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
             onClick={handleSell}
             className="cab-btn cab-btn-success flex-1"
           >
-            {sellMutation.isPending ? 'Сохранение...' : 'Продать'}
+            {sellMutation.isPending ? t('sellPartModal.saving') : t('sellPartModal.sell')}
           </button>
         </div>
       </div>

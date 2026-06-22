@@ -1,4 +1,5 @@
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import {
@@ -9,6 +10,7 @@ import { toast } from 'sonner'
 import { getPartsOrderStatusText } from '@/utils/status'
 import type { PartsOrderStatus } from '@/utils/status'
 import { formatDate } from '@/utils/date'
+import { intlLocale } from '@/i18n'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getPartsDashboardStats } from '@/services/partsService'
 import { supabase } from '@/lib/supabase'
@@ -39,6 +41,7 @@ function StatusChip({ status }: { status: PartsOrderStatus }) {
 }
 
 export default function PartsDashboard() {
+  const { t } = useTranslation('cabinet')
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
@@ -47,9 +50,9 @@ export default function PartsDashboard() {
   const handleUpdateRate = async () => {
     try {
       const r = await fetchPrivatBank()
-      toast.success(`Курс обновлён: ${r} ₴/$`)
+      toast.success(t('dashboard.rateUpdated', { rate: r }))
     } catch {
-      toast.error('Не удалось получить курс ПриватБанка')
+      toast.error(t('dashboard.rateError'))
     }
   }
 
@@ -94,8 +97,8 @@ export default function PartsDashboard() {
       <div className="flex items-center justify-center py-20">
         <div className="empty-state">
           <div className="empty-state-icon"><AlertTriangle className="w-7 h-7 text-orange-500" strokeWidth={1.5} /></div>
-          <p className="empty-state-title">Нет доступа к разборке</p>
-          <p className="empty-state-text">Обратитесь к администратору</p>
+          <p className="empty-state-title">{t('dashboard.noAccess')}</p>
+          <p className="empty-state-text">{t('dashboard.contactAdmin')}</p>
         </div>
       </div>
     )
@@ -103,10 +106,10 @@ export default function PartsDashboard() {
 
   // ── Очередь дел ──────────────────────────────────────────────
   const actions = [
-    { key: 'new-orders', count: stats?.orders?.new ?? 0,     label: 'Новые заказы',    Icon: ShoppingCart, to: '/parts/orders' },
-    { key: 'market',     count: stats?.marketOrders ?? 0,    label: 'Заявки с маркета', Icon: Inbox,        to: '/parts/market-orders' },
-    { key: 'needs-fill', count: stats?.inventory?.needsFill ?? 0, label: 'Без цены или номера', Icon: Tag,    to: '/parts/inventory/no-price' },
-    { key: 'low-stock',  count: stats?.inventory?.lowStock ?? 0, label: 'Мало на складе',  Icon: AlertTriangle, to: '/parts/inventory?source=vehicles' },
+    { key: 'new-orders', count: stats?.orders?.new ?? 0,     label: t('dashboard.actNewOrders'),    Icon: ShoppingCart, to: '/parts/orders' },
+    { key: 'market',     count: stats?.marketOrders ?? 0,    label: t('dashboard.actMarket'), Icon: Inbox,        to: '/parts/market-orders' },
+    { key: 'needs-fill', count: stats?.inventory?.needsFill ?? 0, label: t('dashboard.actNeedsFill'), Icon: Tag,    to: '/parts/inventory/no-price' },
+    { key: 'low-stock',  count: stats?.inventory?.lowStock ?? 0, label: t('dashboard.actLowStock'),  Icon: AlertTriangle, to: '/parts/inventory?source=vehicles' },
   ].filter(a => a.count > 0)
 
   // Курс нужно обновить, если он не на сегодня и уже утро (≥9:00)
@@ -117,10 +120,10 @@ export default function PartsDashboard() {
   const ink3 = 'var(--cab-ink-3)'
 
   const kpis = [
-    { label: 'Выручка',  value: (stats?.revenueUSD ?? 0) > 0 ? `$${Math.round(stats!.revenueUSD).toLocaleString('ru-RU')}` : '—', sub: `${stats?.orders?.completed ?? 0} завершено`, Icon: DollarSign, to: '/parts/analytics' },
-    { label: 'Заказов',  value: stats?.orders?.total ?? 0, sub: `${stats?.orders?.in_progress ?? 0} в работе`, Icon: ShoppingCart, to: '/parts/orders' },
-    { label: 'Запчасти', value: stats?.inventory?.total ?? 0, sub: `${stats?.inventory?.available ?? 0} в наличии`, Icon: Package, to: '/parts/inventory?source=vehicles' },
-    { label: 'Авто',     value: stats?.vehicles?.total ?? 0, sub: `${stats?.vehicles?.dismantled ?? 0} разобрано`, Icon: Car, to: '/parts/vehicles' },
+    { label: t('dashboard.kpiRevenue'),  value: (stats?.revenueUSD ?? 0) > 0 ? `$${Math.round(stats!.revenueUSD).toLocaleString(intlLocale())}` : '—', sub: t('dashboard.kpiCompleted', { n: stats?.orders?.completed ?? 0 }), Icon: DollarSign, to: '/parts/analytics' },
+    { label: t('dashboard.kpiOrders'),  value: stats?.orders?.total ?? 0, sub: t('dashboard.kpiInProgress', { n: stats?.orders?.in_progress ?? 0 }), Icon: ShoppingCart, to: '/parts/orders' },
+    { label: t('dashboard.kpiParts'), value: stats?.inventory?.total ?? 0, sub: t('dashboard.kpiAvailable', { n: stats?.inventory?.available ?? 0 }), Icon: Package, to: '/parts/inventory?source=vehicles' },
+    { label: t('dashboard.kpiVehicles'),     value: stats?.vehicles?.total ?? 0, sub: t('dashboard.kpiDismantled', { n: stats?.vehicles?.dismantled ?? 0 }), Icon: Car, to: '/parts/vehicles' },
   ]
 
   return (
@@ -129,14 +132,14 @@ export default function PartsDashboard() {
       {/* ── Шапка ─────────────────────────────────────────── */}
       <div className="flex items-end justify-between gap-3 flex-wrap">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: ink3 }}>Авторазборка</p>
-          <h1 className="page-title mt-0.5">Пульт</h1>
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: ink3 }}>{t('dashboard.kicker')}</p>
+          <h1 className="page-title mt-0.5">{t('dashboard.title')}</h1>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleUpdateRate}
             disabled={rateFetching}
-            title="Обновить курс доллара (ПриватБанк)"
+            title={t('dashboard.updateRate')}
             className="cab-btn cab-btn-secondary cab-btn-sm"
             style={rateStale ? { borderColor: '#F59E0B', color: '#B45309', background: '#FFFBEB' } : undefined}
           >
@@ -144,10 +147,10 @@ export default function PartsDashboard() {
             <span className="tabular-nums">{usdRate} ₴/$</span>
           </button>
           <button onClick={() => navigate('/parts/vehicles')} className="cab-btn cab-btn-secondary cab-btn-sm hidden sm:inline-flex">
-            <Car className="w-4 h-4" strokeWidth={1.5} /> Авто
+            <Car className="w-4 h-4" strokeWidth={1.5} /> {t('dashboard.vehicles')}
           </button>
           <button onClick={() => navigate('/parts/orders/create')} className="cab-btn cab-btn-primary cab-btn-sm">
-            <Plus className="w-4 h-4" strokeWidth={2} /> Новый заказ
+            <Plus className="w-4 h-4" strokeWidth={2} /> {t('dashboard.newOrder')}
           </button>
         </div>
       </div>
@@ -158,7 +161,7 @@ export default function PartsDashboard() {
       {/* ── Требует действия ──────────────────────────────── */}
       {(actions.length > 0 || rateNeedsUpdate) ? (
         <div className="space-y-3">
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: ink3 }}>Требует действия</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: ink3 }}>{t('dashboard.needsAction')}</p>
 
           {/* Напоминание обновить курс — отдельно от карточек-действий */}
           <ExchangeRateWidget />
@@ -187,8 +190,8 @@ export default function PartsDashboard() {
             <CheckCircle2 className="w-5 h-5" strokeWidth={1.5} />
           </span>
           <div>
-            <p className="text-sm font-bold" style={{ color: ink }}>Всё под контролем</p>
-            <p className="text-xs mt-0.5" style={{ color: ink2 }}>Новых задач нет — заказы обработаны, склад в порядке.</p>
+            <p className="text-sm font-bold" style={{ color: ink }}>{t('dashboard.allGoodTitle')}</p>
+            <p className="text-xs mt-0.5" style={{ color: ink2 }}>{t('dashboard.allGoodText')}</p>
           </div>
         </div>
       )}
@@ -218,15 +221,15 @@ export default function PartsDashboard() {
         {/* Последние заказы */}
         <div className="cab-card lg:col-span-2 overflow-hidden">
           <div className="flex items-center justify-between px-4 h-12" style={{ borderBottom: '1px solid var(--cab-border)' }}>
-            <p className="text-sm font-bold" style={{ color: ink }}>Последние заказы</p>
+            <p className="text-sm font-bold" style={{ color: ink }}>{t('dashboard.recentOrders')}</p>
             <Link to="/parts/orders" className="text-xs font-semibold inline-flex items-center gap-1" style={{ color: 'var(--cab-signal)' }}>
-              Все заказы <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+              {t('dashboard.allOrders')} <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.5} />
             </Link>
           </div>
           {(recentOrders?.length ?? 0) === 0 ? (
             <div className="px-4 py-10 text-center">
               <Boxes className="w-8 h-8 mx-auto mb-2" style={{ color: ink3 }} strokeWidth={1.5} />
-              <p className="text-sm font-medium" style={{ color: ink2 }}>Заказов пока нет</p>
+              <p className="text-sm font-medium" style={{ color: ink2 }}>{t('dashboard.noOrders')}</p>
             </div>
           ) : (
             <div>
@@ -240,13 +243,13 @@ export default function PartsDashboard() {
                       <p className="text-sm font-semibold truncate" style={{ color: ink }}>
                         {o.order_number}
                         <span className="font-normal ml-2" style={{ color: ink3 }}>
-                          {(o.customer as any)?.full_name || 'Без клиента'}
+                          {(o.customer as any)?.full_name || t('dashboard.noCustomer')}
                         </span>
                       </p>
                       <p className="text-[11px] mt-0.5" style={{ color: ink3 }}>{formatDate(o.order_date)}</p>
                     </div>
                     <span className="text-sm font-bold tabular-nums flex-shrink-0" style={{ color: ink }}>
-                      {usd != null ? `$${Math.round(usd).toLocaleString('ru-RU')}` : '—'}
+                      {usd != null ? `$${Math.round(usd).toLocaleString(intlLocale())}` : '—'}
                     </span>
                     <StatusChip status={o.status} />
                   </button>
@@ -258,12 +261,12 @@ export default function PartsDashboard() {
 
         {/* Воронка заказов */}
         <div className="cab-card p-4">
-          <p className="text-sm font-bold mb-3" style={{ color: ink }}>Воронка заказов</p>
+          <p className="text-sm font-bold mb-3" style={{ color: ink }}>{t('dashboard.funnel')}</p>
           <div className="space-y-2.5">
             {[
-              { label: 'Новые',     value: stats?.orders?.new ?? 0,         color: 'var(--cab-signal)' },
-              { label: 'В работе',  value: stats?.orders?.in_progress ?? 0, color: '#B45309' },
-              { label: 'Завершены', value: stats?.orders?.completed ?? 0,   color: '#15803D' },
+              { label: t('dashboard.fNew'),     value: stats?.orders?.new ?? 0,         color: 'var(--cab-signal)' },
+              { label: t('dashboard.fInProgress'),  value: stats?.orders?.in_progress ?? 0, color: '#B45309' },
+              { label: t('dashboard.fCompleted'), value: stats?.orders?.completed ?? 0,   color: '#15803D' },
             ].map(({ label, value, color }) => {
               const total = stats?.orders?.total || 1
               const pct = Math.round((value / total) * 100)
@@ -282,7 +285,7 @@ export default function PartsDashboard() {
           </div>
           <Link to="/parts/customers" className="mt-4 pt-3 flex items-center justify-between text-xs"
             style={{ borderTop: '1px solid var(--cab-border)' }}>
-            <span style={{ color: ink2 }}>Клиентов</span>
+            <span style={{ color: ink2 }}>{t('dashboard.customers')}</span>
             <span className="font-bold tabular-nums inline-flex items-center gap-1" style={{ color: ink }}>
               {stats?.customers?.total ?? 0} <ChevronRight className="w-3.5 h-3.5" style={{ color: ink3 }} strokeWidth={1.5} />
             </span>

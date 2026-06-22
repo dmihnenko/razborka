@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Phone, Inbox, MessageSquare, Store, ClipboardCheck, ArrowRight, Trash2, Car, MapPin } from 'lucide-react'
@@ -7,6 +8,7 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import i18n from '@/i18n'
 import { Spinner } from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -22,10 +24,10 @@ import type { MarketplaceOrder, MarketplaceOrderStatus } from '@/types/marketpla
 
 type StatusFilter = 'active' | 'archive'
 
-const STATUS_LABELS: Record<MarketplaceOrderStatus, string> = {
-  new: 'Новая',
-  viewed: 'Просмотрена',
-  closed: 'Закрыта',
+const STATUS_LABEL_KEYS: Record<MarketplaceOrderStatus, string> = {
+  new: 'statusNew',
+  viewed: 'statusViewed',
+  closed: 'statusClosed',
 }
 
 const STATUS_BADGES: Record<MarketplaceOrderStatus, string> = {
@@ -73,6 +75,7 @@ function MarketOrderCard({
   onOpenOrder: (orderId: string) => void
   isConverting: boolean
 }) {
+  const { t } = useTranslation('cabinet')
   const telHref = `tel:${order.buyerPhone.replace(/[^\d+]/g, '')}`
 
   return (
@@ -80,7 +83,7 @@ function MarketOrderCard({
       {/* Шапка: покупатель + телефон + статус */}
       <div className="flex items-start justify-between gap-3 px-4 py-3.5 border-b border-gray-100">
         <div className="min-w-0">
-          <p className="text-base font-bold text-gray-900 truncate">{order.buyerName || 'Покупатель'}</p>
+          <p className="text-base font-bold text-gray-900 truncate">{order.buyerName || t('marketOrdersPage.buyer')}</p>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
             <a
               href={telHref}
@@ -93,7 +96,7 @@ function MarketOrderCard({
           </div>
         </div>
         <span className={`${STATUS_BADGES[order.status]} flex-shrink-0`}>
-          {STATUS_LABELS[order.status]}
+          {t(`marketOrdersPage.${STATUS_LABEL_KEYS[order.status]}`)}
         </span>
       </div>
 
@@ -113,7 +116,7 @@ function MarketOrderCard({
               {/* Заголовок: с какой машины */}
               <div className="flex items-center gap-1.5 mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
                 <Car className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
-                <span className="truncate">{g.vehicleName || 'Магазин / без авто'}</span>
+                <span className="truncate">{g.vehicleName || t('marketOrdersPage.shopNoVehicle')}</span>
               </div>
               <div className="divide-y divide-gray-100">
                 {g.items.map((item) => (
@@ -156,7 +159,7 @@ function MarketOrderCard({
       {/* Футер: сумма + действия (в одну строку) */}
       <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/60 flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className="kicker">Сумма</p>
+          <p className="kicker">{t('marketOrdersPage.total')}</p>
           <p className="text-lg font-extrabold text-primary tabular leading-none">{formatOrderTotal(order)}</p>
         </div>
         <div className="flex items-center gap-2 justify-end flex-shrink-0">
@@ -165,7 +168,7 @@ function MarketOrderCard({
               onClick={() => onOpenOrder(order.convertedOrderId!)}
               className="cab-btn cab-btn-secondary cab-btn-sm"
             >
-              <ClipboardCheck className="w-3.5 h-3.5 text-green-600" strokeWidth={1.5} /> Открыть заказ
+              <ClipboardCheck className="w-3.5 h-3.5 text-green-600" strokeWidth={1.5} /> {t('marketOrdersPage.openOrder')}
               <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
             </button>
           ) : (
@@ -174,10 +177,10 @@ function MarketOrderCard({
                 onClick={() => onDelete(order)}
                 disabled={isDeleting}
                 className="cab-btn cab-btn-ghost cab-btn-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
-                title="Удалить заявку (товар вернётся в маркет)"
+                title={t('marketOrdersPage.deleteTitle')}
               >
                 {isDeleting ? <Spinner size="sm" /> : <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />}
-                <span className="hidden sm:inline">Удалить</span>
+                <span className="hidden sm:inline">{t('marketOrdersPage.delete')}</span>
               </button>
               <button
                 onClick={() => onConvert(order)}
@@ -185,7 +188,7 @@ function MarketOrderCard({
                 className="cab-btn cab-btn-primary cab-btn-sm disabled:opacity-50"
               >
                 {isConverting ? <Spinner size="sm" /> : <ClipboardCheck className="w-3.5 h-3.5" strokeWidth={1.5} />}
-                Оформить заказ
+                {t('marketOrdersPage.createOrder')}
               </button>
             </>
           )}
@@ -196,6 +199,7 @@ function MarketOrderCard({
 }
 
 export default function PartsMarketOrders() {
+  const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
   const partsCompanyId: string | undefined = profile?.parts_company_id
   const queryClient = useQueryClient()
@@ -216,16 +220,16 @@ export default function PartsMarketOrders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['marketplace-orders', partsCompanyId] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success('Заявка удалена, товар возвращён в маркет')
+      toast.success(t('marketOrdersPage.toastDeleted'))
     },
     onError: () => {
-      toast.error('Не удалось удалить заявку')
+      toast.error(t('marketOrdersPage.toastDeleteError'))
     },
   })
 
   const handleDelete = async (order: MarketplaceOrder) => {
     const ok = await showConfirm({
-      message: `Удалить заявку от «${order.buyerName || order.buyerPhone}»? Забронированный товар вернётся в маркет.`,
+      message: t('marketOrdersPage.confirmDelete', { name: order.buyerName || order.buyerPhone }),
       danger: true,
     })
     if (ok) deleteMutation.mutate(order)
@@ -238,11 +242,11 @@ export default function PartsMarketOrders() {
       queryClient.invalidateQueries({ queryKey: ['marketplace-orders', partsCompanyId] })
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success('Заказ создан из заявки')
+      toast.success(t('marketOrdersPage.toastConverted'))
       navigate(`/parts/orders/${orderId}`)
     },
     onError: () => {
-      toast.error('Не удалось оформить заказ из заявки')
+      toast.error(t('marketOrdersPage.toastConvertError'))
     },
   })
 
@@ -259,11 +263,11 @@ export default function PartsMarketOrders() {
   return (
     <div className="min-h-dvh bg-gray-50">
       <PartsPageHeader
-        title="Заявки с маркета"
+        title={i18n.t('cabinet:pages.marketOrders')}
         subtitle={
           activeCount > 0
-            ? <span className="font-bold text-primary">{activeCount} активных</span>
-            : 'Активных заявок нет'
+            ? <span className="font-bold text-primary">{i18n.t('cabinet:pages.marketOrdersActive', { n: activeCount })}</span>
+            : i18n.t('cabinet:pages.marketOrdersNone')
         }
         backPath="/parts/dashboard"
       />
@@ -273,8 +277,8 @@ export default function PartsMarketOrders() {
         <div className="flex gap-2 mb-4">
           {(
             [
-              { key: 'active', label: 'Активные' },
-              { key: 'archive', label: 'Архив' },
+              { key: 'active', label: t('marketOrdersPage.filterActive') },
+              { key: 'archive', label: t('marketOrdersPage.filterArchive') },
             ] as { key: StatusFilter; label: string }[]
           ).map(({ key, label }) => (
             <button
@@ -299,11 +303,11 @@ export default function PartsMarketOrders() {
         ) : visibleOrders.length === 0 ? (
           <EmptyState
             icon={Inbox}
-            title={statusFilter === 'active' ? 'Активных заявок нет' : 'Архив пуст'}
+            title={statusFilter === 'active' ? t('marketOrdersPage.emptyActiveTitle') : t('marketOrdersPage.emptyArchiveTitle')}
             description={
               statusFilter === 'active'
-                ? 'Когда покупатели на маркетплейсе отправят заявку на ваши запчасти, она появится здесь.'
-                : 'Оформленные заявки переезжают сюда.'
+                ? t('marketOrdersPage.emptyActiveDesc')
+                : t('marketOrdersPage.emptyArchiveDesc')
             }
           />
         ) : (

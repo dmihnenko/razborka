@@ -4,6 +4,8 @@ import { QueryClient } from '@tanstack/react-query'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
 import App from './App.tsx'
+// i18n (ru/uk) — инициализируется до рендера, язык берётся из localStorage 'tsp_lang'/браузера.
+import './i18n'
 // Inter Variable бандлится: на Windows/Android заменяет Segoe UI/Roboto (чище и легче).
 // На Apple-устройствах первым в стеке остаётся системный SF Pro.
 import '@fontsource-variable/inter'

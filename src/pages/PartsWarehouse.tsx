@@ -1,10 +1,12 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Warehouse, Check, X, QrCode, ChevronLeft, ChevronRight, FolderTree, GripVertical } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import i18n from '@/i18n'
 import QrLabelModal from '@/components/parts/QrLabelModal'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { supabase } from '@/lib/supabase'
@@ -23,7 +25,6 @@ interface FlatNode extends StorageLocation { depth: number; childCount: number }
 
 const INDENT = 16
 const MAX_DEPTH = 4
-const LEVEL_LABELS = ['Бокс', 'Стеллаж', 'Полка', 'Ячейка']
 
 /** Плоский список мест с глубиной (DFS, сохраняет порядок). Дети свёрнутых узлов скрыты. */
 function flatten(nodes: StorageLocation[], collapsed: Set<string>): FlatNode[] {
@@ -41,6 +42,8 @@ function flatten(nodes: StorageLocation[], collapsed: Set<string>): FlatNode[] {
 }
 
 export default function PartsWarehouse() {
+  const { t } = useTranslation('cabinet')
+  const LEVEL_LABELS = [t('warehousePage.levelBox'), t('warehousePage.levelRack'), t('warehousePage.levelShelf'), t('warehousePage.levelCell')]
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
@@ -198,19 +201,19 @@ export default function PartsWarehouse() {
       createStorageLocation({ name, parent_id: parentId, parts_company_id: partsCompanyId! }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-storage-locations'] })
-      toast.success('Место добавлено')
+      toast.success(t('warehousePage.toastAdded'))
       setAddingParentId(undefined); setAddingName('')
     },
-    onError: () => toast.error('Ошибка при создании'),
+    onError: () => toast.error(t('warehousePage.toastCreateError')),
   })
 
   const updateMutation = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) => updateStorageLocation(id, { name }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-storage-locations'] })
-      toast.success('Обновлено'); setEditingId(null)
+      toast.success(t('warehousePage.toastUpdated')); setEditingId(null)
     },
-    onError: () => toast.error('Ошибка при обновлении'),
+    onError: () => toast.error(t('warehousePage.toastUpdateError')),
   })
 
   const deleteMutation = useMutation({
@@ -218,10 +221,10 @@ export default function PartsWarehouse() {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['parts-storage-locations'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success('Удалено')
+      toast.success(t('warehousePage.toastDeleted'))
       if (selectedId === id) setSelectedId(null)
     },
-    onError: () => toast.error('Ошибка при удалении'),
+    onError: () => toast.error(t('warehousePage.toastDeleteError')),
   })
 
   const moveMutation = useMutation({
@@ -230,9 +233,9 @@ export default function PartsWarehouse() {
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['parts-storage-locations'] })
       setCollapsed(prev => { const n = new Set(prev); n.delete(vars.parentId); return n }) // раскрыть цель
-      toast.success('Перемещено')
+      toast.success(t('warehousePage.toastMoved'))
     },
-    onError: () => toast.error('Не удалось переместить'),
+    onError: () => toast.error(t('warehousePage.toastMoveError')),
   })
 
   const handleDrop = (srcId: string, targetId: string) => {
@@ -249,9 +252,9 @@ export default function PartsWarehouse() {
 
   const handleDelete = async (node: FlatNode) => {
     const usage = usageMap[node.id] || 0
-    let msg = `Удалить «${node.name}»?`
-    if (node.childCount > 0) msg = `«${node.name}» содержит вложенные места — они тоже будут удалены. Продолжить?`
-    else if (usage > 0) msg = `В «${node.name}» хранится ${usage} запч. — они потеряют привязку. Продолжить?`
+    let msg = t('warehousePage.confirmDelete', { name: node.name })
+    if (node.childCount > 0) msg = t('warehousePage.confirmDeleteWithChildren', { name: node.name })
+    else if (usage > 0) msg = t('warehousePage.confirmDeleteWithItems', { name: node.name, n: usage })
     const ok = await showConfirm({ message: msg, danger: true })
     if (ok) deleteMutation.mutate(node.id)
   }
@@ -259,7 +262,7 @@ export default function PartsWarehouse() {
   if (!partsCompanyId) {
     return (
       <div className="min-h-dvh flex items-center justify-center" style={{ background: 'var(--cab-bg)' }}>
-        <p style={{ color: 'var(--cab-ink-3)' }}>Нет доступа к разборке</p>
+        <p style={{ color: 'var(--cab-ink-3)' }}>{t('warehousePage.noAccess')}</p>
       </div>
     )
   }
@@ -270,12 +273,12 @@ export default function PartsWarehouse() {
   return (
     <div className="min-h-dvh" style={{ background: 'var(--cab-bg)' }}>
       <PartsPageHeader
-        title="Места хранения"
-        subtitle={totalLocations > 0 ? `${totalLocations} мест · ${usedCount} задействовано` : undefined}
+        title={i18n.t('cabinet:pages.warehouse')}
+        subtitle={totalLocations > 0 ? t('warehousePage.subtitle', { total: totalLocations, used: usedCount }) : undefined}
         backPath="/parts/dashboard"
         actions={
           <button onClick={() => { setAddingParentId(null); setAddingName('') }} className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5">
-            <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Место</span>
+            <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t('warehousePage.addLocation')}</span>
           </button>
         }
       />
@@ -289,13 +292,13 @@ export default function PartsWarehouse() {
               <div className="empty-state-icon" style={{ background: 'var(--cab-surface-2)', color: 'var(--cab-ink-2)' }}>
                 <Warehouse className="w-7 h-7" />
               </div>
-              <p className="empty-state-title">Нет мест хранения</p>
+              <p className="empty-state-title">{t('warehousePage.emptyTitle')}</p>
               <p className="empty-state-text">
-                Создайте иерархию склада. Например:{' '}
-                <span className="font-medium" style={{ color: 'var(--cab-ink)' }}>Бокс 1 → Стеллаж 2 → Полка 3 → Ячейка 4</span>
+                {t('warehousePage.emptyText')}{' '}
+                <span className="font-medium" style={{ color: 'var(--cab-ink)' }}>{t('warehousePage.emptyExample')}</span>
               </p>
               <button onClick={() => { setAddingParentId(null); setAddingName('') }} className="cab-btn cab-btn-primary mt-5">
-                <Plus className="w-4 h-4" /> Создать первое место
+                <Plus className="w-4 h-4" /> {t('warehousePage.createFirst')}
               </button>
             </div>
           </div>
@@ -309,14 +312,14 @@ export default function PartsWarehouse() {
                 {/* Форма добавления корневого места */}
                 {addingParentId === null && (
                   <form onSubmit={handleAdd} className="p-2.5 flex gap-2" style={{ borderBottom: '1px solid var(--cab-border)' }}>
-                    <input autoFocus value={addingName} onChange={e => setAddingName(e.target.value)} placeholder="Напр.: Бокс 1" className="form-input flex-1 py-1.5 text-sm" />
+                    <input autoFocus value={addingName} onChange={e => setAddingName(e.target.value)} placeholder={t('warehousePage.placeholderRoot')} className="form-input flex-1 py-1.5 text-sm" />
                     <button type="submit" disabled={!addingName.trim() || createMutation.isPending} className="cab-btn cab-btn-primary px-2.5 min-h-[36px]"><Check className="w-4 h-4" /></button>
                     <button type="button" onClick={() => { setAddingParentId(undefined); setAddingName('') }} className="cab-btn cab-btn-secondary px-2.5 min-h-[36px]"><X className="w-4 h-4" /></button>
                   </form>
                 )}
                 {structActive && (
                   <p className="px-3 py-2 text-[11px] flex items-center gap-1.5" style={{ background: 'var(--cab-signal-weak)', color: 'var(--cab-signal)', borderBottom: '1px solid var(--cab-border)' }}>
-                    <GripVertical className="w-3.5 h-3.5 flex-shrink-0" /> Перетащите подкатегорию в другую категорию
+                    <GripVertical className="w-3.5 h-3.5 flex-shrink-0" /> {t('warehousePage.dragHint')}
                   </p>
                 )}
                 <div className="overflow-y-auto p-2 max-h-[62vh] sm:max-h-none">
@@ -347,7 +350,7 @@ export default function PartsWarehouse() {
                         {draggable && <GripVertical className="flex-shrink-0 w-3.5 h-3.5 mr-0.5" style={{ color: 'var(--cab-ink-3)' }} />}
                         {hasKids ? (
                           <button onClick={() => toggleCollapse(node.id)}
-                            className="flex-shrink-0 p-1 rounded-md hover:bg-black/5" aria-label={isCollapsed ? 'Развернуть' : 'Свернуть'}>
+                            className="flex-shrink-0 p-1 rounded-md hover:bg-black/5" aria-label={isCollapsed ? t('warehousePage.expand') : t('warehousePage.collapse')}>
                             <ChevronRight className={`w-3.5 h-3.5 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} style={{ color: 'var(--cab-ink-3)' }} />
                           </button>
                         ) : (
@@ -362,7 +365,7 @@ export default function PartsWarehouse() {
                     )
                   })}
                   {flat.length === 0 && (
-                    <p className="px-3 py-8 text-center text-sm" style={{ color: 'var(--cab-ink-3)' }}>Нет мест — добавьте первое</p>
+                    <p className="px-3 py-8 text-center text-sm" style={{ color: 'var(--cab-ink-3)' }}>{t('warehousePage.listEmpty')}</p>
                   )}
                 </div>
               </div>
@@ -373,7 +376,7 @@ export default function PartsWarehouse() {
                   <>
                     {/* Шапка выбранного места */}
                     <div className="flex items-center gap-2 px-3 sm:px-4 h-14 flex-shrink-0" style={{ borderBottom: '1px solid var(--cab-border)' }}>
-                      <button onClick={() => setSelectedId(null)} className="sm:hidden -ml-1 btn-icon" aria-label="Назад"><ChevronLeft className="w-5 h-5" /></button>
+                      <button onClick={() => setSelectedId(null)} className="sm:hidden -ml-1 btn-icon" aria-label={t('warehousePage.back')}><ChevronLeft className="w-5 h-5" /></button>
                       {editingId === selected.id ? (
                         <input autoFocus value={editingName} onChange={e => setEditingName(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter' && editingName.trim()) updateMutation.mutate({ id: selected.id, name: editingName.trim() }); if (e.key === 'Escape') setEditingId(null) }}
@@ -384,7 +387,7 @@ export default function PartsWarehouse() {
                           <p className="text-[11px] truncate" style={{ color: 'var(--cab-ink-3)' }}>
                             {LEVEL_LABELS[Math.min(selected.depth, LEVEL_LABELS.length - 1)]}
                             {selected.depth > 0 && ` · ${getNodePath(selected.id)}`}
-                            {items.length > 0 && ` · ${items.length} поз.`}
+                            {items.length > 0 && ` · ${t('warehousePage.positionsCount', { n: items.length })}`}
                           </p>
                         </div>
                       )}
@@ -397,17 +400,17 @@ export default function PartsWarehouse() {
                         ) : (
                           <>
                             {selected.depth === 0 && (
-                              <button onClick={() => setStructMode(s => !s)} title="Перетаскивание подкатегорий"
+                              <button onClick={() => setStructMode(s => !s)} title={t('warehousePage.dragMode')}
                                 className="btn-icon-sm" style={structActive ? { color: 'var(--cab-signal)', background: 'var(--cab-signal-weak)' } : undefined}>
                                 <FolderTree className="w-4 h-4" />
                               </button>
                             )}
                             {selected.depth < MAX_DEPTH - 1 && (
-                              <button onClick={() => { setAddingParentId(selected.id); setAddingName('') }} title="Вложенное место" className="btn-icon-sm"><Plus className="w-4 h-4" /></button>
+                              <button onClick={() => { setAddingParentId(selected.id); setAddingName('') }} title={t('warehousePage.nestedLocation')} className="btn-icon-sm"><Plus className="w-4 h-4" /></button>
                             )}
-                            <button onClick={() => setQrNode({ id: selected.id, name: selected.name, path: getNodePath(selected.id) })} title="QR / этикетка" className="btn-icon-sm"><QrCode className="w-4 h-4" /></button>
-                            <button onClick={() => { setEditingId(selected.id); setEditingName(selected.name) }} title="Переименовать" className="btn-icon-sm"><Pencil className="w-4 h-4" /></button>
-                            <button onClick={() => handleDelete(selected)} disabled={deleteMutation.isPending} title="Удалить" className="btn-icon-sm hover:text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" /></button>
+                            <button onClick={() => setQrNode({ id: selected.id, name: selected.name, path: getNodePath(selected.id) })} title={t('warehousePage.qrLabel')} className="btn-icon-sm"><QrCode className="w-4 h-4" /></button>
+                            <button onClick={() => { setEditingId(selected.id); setEditingName(selected.name) }} title={t('warehousePage.rename')} className="btn-icon-sm"><Pencil className="w-4 h-4" /></button>
+                            <button onClick={() => handleDelete(selected)} disabled={deleteMutation.isPending} title={t('warehousePage.delete')} className="btn-icon-sm hover:text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" /></button>
                           </>
                         )}
                       </div>
@@ -416,7 +419,7 @@ export default function PartsWarehouse() {
                     {/* Форма вложенного места */}
                     {addingParentId === selected.id && (
                       <form onSubmit={handleAdd} className="flex gap-2 px-3 sm:px-4 py-2.5" style={{ background: 'var(--cab-surface-2)', borderBottom: '1px solid var(--cab-border)' }}>
-                        <input autoFocus value={addingName} onChange={e => setAddingName(e.target.value)} placeholder={`Вложенное в «${selected.name}»…`} className="form-input flex-1 py-1.5 text-sm" />
+                        <input autoFocus value={addingName} onChange={e => setAddingName(e.target.value)} placeholder={t('warehousePage.placeholderNested', { name: selected.name })} className="form-input flex-1 py-1.5 text-sm" />
                         <button type="submit" disabled={!addingName.trim() || createMutation.isPending} className="cab-btn cab-btn-primary px-2.5 min-h-[36px]"><Check className="w-4 h-4" /></button>
                         <button type="button" onClick={() => { setAddingParentId(undefined); setAddingName('') }} className="cab-btn cab-btn-secondary px-2.5 min-h-[36px]"><X className="w-4 h-4" /></button>
                       </form>
@@ -426,7 +429,7 @@ export default function PartsWarehouse() {
                     {itemsLoading ? (
                       <div className="flex justify-center py-12"><Spinner size="md" /></div>
                     ) : items.length === 0 ? (
-                      <p className="px-4 py-12 text-center text-sm" style={{ color: 'var(--cab-ink-3)' }}>В этом месте пока нет запчастей</p>
+                      <p className="px-4 py-12 text-center text-sm" style={{ color: 'var(--cab-ink-3)' }}>{t('warehousePage.itemsEmpty')}</p>
                     ) : (
                       <div className="overflow-y-auto" style={{ borderColor: 'var(--cab-border)' }}>
                         {items.map(it => (
@@ -436,7 +439,7 @@ export default function PartsWarehouse() {
                             <div className="flex-1 min-w-0">
                               <span className="text-sm font-medium truncate block" style={{ color: 'var(--cab-ink)' }}>{it.name}</span>
                               <span className="text-xs truncate flex items-center gap-1.5" style={{ color: 'var(--cab-ink-3)' }}>
-                                <span className="truncate">Артикул {it.article}{it.part_number ? ` · OEM ${String(it.part_number).toUpperCase()}` : ''}</span>
+                                <span className="truncate">{t('warehousePage.article')} {it.article}{it.part_number ? ` · OEM ${String(it.part_number).toUpperCase()}` : ''}</span>
                                 {it.storage_location_id && it.storage_location_id !== selectedId && (
                                   <span className="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: 'var(--cab-surface-2)', color: 'var(--cab-ink-2)' }}>
                                     {locNameById.get(it.storage_location_id) || '—'}
@@ -445,7 +448,7 @@ export default function PartsWarehouse() {
                               </span>
                             </div>
                             <div className="flex items-center gap-3 flex-shrink-0">
-                              {it.quantity > 1 && <span className="text-xs tabular-nums" style={{ color: 'var(--cab-ink-3)' }}>{it.quantity} шт</span>}
+                              {it.quantity > 1 && <span className="text-xs tabular-nums" style={{ color: 'var(--cab-ink-3)' }}>{t('warehousePage.pcs', { n: it.quantity })}</span>}
                               {it.selling_price != null && (
                                 <span className="text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: 'var(--cab-ink)' }}>
                                   {formatPrice(it.selling_price, (it.price_currency as 'UAH' | 'USD') || 'USD')}
@@ -459,7 +462,7 @@ export default function PartsWarehouse() {
                   </>
                 ) : (
                   <div className="hidden sm:flex flex-1 items-center justify-center text-sm" style={{ color: 'var(--cab-ink-3)' }}>
-                    Выберите место хранения слева
+                    {t('warehousePage.selectPrompt')}
                   </div>
                 )}
               </div>

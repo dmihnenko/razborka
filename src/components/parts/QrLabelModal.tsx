@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { QrCode, Printer, X } from 'lucide-react'
 import QRCode from 'qrcode'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
@@ -17,6 +18,7 @@ interface Props {
  * обёрнута в .print-area — @media print в index.css печатает только её.
  */
 export default function QrLabelModal({ title, subtitle, value, onClose }: Props) {
+  const { t } = useTranslation('cabinet')
   const [qrDataUrl, setQrDataUrl] = useState<string>('')
   const [qrError, setQrError]     = useState(false)
 
@@ -53,7 +55,7 @@ export default function QrLabelModal({ title, subtitle, value, onClose }: Props)
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Печать QR-этикетки"
+        aria-label={t('qrLabelModal.ariaLabel')}
         onClick={e => e.stopPropagation()}
         className="relative bg-white w-full sm:max-w-sm rounded-2xl shadow-2xl
           max-h-[calc(100dvh-1.5rem)] sm:max-h-[92dvh] flex flex-col overflow-hidden animate-modal-pop"
@@ -64,13 +66,13 @@ export default function QrLabelModal({ title, subtitle, value, onClose }: Props)
             <QrCode className="w-5 h-5 text-slate-700" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-base font-bold text-gray-900 leading-tight truncate">QR-этикетка</h2>
-            <p className="text-xs text-gray-400 mt-0.5 truncate">Печать наклейки</p>
+            <h2 className="text-base font-bold text-gray-900 leading-tight truncate">{t('qrLabelModal.title')}</h2>
+            <p className="text-xs text-gray-400 mt-0.5 truncate">{t('qrLabelModal.subtitle')}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Закрыть"
+            aria-label={t('qrLabelModal.close')}
             className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0"
           >
             <X className="w-4 h-4" />
@@ -100,12 +102,12 @@ export default function QrLabelModal({ title, subtitle, value, onClose }: Props)
             {/* QR */}
             {qrError ? (
               <div style={{ width: 180, height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', borderRadius: 6 }}>
-                <span style={{ fontSize: 12, color: '#6b7280' }}>Ошибка QR</span>
+                <span style={{ fontSize: 12, color: '#6b7280' }}>{t('qrLabelModal.qrError')}</span>
               </div>
             ) : qrDataUrl ? (
               <img
                 src={qrDataUrl}
-                alt="QR-код"
+                alt={t('qrLabelModal.qrAlt')}
                 style={{ width: 180, height: 180, display: 'block', imageRendering: 'pixelated' }}
               />
             ) : (
@@ -157,7 +159,7 @@ export default function QrLabelModal({ title, subtitle, value, onClose }: Props)
 
           {/* Подсказка */}
           <p className="text-xs text-gray-400 text-center no-print">
-            Нажмите «Печать» для вывода на принтер или сохранения в PDF
+            {t('qrLabelModal.hint')}
           </p>
         </div>
 
@@ -173,7 +175,7 @@ export default function QrLabelModal({ title, subtitle, value, onClose }: Props)
             className="cab-btn cab-btn-primary flex-1 flex items-center justify-center gap-2"
           >
             <Printer className="w-4 h-4" />
-            Печать
+            {t('qrLabelModal.print')}
           </button>
           <button
             type="button"
@@ -181,7 +183,7 @@ export default function QrLabelModal({ title, subtitle, value, onClose }: Props)
             className="cab-btn cab-btn-secondary flex items-center justify-center gap-2 px-5"
           >
             <X className="w-4 h-4" />
-            Закрыть
+            {t('qrLabelModal.close')}
           </button>
         </div>
       </div>

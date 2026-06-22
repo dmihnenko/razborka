@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '@/i18n'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
@@ -41,6 +43,7 @@ const BASE_CATEGORIES = [
 ]
 
 export default function PartsCategories() {
+  const { t } = useTranslation('cabinet')
   const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
@@ -94,11 +97,11 @@ export default function PartsCategories() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-categories'] })
       queryClient.invalidateQueries({ queryKey: ['parts-categories-manage'] })
-      toast.success('Категория добавлена')
+      toast.success(t('categoriesPage.toastCategoryAdded'))
       setNewName('')
       setIsAddOpen(false)
     },
-    onError: () => toast.error('Ошибка при создании'),
+    onError: () => toast.error(t('categoriesPage.toastCreateError')),
   })
 
   const bulkMutation = useMutation({
@@ -106,11 +109,11 @@ export default function PartsCategories() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['parts-categories'] })
       queryClient.invalidateQueries({ queryKey: ['parts-categories-manage'] })
-      toast.success(`Добавлено ${data.length} категорий`)
+      toast.success(t('categoriesPage.toastAddedCount', { n: data.length }))
       setBulkText('')
       setIsAddOpen(false)
     },
-    onError: () => toast.error('Ошибка при добавлении'),
+    onError: () => toast.error(t('categoriesPage.toastAddError')),
   })
 
   // Кнопка «Базовые» — добавляет недостающие из стандартного набора BASE_CATEGORIES
@@ -119,9 +122,9 @@ export default function PartsCategories() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['parts-categories'] })
       queryClient.invalidateQueries({ queryKey: ['parts-categories-manage'] })
-      toast.success(`Добавлено ${data.length} базовых категорий`)
+      toast.success(t('categoriesPage.toastBaseAddedCount', { n: data.length }))
     },
-    onError: () => toast.error('Ошибка при добавлении'),
+    onError: () => toast.error(t('categoriesPage.toastAddError')),
   })
 
   // ── Подкатегории (добавление под родителя: по одной / списком) ──────────
@@ -136,10 +139,10 @@ export default function PartsCategories() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-categories'] })
       queryClient.invalidateQueries({ queryKey: ['parts-categories-manage'] })
-      toast.success('Подкатегория добавлена')
+      toast.success(t('categoriesPage.toastSubAdded'))
       setSubName('')
     },
-    onError: () => toast.error('Ошибка при создании'),
+    onError: () => toast.error(t('categoriesPage.toastCreateError')),
   })
 
   const subBulkMutation = useMutation({
@@ -148,10 +151,10 @@ export default function PartsCategories() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['parts-categories'] })
       queryClient.invalidateQueries({ queryKey: ['parts-categories-manage'] })
-      toast.success(`Добавлено ${data.length} подкатегорий`)
+      toast.success(t('categoriesPage.toastSubAddedCount', { n: data.length }))
       closeSub()
     },
-    onError: () => toast.error('Ошибка при добавлении'),
+    onError: () => toast.error(t('categoriesPage.toastAddError')),
   })
 
   const handleAddSub = (e: React.FormEvent, parentId: string) => {
@@ -163,7 +166,7 @@ export default function PartsCategories() {
     e.preventDefault()
     const existing = new Set(categories.filter(c => c.parent_id === parentId).map(c => c.name.toLowerCase()))
     const names = subBulk.split('\n').map(s => s.trim()).filter(s => s.length > 0 && !existing.has(s.toLowerCase()))
-    if (!names.length) { toast.error('Нет новых подкатегорий для добавления'); return }
+    if (!names.length) { toast.error(t('categoriesPage.toastNoNewSub')); return }
     subBulkMutation.mutate({ names, parentId })
   }
 
@@ -173,10 +176,10 @@ export default function PartsCategories() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-categories'] })
       queryClient.invalidateQueries({ queryKey: ['parts-categories-manage'] })
-      toast.success('Обновлено')
+      toast.success(t('categoriesPage.toastUpdated'))
       setEditingId(null)
     },
-    onError: () => toast.error('Ошибка при обновлении'),
+    onError: () => toast.error(t('categoriesPage.toastUpdateError')),
   })
 
   const deleteMutation = useMutation({
@@ -188,9 +191,9 @@ export default function PartsCategories() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-categories'] })
       queryClient.invalidateQueries({ queryKey: ['parts-categories-manage'] })
-      toast.success('Удалено')
+      toast.success(t('categoriesPage.toastDeleted'))
     },
-    onError: () => toast.error('Нельзя удалить — категория используется'),
+    onError: () => toast.error(t('categoriesPage.toastDeleteError')),
   })
 
   const copyMutation = useMutation({
@@ -199,9 +202,9 @@ export default function PartsCategories() {
       queryClient.invalidateQueries({ queryKey: ['parts-categories'] })
       queryClient.invalidateQueries({ queryKey: ['parts-categories-manage'] })
       setSelectedTemplateIds(new Set())
-      toast.success(`Добавлено ${count} категорий из стандартных`)
+      toast.success(t('categoriesPage.toastImportedCount', { n: count }))
     },
-    onError: () => toast.error('Ошибка при импорте'),
+    onError: () => toast.error(t('categoriesPage.toastImportError')),
   })
 
   const handleAdd = (e: React.FormEvent) => {
@@ -216,7 +219,7 @@ export default function PartsCategories() {
       .split('\n')
       .map(s => s.trim())
       .filter(s => s.length > 0 && !existingNames.has(s.toLowerCase()))
-    if (!names.length) { toast.error('Нет новых категорий для добавления'); return }
+    if (!names.length) { toast.error(t('categoriesPage.toastNoNew')); return }
     bulkMutation.mutate(names)
   }
 
@@ -228,9 +231,9 @@ export default function PartsCategories() {
   const handleDelete = async (cat: PartsCategory) => {
     const count = usageMap[cat.id] || 0
     const childCount = categories.filter(c => c.parent_id === cat.id).length
-    const parts: string[] = [`Удалить категорию «${cat.name}» навсегда (без корзины)?`]
-    if (childCount > 0) parts.push(`Будут удалены и подкатегории: ${childCount}.`)
-    if (count > 0) parts.push(`Используется в запчастях: ${count}.`)
+    const parts: string[] = [t('categoriesPage.confirmDelete', { name: cat.name })]
+    if (childCount > 0) parts.push(t('categoriesPage.confirmDeleteChildren', { n: childCount }))
+    if (count > 0) parts.push(t('categoriesPage.confirmDeleteUsage', { n: count }))
     const ok = await showConfirm({ message: parts.join(' '), danger: true })
     if (!ok) return
     deleteMutation.mutate(cat.id)
@@ -246,7 +249,7 @@ export default function PartsCategories() {
 
   const selectAllTemplates = () => {
     setSelectedTemplateIds(new Set(
-      templates.filter(t => !existingNames.has(t.name.toLowerCase())).map(t => t.id)
+      templates.filter(tpl => !existingNames.has(tpl.name.toLowerCase())).map(tpl => tpl.id)
     ))
   }
 
@@ -277,24 +280,24 @@ export default function PartsCategories() {
         ) : (
           <div className="flex-1 min-w-0">
             <span className="text-sm font-semibold text-gray-900 truncate">{cat.name}</span>
-            {usage > 0 && <span className="ml-2 kicker tabular-nums">{usage} запч.</span>}
+            {usage > 0 && <span className="ml-2 kicker tabular-nums">{t('categoriesPage.usageParts', { n: usage })}</span>}
           </div>
         )}
         <div className="flex items-center gap-0.5 flex-shrink-0">
           {isEditing ? (
             <>
-              <button onClick={() => handleSaveEdit(cat.id)} disabled={updateMutation.isPending} className="btn-icon text-green-600 hover:text-green-700 hover:bg-green-50" title="Сохранить"><Check className="w-4 h-4" /></button>
-              <button onClick={() => setEditingId(null)} className="btn-icon" title="Отмена"><X className="w-4 h-4" /></button>
+              <button onClick={() => handleSaveEdit(cat.id)} disabled={updateMutation.isPending} className="btn-icon text-green-600 hover:text-green-700 hover:bg-green-50" title={t('categoriesPage.save')}><Check className="w-4 h-4" /></button>
+              <button onClick={() => setEditingId(null)} className="btn-icon" title={t('categoriesPage.cancel')}><X className="w-4 h-4" /></button>
             </>
           ) : (
             <>
               {!isChild && (
-                <button onClick={() => { setSubParentId(p => p === cat.id ? null : cat.id); setSubMode('single'); setSubName(''); setSubBulk('') }} className="btn-icon" title="Добавить подкатегорию">
+                <button onClick={() => { setSubParentId(p => p === cat.id ? null : cat.id); setSubMode('single'); setSubName(''); setSubBulk('') }} className="btn-icon" title={t('categoriesPage.addSub')}>
                   <Plus className="w-4 h-4" />
                 </button>
               )}
-              <button onClick={() => { setEditingId(cat.id); setEditingName(cat.name) }} className="btn-icon" title="Переименовать"><Pencil className="w-4 h-4" /></button>
-              <button onClick={() => handleDelete(cat)} disabled={deleteMutation.isPending} className="btn-icon hover:text-red-600 hover:bg-red-50" title="Удалить"><Trash2 className="w-4 h-4" /></button>
+              <button onClick={() => { setEditingId(cat.id); setEditingName(cat.name) }} className="btn-icon" title={t('categoriesPage.rename')}><Pencil className="w-4 h-4" /></button>
+              <button onClick={() => handleDelete(cat)} disabled={deleteMutation.isPending} className="btn-icon hover:text-red-600 hover:bg-red-50" title={t('categoriesPage.delete')}><Trash2 className="w-4 h-4" /></button>
             </>
           )}
         </div>
@@ -306,21 +309,21 @@ export default function PartsCategories() {
   const renderSubForm = (parentId: string) => (
     <div className="px-4 py-3 border-t border-gray-100" style={{ paddingLeft: 40, background: 'var(--cab-surface-2)' }}>
       <div className="flex gap-2 mb-3">
-        <button type="button" onClick={() => setSubMode('single')} className={subMode === 'single' ? 'cab-chip cab-chip-signal' : 'cab-chip'}><Plus className="w-3.5 h-3.5" />По одной</button>
-        <button type="button" onClick={() => setSubMode('list')} className={subMode === 'list' ? 'cab-chip cab-chip-signal' : 'cab-chip'}><List className="w-3.5 h-3.5" />Списком</button>
+        <button type="button" onClick={() => setSubMode('single')} className={subMode === 'single' ? 'cab-chip cab-chip-signal' : 'cab-chip'}><Plus className="w-3.5 h-3.5" />{t('categoriesPage.oneByOne')}</button>
+        <button type="button" onClick={() => setSubMode('list')} className={subMode === 'list' ? 'cab-chip cab-chip-signal' : 'cab-chip'}><List className="w-3.5 h-3.5" />{t('categoriesPage.asList')}</button>
       </div>
       {subMode === 'single' ? (
         <form onSubmit={e => handleAddSub(e, parentId)} className="flex gap-2">
-          <input type="text" autoFocus value={subName} onChange={e => setSubName(e.target.value)} placeholder="Название подкатегории…" className="form-input flex-1" />
+          <input type="text" autoFocus value={subName} onChange={e => setSubName(e.target.value)} placeholder={t('categoriesPage.subNamePlaceholder')} className="form-input flex-1" />
           <button type="submit" disabled={!subName.trim() || subCreateMutation.isPending} className="cab-btn cab-btn-primary"><Check className="w-4 h-4" /></button>
           <button type="button" onClick={closeSub} className="cab-btn cab-btn-secondary"><X className="w-4 h-4" /></button>
         </form>
       ) : (
         <form onSubmit={e => handleBulkAddSub(e, parentId)} className="space-y-3">
-          <textarea autoFocus value={subBulk} onChange={e => setSubBulk(e.target.value)} placeholder={'Левая\nПравая\nПередняя\nЗадняя\n…'} rows={5} className="form-input font-mono resize-none" />
+          <textarea autoFocus value={subBulk} onChange={e => setSubBulk(e.target.value)} placeholder={t('categoriesPage.subBulkPlaceholder')} rows={5} className="form-input font-mono resize-none" />
           <div className="flex gap-2 justify-end">
-            <button type="button" onClick={closeSub} className="cab-btn cab-btn-secondary cab-btn-sm">Отмена</button>
-            <button type="submit" disabled={subBulkMutation.isPending} className="cab-btn cab-btn-primary cab-btn-sm">{subBulkMutation.isPending ? 'Добавляем…' : 'Добавить'}</button>
+            <button type="button" onClick={closeSub} className="cab-btn cab-btn-secondary cab-btn-sm">{t('categoriesPage.cancel')}</button>
+            <button type="submit" disabled={subBulkMutation.isPending} className="cab-btn cab-btn-primary cab-btn-sm">{subBulkMutation.isPending ? t('categoriesPage.adding') : t('categoriesPage.add')}</button>
           </div>
         </form>
       )}
@@ -334,8 +337,8 @@ export default function PartsCategories() {
   return (
     <div className="min-h-dvh bg-gray-50">
       <PartsPageHeader
-        title="Категории запчастей"
-        subtitle={`${categories.length} своих категорий`}
+        title={i18n.t('cabinet:pages.categories')}
+        subtitle={i18n.t('cabinet:pages.ownCategories', { n: categories.length })}
         backPath="/parts/inventory"
         height="sm"
         actions={
@@ -344,12 +347,12 @@ export default function PartsCategories() {
               <button
                 onClick={() => baseBulkMutation.mutate(missingBaseNames)}
                 disabled={baseAllAdded || baseBulkMutation.isPending}
-                title={baseAllAdded ? 'Все базовые категории уже добавлены' : 'Добавить стандартный набор категорий (без дублей)'}
+                title={baseAllAdded ? t('categoriesPage.baseAllAddedTitle') : t('categoriesPage.baseAddTitle')}
                 className="cab-btn cab-btn-secondary cab-btn-sm flex items-center gap-1.5"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">
-                  {baseAllAdded ? 'Базовые добавлены' : `Базовые${missingBaseNames.length ? ` (${missingBaseNames.length})` : ''}`}
+                  {baseAllAdded ? t('categoriesPage.baseAdded') : `${t('categoriesPage.base')}${missingBaseNames.length ? ` (${missingBaseNames.length})` : ''}`}
                 </span>
               </button>
               <button
@@ -357,24 +360,24 @@ export default function PartsCategories() {
                 className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Добавить</span>
+                <span className="hidden sm:inline">{t('categoriesPage.add')}</span>
               </button>
             </>
           ) : undefined
         }
         footer={
           <div className="flex border-t border-gray-100 overflow-x-auto scrollbar-hide">
-            {(['my', 'templates'] as Tab[]).map(t => (
+            {(['my', 'templates'] as Tab[]).map(tabId => (
               <button
-                key={t}
-                onClick={() => setTab(t)}
+                key={tabId}
+                onClick={() => setTab(tabId)}
                 className={`px-5 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
-                  tab === t
+                  tab === tabId
                     ? 'border-primary text-primary'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                {t === 'my' ? 'Мои категории' : 'Стандартные'}
+                {tabId === 'my' ? t('categoriesPage.tabMy') : t('categoriesPage.tabTemplates')}
               </button>
             ))}
           </div>
@@ -395,14 +398,14 @@ export default function PartsCategories() {
                     onClick={() => setAddMode('single')}
                     className={addMode === 'single' ? 'cab-chip cab-chip-signal' : 'cab-chip'}
                   >
-                    <Plus className="w-3.5 h-3.5" />По одной
+                    <Plus className="w-3.5 h-3.5" />{t('categoriesPage.oneByOne')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setAddMode('list')}
                     className={addMode === 'list' ? 'cab-chip cab-chip-signal' : 'cab-chip'}
                   >
-                    <List className="w-3.5 h-3.5" />Списком
+                    <List className="w-3.5 h-3.5" />{t('categoriesPage.asList')}
                   </button>
                 </div>
 
@@ -413,7 +416,7 @@ export default function PartsCategories() {
                       autoFocus
                       value={newName}
                       onChange={e => setNewName(e.target.value)}
-                      placeholder="Название категории…"
+                      placeholder={t('categoriesPage.namePlaceholder')}
                       className="form-input flex-1"
                     />
                     <button
@@ -437,7 +440,7 @@ export default function PartsCategories() {
                       autoFocus
                       value={bulkText}
                       onChange={e => setBulkText(e.target.value)}
-                      placeholder={'Двигатель\nКоробка передач\nПодвеска\nОптика\n…'}
+                      placeholder={t('categoriesPage.bulkPlaceholder')}
                       rows={7}
                       className="form-input font-mono resize-none"
                     />
@@ -445,12 +448,12 @@ export default function PartsCategories() {
                       <div className="flex gap-3 text-xs">
                         {bulkNew.length > 0 && (
                           <span className="badge badge-green tabular-nums">
-                            + {bulkNew.length} новых
+                            {t('categoriesPage.bulkNewCount', { n: bulkNew.length })}
                           </span>
                         )}
                         {bulkDuplicate.length > 0 && (
                           <span className="badge badge-gray tabular-nums">
-                            {bulkDuplicate.length} уже есть — пропустятся
+                            {t('categoriesPage.bulkDuplicateCount', { n: bulkDuplicate.length })}
                           </span>
                         )}
                       </div>
@@ -461,14 +464,14 @@ export default function PartsCategories() {
                         onClick={() => { setIsAddOpen(false); setBulkText('') }}
                         className="cab-btn cab-btn-secondary cab-btn-sm"
                       >
-                        Отмена
+                        {t('categoriesPage.cancel')}
                       </button>
                       <button
                         type="submit"
                         disabled={!bulkNew.length || bulkMutation.isPending}
                         className="cab-btn cab-btn-primary cab-btn-sm"
                       >
-                        {bulkMutation.isPending ? 'Добавляем…' : `Добавить ${bulkNew.length || ''}`}
+                        {bulkMutation.isPending ? t('categoriesPage.adding') : `${t('categoriesPage.add')} ${bulkNew.length || ''}`}
                       </button>
                     </div>
                   </form>
@@ -486,20 +489,20 @@ export default function PartsCategories() {
                   <div className="empty-state-icon">
                     <Tag className="w-7 h-7 text-gray-400" />
                   </div>
-                  <p className="empty-state-title">Категорий пока нет</p>
-                  <p className="empty-state-text">Добавьте вручную или импортируйте стандартные</p>
+                  <p className="empty-state-title">{t('categoriesPage.emptyTitle')}</p>
+                  <p className="empty-state-text">{t('categoriesPage.emptyText')}</p>
                   <div className="flex flex-col sm:flex-row gap-2 mt-6">
                     <button
                       onClick={() => { setIsAddOpen(true); setAddMode('single') }}
                       className="cab-btn cab-btn-primary cab-btn-sm"
                     >
-                      Добавить
+                      {t('categoriesPage.add')}
                     </button>
                     <button
                       onClick={() => setTab('templates')}
                       className="cab-btn cab-btn-secondary cab-btn-sm"
                     >
-                      Импортировать стандартные
+                      {t('categoriesPage.importTemplates')}
                     </button>
                   </div>
                 </div>
@@ -529,7 +532,7 @@ export default function PartsCategories() {
             {/* Поиск по марке */}
             <div className="cab-card p-4 mb-4">
               <p className="text-sm text-gray-500 mb-3">
-                Стандартные категории от администратора по марке авто. Выберите нужные и импортируйте в свой список.
+                {t('categoriesPage.templatesHint')}
               </p>
               <div className="relative">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -537,7 +540,7 @@ export default function PartsCategories() {
                   type="text"
                   value={templateBrand}
                   onChange={e => setTemplateBrand(e.target.value)}
-                  placeholder="Марка (Toyota, BMW, Ford…)"
+                  placeholder={t('categoriesPage.brandPlaceholder')}
                   className="form-input pl-10"
                 />
               </div>
@@ -551,14 +554,14 @@ export default function PartsCategories() {
                   style={{ background: 'var(--cab-ink)' }}
                 >
                   <span className="text-sm font-semibold text-white tabular-nums">
-                    Выбрано: {selectedTemplateIds.size}
+                    {t('categoriesPage.selectedCount', { n: selectedTemplateIds.size })}
                   </span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setSelectedTemplateIds(new Set())}
                       className="cab-btn-sm rounded-lg bg-white/20 text-white hover:bg-white/30 transition-colors font-medium"
                     >
-                      Сбросить
+                      {t('categoriesPage.reset')}
                     </button>
                     <button
                       onClick={() => copyMutation.mutate(Array.from(selectedTemplateIds))}
@@ -566,7 +569,7 @@ export default function PartsCategories() {
                       className="cab-btn-sm rounded-lg bg-white text-primary font-semibold hover:bg-white/90 disabled:opacity-50 flex items-center gap-1.5"
                     >
                       <Download className="w-3.5 h-3.5" />
-                      {copyMutation.isPending ? 'Импорт…' : 'Импортировать'}
+                      {copyMutation.isPending ? t('categoriesPage.importing') : t('categoriesPage.import')}
                     </button>
                   </div>
                 </div>
@@ -583,13 +586,13 @@ export default function PartsCategories() {
                   <div className="empty-state-icon">
                     <Tag className="w-7 h-7 text-gray-400" />
                   </div>
-                  <p className="empty-state-title">Стандартных категорий не найдено</p>
+                  <p className="empty-state-title">{t('categoriesPage.templatesEmpty')}</p>
                   {templateBrand && (
                     <button
                       onClick={() => setTemplateBrand('')}
                       className="mt-3 text-sm font-medium text-primary hover:underline"
                     >
-                      Показать все
+                      {t('categoriesPage.showAll')}
                     </button>
                   )}
                 </div>
@@ -599,28 +602,28 @@ export default function PartsCategories() {
                 {/* Шапка таблицы */}
                 <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                   <span className="kicker tabular-nums">
-                    {templates.length} категорий
-                    {templates.filter(t => existingNames.has(t.name.toLowerCase())).length > 0 &&
-                      ` · ${templates.filter(t => existingNames.has(t.name.toLowerCase())).length} уже у вас`}
+                    {t('categoriesPage.templatesCount', { n: templates.length })}
+                    {templates.filter(tpl => existingNames.has(tpl.name.toLowerCase())).length > 0 &&
+                      ` · ${t('categoriesPage.alreadyYours', { n: templates.filter(tpl => existingNames.has(tpl.name.toLowerCase())).length })}`}
                   </span>
                   <button
                     onClick={selectAllTemplates}
                     className="text-xs font-semibold text-primary hover:underline"
                   >
-                    Выбрать все новые
+                    {t('categoriesPage.selectAllNew')}
                   </button>
                 </div>
 
                 <div className="panel-divided">
-                  {templates.map(t => {
-                    const alreadyHave = existingNames.has(t.name.toLowerCase())
-                    const isSelected = selectedTemplateIds.has(t.id)
+                  {templates.map(tpl => {
+                    const alreadyHave = existingNames.has(tpl.name.toLowerCase())
+                    const isSelected = selectedTemplateIds.has(tpl.id)
                     return (
                       <button
-                        key={t.id}
+                        key={tpl.id}
                         type="button"
                         disabled={alreadyHave}
-                        onClick={() => !alreadyHave && toggleTemplateSelect(t.id)}
+                        onClick={() => !alreadyHave && toggleTemplateSelect(tpl.id)}
                         className={[
                           'w-full flex items-center gap-3 px-4 py-3 text-left transition-colors',
                           alreadyHave
@@ -649,17 +652,17 @@ export default function PartsCategories() {
                         {/* Название */}
                         <div className="flex-1 min-w-0">
                           <span className="text-sm font-semibold text-gray-900 truncate">
-                            {t.name}
+                            {tpl.name}
                           </span>
-                          {t.template_type && t.template_type !== 'global' && (
+                          {tpl.template_type && tpl.template_type !== 'global' && (
                             <span className="ml-2 kicker">
-                              {t.brand}{t.model ? ` · ${t.model}` : ''}
+                              {tpl.brand}{tpl.model ? ` · ${tpl.model}` : ''}
                             </span>
                           )}
                         </div>
 
                         {alreadyHave && (
-                          <span className="badge badge-gray flex-shrink-0">есть</span>
+                          <span className="badge badge-gray flex-shrink-0">{t('categoriesPage.have')}</span>
                         )}
                       </button>
                     )

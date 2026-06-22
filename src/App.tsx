@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, lazy, Suspense } from 'react'
 import { Toaster } from 'sonner'
 import { AlertProvider } from './components/CustomAlert'
 import VersionChecker from './components/VersionChecker'
+import LocaleSync from './components/LocaleSync'
 import Version from './components/Version'
 import ImpersonationBanner from './components/ImpersonationBanner'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -171,6 +172,7 @@ function App() {
       <AlertProvider>
         <CartProvider>
         <VersionChecker />
+        <LocaleSync />
         <Version />
         <ImpersonationBanner />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

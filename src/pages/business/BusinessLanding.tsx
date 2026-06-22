@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
@@ -37,43 +38,13 @@ const FADE_UP = (delay = 0) => ({
 
 // ── Преимущества ─────────────────────────────────────────────────────────────
 const FEATURES = [
-  {
-    icon: Car,
-    color: 'text-indigo-600 bg-indigo-50',
-    title: 'Учёт автомобилей',
-    desc: 'Добавляйте б/у авто на разборку: VIN, марка, состояние — всё в одном месте.',
-  },
-  {
-    icon: Package,
-    color: 'text-orange-600 bg-orange-50',
-    title: 'Склад запчастей',
-    desc: 'Каталог запчастей с фото, категориями и ценами. Быстрый поиск по артикулу или названию.',
-  },
-  {
-    icon: ShoppingBag,
-    color: 'text-green-600 bg-green-50',
-    title: 'Маркетплейс запчастей',
-    desc: 'Ваши запчасти автоматически попадают в публичный каталог — покупатели находят их через поиск.',
-  },
-  {
-    icon: Users,
-    color: 'text-purple-600 bg-purple-50',
-    title: 'Клиенты и заказы',
-    desc: 'CRM для клиентов: история заказов, контакты, заявки на запчасти, статусы обработки.',
-  },
-  {
-    icon: Warehouse,
-    color: 'text-indigo-600 bg-indigo-50',
-    title: 'Контроль склада',
-    desc: 'Резервирование, списание, поступления. Всегда знаете, что есть в наличии и где находится.',
-  },
-  {
-    icon: DollarSign,
-    color: 'text-emerald-600 bg-emerald-50',
-    title: 'Мультивалютность',
-    desc: 'Цены в UAH и USD. Автоматический пересчёт по курсу — удобно для международных клиентов.',
-  },
-]
+  { icon: Car, color: 'text-indigo-600 bg-indigo-50', key: 'vehicles' },
+  { icon: Package, color: 'text-orange-600 bg-orange-50', key: 'parts' },
+  { icon: ShoppingBag, color: 'text-green-600 bg-green-50', key: 'marketplace' },
+  { icon: Users, color: 'text-purple-600 bg-purple-50', key: 'clients' },
+  { icon: Warehouse, color: 'text-indigo-600 bg-indigo-50', key: 'warehouse' },
+  { icon: DollarSign, color: 'text-emerald-600 bg-emerald-50', key: 'currency' },
+] as const
 
 // ── Тарифная карточка ─────────────────────────────────────────────────────────
 function TariffCard({
@@ -85,6 +56,7 @@ function TariffCard({
   recommended?: boolean
   onApply: () => void
 }) {
+  const { t } = useTranslation('business')
   return (
     <div
       className={`card flex flex-col relative overflow-hidden transition-all duration-200 hover-lift ${
@@ -99,7 +71,7 @@ function TariffCard({
               background: 'linear-gradient(135deg, #3538CD 0%, #2A2DA8 100%)',
             }}
           >
-            Рекомендуем
+            {t('landing.tariffRecommended')}
           </div>
         </div>
       )}
@@ -115,33 +87,39 @@ function TariffCard({
         <div>
           <span className="text-2xl font-extrabold text-gray-900 tracking-tight">
             {tariff.isCustom ? (
-              <span className="text-gradient-brand">Свяжитесь с нами</span>
+              <span className="text-gradient-brand">{t('landing.tariffContactUs')}</span>
             ) : (
               formatPrice(tariff.price)
             )}
           </span>
           {!tariff.isCustom && (
-            <span className="text-sm text-gray-400 ml-1">/мес</span>
+            <span className="text-sm text-gray-400 ml-1">{t('landing.tariffPerMonth')}</span>
           )}
         </div>
 
         <ul className="space-y-2">
           <li className="flex items-center gap-2 text-sm text-gray-700">
             <Car className="w-4 h-4 text-indigo-500 flex-shrink-0" strokeWidth={1.5} />
-            {tariff.maxVehicles === null ? 'Авто — без лимита' : `До ${tariff.maxVehicles} авто`}
+            {tariff.maxVehicles === null
+              ? t('landing.tariffVehiclesUnlimited')
+              : t('landing.tariffVehiclesUpTo', { count: tariff.maxVehicles })}
           </li>
           <li className="flex items-center gap-2 text-sm text-gray-700">
             <Package className="w-4 h-4 text-orange-500 flex-shrink-0" strokeWidth={1.5} />
-            {tariff.maxParts === null ? 'Запчасти — без лимита' : `До ${tariff.maxParts} запчастей`}
+            {tariff.maxParts === null
+              ? t('landing.tariffPartsUnlimited')
+              : t('landing.tariffPartsUpTo', { count: tariff.maxParts })}
           </li>
           <li className="flex items-center gap-2 text-sm text-gray-700">
             <Users className="w-4 h-4 text-purple-500 flex-shrink-0" strokeWidth={1.5} />
-            {tariff.maxWorkers === null ? 'Сотрудники — без лимита' : `До ${tariff.maxWorkers} сотрудников`}
+            {tariff.maxWorkers === null
+              ? t('landing.tariffWorkersUnlimited')
+              : t('landing.tariffWorkersUpTo', { count: tariff.maxWorkers })}
           </li>
           {tariff.hasAnalytics && (
             <li className="flex items-center gap-2 text-sm text-gray-700">
               <BarChart3 className="w-4 h-4 text-emerald-500 flex-shrink-0" strokeWidth={1.5} />
-              <span className="badge badge-green">Аналитика и окупаемость</span>
+              <span className="badge badge-green">{t('landing.tariffAnalytics')}</span>
             </li>
           )}
         </ul>
@@ -152,7 +130,7 @@ function TariffCard({
         onClick={onApply}
         className={`mt-5 w-full ${recommended ? 'btn-primary' : 'btn-secondary'}`}
       >
-        Подать заявку
+        {t('landing.applyBtn')}
         <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
       </button>
     </div>
@@ -179,6 +157,7 @@ function TariffSkeleton() {
 export function BusinessLanding() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { t } = useTranslation('business')
 
   // Открывать лендинг всегда сверху (React Router не сбрасывает скролл при переходе
   // с маркета, иначе попадаешь в середину страницы — на тарифы).
@@ -218,15 +197,15 @@ export function BusinessLanding() {
             </Link>
             <nav className="flex items-center gap-1.5 sm:gap-2">
               <Link to="/market" className="btn-secondary btn-sm">
-                Маркет
+                {t('landing.navMarket')}
               </Link>
               {user ? (
                 <button type="button" onClick={handleLogout} className="btn-secondary btn-sm">
-                  Выход
+                  {t('landing.navLogout')}
                 </button>
               ) : (
                 <Link to="/login" className="btn-primary btn-sm">
-                  Войти
+                  {t('landing.navLogin')}
                 </Link>
               )}
             </nav>
@@ -259,18 +238,17 @@ export function BusinessLanding() {
           <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-white/90 text-xs font-semibold mb-6 backdrop-blur-sm">
               <Zap className="w-3.5 h-3.5" strokeWidth={1.5} />
-              CRM-платформа для авторазборок
+              {t('landing.heroBadge')}
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-extrabold text-white leading-tight tracking-tight">
-              Управляй разборкой{' '}
+              {t('landing.heroTitle1')}{' '}
               <br className="hidden sm:block" />
-              <span className="text-indigo-300">умнее и быстрее</span>
+              <span className="text-indigo-300">{t('landing.heroTitle2')}</span>
             </h1>
 
             <p className="mt-4 text-base sm:text-lg text-indigo-100/80 max-w-2xl mx-auto leading-relaxed">
-              Учёт авто и запчастей, CRM для клиентов, встроенный маркетплейс — всё в одном месте.
-              Начните бесплатно, без сложных настроек.
+              {t('landing.heroSubtitle')}
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
@@ -279,21 +257,21 @@ export function BusinessLanding() {
                 onClick={handleApply}
                 className="btn-primary btn-lg"
               >
-                Подать заявку
+                {t('landing.applyBtn')}
                 <ArrowRight className="w-5 h-5" strokeWidth={1.5} />
               </button>
               <a
                 href="#tariffs"
                 className="btn-lg inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 cursor-pointer border border-white/25 text-white/90 hover:bg-white/10 hover:border-white/40"
               >
-                Смотреть тарифы
+                {t('landing.heroSeeTariffs')}
               </a>
             </div>
 
             {/* Демо-режим тизер */}
             <div className="mt-8 inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl px-4 py-3 text-sm text-white/80">
               <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" strokeWidth={1.5} />
-              Бесплатный демо-режим: {DEMO_LIMITS.vehicles} авто, {DEMO_LIMITS.parts} запчастей, +1 сотрудник
+              {t('landing.heroDemoTeaser', { vehicles: DEMO_LIMITS.vehicles, parts: DEMO_LIMITS.parts })}
             </div>
           </div>
         </motion.section>
@@ -302,24 +280,24 @@ export function BusinessLanding() {
         <motion.section
           {...FADE_UP(0.1)}
           className="max-w-6xl mx-auto px-4 sm:px-6 py-14 sm:py-20"
-          aria-label="Преимущества"
+          aria-label={t('landing.featuresAria')}
         >
           <div className="text-center mb-10">
-            <h2 className="heading-2">Всё для вашей разборки</h2>
+            <h2 className="heading-2">{t('landing.featuresTitle')}</h2>
             <p className="page-subtitle mt-2">
-              Инструменты, которые реально нужны каждый день
+              {t('landing.featuresSubtitle')}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 stagger-children">
-            {FEATURES.map(({ icon: Icon, color, title, desc }) => (
-              <div key={title} className="card flex gap-4">
+            {FEATURES.map(({ icon: Icon, color, key }) => (
+              <div key={key} className="card flex gap-4">
                 <span className={`icon-tile-lg flex-shrink-0 ${color}`}>
                   <Icon className="w-6 h-6" strokeWidth={1.5} />
                 </span>
                 <div>
-                  <p className="font-bold text-gray-900 text-sm sm:text-base">{title}</p>
-                  <p className="text-sm text-gray-500 mt-1 leading-relaxed">{desc}</p>
+                  <p className="font-bold text-gray-900 text-sm sm:text-base">{t(`landing.feature_${key}_title`)}</p>
+                  <p className="text-sm text-gray-500 mt-1 leading-relaxed">{t(`landing.feature_${key}_desc`)}</p>
                 </div>
               </div>
             ))}
@@ -336,9 +314,9 @@ export function BusinessLanding() {
             className="max-w-6xl mx-auto px-4 sm:px-6"
           >
             <div className="text-center mb-10">
-              <h2 className="heading-2">Тарифы</h2>
+              <h2 className="heading-2">{t('landing.tariffsTitle')}</h2>
               <p className="page-subtitle mt-2">
-                Выберите подходящий план — начните бесплатно в демо-режиме
+                {t('landing.tariffsSubtitle')}
               </p>
             </div>
 
@@ -348,10 +326,13 @@ export function BusinessLanding() {
                 <Zap className="w-5 h-5" strokeWidth={1.5} />
               </span>
               <div className="flex-1">
-                <p className="font-bold text-indigo-800 text-sm">Бесплатный демо-режим</p>
+                <p className="font-bold text-indigo-800 text-sm">{t('landing.demoBlockTitle')}</p>
                 <p className="text-xs text-indigo-600 mt-0.5">
-                  После одобрения заявки: {DEMO_LIMITS.vehicles} авто, {DEMO_LIMITS.parts} запчастей,{' '}
-                  {DEMO_LIMITS.workers} сотрудника (включая вас). Без ограничений по времени.
+                  {t('landing.demoBlockText', {
+                    vehicles: DEMO_LIMITS.vehicles,
+                    parts: DEMO_LIMITS.parts,
+                    workers: DEMO_LIMITS.workers,
+                  })}
                 </p>
               </div>
               <button
@@ -359,7 +340,7 @@ export function BusinessLanding() {
                 onClick={handleApply}
                 className="btn-primary btn-sm flex-shrink-0"
               >
-                Начать бесплатно
+                {t('landing.demoBlockBtn')}
               </button>
             </div>
 
@@ -388,16 +369,16 @@ export function BusinessLanding() {
           {...FADE_UP(0.1)}
           className="max-w-4xl mx-auto px-4 sm:px-6 py-14 sm:py-20 text-center"
         >
-          <h2 className="heading-2">Готовы начать?</h2>
+          <h2 className="heading-2">{t('landing.ctaTitle')}</h2>
           <p className="page-subtitle mt-3 max-w-lg mx-auto">
-            Создайте авторазборку за минуту — демо-доступ активируется сразу, без ожидания одобрения. Изучите интерфейс уже сегодня.
+            {t('landing.ctaSubtitle')}
           </p>
           <button
             type="button"
             onClick={handleApply}
             className="btn-primary btn-lg mt-7"
           >
-            Создать разборку бесплатно
+            {t('landing.ctaBtn')}
             <ArrowRight className="w-5 h-5" strokeWidth={1.5} />
           </button>
         </motion.section>

@@ -3,7 +3,9 @@ import { Spinner } from '@/components/ui/Spinner'
 import { Save, Tag, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import i18n from '@/i18n'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsInventory, updatePartsInventoryItem, getStorageLocations } from '@/services/partsService'
@@ -33,6 +35,7 @@ function buildLocationOptions(locations: StorageLocation[]): { id: string; label
 }
 
 export default function PartsNoPricePage() {
+  const { t } = useTranslation('cabinet')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
@@ -99,9 +102,9 @@ export default function PartsNoPricePage() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       setSaved(prev => new Set([...prev, id]))
-      toast.success('Запчасть обновлена')
+      toast.success(t('noPricePage.toastSaved'))
     },
-    onError: () => toast.error('Ошибка при сохранении'),
+    onError: () => toast.error(t('noPricePage.toastError')),
   })
 
   const handleSave = (item: PartsInventoryItem) => {
@@ -138,7 +141,7 @@ export default function PartsNoPricePage() {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-gray-50 dark:bg-slate-950">
         <div className="empty-state">
-          <p className="empty-state-title">Нет доступа к разборке</p>
+          <p className="empty-state-title">{t('noPricePage.noAccess')}</p>
         </div>
       </div>
     )
@@ -147,8 +150,8 @@ export default function PartsNoPricePage() {
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-slate-950">
       <PartsPageHeader
-        title="Без цены или номера"
-        subtitle={!isLoading ? `${noPriceItems.length} позиций требуют заполнения` : undefined}
+        title={i18n.t('cabinet:pages.noPrice')}
+        subtitle={!isLoading ? i18n.t('cabinet:pages.noPriceSub', { n: noPriceItems.length }) : undefined}
         backPath="/parts/inventory"
         maxWidth="4xl"
       />
@@ -165,13 +168,13 @@ export default function PartsNoPricePage() {
               <div className="empty-state-icon">
                 <CheckCircle2 className="w-8 h-8 text-green-500" />
               </div>
-              <p className="empty-state-title">Всё заполнено!</p>
-              <p className="empty-state-text">У всех запчастей указаны цена и оригинальный номер.</p>
+              <p className="empty-state-title">{t('noPricePage.allFilled')}</p>
+              <p className="empty-state-text">{t('noPricePage.allFilledText')}</p>
               <button
                 onClick={() => navigate('/parts/inventory')}
                 className="cab-btn cab-btn-primary mt-6"
               >
-                На склад
+                {t('noPricePage.toInventory')}
               </button>
             </div>
           </div>
@@ -182,9 +185,9 @@ export default function PartsNoPricePage() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr>
-                    <th className="table-header-cell">Название</th>
-                    <th className="table-header-cell w-44">Цена</th>
-                    <th className="table-header-cell w-52">Ориг. номер</th>
+                    <th className="table-header-cell">{t('noPricePage.colName')}</th>
+                    <th className="table-header-cell w-44">{t('noPricePage.colPrice')}</th>
+                    <th className="table-header-cell w-52">{t('noPricePage.colNumber')}</th>
                     <th className="table-header-cell w-10"></th>
                     <th className="table-header-cell w-28"></th>
                   </tr>
@@ -209,18 +212,18 @@ export default function PartsNoPricePage() {
                               {item.category && (
                                 <span className="badge badge-gray">{item.category.name}</span>
                               )}
-                              {!item.selling_price && <span className="badge badge-yellow">нет цены</span>}
-                              {!item.part_number?.trim() && <span className="badge badge-yellow">нет номера</span>}
+                              {!item.selling_price && <span className="badge badge-yellow">{t('noPricePage.noPriceBadge')}</span>}
+                              {!item.part_number?.trim() && <span className="badge badge-yellow">{t('noPricePage.noNumberBadge')}</span>}
                               {isSaved && (
                                 <span className="badge badge-green flex items-center gap-1">
-                                  <CheckCircle2 className="w-3 h-3" /> Сохранено
+                                  <CheckCircle2 className="w-3 h-3" /> {t('noPricePage.savedBadge')}
                                 </span>
                               )}
                             </div>
                             <p className="text-xs text-gray-400 mt-0.5 tabular-nums">
-                              {item.quantity} шт
+                              {t('noPricePage.qtyPcs', { n: item.quantity })}
                               <span className="mx-1 text-gray-300">·</span>
-                              {item.condition === 'new' ? 'Новая' : item.condition === 'used' ? 'Б/У' : 'Повреждена'}
+                              {item.condition === 'new' ? t('noPricePage.condNew') : item.condition === 'used' ? t('noPricePage.condUsed') : t('noPricePage.condDamaged')}
                             </p>
                           </td>
 
@@ -235,7 +238,7 @@ export default function PartsNoPricePage() {
                                   step="0.01"
                                   value={row.selling_price}
                                   onChange={(e) => setField(item.id, 'selling_price', e.target.value)}
-                                  placeholder="Цена"
+                                  placeholder={t('noPricePage.pricePlaceholder')}
                                   className="flex-1 min-w-0 pl-1.5 pr-1 py-1.5 text-sm border-0 focus:outline-none focus:ring-0 bg-transparent tabular-nums"
                                 />
                                 <button
@@ -260,7 +263,7 @@ export default function PartsNoPricePage() {
                                 type="text"
                                 value={row.part_number}
                                 onChange={(e) => setField(item.id, 'part_number', e.target.value)}
-                                placeholder="Ориг. номер"
+                                placeholder={t('noPricePage.numberPlaceholder')}
                                 className="w-full px-2.5 py-1.5 text-sm font-mono rounded-lg border focus:outline-none focus:ring-2 border-amber-300 focus:ring-amber-400 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700"
                               />
                             ) : (
@@ -274,7 +277,7 @@ export default function PartsNoPricePage() {
                               type="button"
                               onClick={() => toggleExpand(item.id)}
                               className="btn-icon-sm"
-                              title="Доп. поля"
+                              title={t('noPricePage.extraFields')}
                             >
                               {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                             </button>
@@ -289,7 +292,7 @@ export default function PartsNoPricePage() {
                               className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
                             >
                               <Save className="w-3.5 h-3.5" />
-                              {isSaving ? 'Сохр...' : 'Сохранить'}
+                              {isSaving ? t('noPricePage.savingShort') : t('noPricePage.save')}
                             </button>
                           </td>
                         </tr>
@@ -300,13 +303,13 @@ export default function PartsNoPricePage() {
                             <td colSpan={5} className="px-4 py-3">
                               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                                 <div>
-                                  <label className="form-label text-xs">Категория</label>
+                                  <label className="form-label text-xs">{t('noPricePage.category')}</label>
                                   <select
                                     value={row.category_id}
                                     onChange={(e) => setField(item.id, 'category_id', e.target.value)}
                                     className="form-select py-2 text-sm"
                                   >
-                                    <option value="">Без категории</option>
+                                    <option value="">{t('noPricePage.noCategory')}</option>
                                     {categories.map((cat: any) => (
                                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                                     ))}
@@ -314,13 +317,13 @@ export default function PartsNoPricePage() {
                                 </div>
                                 {storageLocations.length > 0 && (
                                   <div>
-                                    <label className="form-label text-xs">Место хранения</label>
+                                    <label className="form-label text-xs">{t('noPricePage.storageLocation')}</label>
                                     <select
                                       value={row.storage_location_id}
                                       onChange={(e) => setField(item.id, 'storage_location_id', e.target.value)}
                                       className="form-select py-2 text-sm"
                                     >
-                                      <option value="">Не указано</option>
+                                      <option value="">{t('noPricePage.notSpecified')}</option>
                                       {buildLocationOptions(storageLocations as StorageLocation[]).map(opt => (
                                         <option key={opt.id} value={opt.id}>{opt.label}</option>
                                       ))}
@@ -328,11 +331,11 @@ export default function PartsNoPricePage() {
                                   </div>
                                 )}
                                 <div className={storageLocations.length > 0 ? '' : 'col-span-2'}>
-                                  <label className="form-label text-xs">Описание</label>
+                                  <label className="form-label text-xs">{t('noPricePage.description')}</label>
                                   <textarea
                                     value={row.description}
                                     onChange={(e) => setField(item.id, 'description', e.target.value)}
-                                    placeholder="Не указано"
+                                    placeholder={t('noPricePage.notSpecified')}
                                     rows={2}
                                     className="form-input py-2 text-sm resize-none"
                                   />
@@ -371,18 +374,18 @@ export default function PartsNoPricePage() {
                           <span className="font-semibold text-gray-900 dark:text-slate-100 truncate">
                             {item.name}
                           </span>
-                          {!item.selling_price && <span className="badge badge-yellow">нет цены</span>}
-                          {!item.part_number?.trim() && <span className="badge badge-yellow">нет номера</span>}
+                          {!item.selling_price && <span className="badge badge-yellow">{t('noPricePage.noPriceBadge')}</span>}
+                          {!item.part_number?.trim() && <span className="badge badge-yellow">{t('noPricePage.noNumberBadge')}</span>}
                           {isSaved && (
                             <span className="badge badge-green flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" /> Сохранено
+                              <CheckCircle2 className="w-3 h-3" /> {t('noPricePage.savedBadge')}
                             </span>
                           )}
                         </div>
                         <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 tabular-nums">
-                          {item.quantity} шт
+                          {t('noPricePage.qtyPcs', { n: item.quantity })}
                           <span className="mx-1 text-gray-300">·</span>
-                          {item.condition === 'new' ? 'Новая' : item.condition === 'used' ? 'Б/У' : 'Повреждена'}
+                          {item.condition === 'new' ? t('noPricePage.condNew') : item.condition === 'used' ? t('noPricePage.condUsed') : t('noPricePage.condDamaged')}
                           {item.category && (
                             <><span className="mx-1">·</span>{item.category.name}</>
                           )}
@@ -397,7 +400,7 @@ export default function PartsNoPricePage() {
                           type="text"
                           value={row.part_number}
                           onChange={(e) => setField(item.id, 'part_number', e.target.value)}
-                          placeholder="Оригинальный номер"
+                          placeholder={t('noPricePage.numberPlaceholderFull')}
                           className="w-full px-3 py-2 text-sm font-mono rounded-lg border focus:outline-none focus:ring-2 border-amber-300 focus:ring-amber-400 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700"
                         />
                       </div>
@@ -414,7 +417,7 @@ export default function PartsNoPricePage() {
                             step="0.01"
                             value={row.selling_price}
                             onChange={(e) => setField(item.id, 'selling_price', e.target.value)}
-                            placeholder="Цена"
+                            placeholder={t('noPricePage.pricePlaceholder')}
                             className="flex-1 min-w-0 pl-1.5 pr-1 py-2 text-sm border-0 focus:outline-none focus:ring-0 bg-transparent tabular-nums"
                           />
                           <button
@@ -435,7 +438,7 @@ export default function PartsNoPricePage() {
                         type="button"
                         onClick={() => toggleExpand(item.id)}
                         className="btn-icon-sm"
-                        title="Доп. поля"
+                        title={t('noPricePage.extraFields')}
                       >
                         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </button>
@@ -447,7 +450,7 @@ export default function PartsNoPricePage() {
                         className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
                       >
                         <Save className="w-3.5 h-3.5" />
-                        {isSaving ? 'Сохр...' : 'Сохр.'}
+                        {isSaving ? t('noPricePage.savingShort') : t('noPricePage.saveShort')}
                       </button>
                     </div>
 
@@ -455,13 +458,13 @@ export default function PartsNoPricePage() {
                     {isExpanded && (
                       <div className="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3 grid grid-cols-1 gap-3 bg-gray-50 dark:bg-slate-900/50 rounded-b-xl">
                         <div>
-                          <label className="form-label text-xs">Категория</label>
+                          <label className="form-label text-xs">{t('noPricePage.category')}</label>
                           <select
                             value={row.category_id}
                             onChange={(e) => setField(item.id, 'category_id', e.target.value)}
                             className="form-select"
                           >
-                            <option value="">Без категории</option>
+                            <option value="">{t('noPricePage.noCategory')}</option>
                             {categories.map((cat: any) => (
                               <option key={cat.id} value={cat.id}>{cat.name}</option>
                             ))}
@@ -469,13 +472,13 @@ export default function PartsNoPricePage() {
                         </div>
                         {storageLocations.length > 0 && (
                           <div>
-                            <label className="form-label text-xs">Место хранения</label>
+                            <label className="form-label text-xs">{t('noPricePage.storageLocation')}</label>
                             <select
                               value={row.storage_location_id}
                               onChange={(e) => setField(item.id, 'storage_location_id', e.target.value)}
                               className="form-select"
                             >
-                              <option value="">Не указано</option>
+                              <option value="">{t('noPricePage.notSpecified')}</option>
                               {buildLocationOptions(storageLocations as StorageLocation[]).map(opt => (
                                 <option key={opt.id} value={opt.id}>{opt.label}</option>
                               ))}
@@ -483,11 +486,11 @@ export default function PartsNoPricePage() {
                           </div>
                         )}
                         <div>
-                          <label className="form-label text-xs">Описание</label>
+                          <label className="form-label text-xs">{t('noPricePage.description')}</label>
                           <textarea
                             value={row.description}
                             onChange={(e) => setField(item.id, 'description', e.target.value)}
-                            placeholder="Не указано"
+                            placeholder={t('noPricePage.notSpecified')}
                             rows={2}
                             className="form-input resize-none"
                           />

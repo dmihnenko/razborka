@@ -6,6 +6,8 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { Search, Users, UserCheck, Phone, Mail } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import i18n from '@/i18n'
+import { useTranslation } from 'react-i18next'
 
 type ViewMode = 'grid' | 'list'
 
@@ -34,14 +36,15 @@ function avatarColor(name?: string | null): string {
 
 function roleBadge(role?: string | null) {
   switch (role) {
-    case 'parts_owner':  return <span className="badge badge-blue">Владелец</span>
-    case 'parts_worker': return <span className="badge badge-gray">Сотрудник</span>
-    case 'admin':        return <span className="badge badge-purple">Админ</span>
-    default:             return <span className="badge badge-gray">{role ?? 'Пользователь'}</span>
+    case 'parts_owner':  return <span className="badge badge-blue">{i18n.t('cabinet:employeesPage.roleOwner')}</span>
+    case 'parts_worker': return <span className="badge badge-gray">{i18n.t('cabinet:employeesPage.roleWorker')}</span>
+    case 'admin':        return <span className="badge badge-purple">{i18n.t('cabinet:employeesPage.roleAdmin')}</span>
+    default:             return <span className="badge badge-gray">{role ?? i18n.t('cabinet:employeesPage.roleUser')}</span>
   }
 }
 
 export default function PartsEmployees() {
+  const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
 
@@ -92,8 +95,8 @@ export default function PartsEmployees() {
     <div className="min-h-dvh bg-gray-50">
       {/* Header */}
       <PartsPageHeader
-        title="Сотрудники"
-        subtitle={`Всего: ${stats.total}`}
+        title={i18n.t('cabinet:pages.employees')}
+        subtitle={i18n.t('cabinet:pages.totalN', { n: stats.total })}
         backPath="/parts/dashboard"
       />
 
@@ -104,7 +107,7 @@ export default function PartsEmployees() {
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4 sm:mb-6">
           <div className="cab-card p-4">
             <div className="flex items-start justify-between mb-3">
-              <p className="kicker">Всего</p>
+              <p className="kicker">{t('employeesPage.statTotal')}</p>
               <Users className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
             </div>
             <p className="text-3xl font-extrabold tabular" style={{ letterSpacing: '-0.03em', color: 'var(--cab-ink)' }}>
@@ -114,7 +117,7 @@ export default function PartsEmployees() {
 
           <div className="cab-card p-4">
             <div className="flex items-start justify-between mb-3">
-              <p className="kicker">С email</p>
+              <p className="kicker">{t('employeesPage.statWithEmail')}</p>
               <UserCheck className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
             </div>
             <p className="text-3xl font-extrabold tabular" style={{ letterSpacing: '-0.03em', color: 'var(--cab-ink)' }}>
@@ -124,7 +127,7 @@ export default function PartsEmployees() {
 
           <div className="cab-card p-4">
             <div className="flex items-start justify-between mb-3">
-              <p className="kicker">С телефоном</p>
+              <p className="kicker">{t('employeesPage.statWithPhone')}</p>
               <Phone className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
             </div>
             <p className="text-3xl font-extrabold tabular" style={{ letterSpacing: '-0.03em', color: 'var(--cab-ink)' }}>
@@ -144,7 +147,7 @@ export default function PartsEmployees() {
               />
               <input
                 type="text"
-                placeholder="Поиск по имени, email, телефону..."
+                placeholder={t('employeesPage.searchPlaceholder')}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="form-input pl-10"
@@ -161,7 +164,7 @@ export default function PartsEmployees() {
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Карточки
+                {t('employeesPage.viewGrid')}
               </button>
               <button
                 onClick={() => setViewMode('list')}
@@ -171,7 +174,7 @@ export default function PartsEmployees() {
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Таблица
+                {t('employeesPage.viewList')}
               </button>
             </div>
           </div>
@@ -189,11 +192,11 @@ export default function PartsEmployees() {
                 <Users className="w-7 h-7 text-gray-400" strokeWidth={1.5} />
               </div>
               <p className="empty-state-title">
-                {searchQuery ? 'Сотрудники не найдены' : 'Нет сотрудников'}
+                {searchQuery ? t('employeesPage.emptySearch') : t('employeesPage.empty')}
               </p>
               {!searchQuery && (
                 <p className="empty-state-text">
-                  Работники найдут вас при регистрации, введя номер телефона вашей разборки
+                  {t('employeesPage.emptyHint')}
                 </p>
               )}
             </div>
@@ -213,7 +216,7 @@ export default function PartsEmployees() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <p className="text-sm font-bold text-gray-900 truncate">
-                      {employee.full_name || 'Без имени'}
+                      {employee.full_name || t('employeesPage.noName')}
                     </p>
                     {roleBadge(employee.role)}
                   </div>
@@ -242,7 +245,7 @@ export default function PartsEmployees() {
                       </a>
                     )}
                     {!employee.email && !employee.phone && (
-                      <p className="text-xs text-gray-400">Нет контактной информации</p>
+                      <p className="text-xs text-gray-400">{t('employeesPage.noContact')}</p>
                     )}
                   </div>
                 </div>
@@ -257,10 +260,10 @@ export default function PartsEmployees() {
               <table className="w-full">
                 <thead>
                   <tr>
-                    <th className="table-header-cell">Сотрудник</th>
-                    <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Роль</th>
-                    <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Email</th>
-                    <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>Телефон</th>
+                    <th className="table-header-cell">{t('employeesPage.colEmployee')}</th>
+                    <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>{t('employeesPage.colRole')}</th>
+                    <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>{t('employeesPage.colEmail')}</th>
+                    <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>{t('employeesPage.colPhone')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -274,7 +277,7 @@ export default function PartsEmployees() {
                           </span>
                           <div className="min-w-0">
                             <p className="text-sm font-semibold text-gray-900 truncate">
-                              {employee.full_name || 'Без имени'}
+                              {employee.full_name || t('employeesPage.noName')}
                             </p>
                             {employee.username && (
                               <p className="text-xs text-gray-400">@{employee.username}</p>

@@ -1,6 +1,7 @@
 import { useState, KeyboardEvent } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
@@ -35,28 +36,29 @@ const FADE_UP = {
 
 // ── Экран «требуется вход» ────────────────────────────────────────────────────
 function LoginRequired() {
+  const { t } = useTranslation('business')
   return (
     <div className="min-h-dvh bg-gray-50 flex flex-col items-center justify-center px-4">
       <motion.div {...FADE_UP} className="card max-w-sm w-full text-center">
         <span className="icon-tile-lg bg-indigo-50 text-indigo-600 mx-auto mb-4">
           <LogIn className="w-6 h-6" strokeWidth={1.5} />
         </span>
-        <h1 className="heading-3 mb-2">Войдите, чтобы создать разборку</h1>
+        <h1 className="heading-3 mb-2">{t('application.loginTitle')}</h1>
         <p className="text-sm text-gray-500 mb-5">
-          Для создания авторазборки необходима авторизация.
+          {t('application.loginText')}
         </p>
         <Link
           to="/login?next=/business/apply"
           className="btn-primary w-full"
         >
-          Войти в аккаунт
+          {t('application.loginBtn')}
         </Link>
         <Link
           to="/business"
           className="btn-ghost w-full mt-2"
         >
           <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
-          Назад к лендингу
+          {t('application.backToLanding')}
         </Link>
       </motion.div>
     </div>
@@ -65,6 +67,7 @@ function LoginRequired() {
 
 // ── Основная форма ─────────────────────────────────────────────────────────────
 export function PartsApplication() {
+  const { t } = useTranslation('business')
   const navigate = useNavigate()
   const { user, loading: authLoading } = useAuth()
   const { data: profile, isLoading: profileLoading } = useUserProfile()
@@ -91,16 +94,16 @@ export function PartsApplication() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userProfile'] })
-      toast.success('Авторазборка создана — демо-доступ активен')
+      toast.success(t('application.toastCreated'))
       navigate('/parts/dashboard')
     },
     onError: (err: any) => {
       const msg: string = err?.message ?? ''
       if (msg.includes('COMPANY_ALREADY_EXISTS')) {
-        toast.info('Разборка уже создана')
+        toast.info(t('application.toastAlreadyExists'))
         navigate('/parts/dashboard')
       } else {
-        toast.error(err?.message || 'Ошибка при создании разборки')
+        toast.error(err?.message || t('application.toastError'))
       }
     },
   })
@@ -157,12 +160,12 @@ export function PartsApplication() {
   // ── Валидация ──────────────────────────────────────────────────────────────
   function validate(): boolean {
     const errs: Record<string, string> = {}
-    if (!companyName.trim()) errs.companyName = 'Обязательное поле'
-    if (!ownerFirstName.trim()) errs.ownerFirstName = 'Обязательное поле'
-    if (!ownerLastName.trim()) errs.ownerLastName = 'Обязательное поле'
-    if (phone.replace(/\D/g, '').length < 10) errs.phone = 'Введите корректный номер телефона'
-    if (!address.trim()) errs.address = 'Обязательное поле'
-    if (vehicleMakes.length === 0) errs.vehicleMakes = 'Добавьте хотя бы одну марку авто'
+    if (!companyName.trim()) errs.companyName = t('application.errRequired')
+    if (!ownerFirstName.trim()) errs.ownerFirstName = t('application.errRequired')
+    if (!ownerLastName.trim()) errs.ownerLastName = t('application.errRequired')
+    if (phone.replace(/\D/g, '').length < 10) errs.phone = t('application.errPhone')
+    if (!address.trim()) errs.address = t('application.errRequired')
+    if (vehicleMakes.length === 0) errs.vehicleMakes = t('application.errMakes')
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -183,7 +186,7 @@ export function PartsApplication() {
             type="button"
             onClick={() => navigate('/business')}
             className="btn-icon"
-            aria-label="Назад"
+            aria-label={t('application.back')}
           >
             <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
           </button>
@@ -202,9 +205,9 @@ export function PartsApplication() {
             <span className="icon-tile-lg bg-indigo-50 text-indigo-600 mx-auto mb-3">
               <Building2 className="w-6 h-6" strokeWidth={1.5} />
             </span>
-            <h1 className="heading-2">Создать авторазборку</h1>
+            <h1 className="heading-2">{t('application.title')}</h1>
             <p className="page-subtitle mt-2">
-              Заполните форму — разборка создастся сразу, демо-доступ активируется автоматически. Изучайте интерфейс уже сегодня.
+              {t('application.subtitle')}
             </p>
           </div>
 
@@ -214,14 +217,14 @@ export function PartsApplication() {
             {/* Название разборки */}
             <div>
               <label htmlFor="companyName" className="form-label">
-                Название авторазборки <span className="text-red-500">*</span>
+                {t('application.companyName')} <span className="text-red-500">*</span>
               </label>
               <input
                 id="companyName"
                 type="text"
                 value={companyName}
                 onChange={e => setCompanyName(e.target.value)}
-                placeholder='Авторазборка «АвтоДеталь»'
+                placeholder={t('application.companyNamePh')}
                 className={`form-input ${errors.companyName ? 'border-red-400 focus:border-red-400' : ''}`}
               />
               {errors.companyName && <p className="form-error">{errors.companyName}</p>}
@@ -233,7 +236,7 @@ export function PartsApplication() {
                 <label htmlFor="ownerFirstName" className="form-label">
                   <span className="flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5" strokeWidth={1.5} />
-                    Имя владельца <span className="text-red-500">*</span>
+                    {t('application.ownerFirstName')} <span className="text-red-500">*</span>
                   </span>
                 </label>
                 <input
@@ -241,21 +244,21 @@ export function PartsApplication() {
                   type="text"
                   value={ownerFirstName}
                   onChange={e => setOwnerFirstName(e.target.value)}
-                  placeholder="Иван"
+                  placeholder={t('application.ownerFirstNamePh')}
                   className={`form-input ${errors.ownerFirstName ? 'border-red-400' : ''}`}
                 />
                 {errors.ownerFirstName && <p className="form-error">{errors.ownerFirstName}</p>}
               </div>
               <div>
                 <label htmlFor="ownerLastName" className="form-label">
-                  Фамилия <span className="text-red-500">*</span>
+                  {t('application.ownerLastName')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="ownerLastName"
                   type="text"
                   value={ownerLastName}
                   onChange={e => setOwnerLastName(e.target.value)}
-                  placeholder="Петренко"
+                  placeholder={t('application.ownerLastNamePh')}
                   className={`form-input ${errors.ownerLastName ? 'border-red-400' : ''}`}
                 />
                 {errors.ownerLastName && <p className="form-error">{errors.ownerLastName}</p>}
@@ -267,7 +270,7 @@ export function PartsApplication() {
               <label htmlFor="phone" className="form-label">
                 <span className="flex items-center gap-1.5">
                   <Phone className="w-3.5 h-3.5" strokeWidth={1.5} />
-                  Телефон <span className="text-red-500">*</span>
+                  {t('application.phone')} <span className="text-red-500">*</span>
                 </span>
               </label>
               <IMaskInput
@@ -286,7 +289,7 @@ export function PartsApplication() {
               <label htmlFor="address" className="form-label">
                 <span className="flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5" strokeWidth={1.5} />
-                  Адрес разборки <span className="text-red-500">*</span>
+                  {t('application.address')} <span className="text-red-500">*</span>
                 </span>
               </label>
               <input
@@ -294,7 +297,7 @@ export function PartsApplication() {
                 type="text"
                 value={address}
                 onChange={e => setAddress(e.target.value)}
-                placeholder="г. Киев, ул. Центральная, 15"
+                placeholder={t('application.addressPh')}
                 className={`form-input ${errors.address ? 'border-red-400' : ''}`}
               />
               {errors.address && <p className="form-error">{errors.address}</p>}
@@ -305,11 +308,11 @@ export function PartsApplication() {
               <label htmlFor="makeInput" className="form-label">
                 <span className="flex items-center gap-1.5">
                   <Car className="w-3.5 h-3.5" strokeWidth={1.5} />
-                  Марки авто <span className="text-red-500">*</span>
+                  {t('application.makes')} <span className="text-red-500">*</span>
                 </span>
               </label>
               <p className="text-xs text-gray-500 mb-2">
-                Введите марку и нажмите Enter или кнопку «+»
+                {t('application.makesHint')}
               </p>
               <div className="flex gap-2">
                 <input
@@ -326,7 +329,7 @@ export function PartsApplication() {
                   onClick={addMake}
                   disabled={!makeInput.trim()}
                   className="btn-secondary btn-sm flex-shrink-0 px-3"
-                  aria-label="Добавить марку"
+                  aria-label={t('application.addMake')}
                 >
                   <Plus className="w-4 h-4" strokeWidth={2} />
                 </button>
@@ -345,7 +348,7 @@ export function PartsApplication() {
                         type="button"
                         onClick={() => removeMake(make)}
                         className="hover:opacity-70 transition-opacity"
-                        aria-label={`Удалить ${make}`}
+                        aria-label={t('application.removeMake', { make })}
                       >
                         <X className="w-3 h-3" strokeWidth={2} />
                       </button>
@@ -366,15 +369,15 @@ export function PartsApplication() {
             {mutation.isPending ? (
               <>
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Создание…
+                {t('application.creating')}
               </>
             ) : (
-              'Создать разборку'
+              t('application.submit')
             )}
           </button>
 
           <p className="text-xs text-gray-400 text-center mt-3">
-            Нажимая «Создать разборку», вы соглашаетесь с условиями использования платформы.
+            {t('application.terms')}
           </p>
         </motion.div>
       </div>

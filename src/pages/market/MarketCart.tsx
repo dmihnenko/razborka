@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useMutation } from '@tanstack/react-query'
 import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
@@ -25,6 +26,7 @@ function totalsLabel(items: CartItem[]): string {
 }
 
 function CartItemRow({ item }: { item: CartItem }) {
+  const { t } = useTranslation('market')
   const { setQty, removeItem } = useCart()
   const [imgError, setImgError] = useState(false)
   const conditionLabel = item.condition ? PARTS_CONDITION_LABELS[item.condition] ?? item.condition : null
@@ -45,27 +47,27 @@ function CartItemRow({ item }: { item: CartItem }) {
 
         <div className="mt-auto pt-2 flex items-center justify-between gap-2 flex-wrap">
           <div className="mk-qty">
-            <button type="button" onClick={() => setQty(item.inventoryId, item.quantity - 1)} className="mk-qty-btn" aria-label={`Уменьшить количество «${item.name}»`}>
+            <button type="button" onClick={() => setQty(item.inventoryId, item.quantity - 1)} className="mk-qty-btn" aria-label={t('cartPage.decreaseQty', { name: item.name })}>
               <Minus className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
             </button>
             <span className="mk-qty-val" aria-live="polite">{item.quantity}</span>
-            <button type="button" onClick={() => setQty(item.inventoryId, item.quantity + 1)} className="mk-qty-btn" aria-label={`Увеличить количество «${item.name}»`}>
+            <button type="button" onClick={() => setQty(item.inventoryId, item.quantity + 1)} className="mk-qty-btn" aria-label={t('cartPage.increaseQty', { name: item.name })}>
               <Plus className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
             </button>
           </div>
 
           <div className="flex items-baseline gap-1.5">
             <span className="mk-price text-sm whitespace-nowrap">{formatPrice(item.sellingPrice * item.quantity, item.priceCurrency)}</span>
-            {item.quantity > 1 && <span className="text-[11px] whitespace-nowrap mk-meta">({formatPrice(item.sellingPrice, item.priceCurrency)} / шт.)</span>}
+            {item.quantity > 1 && <span className="text-[11px] whitespace-nowrap mk-meta">({formatPrice(item.sellingPrice, item.priceCurrency)} / {t('cartPage.perUnit')})</span>}
           </div>
         </div>
       </div>
 
       <button
         type="button"
-        onClick={() => { removeItem(item.inventoryId); toast.success('Удалено из корзины') }}
+        onClick={() => { removeItem(item.inventoryId); toast.success(t('cartPage.removedToast')) }}
         className="mk-icon-btn self-start hover:!bg-[#FEF1F1] hover:!text-[#9B3535]"
-        aria-label={`Удалить «${item.name}» из корзины`}
+        aria-label={t('cartPage.removeFromCart', { name: item.name })}
       >
         <Trash2 className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
       </button>
@@ -74,8 +76,9 @@ function CartItemRow({ item }: { item: CartItem }) {
 }
 
 function CompanyGroup({ group }: { group: CartGroup }) {
+  const { t } = useTranslation('market')
   return (
-    <section className="mk-card px-5 py-4" aria-label={`Товары разборки ${group.companyName}`}>
+    <section className="mk-card px-5 py-4" aria-label={t('cartPage.companyItemsAria', { name: group.companyName })}>
       <div className="flex items-center gap-2.5 pb-3 mk-divider" style={{ borderTop: 'none', borderBottom: '1px solid var(--mk-border)' }}>
         <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0" style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
           <Store className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
@@ -88,7 +91,7 @@ function CompanyGroup({ group }: { group: CartGroup }) {
       </div>
 
       <div className="flex items-center justify-between pt-3 mk-divider">
-        <span className="text-sm font-semibold mk-meta">Итого по разборке</span>
+        <span className="text-sm font-semibold mk-meta">{t('cartPage.companyTotal')}</span>
         <span className="text-base font-extrabold tracking-tight" style={{ color: 'var(--mk-text)' }}>{totalsLabel(group.items)}</span>
       </div>
     </section>
@@ -96,6 +99,7 @@ function CompanyGroup({ group }: { group: CartGroup }) {
 }
 
 export function MarketCart() {
+  const { t } = useTranslation('market')
   const { items, clear, totalCount, groupedByCompany } = useCart()
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
@@ -111,15 +115,15 @@ export function MarketCart() {
 
   const mutation = useMutation({
     mutationFn: (vars: { groups: { companyId: string; items: CartItem[] }[]; buyer: { phone: string; name?: string; comment?: string } }) => submitMarketOrders(vars.groups, vars.buyer),
-    onSuccess: () => { clear(); setSubmitted(true); toast.success('Заявка отправлена') },
-    onError: () => { toast.error('Не удалось отправить заявку. Попробуйте ещё раз') },
+    onSuccess: () => { clear(); setSubmitted(true); toast.success(t('cartPage.orderSentToast')) },
+    onError: () => { toast.error(t('cartPage.orderErrorToast')) },
   })
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    if (!phoneValid) { setPhoneError('Укажите телефон полностью — разборка свяжется с вами по нему'); return }
+    if (!phoneValid) { setPhoneError(t('cartPage.phoneRequired')); return }
     setPhoneError(null)
-    if (!nameValid) { setNameError('Укажите имя — как к вам обращаться'); return }
+    if (!nameValid) { setNameError(t('cartPage.nameRequired')); return }
     setNameError(null)
     mutation.mutate({
       groups: groups.map(g => ({ companyId: g.companyId, items: g.items })),
@@ -134,9 +138,9 @@ export function MarketCart() {
           <span className="w-20 h-20 rounded-full flex items-center justify-center mb-5" style={{ background: '#ECFDF3', color: '#246B45', border: '1px solid #C9EAD6' }}>
             <CheckCircle2 className="w-10 h-10" strokeWidth={1.5} aria-hidden="true" />
           </span>
-          <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--mk-text)' }}>Заявка отправлена!</h1>
-          <p className="mk-sub mt-2 max-w-xs leading-relaxed">Разборка свяжется с вами по указанному телефону, чтобы подтвердить наличие и договориться об оплате и доставке.</p>
-          <Link to="/market/catalog" className="mk-btn mk-btn-accent mk-btn-lg mt-6">Вернуться в каталог</Link>
+          <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'var(--mk-text)' }}>{t('cartPage.successTitle')}</h1>
+          <p className="mk-sub mt-2 max-w-xs leading-relaxed">{t('cartPage.successText')}</p>
+          <Link to="/market/catalog" className="mk-btn mk-btn-accent mk-btn-lg mt-6">{t('cartPage.backToCatalog')}</Link>
         </div>
       </div>
     )
@@ -145,7 +149,7 @@ export function MarketCart() {
   if (items.length === 0) {
     return (
       <div className="max-w-md mx-auto">
-        <EmptyState icon={ShoppingCart} title="Корзина пуста" description="Добавьте запчасти из каталога — оплата не требуется, вы просто оставляете заявку разборке" action={<Link to="/market/catalog" className="mk-btn mk-btn-accent">Перейти в каталог</Link>} />
+        <EmptyState icon={ShoppingCart} title={t('cartPage.emptyTitle')} description={t('cartPage.emptyDescription')} action={<Link to="/market/catalog" className="mk-btn mk-btn-accent">{t('cartPage.goToCatalog')}</Link>} />
       </div>
     )
   }
@@ -153,8 +157,8 @@ export function MarketCart() {
   return (
     <div>
       <div className="mb-5">
-        <h1 className="mk-h1">Корзина</h1>
-        <p className="mk-sub mt-1">{totalCount} шт. · {groups.length > 1 ? `заявки уйдут в ${groups.length} разборки отдельно` : 'заявка уйдёт разборке'}</p>
+        <h1 className="mk-h1">{t('cartPage.title')}</h1>
+        <p className="mk-sub mt-1">{t('cartPage.countLabel', { n: totalCount })} · {groups.length > 1 ? t('cartPage.multiCompanyNote', { n: groups.length }) : t('cartPage.singleCompanyNote')}</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
@@ -163,10 +167,10 @@ export function MarketCart() {
         </div>
 
         <form onSubmit={handleSubmit} className="lg:w-80 lg:flex-shrink-0 lg:sticky lg:top-24 mk-card px-5 py-5 flex flex-col gap-4">
-          <h2 className="mk-title">Оформление заявки</h2>
+          <h2 className="mk-title">{t('cartPage.checkoutTitle')}</h2>
 
           <div>
-            <label htmlFor="cart-phone" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--mk-text-2)' }}>Телефон <span style={{ color: '#9B3535' }}>*</span></label>
+            <label htmlFor="cart-phone" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--mk-text-2)' }}>{t('cartPage.phoneLabel')} <span style={{ color: '#9B3535' }}>*</span></label>
             <IMaskInput
               id="cart-phone" mask="+380 00 000-00-00" value={phone}
               onAccept={(value: string) => { setPhone(value); if (phoneError) setPhoneError(null) }}
@@ -177,33 +181,33 @@ export function MarketCart() {
           </div>
 
           <div>
-            <label htmlFor="cart-name" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--mk-text-2)' }}>Имя <span style={{ color: '#9B3535' }}>*</span></label>
+            <label htmlFor="cart-name" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--mk-text-2)' }}>{t('cartPage.nameLabel')} <span style={{ color: '#9B3535' }}>*</span></label>
             <input
               id="cart-name" type="text" value={name}
               onChange={e => { setName(e.target.value); if (nameError) setNameError(null) }}
-              autoComplete="name" maxLength={100} className="mk-input" placeholder="Как к вам обращаться"
+              autoComplete="name" maxLength={100} className="mk-input" placeholder={t('cartPage.namePlaceholder')}
               aria-invalid={!!nameError} aria-describedby={nameError ? 'cart-name-error' : undefined}
             />
             {nameError && <p id="cart-name-error" className="text-xs mt-1" style={{ color: '#9B3535' }}>{nameError}</p>}
           </div>
 
           <div>
-            <label htmlFor="cart-comment" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--mk-text-2)' }}>Комментарий</label>
-            <textarea id="cart-comment" value={comment} onChange={e => setComment(e.target.value)} rows={3} maxLength={1000} className="mk-input resize-none !h-auto py-2.5" placeholder="Уточнения по запчастям, доставке… (необязательно)" />
+            <label htmlFor="cart-comment" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--mk-text-2)' }}>{t('cartPage.commentLabel')}</label>
+            <textarea id="cart-comment" value={comment} onChange={e => setComment(e.target.value)} rows={3} maxLength={1000} className="mk-input resize-none !h-auto py-2.5" placeholder={t('cartPage.commentPlaceholder')} />
           </div>
 
           <div className="rounded-2xl px-4 py-3 flex items-center justify-between" style={{ background: 'var(--mk-surface-2)' }}>
-            <span className="text-sm font-semibold mk-meta">Итого</span>
+            <span className="text-sm font-semibold mk-meta">{t('cartPage.total')}</span>
             <span className="mk-price-lg !text-xl">{totalsLabel(items)}</span>
           </div>
 
           <button type="submit" disabled={mutation.isPending} className="mk-btn mk-btn-accent mk-btn-lg w-full disabled:opacity-60 disabled:pointer-events-none">
             <Send className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
-            {mutation.isPending ? 'Отправляем…' : 'Отправить заявку'}
+            {mutation.isPending ? t('cartPage.submitting') : t('cartPage.submit')}
           </button>
 
           <p className="text-[11px] leading-relaxed mk-meta">
-            Без оплаты на сайте: разборка получит вашу заявку и перезвонит, чтобы подтвердить наличие{groups.length > 1 ? '. Товары разных разборок уйдут отдельными заявками.' : '.'}
+            {t('cartPage.footerNote')}{groups.length > 1 ? t('cartPage.footerNoteMulti') : '.'}
           </p>
         </form>
       </div>

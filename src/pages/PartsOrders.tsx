@@ -11,8 +11,10 @@ import { Plus, Search, ShoppingCart, LayoutList, Columns3 } from 'lucide-react'
 import { getPartsOrderStatusText } from '@/utils/status'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import i18n from '@/i18n'
 import { updatePartsOrderStatus } from '@/services/partsService'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import {
   DndContext,
   DragEndEvent,
@@ -106,6 +108,7 @@ interface BoardColumnProps {
 
 function BoardColumn({ status, label, dot, ring, orders, formatUSD, computeOrderUSD, onCardClick, activeId }: BoardColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
+  const { t } = useTranslation('cabinet')
 
   return (
     <div
@@ -136,7 +139,7 @@ function BoardColumn({ status, label, dot, ring, orders, formatUSD, computeOrder
         ))}
         {orders.length === 0 && (
           <div className="flex-1 flex items-center justify-center py-8 text-xs text-gray-400 border-2 border-dashed border-gray-200 rounded-lg">
-            Нет заказов
+            {t('ordersPage.noOrders')}
           </div>
         )}
       </div>
@@ -146,6 +149,7 @@ function BoardColumn({ status, label, dot, ring, orders, formatUSD, computeOrder
 
 // ─── Главный компонент ────────────────────────────────────────────────────────
 export default function PartsOrders() {
+  const { t } = useTranslation('cabinet')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
@@ -226,7 +230,7 @@ export default function PartsOrders() {
         delete next[variables.orderId]
         return next
       })
-      toast.error('Не удалось обновить статус заказа')
+      toast.error(t('ordersPage.statusUpdateError'))
     },
   })
 
@@ -309,8 +313,8 @@ export default function PartsOrders() {
     <div className="min-h-dvh" style={{ background: 'var(--cab-bg)' }}>
       {/* Header */}
       <PartsPageHeader
-        title="Заказы"
-        subtitle={`Всего: ${stats.total}`}
+        title={i18n.t('cabinet:pages.orders')}
+        subtitle={t('ordersPage.totalCount', { n: stats.total })}
         backPath="/parts/dashboard"
         actions={
           <button
@@ -318,7 +322,7 @@ export default function PartsOrders() {
             className="cab-btn cab-btn-primary cab-btn-sm"
           >
             <Plus className="w-4 h-4" strokeWidth={2} />
-            <span className="hidden sm:inline">Создать заказ</span>
+            <span className="hidden sm:inline">{t('ordersPage.createOrder')}</span>
           </button>
         }
       />
@@ -329,10 +333,10 @@ export default function PartsOrders() {
         {/* Stats — фильтр-плитки */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
           {[
-            { key: 'all',         label: 'Всего',     value: stats.total,       dot: '#8B909A' },
-            { key: 'new',         label: 'Новые',     value: stats.new,         dot: 'var(--cab-signal)' },
-            { key: 'in_progress', label: 'В работе',  value: stats.in_progress, dot: '#D97706' },
-            { key: 'completed',   label: 'Завершены', value: stats.completed,   dot: '#16A34A' },
+            { key: 'all',         label: t('ordersPage.statAll'),        value: stats.total,       dot: '#8B909A' },
+            { key: 'new',         label: t('ordersPage.statNew'),        value: stats.new,         dot: 'var(--cab-signal)' },
+            { key: 'in_progress', label: t('ordersPage.statInProgress'), value: stats.in_progress, dot: '#D97706' },
+            { key: 'completed',   label: t('ordersPage.statCompleted'),  value: stats.completed,   dot: '#16A34A' },
           ].map(({ key, label, value, dot }) => (
             <button
               key={key}
@@ -352,7 +356,7 @@ export default function PartsOrders() {
 
           {/* Выручка */}
           <div className="cab-card p-4">
-            <p className="text-xs font-semibold mb-2" style={{ color: 'var(--cab-ink-2)' }}>Выручка</p>
+            <p className="text-xs font-semibold mb-2" style={{ color: 'var(--cab-ink-2)' }}>{t('ordersPage.revenue')}</p>
             <p className="text-2xl font-extrabold tabular-nums" style={{ color: 'var(--cab-ink)', letterSpacing: '-0.03em' }}>
               {formatUSD(stats.totalRevenue)}
             </p>
@@ -366,7 +370,7 @@ export default function PartsOrders() {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Поиск по номеру, клиенту, телефону..."
+              placeholder={t('ordersPage.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="form-input pl-10"
@@ -377,11 +381,11 @@ export default function PartsOrders() {
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex flex-wrap gap-2 flex-1">
               {[
-                { key: 'all',         label: 'Все' },
-                { key: 'new',         label: 'Новые' },
-                { key: 'in_progress', label: 'В работе' },
-                { key: 'completed',   label: 'Завершены' },
-                { key: 'cancelled',   label: 'Отменены' },
+                { key: 'all',         label: t('ordersPage.chipAll') },
+                { key: 'new',         label: t('ordersPage.chipNew') },
+                { key: 'in_progress', label: t('ordersPage.chipInProgress') },
+                { key: 'completed',   label: t('ordersPage.chipCompleted') },
+                { key: 'cancelled',   label: t('ordersPage.chipCancelled') },
               ].map(({ key, label }) => (
                 <button
                   key={key}
@@ -397,14 +401,14 @@ export default function PartsOrders() {
             <div className="hidden md:flex items-center gap-1 border border-gray-200 rounded-lg p-0.5 flex-shrink-0">
               <button
                 onClick={() => setViewMode('list')}
-                title="Список"
+                title={t('ordersPage.viewList')}
                 className={`btn-icon-sm rounded-md ${viewMode === 'list' ? 'bg-primary text-white hover:bg-primary hover:text-white' : ''}`}
               >
                 <LayoutList className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('board')}
-                title="Доска"
+                title={t('ordersPage.viewBoard')}
                 className={`btn-icon-sm rounded-md ${viewMode === 'board' ? 'bg-primary text-white hover:bg-primary hover:text-white' : ''}`}
               >
                 <Columns3 className="w-4 h-4" />
@@ -425,7 +429,7 @@ export default function PartsOrders() {
                 <ShoppingCart className="w-7 h-7 text-gray-400" />
               </div>
               <p className="empty-state-title">
-                {searchQuery || statusFilter !== 'all' ? 'Заказы не найдены' : 'Нет заказов'}
+                {searchQuery || statusFilter !== 'all' ? t('ordersPage.notFound') : t('ordersPage.empty')}
               </p>
               {!searchQuery && statusFilter === 'all' && (
                 <p className="empty-state-text">
@@ -433,7 +437,7 @@ export default function PartsOrders() {
                     onClick={() => navigate('/parts/orders/create')}
                     className="text-primary font-semibold hover:underline"
                   >
-                    Создать первый заказ
+                    {t('ordersPage.createFirst')}
                   </button>
                 </p>
               )}
@@ -457,7 +461,7 @@ export default function PartsOrders() {
                         <BoardColumn
                           key={col.status}
                           status={col.status}
-                          label={col.label}
+                          label={t(`ordersPage.boardCol_${col.status}`)}
                           dot={col.dot}
                           ring={col.ring}
                           orders={colOrders}
@@ -498,12 +502,12 @@ export default function PartsOrders() {
                   <table className="w-full">
                     <thead>
                       <tr>
-                        <th className="table-header-cell">№ заказа</th>
-                        <th className="table-header-cell">Запчасти</th>
-                        <th className="table-header-cell">Клиент</th>
-                        <th className="table-header-cell">Дата</th>
-                        <th className="table-header-cell">Статус</th>
-                        <th className="table-header-cell text-right">Сумма</th>
+                        <th className="table-header-cell">{t('ordersPage.thOrderNumber')}</th>
+                        <th className="table-header-cell">{t('ordersPage.thParts')}</th>
+                        <th className="table-header-cell">{t('ordersPage.thCustomer')}</th>
+                        <th className="table-header-cell">{t('ordersPage.thDate')}</th>
+                        <th className="table-header-cell">{t('ordersPage.thStatus')}</th>
+                        <th className="table-header-cell text-right">{t('ordersPage.thSum')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -523,7 +527,7 @@ export default function PartsOrders() {
                                 : '—'}
                             </div>
                             {order.items && order.items.length > 0 && (
-                              <span className="text-xs text-gray-400 mt-0.5 block">{order.items.length} поз.</span>
+                              <span className="text-xs text-gray-400 mt-0.5 block">{t('ordersPage.positions', { n: order.items.length })}</span>
                             )}
                           </td>
                           <td className="table-cell">
@@ -593,7 +597,7 @@ export default function PartsOrders() {
                       {order.items && order.items.length > 0 && (
                         <>
                           <span>·</span>
-                          <span>{order.items.length} поз.</span>
+                          <span>{t('ordersPage.positions', { n: order.items.length })}</span>
                         </>
                       )}
                     </div>

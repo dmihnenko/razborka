@@ -1,6 +1,8 @@
 /**
- * Утилиты для работы со статусами заказов разборки
+ * Утилиты для работы со статусами заказов разборки. Тексты — через i18n (ns cabinet),
+ * с русским fallback (старые ключи), чтобы работало даже до загрузки переводов.
  */
+import i18n from '@/i18n'
 
 // Статусы заказов запчастей (parts_orders)
 export type PartsOrderStatus = 'new' | 'in_progress' | 'completed' | 'cancelled'
@@ -16,13 +18,15 @@ export function getPartsOrderStatusColor(status: PartsOrderStatus): string {
 }
 
 export function getPartsOrderStatusText(status: PartsOrderStatus): string {
-  const statuses: Record<PartsOrderStatus, string> = {
-    new: 'Новый',
-    in_progress: 'В обработке',
-    completed: 'Выполнен',
-    cancelled: 'Отменен',
+  const ru: Record<PartsOrderStatus, string> = {
+    new: 'Новый', in_progress: 'В обработке', completed: 'Выполнен', cancelled: 'Отменен',
   }
-  return statuses[status] || status
+  return i18n.t(`cabinet:status.order.${status}`, { defaultValue: ru[status] || status })
+}
+
+/** Локализованное состояние запчасти (new/used/damaged). */
+export function getPartsConditionLabel(condition: string): string {
+  return i18n.t(`cabinet:status.condition.${condition}`, { defaultValue: PARTS_CONDITION_LABELS[condition] ?? condition })
 }
 
 export function getOrderStatusColor(status: string): string {

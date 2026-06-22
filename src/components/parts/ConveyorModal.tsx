@@ -3,6 +3,7 @@
  * Оприходование свежеразобранной машины без открытия полной формы после каждой запчасти.
  */
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { X, ChevronDown, Zap, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -57,6 +58,7 @@ const EMPTY_FORM: ConveyorForm = {
 }
 
 export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, initialVehicleId }: ConveyorModalProps) {
+  const { t } = useTranslation('cabinet')
   const queryClient = useQueryClient()
   const nameRef = useRef<HTMLInputElement>(null)
 
@@ -102,7 +104,7 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
       // Возвращаем фокус в «Название»
       setTimeout(() => nameRef.current?.focus(), 40)
     },
-    onError: () => toast.error('Ошибка при добавлении'),
+    onError: () => toast.error(t('conveyorModal.toastError')),
   })
 
   const handleAdd = (e: React.FormEvent) => {
@@ -150,7 +152,7 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
         <div className="modal-header">
           <div className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-amber-500 flex-shrink-0" strokeWidth={1.5} />
-            <h3 className="text-base font-bold text-gray-900">Конвейер</h3>
+            <h3 className="text-base font-bold text-gray-900">{t('conveyorModal.title')}</h3>
             {addedCount > 0 && (
               <span className="ml-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">
                 +{addedCount}
@@ -158,14 +160,14 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
             )}
           </div>
           <p className="text-xs text-gray-400 mt-0.5">
-            Быстрый ввод запчастей — авто выбирается один раз
+            {t('conveyorModal.subtitle')}
           </p>
         </div>
 
         <div className="modal-body space-y-4">
           {/* Выбор авто (фиксируется сверху) */}
           <div>
-            <label className="form-label">Автомобиль</label>
+            <label className="form-label">{t('conveyorModal.vehicle')}</label>
             <div className="relative">
               <select
                 value={vehicleId}
@@ -175,7 +177,7 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
                 }}
                 className="form-select"
               >
-                <option value="">— Без привязки к авто —</option>
+                <option value="">{t('conveyorModal.noVehicle')}</option>
                 {vehicles.map(v => (
                   <option key={v.id} value={v.id}>
                     {v.make} {v.model} {v.year ? `(${v.year})` : ''}
@@ -191,14 +193,14 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
             {/* Название */}
             <div>
               <label className="form-label">
-                Название <span className="text-red-500">*</span>
+                {t('conveyorModal.name')} <span className="text-red-500">*</span>
               </label>
               <input
                 ref={nameRef}
                 type="text"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Например: Капот, Бампер передний..."
+                placeholder={t('conveyorModal.namePlaceholder')}
                 className="form-input"
                 autoComplete="off"
               />
@@ -206,14 +208,14 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
 
             {/* Категория */}
             <div>
-              <label className="form-label">Категория</label>
+              <label className="form-label">{t('conveyorModal.category')}</label>
               <div className="relative">
                 <select
                   value={form.category_id}
                   onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))}
                   className="form-select"
                 >
-                  <option value="">Без категории</option>
+                  <option value="">{t('conveyorModal.noCategory')}</option>
                   {filteredCategories.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
@@ -224,7 +226,7 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
 
             {/* Цена + валюта */}
             <div>
-              <label className="form-label">Цена продажи</label>
+              <label className="form-label">{t('conveyorModal.sellingPrice')}</label>
               <div className="flex gap-2">
                 <input
                   type="number"
@@ -239,9 +241,9 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
                   type="button"
                   onClick={() => setForm(f => ({ ...f, price_currency: f.price_currency === 'USD' ? 'UAH' : 'USD' }))}
                   className="cab-btn cab-btn-primary w-12 text-center px-0 flex-shrink-0"
-                  title="Сменить валюту"
+                  title={t('conveyorModal.toggleCurrency')}
                 >
-                  {form.price_currency === 'USD' ? '$' : 'грн'}
+                  {form.price_currency === 'USD' ? '$' : t('conveyorModal.currencyUah')}
                 </button>
               </div>
             </div>
@@ -249,22 +251,22 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
             {/* Состояние + Кол-во */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="form-label">Состояние</label>
+                <label className="form-label">{t('conveyorModal.condition')}</label>
                 <div className="relative">
                   <select
                     value={form.condition}
                     onChange={e => setForm(f => ({ ...f, condition: e.target.value }))}
                     className="form-select"
                   >
-                    <option value="new">Новая</option>
-                    <option value="used">Б/У хорошее</option>
-                    <option value="damaged">Повреждена</option>
+                    <option value="new">{t('conveyorModal.conditionNew')}</option>
+                    <option value="used">{t('conveyorModal.conditionUsed')}</option>
+                    <option value="damaged">{t('conveyorModal.conditionDamaged')}</option>
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" strokeWidth={1.5} />
                 </div>
               </div>
               <div>
-                <label className="form-label">Кол-во</label>
+                <label className="form-label">{t('conveyorModal.quantity')}</label>
                 <input
                   type="number"
                   min="1"
@@ -282,10 +284,10 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
               className="cab-btn cab-btn-primary w-full flex items-center justify-center gap-2 py-3 text-sm font-bold disabled:opacity-50"
             >
               {addMutation.isPending ? (
-                <span>Сохранение...</span>
+                <span>{t('conveyorModal.saving')}</span>
               ) : (
                 <>
-                  <span>Добавить и продолжить</span>
+                  <span>{t('conveyorModal.addAndContinue')}</span>
                   <span className="text-xs opacity-70 font-normal">Enter</span>
                 </>
               )}
@@ -298,7 +300,7 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" strokeWidth={1.5} />
                 <span className="text-sm font-semibold text-gray-700">
-                  Добавлено: <span className="text-green-600">{addedCount}</span>
+                  {t('conveyorModal.added')} <span className="text-green-600">{addedCount}</span>
                 </span>
               </div>
               <div className="space-y-1.5">
@@ -328,7 +330,7 @@ export function ConveyorModal({ partsCompanyId, vehicles, categories, onClose, i
             className="cab-btn cab-btn-secondary w-full flex items-center justify-center gap-2"
           >
             <X className="w-4 h-4" strokeWidth={1.5} />
-            Закрыть
+            {t('conveyorModal.close')}
           </button>
         </div>
       </div>

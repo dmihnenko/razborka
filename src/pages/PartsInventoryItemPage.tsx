@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Spinner } from '@/components/ui/Spinner'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -22,13 +23,6 @@ import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 /* ── Status config ──────────────────────────────────────────────── */
-const STATUS_LABEL: Record<PartsInventoryStatus, string> = {
-  available: 'В наличии',
-  reserved: 'Резерв',
-  sold: 'Продано',
-  damaged: 'Повреждено',
-}
-
 const STATUS_CLS: Record<PartsInventoryStatus, string> = {
   available: 'badge badge-green',
   reserved:  'badge badge-yellow',
@@ -42,6 +36,7 @@ function MarginRow({
 }: {
   pp: number; sp: number; margin: number; markup: number; isPositive: boolean; currency: 'UAH' | 'USD'
 }) {
+  const { t } = useTranslation('cabinet')
   const [open, setOpen] = useState(false)
   return (
     <div className="border-t border-gray-100">
@@ -52,7 +47,7 @@ function MarginRow({
       >
         <span className="flex items-center gap-1.5 text-sm text-gray-500">
           <TrendingUp className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-          Маржа
+          {t('inventoryItemPage.margin')}
         </span>
         <span className="flex items-center gap-2">
           <span className={`text-sm font-bold tabular-nums ${isPositive ? 'text-green-700' : 'text-red-600'}`}>
@@ -64,11 +59,11 @@ function MarginRow({
       {open && (
         <div className="px-4 sm:px-5 pb-3 grid grid-cols-2 gap-2">
           <div className="rounded-xl bg-gray-50 p-2.5">
-            <p className="kicker mb-0.5">Закупка</p>
+            <p className="kicker mb-0.5">{t('inventoryItemPage.purchase')}</p>
             <p className="text-sm font-bold text-gray-700 tabular-nums">{formatPrice(pp, currency)}</p>
           </div>
           <div className="rounded-xl bg-[color:var(--cab-surface-2)] border border-[color:var(--cab-border)] p-2.5">
-            <p className="kicker mb-0.5">Цена продажи</p>
+            <p className="kicker mb-0.5">{t('inventoryItemPage.sellingPrice')}</p>
             <p className="text-sm font-bold text-primary tabular-nums">{formatPrice(sp, currency)}</p>
           </div>
         </div>
@@ -81,7 +76,14 @@ function MarginRow({
 export default function PartsInventoryItemPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { t } = useTranslation('cabinet')
   const { confirm: showConfirm, dialogProps } = useConfirm()
+  const statusLabel: Record<PartsInventoryStatus, string> = {
+    available: t('inventoryItemPage.statusAvailable'),
+    reserved: t('inventoryItemPage.statusReserved'),
+    sold: t('inventoryItemPage.statusSold'),
+    damaged: t('inventoryItemPage.statusDamaged'),
+  }
   const { data: profile } = useUserProfile()
   const [isSellOpen, setIsSellOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
@@ -121,7 +123,7 @@ export default function PartsInventoryItemPage() {
         await moveToTrash({
           entityType: 'parts_inventory',
           entityId: id!,
-          entityLabel: item.name || 'Запчасть',
+          entityLabel: item.name || t('inventoryItemPage.partFallback'),
           entityData: item,
           partsCompanyId: profile?.parts_company_id,
         })
@@ -129,15 +131,15 @@ export default function PartsInventoryItemPage() {
       await deletePartsInventoryItem(id!)
     },
     onSuccess: () => {
-      toast.success('Запчасть удалена')
+      toast.success(t('inventoryItemPage.toastDeleted'))
       navigate('/parts/inventory')
     },
-    onError: () => toast.error('Ошибка при удалении'),
+    onError: () => toast.error(t('inventoryItemPage.toastDeleteError')),
   })
 
   const handleDelete = async () => {
     const ok = await showConfirm({
-      message: `Удалить "${item?.name}"? Это действие нельзя отменить.`,
+      message: t('inventoryItemPage.deleteConfirm', { name: item?.name }),
       danger: true,
     })
     if (!ok) return
@@ -164,13 +166,13 @@ export default function PartsInventoryItemPage() {
         <div className="empty-state-icon">
           <Package className="w-8 h-8 text-gray-400" />
         </div>
-        <p className="empty-state-title">Запчасть не найдена</p>
-        <p className="empty-state-text">Возможно, она была удалена или перемещена</p>
+        <p className="empty-state-title">{t('inventoryItemPage.notFoundTitle')}</p>
+        <p className="empty-state-text">{t('inventoryItemPage.notFoundText')}</p>
         <button
           onClick={() => navigate('/parts/inventory')}
           className="cab-btn cab-btn-secondary cab-btn-sm mt-4"
         >
-          Вернуться к инвентарю
+          {t('inventoryItemPage.backToInventory')}
         </button>
       </div>
     )
@@ -188,7 +190,7 @@ export default function PartsInventoryItemPage() {
           <button
             onClick={() => navigate(-1)}
             className="btn-icon flex-shrink-0"
-            aria-label="Назад"
+            aria-label={t('inventoryItemPage.back')}
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -203,14 +205,14 @@ export default function PartsInventoryItemPage() {
             <button
               onClick={() => setShareOpen(true)}
               className="btn-icon"
-              title="Поделиться"
+              title={t('inventoryItemPage.share')}
             >
               <Share2 className="w-4 h-4" />
             </button>
             <button
               onClick={() => setQrOpen(true)}
               className="btn-icon"
-              title="QR / Этикетка"
+              title={t('inventoryItemPage.qrLabel')}
             >
               <QrCode className="w-4 h-4" />
             </button>
@@ -234,7 +236,7 @@ export default function PartsInventoryItemPage() {
           ) : (
             <div className="aspect-[16/10] bg-gray-50 flex flex-col items-center justify-center gap-2 text-gray-300 border-b border-gray-100">
               <Package className="w-14 h-14" />
-              <span className="kicker text-gray-400">Фото отсутствуют</span>
+              <span className="kicker text-gray-400">{t('inventoryItemPage.noPhotos')}</span>
             </div>
           )}
 
@@ -246,12 +248,12 @@ export default function PartsInventoryItemPage() {
               <span className={STATUS_CLS[item.status]}>
                 {item.status === 'available' && <span className="status-dot status-dot-pulse bg-green-500" />}
                 {item.status === 'sold'      && <CheckCircle2 className="w-3 h-3" />}
-                {STATUS_LABEL[item.status]}
+                {statusLabel[item.status]}
               </span>
               {lowStock && (
                 <span className="badge badge-red">
                   <AlertTriangle className="w-3 h-3" />
-                  Мало на складе
+                  {t('inventoryItemPage.lowStock')}
                 </span>
               )}
             </div>
@@ -262,11 +264,11 @@ export default function PartsInventoryItemPage() {
             {/* Артикул (внутренний SKU — для поиска сотрудниками) */}
             {item.article && (
               <div className="mb-4">
-                <p className="kicker mb-1.5">Артикул</p>
+                <p className="kicker mb-1.5">{t('inventoryItemPage.article')}</p>
                 <button
                   type="button"
-                  onClick={() => { navigator.clipboard.writeText(item.article!); toast.success('Артикул скопирован') }}
-                  title="Нажмите, чтобы скопировать"
+                  onClick={() => { navigator.clipboard.writeText(item.article!); toast.success(t('inventoryItemPage.toastArticleCopied')) }}
+                  title={t('inventoryItemPage.clickToCopy')}
                   className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-[color:var(--cab-border-strong)] hover:border-[color:var(--cab-ink-3)] active:scale-95 transition-all"
                 >
                   <span className="font-mono font-bold tracking-wider text-gray-800 tabular">{item.article}</span>
@@ -278,14 +280,14 @@ export default function PartsInventoryItemPage() {
             {/* Part number */}
             {item.part_number && (
               <div className="mb-4">
-                <p className="kicker mb-1.5">Оригинальный номер</p>
+                <p className="kicker mb-1.5">{t('inventoryItemPage.originalNumber')}</p>
                 <button
                   type="button"
                   onClick={() => {
                     navigator.clipboard.writeText(item.part_number!.toUpperCase())
-                    toast.success('Номер скопирован')
+                    toast.success(t('inventoryItemPage.toastNumberCopied'))
                   }}
-                  title="Нажмите, чтобы скопировать"
+                  title={t('inventoryItemPage.clickToCopy')}
                   className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-[color:var(--cab-border-strong)] hover:border-[color:var(--cab-ink-3)] active:scale-95 transition-all"
                 >
                   <span className="font-mono font-bold tracking-wider text-gray-800 uppercase tabular">
@@ -301,7 +303,7 @@ export default function PartsInventoryItemPage() {
               <div className="flex-1 p-3.5 rounded-xl bg-[color:var(--cab-surface-2)] border border-[color:var(--cab-border)] flex flex-col justify-center">
                 {isSold ? (
                   <>
-                    <p className="kicker mb-1">Продано за</p>
+                    <p className="kicker mb-1">{t('inventoryItemPage.soldFor')}</p>
                     <p className="text-2xl font-bold text-gray-500 tabular">
                       {item.sold_price
                         ? formatPrice(item.sold_price, (item.price_currency as 'UAH' | 'USD') || 'USD')
@@ -310,13 +312,13 @@ export default function PartsInventoryItemPage() {
                   </>
                 ) : item.selling_price ? (
                   <>
-                    <p className="kicker mb-1">Цена продажи</p>
+                    <p className="kicker mb-1">{t('inventoryItemPage.sellingPrice')}</p>
                     <p className="text-3xl font-bold text-primary leading-none tabular">
                       {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
                     </p>
                   </>
                 ) : (
-                  <p className="text-sm text-amber-600 font-semibold">Цена не указана</p>
+                  <p className="text-sm text-amber-600 font-semibold">{t('inventoryItemPage.priceNotSet')}</p>
                 )}
               </div>
 
@@ -325,7 +327,7 @@ export default function PartsInventoryItemPage() {
                   onClick={() => setIsSellOpen(true)}
                   className="cab-btn cab-btn-success cab-btn-lg sm:w-44 justify-center"
                 >
-                  Продать
+                  {t('inventoryItemPage.sell')}
                 </button>
               )}
             </div>
@@ -339,7 +341,7 @@ export default function PartsInventoryItemPage() {
                 <div className="flex items-start justify-between gap-3 py-2.5">
                   <dt className="text-gray-500 flex items-center gap-1.5 min-w-0 flex-shrink-0">
                     <Tag className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                    Категория
+                    {t('inventoryItemPage.category')}
                   </dt>
                   <dd className="font-semibold text-gray-900 text-right flex flex-wrap items-center justify-end gap-1.5">
                     <span className="truncate">{item.category.name}</span>
@@ -362,10 +364,10 @@ export default function PartsInventoryItemPage() {
                           </span>
                         )}
                         {item.shelf && (
-                          <span className="badge badge-sm badge-gray">П{item.shelf}</span>
+                          <span className="badge badge-sm badge-gray">{t('inventoryItemPage.shelfPrefix')}{item.shelf}</span>
                         )}
                         {item.bin && (
-                          <span className="badge badge-sm badge-gray">Я{item.bin}</span>
+                          <span className="badge badge-sm badge-gray">{t('inventoryItemPage.binPrefix')}{item.bin}</span>
                         )}
                       </span>
                     )}
@@ -375,7 +377,7 @@ export default function PartsInventoryItemPage() {
 
               {item.condition && (
                 <div className="flex items-center justify-between gap-3 py-2.5">
-                  <dt className="text-gray-500">Состояние</dt>
+                  <dt className="text-gray-500">{t('inventoryItemPage.condition')}</dt>
                   <dd className="font-semibold text-gray-900 text-right">
                     {PARTS_CONDITION_LABELS[item.condition] || item.condition}
                   </dd>
@@ -384,15 +386,15 @@ export default function PartsInventoryItemPage() {
 
               {!item.vehicle_id && (
                 <div className="flex items-center justify-between gap-3 py-2.5">
-                  <dt className="text-gray-500">Количество</dt>
+                  <dt className="text-gray-500">{t('inventoryItemPage.quantity')}</dt>
                   <dd className={`font-semibold text-right tabular ${lowStock ? 'text-red-600' : 'text-gray-900'}`}>
-                    {item.quantity} шт
+                    {item.quantity} {t('inventoryItemPage.pcs')}
                   </dd>
                 </div>
               )}
 
               <div className="flex items-center justify-between gap-3 py-2.5">
-                <dt className="text-gray-500">Добавлена</dt>
+                <dt className="text-gray-500">{t('inventoryItemPage.added')}</dt>
                 <dd className="font-medium text-gray-900 text-right tabular">
                   {new Date(item.created_at).toLocaleDateString('ru-RU')}
                 </dd>
@@ -430,7 +432,7 @@ export default function PartsInventoryItemPage() {
             >
               <p className="kicker flex items-center gap-1.5 mb-2">
                 <Car className="w-3.5 h-3.5" />
-                Снята с авто
+                {t('inventoryItemPage.removedFromCar')}
               </p>
               <p className="text-sm font-semibold text-gray-900 group-hover:text-primary transition-colors">
                 {item.vehicle.make} {item.vehicle.model}
@@ -451,7 +453,7 @@ export default function PartsInventoryItemPage() {
                 <div>
                   <p className="kicker flex items-center gap-1.5 mb-1.5">
                     <FileText className="w-3.5 h-3.5" />
-                    Описание
+                    {t('inventoryItemPage.description')}
                   </p>
                   <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                     {item.description}
@@ -460,7 +462,7 @@ export default function PartsInventoryItemPage() {
               )}
               {item.notes && (
                 <div className={item.description ? 'pt-3 border-t border-gray-50' : ''}>
-                  <p className="kicker mb-1.5">Заметки</p>
+                  <p className="kicker mb-1.5">{t('inventoryItemPage.notes')}</p>
                   <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed italic">
                     {item.notes}
                   </p>
@@ -477,14 +479,14 @@ export default function PartsInventoryItemPage() {
             onClick={() => navigate('/parts/inventory', { state: { editItemId: id } })}
             className="cab-btn cab-btn-secondary cab-btn-sm flex-1 gap-1.5"
           >
-            <Edit2 className="w-4 h-4" /> Редактировать
+            <Edit2 className="w-4 h-4" /> {t('inventoryItemPage.edit')}
           </button>
           <button
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
             className="cab-btn cab-btn-danger cab-btn-sm gap-1.5"
           >
-            <Trash2 className="w-4 h-4" /> Удалить
+            <Trash2 className="w-4 h-4" /> {t('inventoryItemPage.delete')}
           </button>
         </div>
       </div>
@@ -505,8 +507,8 @@ export default function PartsInventoryItemPage() {
           isOpen={shareOpen}
           onClose={() => setShareOpen(false)}
           url={`${window.location.origin}/public/parts-item/${id}`}
-          title="Поделиться запчастью"
-          subtitle="Ссылка открывает карточку запчасти"
+          title={t('inventoryItemPage.shareTitle')}
+          subtitle={t('inventoryItemPage.shareSubtitle')}
           shareTitle={item.name}
           shareText={[
             item.name,

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Mail, MapPin, Phone, Store, Truck, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import type { MarketCompanyContact } from '@/types/marketplace'
@@ -38,6 +39,7 @@ function TelegramIcon({ className }: { className?: string }) {
 const TILE = 'inline-flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0'
 
 export function SellerContactCard({ company, supplierId, hideCallButton, telegramMessage }: SellerContactCardProps) {
+  const { t } = useTranslation('market')
   const phoneRaw = company.phone ? cleanPhone(company.phone) : null
   const tgHref = telegramHref(company.telegram)
   const supplierLink = `/market/supplier/${supplierId ?? company.id}`
@@ -46,19 +48,19 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
   const handleWriteTelegram = () => {
     if (!telegramMessage) return
     navigator.clipboard?.writeText(telegramMessage)
-      .then(() => toast.success('Шаблон сообщения скопирован — вставьте в чат с разборкой'))
+      .then(() => toast.success(t('sellerCard.tgCopied')))
       .catch(() => {})
   }
 
   return (
     <div className="mk-card p-5">
       {/* Продавец */}
-      <Link to={supplierLink} className="flex items-center gap-3 mb-4" aria-label={`Разборка ${company.name}`}>
+      <Link to={supplierLink} className="flex items-center gap-3 mb-4" aria-label={t('sellerCard.supplierAria', { name: company.name })}>
         <span className="mk-tile-icon">
           <Store className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" />
         </span>
         <span className="min-w-0">
-          <span className="block text-[10px] font-bold uppercase tracking-wider mk-meta">Продавец</span>
+          <span className="block text-[10px] font-bold uppercase tracking-wider mk-meta">{t('sellerCard.seller')}</span>
           <span className="block text-base font-bold tracking-tight leading-snug truncate" style={{ color: 'var(--mk-text)' }}>
             {company.name}
           </span>
@@ -68,7 +70,7 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
       {/* Контакты */}
       <div className="space-y-1 mb-3 -mx-1.5">
         {company.phone && phoneRaw && (
-          <a href={`tel:${phoneRaw}`} className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-xl text-sm transition-colors hover:bg-[var(--mk-surface-2)]" style={{ color: 'var(--mk-text-2)' }} aria-label={`Позвонить ${company.phone}`}>
+          <a href={`tel:${phoneRaw}`} className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-xl text-sm transition-colors hover:bg-[var(--mk-surface-2)]" style={{ color: 'var(--mk-text-2)' }} aria-label={t('sellerCard.callAria', { phone: company.phone })}>
             <span className={TILE} style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
               <Phone className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
             </span>
@@ -84,7 +86,7 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
           </p>
         )}
         {company.email && (
-          <a href={`mailto:${company.email}`} className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-xl text-sm transition-colors hover:bg-[var(--mk-surface-2)] min-w-0" style={{ color: 'var(--mk-text-2)' }} aria-label={`Написать на почту ${company.email}`}>
+          <a href={`mailto:${company.email}`} className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-xl text-sm transition-colors hover:bg-[var(--mk-surface-2)] min-w-0" style={{ color: 'var(--mk-text-2)' }} aria-label={t('sellerCard.emailAria', { email: company.email })}>
             <span className={TILE} style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
               <Mail className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
             </span>
@@ -99,14 +101,14 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
           <span className={TILE} style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
             <Truck className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
           </span>
-          <span>Новой Почтой · {company.shipSpeed === 'days12' ? '1–2 дня' : 'сегодня'}</span>
+          <span>{t('sellerCard.novaPoshta')} · {company.shipSpeed === 'days12' ? t('sellerCard.ship12') : t('sellerCard.shipToday')}</span>
         </div>
         {company.warrantyEnabled && (company.warrantyDays ?? 0) > 0 && (
           <div className="flex items-center gap-2.5 px-1.5 py-1.5 text-sm" style={{ color: 'var(--mk-text-2)' }}>
             <span className={TILE} style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
               <ShieldCheck className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
             </span>
-            <span>Гарантия {company.warrantyDays} дней</span>
+            <span>{t('sellerCard.warranty', { n: company.warrantyDays })}</span>
           </div>
         )}
       </div>
@@ -118,8 +120,8 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
       {(showCall || tgHref) && (
         <div className="flex flex-wrap gap-2.5">
           {showCall && (
-            <a href={`tel:${phoneRaw}`} className="mk-btn mk-btn-accent flex-1 sm:flex-none min-w-[140px]" aria-label={`Позвонить ${company.phone}`}>
-              <Phone className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> Позвонить
+            <a href={`tel:${phoneRaw}`} className="mk-btn mk-btn-accent flex-1 sm:flex-none min-w-[140px]" aria-label={t('sellerCard.callAria', { phone: company.phone })}>
+              <Phone className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> {t('sellerCard.call')}
             </a>
           )}
           {tgHref && (
@@ -129,9 +131,9 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
               rel="noopener noreferrer"
               onClick={telegramMessage ? handleWriteTelegram : undefined}
               className="mk-btn mk-btn-outline flex-1 sm:flex-none min-w-[140px]"
-              aria-label={telegramMessage ? 'Написать в Telegram' : 'Открыть Telegram разборки'}
+              aria-label={telegramMessage ? t('sellerCard.tgWriteAria') : t('sellerCard.tgOpenAria')}
             >
-              <TelegramIcon className="w-4 h-4 fill-current" /> {telegramMessage ? 'Написать' : 'Telegram'}
+              <TelegramIcon className="w-4 h-4 fill-current" /> {telegramMessage ? t('sellerCard.write') : t('sellerCard.telegram')}
             </a>
           )}
         </div>

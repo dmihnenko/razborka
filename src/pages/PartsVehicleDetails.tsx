@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Spinner } from '@/components/ui/Spinner'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -67,6 +68,7 @@ export default function PartsVehicleDetails() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { confirm: showConfirm, dialogProps } = useConfirm()
+  const { t } = useTranslation('cabinet')
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isAddPartOpen, setIsAddPartOpen] = useState(false)
   const [isConveyorOpen, setIsConveyorOpen] = useState(false)
@@ -146,10 +148,10 @@ export default function PartsVehicleDetails() {
       createPartsInventoryItem({ ...data, vehicle_id: data.vehicle_id || id }, partsCompanyId!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-parts', id] })
-      toast.success('Запчасть добавлена')
+      toast.success(t('vehicleDetailsPage.toastPartAdded'))
       setIsAddPartOpen(false)
     },
-    onError: () => toast.error('Ошибка при добавлении'),
+    onError: () => toast.error(t('vehicleDetailsPage.toastAddError')),
   })
 
   const addBulkMutation = useMutation({
@@ -161,10 +163,10 @@ export default function PartsVehicleDetails() {
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-parts', id] })
-      toast.success('Запчасти добавлены')
+      toast.success(t('vehicleDetailsPage.toastPartsAdded'))
       setIsAddPartOpen(false)
     },
-    onError: () => toast.error('Ошибка при добавлении'),
+    onError: () => toast.error(t('vehicleDetailsPage.toastAddError')),
   })
 
   // Delete part mutation
@@ -176,7 +178,7 @@ export default function PartsVehicleDetails() {
       await moveToTrash({
         entityType: 'parts_inventory',
         entityId: part.id,
-        entityLabel: part.name ? `Запчасть: ${part.name}` : 'Запчасть',
+        entityLabel: part.name ? t('vehicleDetailsPage.trashLabelNamed', { name: part.name }) : t('vehicleDetailsPage.trashLabel'),
         entityData: part,
         partsCompanyId: partsCompanyId,
       })
@@ -189,13 +191,13 @@ export default function PartsVehicleDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle-parts', id] })
       queryClient.invalidateQueries({ queryKey: ['trash'] })
-      toast.success('Запчасть перемещена в корзину')
+      toast.success(t('vehicleDetailsPage.toastMovedToTrash'))
     },
     onError: (error: any) => {
       if (error?.status === 409 || error?.code === '23503') {
-        toast.error('Нельзя удалить: запчасть входит в заказ. Сначала удалите её из заказа.')
+        toast.error(t('vehicleDetailsPage.toastDeleteInOrder'))
       } else {
-        toast.error('Ошибка при удалении')
+        toast.error(t('vehicleDetailsPage.toastDeleteError'))
       }
     },
   })
@@ -223,9 +225,9 @@ export default function PartsVehicleDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-vehicle', id] })
       queryClient.invalidateQueries({ queryKey: ['parts-vehicles'] })
-      toast.success('Статус обновлён')
+      toast.success(t('vehicleDetailsPage.toastStatusUpdated'))
     },
-    onError: () => toast.error('Ошибка смены статуса'),
+    onError: () => toast.error(t('vehicleDetailsPage.toastStatusError')),
   })
 
   // Update vehicle
@@ -241,9 +243,9 @@ export default function PartsVehicleDetails() {
       queryClient.invalidateQueries({ queryKey: ['parts-vehicle', id] })
       queryClient.invalidateQueries({ queryKey: ['parts-vehicles'] })
       setIsEditModalOpen(false)
-      toast.success('Данные сохранены')
+      toast.success(t('vehicleDetailsPage.toastSaved'))
     },
-    onError: () => toast.error('Ошибка сохранения'),
+    onError: () => toast.error(t('vehicleDetailsPage.toastSaveError')),
   })
 
   // ── Окупаемость ───────────────────────────────────────────────────────────
@@ -284,12 +286,12 @@ export default function PartsVehicleDetails() {
         <div className="empty-state-icon">
           <Car className="w-8 h-8 text-gray-400" />
         </div>
-        <p className="empty-state-title">Автомобиль не найден</p>
+        <p className="empty-state-title">{t('vehicleDetailsPage.notFound')}</p>
         <button
           onClick={() => navigate('/parts/vehicles')}
           className="mt-3 cab-btn cab-btn-ghost cab-btn-sm"
         >
-          Вернуться к списку
+          {t('vehicleDetailsPage.backToList')}
         </button>
       </div>
     )
@@ -312,7 +314,7 @@ export default function PartsVehicleDetails() {
             <button
               onClick={() => navigate('/parts/vehicles')}
               className="btn-icon flex-shrink-0"
-              aria-label="Назад"
+              aria-label={t('vehicleDetailsPage.back')}
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
@@ -325,7 +327,7 @@ export default function PartsVehicleDetails() {
               </h1>
             </div>
             <span className={STATUS_BADGE[vehicle.status]}>
-              {STATUS_LABELS[vehicle.status]}
+              {t(`vehicleDetailsPage.status_${vehicle.status}`)}
             </span>
           </div>
 
@@ -334,17 +336,17 @@ export default function PartsVehicleDetails() {
             <button
               onClick={() => setIsConveyorOpen(true)}
               className="cab-btn cab-btn-primary cab-btn-sm"
-              title="Быстрый ввод запчастей (Конвейер)"
+              title={t('vehicleDetailsPage.conveyorTitle')}
             >
               <Zap className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Конвейер</span>
+              <span className="hidden sm:inline">{t('vehicleDetailsPage.conveyor')}</span>
             </button>
             <button
               onClick={() => setIsEditModalOpen(true)}
               className="cab-btn cab-btn-secondary cab-btn-sm"
             >
               <Edit className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Редактировать</span>
+              <span className="hidden sm:inline">{t('vehicleDetailsPage.edit')}</span>
             </button>
           </div>
         </div>
@@ -357,7 +359,7 @@ export default function PartsVehicleDetails() {
         <div className="cab-card p-4">
           {/* Status switcher */}
           <div className="mb-5">
-            <p className="kicker text-gray-400 mb-2">Статус разборки</p>
+            <p className="kicker text-gray-400 mb-2">{t('vehicleDetailsPage.dismantleStatus')}</p>
             <div className="flex flex-wrap gap-2">
               {(Object.keys(STATUS_LABELS) as PartsVehicleStatus[]).map(status => (
                 <button
@@ -370,7 +372,7 @@ export default function PartsVehicleDetails() {
                       : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 hover:border-gray-300'
                   }`}
                 >
-                  {STATUS_LABELS[status]}
+                  {t(`vehicleDetailsPage.status_${status}`)}
                 </button>
               ))}
             </div>
@@ -379,10 +381,10 @@ export default function PartsVehicleDetails() {
           {/* Info grid */}
           <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-4 border-t border-gray-100 pt-5">
             {vehicle.make && vehicle.model && (
-              <InfoRow label="Марка и модель" value={`${vehicle.make} ${vehicle.model}`} />
+              <InfoRow label={t('vehicleDetailsPage.makeModel')} value={`${vehicle.make} ${vehicle.model}`} />
             )}
             {vehicle.year && (
-              <InfoRow label="Год выпуска" value={vehicle.year} />
+              <InfoRow label={t('vehicleDetailsPage.year')} value={vehicle.year} />
             )}
             {vehicle.vin && (
               <div className="col-span-2 flex flex-col gap-0.5">
@@ -393,24 +395,24 @@ export default function PartsVehicleDetails() {
               </div>
             )}
             {vehicle.color && (
-              <InfoRow label="Цвет" value={vehicle.color} />
+              <InfoRow label={t('vehicleDetailsPage.color')} value={vehicle.color} />
             )}
             {vehicle.mileage && (
               <InfoRow
-                label="Пробег"
+                label={t('vehicleDetailsPage.mileage')}
                 value={
                   <span className="tabular">
-                    {vehicle.mileage.toLocaleString('ru-RU')} км
+                    {vehicle.mileage.toLocaleString('ru-RU')} {t('vehicleDetailsPage.km')}
                   </span>
                 }
               />
             )}
             {vehicle.license_plate && (
-              <InfoRow label="Гос. номер" value={vehicle.license_plate} mono />
+              <InfoRow label={t('vehicleDetailsPage.licensePlate')} value={vehicle.license_plate} mono />
             )}
             {vehicle.purchase_price ? (
               <InfoRow
-                label="Цена покупки"
+                label={t('vehicleDetailsPage.purchasePrice')}
                 value={
                   <span className="tabular text-red-600">
                     ${purchasePriceUSD.toLocaleString('ru-RU', { maximumFractionDigits: 0 })}
@@ -420,7 +422,7 @@ export default function PartsVehicleDetails() {
             ) : null}
             {vehicle.purchase_date && (
               <InfoRow
-                label="Дата покупки"
+                label={t('vehicleDetailsPage.purchaseDate')}
                 value={new Date(vehicle.purchase_date).toLocaleDateString('ru-RU')}
               />
             )}
@@ -428,7 +430,7 @@ export default function PartsVehicleDetails() {
 
           {vehicle.notes && (
             <div className="mt-5 pt-4 border-t border-gray-100">
-              <p className="kicker text-gray-400 mb-1">Примечания</p>
+              <p className="kicker text-gray-400 mb-1">{t('vehicleDetailsPage.notes')}</p>
               <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{vehicle.notes}</p>
             </div>
           )}
@@ -442,7 +444,7 @@ export default function PartsVehicleDetails() {
             {/* Section header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <h2 className="heading-3 text-base">
-                Запчасти
+                {t('vehicleDetailsPage.parts')}
                 {parts.length > 0 && (
                   <span className="ml-2 kicker text-gray-400 normal-case">
                     {parts.length}
@@ -454,7 +456,7 @@ export default function PartsVehicleDetails() {
                 className="cab-btn cab-btn-primary cab-btn-sm"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Добавить</span>
+                <span className="hidden sm:inline">{t('vehicleDetailsPage.add')}</span>
               </button>
             </div>
 
@@ -463,14 +465,14 @@ export default function PartsVehicleDetails() {
                 <div className="empty-state-icon">
                   <Tag className="w-8 h-8 text-gray-400" />
                 </div>
-                <p className="empty-state-title">Запчастей пока нет</p>
-                <p className="empty-state-text">Добавьте первую запчасть с этого автомобиля</p>
+                <p className="empty-state-title">{t('vehicleDetailsPage.partsEmpty')}</p>
+                <p className="empty-state-text">{t('vehicleDetailsPage.partsEmptyText')}</p>
                 <button
                   onClick={() => setIsAddPartOpen(true)}
                   className="mt-4 cab-btn cab-btn-primary cab-btn-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Добавить запчасть
+                  {t('vehicleDetailsPage.addPart')}
                 </button>
               </div>
             ) : (
@@ -480,9 +482,9 @@ export default function PartsVehicleDetails() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr>
-                        <th className="table-header-cell">Запчасть</th>
-                        <th className="table-header-cell text-right">Цена</th>
-                        <th className="table-header-cell text-center">Статус</th>
+                        <th className="table-header-cell">{t('vehicleDetailsPage.colPart')}</th>
+                        <th className="table-header-cell text-right">{t('vehicleDetailsPage.colPrice')}</th>
+                        <th className="table-header-cell text-center">{t('vehicleDetailsPage.colStatus')}</th>
                         <th className="table-header-cell w-10" />
                       </tr>
                     </thead>
@@ -527,14 +529,14 @@ export default function PartsVehicleDetails() {
                           </td>
                           <td className="table-cell text-center">
                             <span className={PART_STATUS_BADGE[part.status] ?? 'badge badge-gray'}>
-                              {PART_STATUS_LABELS[part.status] ?? part.status}
+                              {PART_STATUS_LABELS[part.status] ? t(`vehicleDetailsPage.partStatus_${part.status}`) : part.status}
                             </span>
                           </td>
                           <td className="table-cell w-10 pr-3">
                             <button
                               onClick={async () => {
                                 const ok = await showConfirm({
-                                  message: `Удалить «${part.name}»?`,
+                                  message: t('vehicleDetailsPage.confirmDeletePart', { name: part.name }),
                                   danger: true,
                                 })
                                 if (!ok) return
@@ -546,7 +548,7 @@ export default function PartsVehicleDetails() {
                               }}
                               disabled={deletePartMutation.isPending}
                               className="btn-icon-sm text-gray-400 hover:text-red-600 hover:bg-red-50"
-                              title="Удалить запчасть"
+                              title={t('vehicleDetailsPage.deletePart')}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -581,7 +583,7 @@ export default function PartsVehicleDetails() {
                             {part.name}
                           </span>
                           <span className={`${PART_STATUS_BADGE[part.status] ?? 'badge badge-gray'} flex-shrink-0`}>
-                            {PART_STATUS_LABELS[part.status] ?? part.status}
+                            {PART_STATUS_LABELS[part.status] ? t(`vehicleDetailsPage.partStatus_${part.status}`) : part.status}
                           </span>
                         </div>
                         <div className="flex items-center justify-between mt-1 gap-2">
@@ -608,7 +610,7 @@ export default function PartsVehicleDetails() {
                       <button
                         onClick={async () => {
                           const ok = await showConfirm({
-                            message: `Удалить «${part.name}»?`,
+                            message: t('vehicleDetailsPage.confirmDeletePart', { name: part.name }),
                             danger: true,
                           })
                           if (!ok) return
@@ -620,7 +622,7 @@ export default function PartsVehicleDetails() {
                         }}
                         disabled={deletePartMutation.isPending}
                         className="btn-icon-sm text-gray-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0"
-                        title="Удалить"
+                        title={t('vehicleDetailsPage.delete')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -640,9 +642,9 @@ export default function PartsVehicleDetails() {
               {/* 3 мини-плитки */}
               <dl className="grid grid-cols-3 gap-2">
                 {[
-                  { label: 'Всего', value: parts.length, cls: 'text-gray-900' },
-                  { label: 'Продано', value: soldCount, cls: 'text-green-600' },
-                  { label: 'В наличии', value: availableCount, cls: 'text-primary' },
+                  { label: t('vehicleDetailsPage.statTotal'), value: parts.length, cls: 'text-gray-900' },
+                  { label: t('vehicleDetailsPage.statSold'), value: soldCount, cls: 'text-green-600' },
+                  { label: t('vehicleDetailsPage.statAvailable'), value: availableCount, cls: 'text-primary' },
                 ].map(({ label, value, cls }) => (
                   <div
                     key={label}
@@ -657,13 +659,13 @@ export default function PartsVehicleDetails() {
               {/* Stale rate warning */}
               {!vehicle?.exchange_rate && rateIsStale && (
                 <div className="alert alert-warning py-2 text-xs">
-                  <span className="flex-1">Курс не обновлён сегодня</span>
+                  <span className="flex-1">{t('vehicleDetailsPage.rateNotUpdated')}</span>
                   <button
                     onClick={() => navigate('/parts/settings')}
                     className="flex items-center gap-1 font-semibold hover:underline flex-shrink-0"
                   >
                     <Settings className="w-3 h-3" />
-                    Обновить
+                    {t('vehicleDetailsPage.refresh')}
                   </button>
                 </div>
               )}
@@ -672,14 +674,14 @@ export default function PartsVehicleDetails() {
               <div className="panel-divided border-t border-gray-100 pt-4">
                 {/* Purchase */}
                 <div className="flex items-center justify-between gap-3 pb-2.5">
-                  <span className="text-sm text-gray-500">Покупка</span>
+                  <span className="text-sm text-gray-500">{t('vehicleDetailsPage.finPurchase')}</span>
                   <div className="text-right">
                     <div className="tabular font-semibold text-red-600 text-sm">
                       ${purchasePriceUSD.toLocaleString('ru-RU', { maximumFractionDigits: 0 })}
                     </div>
                     {purchasePrice > 0 && (
                       <div className="text-xs text-gray-400 tabular">
-                        {purchasePrice.toLocaleString('ru-RU')} грн.
+                        {purchasePrice.toLocaleString('ru-RU')} {t('vehicleDetailsPage.uah')}
                       </div>
                     )}
                   </div>
@@ -687,14 +689,14 @@ export default function PartsVehicleDetails() {
 
                 {/* Revenue */}
                 <div className="flex items-center justify-between gap-3 py-2.5">
-                  <span className="text-sm text-gray-500">Доход</span>
+                  <span className="text-sm text-gray-500">{t('vehicleDetailsPage.finRevenue')}</span>
                   <div className="text-right">
                     <div className="tabular font-semibold text-green-600 text-sm">
                       ${totalRevenueUSD.toLocaleString('ru-RU', { maximumFractionDigits: 0 })}
                     </div>
                     {totalRevenue > 0 && (
                       <div className="text-xs text-gray-400 tabular">
-                        {totalRevenue.toLocaleString('ru-RU')} грн.
+                        {totalRevenue.toLocaleString('ru-RU')} {t('vehicleDetailsPage.uah')}
                       </div>
                     )}
                   </div>
@@ -707,7 +709,7 @@ export default function PartsVehicleDetails() {
                       {isProfitable
                         ? <TrendingUp className="w-4 h-4 text-green-600 flex-shrink-0" />
                         : <TrendingDown className="w-4 h-4 text-red-600 flex-shrink-0" />}
-                      <span className="font-semibold text-sm text-gray-700">Итого</span>
+                      <span className="font-semibold text-sm text-gray-700">{t('vehicleDetailsPage.finTotal')}</span>
                     </div>
                     <div className="text-right">
                       <div
@@ -723,7 +725,7 @@ export default function PartsVehicleDetails() {
                           isProfitable ? 'text-green-500' : 'text-red-400'
                         }`}
                       >
-                        {profit > 0 ? '+' : ''}{profit.toLocaleString('ru-RU')} грн.
+                        {profit > 0 ? '+' : ''}{profit.toLocaleString('ru-RU')} {t('vehicleDetailsPage.uah')}
                         {recoveryPct && <span className="ml-1 text-gray-400">· {recoveryPct}%</span>}
                       </div>
                     </div>
@@ -741,19 +743,19 @@ export default function PartsVehicleDetails() {
                       <Sparkles className="w-4 h-4 text-indigo-600" />
                     </span>
                     <p className="text-sm font-semibold text-indigo-900 leading-tight">
-                      {unimportedTemplates.length} кат. для {vehicle.make}
+                      {t('vehicleDetailsPage.templatesCount', { n: unimportedTemplates.length, make: vehicle.make })}
                     </p>
                   </div>
                   <button
                     onClick={() => setSuggestionDismissed(true)}
                     className="btn-icon-sm text-indigo-400 hover:text-indigo-600"
-                    aria-label="Закрыть"
+                    aria-label={t('vehicleDetailsPage.close')}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
                 <p className="text-xs text-indigo-600/80 mb-3">
-                  Стандартные категории от администратора — можно импортировать или создать свои.
+                  {t('vehicleDetailsPage.templatesHint')}
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -765,13 +767,13 @@ export default function PartsVehicleDetails() {
                     className="flex-1 cab-btn cab-btn-signal cab-btn-sm"
                   >
                     <Tag className="w-3 h-3" />
-                    Импортировать
+                    {t('vehicleDetailsPage.import')}
                   </button>
                   <button
                     onClick={() => navigate('/parts/categories')}
                     className="flex-1 cab-btn cab-btn-secondary cab-btn-sm"
                   >
-                    Создать свои
+                    {t('vehicleDetailsPage.createOwn')}
                   </button>
                 </div>
               </div>
@@ -784,12 +786,12 @@ export default function PartsVehicleDetails() {
                   <div className="empty-state-icon mx-auto">
                     <Tag className="w-6 h-6 text-gray-400" />
                   </div>
-                  <p className="text-xs text-gray-500 mb-2">Категорий нет</p>
+                  <p className="text-xs text-gray-500 mb-2">{t('vehicleDetailsPage.noCategories')}</p>
                   <button
                     onClick={() => navigate('/parts/categories')}
                     className="text-primary hover:underline text-xs font-semibold"
                   >
-                    Добавить категории
+                    {t('vehicleDetailsPage.addCategories')}
                   </button>
                 </div>
               )}

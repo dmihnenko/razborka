@@ -8,6 +8,8 @@ import { createPartsOrder } from '@/services/partsService'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Info, Search, X, User } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import i18n from '@/i18n'
+import { useTranslation } from 'react-i18next'
 
 /** Совпадение телефона по цифрам: запрос — подпоследовательность цифр номера.
  *  «355253» найдёт «0953552553» (цифры по порядку, можно пропускать). */
@@ -23,6 +25,7 @@ function phoneDigitsMatch(phone: string, queryDigits: string): boolean {
 }
 
 export default function PartsCreateOrder() {
+  const { t } = useTranslation('cabinet')
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
@@ -105,7 +108,7 @@ export default function PartsCreateOrder() {
 
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-950">
-      <PartsPageHeader title="Создание заказа" backPath="/parts/orders" maxWidth="3xl" />
+      <PartsPageHeader title={i18n.t('cabinet:pages.createOrder')} backPath="/parts/orders" maxWidth="3xl" />
 
       <div className="max-w-3xl mx-auto px-3 sm:px-5 lg:px-8 py-5 sm:py-7">
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -114,10 +117,10 @@ export default function PartsCreateOrder() {
           <div className="cab-card p-4 space-y-4">
             <div>
               <label htmlFor="customer_id" className="form-label">
-                Клиент
+                {t('createOrderPage.customer')}
               </label>
               {customersLoading ? (
-                <p className="text-sm text-gray-500 py-2">Загрузка клиентов…</p>
+                <p className="text-sm text-gray-500 py-2">{t('createOrderPage.loadingCustomers')}</p>
               ) : selectedCustomer ? (
                 /* Выбранный клиент — чип с возможностью сбросить */
                 <div className="flex items-center justify-between gap-2 form-input">
@@ -132,7 +135,7 @@ export default function PartsCreateOrder() {
                     type="button"
                     onClick={() => selectCustomer(null)}
                     className="text-gray-400 hover:text-red-500 flex-shrink-0"
-                    aria-label="Сбросить клиента"
+                    aria-label={t('createOrderPage.resetCustomer')}
                   >
                     <X className="w-4 h-4" strokeWidth={1.5} />
                   </button>
@@ -146,7 +149,7 @@ export default function PartsCreateOrder() {
                     value={customerSearch}
                     onChange={(e) => { setCustomerSearch(e.target.value); setCustomerOpen(true) }}
                     onFocus={() => setCustomerOpen(true)}
-                    placeholder="Поиск по имени или телефону…"
+                    placeholder={t('createOrderPage.searchPlaceholder')}
                     className="form-input pl-9"
                   />
                   {customerOpen && (
@@ -156,7 +159,7 @@ export default function PartsCreateOrder() {
                         onClick={() => selectCustomer(null)}
                         className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-500"
                       >
-                        Без клиента (розничная продажа)
+                        {t('createOrderPage.noCustomer')}
                       </button>
                       {filteredCustomers.map((customer) => (
                         <button
@@ -174,27 +177,27 @@ export default function PartsCreateOrder() {
                         </button>
                       ))}
                       {filteredCustomers.length === 0 && (
-                        <p className="px-3 py-3 text-sm text-gray-400">Клиент не найден</p>
+                        <p className="px-3 py-3 text-sm text-gray-400">{t('createOrderPage.customerNotFound')}</p>
                       )}
                     </div>
                   )}
                 </div>
               )}
               <div className="flex items-center justify-between mt-1.5">
-                <p className="text-xs text-gray-400">Необязательно</p>
+                <p className="text-xs text-gray-400">{t('createOrderPage.optional')}</p>
                 <button
                   type="button"
                   onClick={() => navigate('/parts/customers')}
                   className="cab-btn cab-btn-ghost text-xs text-primary font-medium"
                 >
-                  + Добавить клиента
+                  {t('createOrderPage.addCustomer')}
                 </button>
               </div>
             </div>
 
             <div className="border-t border-gray-100 dark:border-white/5 pt-4">
               <label htmlFor="notes" className="form-label">
-                Примечание к заказу
+                {t('createOrderPage.notes')}
               </label>
               <textarea
                 id="notes"
@@ -202,7 +205,7 @@ export default function PartsCreateOrder() {
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
                 className="form-input resize-none"
-                placeholder="Особые пожелания, детали доставки…"
+                placeholder={t('createOrderPage.notesPlaceholder')}
               />
             </div>
           </div>
@@ -212,7 +215,7 @@ export default function PartsCreateOrder() {
             <div className="alert alert-danger">
               <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold">Ошибка при создании заказа. Попробуйте ещё раз.</p>
+                <p className="font-semibold">{t('createOrderPage.createError')}</p>
                 {(createMutation.error as Error)?.message && (
                   <p className="text-xs mt-0.5 opacity-80">
                     {(createMutation.error as Error).message}
@@ -229,7 +232,7 @@ export default function PartsCreateOrder() {
               onClick={() => navigate('/parts/orders')}
               className="cab-btn cab-btn-secondary sm:w-auto w-full"
             >
-              Отмена
+              {t('createOrderPage.cancel')}
             </button>
             <button
               type="submit"
@@ -239,12 +242,12 @@ export default function PartsCreateOrder() {
               {createMutation.isPending ? (
                 <>
                   <span className="inline-block w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                  Создание…
+                  {t('createOrderPage.creating')}
                 </>
               ) : (
                 <>
                   <Plus className="w-4 h-4" />
-                  Создать заказ
+                  {t('createOrderPage.submit')}
                 </>
               )}
             </button>

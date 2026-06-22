@@ -308,6 +308,12 @@ export async function getUserByUsername(username: string): Promise<{ id: string 
   return data
 }
 
+/** Язык интерфейса пользователя (ru/uk) — сохраняем в user_profiles.locale. */
+export async function updateUserLocale(userId: string, locale: 'ru' | 'uk'): Promise<void> {
+  const { error } = await supabase.from('user_profiles').update({ locale }).eq('id', userId)
+  if (error) throw error
+}
+
 /** Полное редактирование пользователя админом (email/пароль/профиль) через Edge Function. */
 export async function adminUpdateUser(payload: {
   userId: string

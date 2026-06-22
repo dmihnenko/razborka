@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, Car, Package, Search, Store } from 'lucide-react'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 import {
   getMarketMakes, getMarketParts, getMarketSuppliers,
 } from '@/services/marketplaceService'
@@ -44,6 +46,7 @@ function SkeletonCard() {
 
 export function MarketHome() {
   const navigate = useNavigate()
+  const { t } = useTranslation('market')
   const [search, setSearch] = useState('')
   const reduce = useReducedMotion()
   const anim = (delay: number) => reduce ? {} : {
@@ -71,6 +74,11 @@ export function MarketHome() {
   return (
     <div className="space-y-6 sm:space-y-8">
 
+      {/* Выбор языка интерфейса (главная) */}
+      <div className="flex justify-end -mb-2">
+        <LanguageSwitcher />
+      </div>
+
       {/* ── Герой: чистая панель, акцент только на кнопке ─────────────── */}
       <motion.section {...anim(0)} className="mk-card p-5 sm:p-8 text-center">
         <form onSubmit={handleSearch} role="search" className="max-w-xl mx-auto">
@@ -79,11 +87,11 @@ export function MarketHome() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none mk-meta" strokeWidth={1.5} aria-hidden="true" />
               <input
                 type="search" value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="Название запчасти или артикул…"
-                className="mk-input mk-search !min-h-[var(--mk-control-h-lg)]" aria-label="Поиск по каталогу запчастей"
+                placeholder={t('home.searchPlaceholder')}
+                className="mk-input mk-search !min-h-[var(--mk-control-h-lg)]" aria-label={t('home.searchAria')}
               />
             </div>
-            <button type="submit" className="mk-btn mk-btn-accent mk-btn-lg flex-shrink-0">Найти</button>
+            <button type="submit" className="mk-btn mk-btn-accent mk-btn-lg flex-shrink-0">{t('home.find')}</button>
           </div>
         </form>
       </motion.section>
@@ -91,7 +99,7 @@ export function MarketHome() {
       {/* ── Марки авто — чипы ─────────────────────────────────────────── */}
       {topMakes.length > 0 && (
         <motion.section {...anim(0.12)} aria-labelledby="mk-makes-title">
-          <SectionHead id="mk-makes-title" title="Марки авто" to="/market/catalog" linkLabel="Все марки" />
+          <SectionHead id="mk-makes-title" title={t('home.makes')} to="/market/catalog" linkLabel={t('home.allMakes')} />
           <div className="mk-scroller sm:flex-wrap pb-1 -mb-1">
             {topMakes.map(make => (
               <Link key={make} to={`/market/catalog?make=${encodeURIComponent(make)}`} className="mk-chip">
@@ -104,11 +112,11 @@ export function MarketHome() {
 
       {/* ── Свежие поступления ───────────────────────────────────────── */}
       <motion.section {...anim(0.16)} aria-labelledby="mk-fresh-title">
-        <SectionHead id="mk-fresh-title" title="Свежие поступления" to="/market/catalog" linkLabel="Весь каталог" />
+        <SectionHead id="mk-fresh-title" title={t('home.fresh')} to="/market/catalog" linkLabel={t('home.wholeCatalog')} />
         {freshLoading ? (
           <div className="mk-grid">{Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)}</div>
         ) : (fresh?.items.length ?? 0) === 0 ? (
-          <EmptyState icon={Package} title="Пока нет товаров" description="Разборки ещё не добавили запчасти в каталог — загляните позже" />
+          <EmptyState icon={Package} title={t('home.freshEmptyTitle')} description={t('home.freshEmptyText')} />
         ) : (
           <div className="mk-grid">{fresh!.items.map(part => <MarketProductCard key={part.id} part={part} />)}</div>
         )}
@@ -116,11 +124,11 @@ export function MarketHome() {
 
       {/* ── Разборки ─────────────────────────────────────────────────── */}
       <motion.section {...anim(0.2)} aria-labelledby="mk-suppliers-title">
-        <SectionHead id="mk-suppliers-title" title="Разборки" to="/market/suppliers" linkLabel="Все разборки" />
+        <SectionHead id="mk-suppliers-title" title={t('home.suppliers')} to="/market/suppliers" linkLabel={t('home.allSuppliers')} />
         {suppliersLoading ? (
           <div className="mk-grid-wide">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="mk-card h-24" aria-hidden="true" />)}</div>
         ) : topSuppliers.length === 0 ? (
-          <EmptyState icon={Store} title="Разборок пока нет" description="Скоро здесь появятся продавцы запчастей" />
+          <EmptyState icon={Store} title={t('home.suppliersEmptyTitle')} description={t('home.suppliersEmptyText')} />
         ) : (
           <div className="mk-grid-wide">{topSuppliers.map(s => <SupplierCard key={s.id} supplier={s} />)}</div>
         )}
@@ -130,10 +138,10 @@ export function MarketHome() {
       <motion.section {...anim(0.24)}>
         <div className="mk-card p-6 sm:p-7 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
           <div className="flex-1">
-            <p className="text-base font-bold" style={{ color: 'var(--mk-text)' }}>Вы авторазборка? Разместите витрину на маркете</p>
-            <p className="mk-sub mt-0.5">Ознакомьтесь с предложением и тарифами для разборок</p>
+            <p className="text-base font-bold" style={{ color: 'var(--mk-text)' }}>{t('home.ctaTitle')}</p>
+            <p className="mk-sub mt-0.5">{t('home.ctaText')}</p>
           </div>
-          <Link to="/business" className="mk-btn mk-btn-accent mk-btn-lg flex-shrink-0">Наше предложение</Link>
+          <Link to="/business" className="mk-btn mk-btn-accent mk-btn-lg flex-shrink-0">{t('home.ctaBtn')}</Link>
         </div>
       </motion.section>
     </div>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronRight, Copy, FileText, Package, ShoppingCart, Tag } from 'lucide-react'
 import { toast } from 'sonner'
@@ -41,6 +42,7 @@ function toGalleryPhotos(part: MarketPart): ImgbbPhoto[] {
 }
 
 export default function MarketProductPage() {
+  const { t } = useTranslation('market')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { addItem, items } = useCart()
@@ -69,10 +71,10 @@ export default function MarketProductPage() {
           <Package className="w-9 h-9" strokeWidth={1.5} aria-hidden="true" />
         </span>
         <div>
-          <p className="text-lg font-bold" style={{ color: 'var(--mk-text)' }}>Товар не найден</p>
-          <p className="mk-sub mt-1">Возможно, запчасть уже продана или снята с публикации</p>
+          <p className="text-lg font-bold" style={{ color: 'var(--mk-text)' }}>{t('productPage.notFoundTitle')}</p>
+          <p className="mk-sub mt-1">{t('productPage.notFoundSub')}</p>
         </div>
-        <Link to="/market/catalog" className="mk-btn mk-btn-accent mt-1">Перейти в каталог</Link>
+        <Link to="/market/catalog" className="mk-btn mk-btn-accent mt-1">{t('productPage.goToCatalog')}</Link>
       </div>
     )
   }
@@ -85,7 +87,7 @@ export default function MarketProductPage() {
       inventoryId: part.id, name: part.name, sellingPrice: part.sellingPrice, priceCurrency: part.priceCurrency,
       photoUrl: photo, quantity: 1, companyId: part.company.id, companyName: part.company.name, condition: part.condition,
     })
-    toast.success('Добавлено в корзину', { position: 'top-center' })
+    toast.success(t('productPage.addedToCart'), { position: 'top-center' })
   }
 
   const handleBuyNow = () => {
@@ -96,18 +98,18 @@ export default function MarketProductPage() {
   const copyPartNumber = () => {
     if (!part.partNumber) return
     navigator.clipboard.writeText(part.partNumber.toUpperCase())
-    toast.success('Номер скопирован')
+    toast.success(t('productPage.numberCopied'))
   }
 
 
   return (
     <div>
       {/* Хлебные крошки */}
-      <nav aria-label="Хлебные крошки" className="mb-4">
+      <nav aria-label={t('productPage.breadcrumbsAria')} className="mb-4">
         <ol className="flex items-center gap-1 text-xs sm:text-sm min-w-0 mk-meta">
-          <li><Link to="/market" className="font-medium mk-link">Маркет</Link></li>
+          <li><Link to="/market" className="font-medium mk-link">{t('productPage.crumbMarket')}</Link></li>
           <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
-          <li><Link to="/market/catalog" className="font-medium mk-link">Каталог</Link></li>
+          <li><Link to="/market/catalog" className="font-medium mk-link">{t('productPage.crumbCatalog')}</Link></li>
           <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
           <li className="font-semibold truncate min-w-0" aria-current="page" style={{ color: 'var(--mk-text-2)' }}>{part.name}</li>
         </ol>
@@ -123,7 +125,7 @@ export default function MarketProductPage() {
           ) : (
             <div className="mk-card aspect-[4/3] flex flex-col items-center justify-center gap-3" style={{ color: 'var(--mk-text-3)' }}>
               <Package className="w-12 h-12" strokeWidth={1.5} aria-hidden="true" />
-              <span className="text-sm mk-meta">Нет фото</span>
+              <span className="text-sm mk-meta">{t('productPage.noPhoto')}</span>
             </div>
           )}
         </div>
@@ -132,8 +134,8 @@ export default function MarketProductPage() {
         <div className="mk-card p-4 order-2">
             <div className="flex flex-wrap gap-1.5 mb-2.5">
               {conditionBadge(part.condition)}
-              <span className="mk-badge mk-badge-neutral">Оригинал</span>
-              {part.quantity > 0 && <span className="mk-badge mk-badge-new">В наличии</span>}
+              <span className="mk-badge mk-badge-neutral">{t('productPage.original')}</span>
+              {part.quantity > 0 && <span className="mk-badge mk-badge-new">{t('productPage.inStock')}</span>}
               {part.categoryName && (
                 <span className="mk-badge mk-badge-neutral"><Tag className="w-3 h-3" strokeWidth={1.5} aria-hidden="true" /> {part.categoryName}</span>
               )}
@@ -145,7 +147,7 @@ export default function MarketProductPage() {
             <div className="mt-2 mb-3 space-y-0.5 text-sm" style={{ color: 'var(--mk-text-2)' }}>
               {part.article && (
                 <p>
-                  Артикул:{' '}
+                  {t('productPage.article')}{' '}
                   <span className="font-mono font-bold" style={{ color: 'var(--mk-text)' }}>{part.article}</span>
                 </p>
               )}
@@ -153,8 +155,8 @@ export default function MarketProductPage() {
                 <p>
                   OEM:{' '}
                   <button
-                    type="button" onClick={copyPartNumber} title="Нажмите, чтобы скопировать"
-                    aria-label={`Скопировать оригинальный номер ${part.partNumber.toUpperCase()}`}
+                    type="button" onClick={copyPartNumber} title={t('productPage.clickToCopy')}
+                    aria-label={t('productPage.copyOemAria', { number: part.partNumber.toUpperCase() })}
                     className="font-mono font-bold uppercase inline-flex items-center gap-1 hover:underline"
                     style={{ color: 'var(--mk-text)' }}
                   >
@@ -167,10 +169,10 @@ export default function MarketProductPage() {
 
             {/* Цена — в строку, компактно */}
             <div className="mt-3 px-3.5 py-2.5 rounded-xl flex items-baseline gap-2 flex-wrap" style={{ background: 'var(--mk-surface-2)' }}>
-              <span className="text-[10px] uppercase tracking-widest font-bold mk-meta">Цена</span>
+              <span className="text-[10px] uppercase tracking-widest font-bold mk-meta">{t('productPage.price')}</span>
               <span className="mk-price-lg leading-none">{formatPrice(part.sellingPrice, part.priceCurrency)}</span>
               {part.quantity > 1 && (
-                <span className="text-xs mk-meta ml-auto">в наличии {part.quantity} шт.</span>
+                <span className="text-xs mk-meta ml-auto">{t('productPage.inStockQty', { n: part.quantity })}</span>
               )}
             </div>
 
@@ -178,15 +180,15 @@ export default function MarketProductPage() {
             <div className="mt-3 grid grid-cols-2 gap-2">
               {inCart ? (
                 <Link to="/market/cart" className="mk-btn mk-btn-accent w-full col-span-2">
-                  <ShoppingCart className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> Перейти в корзину
+                  <ShoppingCart className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> {t('productPage.goToCart')}
                 </Link>
               ) : (
                 <>
                   <button type="button" onClick={handleAddToCart} className="mk-btn mk-btn-accent w-full">
-                    <ShoppingCart className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> В корзину
+                    <ShoppingCart className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> {t('productPage.addToCart')}
                   </button>
                   <button type="button" onClick={handleBuyNow} className="mk-btn mk-btn-brand w-full">
-                    Купить сейчас
+                    {t('productPage.buyNow')}
                   </button>
                 </>
               )}
@@ -195,11 +197,11 @@ export default function MarketProductPage() {
             {/* Авто-донор — в той же карточке через разделитель */}
             {part.vehicle && (
               <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--mk-border)' }}>
-                <p className="text-xs font-bold uppercase tracking-widest mb-2 mk-meta">Снята с автомобиля</p>
+                <p className="text-xs font-bold uppercase tracking-widest mb-2 mk-meta">{t('productPage.removedFromCar')}</p>
                 <div className="min-w-0">
                   <p className="text-sm font-bold leading-snug" style={{ color: 'var(--mk-text)' }}>
                     {[part.vehicle.make, part.vehicle.model].filter(Boolean).join(' ')}
-                    {part.vehicle.year && <span className="font-medium mk-meta"> · {part.vehicle.year} г.</span>}
+                    {part.vehicle.year && <span className="font-medium mk-meta"> · {t('productPage.yearShort', { year: part.vehicle.year })}</span>}
                   </p>
                   {part.vehicle.vin && <p className="text-[11px] font-mono mt-0.5 select-all mk-meta">VIN: {part.vehicle.vin}</p>}
                 </div>
@@ -211,7 +213,7 @@ export default function MarketProductPage() {
         {part.description?.trim() && (
           <div className="mk-card p-4 order-3 lg:order-4 lg:col-span-3">
             <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest mb-3 mk-meta">
-              <FileText className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> Описание
+              <FileText className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> {t('productPage.description')}
             </h2>
             <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--mk-text-2)' }}>{part.description}</p>
           </div>
@@ -223,9 +225,9 @@ export default function MarketProductPage() {
             company={part.company}
             hideCallButton
             telegramMessage={
-              `Здравствуйте! Интересует запчасть:\n«${part.name}»` +
-              (part.vehicle ? `\nАвто: ${part.vehicle.make} ${part.vehicle.model}${part.vehicle.year ? ` ${part.vehicle.year}` : ''}` : '') +
-              (part.partNumber ? `\nОриг. номер: ${part.partNumber.toUpperCase()}` : '') +
+              t('productPage.tgIntro', { name: part.name }) +
+              (part.vehicle ? '\n' + t('productPage.tgCar', { car: `${part.vehicle.make} ${part.vehicle.model}${part.vehicle.year ? ` ${part.vehicle.year}` : ''}` }) : '') +
+              (part.partNumber ? '\n' + t('productPage.tgOem', { number: part.partNumber.toUpperCase() }) : '') +
               `\n${typeof window !== 'undefined' ? window.location.href : ''}`
             }
           />
@@ -235,9 +237,9 @@ export default function MarketProductPage() {
       {related.length > 0 && (
         <section className="mt-8 sm:mt-10">
           <div className="flex items-center justify-between gap-3 mb-4">
-            <h2 className="mk-title">Ещё от этой разборки</h2>
+            <h2 className="mk-title">{t('productPage.moreFromSeller')}</h2>
             <Link to={`/market/supplier/${part.company.id}`} className="text-sm mk-link inline-flex items-center gap-1 min-h-[44px]">
-              Все товары <ChevronRight className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
+              {t('productPage.allProducts')} <ChevronRight className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
             </Link>
           </div>
           <div className="mk-grid">{related.map(p => <MarketProductCard key={p.id} part={p} />)}</div>

@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { supabase } from '@/lib/supabase'
 import { getUserRolesWithNames } from '@/services/userService'
 import { toast } from 'sonner'
@@ -10,6 +12,7 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { Logo } from '@/components/brand/Logo'
 
 export default function Login() {
+  const { t } = useTranslation('auth')
   const [emailOrUsername, setEmailOrUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -200,16 +203,16 @@ export default function Login() {
   }
 
   const formTitle = isForgotMode
-    ? 'Восстановление пароля'
+    ? t('forgotTitle')
     : isRegisterMode
-    ? 'Создать аккаунт'
-    : 'Добро пожаловать'
+    ? t('createAccount')
+    : t('welcome')
 
   const formSubtitle = isForgotMode
-    ? 'Введите email — отправим ссылку для сброса пароля'
+    ? t('forgotSubtitle')
     : isRegisterMode
-    ? 'Заполните данные для регистрации'
-    : 'Войдите в свой аккаунт'
+    ? t('registerSubtitle')
+    : t('loginSubtitle')
 
   return (
     <div
@@ -236,6 +239,11 @@ export default function Login() {
           }}
         >
 
+            {/* Выбор языка интерфейса */}
+            <div className="flex justify-end mb-3">
+              <LanguageSwitcher />
+            </div>
+
             {/* Logo */}
             <motion.div
               initial={{ opacity: 0, y: -10 }}
@@ -243,7 +251,9 @@ export default function Login() {
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="flex items-center justify-center mb-4"
             >
-              <Logo size="md" withText />
+              <Link to="/market" aria-label="На маркет запчастей" className="inline-flex">
+                <Logo size="md" withText />
+              </Link>
             </motion.div>
 
             {/* Карточка формы — единый стиль Ink & Signal */}
@@ -293,7 +303,7 @@ export default function Login() {
                         htmlFor="reg-email"
                         className="form-label"
                       >
-                        Email
+                        {t('email')}
                       </label>
                       <div className="relative">
                         <Mail
@@ -320,7 +330,7 @@ export default function Login() {
                         htmlFor="emailOrUsername"
                         className="form-label"
                       >
-                        Email
+                        {t('email')}
                       </label>
                       <div className="relative">
                         <Mail
@@ -354,7 +364,7 @@ export default function Login() {
                           htmlFor="password"
                           className="form-label !mb-0"
                         >
-                          Пароль
+                          {t('password')}
                         </label>
                         {!isRegisterMode && (
                           <button
@@ -364,7 +374,7 @@ export default function Login() {
                             className="text-xs font-semibold text-[var(--cab-signal)] hover:text-[var(--cab-signal-hover)] transition-colors duration-150 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                             style={{ padding: '2px 4px', minHeight: '28px' }}
                           >
-                            Забыли пароль?
+                            {t('forgotPassword')}
                           </button>
                         )}
                       </div>
@@ -382,7 +392,7 @@ export default function Login() {
                           onChange={(e) => setPassword(e.target.value)}
                           required
                           autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
-                          placeholder={isRegisterMode ? 'Минимум 6 символов' : 'Введите пароль'}
+                          placeholder={isRegisterMode ? t('placeholderPasswordMin') : t('placeholderPasswordEnter')}
                           className="form-input w-full pl-10 pr-12"
                         />
                         <button
@@ -405,7 +415,7 @@ export default function Login() {
                           htmlFor="confirmPassword"
                           className="form-label"
                         >
-                          Повторите пароль
+                          {t('repeatPassword')}
                         </label>
                         <div className="relative">
                           <Lock
@@ -421,7 +431,7 @@ export default function Login() {
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             required
                             autoComplete="new-password"
-                            placeholder="Ещё раз тот же пароль"
+                            placeholder={t('placeholderPasswordRepeat')}
                             className="form-input w-full pl-10 pr-12"
                           />
                           <button
@@ -449,8 +459,8 @@ export default function Login() {
                   style={{ letterSpacing: '-0.01em' }}
                 >
                   {loading
-                    ? (isForgotMode ? 'Отправка...' : isRegisterMode ? 'Регистрация...' : 'Вход...')
-                    : (isForgotMode ? 'Отправить ссылку' : isRegisterMode ? 'Зарегистрироваться' : 'Войти')}
+                    ? (isForgotMode ? t('sending') : isRegisterMode ? t('registering') : t('signingIn'))
+                    : (isForgotMode ? t('sendLink') : isRegisterMode ? t('register') : t('signIn'))}
                 </button>
 
                 {/* Google OAuth + divider (login mode only) */}
@@ -458,14 +468,14 @@ export default function Login() {
                   <>
                     <div className="flex items-center gap-3 my-5" role="separator" aria-hidden="true">
                       <div className="flex-1 h-px bg-gray-200" />
-                      <span className="text-xs font-medium text-gray-400">или</span>
+                      <span className="text-xs font-medium text-gray-400">{t('or')}</span>
                       <div className="flex-1 h-px bg-gray-200" />
                     </div>
                     <button
                       type="button"
                       onClick={handleGoogleLogin}
                       disabled={loading}
-                      aria-label="Войти через Google"
+                      aria-label={t('google')}
                       className="cab-btn cab-btn-secondary cab-btn-lg w-full"
                     >
                       <svg width="17" height="17" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
@@ -474,7 +484,7 @@ export default function Login() {
                         <path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.05l3.01-2.33z"/>
                         <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/>
                       </svg>
-                      Войти через Google
+                      {t('google')}
                     </button>
                   </>
                 )}
@@ -487,7 +497,7 @@ export default function Login() {
                       onClick={() => setIsForgotMode(false)}
                       className="inline-flex items-center justify-center min-h-[44px] px-2 text-sm font-semibold text-[var(--cab-signal)] hover:text-[var(--cab-signal-hover)] transition-colors duration-150 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                     >
-                      ← Вернуться ко входу
+                      {t('backToLogin')}
                     </button>
                   ) : (
                     <button
@@ -499,7 +509,7 @@ export default function Login() {
                       }}
                       className="inline-flex items-center justify-center min-h-[44px] px-2 text-sm font-semibold text-[var(--cab-signal)] hover:text-[var(--cab-signal-hover)] transition-colors duration-150 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                     >
-                      {isRegisterMode ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
+                      {isRegisterMode ? t('haveAccount') : t('noAccount')}
                     </button>
                   )}
                 </div>

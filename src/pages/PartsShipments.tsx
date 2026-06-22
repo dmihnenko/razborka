@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { RefreshCw, ExternalLink, PackageOpen } from 'lucide-react'
@@ -25,6 +26,7 @@ function isProblem(s: PartsShipment) {
 }
 
 export default function PartsShipments() {
+  const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
   const queryClient = useQueryClient()
@@ -40,16 +42,16 @@ export default function PartsShipments() {
   const refreshMutation = useMutation({
     mutationFn: async (s: PartsShipment) => {
       const apiKey = getNpApiKey()
-      if (!apiKey) throw new Error('Укажите API-ключ Новой почты в настройках')
+      if (!apiKey) throw new Error(t('shipments.npKeyNeeded'))
       const st = await trackTtn(s.ttn, s.recipient_phone ?? undefined, apiKey)
       if (st) await refreshShipmentStatus(s.id, st)
       return st
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-shipments', partsCompanyId] })
-      toast.success('Статус обновлён')
+      toast.success(t('shipments.statusUpdated'))
     },
-    onError: (e: any) => toast.error(e?.message || 'Не удалось обновить статус'),
+    onError: (e: any) => toast.error(e?.message || t('shipments.statusError')),
   })
 
   if (!partsCompanyId) return <PartsAccessDenied />
@@ -71,16 +73,16 @@ export default function PartsShipments() {
 
   return (
     <div className="min-h-dvh" style={{ background: 'var(--cab-bg)' }}>
-      <PartsPageHeader title="Доставка" subtitle={`Посылок: ${counts.all}`} backPath="/parts/dashboard" />
+      <PartsPageHeader title={t('pages.shipments')} subtitle={t('pages.shipmentsSub', { n: counts.all })} backPath="/parts/dashboard" />
 
       <div className="page-container">
         {/* Вкладки-фильтры */}
         <div className="flex flex-wrap gap-2 mb-4">
           {([
-            { key: 'active', label: 'В пути', n: counts.active },
-            { key: 'delivered', label: 'Получено', n: counts.delivered },
-            { key: 'problem', label: 'Проблемные', n: counts.problem },
-            { key: 'all', label: 'Все', n: counts.all },
+            { key: 'active', label: t('shipments.tabActive'), n: counts.active },
+            { key: 'delivered', label: t('shipments.tabDelivered'), n: counts.delivered },
+            { key: 'problem', label: t('shipments.tabProblem'), n: counts.problem },
+            { key: 'all', label: t('shipments.tabAll'), n: counts.all },
           ] as const).map(({ key, label, n }) => (
             <button key={key} onClick={() => setTab(key)}
               className={`chip ${tab === key ? 'chip-active' : ''}`}>
@@ -99,9 +101,9 @@ export default function PartsShipments() {
         ) : filtered.length === 0 ? (
           <div className="cab-card p-10 text-center">
             <PackageOpen className="w-9 h-9 mx-auto mb-3" style={{ color: ink3 }} strokeWidth={1.5} />
-            <p className="text-sm font-semibold" style={{ color: ink }}>Посылок нет</p>
+            <p className="text-sm font-semibold" style={{ color: ink }}>{t('shipments.empty')}</p>
             <p className="text-xs mt-1" style={{ color: ink2 }}>
-              Накладные ТТН создаются в заказе — появятся здесь для отслеживания.
+              {t('shipments.emptyText')}
             </p>
           </div>
         ) : (
@@ -113,23 +115,23 @@ export default function PartsShipments() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold tabular-nums" style={{ color: ink }}>{s.ttn}</span>
                     <a href={`https://novaposhta.ua/tracking/?cargo_number=${s.ttn}`} target="_blank" rel="noreferrer"
-                      className="inline-flex" style={{ color: ink3 }} title="Открыть на НП">
+                      className="inline-flex" style={{ color: ink3 }} title={t('shipments.openNp')}>
                       <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.5} />
                     </a>
                   </div>
                   <p className="text-xs mt-0.5 truncate" style={{ color: ink2 }}>
                     {s.recipient_name || '—'}
-                    {s.order_id && <Link to={`/parts/orders/${s.order_id}`} className="ml-2 font-semibold" style={{ color: 'var(--cab-signal)' }}>заказ</Link>}
+                    {s.order_id && <Link to={`/parts/orders/${s.order_id}`} className="ml-2 font-semibold" style={{ color: 'var(--cab-signal)' }}>{t('shipments.order')}</Link>}
                   </p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-xs font-semibold" style={{ color: isProblem(s) ? '#B91C1C' : isDelivered(s) ? '#15803D' : ink }}>
-                    {s.status || 'Нет данных'}
+                    {s.status || t('shipments.noData')}
                   </p>
                   <p className="text-[11px]" style={{ color: ink3 }}>{formatDate(s.created_at)}</p>
                 </div>
                 <button onClick={() => refreshMutation.mutate(s)} disabled={refreshMutation.isPending}
-                  className="cab-btn cab-btn-sm cab-btn-secondary flex-shrink-0" title="Обновить статус">
+                  className="cab-btn cab-btn-sm cab-btn-secondary flex-shrink-0" title={t('shipments.refresh')}>
                   <RefreshCw className={`w-3.5 h-3.5 ${refreshMutation.isPending ? 'animate-spin' : ''}`} strokeWidth={1.5} />
                 </button>
               </div>

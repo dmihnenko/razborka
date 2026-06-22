@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { AlertCircle, MapPin, Search, Store } from 'lucide-react'
 import { getMarketSuppliers } from '@/services/marketplaceService'
@@ -12,6 +13,7 @@ import EmptyState from '@/components/ui/EmptyState'
 const CITY_KEY = 'tsp_market_supplier_city'
 
 export function MarketSuppliers() {
+  const { t } = useTranslation('market')
   const [search, setSearch] = useState('')
   const [city, setCityState] = useState<string>(() => {
     try { return localStorage.getItem(CITY_KEY) || '' } catch { return '' }
@@ -60,25 +62,25 @@ export function MarketSuppliers() {
   }
 
   if (isError) {
-    return <EmptyState icon={AlertCircle} title="Не удалось загрузить разборки" description="Проверьте соединение и обновите страницу" />
+    return <EmptyState icon={AlertCircle} title={t('suppliersPage.errorTitle')} description={t('suppliersPage.errorDesc')} />
   }
 
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
         <div>
-          <h1 className="mk-h1">Разборки</h1>
+          <h1 className="mk-h1">{t('suppliersPage.title')}</h1>
           <p className="mk-sub mt-1" aria-live="polite">
             {hasFilter
-              ? `Найдено: ${filtered.length} из ${suppliers?.length ?? 0}`
-              : `Всего разборок: ${suppliers?.length ?? 0}`}
+              ? t('suppliersPage.found', { n: filtered.length, total: suppliers?.length ?? 0 })
+              : t('suppliersPage.total', { n: suppliers?.length ?? 0 })}
             {activeCity && <span> · {activeCity}</span>}
           </p>
         </div>
         {!hasFilter && suppliers && suppliers.length > 0 && (
           <span className="inline-flex items-center gap-1.5 px-3 h-9 rounded-full text-xs font-bold self-start sm:self-auto" style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
             <Store className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" />
-            {pluralizeParts(suppliers.reduce((s, x) => s + x.availableParts, 0))} в наличии
+            {pluralizeParts(suppliers.reduce((s, x) => s + x.availableParts, 0))} {t('suppliersPage.inStock')}
           </span>
         )}
       </div>
@@ -88,7 +90,7 @@ export function MarketSuppliers() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none mk-meta" strokeWidth={1.5} aria-hidden="true" />
           <input
             type="search" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Поиск разборки по названию…" className="mk-input mk-search" aria-label="Поиск разборки по названию"
+            placeholder={t('suppliersPage.searchPlaceholder')} className="mk-input mk-search" aria-label={t('suppliersPage.searchAria')}
           />
         </div>
         {cities.length > 0 && (
@@ -98,9 +100,9 @@ export function MarketSuppliers() {
               value={activeCity}
               onChange={e => setCity(e.target.value)}
               className="mk-input pl-10 appearance-none cursor-pointer"
-              aria-label="Фильтр по городу"
+              aria-label={t('suppliersPage.cityFilterAria')}
             >
-              <option value="">Все города</option>
+              <option value="">{t('suppliersPage.allCities')}</option>
               {cities.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
@@ -110,8 +112,8 @@ export function MarketSuppliers() {
       {filtered.length === 0 ? (
         <EmptyState
           icon={Store}
-          title={hasFilter ? 'Ничего не найдено' : 'Разборок пока нет'}
-          description={hasFilter ? 'Попробуйте изменить запрос или город' : 'Активные разборки появятся здесь'}
+          title={hasFilter ? t('suppliersPage.emptyFilteredTitle') : t('suppliersPage.emptyTitle')}
+          description={hasFilter ? t('suppliersPage.emptyFilteredDesc') : t('suppliersPage.emptyDesc')}
         />
       ) : (
         <div className="mk-grid-wide">{filtered.map(s => <SupplierCard key={s.id} supplier={s} />)}</div>

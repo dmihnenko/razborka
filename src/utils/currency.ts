@@ -1,3 +1,5 @@
+import { intlLocale } from '@/i18n'
+
 export type PriceCurrency = 'UAH' | 'USD'
 
 /**
@@ -6,7 +8,7 @@ export type PriceCurrency = 'UAH' | 'USD'
  */
 export function formatCurrency(amount?: number | null): string {
   if (!amount) return '—'
-  return new Intl.NumberFormat('ru-RU', {
+  return new Intl.NumberFormat(intlLocale(), {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount) + ' грн.'
