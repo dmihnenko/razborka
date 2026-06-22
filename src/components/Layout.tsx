@@ -251,8 +251,8 @@ export default function Layout() {
         className={`${isUserCtx ? 'hidden' : 'hidden md:flex'} md:flex-col md:w-16 lg:w-64 flex-shrink-0`}
         style={{ background: 'var(--cab-surface)', borderRight: '1px solid var(--cab-border)' }}
       >
-        {/* Шапка сайдбара — логотип как в маркете: полная эмблема на широком (lg), знак на узком (md) */}
-        <div className="flex items-center justify-center lg:justify-start px-2 lg:px-3 h-14" style={{ borderBottom: '1px solid var(--cab-border)' }}>
+        {/* Шапка сайдбара — логотип по центру: полная эмблема на широком (lg), знак на узком (md) */}
+        <div className="flex items-center justify-center px-2 lg:px-3 h-14" style={{ borderBottom: '1px solid var(--cab-border)' }}>
           <Link to="/parts/dashboard" className="inline-flex items-center flex-shrink-0 min-w-0" aria-label={BRAND.name}>
             <Logo size="sm" withText={false} className="lg:hidden flex-shrink-0" />
             <Logo size="sm" withText className="hidden lg:inline-flex flex-shrink-0" />
