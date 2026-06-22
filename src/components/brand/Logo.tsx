@@ -10,6 +10,8 @@ import { BRAND } from '@/config/brand'
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg'
   withText?: boolean
+  /** Рамка-плашка вокруг эмблемы (фон/граница/тень). false → только «RAZBORKA» + .net */
+  framed?: boolean
   className?: string
 }
 
@@ -34,7 +36,7 @@ function Mark({ px }: { px: number }) {
   )
 }
 
-export function Logo({ size = 'md', withText = true, className = '' }: LogoProps) {
+export function Logo({ size = 'md', withText = true, framed = true, className = '' }: LogoProps) {
   const s = S[size]
 
   // Компактная иконка-монограм
@@ -46,19 +48,21 @@ export function Logo({ size = 'md', withText = true, className = '' }: LogoProps
     )
   }
 
-  // Полная эмблема-плашка
-  return (
-    <span
-      className={`relative inline-flex flex-col items-center ${className}`}
-      aria-label={BRAND.name}
-      style={{
+  // Полная эмблема. framed=true → плашка (фон/рамка/тень), false → только текст + .net
+  const frameStyle = framed
+    ? {
         background: 'var(--cab-surface-2, #F4F5F7)',
         border: `${s.bd}px solid var(--cab-ink, #16181D)`,
         borderRadius: s.r,
         padding: `${s.py}px ${s.px}px`,
         boxShadow: '0 7px 18px -8px rgba(20,20,40,.22), 0 1px 2px rgba(20,20,40,.06)',
-        lineHeight: 1,
-      }}
+      }
+    : {}
+  return (
+    <span
+      className={`relative inline-flex flex-col items-center ${className}`}
+      aria-label={BRAND.name}
+      style={{ ...frameStyle, lineHeight: 1 }}
     >
       {/* Уголок «.net» */}
       <span

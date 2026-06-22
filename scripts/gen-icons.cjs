@@ -28,7 +28,7 @@ const maskable = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0
       <path d="M190 150h62a54 54 0 0 1 0 108h-62"/>
       <path d="M206 252 306 362"/>
     </g>
-    <circle cx="372" cy="372" r="30" fill="#0D9488"/>
+    <text x="468" y="414" text-anchor="end" fill="#0D9488" font-family="Arial, 'Segoe UI', sans-serif" font-weight="800" font-size="72" letter-spacing="-3">.net</text>
   </g>
 </svg>`)
 

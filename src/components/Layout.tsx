@@ -251,17 +251,12 @@ export default function Layout() {
         className={`${isUserCtx ? 'hidden' : 'hidden md:flex'} md:flex-col md:w-16 lg:w-64 flex-shrink-0`}
         style={{ background: 'var(--cab-surface)', borderRight: '1px solid var(--cab-border)' }}
       >
-        {/* Шапка сайдбара — свитчер ролей (если их несколько) или лого */}
+        {/* Шапка сайдбара — логотип как в маркете: полная эмблема на широком (lg), знак на узком (md) */}
         <div className="flex items-center justify-center lg:justify-start px-2 lg:px-3 h-14" style={{ borderBottom: '1px solid var(--cab-border)' }}>
-          {multiCtx ? (
-            <div className="w-full min-w-0">
-              <ContextSwitcher current={currentCtx} variant="sidebar" />
-            </div>
-          ) : (
-            <Link to="/parts/dashboard" aria-label={BRAND.name}>
-              <Logo size="sm" withText={false} />
-            </Link>
-          )}
+          <Link to="/parts/dashboard" className="inline-flex items-center flex-shrink-0 min-w-0" aria-label={BRAND.name}>
+            <Logo size="sm" withText={false} className="lg:hidden flex-shrink-0" />
+            <Logo size="sm" withText className="hidden lg:inline-flex flex-shrink-0" />
+          </Link>
         </div>
 
         {/* Nav — сгруппирован: Работа / База / Система */}
@@ -327,15 +322,19 @@ export default function Layout() {
           </div>
         )}
 
-        {/* ── DESKTOP TOP BAR (разборка): «В маркет» справа (свитчер — в шапке сайдбара) ── */}
+        {/* ── DESKTOP TOP BAR (разборка): слева — смена ролей (сразу за линией раздела
+            сайдбара), справа — «В маркет». ── */}
         {currentCtx === 'parts' && (
           <div className="hidden md:flex h-14 flex-shrink-0"
             style={{ background: 'var(--cab-surface)', borderBottom: '1px solid var(--cab-border)' }}>
-            <div className="mk-container flex items-center justify-end gap-3">
+            <div className="mk-container flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                {multiCtx && <ContextSwitcher current={currentCtx} />}
+              </div>
               <Link
                 to="/market"
                 title="Открыть маркет запчастей"
-                className="market mk-btn mk-btn-outline"
+                className="market mk-btn mk-btn-outline flex-shrink-0"
               >
                 <Store className="w-4 h-4" strokeWidth={1.5} /> В маркет
               </Link>
