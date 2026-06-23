@@ -18,7 +18,7 @@ import { getDefaultRouteForRoles } from '@/config/navigation'
 
 function navTab({ isActive }: { isActive: boolean }) {
   return [
-    'inline-flex items-center justify-center min-w-0 sm:min-w-[92px] h-8 px-2 sm:px-4 rounded-[7px] text-xs sm:text-sm whitespace-nowrap transition-colors',
+    'inline-flex items-center justify-center min-w-0 sm:min-w-[92px] h-9 px-2 sm:px-4 rounded-[7px] text-xs sm:text-sm whitespace-nowrap transition-colors',
     isActive ? 'font-semibold' : 'font-medium',
   ].join(' ')
 }
@@ -87,11 +87,11 @@ function MarketLayoutInner() {
         <div className="mk-container">
           {/* Ряд 1 — на мобиле контролы компактнее (--mk-control-h 36 вместо 44),
               чтобы лого + табы + язык + корзина + вход уместились в один ряд */}
-          <div className="flex items-center gap-1.5 sm:gap-3 h-14 sm:h-16 [--mk-control-h:36px] sm:[--mk-control-h:44px]">
+          <div className="flex items-center gap-1.5 sm:gap-3 h-14 sm:h-16 [--mk-control-h:40px] sm:[--mk-control-h:44px]">
             {/* Лого: на мобиле компактный знак (в размер кнопок Каталог/Разборки),
                 на десктопе — полная эмблема с дескриптором */}
             <Link to="/market" className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0 min-w-0" aria-label="Razborka.net — маркет запчастей, на главную">
-              <Logo size="sm" withText={false} className="md:hidden flex-shrink-0 [&>svg]:!w-11 [&>svg]:!h-11" />
+              <Logo size="sm" withText={false} className="md:hidden flex-shrink-0 [&>svg]:!w-[40px] [&>svg]:!h-[40px]" />
               <Logo size="sm" withText className="hidden md:inline-flex flex-shrink-0" />
             </Link>
 
