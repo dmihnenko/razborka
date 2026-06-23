@@ -82,7 +82,7 @@ export function Logo({ size = 'md', withText = true, framed = true, className = 
       <span style={{
         fontFamily: "'Montserrat', var(--font-sans)", fontWeight: 700, fontSize: s.name,
         letterSpacing: '-0.01em', color: 'var(--cab-ink, #16181D)',
-        transform: 'translateY(1px)',
+        transform: 'translateY(0.04em)',
       }}>
         {BRAND.wordmark.lead}
       </span>
