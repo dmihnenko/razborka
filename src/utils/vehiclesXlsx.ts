@@ -48,7 +48,11 @@ export function invStatusIn(s: string): string {
 
 const WARNING = '⚠️ Не изменяйте строки 1–10 (данные авто и шапка). Редактируйте только список запчастей с 11-й строки.'
 
-const SHEET_COLS = [22, 24, 14, 12, 9, 11, 9, 12, 22, 11, 11]
+// Ширины колонок запчастей (1–9) + запас под предупреждение (10–11).
+// Подобраны под реальный контент: широкие «Название» и «Место хранения», читаемый OEM.
+const SHEET_COLS = [36, 22, 18, 14, 9, 13, 10, 14, 26, 12, 12]
+// Числовые колонки таблицы запчастей — выравниваются по правому краю (только тело, НЕ шапка).
+const NUM_COLS = [5, 6]
 
 function downloadBlob(buf: ArrayBuffer, name: string) {
   const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
@@ -106,28 +110,31 @@ const PARTS_HEADERS = ['Название', 'OEM-номер', 'Категория
 
 function writePartsHeader(ws: any) {
   const hr = ws.getRow(10)
-  PARTS_HEADERS.forEach((h, i) => { hr.getCell(i + 1).value = h })
-  hr.height = 22
-  hr.eachCell((c: any) => {
+  hr.height = 30
+  // Все 9 ячеек шапки — единое оформление и выравнивание (по центру, перенос).
+  for (let i = 1; i <= PARTS_HEADERS.length; i++) {
+    const c = hr.getCell(i)
+    c.value = PARTS_HEADERS[i - 1]
     c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BRAND } }
     c.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 }
     c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-  })
+    c.border = { right: { style: 'thin', color: { argb: 'FFFFFFFF' } } }
+  }
   ws.views = [{ state: 'frozen', ySplit: 10 }]
 }
 
 function stylePartsBody(ws: any) {
+  ws.getColumn(6).numFmt = '# ##0.##'
   for (let i = 11; i <= ws.rowCount; i++) {
     const row = ws.getRow(i)
-    row.eachCell((c: any) => {
+    for (let cn = 1; cn <= PARTS_HEADERS.length; cn++) {
+      const c = row.getCell(cn)
       c.border = { bottom: { style: 'hair', color: { argb: BORDER } }, right: { style: 'hair', color: { argb: BORDER } } }
       if (i % 2 === 1) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: ZEBRA } }
-      if (!c.alignment) c.alignment = { vertical: 'middle' }
-    })
+      // Числовые — вправо; остальные — влево; всё по вертикали по центру, с переносом длинного текста.
+      c.alignment = { horizontal: NUM_COLS.includes(cn) ? 'right' : 'left', vertical: 'middle', wrapText: cn === 1 || cn === 9 }
+    }
   }
-  ws.getColumn(6).numFmt = '# ##0.##'
-  ws.getColumn(5).alignment = { horizontal: 'right' }
-  ws.getColumn(6).alignment = { horizontal: 'right' }
 }
 
 function sheetNamer() {

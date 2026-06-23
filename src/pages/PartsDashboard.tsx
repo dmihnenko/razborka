@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
@@ -12,7 +13,7 @@ import type { PartsOrderStatus } from '@/utils/status'
 import { formatDate } from '@/utils/date'
 import { intlLocale } from '@/i18n'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
-import { getPartsDashboardStats } from '@/services/partsService'
+import { getPartsDashboardStats, type DashboardPeriod } from '@/services/partsService'
 import { getShipments, type PartsShipment } from '@/services/shipmentsService'
 import { supabase } from '@/lib/supabase'
 import ExchangeRateWidget from '@/components/parts/ExchangeRateWidget'
@@ -52,6 +53,8 @@ export default function PartsDashboard() {
   const partsCompanyId = profile?.parts_company_id
   // Финансы (выручка/прибыль) видят владелец и админ; рядовой работник — нет.
   const canSeeFinance = useHasAnyRole(['parts_owner', 'admin'])
+  // Период для финансовых метрик (выручка). Операционные счётчики — всегда текущее состояние.
+  const [period, setPeriod] = useState<DashboardPeriod>('all')
   const { rate: usdRate, isStale: rateStale, fetching: rateFetching, fetchPrivatBank } = usePartsExchangeRate()
 
   const handleUpdateRate = async () => {
@@ -64,8 +67,8 @@ export default function PartsDashboard() {
   }
 
   const { data: stats } = useQuery({
-    queryKey: ['parts-dashboard-stats', partsCompanyId],
-    queryFn: () => getPartsDashboardStats(partsCompanyId!, usdRate || 41),
+    queryKey: ['parts-dashboard-stats', partsCompanyId, period],
+    queryFn: () => getPartsDashboardStats(partsCompanyId!, usdRate || 41, period),
     enabled: !!partsCompanyId,
     staleTime: 5 * 60 * 1000,
   })
@@ -142,7 +145,7 @@ export default function PartsDashboard() {
   const kpis = [
     // Выручка — только для владельца/админа; работнику показываем «Доставка в пути»
     canSeeFinance
-      ? { label: t('dashboard.kpiRevenue'), value: (stats?.revenueUSD ?? 0) > 0 ? `$${Math.round(stats!.revenueUSD).toLocaleString(intlLocale())}` : '—', sub: t('dashboard.kpiCompleted', { n: stats?.orders?.completed ?? 0 }), Icon: DollarSign, to: '/parts/analytics' }
+      ? { label: t('dashboard.kpiRevenue'), value: (stats?.revenueUSD ?? 0) > 0 ? `$${Math.round(stats!.revenueUSD).toLocaleString(intlLocale())}` : '—', sub: t('dashboard.kpiCompleted', { n: stats?.revenueOrders ?? stats?.orders?.completed ?? 0 }), Icon: DollarSign, to: '/parts/analytics' }
       : { label: t('dashboard.kpiDelivery'), value: delivery.active, sub: t('dashboard.kpiDelivered', { n: delivery.delivered }), Icon: Truck, to: '/parts/shipments' },
     { label: t('dashboard.kpiOrders'),  value: stats?.orders?.total ?? 0, sub: t('dashboard.kpiInProgress', { n: stats?.orders?.in_progress ?? 0 }), Icon: ShoppingCart, to: '/parts/orders' },
     { label: t('dashboard.kpiParts'), value: stats?.inventory?.total ?? 0, sub: t('dashboard.kpiAvailable', { n: stats?.inventory?.available ?? 0 }), Icon: Package, to: '/parts/inventory?source=vehicles' },
@@ -214,6 +217,27 @@ export default function PartsDashboard() {
           <div>
             <p className="text-sm font-bold" style={{ color: ink }}>{t('dashboard.allGoodTitle')}</p>
             <p className="text-xs mt-0.5" style={{ color: ink2 }}>{t('dashboard.allGoodText')}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Период (для финансовых метрик) ─────────────────── */}
+      {canSeeFinance && (
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: ink3 }}>{t('dashboard.results')}</p>
+          <div className="inline-flex rounded-lg p-0.5" style={{ background: 'var(--cab-surface-2)' }}>
+            {(['today', '7d', 'month', 'all'] as DashboardPeriod[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className="px-2.5 py-1 rounded-md text-xs font-semibold transition-colors"
+                style={period === p
+                  ? { background: '#fff', color: ink, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }
+                  : { color: ink3 }}
+              >
+                {t(`dashboard.period_${p}`)}
+              </button>
+            ))}
           </div>
         </div>
       )}

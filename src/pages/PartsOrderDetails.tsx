@@ -28,6 +28,8 @@ import { createShipment } from '@/services/shipmentsService'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { moveToTrash } from '@/services/trashService'
+import { getEntityActivity } from '@/services/activityLogService'
+import { History } from 'lucide-react'
 
 /* ── локальная карта статус → badge-класс ────────────────────── */
 const STATUS_BADGE: Record<string, string> = {
@@ -90,6 +92,13 @@ export default function PartsOrderDetails() {
     enabled: !!id,
   })
 
+  /* ── история заказа (таймлайн статусов/событий) ─────────────── */
+  const { data: timeline = [] } = useQuery({
+    queryKey: ['parts-order-activity', id],
+    queryFn: () => getEntityActivity(partsCompanyId!, 'order', id!),
+    enabled: !!id && !!partsCompanyId,
+  })
+
   /* ── удалить позицию ────────────────────────────────────────── */
   const deleteItemMutation = useMutation({
     mutationFn: ({ itemId, inventoryItemId }: { itemId: string; inventoryItemId: string }) =>
@@ -114,6 +123,7 @@ export default function PartsOrderDetails() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-order', id] })
+      queryClient.invalidateQueries({ queryKey: ['parts-order-activity', id] })
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       setShowCompleteModal(false)
@@ -678,6 +688,29 @@ export default function PartsOrderDetails() {
           }}
           orderId={order.id}
         />
+
+        {/* ── таймлайн заказа (история статусов/событий) ──────────────── */}
+        {timeline.length > 0 && (
+          <div className="cab-card p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="icon-tile-sm bg-slate-100 text-slate-600">
+                <History className="w-4 h-4" />
+              </span>
+              <h2 className="heading-3">{t('orderDetailsPage.timeline')}</h2>
+            </div>
+            <ol className="relative border-l border-gray-200 ml-2 space-y-4">
+              {timeline.map((e) => (
+                <li key={e.id} className="ml-4">
+                  <span className="absolute -left-[5px] w-2.5 h-2.5 rounded-full bg-primary mt-1.5" />
+                  <p className="text-sm text-gray-800">{e.detail || e.action}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {formatDate(e.created_at)}{e.user_name ? ` · ${e.user_name}` : ''}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
 
         {/* ── кнопка «Завершить» ────────────────────────────────────── */}
         {canManage && order.status !== 'completed' && order.items && order.items.length > 0 && (

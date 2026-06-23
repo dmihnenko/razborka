@@ -2,14 +2,16 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Spinner } from '@/components/ui/Spinner'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   ArrowLeft, Trash2, Package,
   MapPin, Tag, Car, FileText, AlertTriangle,
-  Share2, Edit2, Copy, Warehouse, CheckCircle2, QrCode, TrendingUp, ChevronDown, ChevronRight,
+  Share2, Edit2, Copy, Warehouse, CheckCircle2, QrCode, TrendingUp, ChevronDown, ChevronRight, History, RotateCcw,
 } from 'lucide-react'
-import { getPartsInventoryItem, deletePartsInventoryItem, getStorageLocations } from '@/services/partsService'
+import { getPartsInventoryItem, deletePartsInventoryItem, getStorageLocations, updatePartsInventoryItem } from '@/services/partsService'
+import { getEntityActivity } from '@/services/activityLogService'
+import { formatDate } from '@/utils/date'
 import { moveToTrash } from '@/services/trashService'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { formatPrice } from '@/utils/currency'
@@ -85,6 +87,7 @@ export default function PartsInventoryItemPage() {
     damaged: t('inventoryItemPage.statusDamaged'),
   }
   const { data: profile } = useUserProfile()
+  const queryClient = useQueryClient()
   const [isSellOpen, setIsSellOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [qrOpen, setQrOpen] = useState(false)
@@ -94,6 +97,37 @@ export default function PartsInventoryItemPage() {
     queryFn: () => getPartsInventoryItem(id!),
     enabled: !!id,
   })
+
+  /* История позиции (изменения цены, статусы) — из журнала активности */
+  const { data: history = [] } = useQuery({
+    queryKey: ['parts-inventory-item-activity', id],
+    queryFn: () => getEntityActivity(profile!.parts_company_id!, 'inventory', id!),
+    enabled: !!id && !!profile?.parts_company_id,
+  })
+
+  /* Возврат проданной позиции в наличие (sold → available) */
+  const returnMutation = useMutation({
+    mutationFn: async () => {
+      await updatePartsInventoryItem(id!, {
+        status: 'available',
+        sold_price: null, sold_at: null, sold_quantity: null,
+        sold_to_customer_id: null, exchange_rate_at_sale: null,
+      } as any)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory-item', id] })
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory-item-activity', id] })
+      toast.success(t('inventoryItemPage.toastReturned'))
+    },
+    onError: () => toast.error(t('inventoryItemPage.toastReturnError')),
+  })
+
+  const handleReturn = async () => {
+    const ok = await showConfirm({ message: t('inventoryItemPage.returnConfirm') })
+    if (!ok) return
+    returnMutation.mutate()
+  }
 
   /* Storage location breadcrumb */
   const { data: locations = [] } = useQuery({
@@ -514,21 +548,51 @@ export default function PartsInventoryItemPage() {
         </div>
 
         {/* Управление позицией */}
-        <div className="cab-card p-3 flex items-center gap-2">
-          <button
-            onClick={() => navigate('/parts/inventory', { state: { editItemId: id } })}
-            className="cab-btn cab-btn-secondary cab-btn-sm flex-1 gap-1.5"
-          >
-            <Edit2 className="w-4 h-4" /> {t('inventoryItemPage.edit')}
-          </button>
-          <button
-            onClick={handleDelete}
-            disabled={deleteMutation.isPending}
-            className="cab-btn cab-btn-danger cab-btn-sm gap-1.5"
-          >
-            <Trash2 className="w-4 h-4" /> {t('inventoryItemPage.delete')}
-          </button>
+        <div className="cab-card p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/parts/inventory', { state: { editItemId: id } })}
+              className="cab-btn cab-btn-secondary cab-btn-sm flex-1 gap-1.5"
+            >
+              <Edit2 className="w-4 h-4" /> {t('inventoryItemPage.edit')}
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              className="cab-btn cab-btn-danger cab-btn-sm gap-1.5"
+            >
+              <Trash2 className="w-4 h-4" /> {t('inventoryItemPage.delete')}
+            </button>
+          </div>
+          {/* Возврат в наличие — для проданных позиций */}
+          {isSold && (
+            <button
+              onClick={handleReturn}
+              disabled={returnMutation.isPending}
+              className="cab-btn cab-btn-secondary cab-btn-sm w-full justify-center gap-1.5"
+            >
+              <RotateCcw className="w-4 h-4" /> {t('inventoryItemPage.returnToStock')}
+            </button>
+          )}
         </div>
+
+        {/* История позиции (цена/статусы) */}
+        {history.length > 0 && (
+          <div className="cab-card p-4">
+            <p className="kicker flex items-center gap-1.5 mb-3">
+              <History className="w-3.5 h-3.5" /> {t('inventoryItemPage.history')}
+            </p>
+            <ol className="relative border-l border-gray-200 ml-1.5 space-y-3">
+              {history.map((e) => (
+                <li key={e.id} className="ml-3">
+                  <span className="absolute -left-[5px] w-2 h-2 rounded-full bg-gray-300 mt-1.5" />
+                  <p className="text-xs text-gray-700">{e.detail || e.action}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">{formatDate(e.created_at)}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
 
         </div>{/* /правая колонка */}
       </div>

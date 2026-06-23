@@ -318,15 +318,19 @@ export interface PartsDashboardStats {
   inventory: { total: number; available: number; lowStock: number; needsFill: number; valueUSD: number; valueUAH: number; fromVehicles: number; fromShop: number }
   orders: { total: number; new: number; in_progress: number; completed: number }
   revenueUSD: number
+  revenueOrders?: number
   customers: { total: number; withOrders: number }
   marketOrders: number
 }
 
 /** Агрегаты дашборда одним RPC (вместо ~6 запросов с клиентской агрегацией полных таблиц). */
-export async function getPartsDashboardStats(partsCompanyId: string, rate = 41): Promise<PartsDashboardStats> {
+export type DashboardPeriod = 'today' | '7d' | 'month' | 'all'
+
+export async function getPartsDashboardStats(partsCompanyId: string, rate = 41, period: DashboardPeriod = 'all'): Promise<PartsDashboardStats> {
   const { data, error } = await supabase.rpc('get_parts_dashboard_stats', {
     p_company: partsCompanyId,
     p_rate: rate,
+    p_period: period,
   })
   if (error) throw error
   return data as PartsDashboardStats

@@ -57,3 +57,34 @@ export async function getActivityLog(
 
   return { items, total: count ?? 0 }
 }
+
+/** История событий по одной сущности (для таймлайна заказа/авто и т.п.). */
+export async function getEntityActivity(
+  partsCompanyId: string,
+  entityType: string,
+  entityId: string,
+  limit = 30,
+): Promise<ActivityLogEntry[]> {
+  const { data, error } = await supabase
+    .from('parts_activity_log')
+    .select('*')
+    .eq('parts_company_id', partsCompanyId)
+    .eq('entity_type', entityType)
+    .eq('entity_id', entityId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  const items = (data ?? []) as ActivityLogEntry[]
+
+  const userIds = [...new Set(items.map(i => i.user_id).filter(Boolean))] as string[]
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('user_profiles')
+      .select('id, full_name, email')
+      .in('id', userIds)
+    const nameMap: Record<string, string> = {}
+    for (const p of profiles ?? []) nameMap[p.id] = p.full_name || p.email || p.id.slice(0, 8)
+    for (const item of items) if (item.user_id) item.user_name = nameMap[item.user_id] ?? item.user_id.slice(0, 8)
+  }
+  return items
+}
