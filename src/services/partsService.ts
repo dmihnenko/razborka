@@ -9,7 +9,8 @@ import type {
   CreatePartsCustomerInput,
   CreatePartsInventoryInput,
   CreatePartsCategoryInput,
-  PartsCategorySuggestion
+  PartsCategorySuggestion,
+  VehicleRoi
 } from '@/types/parts'
 
 // ============================================================================
@@ -339,6 +340,16 @@ export async function getPartsAnalytics(partsCompanyId: string, rate = 41): Prom
   })
   if (error) throw error
   return data
+}
+
+/** Окупаемость авто: на каждое авто — вложено (цена авто), возвращено, остаток, прибыль, %. */
+export async function getVehicleRoi(partsCompanyId: string, rate = 41): Promise<VehicleRoi[]> {
+  const { data, error } = await supabase.rpc('get_vehicle_roi', {
+    p_company: partsCompanyId,
+    p_rate: rate,
+  })
+  if (error) throw error
+  return (data ?? []) as VehicleRoi[]
 }
 
 export async function getPartsInventory(partsCompanyId: string) {

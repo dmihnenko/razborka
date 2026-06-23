@@ -15,6 +15,7 @@ import {
   Truck,
   FolderTree,
   Warehouse,
+  PiggyBank,
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -53,6 +54,7 @@ export const partsOwnerMenu: MenuItem[] = [
   { name: 'Клиенты', href: '/parts/customers', icon: Users, group: 'base' },
   { name: 'Категории', href: '/parts/categories', icon: FolderTree, group: 'base' },
   { name: 'Места хранения', href: '/parts/warehouse', icon: Warehouse, group: 'base' },
+  { name: 'Окупаемость авто', href: '/parts/roi', icon: PiggyBank, group: 'system' },
   { name: 'Аналитика', href: '/parts/analytics', icon: LineChart, group: 'system' },
   { name: 'Сотрудники', href: '/parts/employees', icon: Users, group: 'system' },
   { name: 'Настройки', href: '/parts/settings', icon: SlidersHorizontal, group: 'system' },

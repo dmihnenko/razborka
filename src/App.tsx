@@ -40,6 +40,7 @@ const PartsOrderDetails = lazy(() => import('./pages/PartsOrderDetails'))
 const PartsCreateOrder = lazy(() => import('./pages/PartsCreateOrder'))
 const PartsEmployees = lazy(() => import('./pages/PartsEmployees'))
 const PartsAnalytics = lazy(() => import('./pages/PartsAnalytics'))
+const PartsRoi = lazy(() => import('./pages/PartsRoi'))
 const PartsCustomers = lazy(() => import('./pages/PartsCustomers'))
 const PartsCustomerProfile = lazy(() => import('./pages/PartsCustomerProfile'))
 const PublicPartsCustomerView = lazy(() => import('./pages/PublicPartsCustomerView'))
@@ -243,6 +244,7 @@ function App() {
           <Route path="parts/customers/:id" element={<PartsCustomerProfile />} />
           <Route path="parts/employees" element={<PartsEmployees />} />
           <Route path="parts/analytics" element={<PartsAnalytics />} />
+          <Route path="parts/roi" element={<PartsRoi />} />
           <Route path="parts/activity" element={<PartsActivityLog />} />
           <Route path="parts/categories" element={<PartsCategories />} />
           <Route path="parts/settings" element={<PartsSettings />} />

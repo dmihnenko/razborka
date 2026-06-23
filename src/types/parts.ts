@@ -184,6 +184,37 @@ export interface CreatePartsInventoryInput {
 }
 
 // ============================================================================
+// Окупаемость авто (Vehicle ROI)
+// ============================================================================
+
+/** Строка окупаемости одного авто. Все денежные значения — в USD (как аналитика). */
+export interface VehicleRoi {
+  vehicle_id: string
+  make: string
+  model: string
+  year?: number
+  status: PartsVehicleStatus
+  /** Цена покупки авто в исходной валюте ввода (для подписи); расчёт — через investment_usd. */
+  purchase_price?: number
+  purchase_date?: string
+  /** Вложено = цена покупки авто, в USD. null — если цена не указана. */
+  investment_usd: number | null
+  /** Возвращено проданными запчастями этого авто, USD. */
+  realized_usd: number
+  /** Потенциал непроданного остатка (available+reserved) по ценам продажи, USD. */
+  stock_usd: number
+  parts_total: number
+  parts_sold: number
+  parts_in_stock: number
+  /** Фактическая прибыль = realized − investment, USD. */
+  profit_usd: number
+  /** % окупаемости = realized / investment × 100. null — если нет цены покупки. */
+  payback_pct: number | null
+  /** Прогноз полной окупаемости = realized + stock − investment, USD. */
+  forecast_usd: number
+}
+
+// ============================================================================
 // Склад (иерархические места хранения)
 // ============================================================================
 

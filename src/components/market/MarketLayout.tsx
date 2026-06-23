@@ -92,7 +92,7 @@ function MarketLayoutInner() {
             {/* Лого: на мобиле компактный знак (в размер кнопок Каталог/Разборки),
                 на десктопе — полная эмблема с дескриптором */}
             <Link to="/market" className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0 min-w-0" aria-label="Razborka.net — маркет запчастей, на главную">
-              <Logo size="sm" withText={false} className="md:hidden flex-shrink-0 [&>svg]:!w-[42px] [&>svg]:!h-[42px]" />
+              <Logo size="sm" withText={false} className="md:hidden flex-shrink-0 [&>svg]:!w-[44px] [&>svg]:!h-[44px]" />
               <Logo size="sm" withText className="hidden md:inline-flex flex-shrink-0" />
             </Link>
 
@@ -184,7 +184,7 @@ function MarketLayoutInner() {
       <footer style={{ background: 'var(--mk-surface)', borderTop: '1px solid var(--mk-border)' }} className="mt-10">
         <div className="mk-container py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-4">
-            <Link to="/market" aria-label={BRAND.name} className="inline-flex flex-shrink-0">
+            <Link to="/market" aria-label={BRAND.name} className="inline-flex flex-shrink-0 md:hidden">
               <Logo size="sm" withText />
             </Link>
             <p className="text-xs mk-meta text-center sm:text-left">{t('footer.tagline')}</p>

@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
-import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { supabase } from '@/lib/supabase'
 import { getUserRolesWithNames } from '@/services/userService'
 import { toast } from 'sonner'
@@ -238,11 +237,6 @@ export default function Login() {
             padding: 'clamp(24px, 5vw, 48px) clamp(16px, 4vw, 40px)',
           }}
         >
-
-            {/* Выбор языка интерфейса */}
-            <div className="flex justify-end mb-3">
-              <LanguageSwitcher />
-            </div>
 
             {/* Logo */}
             <motion.div
