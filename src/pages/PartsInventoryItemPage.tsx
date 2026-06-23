@@ -224,24 +224,29 @@ export default function PartsInventoryItemPage() {
       <div className="w-full py-4 sm:py-5 animate-fade-in grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 items-start">
         <div className="cab-card overflow-hidden lg:col-span-2">
 
-          {/* Photo gallery */}
-          {photos.length > 0 ? (
-            <PhotoGallery
-              photos={photos as any[]}
-              alt={item.name}
-              mainAspect="aspect-[16/10] sm:aspect-[16/9]"
-              objectFit="contain"
-              mainBgClass="bg-white"
-            />
-          ) : (
-            <div className="aspect-[16/10] bg-gray-50 flex flex-col items-center justify-center gap-2 text-gray-300 border-b border-gray-100">
-              <Package className="w-14 h-14" />
-              <span className="kicker text-gray-400">{t('inventoryItemPage.noPhotos')}</span>
+          {/* ── Верх: фото (компактно) + ключевая инфо ── */}
+          <div className="flex flex-col sm:flex-row">
+
+            {/* Фото — компактная колонка, не на пол-экрана */}
+            <div className="sm:w-64 lg:w-80 flex-shrink-0 border-b sm:border-b-0 sm:border-r border-gray-100">
+              {photos.length > 0 ? (
+                <PhotoGallery
+                  photos={photos as any[]}
+                  alt={item.name}
+                  mainAspect="aspect-square"
+                  objectFit="contain"
+                  mainBgClass="bg-white"
+                />
+              ) : (
+                <div className="aspect-square bg-gray-50 flex flex-col items-center justify-center gap-2 text-gray-300">
+                  <Package className="w-12 h-12" />
+                  <span className="kicker text-gray-400">{t('inventoryItemPage.noPhotos')}</span>
+                </div>
+              )}
             </div>
-          )}
 
           {/* ── Hero: статус · название · артикул · цена · продать ── */}
-          <div className="p-4 sm:p-5">
+          <div className="flex-1 min-w-0 p-4 sm:p-5">
 
             {/* Status badges */}
             <div className="flex flex-wrap gap-1.5 mb-3">
@@ -265,15 +270,9 @@ export default function PartsInventoryItemPage() {
             {item.article && (
               <div className="mb-4">
                 <p className="kicker mb-1.5">{t('inventoryItemPage.article')}</p>
-                <button
-                  type="button"
-                  onClick={() => { navigator.clipboard.writeText(item.article!); toast.success(t('inventoryItemPage.toastArticleCopied')) }}
-                  title={t('inventoryItemPage.clickToCopy')}
-                  className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-[color:var(--cab-border-strong)] hover:border-[color:var(--cab-ink-3)] active:scale-95 transition-all"
-                >
+                <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-white border border-[color:var(--cab-border-strong)]">
                   <span className="font-mono font-bold tracking-wider text-gray-800 tabular">{item.article}</span>
-                  <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-primary transition-colors" />
-                </button>
+                </span>
               </div>
             )}
 
@@ -332,6 +331,7 @@ export default function PartsInventoryItemPage() {
               )}
             </div>
           </div>
+          </div>{/* /верх: фото + инфо */}
 
           {/* ── Характеристики + Расположение ───────────────────── */}
           <div className="border-t border-gray-100 px-4 sm:px-5">

@@ -54,6 +54,28 @@ export default function PartsShipments() {
     onError: (e: any) => toast.error(e?.message || t('shipments.statusError')),
   })
 
+  // Массовая проверка статусов всех активных (в пути) посылок
+  const refreshAllMutation = useMutation({
+    mutationFn: async () => {
+      const apiKey = getNpApiKey()
+      if (!apiKey) throw new Error(t('shipments.npKeyNeeded'))
+      const active = shipments.filter(s => !isDelivered(s) && !isProblem(s))
+      let updated = 0
+      for (const s of active) {
+        try {
+          const st = await trackTtn(s.ttn, s.recipient_phone ?? undefined, apiKey)
+          if (st) { await refreshShipmentStatus(s.id, st); updated++ }
+        } catch { /* пропускаем одну посылку, продолжаем остальные */ }
+      }
+      return updated
+    },
+    onSuccess: (n) => {
+      queryClient.invalidateQueries({ queryKey: ['parts-shipments', partsCompanyId] })
+      toast.success(t('shipments.checkedAll', { n }))
+    },
+    onError: (e: any) => toast.error(e?.message || t('shipments.statusError')),
+  })
+
   if (!partsCompanyId) return <PartsAccessDenied />
 
   const counts = {
@@ -73,7 +95,22 @@ export default function PartsShipments() {
 
   return (
     <div className="min-h-dvh" style={{ background: 'var(--cab-bg)' }}>
-      <PartsPageHeader title={t('pages.shipments')} subtitle={t('pages.shipmentsSub', { n: counts.all })} backPath="/parts/dashboard" />
+      <PartsPageHeader
+        title={t('pages.shipments')}
+        subtitle={t('pages.shipmentsSub', { n: counts.all })}
+        backPath="/parts/dashboard"
+        actions={
+          <button
+            onClick={() => refreshAllMutation.mutate()}
+            disabled={refreshAllMutation.isPending || counts.active === 0}
+            className="cab-btn cab-btn-sm cab-btn-primary"
+            title={t('shipments.checkAll')}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshAllMutation.isPending ? 'animate-spin' : ''}`} strokeWidth={1.5} />
+            <span className="hidden sm:inline">{t('shipments.checkAll')}</span>
+          </button>
+        }
+      />
 
       <div className="page-container">
         {/* Вкладки-фильтры */}

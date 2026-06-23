@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
-import { Plus, Search, Package, Grid, List, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, ChevronRight, Download, Zap, MapPin, FolderOpen, Copy, Check } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, ChevronRight, Download, MapPin, FolderOpen, Copy, Check } from 'lucide-react'
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -26,7 +26,6 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { moveToTrash } from '@/services/trashService'
 import { buildCsv, downloadCsv } from '@/utils/csv'
 import type { CsvRow } from '@/utils/csv'
-import { ConveyorModal } from '@/components/parts/ConveyorModal'
 
 type ViewMode = 'grid' | 'list'
 
@@ -99,7 +98,6 @@ export default function PartsInventory() {
   // По умолчанию — по дате добавления, новые сверху (удобно отслеживать последнее добавленное)
   const [sortField, setSortField] = useState<'date' | 'name' | 'status' | 'price'>('date')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
-  const [isConveyorOpen, setIsConveyorOpen] = useState(false)
   const [isBulkLocationOpen, setIsBulkLocationOpen] = useState(false)
   const [isBulkCategoryOpen, setIsBulkCategoryOpen] = useState(false)
   const [bulkLocationId, setBulkLocationId] = useState<string>('')
@@ -240,7 +238,7 @@ export default function PartsInventory() {
       if (error) throw error
       return data
     },
-    enabled: !!partsCompanyId && (isModalOpen || isConveyorOpen)
+    enabled: !!partsCompanyId && isModalOpen
   })
 
   // Get storage locations for dropdown in modal and bulk operations
@@ -723,16 +721,6 @@ export default function PartsInventory() {
               <Download className="w-4 h-4" strokeWidth={1.5} />
               <span className="hidden md:inline">CSV</span>
             </button>
-            {sourceFilter !== 'shop' && (
-              <button
-                onClick={() => setIsConveyorOpen(true)}
-                className="cab-btn cab-btn-secondary cab-btn-sm flex items-center gap-1.5"
-                title={t('inventoryPage.conveyorTitle')}
-              >
-                <Zap className="w-4 h-4" strokeWidth={1.5} />
-                <span className="hidden sm:inline">{t('inventoryPage.conveyor')}</span>
-              </button>
-            )}
             <button
               onClick={() => {
                 setEditingItem(null)
@@ -1665,19 +1653,6 @@ export default function PartsInventory() {
           }}
         />
       )}
-      {/* Конвейер */}
-      {isConveyorOpen && (
-        <ConveyorModal
-          partsCompanyId={partsCompanyId}
-          vehicles={vehicles as { id: string; make: string; model: string; year?: number }[]}
-          categories={categories as { id: string; name: string; brand?: string }[]}
-          onClose={() => {
-            setIsConveyorOpen(false)
-            queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-          }}
-        />
-      )}
-
       <ConfirmDialog {...dialogProps} />
     </div>
   )

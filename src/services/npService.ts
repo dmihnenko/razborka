@@ -154,6 +154,24 @@ export async function getSenderContactRef(counterpartyRef: string): Promise<stri
 }
 
 /**
+ * Приводит украинский номер к формату 380XXXXXXXXX (требование API Новой почты).
+ * Принимает любые варианты ввода: +38 (095)…, 095…, 80…, 38095…, голые 9 цифр.
+ */
+export function formatUaPhone(raw: string): string {
+  let d = (raw || '').replace(/\D/g, '')
+  if (d.startsWith('380')) {
+    // уже в нужном формате
+  } else if (d.startsWith('80')) {
+    d = '3' + d            // 80XXXXXXXXX → 380XXXXXXXXX
+  } else if (d.startsWith('0')) {
+    d = '38' + d           // 0XXXXXXXXX → 380XXXXXXXXX
+  } else if (d.length === 9) {
+    d = '380' + d          // XXXXXXXXX → 380XXXXXXXXX (без ведущего 0)
+  }
+  return d
+}
+
+/**
  * Создаёт получателя (физическое лицо) и возвращает его Ref и contactRef.
  */
 export async function createRecipientPrivatePerson(params: {
@@ -210,10 +228,13 @@ export async function createTtn(
   const lastName = nameParts[0] || 'Клієнт'
   const firstName = nameParts.slice(1).join(' ') || 'Клієнт'
 
+  // Номер получателя — строго в формате 380XXXXXXXXX (иначе НП отклоняет)
+  const recipientPhone = formatUaPhone(p.recipientPhone)
+
   const recipient = await createRecipientPrivatePerson({
     firstName,
     lastName,
-    phone: p.recipientPhone,
+    phone: recipientPhone,
   })
 
   // Используем npRequest напрямую через fetch, т.к. InternetDocument/save
@@ -244,7 +265,7 @@ export async function createTtn(
       Recipient: recipient.ref,
       RecipientAddress: p.recipientWarehouseRef,
       ContactRecipient: recipient.contactRef ?? '',
-      RecipientsPhone: p.recipientPhone,
+      RecipientsPhone: recipientPhone,
     },
   }
 

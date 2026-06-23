@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Spinner } from '@/components/ui/Spinner'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Edit, TrendingUp, TrendingDown, Plus, Settings, Tag, Sparkles, X, Car, Zap, DollarSign } from 'lucide-react'
+import { Edit, TrendingUp, TrendingDown, Plus, Settings, Tag, Sparkles, X, Car, DollarSign } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsCategoryTemplates, createPartsInventoryItem, getStorageLocations, updateVehicleStatus } from '@/services/partsService'
@@ -13,7 +13,6 @@ import type { PartsVehicle, PartsVehicleStatus, CreatePartsInventoryInput, Stora
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
-import { ConveyorModal } from '@/components/parts/ConveyorModal'
 import SellPartModal from '@/components/parts/SellPartModal'
 import { formatPrice } from '@/utils/currency'
 import { PartsInventoryModal } from '@/pages/PartsInventory'
@@ -68,7 +67,6 @@ export default function PartsVehicleDetails() {
   const { t } = useTranslation('cabinet')
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isAddPartOpen, setIsAddPartOpen] = useState(false)
-  const [isConveyorOpen, setIsConveyorOpen] = useState(false)
   const [sellPart, setSellPart] = useState<PartsInventoryItem | null>(null)
   const [suggestionDismissed, setSuggestionDismissed] = useState(false)
   const { rate: globalRate, isStale: rateIsStale } = usePartsExchangeRate()
@@ -103,7 +101,7 @@ export default function PartsVehicleDetails() {
       if (error) throw error
       return data
     },
-    enabled: !!partsCompanyId && (isAddPartOpen || isConveyorOpen),
+    enabled: !!partsCompanyId && isAddPartOpen,
   })
 
   const { data: storageLocations = [] } = useQuery({
@@ -281,14 +279,6 @@ export default function PartsVehicleDetails() {
             <span className={`${STATUS_BADGE[vehicle.status]} hidden sm:inline-flex`}>
               {t(`vehicleDetailsPage.status_${vehicle.status}`)}
             </span>
-            <button
-              onClick={() => setIsConveyorOpen(true)}
-              className="cab-btn cab-btn-primary cab-btn-sm"
-              title={t('vehicleDetailsPage.conveyorTitle')}
-            >
-              <Zap className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t('vehicleDetailsPage.conveyor')}</span>
-            </button>
             <button
               onClick={() => setIsEditModalOpen(true)}
               className="cab-btn cab-btn-secondary cab-btn-sm"
@@ -762,19 +752,6 @@ export default function PartsVehicleDetails() {
         />
       )}
 
-      {isConveyorOpen && partsCompanyId && (
-        <ConveyorModal
-          partsCompanyId={partsCompanyId}
-          vehicles={[{ id: vehicle.id, make: vehicle.make, model: vehicle.model, year: vehicle.year ?? undefined }]}
-          categories={categories}
-          initialVehicleId={vehicle.id}
-          onClose={() => {
-            queryClient.invalidateQueries({ queryKey: ['vehicle-parts', id] })
-            queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-            setIsConveyorOpen(false)
-          }}
-        />
-      )}
 
       {sellPart && partsCompanyId && (
         <SellPartModal

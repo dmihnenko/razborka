@@ -10,7 +10,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowLeft, Plus, Trash2, Edit2, Search,
-  CheckCircle, MapPin, Truck, Package, X, Copy, ExternalLink,
+  CheckCircle, MapPin, Truck, Package, X, Copy, ExternalLink, AlertTriangle,
 } from 'lucide-react'
 import { getNpApiKey } from '@/utils/npApiKey'
 import { searchCities, searchWarehouses, NpCity, NpWarehouse, createTtn } from '@/services/npService'
@@ -1190,11 +1190,19 @@ function NpTtnBlock({
   const customerName = order.customer?.full_name || customerFullName
   const customerPhone_ = order.customer?.phone || customerPhone
 
-  const canCreateTtn = npApiKeySet &&
-    Boolean(customerNpCityRef) &&
-    Boolean(customerNpWarehouseRef) &&
-    Boolean(customerPhone_) &&
-    Boolean(customerName)
+  // Для ТТН обязательны: имя И фамилия (2 слова), телефон, город + отделение НП
+  const hasFullName = (customerName || '').trim().split(/\s+/).filter(Boolean).length >= 2
+  const hasNp = Boolean(customerNpCityRef) && Boolean(customerNpWarehouseRef)
+  const hasPhone = Boolean(customerPhone_)
+
+  const canCreateTtn = npApiKeySet && hasFullName && hasPhone && hasNp
+
+  // Список незаполненных обязательных полей — показываем работнику
+  const ttnMissing = [
+    !hasFullName && t('orderDetailsPage.reqName'),
+    !hasPhone && t('orderDetailsPage.reqPhone'),
+    !hasNp && t('orderDetailsPage.reqNp'),
+  ].filter(Boolean) as string[]
 
   const handleCreateTtn = async () => {
     setTtnCreating(true)
@@ -1339,15 +1347,24 @@ function NpTtnBlock({
             </div>
           )}
         </div>
-      ) : (
-        /* ── Нет данных ── */
+      ) : !npApiKeySet ? (
+        /* ── Нет API-ключа НП ── */
         <div className="flex items-start gap-2">
           <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-gray-500">
-            {!npApiKeySet
-              ? t('orderDetailsPage.noApiKeyHint')
-              : t('orderDetailsPage.noDataHint')}
-          </p>
+          <p className="text-sm text-gray-500">{t('orderDetailsPage.noApiKeyHint')}</p>
+        </div>
+      ) : (
+        /* ── Не заполнены обязательные поля для ТТН ── */
+        <div className="rounded-lg bg-amber-50 border border-amber-200 p-3">
+          <p className="text-sm font-semibold text-amber-800">{t('orderDetailsPage.reqIntro')}</p>
+          <ul className="mt-1.5 space-y-1">
+            {ttnMissing.map((m) => (
+              <li key={m} className="flex items-center gap-1.5 text-sm text-amber-700">
+                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.8} />
+                {m}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
