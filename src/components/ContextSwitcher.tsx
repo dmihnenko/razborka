@@ -24,15 +24,18 @@ const CONTEXTS: Ctx[] = [
 interface Props {
   current: ContextId
   excludeIds?: ContextId[]
-  /** 'bar' — кнопка с ярлыком (шапки). 'sidebar' — компактная (иконка + chevron) для свёрнутого сайдбара. */
-  variant?: 'bar' | 'sidebar'
+  /** 'bar' — кнопка с ярлыком (шапки). 'sidebar' — компактная (иконка + chevron) для свёрнутого сайдбара.
+   *  'segment' — сегментированный переключатель из двух кнопок [Админ | Разборка/Мои авто] (для админа). */
+  variant?: 'bar' | 'sidebar' | 'segment'
+  /** Для variant='segment': когда показывать подписи. 'lg' — только на широком (узкий md-сайдбар → иконки). */
+  segLabels?: 'always' | 'lg'
 }
 
 /**
  * Динамическая смена роли: одна кнопка → меню со ВСЕМИ доступными пользователю
  * разделами (определяются по фактическим ролям). Текущий отмечен галочкой.
  */
-export default function ContextSwitcher({ current, excludeIds = [], variant = 'bar' }: Props) {
+export default function ContextSwitcher({ current, excludeIds = [], variant = 'bar', segLabels = 'always' }: Props) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
@@ -83,6 +86,40 @@ export default function ContextSwitcher({ current, excludeIds = [], variant = 'b
   const compact = variant === 'sidebar'
   const spring = { duration: 0.18, ease: [0.16, 1, 0.3, 1] as const }
   const CurIcon = cur.icon
+
+  // ── Сегментированный переключатель: [Админ | Разборка/Мои авто] ──
+  if (variant === 'segment') {
+    const adminC = CONTEXTS.find(c => c.id === 'admin')!
+    const opPrefersParts = roleNames.includes('parts_owner') || roleNames.includes('parts_worker') || !!(profile as any)?.parts_company_id
+    const opC = (opPrefersParts ? CONTEXTS.find(c => c.id === 'parts') : CONTEXTS.find(c => c.id === 'user'))!
+    const segs = [adminC, opC].filter(c => has(c.id) && !excludeIds.includes(c.id))
+    if (segs.length < 2) return null
+    return (
+      <div className="w-full inline-flex gap-0.5 p-0.5 rounded-xl"
+        style={{ background: 'var(--cab-surface-2)', border: '1px solid var(--cab-border)' }}>
+        {segs.map(c => {
+          const Icon = c.icon
+          const active = c.id === current
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => switchTo(c)}
+              title={c.label}
+              aria-pressed={active}
+              className="flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 h-8 rounded-lg text-[13px] font-semibold transition-colors active:scale-[0.98]"
+              style={active
+                ? { background: 'var(--cab-surface)', color: 'var(--cab-ink)', boxShadow: '0 1px 2px rgba(16,24,40,.14)' }
+                : { color: 'var(--cab-ink-3)' }}
+            >
+              <Icon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.8} />
+              <span className={`truncate ${segLabels === 'lg' ? 'hidden lg:inline' : ''}`}>{c.label}</span>
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
 
   return (
     <div className="relative min-w-0" ref={ref}>

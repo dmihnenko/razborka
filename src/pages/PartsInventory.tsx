@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
-import { Plus, Search, Package, Grid, List, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, ChevronRight, Download, MapPin, FolderOpen, Copy, Check } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, ChevronRight, MapPin, FolderOpen, Copy, Check } from 'lucide-react'
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -24,8 +24,6 @@ import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { moveToTrash } from '@/services/trashService'
-import { buildCsv, downloadCsv } from '@/utils/csv'
-import type { CsvRow } from '@/utils/csv'
 
 type ViewMode = 'grid' | 'list'
 
@@ -608,27 +606,6 @@ export default function PartsInventory() {
     onError: () => toast.error(t('inventoryPage.toastStatusError')),
   })
 
-  const handleExportCsv = () => {
-    const rows: CsvRow[] = filteredAndSorted.map((item: PartsInventoryItem) => ({
-      name: item.name,
-      part_number: item.part_number,
-      category: item.category?.name,
-      vehicle: item.vehicle ? `${item.vehicle.make} ${item.vehicle.model}${item.vehicle.year ? ` ${item.vehicle.year}` : ''}` : null,
-      condition: item.condition,
-      quantity: item.quantity,
-      selling_price: item.selling_price,
-      price_currency: item.price_currency,
-      purchase_price: (item as any).purchase_price,
-      location: item.location,
-      status: item.status,
-    }))
-    const csv = buildCsv(rows)
-    const date = new Date().toISOString().slice(0, 10)
-    downloadCsv(csv, `sklad_${date}.csv`)
-    const note = totalCount > rows.length ? t('inventoryPage.exportNote', { loaded: rows.length, total: totalCount }) : ''
-    toast.success(t('inventoryPage.exportDone', { n: rows.length, note }))
-  }
-
   const handleStatusClick = (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
     setStatusPickerItem(item)
@@ -713,14 +690,6 @@ export default function PartsInventory() {
         backPath="/parts"
         actions={
           <>
-            <button
-              onClick={handleExportCsv}
-              className="cab-btn cab-btn-ghost cab-btn-sm flex items-center gap-1.5"
-              title={t('inventoryPage.exportCsvTitle')}
-            >
-              <Download className="w-4 h-4" strokeWidth={1.5} />
-              <span className="hidden md:inline">CSV</span>
-            </button>
             <button
               onClick={() => {
                 setEditingItem(null)

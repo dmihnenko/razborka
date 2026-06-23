@@ -282,12 +282,16 @@ export default function Layout() {
         className={`${isUserCtx ? 'hidden' : 'hidden md:flex'} md:flex-col md:w-16 lg:w-64 flex-shrink-0`}
         style={{ background: 'var(--cab-surface)', borderRight: '1px solid var(--cab-border)' }}
       >
-        {/* Шапка сайдбара — логотип по центру: полная эмблема на широком (lg), знак на узком (md) */}
+        {/* Шапка сайдбара: у админа — переключатель разделов вместо лого; иначе логотип */}
         <div className="flex items-center justify-center px-2 lg:px-3 h-14" style={{ borderBottom: '1px solid var(--cab-border)' }}>
-          <Link to="/parts/dashboard" className="inline-flex items-center flex-shrink-0 min-w-0" aria-label={BRAND.name}>
-            <Logo size="sm" withText={false} className="lg:hidden flex-shrink-0" />
-            <Logo size="sm" withText className="hidden lg:inline-flex flex-shrink-0" />
-          </Link>
+          {isAdmin ? (
+            <ContextSwitcher current={currentCtx} variant="segment" segLabels="lg" />
+          ) : (
+            <Link to="/parts/dashboard" className="inline-flex items-center flex-shrink-0 min-w-0" aria-label={BRAND.name}>
+              <Logo size="sm" withText={false} className="lg:hidden flex-shrink-0" />
+              <Logo size="sm" withText className="hidden lg:inline-flex flex-shrink-0" />
+            </Link>
+          )}
         </div>
 
         {/* Nav — сгруппирован: Работа / База / Система */}
@@ -360,7 +364,7 @@ export default function Layout() {
             style={{ background: 'var(--cab-surface)', borderBottom: '1px solid var(--cab-border)' }}>
             <div className="mk-container flex items-center justify-between gap-3">
               <div className="min-w-0">
-                {multiCtx && <ContextSwitcher current={currentCtx} />}
+                {multiCtx && !isAdmin && <ContextSwitcher current={currentCtx} />}
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
                 <LanguageSwitcher />

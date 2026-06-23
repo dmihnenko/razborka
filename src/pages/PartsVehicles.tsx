@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/i18n'
 import { Spinner } from '@/components/ui/Spinner'
-import { Plus, Search, Car, Filter, Grid, List } from 'lucide-react'
+import { Plus, Search, Car, Filter, Grid, List, Download, Upload, FileSpreadsheet, X } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -11,13 +11,27 @@ import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
-import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle, getPartsCategoryTemplates, getPartsInventoryByVehicle } from '@/services/partsService'
+import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle, getPartsCategoryTemplates, getPartsInventoryByVehicle, getVehicleRoi, getPartsInventory, createPartsInventoryItem, updateVehicleStatus } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
+import { exportVehiclesXlsx, downloadVehiclesTemplate, parseVehiclesFile, type ParsedVehicle, type ParsedPart } from '@/utils/vehiclesXlsx'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
-import type { PartsVehicle, CreatePartsVehicleInput, PartsVehicleStatus } from '@/types/parts'
+import type { PartsVehicle, CreatePartsVehicleInput, PartsVehicleStatus, VehicleRoi } from '@/types/parts'
+
+/** Бейдж окупаемости авто: % возврата + цвет (окупилось/в процессе/в минусе). */
+function roiBadge(r?: VehicleRoi): { pct: number; cls: string } | null {
+  if (!r || r.investment_usd == null || r.investment_usd <= 0) return null
+  const paid = r.realized_usd >= r.investment_usd
+  const loss = r.realized_usd + r.stock_usd < r.investment_usd
+  const cls = paid
+    ? 'text-emerald-700 bg-emerald-50 ring-emerald-100'
+    : loss
+      ? 'text-red-700 bg-red-50 ring-red-100'
+      : 'text-amber-700 bg-amber-50 ring-amber-100'
+  return { pct: r.payback_pct ?? 0, cls }
+}
 
 const statusLabels: Record<PartsVehicleStatus, string> = {
   awaiting: i18n.t('cabinet:vehiclesPage.statusAwaiting'),
@@ -55,6 +69,11 @@ export default function PartsVehicles() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState<PartsVehicle | null>(null)
+  // Импорт/экспорт
+  const [importOpen, setImportOpen] = useState(false)
+  const [parsed, setParsed] = useState<{ vehicles: ParsedVehicle[]; parts: ParsedPart[] } | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const queryClient = useQueryClient()
   const { confirm: showConfirm, dialogProps } = useConfirm()
@@ -68,6 +87,18 @@ export default function PartsVehicles() {
     queryFn: () => getPartsVehicles(partsCompanyId!),
     enabled: !!partsCompanyId
   })
+
+  // Окупаемость по каждому авто (тот же RPC, что и страница «Окупаемость авто»)
+  const { data: roiList = [] } = useQuery({
+    queryKey: ['vehicle-roi', partsCompanyId, globalRate],
+    queryFn: () => getVehicleRoi(partsCompanyId!, globalRate),
+    enabled: !!partsCompanyId,
+    staleTime: 5 * 60 * 1000,
+  })
+  const roiByVehicle = useMemo(
+    () => new Map(roiList.map((r) => [r.vehicle_id, r])),
+    [roiList],
+  )
 
   // Create/Update vehicle
   const saveMutation = useMutation({
@@ -133,6 +164,73 @@ export default function PartsVehicles() {
     }
   })
 
+  // ── Экспорт: авто + их запчасти в оформленный XLSX ──
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const all = await getPartsInventory(partsCompanyId!)
+      const res = await exportVehiclesXlsx({ vehicles, parts: all, roi: roiByVehicle })
+      toast.success(t('vehiclesPage.exportDone', { v: res.vehicles, p: res.parts }))
+    } catch (e: any) {
+      toast.error(e?.message || t('vehiclesPage.exportError'))
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleFile = async (file: File) => {
+    try {
+      const data = await parseVehiclesFile(file)
+      setParsed(data)
+    } catch {
+      toast.error(t('vehiclesPage.importParseError'))
+    }
+  }
+
+  // ── Импорт: создаём авто и привязанные по VIN запчасти ──
+  const importMutation = useMutation({
+    mutationFn: async () => {
+      if (!parsed) return { v: 0, p: 0, skipped: 0 }
+      const existingVins = new Set(vehicles.map(v => v.vin?.toUpperCase()).filter(Boolean) as string[])
+      const vinToId = new Map<string, string>()
+      vehicles.forEach(v => { if (v.vin) vinToId.set(v.vin.toUpperCase(), v.id) })
+      let cv = 0, cp = 0, skipped = 0
+      for (const pv of parsed.vehicles) {
+        if (pv._error) { skipped++; continue }
+        const vinU = pv.vin?.toUpperCase()
+        if (vinU && existingVins.has(vinU)) { skipped++; continue }   // дубль по VIN
+        if (!canCreate.vehicle()) { skipped++; continue }              // лимит тарифа
+        const created = await createPartsVehicle({
+          make: pv.make, model: pv.model, year: pv.year, vin: pv.vin,
+          license_plate: pv.license_plate, color: pv.color, mileage: pv.mileage,
+          purchase_price: pv.purchase_price, purchase_date: pv.purchase_date, exchange_rate: pv.exchange_rate,
+        }, partsCompanyId!)
+        cv++
+        if (vinU) { vinToId.set(vinU, created.id); existingVins.add(vinU) }
+        if (pv.status !== 'awaiting') { try { await updateVehicleStatus(created.id, pv.status, created as any) } catch { /* статус не критичен */ } }
+      }
+      for (const pp of parsed.parts) {
+        if (pp._error) { skipped++; continue }
+        const vid = pp.vin ? vinToId.get(pp.vin.toUpperCase()) : undefined
+        await createPartsInventoryItem({
+          name: pp.name, part_number: pp.part_number, condition: pp.condition,
+          quantity: pp.quantity, selling_price: pp.selling_price, price_currency: pp.price_currency,
+          location: pp.location, vehicle_id: vid, status: 'available',
+        }, partsCompanyId!)
+        cp++
+      }
+      return { v: cv, p: cp, skipped }
+    },
+    onSuccess: (r) => {
+      queryClient.invalidateQueries({ queryKey: ['parts-vehicles'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['vehicle-roi'] })
+      toast.success(t('vehiclesPage.importDone', { v: r.v, p: r.p, skipped: r.skipped }))
+      setImportOpen(false); setParsed(null)
+    },
+    onError: (e: any) => toast.error(e?.message || t('vehiclesPage.importError')),
+  })
+
   // Filter vehicles
   const filteredVehicles = vehicles.filter(vehicle => {
     const matchesSearch = searchQuery === '' ||
@@ -179,16 +277,35 @@ export default function PartsVehicles() {
         subtitle={i18n.t('cabinet:pages.totalN', { n: stats.total })}
         backPath="/parts/dashboard"
         actions={
-          <button
-            onClick={() => {
-              setSelectedVehicle(null)
-              setIsModalOpen(true)
-            }}
-            className="cab-btn cab-btn-primary"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">{t('vehiclesPage.add')}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setImportOpen(true)}
+              className="cab-btn cab-btn-secondary cab-btn-sm"
+              title={t('vehiclesPage.import')}
+            >
+              <Upload className="w-4 h-4" strokeWidth={1.5} />
+              <span className="hidden lg:inline">{t('vehiclesPage.import')}</span>
+            </button>
+            <button
+              onClick={handleExport}
+              disabled={exporting || vehicles.length === 0}
+              className="cab-btn cab-btn-secondary cab-btn-sm"
+              title={t('vehiclesPage.export')}
+            >
+              <Download className="w-4 h-4" strokeWidth={1.5} />
+              <span className="hidden lg:inline">{exporting ? t('vehiclesPage.exporting') : t('vehiclesPage.export')}</span>
+            </button>
+            <button
+              onClick={() => {
+                setSelectedVehicle(null)
+                setIsModalOpen(true)
+              }}
+              className="cab-btn cab-btn-primary cab-btn-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('vehiclesPage.add')}</span>
+            </button>
+          </div>
         }
       />
 
@@ -354,6 +471,17 @@ export default function PartsVehicles() {
                       <span className="font-semibold text-gray-900 tabular-nums">{formatPriceUSD(vehicle)}</span>
                     </div>
                   )}
+                  {(() => {
+                    const b = roiBadge(roiByVehicle.get(vehicle.id))
+                    return b && (
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="kicker shrink-0">{t('vehiclesPage.recovery')}</span>
+                        <span className={`inline-flex items-center px-1.5 h-5 rounded-full text-xs font-bold tabular-nums ring-1 ${b.cls}`}>
+                          {b.pct}%
+                        </span>
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
 
@@ -386,6 +514,7 @@ export default function PartsVehicles() {
                   <th className="table-header-cell hidden lg:table-cell">VIN</th>
                   <th className="table-header-cell hidden md:table-cell">{t('vehiclesPage.colStatus')}</th>
                   <th className="table-header-cell text-right hidden sm:table-cell">{t('vehiclesPage.colPurchasePrice')}</th>
+                  <th className="table-header-cell text-right hidden md:table-cell">{t('vehiclesPage.recovery')}</th>
                   <th className="table-header-cell text-right">{t('vehiclesPage.colActions')}</th>
                 </tr>
               </thead>
@@ -417,6 +546,14 @@ export default function PartsVehicles() {
                     </td>
                     <td className="table-cell hidden sm:table-cell text-right font-semibold text-gray-900 tabular-nums">
                       {formatPriceUSD(vehicle)}
+                    </td>
+                    <td className="table-cell hidden md:table-cell text-right">
+                      {(() => {
+                        const b = roiBadge(roiByVehicle.get(vehicle.id))
+                        return b
+                          ? <span className={`inline-flex items-center px-1.5 h-5 rounded-full text-xs font-bold tabular-nums ring-1 ${b.cls}`}>{b.pct}%</span>
+                          : <span className="text-gray-400">—</span>
+                      })()}
                     </td>
                     <td className="table-cell text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -457,6 +594,87 @@ export default function PartsVehicles() {
         />
       )}
       <ConfirmDialog {...dialogProps} />
+
+      {/* ── Модалка импорта авто + запчастей ── */}
+      {importOpen && (
+        <div className="modal-overlay" onClick={() => { setImportOpen(false); setParsed(null) }}>
+          <div className="modal-sheet sm:max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="min-w-0">
+                <h3 className="text-base font-semibold text-gray-900">{t('vehiclesPage.importTitle')}</h3>
+                <p className="text-xs text-gray-500 mt-0.5">{t('vehiclesPage.importSubtitle')}</p>
+              </div>
+              <button type="button" onClick={() => { setImportOpen(false); setParsed(null) }} className="btn-icon btn-icon-sm ml-3 flex-shrink-0">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="modal-body space-y-4">
+              {!parsed ? (
+                <>
+                  <label className="block border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept=".xlsx"
+                      className="hidden"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }}
+                    />
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" strokeWidth={1.5} />
+                    <p className="text-sm font-medium text-gray-700">{t('vehiclesPage.importDrop')}</p>
+                    <p className="text-xs text-gray-400 mt-1">{t('vehiclesPage.importHint')}</p>
+                  </label>
+                  <button onClick={() => downloadVehiclesTemplate()} className="cab-btn cab-btn-ghost cab-btn-sm w-full justify-center gap-1.5">
+                    <FileSpreadsheet className="w-4 h-4" /> {t('vehiclesPage.template')}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="cab-card p-3">
+                      <p className="kicker">{t('vehiclesPage.importVehicles')}</p>
+                      <p className="heading-2 tabular-nums" style={{ color: 'var(--cab-ink)' }}>{parsed.vehicles.length}</p>
+                    </div>
+                    <div className="cab-card p-3">
+                      <p className="kicker">{t('vehiclesPage.importParts')}</p>
+                      <p className="heading-2 tabular-nums" style={{ color: 'var(--cab-ink)' }}>{parsed.parts.length}</p>
+                    </div>
+                  </div>
+                  {(() => {
+                    const errs = [...parsed.vehicles, ...parsed.parts].filter(x => x._error).length
+                    return errs > 0 ? (
+                      <div className="rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-700">
+                        {t('vehiclesPage.importErrors', { n: errs })}
+                      </div>
+                    ) : null
+                  })()}
+                  <div className="max-h-44 overflow-auto rounded-lg border border-gray-100 divide-y divide-gray-50">
+                    {parsed.vehicles.slice(0, 20).map((v, i) => (
+                      <div key={i} className="px-3 py-1.5 text-xs flex items-center justify-between gap-2">
+                        <span className="font-medium text-gray-800 truncate">{v.make} {v.model}{v.year ? ` ${v.year}` : ''}</span>
+                        <span className="font-mono text-gray-400 truncate">{v.vin || '—'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="modal-footer" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}>
+              {parsed ? (
+                <>
+                  <button onClick={() => setParsed(null)} className="cab-btn cab-btn-secondary flex-1">{t('vehiclesPage.importOther')}</button>
+                  <button onClick={() => importMutation.mutate()} disabled={importMutation.isPending} className="cab-btn cab-btn-primary flex-1">
+                    {importMutation.isPending ? t('vehiclesPage.importing') : t('vehiclesPage.importDo')}
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => setImportOpen(false)} className="cab-btn cab-btn-secondary w-full justify-center">{t('vehiclesPage.cancel')}</button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   )

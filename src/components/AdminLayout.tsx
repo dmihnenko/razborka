@@ -101,7 +101,7 @@ export default function AdminLayout() {
       >
         <div className="px-3 h-14 flex items-center" style={{ borderBottom: '1px solid var(--cab-border)' }}>
           <div className="w-full min-w-0">
-            <ContextSwitcher current="admin" />
+            <ContextSwitcher current="admin" variant="segment" />
           </div>
         </div>
 
@@ -144,8 +144,8 @@ export default function AdminLayout() {
 
       {/* ═══ MOBILE TOP BAR ═══ */}
       <header className="md:hidden sticky top-0 z-20 bg-white" style={{ borderBottom: '1px solid var(--cab-border)' }}>
-        <div className="h-14 px-2 flex items-center justify-between">
-          <ContextSwitcher current="admin" />
+        <div className="h-14 px-2 flex items-center justify-between gap-2">
+          <div className="flex-1 min-w-0"><ContextSwitcher current="admin" variant="segment" /></div>
           <button onClick={handleLogout}
             className="p-2 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors">
             <LogOut className="w-5 h-5" strokeWidth={1.5} />
