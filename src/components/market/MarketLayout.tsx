@@ -90,7 +90,7 @@ function MarketLayoutInner() {
             {/* Лого: на мобиле компактный знак (в размер кнопок Каталог/Разборки),
                 на десктопе — полная эмблема с дескриптором */}
             <Link to="/market" className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0 min-w-0" aria-label="Razborka.net — маркет запчастей, на главную">
-              <Logo size="sm" withText={false} className="md:hidden flex-shrink-0" />
+              <Logo size="sm" withText={false} className="md:hidden flex-shrink-0 [&>svg]:!w-10 [&>svg]:!h-10" />
               <Logo size="sm" withText className="hidden md:inline-flex flex-shrink-0" />
             </Link>
 
@@ -118,6 +118,7 @@ function MarketLayoutInner() {
             )}
 
             <div className="flex items-center gap-2 ml-auto flex-shrink-0">
+              <LanguageSwitcher className="hidden md:inline-flex" />
               <Link to="/market/cart" className="mk-icon-btn relative" aria-label={`Корзина${totalCount ? `, товаров: ${totalCount}` : ' (пусто)'}`}>
                 <ShoppingCart className="w-5 h-5" aria-hidden="true" />
                 {totalCount > 0 && (
@@ -146,22 +147,25 @@ function MarketLayoutInner() {
             {navTabs}
           </nav>
 
-          {/* Поиск (мобила) — под категориями/разборками */}
-          {showHeaderSearch && (
-            <form onSubmit={handleSearch} role="search" className="md:hidden pb-2.5">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none mk-meta" aria-hidden="true" />
-                <input
-                  type="search"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Поиск запчасти или артикула…"
-                  className="mk-input mk-search !rounded-full"
-                  aria-label={t('header.searchPlaceholder')}
-                />
-              </div>
-            </form>
-          )}
+          {/* Мобила: строка под первым рядом — поиск (если нужен) + смена языка справа */}
+          <div className="md:hidden flex items-center gap-2 pb-2.5">
+            {showHeaderSearch && (
+              <form onSubmit={handleSearch} role="search" className="flex-1 min-w-0">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none mk-meta" aria-hidden="true" />
+                  <input
+                    type="search"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Поиск запчасти или артикула…"
+                    className="mk-input mk-search !rounded-full"
+                    aria-label={t('header.searchPlaceholder')}
+                  />
+                </div>
+              </form>
+            )}
+            <LanguageSwitcher className="ml-auto flex-shrink-0" />
+          </div>
         </div>
       </header>
 
@@ -182,7 +186,6 @@ function MarketLayoutInner() {
         <div className="mk-container py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs mk-meta">{t('footer.tagline')}</p>
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
-            <LanguageSwitcher />
             <Link to="/business" className="text-xs font-semibold mk-link">{t('footer.openBusiness')}</Link>
             <p className="text-xs mk-meta">© {new Date().getFullYear()}</p>
           </div>
