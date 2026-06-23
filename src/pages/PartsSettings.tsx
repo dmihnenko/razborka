@@ -286,8 +286,8 @@ export default function PartsSettings() {
   const npConnected = Boolean(npKeyInput.trim())
   const tgConnected = Boolean((company as any)?.telegram_chat_id)
 
-  const connectedBadge = { cls: 'badge badge-green', text: t('settingsPage.badgeConnected') }
-  const notSetBadge = { cls: 'badge badge-gray', text: t('settingsPage.badgeNotSet') }
+  const connectedBadge = { cls: 'cab-chip text-emerald-700 bg-emerald-50 border-emerald-200', text: t('settingsPage.badgeConnected') }
+  const notSetBadge = { cls: 'cab-chip', text: t('settingsPage.badgeNotSet') }
 
   type CardDef = {
     id: string
@@ -302,40 +302,40 @@ export default function PartsSettings() {
 
   const cards: CardDef[] = [
     {
-      id: 'contacts', Icon: Phone, iconBg: 'bg-emerald-100 dark:bg-emerald-900/40', iconColor: 'text-emerald-600 dark:text-emerald-400',
+      id: 'contacts', Icon: Phone, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600',
       title: t('settingsPage.cardContactsTitle'), sub: t('settingsPage.cardContactsSub'), onClick: () => setPanel('contacts'),
     },
     {
-      id: 'rate', Icon: DollarSign, iconBg: 'bg-green-100 dark:bg-green-900/40', iconColor: 'text-green-600 dark:text-green-400',
+      id: 'rate', Icon: DollarSign, iconBg: 'bg-green-100', iconColor: 'text-green-600',
       title: t('settingsPage.cardRateTitle'), sub: `${rate} ₴/$ · ${isStale ? t('settingsPage.cardRateSubStale') : t('settingsPage.cardRateSubFresh')}`,
-      badge: isStale ? { cls: 'badge badge-yellow', text: t('settingsPage.badgeUpdate') } : { cls: 'badge badge-green', text: t('settingsPage.badgeToday') },
+      badge: isStale ? { cls: 'cab-chip text-amber-700 bg-amber-50 border-amber-200', text: t('settingsPage.badgeUpdate') } : { cls: 'cab-chip text-emerald-700 bg-emerald-50 border-emerald-200', text: t('settingsPage.badgeToday') },
       onClick: () => setPanel('rate'),
     },
     {
-      id: 'imgbb', Icon: Key, iconBg: 'bg-purple-100 dark:bg-purple-900/40', iconColor: 'text-purple-600 dark:text-purple-400',
+      id: 'imgbb', Icon: Key, iconBg: 'bg-purple-100', iconColor: 'text-purple-600',
       title: t('settingsPage.cardPhotoTitle'), sub: PHOTO_SERVICES.find(s => s.id === photoCfg.provider)?.name || t('settingsPage.cardPhotoSubFallback'), badge: imgbbConnected ? connectedBadge : notSetBadge,
       onClick: () => setPanel('imgbb'),
     },
     {
-      id: 'np', Icon: Truck, iconBg: 'bg-red-100 dark:bg-red-900/40', iconColor: 'text-red-600 dark:text-red-400',
+      id: 'np', Icon: Truck, iconBg: 'bg-red-100', iconColor: 'text-red-600',
       title: t('settingsPage.cardNpTitle'), sub: t('settingsPage.cardNpSub'), badge: npConnected ? connectedBadge : notSetBadge,
       onClick: () => setPanel('np'),
     },
     ...(TELEGRAM_BOT_USERNAME ? [{
-      id: 'telegram', Icon: Send, iconBg: 'bg-sky-100 dark:bg-sky-900/40', iconColor: 'text-sky-600 dark:text-sky-400',
+      id: 'telegram', Icon: Send, iconBg: 'bg-sky-100', iconColor: 'text-sky-600',
       title: t('settingsPage.cardTelegramTitle'), sub: t('settingsPage.cardTelegramSub'), badge: tgConnected ? connectedBadge : notSetBadge,
       onClick: () => setPanel('telegram'),
     } as CardDef] : []),
     {
-      id: 'categories', Icon: Tag, iconBg: 'bg-orange-100 dark:bg-orange-900/40', iconColor: 'text-orange-600 dark:text-orange-400',
+      id: 'categories', Icon: Tag, iconBg: 'bg-orange-100', iconColor: 'text-orange-600',
       title: t('settingsPage.cardCategoriesTitle'), sub: t('settingsPage.cardCategoriesSub'), onClick: () => navigate('/parts/categories'),
     },
     {
-      id: 'warehouse', Icon: Warehouse, iconBg: 'bg-indigo-100 dark:bg-indigo-900/40', iconColor: 'text-indigo-600 dark:text-indigo-400',
+      id: 'warehouse', Icon: Warehouse, iconBg: 'bg-indigo-100', iconColor: 'text-indigo-600',
       title: t('settingsPage.cardWarehouseTitle'), sub: t('settingsPage.cardWarehouseSub'), onClick: () => navigate('/parts/warehouse'),
     },
     {
-      id: 'trash', Icon: Trash2, iconBg: 'bg-red-100 dark:bg-red-900/40', iconColor: 'text-red-600 dark:text-red-400',
+      id: 'trash', Icon: Trash2, iconBg: 'bg-red-100', iconColor: 'text-red-600',
       title: t('settingsPage.cardTrashTitle'), sub: t('settingsPage.cardTrashSub'), onClick: () => navigate('/parts/trash'),
     },
   ]
@@ -364,7 +364,7 @@ export default function PartsSettings() {
               <div>
                 <label className="form-label">{t('settingsPage.fieldCity')}</label>
                 <input type="text" value={contacts.city} onChange={e => setContacts(p => ({ ...p, city: e.target.value }))} placeholder={t('settingsPage.fieldCityPlaceholder')} className="form-input" />
-                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{t('settingsPage.fieldCityHint')}</p>
+                <p className="text-xs text-gray-400 mt-1">{t('settingsPage.fieldCityHint')}</p>
               </div>
               <div>
                 <label className="form-label">{t('settingsPage.fieldAddress')}</label>
@@ -374,7 +374,7 @@ export default function PartsSettings() {
             <div>
               <label className="form-label">{t('settingsPage.fieldTelegram')}</label>
               <input type="text" value={contacts.telegram} onChange={e => setContacts(p => ({ ...p, telegram: e.target.value }))} placeholder={t('settingsPage.fieldTelegramPlaceholder')} className="form-input" />
-              <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{t('settingsPage.fieldTelegramHint')}</p>
+              <p className="text-xs text-gray-400 mt-1">{t('settingsPage.fieldTelegramHint')}</p>
             </div>
             <div>
               <label className="form-label">{t('settingsPage.fieldDescription')} <span className="text-gray-400 font-normal ml-1">{t('settingsPage.fieldDescriptionNote')}</span></label>
@@ -382,19 +382,19 @@ export default function PartsSettings() {
             </div>
 
             {/* Доставка и гарантия — видно покупателям на странице товара */}
-            <div className="pt-3 mt-1 border-t border-gray-100 dark:border-slate-700 space-y-3">
-              <p className="text-sm font-semibold text-gray-800 dark:text-slate-200">{t('settingsPage.deliveryWarranty')}</p>
+            <div className="pt-3 mt-1 border-t border-gray-100 space-y-3">
+              <p className="text-sm font-semibold text-gray-800">{t('settingsPage.deliveryWarranty')}</p>
               <div>
                 <label className="form-label">{t('settingsPage.shipSpeed')}</label>
                 <select value={contacts.shipSpeed} onChange={e => setContacts(p => ({ ...p, shipSpeed: e.target.value }))} className="form-select">
                   <option value="today">{t('settingsPage.shipToday')}</option>
                   <option value="days12">{t('settingsPage.shipDays12')}</option>
                 </select>
-                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{t('settingsPage.shipSpeedHint')}</p>
+                <p className="text-xs text-gray-400 mt-1">{t('settingsPage.shipSpeedHint')}</p>
               </div>
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <input type="checkbox" checked={contacts.warrantyEnabled} onChange={e => setContacts(p => ({ ...p, warrantyEnabled: e.target.checked }))} className="w-4 h-4 accent-[var(--cab-signal)]" />
-                <span className="text-sm text-gray-700 dark:text-slate-300">{t('settingsPage.warrantyShow')}</span>
+                <span className="text-sm text-gray-700">{t('settingsPage.warrantyShow')}</span>
               </label>
               {contacts.warrantyEnabled && (
                 <div>
@@ -438,7 +438,7 @@ export default function PartsSettings() {
                   {fetching ? t('settingsPage.fetchingRate') : t('settingsPage.fetchPrivatRate')}
                 </button>
                 {fetchError && <p className="form-error mt-1.5">{fetchError}</p>}
-                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1.5">{t('settingsPage.rateUsdUahHint')}</p>
+                <p className="text-xs text-gray-400 mt-1.5">{t('settingsPage.rateUsdUahHint')}</p>
               </div>
             ) : (
               <div className="flex gap-2">
@@ -454,7 +454,7 @@ export default function PartsSettings() {
               <summary className="text-xs text-primary cursor-pointer select-none hover:underline inline-flex items-center gap-1">
                 <Info className="w-3.5 h-3.5" /> {t('settingsPage.howRateWorks')}
               </summary>
-              <ul className="mt-2 space-y-1 list-disc list-inside text-xs text-gray-500 dark:text-slate-400">
+              <ul className="mt-2 space-y-1 list-disc list-inside text-xs text-gray-500">
                 <li>{t('settingsPage.rateInfo1')}</li>
                 <li>{t('settingsPage.rateInfo2')}</li>
                 <li>{t('settingsPage.rateInfo3')}</li>
@@ -467,7 +467,7 @@ export default function PartsSettings() {
         const svc = PHOTO_SERVICES.find(s => s.id === photoCfg.provider) ?? PHOTO_SERVICES[0]
         return (
           <div className="space-y-4">
-            <p className="text-sm text-gray-500 dark:text-slate-400">
+            <p className="text-sm text-gray-500">
               {t('settingsPage.photoIntro1')} <b>{t('settingsPage.photoIntroOwn')}</b> {t('settingsPage.photoIntro2')}
             </p>
 
@@ -480,22 +480,22 @@ export default function PartsSettings() {
                     key={s.id}
                     type="button"
                     onClick={() => setPhotoCfg(c => ({ ...c, provider: s.id as PhotoProvider }))}
-                    className={`text-left p-3 rounded-xl border-2 transition-colors ${active ? 'border-primary bg-primary/5' : 'border-gray-200 dark:border-slate-700 hover:border-gray-300'}`}
+                    className={`text-left p-3 rounded-xl border-2 transition-colors ${active ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'}`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{s.name}</span>
+                      <span className="text-sm font-bold text-gray-900">{s.name}</span>
                       {active && <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />}
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{s.limits}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{s.limits}</p>
                   </button>
                 )
               })}
             </div>
 
             {/* Инструкция для выбранного сервиса */}
-            <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3">
-              <p className="text-xs font-semibold text-gray-700 dark:text-slate-200 mb-1.5">{t('settingsPage.howToConnect', { name: svc.name })}</p>
-              <ol className="space-y-1 text-xs text-gray-600 dark:text-slate-300 list-decimal list-inside">
+            <div className="rounded-xl bg-slate-50 p-3">
+              <p className="text-xs font-semibold text-gray-700 mb-1.5">{t('settingsPage.howToConnect', { name: svc.name })}</p>
+              <ol className="space-y-1 text-xs text-gray-600 list-decimal list-inside">
                 {svc.steps.map((st, i) => <li key={i}>{st}</li>)}
               </ol>
               <a href={svc.signupUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-2">
@@ -537,10 +537,10 @@ export default function PartsSettings() {
             </a>
 
             {npKeyInput && (
-              <div className="pt-3 border-t border-gray-100 dark:border-slate-700 space-y-3">
+              <div className="pt-3 border-t border-gray-100 space-y-3">
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0" />
-                  <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">{t('settingsPage.sender')}</span>
+                  <MapPin className="w-4 h-4 text-red-500 flex-shrink-0" />
+                  <span className="text-sm font-semibold text-gray-800">{t('settingsPage.sender')}</span>
                 </div>
 
                 <div>
@@ -601,10 +601,10 @@ export default function PartsSettings() {
       case 'telegram':
         return (
           <div className="space-y-3">
-            <p className="text-sm text-gray-500 dark:text-slate-400">{t('settingsPage.telegramIntro')}</p>
+            <p className="text-sm text-gray-500">{t('settingsPage.telegramIntro')}</p>
             {tgConnected ? (
               <div className="flex items-center justify-between gap-2">
-                <span className="badge badge-green"><CheckCircle className="w-3.5 h-3.5" /> {t('settingsPage.telegramConnected')}</span>
+                <span className="cab-chip text-emerald-700 bg-emerald-50 border-emerald-200"><CheckCircle className="w-3.5 h-3.5" /> {t('settingsPage.telegramConnected')}</span>
                 <a href={partsCompanyId ? telegramConnectLink(partsCompanyId) : '#'} target="_blank" rel="noopener noreferrer" className="cab-btn cab-btn-ghost cab-btn-sm">{t('settingsPage.telegramReconnect')}</a>
               </div>
             ) : (
@@ -621,7 +621,7 @@ export default function PartsSettings() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50 dark:bg-slate-950">
+    <div className="min-h-dvh bg-gray-50">
       <PartsPageHeader title={i18n.t('cabinet:pages.settings')} backPath="/parts/dashboard" height="sm" />
 
       <div className="page-container">
@@ -639,8 +639,8 @@ export default function PartsSettings() {
                   : <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0" />}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate">{c.title}</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 truncate">{c.sub}</p>
+                <p className="text-sm font-bold text-gray-900 truncate">{c.title}</p>
+                <p className="text-xs text-gray-500 mt-0.5 truncate">{c.sub}</p>
               </div>
             </button>
           ))}
@@ -649,8 +649,8 @@ export default function PartsSettings() {
         {/* Обновления приложения — ручная проверка (авто-проверка раз в 12 ч + при возврате на вкладку) */}
         <div className="cab-card p-4 mt-3 sm:mt-4 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-bold text-gray-900 dark:text-slate-100">{t('settingsPage.updates')}</p>
-            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 truncate">{t('settingsPage.updatesSub')}</p>
+            <p className="text-sm font-bold text-gray-900">{t('settingsPage.updates')}</p>
+            <p className="text-xs text-gray-500 mt-0.5 truncate">{t('settingsPage.updatesSub')}</p>
           </div>
           <button onClick={handleCheckUpdates} disabled={checkingUpdate} className="cab-btn cab-btn-secondary cab-btn-sm flex-shrink-0">
             <RefreshCw className={`w-4 h-4 ${checkingUpdate ? 'animate-spin' : ''}`} strokeWidth={1.5} /> {t('settingsPage.checkUpdates')}
@@ -724,12 +724,12 @@ function NpSettingsCombobox({
         onKeyDown={e => { if (e.key === 'Escape') onClose() }}
       />
       {open && items.length > 0 && (
-        <ul className="absolute z-50 left-0 right-0 top-full mt-1 max-h-56 overflow-y-auto rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
+        <ul className="absolute z-50 left-0 right-0 top-full mt-1 max-h-56 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
           {items.map(item => (
             <li key={item.value}>
               <button
                 type="button"
-                className="w-full text-left px-4 py-2.5 text-sm text-gray-800 dark:text-slate-200 hover:bg-[var(--cab-signal-weak)] dark:hover:bg-slate-800 transition-colors"
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-800 hover:bg-[var(--cab-signal-weak)] transition-colors"
                 onMouseDown={e => { e.preventDefault(); onSelect(item) }}
               >
                 {item.label}

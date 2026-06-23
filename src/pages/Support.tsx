@@ -206,7 +206,7 @@ export default function Support() {
           </div>
           <button
             onClick={() => setIsNewChatOpen(true)}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm sm:text-base"
+            className="cab-btn cab-btn-signal cab-btn-sm sm:[min-height:38px]"
           >
             <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="hidden sm:inline">{t('supportPage.newTicket')}</span>
@@ -262,8 +262,8 @@ export default function Support() {
                               {chat.subject || t('supportPage.ticket')}
                             </h3>
                             <div className="flex items-center gap-1.5 flex-shrink-0">
-                              <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                              <span className="cab-chip text-emerald-700 bg-emerald-50 border-emerald-100">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                                 {t('supportPage.statusActive')}
                               </span>
                               <button
@@ -277,7 +277,7 @@ export default function Support() {
                                   })
                                   if (ok) deleteChatMutation.mutate(chat.id)
                                 }}
-                                className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                                className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
                                 title={t('supportPage.deleteTicketTooltip')}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -316,7 +316,7 @@ export default function Support() {
                               {chat.subject || t('supportPage.ticket')}
                             </h3>
                             <div className="flex items-center gap-1.5 flex-shrink-0">
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                              <span className="cab-chip">
                                 {t('supportPage.statusClosed')}
                               </span>
                               <button
@@ -330,7 +330,7 @@ export default function Support() {
                                   })
                                   if (ok) deleteChatMutation.mutate(chat.id)
                                 }}
-                                className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                                className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
                                 title={t('supportPage.deleteTicketTooltip')}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -372,7 +372,7 @@ export default function Support() {
                       <p className="text-xs text-gray-500 flex items-center gap-1">
                         {chats.find((c: SupportChat) => c.id === selectedChat)?.status === 'active' ? (
                           <>
-                            <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                             {t('supportPage.activeChat')}
                           </>
                         ) : (
@@ -387,7 +387,7 @@ export default function Support() {
                   {chats.find((c: SupportChat) => c.id === selectedChat)?.status === 'active' && (
                     <button
                       onClick={() => closeChatMutation.mutate(selectedChat)}
-                      className="text-red-600 hover:text-red-700 text-xs sm:text-sm font-medium px-2 sm:px-3 py-1.5 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                      className="cab-btn cab-btn-danger cab-btn-sm flex-shrink-0"
                     >
                       {t('supportPage.close')}
                     </button>
@@ -439,14 +439,14 @@ export default function Support() {
                                   {msg.message}
                                 </p>
                                 <div className="flex items-center justify-end gap-1 mt-1">
-                                  <p className={`text-xs sm:text-xs ${isOwn ? 'text-blue-100' : 'text-gray-400'}`}>
+                                  <p className={`text-xs sm:text-xs ${isOwn ? 'text-white/70' : 'text-gray-400'}`}>
                                     {new Date(msg.created_at).toLocaleTimeString('ru-RU', { 
                                       hour: '2-digit', 
                                       minute: '2-digit' 
                                     })}
                                   </p>
                                   {isOwn && (
-                                    <CheckCheck className={`w-3 h-3 ${msg.is_read ? 'text-blue-200' : 'text-blue-300'}`} />
+                                    <CheckCheck className={`w-3 h-3 ${msg.is_read ? 'text-white/90' : 'text-white/50'}`} />
                                   )}
                                 </div>
                               </div>
@@ -468,13 +468,13 @@ export default function Support() {
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder={t('supportPage.messagePlaceholder')}
-                        className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        className="form-input flex-1"
                         autoFocus={window.innerWidth > 768}
                       />
                       <button
                         type="submit"
                         disabled={sendMessageMutation.isPending || !newMessage.trim()}
-                        className="px-3 sm:px-4 py-2 sm:py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                        className="cab-btn cab-btn-signal flex-shrink-0"
                       >
                         <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
@@ -526,44 +526,44 @@ export default function Support() {
             </div>
             <form onSubmit={handleCreateChat} className="p-4 sm:p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="form-label">
                   {t('supportPage.subjectLabel')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={newChatSubject}
                   onChange={(e) => setNewChatSubject(e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="form-input"
                   placeholder={t('supportPage.subjectPlaceholder')}
                   required
                   autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="form-label">
                   {t('supportPage.messageLabel')} <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={newChatMessage}
                   onChange={(e) => setNewChatMessage(e.target.value)}
                   rows={4}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                  className="form-input resize-none"
                   placeholder={t('supportPage.messageBodyPlaceholder')}
                   required
                 />
               </div>
-              <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 pt-2">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsNewChatOpen(false)}
-                  className="w-full sm:w-auto px-4 py-2.5 text-sm sm:text-base text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                  className="cab-btn cab-btn-secondary w-full sm:w-auto"
                 >
                   {t('supportPage.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={createChatMutation.isPending}
-                  className="w-full sm:w-auto px-4 py-2.5 text-sm sm:text-base text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                  className="cab-btn cab-btn-signal w-full sm:w-auto"
                 >
                   {createChatMutation.isPending ? t('supportPage.creating') : t('supportPage.createTicket')}
                 </button>

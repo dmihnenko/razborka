@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Spinner } from '@/components/ui/Spinner'
+import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -249,7 +250,7 @@ export default function PartsCustomerProfile() {
   // ── Loading / not found ───────────────────────────────────────────────
   if (customerLoading) {
     return (
-      <div className="flex justify-center items-center min-h-dvh">
+      <div className="flex justify-center items-center min-h-dvh bg-gray-50">
         <Spinner size="lg" />
       </div>
     )
@@ -257,7 +258,7 @@ export default function PartsCustomerProfile() {
 
   if (!customer) {
     return (
-      <div className="empty-state py-24">
+      <div className="empty-state py-24 min-h-dvh bg-gray-50">
         <div className="empty-state-icon">
           <User className="w-7 h-7 text-gray-400" />
         </div>
@@ -275,25 +276,15 @@ export default function PartsCustomerProfile() {
   const avatarCls = avatarColor(customer.full_name)
 
   return (
-    <div className="w-full animate-fade-in">
+    <div className="min-h-dvh bg-gray-50 animate-fade-in">
 
       {/* ── Sticky page header ─────────────────────────────────────────── */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-gray-100 -mx-4 px-4 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 mb-5">
-        <div className="page-header py-3 mb-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <Link
-              to="/parts/customers"
-              className="btn-icon flex-shrink-0"
-              aria-label={t('customerProfilePage.backToCustomers')}
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-            <div className="min-w-0">
-              <h1 className="page-title truncate">{customer.full_name}</h1>
-              <p className="page-subtitle hidden sm:block">{t('customerProfilePage.title')}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+      <PartsPageHeader
+        title={customer.full_name}
+        subtitle={t('customerProfilePage.title')}
+        backPath="/parts/customers"
+        actions={
+          <>
             <button
               onClick={handleCopyPublicLink}
               className="cab-btn cab-btn-secondary cab-btn-sm"
@@ -316,9 +307,11 @@ export default function PartsCustomerProfile() {
               <ShoppingCart className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t('customerProfilePage.createOrder')}</span>
             </button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
+
+      <div className="w-full py-5 sm:py-6">
 
       {/* ── Hero-карточка клиента ───────────────────────────────────────── */}
       <div className="cab-card p-4 mb-5">
@@ -330,7 +323,7 @@ export default function PartsCustomerProfile() {
           <div className="flex-1 min-w-0">
             <h2 className="heading-3 truncate">{customer.full_name}</h2>
             {customer.discount_percent > 0 && (
-              <span className="badge badge-green mt-1">
+              <span className="cab-chip mt-1 bg-emerald-50 text-emerald-700 border-emerald-200/60">
                 {t('customerProfilePage.discount', { percent: customer.discount_percent })}
               </span>
             )}
@@ -450,7 +443,7 @@ export default function PartsCustomerProfile() {
                         {t('customerProfilePage.itemsPcs', { count: order.items?.length || 0 })}
                       </td>
                       <td className="table-cell">
-                        <span className={`badge ${getPartsOrderStatusColor(order.status)}`}>
+                        <span className={`cab-chip ${getPartsOrderStatusColor(order.status)}`}>
                           {getPartsOrderStatusText(order.status)}
                         </span>
                       </td>
@@ -486,7 +479,7 @@ export default function PartsCustomerProfile() {
                       <span className="text-sm font-bold text-primary tabular-nums">
                         {formatCurrency(order.total_amount)}
                       </span>
-                      <span className={`badge ${getPartsOrderStatusColor(order.status)}`}>
+                      <span className={`cab-chip ${getPartsOrderStatusColor(order.status)}`}>
                         {getPartsOrderStatusText(order.status)}
                       </span>
                     </div>
@@ -544,6 +537,7 @@ export default function PartsCustomerProfile() {
           </div>
         )}
       </div>
+      </div>
 
       {/* ── Модалка: новый заказ из склада ─────────────────────────────── */}
       {isOrderModalOpen && (
@@ -581,7 +575,7 @@ export default function PartsCustomerProfile() {
                 >
                   {t('customerProfilePage.tabCart')}
                   {cart.length > 0 && (
-                    <span className="badge badge-green min-w-[20px] h-5 px-1.5">
+                    <span className="cab-chip cab-chip-signal min-w-[20px] h-5 px-1.5">
                       {cart.length}
                     </span>
                   )}
@@ -707,7 +701,7 @@ export default function PartsCustomerProfile() {
                         {selectedMake === '__all__' && (
                           <span className="font-bold text-gray-900">{t('customerProfilePage.allParts')}</span>
                         )}
-                        <span className="ml-auto flex-shrink-0 badge badge-gray">
+                        <span className="ml-auto flex-shrink-0 cab-chip">
                           {t('customerProfilePage.itemsPcs', { count: filteredInventory.length })}
                         </span>
                       </div>

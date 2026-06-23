@@ -26,9 +26,9 @@ const statusLabels: Record<PartsVehicleStatus, string> = {
 }
 
 const statusBadge: Record<PartsVehicleStatus, string> = {
-  awaiting:    'badge badge-yellow',
-  in_progress: 'badge badge-blue',
-  dismantled:  'badge badge-green',
+  awaiting:    'cab-chip text-amber-700 bg-amber-50 border-amber-200',
+  in_progress: 'cab-chip cab-chip-signal',
+  dismantled:  'cab-chip text-emerald-700 bg-emerald-50 border-emerald-200',
 }
 
 const statusDot: Record<PartsVehicleStatus, string> = {
@@ -383,9 +383,9 @@ export default function PartsVehicles() {
               <thead>
                 <tr>
                   <th className="table-header-cell">{t('vehiclesPage.colVehicle')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200 hidden lg:table-cell" style={{ letterSpacing: '0.06em' }}>VIN</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200 hidden md:table-cell" style={{ letterSpacing: '0.06em' }}>{t('vehiclesPage.colStatus')}</th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200 hidden sm:table-cell" style={{ letterSpacing: '0.06em' }}>{t('vehiclesPage.colPurchasePrice')}</th>
+                  <th className="table-header-cell hidden lg:table-cell">VIN</th>
+                  <th className="table-header-cell hidden md:table-cell">{t('vehiclesPage.colStatus')}</th>
+                  <th className="table-header-cell text-right hidden sm:table-cell">{t('vehiclesPage.colPurchasePrice')}</th>
                   <th className="table-header-cell text-right">{t('vehiclesPage.colActions')}</th>
                 </tr>
               </thead>
@@ -404,18 +404,18 @@ export default function PartsVehicles() {
                         </p>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 border-b border-gray-100 hidden lg:table-cell">
+                    <td className="table-cell hidden lg:table-cell">
                       {vehicle.vin
                         ? <span className="font-mono text-xs text-gray-600 max-w-[160px] block truncate">{vehicle.vin}</span>
                         : <span className="text-gray-400">—</span>
                       }
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 border-b border-gray-100 hidden md:table-cell">
+                    <td className="table-cell hidden md:table-cell">
                       <span className={statusBadge[vehicle.status]}>
                         {statusLabels[vehicle.status]}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm border-b border-gray-100 hidden sm:table-cell text-right font-semibold text-gray-900 tabular-nums">
+                    <td className="table-cell hidden sm:table-cell text-right font-semibold text-gray-900 tabular-nums">
                       {formatPriceUSD(vehicle)}
                     </td>
                     <td className="table-cell text-right">

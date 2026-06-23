@@ -1010,7 +1010,7 @@ export default function PartsInventory() {
                           checked={selectedIds.has(item.id)}
                           onChange={(e) => { e.stopPropagation(); toggleSelect(item.id, e) }}
                           onClick={(e) => e.stopPropagation()}
-                          className="w-4 h-4 accent-blue-600 cursor-pointer"
+                          className="w-4 h-4 accent-primary cursor-pointer"
                         />
                       </td>
                       {/* Название */}

@@ -36,16 +36,16 @@ const BOARD_COLUMNS: { status: PartsOrderStatus; label: string; dot: string; rin
   { status: 'completed',   label: 'Завершён', dot: 'bg-emerald-500', ring: 'ring-emerald-500'},
 ]
 
-// ─── Бейджи ──────────────────────────────────────────────────────────────────
+// ─── Бейджи статуса ───────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
-  new:         'badge badge-blue',
-  in_progress: 'badge badge-yellow',
-  completed:   'badge badge-green',
-  cancelled:   'badge badge-red',
+  new:         'cab-chip text-primary',
+  in_progress: 'cab-chip text-amber-700',
+  completed:   'cab-chip text-emerald-700',
+  cancelled:   'cab-chip text-red-700',
 }
 
 function statusBadge(status: string) {
-  return STATUS_BADGE[status] ?? 'badge badge-gray'
+  return STATUS_BADGE[status] ?? 'cab-chip text-gray-600'
 }
 
 // ─── Draggable карточка на доске ─────────────────────────────────────────────
@@ -310,7 +310,7 @@ export default function PartsOrders() {
   }
 
   return (
-    <div className="min-h-dvh" style={{ background: 'var(--cab-bg)' }}>
+    <div className="min-h-dvh bg-gray-50">
       {/* Header */}
       <PartsPageHeader
         title={i18n.t('cabinet:pages.orders')}
@@ -390,7 +390,7 @@ export default function PartsOrders() {
                 <button
                   key={key}
                   onClick={() => setStatusFilter(key)}
-                  className={`chip ${statusFilter === key ? 'chip-active' : ''}`}
+                  className={statusFilter === key ? 'cab-chip cab-chip-signal' : 'cab-chip'}
                 >
                   {label}
                 </button>
@@ -551,7 +551,7 @@ export default function PartsOrders() {
                             </span>
                           </td>
                           <td className="table-cell whitespace-nowrap text-right">
-                            <span className="text-base font-extrabold tabular text-primary" style={{ letterSpacing: '-0.02em' }}>
+                            <span className="text-base font-extrabold tabular-nums text-primary" style={{ letterSpacing: '-0.02em' }}>
                               {formatUSD(computeOrderUSD(order))}
                             </span>
                           </td>
@@ -583,7 +583,7 @@ export default function PartsOrders() {
                         </p>
                         <p className="text-xs text-gray-400 truncate mt-0.5">{itemNames}</p>
                       </div>
-                      <span className="text-base font-extrabold tabular text-primary flex-shrink-0" style={{ letterSpacing: '-0.02em' }}>
+                      <span className="text-base font-extrabold tabular-nums text-primary flex-shrink-0" style={{ letterSpacing: '-0.02em' }}>
                         {formatUSD(computeOrderUSD(order))}
                       </span>
                     </div>

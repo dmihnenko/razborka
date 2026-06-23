@@ -36,10 +36,10 @@ function avatarColor(name?: string | null): string {
 
 function roleBadge(role?: string | null) {
   switch (role) {
-    case 'parts_owner':  return <span className="badge badge-blue">{i18n.t('cabinet:employeesPage.roleOwner')}</span>
-    case 'parts_worker': return <span className="badge badge-gray">{i18n.t('cabinet:employeesPage.roleWorker')}</span>
-    case 'admin':        return <span className="badge badge-purple">{i18n.t('cabinet:employeesPage.roleAdmin')}</span>
-    default:             return <span className="badge badge-gray">{role ?? i18n.t('cabinet:employeesPage.roleUser')}</span>
+    case 'parts_owner':  return <span className="cab-chip cab-chip-signal">{i18n.t('cabinet:employeesPage.roleOwner')}</span>
+    case 'parts_worker': return <span className="cab-chip">{i18n.t('cabinet:employeesPage.roleWorker')}</span>
+    case 'admin':        return <span className="cab-chip cab-chip-signal">{i18n.t('cabinet:employeesPage.roleAdmin')}</span>
+    default:             return <span className="cab-chip">{role ?? i18n.t('cabinet:employeesPage.roleUser')}</span>
   }
 }
 
@@ -261,9 +261,9 @@ export default function PartsEmployees() {
                 <thead>
                   <tr>
                     <th className="table-header-cell">{t('employeesPage.colEmployee')}</th>
-                    <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>{t('employeesPage.colRole')}</th>
-                    <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>{t('employeesPage.colEmail')}</th>
-                    <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200" style={{ letterSpacing: '0.06em' }}>{t('employeesPage.colPhone')}</th>
+                    <th className="table-header-cell hidden md:table-cell">{t('employeesPage.colRole')}</th>
+                    <th className="table-header-cell hidden lg:table-cell">{t('employeesPage.colEmail')}</th>
+                    <th className="table-header-cell hidden sm:table-cell">{t('employeesPage.colPhone')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -287,12 +287,12 @@ export default function PartsEmployees() {
                       </td>
 
                       {/* Роль */}
-                      <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
+                      <td className="hidden md:table-cell px-3 py-2 text-sm text-gray-700 border-b border-gray-100">
                         {roleBadge(employee.role)}
                       </td>
 
                       {/* Email */}
-                      <td className="hidden lg:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
+                      <td className="hidden lg:table-cell px-3 py-2 text-sm text-gray-700 border-b border-gray-100">
                         {employee.email ? (
                           <a
                             href={`mailto:${employee.email}`}
@@ -307,7 +307,7 @@ export default function PartsEmployees() {
                       </td>
 
                       {/* Телефон */}
-                      <td className="hidden sm:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
+                      <td className="hidden sm:table-cell px-3 py-2 text-sm text-gray-700 border-b border-gray-100">
                         {employee.phone ? (
                           <a
                             href={`tel:${employee.phone}`}

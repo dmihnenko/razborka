@@ -3,34 +3,32 @@ import { useTranslation } from 'react-i18next'
 import { Spinner } from '@/components/ui/Spinner'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Edit, TrendingUp, TrendingDown, Plus, Settings, Trash2, Tag, Sparkles, X, Car, Zap } from 'lucide-react'
+import { Edit, TrendingUp, TrendingDown, Plus, Settings, Tag, Sparkles, X, Car, Zap, DollarSign } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsCategoryTemplates, createPartsInventoryItem, getStorageLocations, updateVehicleStatus } from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { toast } from 'sonner'
-import type { PartsVehicle, PartsVehicleStatus, CreatePartsInventoryInput, StorageLocation } from '@/types/parts'
+import type { PartsVehicle, PartsVehicleStatus, CreatePartsInventoryInput, StorageLocation, PartsInventoryItem } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
-import { deletePhotosFromImgbb } from '@/services/imgbbService'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
+import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { ConveyorModal } from '@/components/parts/ConveyorModal'
+import SellPartModal from '@/components/parts/SellPartModal'
 import { formatPrice } from '@/utils/currency'
-import { useConfirm } from '@/hooks/useConfirm'
-import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { PartsInventoryModal } from '@/pages/PartsInventory'
-import { moveToTrash } from '@/services/trashService'
 
 // ── Статусы разборки ──────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<PartsVehicleStatus, string> = {
-  awaiting:    'badge badge-yellow',
-  in_progress: 'badge badge-blue',
-  dismantled:  'badge badge-green',
+  awaiting:    'cab-chip text-amber-700 bg-amber-50 border-amber-200',
+  in_progress: 'cab-chip cab-chip-signal',
+  dismantled:  'cab-chip text-emerald-700 bg-emerald-50 border-emerald-200',
 }
 
 const STATUS_BTN_ACTIVE: Record<PartsVehicleStatus, string> = {
-  awaiting:    'bg-yellow-100 text-yellow-800 border border-yellow-300',
-  in_progress: 'bg-blue-100   text-blue-800   border border-blue-300',
-  dismantled:  'bg-green-100  text-green-800  border border-green-300',
+  awaiting:    'bg-amber-100 text-amber-800 border border-amber-300',
+  in_progress: 'bg-primary/10 text-primary border border-primary/30',
+  dismantled:  'bg-emerald-100 text-emerald-800 border border-emerald-300',
 }
 
 const STATUS_LABELS: Record<PartsVehicleStatus, string> = {
@@ -41,9 +39,9 @@ const STATUS_LABELS: Record<PartsVehicleStatus, string> = {
 
 // ── Статусы запчастей ─────────────────────────────────────────────────────────
 const PART_STATUS_BADGE: Record<string, string> = {
-  available: 'badge badge-green',
-  sold:      'badge badge-gray',
-  reserved:  'badge badge-yellow',
+  available: 'cab-chip text-emerald-700 bg-emerald-50 border-emerald-200',
+  sold:      'cab-chip',
+  reserved:  'cab-chip text-amber-700 bg-amber-50 border-amber-200',
 }
 const PART_STATUS_LABELS: Record<string, string> = {
   available: 'В наличии',
@@ -67,11 +65,11 @@ export default function PartsVehicleDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { confirm: showConfirm, dialogProps } = useConfirm()
   const { t } = useTranslation('cabinet')
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isAddPartOpen, setIsAddPartOpen] = useState(false)
   const [isConveyorOpen, setIsConveyorOpen] = useState(false)
+  const [sellPart, setSellPart] = useState<PartsInventoryItem | null>(null)
   const [suggestionDismissed, setSuggestionDismissed] = useState(false)
   const { rate: globalRate, isStale: rateIsStale } = usePartsExchangeRate()
 
@@ -167,39 +165,6 @@ export default function PartsVehicleDetails() {
       setIsAddPartOpen(false)
     },
     onError: () => toast.error(t('vehicleDetailsPage.toastAddError')),
-  })
-
-  // Delete part mutation
-  const deletePartMutation = useMutation({
-    mutationFn: async (part: { id: string; photos?: ImgbbPhoto[]; name?: string }) => {
-      if (part.photos?.length) {
-        await deletePhotosFromImgbb(part.photos)
-      }
-      await moveToTrash({
-        entityType: 'parts_inventory',
-        entityId: part.id,
-        entityLabel: part.name ? t('vehicleDetailsPage.trashLabelNamed', { name: part.name }) : t('vehicleDetailsPage.trashLabel'),
-        entityData: part,
-        partsCompanyId: partsCompanyId,
-      })
-      const { error } = await supabase
-        .from('parts_inventory')
-        .delete()
-        .eq('id', part.id)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vehicle-parts', id] })
-      queryClient.invalidateQueries({ queryKey: ['trash'] })
-      toast.success(t('vehicleDetailsPage.toastMovedToTrash'))
-    },
-    onError: (error: any) => {
-      if (error?.status === 409 || error?.code === '23503') {
-        toast.error(t('vehicleDetailsPage.toastDeleteInOrder'))
-      } else {
-        toast.error(t('vehicleDetailsPage.toastDeleteError'))
-      }
-    },
   })
 
   // Fetch parts for this vehicle
@@ -304,35 +269,18 @@ export default function PartsVehicleDetails() {
     : null
 
   return (
-    <div className="animate-fade-in">
+    <div className="min-h-dvh bg-gray-50">
 
       {/* ── Sticky page header ─────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-sm border-b border-gray-100">
-        <div className="page-container py-0 flex items-center justify-between gap-3 h-14">
-          {/* Back + title */}
-          <div className="flex items-center gap-2 min-w-0">
-            <button
-              onClick={() => navigate('/parts/vehicles')}
-              className="btn-icon flex-shrink-0"
-              aria-label={t('vehicleDetailsPage.back')}
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <div className="min-w-0">
-              <h1 className="page-title truncate text-base sm:text-lg">
-                {vehicle.make} {vehicle.model}
-                {vehicle.year && (
-                  <span className="text-gray-400 font-normal ml-1">({vehicle.year})</span>
-                )}
-              </h1>
-            </div>
-            <span className={STATUS_BADGE[vehicle.status]}>
+      <PartsPageHeader
+        backPath="/parts/vehicles"
+        height="sm"
+        title={`${vehicle.make} ${vehicle.model}${vehicle.year ? ` (${vehicle.year})` : ''}`}
+        actions={
+          <>
+            <span className={`${STATUS_BADGE[vehicle.status]} hidden sm:inline-flex`}>
               {t(`vehicleDetailsPage.status_${vehicle.status}`)}
             </span>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setIsConveyorOpen(true)}
               className="cab-btn cab-btn-primary cab-btn-sm"
@@ -348,12 +296,12 @@ export default function PartsVehicleDetails() {
               <Edit className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t('vehicleDetailsPage.edit')}</span>
             </button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* ── Content ────────────────────────────────────────────────────────── */}
-      <div className="page-container space-y-5">
+      <div className="page-container py-5 space-y-5">
 
         {/* ── Hero: vehicle info + status ──────────────────────────────────── */}
         <div className="cab-card p-4">
@@ -366,7 +314,7 @@ export default function PartsVehicleDetails() {
                   key={status}
                   onClick={() => statusMutation.mutate(status)}
                   disabled={statusMutation.isPending}
-                  className={`btn cab-btn-sm transition-all ${
+                  className={`cab-btn cab-btn-sm transition-all ${
                     vehicle.status === status
                       ? STATUS_BTN_ACTIVE[status]
                       : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 hover:border-gray-300'
@@ -485,12 +433,16 @@ export default function PartsVehicleDetails() {
                         <th className="table-header-cell">{t('vehicleDetailsPage.colPart')}</th>
                         <th className="table-header-cell text-right">{t('vehicleDetailsPage.colPrice')}</th>
                         <th className="table-header-cell text-center">{t('vehicleDetailsPage.colStatus')}</th>
-                        <th className="table-header-cell w-10" />
+                        <th className="table-header-cell w-28" />
                       </tr>
                     </thead>
                     <tbody className="grid-hairline">
                       {parts.map((part: any) => (
-                        <tr key={part.id} className="table-row">
+                        <tr
+                          key={part.id}
+                          onClick={() => navigate(`/parts/inventory/${part.id}`)}
+                          className="table-row cursor-pointer hover:bg-gray-50"
+                        >
                           <td className="table-cell">
                             <div className="font-semibold text-gray-900 leading-tight">{part.name}</div>
                             {part.part_number && (
@@ -528,30 +480,23 @@ export default function PartsVehicleDetails() {
                                 )}
                           </td>
                           <td className="table-cell text-center">
-                            <span className={PART_STATUS_BADGE[part.status] ?? 'badge badge-gray'}>
+                            <span className={PART_STATUS_BADGE[part.status] ?? 'cab-chip'}>
                               {PART_STATUS_LABELS[part.status] ? t(`vehicleDetailsPage.partStatus_${part.status}`) : part.status}
                             </span>
                           </td>
-                          <td className="table-cell w-10 pr-3">
-                            <button
-                              onClick={async () => {
-                                const ok = await showConfirm({
-                                  message: t('vehicleDetailsPage.confirmDeletePart', { name: part.name }),
-                                  danger: true,
-                                })
-                                if (!ok) return
-                                deletePartMutation.mutate({
-                                  id: part.id,
-                                  photos: part.photos,
-                                  name: part.name,
-                                })
-                              }}
-                              disabled={deletePartMutation.isPending}
-                              className="btn-icon-sm text-gray-400 hover:text-red-600 hover:bg-red-50"
-                              title={t('vehicleDetailsPage.deletePart')}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                          <td className="table-cell w-28 pr-3 text-right" onClick={(e) => e.stopPropagation()}>
+                            {part.status !== 'sold' ? (
+                              <button
+                                onClick={() => setSellPart(part)}
+                                className="cab-btn cab-btn-success cab-btn-sm"
+                                title={t('vehicleDetailsPage.sellBtn')}
+                              >
+                                <DollarSign className="w-3.5 h-3.5" />
+                                <span className="hidden lg:inline">{t('vehicleDetailsPage.sellBtn')}</span>
+                              </button>
+                            ) : (
+                              <span className="text-xs text-gray-400">{t('vehicleDetailsPage.partStatus_sold')}</span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -562,7 +507,11 @@ export default function PartsVehicleDetails() {
                 {/* Mobile cards */}
                 <div className="sm:hidden divide-y divide-gray-100">
                   {parts.map((part: any) => (
-                    <div key={part.id} className="px-4 py-3 flex items-start gap-3">
+                    <div
+                      key={part.id}
+                      onClick={() => navigate(`/parts/inventory/${part.id}`)}
+                      className="px-4 py-3 flex items-start gap-3 cursor-pointer active:bg-gray-50"
+                    >
                       {/* Thumb */}
                       {part.photos?.length > 0 ? (
                         <img
@@ -582,7 +531,7 @@ export default function PartsVehicleDetails() {
                           <span className="font-semibold text-sm text-gray-900 truncate leading-tight">
                             {part.name}
                           </span>
-                          <span className={`${PART_STATUS_BADGE[part.status] ?? 'badge badge-gray'} flex-shrink-0`}>
+                          <span className={`${PART_STATUS_BADGE[part.status] ?? 'cab-chip'} flex-shrink-0`}>
                             {PART_STATUS_LABELS[part.status] ? t(`vehicleDetailsPage.partStatus_${part.status}`) : part.status}
                           </span>
                         </div>
@@ -606,26 +555,16 @@ export default function PartsVehicleDetails() {
                         </div>
                       </div>
 
-                      {/* Delete */}
-                      <button
-                        onClick={async () => {
-                          const ok = await showConfirm({
-                            message: t('vehicleDetailsPage.confirmDeletePart', { name: part.name }),
-                            danger: true,
-                          })
-                          if (!ok) return
-                          deletePartMutation.mutate({
-                            id: part.id,
-                            photos: part.photos,
-                            name: part.name,
-                          })
-                        }}
-                        disabled={deletePartMutation.isPending}
-                        className="btn-icon-sm text-gray-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0"
-                        title={t('vehicleDetailsPage.delete')}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {/* Sell */}
+                      {part.status !== 'sold' && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSellPart(part) }}
+                          className="cab-btn cab-btn-success cab-btn-sm flex-shrink-0"
+                          title={t('vehicleDetailsPage.sellBtn')}
+                        >
+                          <DollarSign className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -643,7 +582,7 @@ export default function PartsVehicleDetails() {
               <dl className="grid grid-cols-3 gap-2">
                 {[
                   { label: t('vehicleDetailsPage.statTotal'), value: parts.length, cls: 'text-gray-900' },
-                  { label: t('vehicleDetailsPage.statSold'), value: soldCount, cls: 'text-green-600' },
+                  { label: t('vehicleDetailsPage.statSold'), value: soldCount, cls: 'text-emerald-600' },
                   { label: t('vehicleDetailsPage.statAvailable'), value: availableCount, cls: 'text-primary' },
                 ].map(({ label, value, cls }) => (
                   <div
@@ -691,7 +630,7 @@ export default function PartsVehicleDetails() {
                 <div className="flex items-center justify-between gap-3 py-2.5">
                   <span className="text-sm text-gray-500">{t('vehicleDetailsPage.finRevenue')}</span>
                   <div className="text-right">
-                    <div className="tabular font-semibold text-green-600 text-sm">
+                    <div className="tabular font-semibold text-emerald-600 text-sm">
                       ${totalRevenueUSD.toLocaleString('ru-RU', { maximumFractionDigits: 0 })}
                     </div>
                     {totalRevenue > 0 && (
@@ -707,14 +646,14 @@ export default function PartsVehicleDetails() {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
                       {isProfitable
-                        ? <TrendingUp className="w-4 h-4 text-green-600 flex-shrink-0" />
+                        ? <TrendingUp className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                         : <TrendingDown className="w-4 h-4 text-red-600 flex-shrink-0" />}
                       <span className="font-semibold text-sm text-gray-700">{t('vehicleDetailsPage.finTotal')}</span>
                     </div>
                     <div className="text-right">
                       <div
                         className={`text-xl font-extrabold tabular leading-none ${
-                          isProfitable ? 'text-green-600' : 'text-red-600'
+                          isProfitable ? 'text-emerald-600' : 'text-red-600'
                         }`}
                       >
                         {profitUSD > 0 ? '+' : ''}$
@@ -722,7 +661,7 @@ export default function PartsVehicleDetails() {
                       </div>
                       <div
                         className={`text-xs tabular font-medium mt-0.5 ${
-                          isProfitable ? 'text-green-500' : 'text-red-400'
+                          isProfitable ? 'text-emerald-500' : 'text-red-400'
                         }`}
                       >
                         {profit > 0 ? '+' : ''}{profit.toLocaleString('ru-RU')} {t('vehicleDetailsPage.uah')}
@@ -736,25 +675,25 @@ export default function PartsVehicleDetails() {
 
             {/* Brand template suggestion */}
             {!suggestionDismissed && unimportedTemplates.length > 0 && (
-              <div className="cab-card p-4 border-indigo-200/80 bg-indigo-50/60">
+              <div className="cab-card p-4 border-primary/20 bg-primary/5">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="icon-tile-sm bg-indigo-100">
-                      <Sparkles className="w-4 h-4 text-indigo-600" />
+                    <span className="icon-tile-sm bg-primary/10">
+                      <Sparkles className="w-4 h-4 text-primary" />
                     </span>
-                    <p className="text-sm font-semibold text-indigo-900 leading-tight">
+                    <p className="text-sm font-semibold text-primary leading-tight">
                       {t('vehicleDetailsPage.templatesCount', { n: unimportedTemplates.length, make: vehicle.make })}
                     </p>
                   </div>
                   <button
                     onClick={() => setSuggestionDismissed(true)}
-                    className="btn-icon-sm text-indigo-400 hover:text-indigo-600"
+                    className="btn-icon-sm text-primary/60 hover:text-primary"
                     aria-label={t('vehicleDetailsPage.close')}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <p className="text-xs text-indigo-600/80 mb-3">
+                <p className="text-xs text-primary/70 mb-3">
                   {t('vehicleDetailsPage.templatesHint')}
                 </p>
                 <div className="flex gap-2">
@@ -837,7 +776,17 @@ export default function PartsVehicleDetails() {
         />
       )}
 
-      <ConfirmDialog {...dialogProps} />
+      {sellPart && partsCompanyId && (
+        <SellPartModal
+          item={sellPart}
+          partsCompanyId={partsCompanyId}
+          onClose={() => setSellPart(null)}
+          onSold={() => {
+            queryClient.invalidateQueries({ queryKey: ['vehicle-parts', id] })
+            queryClient.invalidateQueries({ queryKey: ['parts-vehicle', id] })
+          }}
+        />
+      )}
     </div>
   )
 }

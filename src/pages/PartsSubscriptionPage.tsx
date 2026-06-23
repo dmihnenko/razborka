@@ -13,6 +13,7 @@ import {
   getSubscriptionTiers, getMyLatestRequest, createSubscriptionRequest,
 } from '@/services/subscriptionService'
 import UsageMeter from '@/components/subscription/UsageMeter'
+import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import {
   DURATIONS, tierTermPrice, tierTermPerMonth, durationLabel, discountPct, fmtPrice,
 } from '@/config/subscriptionPlans'
@@ -69,15 +70,14 @@ export default function PartsSubscriptionPage() {
   )
 
   return (
-    <div className="w-full pb-12 space-y-5 animate-fade-in">
+    <div className="min-h-dvh bg-gray-50">
+      <PartsPageHeader
+        title="Тариф разборки"
+        subtitle="Текущий план, лимиты и оформление подписки"
+        backPath="/parts/dashboard"
+      />
 
-      {/* ── Заголовок страницы ─────────────────────────────────── */}
-      <div className="page-header mb-0">
-        <div>
-          <h1 className="page-title">Тариф разборки</h1>
-          <p className="page-subtitle">Текущий план, лимиты и оформление подписки</p>
-        </div>
-      </div>
+      <div className="w-full py-5 sm:py-6 pb-12 space-y-5 animate-fade-in">
 
       {/* ── Алерт: подписка истекает ──────────────────────────── */}
       {isExpiringSoon && subDaysLeft !== null && (
@@ -231,7 +231,7 @@ export default function PartsSubscriptionPage() {
                 >
                   {d.label}
                   {d.discount > 0 && (
-                    <span className="ml-1 text-[10px] font-bold text-green-600">
+                    <span className="ml-1 text-[10px] font-bold text-emerald-600">
                       −{discountPct(d.months)}%
                     </span>
                   )}
@@ -304,7 +304,7 @@ export default function PartsSubscriptionPage() {
                             <span className="badge badge-green">Текущий</span>
                           )}
                           {isRecommended && !isCurrent && (
-                            <span className="badge badge-blue">Хит</span>
+                            <span className="cab-chip cab-chip-signal">Хит</span>
                           )}
                           {isSelected && (
                             <Check
@@ -399,9 +399,10 @@ export default function PartsSubscriptionPage() {
 
       {/* ── Подсказка ─────────────────────────────────────────── */}
       <p className="text-xs text-gray-400 flex items-center gap-1.5">
-        <CheckCircle2 className="w-3.5 h-3.5 text-green-500" strokeWidth={1.5} />
+        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" strokeWidth={1.5} />
         Лимиты тарифа: количество машин и запчастей в базе разборки.
       </p>
+      </div>
     </div>
   )
 }

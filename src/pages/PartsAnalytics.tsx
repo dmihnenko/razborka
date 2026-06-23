@@ -190,7 +190,7 @@ export default function PartsAnalytics() {
                         </span>
                         <div className="w-full flex items-end" style={{ height: '120px' }}>
                           <div
-                            className="w-full bg-primary hover:bg-blue-400 rounded-t transition-colors cursor-default"
+                            className="w-full bg-primary hover:bg-primary/80 rounded-t transition-colors cursor-default"
                             style={{ height: `${Math.max(heightPercent, 4)}%` }}
                             title={`${month}: ${formatPrice(mdata.revenue, 'USD')} · ${t('analyticsPage.ordersShort', { n: mdata.orders })}`}
                           />

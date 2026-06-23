@@ -356,8 +356,7 @@ export default function PartsOrderDetails() {
                     <button
                       onClick={() => updateStatusMutation.mutate('cancelled')}
                       disabled={updateStatusMutation.isPending}
-                      className="cab-btn cab-btn-sm cab-btn-secondary"
-                      style={{ color: '#B91C1C' }}
+                      className="cab-btn cab-btn-sm cab-btn-secondary text-red-700"
                     >
                       {t('orderDetailsPage.cancel')}
                     </button>
@@ -776,12 +775,12 @@ function NpCombobox({
         onKeyDown={e => { if (e.key === 'Escape') onClose() }}
       />
       {open && items.length > 0 && (
-        <ul className="absolute z-50 left-0 right-0 top-full mt-1 max-h-56 overflow-y-auto rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
+        <ul className="absolute z-50 left-0 right-0 top-full mt-1 max-h-56 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
           {items.map(item => (
             <li key={item.value}>
               <button
                 type="button"
-                className="w-full text-left px-4 py-2.5 text-sm text-gray-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-800 hover:bg-slate-100 transition-colors"
                 onMouseDown={e => { e.preventDefault(); onSelect(item) }}
               >
                 {item.label}
@@ -1105,7 +1104,7 @@ function ConfirmCompleteModal({ onConfirm, onClose, isLoading }: ConfirmComplete
 
         <div className="modal-header">
           <div className="flex items-center gap-3">
-            <span className="icon-tile bg-green-100 text-green-700">
+            <span className="icon-tile bg-emerald-100 text-emerald-700">
               <CheckCircle className="w-5 h-5" />
             </span>
             <h3 className="heading-3">{t('orderDetailsPage.completeOrderQuestion')}</h3>
@@ -1127,8 +1126,7 @@ function ConfirmCompleteModal({ onConfirm, onClose, isLoading }: ConfirmComplete
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className="flex-1 py-3 text-sm font-semibold text-white rounded-lg disabled:opacity-50 transition-all cab-btn cab-btn-success"
-            style={{ backgroundImage: 'linear-gradient(180deg, #16A34A 0%, #15803D 100%)' }}
+            className="cab-btn cab-btn-success flex-1 disabled:opacity-50"
           >
             {isLoading ? t('orderDetailsPage.completing') : t('orderDetailsPage.yesComplete')}
           </button>
@@ -1238,11 +1236,11 @@ function NpTtnBlock({
       {hasTtn ? (
         /* ── ТТН вже є ── */
         <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800">
-            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-50 border border-emerald-100">
+            <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-green-700 dark:text-green-400 font-medium">{t('orderDetailsPage.ttnNumber')}</p>
-              <p className="text-base font-bold text-green-900 dark:text-green-300 tabular tracking-wide">
+              <p className="text-xs text-emerald-700 font-medium">{t('orderDetailsPage.ttnNumber')}</p>
+              <p className="text-base font-bold text-emerald-900 tabular tracking-wide">
                 {order.np_ttn}
               </p>
             </div>
@@ -1345,7 +1343,7 @@ function NpTtnBlock({
         /* ── Нет данных ── */
         <div className="flex items-start gap-2">
           <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-gray-500 dark:text-slate-400">
+          <p className="text-sm text-gray-500">
             {!npApiKeySet
               ? t('orderDetailsPage.noApiKeyHint')
               : t('orderDetailsPage.noDataHint')}

@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import {
   ArrowLeft, Trash2, Package,
   MapPin, Tag, Car, FileText, AlertTriangle,
-  Share2, Edit2, Copy, Warehouse, CheckCircle2, QrCode, TrendingUp, ChevronDown,
+  Share2, Edit2, Copy, Warehouse, CheckCircle2, QrCode, TrendingUp, ChevronDown, ChevronRight,
 } from 'lucide-react'
 import { getPartsInventoryItem, deletePartsInventoryItem, getStorageLocations } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
@@ -179,7 +179,7 @@ export default function PartsInventoryItemPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-background">
+    <div className="min-h-dvh bg-gray-50">
 
       {/* ── Sticky header ────────────────────────────────────────── */}
       <div className="sticky top-0 z-20 bg-white border-b border-gray-100"
@@ -473,6 +473,43 @@ export default function PartsInventoryItemPage() {
 
         </div>
 
+        {/* ── QR-этикетка и ссылка на товар (заметный блок) ───────── */}
+        <div className="cab-card overflow-hidden mt-4">
+          {/* QR с размещением */}
+          <button
+            onClick={() => setQrOpen(true)}
+            className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-left"
+          >
+            <span className="icon-tile bg-slate-100 text-slate-700 flex-shrink-0">
+              <QrCode className="w-5 h-5" strokeWidth={1.5} />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block font-semibold text-gray-900">{t('inventoryItemPage.qrBlockTitle')}</span>
+              <span className="block text-xs text-gray-500 mt-0.5 truncate">
+                {locationPath.length > 0
+                  ? locationPath.join(' / ')
+                  : item.location || t('inventoryItemPage.qrBlockHint')}
+              </span>
+            </span>
+            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          </button>
+
+          {/* Ссылка на товар → модуль «Поделиться» (мессенджеры + копировать) */}
+          <button
+            onClick={() => setShareOpen(true)}
+            className="w-full flex items-center gap-3 p-4 border-t border-gray-100 hover:bg-gray-50 transition-colors text-left"
+          >
+            <span className="icon-tile bg-primary/10 text-primary flex-shrink-0">
+              <Share2 className="w-5 h-5" strokeWidth={1.5} />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block font-semibold text-gray-900">{t('inventoryItemPage.linkBlockTitle')}</span>
+              <span className="block text-xs text-gray-500 mt-0.5">{t('inventoryItemPage.linkBlockHint')}</span>
+            </span>
+            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          </button>
+        </div>
+
         {/* Управление позицией */}
         <div className="cab-card p-3 mt-4 flex items-center gap-2">
           <button
@@ -523,7 +560,10 @@ export default function PartsInventoryItemPage() {
       {qrOpen && (
         <QrLabelModal
           title={item.name}
-          subtitle={item.part_number ? item.part_number.toUpperCase() : undefined}
+          subtitle={[
+            item.part_number ? item.part_number.toUpperCase() : null,
+            locationPath.length > 0 ? locationPath.join(' / ') : item.location || null,
+          ].filter(Boolean).join('  ·  ') || undefined}
           value={`${window.location.origin}/public/parts-item/${id}`}
           onClose={() => setQrOpen(false)}
         />

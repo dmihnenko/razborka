@@ -110,7 +110,7 @@ export default function ProfileSettings() {
       {/* Информация об аккаунте */}
       <div className="cab-card overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+          <div className="icon-tile-sm bg-slate-100">
             <User className="w-4 h-4 text-slate-700" />
           </div>
           <div>
@@ -129,7 +129,7 @@ export default function ProfileSettings() {
       {/* Редактирование профиля */}
       <div className="cab-card overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+          <div className="icon-tile-sm bg-slate-100">
             <User className="w-4 h-4 text-slate-700" />
           </div>
           <div>
@@ -139,22 +139,22 @@ export default function ProfileSettings() {
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">ФИО</label>
+            <label className="form-label">ФИО</label>
             <input
               type="text"
               value={profileForm.full_name}
               onChange={e => setProfileForm({ ...profileForm, full_name: e.target.value })}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="form-input"
               placeholder="Иванов Иван Иванович"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Телефон</label>
+            <label className="form-label">Телефон</label>
             <input
               type="tel"
               value={profileForm.phone}
               onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="form-input"
               placeholder="+380 XX XXX-XX-XX"
             />
           </div>
@@ -175,7 +175,7 @@ export default function ProfileSettings() {
       {showPartsContacts && (
         <div className="cab-card overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+            <div className="icon-tile-sm bg-slate-100">
               <Send className="w-4 h-4 text-slate-700" />
             </div>
             <div>
@@ -185,44 +185,44 @@ export default function ProfileSettings() {
           </div>
           <div className="p-5 space-y-3">
             <div>
-              <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5"><Send className="w-3.5 h-3.5 text-sky-500" /> Telegram</label>
+              <label className="form-label flex items-center gap-1.5"><Send className="w-3.5 h-3.5 text-sky-500" /> Telegram</label>
               <input
                 type="text"
                 value={contactForm.telegram}
                 onChange={e => setContactForm(f => ({ ...f, telegram: e.target.value }))}
                 placeholder="@username или https://t.me/username"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                className="form-input"
               />
               <p className="text-[11px] text-gray-400 mt-1">Чтобы покупатели могли написать вам в Telegram</p>
             </div>
             <div>
-              <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5"><Phone className="w-3.5 h-3.5 text-green-500" /> Телефон</label>
+              <label className="form-label flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-green-500" /> Телефон</label>
               <input
                 type="tel"
                 value={contactForm.phone}
                 onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))}
                 placeholder="+380 XX XXX-XX-XX"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                className="form-input"
               />
             </div>
             <div>
-              <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5"><MapPin className="w-3.5 h-3.5 text-orange-500" /> Адрес / город</label>
+              <label className="form-label flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-orange-500" /> Адрес / город</label>
               <input
                 type="text"
                 value={contactForm.address}
                 onChange={e => setContactForm(f => ({ ...f, address: e.target.value }))}
                 placeholder="Город, улица"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                className="form-input"
               />
             </div>
             <div>
-              <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5"><Mail className="w-3.5 h-3.5 text-blue-500" /> Email</label>
+              <label className="form-label flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-blue-500" /> Email</label>
               <input
                 type="email"
                 value={contactForm.email}
                 onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
                 placeholder="email@example.com"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                className="form-input"
               />
             </div>
             <div className="flex justify-end">
@@ -242,7 +242,7 @@ export default function ProfileSettings() {
       {/* Смена пароля */}
       <div className="cab-card overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+          <div className="icon-tile-sm bg-slate-100">
             <Lock className="w-4 h-4 text-slate-700" />
           </div>
           <div>
@@ -252,13 +252,13 @@ export default function ProfileSettings() {
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Новый пароль</label>
+            <label className="form-label">Новый пароль</label>
             <div className="relative">
               <input
                 type={showNew ? 'text' : 'password'}
                 value={passwordForm.newPassword}
                 onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                className="form-input pr-10"
                 placeholder="Новый пароль"
                 autoComplete="new-password"
               />
@@ -276,13 +276,13 @@ export default function ProfileSettings() {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Подтвердите пароль</label>
+            <label className="form-label">Подтвердите пароль</label>
             <div className="relative">
               <input
                 type={showConfirm ? 'text' : 'password'}
                 value={passwordForm.confirmPassword}
                 onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                className="form-input pr-10"
                 placeholder="Повторите пароль"
                 autoComplete="new-password"
               />

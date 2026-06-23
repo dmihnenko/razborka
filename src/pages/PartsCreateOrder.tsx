@@ -107,7 +107,7 @@ export default function PartsCreateOrder() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-dvh bg-gray-50">
       <PartsPageHeader title={i18n.t('cabinet:pages.createOrder')} backPath="/parts/orders" maxWidth="3xl" />
 
       <div className="max-w-3xl mx-auto px-3 sm:px-5 lg:px-8 py-5 sm:py-7">
@@ -153,11 +153,11 @@ export default function PartsCreateOrder() {
                     className="form-input pl-9"
                   />
                   {customerOpen && (
-                    <div className="absolute z-20 mt-1 w-full max-h-60 overflow-auto rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg">
+                    <div className="absolute z-20 mt-1 w-full max-h-60 overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg">
                       <button
                         type="button"
                         onClick={() => selectCustomer(null)}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-500"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-500"
                       >
                         {t('createOrderPage.noCustomer')}
                       </button>
@@ -166,9 +166,9 @@ export default function PartsCreateOrder() {
                           key={customer.id}
                           type="button"
                           onClick={() => selectCustomer(customer.id)}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 border-t border-gray-50 dark:border-slate-700/50"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 border-t border-gray-50"
                         >
-                          <span className="block text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{customer.full_name}</span>
+                          <span className="block text-sm font-medium text-gray-900 truncate">{customer.full_name}</span>
                           {(customer.phone || customer.email) && (
                             <span className="block text-xs text-gray-400 truncate">
                               {[customer.phone, customer.email].filter(Boolean).join(' · ')}
@@ -195,7 +195,7 @@ export default function PartsCreateOrder() {
               </div>
             </div>
 
-            <div className="border-t border-gray-100 dark:border-white/5 pt-4">
+            <div className="border-t border-gray-100 pt-4">
               <label htmlFor="notes" className="form-label">
                 {t('createOrderPage.notes')}
               </label>

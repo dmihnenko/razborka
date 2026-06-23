@@ -125,7 +125,8 @@ export default function PartsShipments() {
                   </p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-xs font-semibold" style={{ color: isProblem(s) ? '#B91C1C' : isDelivered(s) ? '#15803D' : ink }}>
+                  <p className={`text-xs font-semibold ${isProblem(s) ? 'text-red-700' : isDelivered(s) ? 'text-emerald-700' : ''}`}
+                    style={isProblem(s) || isDelivered(s) ? undefined : { color: ink }}>
                     {s.status || t('shipments.noData')}
                   </p>
                   <p className="text-[11px]" style={{ color: ink3 }}>{formatDate(s.created_at)}</p>

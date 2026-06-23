@@ -363,7 +363,7 @@ export default function PartsCustomers() {
                             </button>
                             <button
                               onClick={e => handleDelete(customer.id, e)}
-                              className="cab-btn cab-btn-sm text-red-600 hover:bg-red-50"
+                              className="cab-btn cab-btn-danger cab-btn-sm"
                             >
                               {t('customersPage.delete')}
                             </button>

@@ -24,17 +24,17 @@ import OnboardingChecklist from '@/components/parts/OnboardingChecklist'
 // воронка заказов и последние заказы. Данные — getPartsDashboardStats (RPC).
 // ============================================================================
 
-const STATUS_CHIP: Record<string, { bg: string; color: string }> = {
-  new:         { bg: 'var(--cab-signal-weak)', color: 'var(--cab-signal)' },
-  in_progress: { bg: '#FEF3C7', color: '#B45309' },
-  completed:   { bg: '#DCFCE7', color: '#15803D' },
-  cancelled:   { bg: '#F3F4F6', color: '#6B7280' },
+const STATUS_CHIP: Record<string, string> = {
+  new:         'cab-chip-signal',
+  in_progress: 'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
+  completed:   'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100',
+  cancelled:   'bg-gray-100 text-gray-500 ring-1 ring-gray-200',
 }
 
 function StatusChip({ status }: { status: PartsOrderStatus }) {
-  const s = STATUS_CHIP[status] ?? STATUS_CHIP.cancelled
+  const cls = STATUS_CHIP[status] ?? STATUS_CHIP.cancelled
   return (
-    <span className="cab-chip" style={{ background: s.bg, color: s.color, borderColor: 'transparent' }}>
+    <span className={`cab-chip border-transparent ${cls}`}>
       {getPartsOrderStatusText(status)}
     </span>
   )
@@ -140,8 +140,7 @@ export default function PartsDashboard() {
             onClick={handleUpdateRate}
             disabled={rateFetching}
             title={t('dashboard.updateRate')}
-            className="cab-btn cab-btn-secondary cab-btn-sm"
-            style={rateStale ? { borderColor: '#F59E0B', color: '#B45309', background: '#FFFBEB' } : undefined}
+            className={`cab-btn cab-btn-secondary cab-btn-sm${rateStale ? ' border-amber-400 text-amber-700 bg-amber-50' : ''}`}
           >
             <RefreshCw className={`w-4 h-4 ${rateFetching ? 'animate-spin' : ''}`} strokeWidth={1.5} />
             <span className="tabular-nums">{usdRate} ₴/$</span>
@@ -186,7 +185,7 @@ export default function PartsDashboard() {
         </div>
       ) : (
         <div className="cab-card p-4 flex items-center gap-3">
-          <span className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#DCFCE7', color: '#15803D' }}>
+          <span className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-50 text-emerald-700">
             <CheckCircle2 className="w-5 h-5" strokeWidth={1.5} />
           </span>
           <div>

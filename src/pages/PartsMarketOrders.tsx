@@ -30,10 +30,10 @@ const STATUS_LABEL_KEYS: Record<MarketplaceOrderStatus, string> = {
   closed: 'statusClosed',
 }
 
-const STATUS_BADGES: Record<MarketplaceOrderStatus, string> = {
-  new: 'badge badge-blue',
-  viewed: 'badge badge-yellow',
-  closed: 'badge badge-gray',
+const STATUS_CHIPS: Record<MarketplaceOrderStatus, string> = {
+  new: 'cab-chip cab-chip-signal',
+  viewed: 'cab-chip bg-amber-50 text-amber-700 border-amber-200',
+  closed: 'cab-chip',
 }
 
 /** Группируем позиции по авто (с какой машины) — удобно собирать заказ */
@@ -95,7 +95,7 @@ function MarketOrderCard({
             <span className="kicker">{formatDateTime(order.createdAt)}</span>
           </div>
         </div>
-        <span className={`${STATUS_BADGES[order.status]} flex-shrink-0`}>
+        <span className={`${STATUS_CHIPS[order.status]} flex-shrink-0`}>
           {t(`marketOrdersPage.${STATUS_LABEL_KEYS[order.status]}`)}
         </span>
       </div>
@@ -103,7 +103,7 @@ function MarketOrderCard({
       <div className="px-4 py-3 space-y-3">
         {/* Комментарий покупателя */}
         {order.comment && (
-          <div className="alert alert-info gap-2.5">
+          <div className="flex items-start gap-2.5 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2.5 text-gray-600">
             <MessageSquare className="w-4 h-4 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
             <p className="text-sm whitespace-pre-wrap break-words">{order.comment}</p>
           </div>
@@ -144,7 +144,7 @@ function MarketOrderCard({
                         )}
                       </div>
                     </div>
-                    <p className="text-sm font-extrabold text-gray-900 whitespace-nowrap tabular">
+                    <p className="text-sm font-extrabold text-gray-900 whitespace-nowrap tabular-nums">
                       {formatPrice(item.sellingPrice, item.priceCurrency)}
                     </p>
                   </div>
@@ -160,7 +160,7 @@ function MarketOrderCard({
       <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/60 flex items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="kicker">{t('marketOrdersPage.total')}</p>
-          <p className="text-lg font-extrabold text-primary tabular leading-none">{formatOrderTotal(order)}</p>
+          <p className="text-lg font-extrabold text-primary tabular-nums leading-none">{formatOrderTotal(order)}</p>
         </div>
         <div className="flex items-center gap-2 justify-end flex-shrink-0">
           {order.convertedOrderId ? (
