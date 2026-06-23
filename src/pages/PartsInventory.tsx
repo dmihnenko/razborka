@@ -12,7 +12,7 @@ import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { InventoryCard } from '@/components/parts/InventoryCard'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import i18n from '@/i18n'
-import { getPartsInventoryPaged, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
+import { getPartsInventoryPaged, getPartsInventoryItem, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { deletePhotosFromImgbb } from '@/services/imgbbService'
@@ -163,16 +163,24 @@ export default function PartsInventory() {
   // Auto-open edit modal when navigated back with editItemId in state
   useEffect(() => {
     const editItemId = location.state?.editItemId
-    if (!editItemId || inventory.length === 0) return
-    const found = inventory.find((i: PartsInventoryItem) => i.id === editItemId)
-    if (found) {
-      setEditingItem(found)
-      setIsModalOpen(true)
-    }
+    if (!editItemId) return
+    let cancelled = false
+    // Берём СВЕЖИЙ товар по id: пагинированный список мог быть устаревшим
+    // (напр. после заполнения цены/номера в «Без цены или номера»), из-за чего
+    // в форму редактирования попадал товар без актуальной цены.
+    ;(async () => {
+      const fresh = await getPartsInventoryItem(editItemId).catch(() => null)
+      const item = fresh || inventory.find((i: PartsInventoryItem) => i.id === editItemId)
+      if (!cancelled && item) {
+        setEditingItem(item as PartsInventoryItem)
+        setIsModalOpen(true)
+      }
+    })()
     // Чистим состояние через роутер, иначе после сохранения refetch
     // снова триггерит эффект и модалка открывается повторно
     navigate(location.pathname + location.search, { replace: true, state: null })
-  }, [location.state?.editItemId, inventory.length])  
+    return () => { cancelled = true }
+  }, [location.state?.editItemId])
 
   // Auto-open sell modal when navigated with sellItemId in state (from item page)
   useEffect(() => {

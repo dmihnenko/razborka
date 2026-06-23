@@ -101,6 +101,7 @@ export default function PartsNoPricePage() {
       updatePartsInventoryItem(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory-item', id] })
       setSaved(prev => new Set([...prev, id]))
       toast.success(t('noPricePage.toastSaved'))
     },

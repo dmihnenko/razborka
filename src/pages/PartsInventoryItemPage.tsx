@@ -184,7 +184,7 @@ export default function PartsInventoryItemPage() {
       {/* ── Sticky header ────────────────────────────────────────── */}
       <div className="sticky top-0 z-20 bg-white border-b border-gray-100"
            style={{ boxShadow: '0 1px 3px rgba(0,0,0,.06)' }}>
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
+        <div className="w-full h-14 flex items-center gap-3">
 
           {/* Back */}
           <button
@@ -221,8 +221,8 @@ export default function PartsInventoryItemPage() {
       </div>
 
       {/* ── Content ──────────────────────────────────────────────── */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-5 animate-fade-in">
-        <div className="cab-card overflow-hidden">
+      <div className="w-full py-4 sm:py-5 animate-fade-in grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 items-start">
+        <div className="cab-card overflow-hidden lg:col-span-2">
 
           {/* Photo gallery */}
           {photos.length > 0 ? (
@@ -473,8 +473,11 @@ export default function PartsInventoryItemPage() {
 
         </div>
 
+        {/* ── Правая колонка: QR/ссылка + управление ───────────────── */}
+        <div className="space-y-4 lg:sticky lg:top-20">
+
         {/* ── QR-этикетка и ссылка на товар (заметный блок) ───────── */}
-        <div className="cab-card overflow-hidden mt-4">
+        <div className="cab-card overflow-hidden">
           {/* QR с размещением */}
           <button
             onClick={() => setQrOpen(true)}
@@ -511,7 +514,7 @@ export default function PartsInventoryItemPage() {
         </div>
 
         {/* Управление позицией */}
-        <div className="cab-card p-3 mt-4 flex items-center gap-2">
+        <div className="cab-card p-3 flex items-center gap-2">
           <button
             onClick={() => navigate('/parts/inventory', { state: { editItemId: id } })}
             className="cab-btn cab-btn-secondary cab-btn-sm flex-1 gap-1.5"
@@ -526,6 +529,8 @@ export default function PartsInventoryItemPage() {
             <Trash2 className="w-4 h-4" /> {t('inventoryItemPage.delete')}
           </button>
         </div>
+
+        </div>{/* /правая колонка */}
       </div>
 
       {/* ── Modals ───────────────────────────────────────────────── */}
