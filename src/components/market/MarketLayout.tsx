@@ -18,7 +18,7 @@ import { getDefaultRouteForRoles } from '@/config/navigation'
 
 function navTab({ isActive }: { isActive: boolean }) {
   return [
-    'inline-flex items-center justify-center min-w-0 sm:min-w-[92px] h-8 px-3 sm:px-4 rounded-[7px] text-sm whitespace-nowrap transition-colors',
+    'inline-flex items-center justify-center min-w-0 sm:min-w-[92px] h-8 px-2 sm:px-4 rounded-[7px] text-xs sm:text-sm whitespace-nowrap transition-colors',
     isActive ? 'font-semibold' : 'font-medium',
   ].join(' ')
 }
@@ -54,7 +54,7 @@ function MarketLayoutInner() {
   }
 
   const navTabs = (
-    <div className="inline-flex items-center gap-1 p-1 rounded-[10px]" style={{ background: 'var(--mk-surface-2)' }}>
+    <div className="inline-flex items-center gap-1 p-0.5 sm:p-1 rounded-[10px]" style={{ background: 'var(--mk-surface-2)' }}>
       <NavLink
         to="/market/catalog"
         className={navTab}
@@ -85,12 +85,13 @@ function MarketLayoutInner() {
         style={{ background: 'color-mix(in srgb, var(--mk-surface) 88%, transparent)', borderBottom: '1px solid var(--mk-border)' }}
       >
         <div className="mk-container">
-          {/* Ряд 1 */}
-          <div className="flex items-center gap-2 sm:gap-3 h-14 sm:h-16">
+          {/* Ряд 1 — на мобиле контролы компактнее (--mk-control-h 36 вместо 44),
+              чтобы лого + табы + язык + корзина + вход уместились в один ряд */}
+          <div className="flex items-center gap-1.5 sm:gap-3 h-14 sm:h-16 [--mk-control-h:36px] sm:[--mk-control-h:44px]">
             {/* Лого: на мобиле компактный знак (в размер кнопок Каталог/Разборки),
                 на десктопе — полная эмблема с дескриптором */}
             <Link to="/market" className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0 min-w-0" aria-label="Razborka.net — маркет запчастей, на главную">
-              <Logo size="sm" withText={false} className="md:hidden flex-shrink-0 [&>svg]:!w-10 [&>svg]:!h-10" />
+              <Logo size="sm" withText={false} className="md:hidden flex-shrink-0 [&>svg]:!w-9 [&>svg]:!h-9" />
               <Logo size="sm" withText className="hidden md:inline-flex flex-shrink-0" />
             </Link>
 
@@ -117,8 +118,8 @@ function MarketLayoutInner() {
               <div className="hidden md:flex flex-1 justify-center">{navTabs}</div>
             )}
 
-            <div className="flex items-center gap-2 ml-auto flex-shrink-0">
-              <LanguageSwitcher className="hidden md:inline-flex" />
+            <div className="flex items-center gap-1.5 sm:gap-2 ml-auto flex-shrink-0">
+              <LanguageSwitcher />
               <Link to="/market/cart" className="mk-icon-btn relative" aria-label={`Корзина${totalCount ? `, товаров: ${totalCount}` : ' (пусто)'}`}>
                 <ShoppingCart className="w-5 h-5" aria-hidden="true" />
                 {totalCount > 0 && (
@@ -130,7 +131,7 @@ function MarketLayoutInner() {
                   </span>
                 )}
               </Link>
-              <Link to={user ? dashboardHref : '/login'} className="mk-btn mk-btn-outline">
+              <Link to={user ? dashboardHref : '/login'} className="mk-btn mk-btn-outline px-2.5 sm:px-[0.875rem]">
                 {user
                   ? <><LayoutDashboard className="w-4 h-4" aria-hidden="true" /><span className="hidden sm:inline">{t('header.toCabinet')}</span></>
                   : <><LogIn className="w-4 h-4" aria-hidden="true" /><span className="hidden sm:inline">{t('header.login')}</span></>}
@@ -147,25 +148,22 @@ function MarketLayoutInner() {
             {navTabs}
           </nav>
 
-          {/* Мобила: строка под первым рядом — поиск (если нужен) + смена языка справа */}
-          <div className="md:hidden flex items-center gap-2 pb-2.5">
-            {showHeaderSearch && (
-              <form onSubmit={handleSearch} role="search" className="flex-1 min-w-0">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none mk-meta" aria-hidden="true" />
-                  <input
-                    type="search"
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder="Поиск запчасти или артикула…"
-                    className="mk-input mk-search !rounded-full"
-                    aria-label={t('header.searchPlaceholder')}
-                  />
-                </div>
-              </form>
-            )}
-            <LanguageSwitcher className="ml-auto flex-shrink-0" />
-          </div>
+          {/* Поиск (мобила) — под категориями/разборками */}
+          {showHeaderSearch && (
+            <form onSubmit={handleSearch} role="search" className="md:hidden pb-2.5">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none mk-meta" aria-hidden="true" />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Поиск запчасти или артикула…"
+                  className="mk-input mk-search !rounded-full"
+                  aria-label={t('header.searchPlaceholder')}
+                />
+              </div>
+            </form>
+          )}
         </div>
       </header>
 

@@ -3,36 +3,35 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { SUPPORTED_LANGS } from '@/i18n'
 
 /**
- * Переключатель языка (RU/UK). Стиль нейтральный (mk-/cab-токены с фолбэками) —
- * подходит и для маркета, и для кабинета, и для логина.
+ * Переключатель языка — единая кнопка-свитч (а не два языка сразу).
+ * Показывает текущий язык; клик переключает на следующий по кругу
+ * (RU → UK → RU). Высота берётся из --mk-control-h, чтобы совпадать
+ * с соседними контролами; токены с фолбэками — годится и для маркета,
+ * и для кабинета, и для логина.
  */
 export default function LanguageSwitcher({ className = '' }: { className?: string }) {
   const { lang, setLang } = useLanguage()
   const { t } = useTranslation('common')
+  const idx = SUPPORTED_LANGS.indexOf(lang)
+  const next = SUPPORTED_LANGS[(idx + 1) % SUPPORTED_LANGS.length]
   return (
-    <div
-      role="group"
-      aria-label={t('lang.label')}
-      className={`inline-flex items-center rounded-lg p-0.5 ${className}`}
-      style={{ background: 'var(--mk-surface-2, #F4F5F7)', border: '1px solid var(--mk-border, #E4E6EA)' }}
-    >
-      {SUPPORTED_LANGS.map((l) => {
-        const active = lang === l
-        return (
-          <button
-            key={l}
-            type="button"
-            onClick={() => setLang(l)}
-            aria-pressed={active}
-            className="px-2.5 h-7 rounded-md text-xs font-bold transition-colors"
-            style={active
-              ? { background: 'var(--mk-surface, #fff)', color: 'var(--mk-text, #16181D)', boxShadow: '0 1px 2px rgba(20,20,40,.08)' }
-              : { color: 'var(--mk-text-3, #8B909A)' }}
-          >
-            {t(`lang.${l}`)}
-          </button>
-        )
+    <button
+      type="button"
+      onClick={() => setLang(next)}
+      aria-label={t('lang.switchTo', {
+        lang: t(`lang.${next}`),
+        defaultValue: `Switch language to ${next.toUpperCase()}`,
       })}
-    </div>
+      title={t('lang.label')}
+      className={`inline-flex items-center justify-center rounded-lg px-2 sm:px-2.5 text-xs font-bold uppercase transition-colors flex-shrink-0 ${className}`}
+      style={{
+        height: 'var(--mk-control-h, 36px)',
+        background: 'var(--mk-surface, #fff)',
+        border: '1px solid var(--mk-border, #E4E6EA)',
+        color: 'var(--mk-text, #16181D)',
+      }}
+    >
+      {t(`lang.${lang}`)}
+    </button>
   )
 }
