@@ -193,7 +193,7 @@ export function BusinessLanding() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-[60px]">
             <Link to="/business">
-              <Logo size="md" withText />
+              <Logo size="sm" withText />
             </Link>
             <nav className="flex items-center gap-1.5 sm:gap-2">
               <Link to="/market" className="btn-secondary btn-sm">

@@ -84,17 +84,6 @@ export function Logo({ size = 'md', withText = true, framed = true, className = 
       }}>
         {BRAND.wordmark.lead}
       </span>
-
-      {/* Таглайн (скрыт на sm) */}
-      {s.tag > 0 && (
-        <span style={{
-          fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: s.tag,
-          textTransform: 'uppercase', letterSpacing: '0.2em',
-          color: 'var(--cab-ink-3, #8B909A)', marginTop: 6, whiteSpace: 'nowrap',
-        }}>
-          {BRAND.tagline}
-        </span>
-      )}
     </span>
   )
 }

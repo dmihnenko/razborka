@@ -252,7 +252,7 @@ export default function Login() {
               className="flex items-center justify-center mb-4"
             >
               <Link to="/market" aria-label="На маркет запчастей" className="inline-flex">
-                <Logo size="md" withText />
+                <Logo size="sm" withText />
               </Link>
             </motion.div>
 
