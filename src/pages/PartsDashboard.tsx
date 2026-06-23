@@ -1,10 +1,10 @@
 import { useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { useUserProfile } from '@/hooks/useUserProfile'
+import { useUserProfile, useHasAnyRole } from '@/hooks/useUserProfile'
 import {
   ShoppingCart, Inbox, Tag, AlertTriangle, DollarSign, Package, Car,
-  ArrowRight, ChevronRight, Plus, CheckCircle2, Boxes, RefreshCw,
+  ArrowRight, ChevronRight, Plus, CheckCircle2, Boxes, RefreshCw, Truck,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getPartsOrderStatusText } from '@/utils/status'
@@ -13,6 +13,7 @@ import { formatDate } from '@/utils/date'
 import { intlLocale } from '@/i18n'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getPartsDashboardStats } from '@/services/partsService'
+import { getShipments, type PartsShipment } from '@/services/shipmentsService'
 import { supabase } from '@/lib/supabase'
 import ExchangeRateWidget from '@/components/parts/ExchangeRateWidget'
 import OnboardingChecklist from '@/components/parts/OnboardingChecklist'
@@ -40,11 +41,17 @@ function StatusChip({ status }: { status: PartsOrderStatus }) {
   )
 }
 
+// НП: 9/10/11 — доставлено/получено; 14/102/103/108 — проблема/возврат; остальное — в пути.
+const shipDelivered = (s: PartsShipment) => ['9', '10', '11'].includes(s.status_code || '')
+const shipProblem = (s: PartsShipment) => ['14', '102', '103', '108'].includes(s.status_code || '')
+
 export default function PartsDashboard() {
   const { t } = useTranslation('cabinet')
   const navigate = useNavigate()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
+  // Финансы (выручка/прибыль) видят владелец и админ; рядовой работник — нет.
+  const canSeeFinance = useHasAnyRole(['parts_owner', 'admin'])
   const { rate: usdRate, isStale: rateStale, fetching: rateFetching, fetchPrivatBank } = usePartsExchangeRate()
 
   const handleUpdateRate = async () => {
@@ -62,6 +69,19 @@ export default function PartsDashboard() {
     enabled: !!partsCompanyId,
     staleTime: 5 * 60 * 1000,
   })
+
+  // Доставка — агрегат активных/проблемных/доставленных ТТН для блока на дашборде
+  const { data: shipments = [] } = useQuery({
+    queryKey: ['parts-shipments', partsCompanyId],
+    queryFn: () => getShipments(partsCompanyId!),
+    enabled: !!partsCompanyId,
+    staleTime: 5 * 60 * 1000,
+  })
+  const delivery = {
+    active: shipments.filter((s) => !shipDelivered(s) && !shipProblem(s)).length,
+    problem: shipments.filter(shipProblem).length,
+    delivered: shipments.filter(shipDelivered).length,
+  }
 
   const { data: recentOrders } = useQuery({
     queryKey: ['parts-recent-activity', partsCompanyId],
@@ -120,7 +140,10 @@ export default function PartsDashboard() {
   const ink3 = 'var(--cab-ink-3)'
 
   const kpis = [
-    { label: t('dashboard.kpiRevenue'),  value: (stats?.revenueUSD ?? 0) > 0 ? `$${Math.round(stats!.revenueUSD).toLocaleString(intlLocale())}` : '—', sub: t('dashboard.kpiCompleted', { n: stats?.orders?.completed ?? 0 }), Icon: DollarSign, to: '/parts/analytics' },
+    // Выручка — только для владельца/админа; работнику показываем «Доставка в пути»
+    canSeeFinance
+      ? { label: t('dashboard.kpiRevenue'), value: (stats?.revenueUSD ?? 0) > 0 ? `$${Math.round(stats!.revenueUSD).toLocaleString(intlLocale())}` : '—', sub: t('dashboard.kpiCompleted', { n: stats?.orders?.completed ?? 0 }), Icon: DollarSign, to: '/parts/analytics' }
+      : { label: t('dashboard.kpiDelivery'), value: delivery.active, sub: t('dashboard.kpiDelivered', { n: delivery.delivered }), Icon: Truck, to: '/parts/shipments' },
     { label: t('dashboard.kpiOrders'),  value: stats?.orders?.total ?? 0, sub: t('dashboard.kpiInProgress', { n: stats?.orders?.in_progress ?? 0 }), Icon: ShoppingCart, to: '/parts/orders' },
     { label: t('dashboard.kpiParts'), value: stats?.inventory?.total ?? 0, sub: t('dashboard.kpiAvailable', { n: stats?.inventory?.available ?? 0 }), Icon: Package, to: '/parts/inventory?source=vehicles' },
     { label: t('dashboard.kpiVehicles'),     value: stats?.vehicles?.total ?? 0, sub: t('dashboard.kpiDismantled', { n: stats?.vehicles?.dismantled ?? 0 }), Icon: Car, to: '/parts/vehicles' },
@@ -247,9 +270,11 @@ export default function PartsDashboard() {
                       </p>
                       <p className="text-[11px] mt-0.5" style={{ color: ink3 }}>{formatDate(o.order_date)}</p>
                     </div>
-                    <span className="text-sm font-bold tabular-nums flex-shrink-0" style={{ color: ink }}>
-                      {usd != null ? `$${Math.round(usd).toLocaleString(intlLocale())}` : '—'}
-                    </span>
+                    {canSeeFinance && (
+                      <span className="text-sm font-bold tabular-nums flex-shrink-0" style={{ color: ink }}>
+                        {usd != null ? `$${Math.round(usd).toLocaleString(intlLocale())}` : '—'}
+                      </span>
+                    )}
                     <StatusChip status={o.status} />
                   </button>
                 )
@@ -258,6 +283,8 @@ export default function PartsDashboard() {
           )}
         </div>
 
+        {/* Правая колонка: воронка + доставка */}
+        <div className="space-y-4">
         {/* Воронка заказов */}
         <div className="cab-card p-4">
           <p className="text-sm font-bold mb-3" style={{ color: ink }}>{t('dashboard.funnel')}</p>
@@ -289,6 +316,31 @@ export default function PartsDashboard() {
               {stats?.customers?.total ?? 0} <ChevronRight className="w-3.5 h-3.5" style={{ color: ink3 }} strokeWidth={1.5} />
             </span>
           </Link>
+        </div>
+
+        {/* Доставка (Новая Почта) */}
+        <Link to="/parts/shipments" className="cab-card cab-card-hover p-4 block group">
+          <div className="flex items-center justify-between mb-3">
+            <span className="inline-flex items-center gap-2 text-sm font-bold" style={{ color: ink }}>
+              <Truck className="w-4 h-4" strokeWidth={1.5} /> {t('dashboard.delivery')}
+            </span>
+            <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--cab-signal)' }} strokeWidth={1.5} />
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <p className="text-xl font-extrabold tabular-nums leading-none" style={{ color: 'var(--cab-signal)' }}>{delivery.active}</p>
+              <p className="text-[11px] mt-1" style={{ color: ink2 }}>{t('dashboard.delInTransit')}</p>
+            </div>
+            <div>
+              <p className="text-xl font-extrabold tabular-nums leading-none" style={{ color: delivery.problem > 0 ? '#DC2626' : ink3 }}>{delivery.problem}</p>
+              <p className="text-[11px] mt-1" style={{ color: ink2 }}>{t('dashboard.delProblem')}</p>
+            </div>
+            <div>
+              <p className="text-xl font-extrabold tabular-nums leading-none" style={{ color: '#15803D' }}>{delivery.delivered}</p>
+              <p className="text-[11px] mt-1" style={{ color: ink2 }}>{t('dashboard.delDelivered')}</p>
+            </div>
+          </div>
+        </Link>
         </div>
       </div>
     </div>

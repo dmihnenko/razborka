@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/i18n'
 import { Spinner } from '@/components/ui/Spinner'
-import { Plus, Search, Car, Filter, Grid, List, Download, Upload, FileSpreadsheet, X } from 'lucide-react'
+import { Plus, Search, Car, Filter, Grid, List, Download, Upload, FileSpreadsheet, X, ChevronDown, CheckSquare, Square } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -11,14 +11,14 @@ import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
-import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle, getPartsCategoryTemplates, getPartsInventoryByVehicle, getVehicleRoi, getPartsInventory, createPartsInventoryItem, updateVehicleStatus } from '@/services/partsService'
+import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle, getPartsCategoryTemplates, getPartsInventoryByVehicle, getVehicleRoi, getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, updateVehicleStatus } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
-import { exportVehiclesXlsx, downloadVehiclesTemplate, parseVehiclesFile, type ParsedVehicle, type ParsedPart } from '@/utils/vehiclesXlsx'
+import { exportVehiclesXlsx, downloadVehiclesTemplate, parseVehiclesFile, type ParsedVehicle } from '@/utils/vehiclesXlsx'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
-import type { PartsVehicle, CreatePartsVehicleInput, PartsVehicleStatus, VehicleRoi } from '@/types/parts'
+import type { PartsVehicle, CreatePartsVehicleInput, PartsVehicleStatus, VehicleRoi, PartsInventoryItem } from '@/types/parts'
 
 /** Бейдж окупаемости авто: % возврата + цвет (окупилось/в процессе/в минусе). */
 function roiBadge(r?: VehicleRoi): { pct: number; cls: string } | null {
@@ -31,6 +31,92 @@ function roiBadge(r?: VehicleRoi): { pct: number; cls: string } | null {
       ? 'text-red-700 bg-red-50 ring-red-100'
       : 'text-amber-700 bg-amber-50 ring-amber-100'
   return { pct: r.payback_pct ?? 0, cls }
+}
+
+// ── Импорт: план сверки (новые/без изменений/изменённые) ──
+type ImportDecision = 'create' | 'skip' | 'update'
+interface VDiff { label: string; from: string; to: string }
+// Изменённая запчасть существующего авто (цена/кол-во/статус/…): было→стало
+interface PartChange {
+  existingId: string
+  name: string
+  diffs: VDiff[]
+  patch: Partial<PartsInventoryItem>
+  decision: 'update' | 'skip'
+}
+interface PlanItem {
+  pv: ParsedVehicle
+  matchId?: string
+  kind: 'new' | 'same' | 'changed'
+  diffs: VDiff[]
+  partChanges: PartChange[]
+  partAdds: number
+  decision: ImportDecision
+}
+const V_STATUS_S: Record<string, string> = { awaiting: 'Ожидает', in_progress: 'В разборе', dismantled: 'Разобран' }
+const INV_STATUS_S: Record<string, string> = { available: 'В наличии', reserved: 'Резерв', sold: 'Продано', damaged: 'Брак' }
+const COND_S: Record<string, string> = { new: 'Новая', used: 'Б/У', damaged: 'Повреждённая' }
+const vNorm = (x: any): string => (x == null || x === '') ? '' : String(x).trim()
+const partKey = (pn?: string | null, name?: string | null) => ((pn || name || '').toLowerCase().trim())
+function vehKey(v: { vin?: string | null; make: string; model: string; year?: number | null }): string {
+  const vin = (v.vin || '').toUpperCase().trim()
+  return vin || `${v.make}|${v.model}|${v.year ?? ''}`.toLowerCase().trim()
+}
+function buildPlan(parsedVehicles: ParsedVehicle[], existing: PartsVehicle[], existingParts: PartsInventoryItem[]): PlanItem[] {
+  const byKey = new Map(existing.map((v) => [vehKey(v), v]))
+  const partsByVeh = new Map<string, PartsInventoryItem[]>()
+  existingParts.forEach((p) => {
+    if (!p.vehicle_id) return
+    const a = partsByVeh.get(p.vehicle_id) || []; a.push(p); partsByVeh.set(p.vehicle_id, a)
+  })
+  return parsedVehicles.filter((pv) => !pv._error).map((pv): PlanItem => {
+    const ex = byKey.get(vehKey(pv))
+    if (!ex) return { pv, kind: 'new', diffs: [], partChanges: [], partAdds: pv.parts.length, decision: 'create' }
+    const diffs: VDiff[] = []
+    const cmp = (label: string, a: any, b: any) => {
+      const an = vNorm(a), bn = vNorm(b)
+      if (an !== bn) diffs.push({ label, from: bn || '—', to: an || '—' })
+    }
+    cmp('Год', pv.year, ex.year)
+    cmp('Госномер', pv.license_plate, ex.license_plate)
+    cmp('Цвет', pv.color, ex.color)
+    cmp('Пробег', pv.mileage, ex.mileage)
+    cmp('Цена покупки', pv.purchase_price, ex.purchase_price)
+    cmp('Курс', pv.exchange_rate, ex.exchange_rate)
+    cmp('Статус', V_STATUS_S[pv.status], V_STATUS_S[ex.status])
+
+    // Сверка запчастей по ключу (OEM/название)
+    const exParts = new Map((partsByVeh.get(ex.id) || []).map((p) => [partKey(p.part_number, p.name), p]))
+    const partChanges: PartChange[] = []
+    let partAdds = 0
+    for (const pp of pv.parts) {
+      const exp = exParts.get(partKey(pp.part_number, pp.name))
+      if (!exp) { partAdds++; continue }
+      const pd: VDiff[] = []
+      const patch: Partial<PartsInventoryItem> = {}
+      if (pp.selling_price != null && vNorm(pp.selling_price) !== vNorm(exp.selling_price)) {
+        pd.push({ label: 'Цена', from: vNorm(exp.selling_price) || '—', to: vNorm(pp.selling_price) }); patch.selling_price = pp.selling_price
+      }
+      if (vNorm(pp.quantity) !== vNorm(exp.quantity)) {
+        pd.push({ label: 'Кол-во', from: vNorm(exp.quantity) || '—', to: vNorm(pp.quantity) }); patch.quantity = pp.quantity
+      }
+      if (pp.status !== exp.status) {
+        pd.push({ label: 'Статус', from: INV_STATUS_S[exp.status] || exp.status, to: INV_STATUS_S[pp.status] || pp.status }); patch.status = pp.status as any
+      }
+      if (pp.condition !== exp.condition) {
+        pd.push({ label: 'Состояние', from: COND_S[exp.condition] || exp.condition, to: COND_S[pp.condition] || pp.condition }); patch.condition = pp.condition as any
+      }
+      const exLoc = exp.storage_location?.name || exp.location || ''
+      if (pp.location && vNorm(pp.location) !== vNorm(exLoc)) {
+        pd.push({ label: 'Место', from: exLoc || '—', to: pp.location }); patch.location = pp.location
+      }
+      if (pd.length > 0) partChanges.push({ existingId: exp.id, name: pp.name, diffs: pd, patch, decision: 'update' })
+    }
+
+    if (diffs.length === 0 && partChanges.length === 0 && partAdds === 0)
+      return { pv, matchId: ex.id, kind: 'same', diffs, partChanges, partAdds, decision: 'skip' }
+    return { pv, matchId: ex.id, kind: 'changed', diffs, partChanges, partAdds, decision: 'update' }
+  })
 }
 
 const statusLabels: Record<PartsVehicleStatus, string> = {
@@ -71,9 +157,19 @@ export default function PartsVehicles() {
   const [selectedVehicle, setSelectedVehicle] = useState<PartsVehicle | null>(null)
   // Импорт/экспорт
   const [importOpen, setImportOpen] = useState(false)
-  const [parsed, setParsed] = useState<{ vehicles: ParsedVehicle[]; parts: ParsedPart[] } | null>(null)
+  const [parsed, setParsed] = useState<{ vehicles: ParsedVehicle[] } | null>(null)
+  const [plan, setPlan] = useState<PlanItem[] | null>(null)
+  const [existingParts, setExistingParts] = useState<PartsInventoryItem[]>([])
   const [exporting, setExporting] = useState(false)
+  const [parsing, setParsing] = useState(false)
+  const [exportMenu, setExportMenu] = useState(false)
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const toggleSelect = (id: string) => setSelectedIds((prev) => {
+    const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next
+  })
 
   const queryClient = useQueryClient()
   const { confirm: showConfirm, dialogProps } = useConfirm()
@@ -164,12 +260,14 @@ export default function PartsVehicles() {
     }
   })
 
-  // ── Экспорт: авто + их запчасти в оформленный XLSX ──
-  const handleExport = async () => {
+  // ── Экспорт: авто + их запчасти в оформленный XLSX (по выбору) ──
+  const handleExport = async (list: PartsVehicle[]) => {
+    setExportMenu(false)
+    if (list.length === 0) { toast.error(t('vehiclesPage.exportEmpty')); return }
     setExporting(true)
     try {
       const all = await getPartsInventory(partsCompanyId!)
-      const res = await exportVehiclesXlsx({ vehicles, parts: all, roi: roiByVehicle })
+      const res = await exportVehiclesXlsx({ vehicles: list, parts: all, roi: roiByVehicle, summary: list.length > 1 })
       toast.success(t('vehiclesPage.exportDone', { v: res.vehicles, p: res.parts }))
     } catch (e: any) {
       toast.error(e?.message || t('vehiclesPage.exportError'))
@@ -179,54 +277,96 @@ export default function PartsVehicles() {
   }
 
   const handleFile = async (file: File) => {
+    setParsing(true)
     try {
       const data = await parseVehiclesFile(file)
+      // Существующие запчасти (для досоздания недостающих к обновляемым авто)
+      const allParts = await getPartsInventory(partsCompanyId!).catch(() => [] as PartsInventoryItem[])
+      setExistingParts(allParts)
       setParsed(data)
+      setPlan(buildPlan(data.vehicles, vehicles, allParts))
     } catch {
       toast.error(t('vehiclesPage.importParseError'))
+    } finally {
+      setParsing(false)
     }
   }
 
-  // ── Импорт: создаём авто и привязанные по VIN запчасти ──
+  const setDecision = (idx: number, decision: ImportDecision) =>
+    setPlan((prev) => prev ? prev.map((it, i) => (i === idx ? { ...it, decision } : it)) : prev)
+  const setAllChanged = (decision: ImportDecision) =>
+    setPlan((prev) => prev ? prev.map((it) => (it.kind === 'changed' ? { ...it, decision } : it)) : prev)
+  // Решение по конкретной изменённой запчасти внутри авто
+  const setPartDecision = (idx: number, pcIdx: number, decision: 'update' | 'skip') =>
+    setPlan((prev) => prev ? prev.map((it, i) => i === idx
+      ? { ...it, partChanges: it.partChanges.map((pc, j) => j === pcIdx ? { ...pc, decision } : pc) }
+      : it) : prev)
+
+  // ── Импорт по плану: создать новые / обновить изменённые / пропустить ──
   const importMutation = useMutation({
     mutationFn: async () => {
-      if (!parsed) return { v: 0, p: 0, skipped: 0 }
-      const existingVins = new Set(vehicles.map(v => v.vin?.toUpperCase()).filter(Boolean) as string[])
-      const vinToId = new Map<string, string>()
-      vehicles.forEach(v => { if (v.vin) vinToId.set(v.vin.toUpperCase(), v.id) })
-      let cv = 0, cp = 0, skipped = 0
-      for (const pv of parsed.vehicles) {
-        if (pv._error) { skipped++; continue }
-        const vinU = pv.vin?.toUpperCase()
-        if (vinU && existingVins.has(vinU)) { skipped++; continue }   // дубль по VIN
-        if (!canCreate.vehicle()) { skipped++; continue }              // лимит тарифа
-        const created = await createPartsVehicle({
-          make: pv.make, model: pv.model, year: pv.year, vin: pv.vin,
-          license_plate: pv.license_plate, color: pv.color, mileage: pv.mileage,
-          purchase_price: pv.purchase_price, purchase_date: pv.purchase_date, exchange_rate: pv.exchange_rate,
-        }, partsCompanyId!)
-        cv++
-        if (vinU) { vinToId.set(vinU, created.id); existingVins.add(vinU) }
-        if (pv.status !== 'awaiting') { try { await updateVehicleStatus(created.id, pv.status, created as any) } catch { /* статус не критичен */ } }
+      if (!plan) return { created: 0, updated: 0, skipped: 0, parts: 0, partsUpdated: 0 }
+      // Существующие запчасти по авто — для досоздания недостающих
+      const partsByVeh = new Map<string, PartsInventoryItem[]>()
+      existingParts.forEach((p) => {
+        if (!p.vehicle_id) return
+        const a = partsByVeh.get(p.vehicle_id) || []; a.push(p); partsByVeh.set(p.vehicle_id, a)
+      })
+      let created = 0, updated = 0, skipped = 0, parts = 0, partsUpdated = 0
+
+      const addParts = async (vehicleId: string, list: ParsedVehicle['parts'], existing: PartsInventoryItem[]) => {
+        const seen = new Set(existing.map((p) => partKey(p.part_number, p.name)))
+        for (const pp of list) {
+          if (seen.has(partKey(pp.part_number, pp.name))) continue   // запчасть уже есть → пропуск (обновление — отдельно)
+          await createPartsInventoryItem({
+            name: pp.name, part_number: pp.part_number, condition: pp.condition,
+            quantity: pp.quantity, selling_price: pp.selling_price, price_currency: pp.price_currency,
+            location: pp.location, vehicle_id: vehicleId, status: 'available',
+          }, partsCompanyId!)
+          seen.add(partKey(pp.part_number, pp.name)); parts++
+        }
       }
-      for (const pp of parsed.parts) {
-        if (pp._error) { skipped++; continue }
-        const vid = pp.vin ? vinToId.get(pp.vin.toUpperCase()) : undefined
-        await createPartsInventoryItem({
-          name: pp.name, part_number: pp.part_number, condition: pp.condition,
-          quantity: pp.quantity, selling_price: pp.selling_price, price_currency: pp.price_currency,
-          location: pp.location, vehicle_id: vid, status: 'available',
-        }, partsCompanyId!)
-        cp++
+
+      for (const it of plan) {
+        const pv = it.pv
+        if (it.decision === 'skip') { skipped++; continue }
+        if (it.decision === 'create') {
+          if (!canCreate.vehicle()) { skipped++; continue }
+          const v = await createPartsVehicle({
+            make: pv.make, model: pv.model, year: pv.year, vin: pv.vin,
+            license_plate: pv.license_plate, color: pv.color, mileage: pv.mileage,
+            purchase_price: pv.purchase_price, purchase_date: pv.purchase_date, exchange_rate: pv.exchange_rate,
+          }, partsCompanyId!)
+          created++
+          if (pv.status !== 'awaiting') { try { await updateVehicleStatus(v.id, pv.status, v as any) } catch { /* ignore */ } }
+          await addParts(v.id, pv.parts, [])
+        } else if (it.decision === 'update' && it.matchId) {
+          if (it.diffs.length > 0) {
+            await updatePartsVehicle(it.matchId, {
+              year: pv.year, vin: pv.vin, license_plate: pv.license_plate, color: pv.color,
+              mileage: pv.mileage, purchase_price: pv.purchase_price, purchase_date: pv.purchase_date,
+              exchange_rate: pv.exchange_rate,
+            })
+            try { await updateVehicleStatus(it.matchId, pv.status) } catch { /* ignore */ }
+          }
+          // Изменённые запчасти — было→стало (по решению пользователя)
+          for (const pc of it.partChanges) {
+            if (pc.decision !== 'update') continue
+            await updatePartsInventoryItem(pc.existingId, pc.patch)
+            partsUpdated++
+          }
+          updated++
+          await addParts(it.matchId, pv.parts, partsByVeh.get(it.matchId) || [])
+        }
       }
-      return { v: cv, p: cp, skipped }
+      return { created, updated, skipped, parts, partsUpdated }
     },
     onSuccess: (r) => {
       queryClient.invalidateQueries({ queryKey: ['parts-vehicles'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       queryClient.invalidateQueries({ queryKey: ['vehicle-roi'] })
-      toast.success(t('vehiclesPage.importDone', { v: r.v, p: r.p, skipped: r.skipped }))
-      setImportOpen(false); setParsed(null)
+      toast.success(t('vehiclesPage.importDone2', { created: r.created, updated: r.updated, parts: r.parts, skipped: r.skipped }) + (r.partsUpdated ? t('vehiclesPage.importPartsUpdated', { n: r.partsUpdated }) : ''))
+      setImportOpen(false); setParsed(null); setPlan(null)
     },
     onError: (e: any) => toast.error(e?.message || t('vehiclesPage.importError')),
   })
@@ -286,15 +426,52 @@ export default function PartsVehicles() {
               <Upload className="w-4 h-4" strokeWidth={1.5} />
               <span className="hidden lg:inline">{t('vehiclesPage.import')}</span>
             </button>
-            <button
-              onClick={handleExport}
-              disabled={exporting || vehicles.length === 0}
-              className="cab-btn cab-btn-secondary cab-btn-sm"
-              title={t('vehiclesPage.export')}
-            >
-              <Download className="w-4 h-4" strokeWidth={1.5} />
-              <span className="hidden lg:inline">{exporting ? t('vehiclesPage.exporting') : t('vehiclesPage.export')}</span>
-            </button>
+            {/* Экспорт по выбору: все / фильтр / выбранные */}
+            <div className="relative">
+              <button
+                onClick={() => setExportMenu((v) => !v)}
+                disabled={exporting || vehicles.length === 0}
+                className="cab-btn cab-btn-secondary cab-btn-sm"
+                title={t('vehiclesPage.export')}
+              >
+                <Download className="w-4 h-4" strokeWidth={1.5} />
+                <span className="hidden lg:inline">{exporting ? t('vehiclesPage.exporting') : t('vehiclesPage.export')}</span>
+                <ChevronDown className="w-3.5 h-3.5 opacity-60" strokeWidth={1.5} />
+              </button>
+              {exportMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setExportMenu(false)} />
+                  <div className="absolute right-0 mt-1 w-60 cab-card p-1.5 z-50 shadow-lg">
+                    <button onClick={() => handleExport(vehicles)} className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+                      <span>{t('vehiclesPage.exportAll')}</span>
+                      <span className="kicker tabular-nums">{vehicles.length}</span>
+                    </button>
+                    {filteredVehicles.length !== vehicles.length && (
+                      <button onClick={() => handleExport(filteredVehicles)} className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+                        <span>{t('vehiclesPage.exportFiltered')}</span>
+                        <span className="kicker tabular-nums">{filteredVehicles.length}</span>
+                      </button>
+                    )}
+                    <button
+                      disabled={selectedIds.size === 0}
+                      onClick={() => handleExport(vehicles.filter((v) => selectedIds.has(v.id)))}
+                      className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent"
+                    >
+                      <span>{t('vehiclesPage.exportSelected')}</span>
+                      <span className="kicker tabular-nums">{selectedIds.size}</span>
+                    </button>
+                    <div className="h-px bg-gray-100 my-1" />
+                    <button
+                      onClick={() => { setSelectMode((v) => !v); setExportMenu(false); if (selectMode) setSelectedIds(new Set()) }}
+                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+                    >
+                      {selectMode ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                      {selectMode ? t('vehiclesPage.selectModeOff') : t('vehiclesPage.selectModeOn')}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
             <button
               onClick={() => {
                 setSelectedVehicle(null)
@@ -431,9 +608,20 @@ export default function PartsVehicles() {
           {filteredVehicles.map((vehicle) => (
             <div
               key={vehicle.id}
-              onClick={() => navigate(`/parts/vehicles/${vehicle.id}`)}
-              className="cab-card cab-card-hover flex flex-col overflow-hidden"
+              onClick={() => selectMode ? toggleSelect(vehicle.id) : navigate(`/parts/vehicles/${vehicle.id}`)}
+              className={`cab-card cab-card-hover flex flex-col overflow-hidden relative ${selectMode && selectedIds.has(vehicle.id) ? 'ring-2 ring-primary' : ''}`}
             >
+              {selectMode && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleSelect(vehicle.id) }}
+                  className="absolute top-2 right-2 z-10 p-1 rounded-md bg-white/85 backdrop-blur-sm shadow-sm"
+                  aria-label={t('vehiclesPage.select')}
+                >
+                  {selectedIds.has(vehicle.id)
+                    ? <CheckSquare className="w-4 h-4 text-primary" />
+                    : <Square className="w-4 h-4 text-gray-400" />}
+                </button>
+              )}
               {/* Card body */}
               <div className="p-4 flex-1">
                 {/* Status */}
@@ -510,6 +698,7 @@ export default function PartsVehicles() {
             <table className="w-full">
               <thead>
                 <tr>
+                  {selectMode && <th className="table-header-cell w-10"></th>}
                   <th className="table-header-cell">{t('vehiclesPage.colVehicle')}</th>
                   <th className="table-header-cell hidden lg:table-cell">VIN</th>
                   <th className="table-header-cell hidden md:table-cell">{t('vehiclesPage.colStatus')}</th>
@@ -522,9 +711,18 @@ export default function PartsVehicles() {
                 {filteredVehicles.map((vehicle) => (
                   <tr
                     key={vehicle.id}
-                    onClick={() => navigate(`/parts/vehicles/${vehicle.id}`)}
-                    className="table-row cursor-pointer"
+                    onClick={() => selectMode ? toggleSelect(vehicle.id) : navigate(`/parts/vehicles/${vehicle.id}`)}
+                    className={`table-row cursor-pointer ${selectMode && selectedIds.has(vehicle.id) ? 'bg-primary/5' : ''}`}
                   >
+                    {selectMode && (
+                      <td className="table-cell">
+                        <button onClick={(e) => { e.stopPropagation(); toggleSelect(vehicle.id) }} aria-label={t('vehiclesPage.select')}>
+                          {selectedIds.has(vehicle.id)
+                            ? <CheckSquare className="w-4 h-4 text-primary" />
+                            : <Square className="w-4 h-4 text-gray-400" />}
+                        </button>
+                      </td>
+                    )}
                     <td className="table-cell">
                       <p className="font-semibold text-gray-900">{vehicle.make} {vehicle.model}</p>
                       {vehicle.year && (
@@ -596,21 +794,33 @@ export default function PartsVehicles() {
       <ConfirmDialog {...dialogProps} />
 
       {/* ── Модалка импорта авто + запчастей ── */}
-      {importOpen && (
-        <div className="modal-overlay" onClick={() => { setImportOpen(false); setParsed(null) }}>
+      {importOpen && (() => {
+        const counts = plan
+          ? {
+              create: plan.filter(p => p.decision === 'create').length,
+              update: plan.filter(p => p.decision === 'update').length,
+              skip: plan.filter(p => p.decision === 'skip').length,
+              parts: plan.filter(p => p.decision !== 'skip').reduce((s, p) => s + p.pv.parts.length, 0),
+            }
+          : { create: 0, update: 0, skip: 0, parts: 0 }
+        const changedCount = plan?.filter(p => p.kind === 'changed').length ?? 0
+        const close = () => { setImportOpen(false); setParsed(null); setPlan(null) }
+        const reset = () => { setParsed(null); setPlan(null) }
+        return (
+        <div className="modal-overlay" onClick={close}>
           <div className="modal-sheet sm:max-w-lg" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="min-w-0">
                 <h3 className="text-base font-semibold text-gray-900">{t('vehiclesPage.importTitle')}</h3>
                 <p className="text-xs text-gray-500 mt-0.5">{t('vehiclesPage.importSubtitle')}</p>
               </div>
-              <button type="button" onClick={() => { setImportOpen(false); setParsed(null) }} className="btn-icon btn-icon-sm ml-3 flex-shrink-0">
+              <button type="button" onClick={close} className="btn-icon btn-icon-sm ml-3 flex-shrink-0">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="modal-body space-y-4">
-              {!parsed ? (
+              {!parsed && !parsing ? (
                 <>
                   <label className="block border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors">
                     <input
@@ -628,53 +838,120 @@ export default function PartsVehicles() {
                     <FileSpreadsheet className="w-4 h-4" /> {t('vehiclesPage.template')}
                   </button>
                 </>
+              ) : parsing ? (
+                <div className="py-10 flex justify-center"><Spinner size="md" /></div>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="cab-card p-3">
-                      <p className="kicker">{t('vehiclesPage.importVehicles')}</p>
-                      <p className="heading-2 tabular-nums" style={{ color: 'var(--cab-ink)' }}>{parsed.vehicles.length}</p>
+                  {/* Сводка плана */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="cab-card p-3 text-center">
+                      <p className="kicker">{t('vehiclesPage.importCreate')}</p>
+                      <p className="heading-3 tabular-nums text-emerald-600">{counts.create}</p>
                     </div>
-                    <div className="cab-card p-3">
-                      <p className="kicker">{t('vehiclesPage.importParts')}</p>
-                      <p className="heading-2 tabular-nums" style={{ color: 'var(--cab-ink)' }}>{parsed.parts.length}</p>
+                    <div className="cab-card p-3 text-center">
+                      <p className="kicker">{t('vehiclesPage.importUpdate')}</p>
+                      <p className="heading-3 tabular-nums text-amber-600">{counts.update}</p>
+                    </div>
+                    <div className="cab-card p-3 text-center">
+                      <p className="kicker">{t('vehiclesPage.importSkip')}</p>
+                      <p className="heading-3 tabular-nums text-gray-500">{counts.skip}</p>
                     </div>
                   </div>
-                  {(() => {
-                    const errs = [...parsed.vehicles, ...parsed.parts].filter(x => x._error).length
-                    return errs > 0 ? (
-                      <div className="rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-700">
-                        {t('vehiclesPage.importErrors', { n: errs })}
+                  <p className="text-xs text-gray-400">{t('vehiclesPage.importPartsAdd', { n: counts.parts })}</p>
+
+                  {/* Изменённые — подтверждение */}
+                  {changedCount > 0 && plan && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-gray-800">{t('vehiclesPage.importChanged', { n: changedCount })}</p>
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => setAllChanged('update')} className="text-xs font-semibold text-primary hover:underline">{t('vehiclesPage.importUpdateAll')}</button>
+                          <span className="text-gray-300">·</span>
+                          <button onClick={() => setAllChanged('skip')} className="text-xs font-semibold text-gray-500 hover:underline">{t('vehiclesPage.importSkipAll')}</button>
+                        </div>
                       </div>
-                    ) : null
-                  })()}
-                  <div className="max-h-44 overflow-auto rounded-lg border border-gray-100 divide-y divide-gray-50">
-                    {parsed.vehicles.slice(0, 20).map((v, i) => (
-                      <div key={i} className="px-3 py-1.5 text-xs flex items-center justify-between gap-2">
-                        <span className="font-medium text-gray-800 truncate">{v.make} {v.model}{v.year ? ` ${v.year}` : ''}</span>
-                        <span className="font-mono text-gray-400 truncate">{v.vin || '—'}</span>
+                      <div className="max-h-56 overflow-auto space-y-2">
+                        {plan.map((it, idx) => it.kind === 'changed' ? (
+                          <div key={idx} className="rounded-lg border border-gray-200 p-2.5">
+                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                              <span className="text-sm font-semibold text-gray-900 truncate">
+                                {it.pv.make} {it.pv.model}{it.pv.year ? ` ${it.pv.year}` : ''}
+                              </span>
+                              <div className="inline-flex rounded-lg overflow-hidden ring-1 ring-gray-200 text-xs flex-shrink-0">
+                                <button onClick={() => setDecision(idx, 'update')} className={`px-2 py-1 font-medium ${it.decision === 'update' ? 'bg-primary text-white' : 'bg-white text-gray-500'}`}>{t('vehiclesPage.importUpdate')}</button>
+                                <button onClick={() => setDecision(idx, 'skip')} className={`px-2 py-1 font-medium ${it.decision === 'skip' ? 'bg-gray-200 text-gray-700' : 'bg-white text-gray-500'}`}>{t('vehiclesPage.importSkip')}</button>
+                              </div>
+                            </div>
+                            {it.diffs.length > 0 && (
+                              <div className="space-y-0.5">
+                                {it.diffs.map((d, di) => (
+                                  <div key={di} className="text-xs flex items-center gap-1.5">
+                                    <span className="text-gray-400 w-20 flex-shrink-0">{d.label}</span>
+                                    <span className="text-gray-400 line-through truncate max-w-[35%]">{d.from}</span>
+                                    <span className="text-gray-300">→</span>
+                                    <span className="font-medium text-gray-800 truncate">{d.to}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Изменённые запчасти этого авто */}
+                            {it.partChanges.length > 0 && (
+                              <div className="mt-2 pt-2 border-t border-gray-100 space-y-1.5">
+                                <p className="kicker text-gray-400">{t('vehiclesPage.importPartChanges', { n: it.partChanges.length })}</p>
+                                {it.partChanges.map((pc, pcIdx) => (
+                                  <div key={pcIdx} className={`rounded-md bg-gray-50 p-1.5 ${it.decision === 'skip' || pc.decision === 'skip' ? 'opacity-50' : ''}`}>
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="text-xs font-medium text-gray-700 truncate">{pc.name}</span>
+                                      <div className="inline-flex rounded-md overflow-hidden ring-1 ring-gray-200 text-[10px] flex-shrink-0">
+                                        <button onClick={() => setPartDecision(idx, pcIdx, 'update')} className={`px-1.5 py-0.5 font-medium ${pc.decision === 'update' ? 'bg-primary text-white' : 'bg-white text-gray-500'}`}>{t('vehiclesPage.importUpdate')}</button>
+                                        <button onClick={() => setPartDecision(idx, pcIdx, 'skip')} className={`px-1.5 py-0.5 font-medium ${pc.decision === 'skip' ? 'bg-gray-200 text-gray-700' : 'bg-white text-gray-500'}`}>{t('vehiclesPage.importSkip')}</button>
+                                      </div>
+                                    </div>
+                                    {pc.diffs.map((d, di) => (
+                                      <div key={di} className="text-[11px] flex items-center gap-1.5 mt-0.5">
+                                        <span className="text-gray-400 w-14 flex-shrink-0">{d.label}</span>
+                                        <span className="text-gray-400 line-through truncate max-w-[35%]">{d.from}</span>
+                                        <span className="text-gray-300">→</span>
+                                        <span className="font-medium text-gray-800 truncate">{d.to}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {it.partAdds > 0 && (
+                              <p className="text-xs text-emerald-600 mt-2">{t('vehiclesPage.importPartsNew', { n: it.partAdds })}</p>
+                            )}
+                          </div>
+                        ) : null)}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
 
             <div className="modal-footer" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}>
-              {parsed ? (
+              {parsed && !parsing ? (
                 <>
-                  <button onClick={() => setParsed(null)} className="cab-btn cab-btn-secondary flex-1">{t('vehiclesPage.importOther')}</button>
-                  <button onClick={() => importMutation.mutate()} disabled={importMutation.isPending} className="cab-btn cab-btn-primary flex-1">
-                    {importMutation.isPending ? t('vehiclesPage.importing') : t('vehiclesPage.importDo')}
+                  <button onClick={reset} className="cab-btn cab-btn-secondary flex-1">{t('vehiclesPage.importOther')}</button>
+                  <button
+                    onClick={() => importMutation.mutate()}
+                    disabled={importMutation.isPending || (counts.create + counts.update === 0)}
+                    className="cab-btn cab-btn-primary flex-1"
+                  >
+                    {importMutation.isPending ? t('vehiclesPage.importing') : t('vehiclesPage.importApply')}
                   </button>
                 </>
               ) : (
-                <button onClick={() => setImportOpen(false)} className="cab-btn cab-btn-secondary w-full justify-center">{t('vehiclesPage.cancel')}</button>
+                <button onClick={close} className="cab-btn cab-btn-secondary w-full justify-center">{t('vehiclesPage.cancel')}</button>
               )}
             </div>
           </div>
         </div>
-      )}
+        )
+      })()}
       </div>
     </div>
   )

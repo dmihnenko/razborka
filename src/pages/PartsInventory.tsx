@@ -687,7 +687,7 @@ export default function PartsInventory() {
         subtitle={totalCount > inventory.length
           ? t('inventoryPage.subtitleOf', { loaded: inventory.length, total: totalCount })
           : t('inventoryPage.subtitleTotal', { loaded: inventory.length, total: totalCount })}
-        backPath="/parts"
+        backPath="/parts/dashboard"
         actions={
           <>
             <button
@@ -951,14 +951,14 @@ export default function PartsInventory() {
               <table className="w-full table-fixed min-w-[640px]">
                 <thead>
                   <tr>
-                    <th className="table-header-cell px-2" style={{ width: '38px' }}></th>
-                    <th className="table-header-cell" style={{ width: '26%' }}>{t('inventoryPage.colName')}</th>
-                    <th className="table-header-cell hidden sm:table-cell" style={{ width: '15%' }}>{t('inventoryPage.colOem')}</th>
-                    <th className="table-header-cell whitespace-nowrap" style={{ width: '9%' }}>{t('inventoryPage.colPrice')}</th>
-                    <th className="table-header-cell whitespace-nowrap" style={{ width: '13%' }}>{t('inventoryPage.colStatus')}</th>
-                    <th className="table-header-cell hidden md:table-cell" style={{ width: '15%' }}>{t('inventoryPage.colVehicle')}</th>
-                    <th className="table-header-cell hidden lg:table-cell" style={{ width: '11%' }}>{t('inventoryPage.colCategory')}</th>
-                    <th className="table-header-cell hidden xl:table-cell" style={{ width: '11%' }}>{t('inventoryPage.colStorage')}</th>
+                    <th className="table-header-cell !px-2" style={{ width: '38px' }}></th>
+                    <th className="table-header-cell !px-2" style={{ width: '26%' }}>{t('inventoryPage.colName')}</th>
+                    <th className="table-header-cell !px-2 hidden sm:table-cell" style={{ width: '15%' }}>{t('inventoryPage.colOem')}</th>
+                    <th className="table-header-cell !px-2 whitespace-nowrap" style={{ width: '9%' }}>{t('inventoryPage.colPrice')}</th>
+                    <th className="table-header-cell !px-2 whitespace-nowrap" style={{ width: '13%' }}>{t('inventoryPage.colStatus')}</th>
+                    <th className="table-header-cell !px-2 hidden md:table-cell" style={{ width: '15%' }}>{t('inventoryPage.colVehicle')}</th>
+                    <th className="table-header-cell !px-2 hidden lg:table-cell" style={{ width: '11%' }}>{t('inventoryPage.colCategory')}</th>
+                    <th className="table-header-cell !px-2 hidden xl:table-cell" style={{ width: '11%' }}>{t('inventoryPage.colStorage')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -979,23 +979,23 @@ export default function PartsInventory() {
                         />
                       </td>
                       {/* Название */}
-                      <td className="px-3 py-2">
+                      <td className="px-2 py-2">
                         <div className="font-semibold text-gray-900 group-hover/row:text-primary transition-colors truncate">
                           {item.name}
                         </div>
                       </td>
                       {/* Оригинальный номер */}
-                      <td className="hidden sm:table-cell px-3 py-2 text-sm text-gray-500 font-mono truncate">
+                      <td className="hidden sm:table-cell px-2 py-2 text-sm text-gray-500 font-mono truncate">
                         {item.part_number || <span className="text-gray-300">—</span>}
                       </td>
                       {/* Цена */}
-                      <td className="px-3 py-2 whitespace-nowrap">
+                      <td className="px-2 py-2 whitespace-nowrap">
                         <span className="text-sm font-bold text-primary tabular">
                           {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
                         </span>
                       </td>
                       {/* Наличие — статус + кол-во */}
-                      <td className="px-3 py-2 whitespace-nowrap">
+                      <td className="px-2 py-2 whitespace-nowrap">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleStatusClick(item, e) }}
                           className={`${statusColors[item.status]} cursor-pointer hover:opacity-80 transition-opacity`}
@@ -1011,7 +1011,7 @@ export default function PartsInventory() {
                         )}
                       </td>
                       {/* Авто */}
-                      <td className="hidden md:table-cell px-3 py-2 text-sm text-gray-700">
+                      <td className="hidden md:table-cell px-2 py-2 text-sm text-gray-700">
                         {item.vehicle ? (
                           <div className="leading-tight min-w-0">
                             <div className="text-sm font-medium text-gray-700 truncate">{item.vehicle.make} {item.vehicle.model}</div>
@@ -1022,13 +1022,13 @@ export default function PartsInventory() {
                         )}
                       </td>
                       {/* Категория */}
-                      <td className="hidden lg:table-cell px-3 py-2 text-sm text-gray-600">
+                      <td className="hidden lg:table-cell px-2 py-2 text-sm text-gray-600">
                         <div className="truncate">
                           {item.category ? item.category.name : <span className="text-gray-300">—</span>}
                         </div>
                       </td>
                       {/* Склад */}
-                      <td className="hidden xl:table-cell px-3 py-2 text-sm text-gray-600">
+                      <td className="hidden xl:table-cell px-2 py-2 text-sm text-gray-600">
                         <div className="truncate">
                           {item.storage_location?.name || item.location || <span className="text-gray-300">—</span>}
                         </div>

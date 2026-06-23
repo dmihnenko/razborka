@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Spinner } from '@/components/ui/Spinner'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Edit, TrendingUp, TrendingDown, Plus, Settings, Tag, Sparkles, X, Car, DollarSign } from 'lucide-react'
+import { Edit, TrendingUp, TrendingDown, Plus, Settings, Tag, Sparkles, X, Car, DollarSign, Download } from 'lucide-react'
+import { exportSingleVehicleXlsx } from '@/utils/vehiclesXlsx'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsCategoryTemplates, createPartsInventoryItem, getStorageLocations, updateVehicleStatus } from '@/services/partsService'
@@ -69,6 +70,7 @@ export default function PartsVehicleDetails() {
   const [isAddPartOpen, setIsAddPartOpen] = useState(false)
   const [sellPart, setSellPart] = useState<PartsInventoryItem | null>(null)
   const [suggestionDismissed, setSuggestionDismissed] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const { rate: globalRate, isStale: rateIsStale } = usePartsExchangeRate()
 
   const { data: profile } = useUserProfile()
@@ -266,6 +268,20 @@ export default function PartsVehicleDetails() {
     ? ((totalRevenue / purchasePrice) * 100).toFixed(1)
     : null
 
+  // ── Экспорт этого авто (один лист XLSX) ──
+  const handleExportVehicle = async () => {
+    if (!vehicle) return
+    setExporting(true)
+    try {
+      const res = await exportSingleVehicleXlsx(vehicle, parts as PartsInventoryItem[])
+      toast.success(t('vehicleDetailsPage.exportDone', { p: res.parts }))
+    } catch (e: any) {
+      toast.error(e?.message || t('vehicleDetailsPage.exportError'))
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <div className="min-h-dvh bg-gray-50">
 
@@ -279,6 +295,15 @@ export default function PartsVehicleDetails() {
             <span className={`${STATUS_BADGE[vehicle.status]} hidden sm:inline-flex`}>
               {t(`vehicleDetailsPage.status_${vehicle.status}`)}
             </span>
+            <button
+              onClick={handleExportVehicle}
+              disabled={exporting}
+              className="cab-btn cab-btn-secondary cab-btn-sm"
+              title={t('vehicleDetailsPage.exportVehicle')}
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{exporting ? t('vehicleDetailsPage.exporting') : t('vehicleDetailsPage.exportVehicle')}</span>
+            </button>
             <button
               onClick={() => setIsEditModalOpen(true)}
               className="cab-btn cab-btn-secondary cab-btn-sm"

@@ -125,15 +125,10 @@ export default function AdminLayout() {
         </nav>
 
         <div className="p-2.5" style={{ borderTop: '1px solid var(--cab-border)' }}>
-          <Link to="/profile" className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-[var(--cab-surface-2)] transition-colors mb-1">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-              style={{ background: 'var(--cab-ink)' }}>
-              {(profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'A').toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold truncate" style={{ color: 'var(--cab-ink)' }}>{profile?.full_name || 'Админ'}</p>
-              <p className="text-[11px] truncate" style={{ color: 'var(--cab-ink-3)' }}>{profile?.email}</p>
-            </div>
+          <Link to="/my-vehicles"
+            className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 hover:bg-[var(--cab-surface-2)]"
+            style={{ color: 'var(--cab-ink-2)' }}>
+            <Car className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} /> Мои авто
           </Link>
           <button onClick={handleLogout}
             className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-colors text-slate-600 hover:bg-red-50 hover:text-red-600">

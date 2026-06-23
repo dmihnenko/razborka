@@ -87,10 +87,10 @@ export default function ContextSwitcher({ current, excludeIds = [], variant = 'b
   const spring = { duration: 0.18, ease: [0.16, 1, 0.3, 1] as const }
   const CurIcon = cur.icon
 
-  // ── Сегментированный переключатель: [Админ | Разборка/Мои авто] ──
+  // ── Сегмент из двух кнопок [Админ | Разборка/Мои авто]; активная подсвечена ──
   if (variant === 'segment') {
     const adminC = CONTEXTS.find(c => c.id === 'admin')!
-    const opPrefersParts = roleNames.includes('parts_owner') || roleNames.includes('parts_worker') || !!(profile as any)?.parts_company_id
+    const opPrefersParts = current === 'parts' || roleNames.includes('parts_owner') || roleNames.includes('parts_worker') || !!(profile as any)?.parts_company_id
     const opC = (opPrefersParts ? CONTEXTS.find(c => c.id === 'parts') : CONTEXTS.find(c => c.id === 'user'))!
     const segs = [adminC, opC].filter(c => has(c.id) && !excludeIds.includes(c.id))
     if (segs.length < 2) return null
