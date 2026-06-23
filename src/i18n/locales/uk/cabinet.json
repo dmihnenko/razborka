@@ -1,6 +1,6 @@
 {
   "nav": {
-    "dashboard": "Пульт",
+    "dashboard": "Дашборд",
     "orders": "Замовлення",
     "marketOrders": "Заявки з маркету",
     "shipments": "Доставка",
@@ -67,7 +67,7 @@
   },
   "dashboard": {
     "kicker": "Авторозбірка",
-    "title": "Пульт",
+    "title": "Дашборд",
     "newOrder": "Нове замовлення",
     "vehicles": "Авто",
     "updateRate": "Оновити курс долара (ПриватБанк)",

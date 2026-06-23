@@ -105,7 +105,7 @@ export default function ProfileSettings() {
         <span className="font-semibold text-gray-900">Мой профиль</span>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+      <div className="columns-1 lg:columns-2 gap-5 [&>*]:mb-5 [&>*]:break-inside-avoid">
 
       {/* Информация об аккаунте */}
       <div className="cab-card overflow-hidden">

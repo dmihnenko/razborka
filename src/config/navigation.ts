@@ -44,7 +44,7 @@ export const adminMenu: MenuItem[] = [
 // Порядок = и для сайдбара, и для мобильного нижнего меню (первые 4 — табы):
 // Дашборд / Заказы / Заявки с маркета / Запчасти — самые частые.
 export const partsOwnerMenu: MenuItem[] = [
-  { name: 'Пульт', href: '/parts/dashboard', icon: LayoutGrid, group: 'work' },
+  { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutGrid, group: 'work' },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart, group: 'work' },
   { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox, group: 'work' },
   { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package, group: 'base' },
@@ -66,7 +66,7 @@ export const partsOwnerMenu: MenuItem[] = [
 
 // Меню для работника разборки (первые 4 — мобильные табы)
 export const partsWorkerMenu: MenuItem[] = [
-  { name: 'Пульт', href: '/parts/dashboard', icon: LayoutGrid, group: 'work' },
+  { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutGrid, group: 'work' },
   { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart, group: 'work' },
   { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox, group: 'work' },
   { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package, group: 'base' },
