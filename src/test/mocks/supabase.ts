@@ -56,6 +56,17 @@ export const mockSupabaseOnAuthStateChange = vi.fn()
 export const mockSupabaseSignInWithPassword = vi.fn()
 export const mockSupabaseSignOut = vi.fn()
 
+// Дефолтные реализации auth-методов, чтобы любой компонент с useAuth
+// (getSession + onAuthStateChange) рендерился в тестах без падений.
+// setup.ts использует clearAllMocks (сбрасывает только вызовы, не реализации),
+// поэтому дефолты, заданные здесь на уровне модуля, переживают каждый тест.
+mockSupabaseGetSession.mockResolvedValue({ data: { session: null }, error: null })
+mockSupabaseGetUser.mockResolvedValue({ data: { user: null }, error: null })
+mockSupabaseSignOut.mockResolvedValue({ error: null })
+mockSupabaseOnAuthStateChange.mockReturnValue({
+  data: { subscription: { unsubscribe: vi.fn() } },
+})
+
 export function setFromResponse(data: unknown, error: unknown = null) {
   const builder = createQueryBuilder({ data, error })
   mockSupabaseFrom.mockReturnValue(builder)

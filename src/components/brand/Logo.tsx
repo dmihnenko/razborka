@@ -77,10 +77,12 @@ export function Logo({ size = 'md', withText = true, framed = true, className = 
         {BRAND.wordmark.accent}
       </span>
 
-      {/* RAZBORKA */}
+      {/* RAZBORKA — translateY компенсирует оптический подъём заглавных букв
+          (метрики шрифта тянут капсы вверх → ставим ровно по центру плашки) */}
       <span style={{
         fontFamily: "'Montserrat', var(--font-sans)", fontWeight: 700, fontSize: s.name,
         letterSpacing: '-0.01em', color: 'var(--cab-ink, #16181D)',
+        transform: 'translateY(1px)',
       }}>
         {BRAND.wordmark.lead}
       </span>

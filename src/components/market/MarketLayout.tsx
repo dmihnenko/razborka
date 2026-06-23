@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { useTranslation } from 'react-i18next'
 import { LayoutDashboard, LogIn, Search, ShoppingCart } from 'lucide-react'
 import { Logo } from '@/components/brand/Logo'
+import { BRAND } from '@/config/brand'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { Spinner } from '@/components/ui/Spinner'
 import { CartProvider, useCart } from '@/hooks/useCart'
@@ -91,7 +92,7 @@ function MarketLayoutInner() {
             {/* Лого: на мобиле компактный знак (в размер кнопок Каталог/Разборки),
                 на десктопе — полная эмблема с дескриптором */}
             <Link to="/market" className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0 min-w-0" aria-label="Razborka.net — маркет запчастей, на главную">
-              <Logo size="sm" withText={false} className="md:hidden flex-shrink-0 [&>svg]:!w-[40px] [&>svg]:!h-[40px]" />
+              <Logo size="sm" withText={false} className="md:hidden flex-shrink-0 [&>svg]:!w-[42px] [&>svg]:!h-[42px]" />
               <Logo size="sm" withText className="hidden md:inline-flex flex-shrink-0" />
             </Link>
 
@@ -182,7 +183,12 @@ function MarketLayoutInner() {
       {/* ── Подвал ─────────────────────────────────────────────────────── */}
       <footer style={{ background: 'var(--mk-surface)', borderTop: '1px solid var(--mk-border)' }} className="mt-10">
         <div className="mk-container py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs mk-meta">{t('footer.tagline')}</p>
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-4">
+            <Link to="/market" aria-label={BRAND.name} className="inline-flex flex-shrink-0">
+              <Logo size="sm" withText />
+            </Link>
+            <p className="text-xs mk-meta text-center sm:text-left">{t('footer.tagline')}</p>
+          </div>
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
             <Link to="/business" className="text-xs font-semibold mk-link">{t('footer.openBusiness')}</Link>
             <p className="text-xs mk-meta">© {new Date().getFullYear()}</p>

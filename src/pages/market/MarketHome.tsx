@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, Car, Package, Search, Store } from 'lucide-react'
-import LanguageSwitcher from '@/components/LanguageSwitcher'
 import {
   getMarketMakes, getMarketParts, getMarketSuppliers,
 } from '@/services/marketplaceService'
@@ -73,11 +72,6 @@ export function MarketHome() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-
-      {/* Выбор языка интерфейса (главная) */}
-      <div className="flex justify-end -mb-2">
-        <LanguageSwitcher />
-      </div>
 
       {/* ── Герой: чистая панель, акцент только на кнопке ─────────────── */}
       <motion.section {...anim(0)} className="mk-card p-5 sm:p-8 text-center">
