@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import {
   Package, Tag, FileText, Phone, Mail, MapPin,
   CheckCircle, Clock, AlertTriangle, DollarSign,
-  ChevronLeft, ChevronRight, X, Copy,
+  ChevronLeft, ChevronRight, X, Copy, Share2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { PublicBrandHeader } from '@/components/PublicBrandHeader'
@@ -295,6 +295,25 @@ export default function PublicPartsItemView() {
     [photos.length],
   )
 
+  const handleShare = useCallback(async () => {
+    const url = window.location.href
+    // На мобильных — нативный лист «Поделиться»; иначе копируем ссылку.
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: item?.name || 'Запчасть', url })
+        return
+      } catch {
+        // отмена/недоступно — падаем в копирование
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success('Ссылка скопирована')
+    } catch {
+      toast.error('Не удалось скопировать ссылку')
+    }
+  }, [item?.name])
+
   if (isLoading) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-gray-50">
@@ -443,6 +462,16 @@ export default function PublicPartsItemView() {
                     {PARTS_CONDITION_LABELS[item.condition] || item.condition}
                   </span>
                 )}
+
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  aria-label="Поделиться"
+                  title="Поделиться"
+                  className="ml-auto inline-flex items-center justify-center w-8 h-8 rounded-md text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
               </div>
 
               {/* Название */}
