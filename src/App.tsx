@@ -307,6 +307,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // Залогиненные переходят в свой раздел кнопкой «В кабинет» в шапке маркета —
 // без принудительного авто-редиректа (раньше он бросал в админку/разборку).
 function RootGate() {
+  const { loading } = useAuth()
+  // ВАЖНО для OAuth: при возврате с Google в URL лежит «?code=…», который supabase-js
+  // обменивает на сессию во время инициализации (loading=true). Если редиректнуть
+  // сразу, Navigate затрёт «?code» из адреса ДО обмена — сессия не создастся.
+  // Поэтому ждём окончания инициализации авторизации и только потом уходим на /market.
+  if (loading) return <PageLoader />
   return <Navigate to="/market" replace />
 }
 
