@@ -2,7 +2,7 @@ import { BRAND } from '@/config/brand'
 
 // ============================================================================
 // Logo — эмблема Razborka.net (ink-монохром + тил-уголок «.net»).
-// withText  → плашка: «RAZBORKA» (Montserrat 700) + таглайн + наклонный «.net».
+// withText  → плашка: «RAZBORKA» (системный шрифт 700) + таглайн + наклонный «.net».
 // withText=false → иконка-монограм «R» (как favicon/PWA).
 // Имя/таглайн — из src/config/brand.ts. Цвета — токены :root.
 // ============================================================================
@@ -49,9 +49,8 @@ export function Logo({ size = 'md', withText = true, framed = true, className = 
   }
 
   // Полная эмблема. framed=true → плашка (фон/рамка/тень), false → только текст + .net.
-  // Капсы Montserrat при line-height:1 занимают верх строки (под базовой линией —
-  // пустое место), поэтому при симметричном паддинге текст «прижат» к верху рамки.
-  // Компенсируем: верхний паддинг чуть больше нижнего → каркас по центру рамки.
+  // RAZBORKA — всё-капс: внизу строки остаётся пустая зона подстрочных, из-за чего
+  // текст «сидит высоко». Компенсируем: верхний паддинг больше нижнего → по центру.
   const vo = Math.round(s.name * 0.1)
   const frameStyle = framed
     ? {
@@ -73,7 +72,7 @@ export function Logo({ size = 'md', withText = true, framed = true, className = 
         style={{
           position: 'absolute', top: s.nt, right: s.nr, transform: `rotate(${s.rot}deg)`,
           background: 'var(--logo-net, #0D9488)', color: '#fff',
-          fontFamily: "'Montserrat', var(--font-sans)", fontWeight: 700, fontSize: s.net,
+          fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: s.net,
           padding: '2px 7px', borderRadius: 7, border: '1.5px solid #fff',
           boxShadow: '0 6px 13px -4px rgba(20,20,40,.4)', letterSpacing: '-0.01em',
         }}
@@ -81,10 +80,10 @@ export function Logo({ size = 'md', withText = true, framed = true, className = 
         {BRAND.wordmark.accent}
       </span>
 
-      {/* RAZBORKA — вертикальное центрирование капсов в рамке делает frameStyle
-          (асимметричный паддинг vo), см. выше. */}
+      {/* RAZBORKA — системный шрифт (--font-sans). Montserrat НЕ подключён в проекте,
+          поэтому раньше у части пользователей логотип «прыгал» при загрузке. */}
       <span style={{
-        fontFamily: "'Montserrat', var(--font-sans)", fontWeight: 700, fontSize: s.name,
+        fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: s.name,
         letterSpacing: '-0.01em', color: 'var(--cab-ink, #16181D)',
       }}>
         {BRAND.wordmark.lead}
