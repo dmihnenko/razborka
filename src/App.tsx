@@ -177,7 +177,14 @@ function App() {
         <Version />
         <ImpersonationBanner />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <Toaster position="top-right" />
+          {/* Короче по времени и не перекрывают мобильную шапку:
+              на мобиле опускаем ниже хедера (mobileOffset), на десктопе — обычный отступ. */}
+          <Toaster
+            position="top-center"
+            duration={2500}
+            offset={{ top: 16 }}
+            mobileOffset={{ top: 64 }}
+          />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/login" element={<Login />} />
