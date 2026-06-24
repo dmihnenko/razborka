@@ -244,8 +244,9 @@ export default function PartsInventoryItemPage() {
             {item.name}
           </h1>
 
-          {/* Actions — в шапке только Поделиться и QR */}
-          <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Actions — Поделиться и QR. На мобиле скрыты: они есть ниже (в блоке
+              статуса и в сайдбаре с QR), чтобы не дублировать в шапке. */}
+          <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
             <button
               onClick={() => setShareOpen(true)}
               className="btn-icon"
