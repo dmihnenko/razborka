@@ -50,6 +50,7 @@ const PartsCategories = lazy(() => import('./pages/PartsCategories'))
 const PartsSettings = lazy(() => import('./pages/PartsSettings'))
 const PartsWarehouse = lazy(() => import('./pages/PartsWarehouse'))
 const PartsNoPricePage = lazy(() => import('./pages/PartsNoPricePage'))
+const PartsNoPhotoPage = lazy(() => import('./pages/PartsNoPhotoPage'))
 const PartsInventoryItemPage = lazy(() => import('./pages/PartsInventoryItemPage'))
 const Trash = lazy(() => import('./pages/Trash'))
 const DatabasePage = lazy(() => import('./pages/Database'))
@@ -245,6 +246,7 @@ function App() {
           <Route path="parts/vehicles/:id" element={<PartsVehicleDetails />} />
           <Route path="parts/inventory" element={<PartsInventory />} />
           <Route path="parts/inventory/no-price" element={<PartsNoPricePage />} />
+          <Route path="parts/inventory/no-photo" element={<PartsNoPhotoPage />} />
           <Route path="parts/inventory/:id" element={<PartsInventoryItemPage />} />
           <Route path="parts/orders" element={<PartsOrders />} />
           <Route path="parts/market-orders" element={<PartsMarketOrders />} />

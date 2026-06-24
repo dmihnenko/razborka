@@ -153,6 +153,8 @@
     "marketOrdersNone": "Активних заявок немає",
     "ownCategories": "{{n}} власних категорій",
     "noPriceSub": "{{n}} позицій потребують заповнення",
+    "noPhoto": "Без фото",
+    "noPhotoSub": "{{n}} позицій без фото",
     "inventorySub": "Завантажено: {{loaded}} з {{total}}"
   },
   "shipments": {
@@ -272,6 +274,8 @@
     "partsLabel": "Запчастини",
     "needsFillText": "запчастин без ціни або номера",
     "fill": "Заповнити",
+    "noPhotoText": "запчастин без фото",
+    "addPhotos": "Додати фото",
     "chipAll": "Усього",
     "chipAvailable": "В наявності",
     "chipReserved": "Зарезервовано",
@@ -842,6 +846,16 @@
     "storageLocation": "Місце зберігання",
     "notSpecified": "Не вказано",
     "description": "Опис"
+  },
+  "noPhotoPage": {
+    "noAccess": "Немає доступу до розбірки",
+    "noVehicle": "Без авто",
+    "addPhoto": "Додати фото",
+    "photoAdded": "Фото додано",
+    "uploadError": "Не вдалося завантажити фото",
+    "allDone": "У всіх є фото!",
+    "allDoneText": "Усі запчастини на складі з фотографіями.",
+    "toInventory": "На склад"
   },
   "orderDetailsPage": {
     "itemDeleted": "Позицію видалено",

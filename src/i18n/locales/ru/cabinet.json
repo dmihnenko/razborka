@@ -153,6 +153,8 @@
     "marketOrdersNone": "Активных заявок нет",
     "ownCategories": "{{n}} своих категорий",
     "noPriceSub": "{{n}} позиций требуют заполнения",
+    "noPhoto": "Без фото",
+    "noPhotoSub": "{{n}} позиций без фото",
     "inventorySub": "Загружено: {{loaded}} из {{total}}"
   },
   "shipments": {
@@ -272,6 +274,8 @@
     "partsLabel": "Запчасти",
     "needsFillText": "запчастей без цены или номера",
     "fill": "Заполнить",
+    "noPhotoText": "запчастей без фото",
+    "addPhotos": "Добавить фото",
     "chipAll": "Всего",
     "chipAvailable": "В наличии",
     "chipReserved": "Зарезервировано",
@@ -842,6 +846,16 @@
     "storageLocation": "Место хранения",
     "notSpecified": "Не указано",
     "description": "Описание"
+  },
+  "noPhotoPage": {
+    "noAccess": "Нет доступа к разборке",
+    "noVehicle": "Без авто",
+    "addPhoto": "Добавить фото",
+    "photoAdded": "Фото добавлено",
+    "uploadError": "Не удалось загрузить фото",
+    "allDone": "У всех есть фото!",
+    "allDoneText": "Все запчасти на складе с фотографиями.",
+    "toInventory": "На склад"
   },
   "orderDetailsPage": {
     "itemDeleted": "Позиция удалена",

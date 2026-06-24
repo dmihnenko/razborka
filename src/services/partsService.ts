@@ -372,6 +372,10 @@ export async function getPartsInventory(partsCompanyId: string) {
 export interface PartsInventorySummary {
   stockUSD: number; soldUSD: number
   availableCount: number; reservedCount: number; soldCount: number
+  /** Непроданные без цены ИЛИ без оригинального номера (серверный счёт по всей выборке) */
+  needsFill: number
+  /** Непроданные без фото */
+  noPhoto: number
 }
 
 /** Серверный агрегат стоимости склада/продаж по ВСЕЙ выборке (не по подгруженной странице). */

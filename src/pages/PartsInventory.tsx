@@ -421,7 +421,6 @@ export default function PartsInventory() {
     reserved: inventory.filter((i: PartsInventoryItem) => i.status === 'reserved').length,
     sold: inventory.filter((i: PartsInventoryItem) => i.status === 'sold').length,
     lowStock: inventory.filter((i: PartsInventoryItem) => !i.vehicle_id && i.quantity <= 2 && i.status === 'available').length,
-    needsFill: inventory.filter((i: PartsInventoryItem) => i.status !== 'sold' && (!i.selling_price || !i.part_number?.trim())).length,
     totalUAH: inventory.reduce((sum: number, item: PartsInventoryItem) => {
       const price = item.status === 'sold' ? (item.sold_price ?? item.selling_price ?? 0) : (item.selling_price || 0)
       return item.price_currency === 'UAH' ? sum + price * item.quantity : sum
@@ -741,16 +740,16 @@ export default function PartsInventory() {
           </div>
         )}
 
-        {/* Needs-fill banner: нет цены или оригинального номера */}
-        {stats.needsFill > 0 && (
+        {/* Needs-fill banner: нет цены или оригинального номера (серверный счёт по всей выборке) */}
+        {(summary?.needsFill ?? 0) > 0 && (
           <div className="mb-4 flex items-center justify-between gap-3 bg-amber-50 border border-amber-200/60 rounded-2xl px-4 py-3">
             <div className="flex items-center gap-2.5">
               <div className="icon-tile-sm bg-amber-100 text-amber-600 flex-shrink-0">
                 <Tag className="w-3.5 h-3.5" strokeWidth={1.5} />
               </div>
               <span className="text-sm text-amber-800">
-                <span className="font-bold">{stats.needsFill}</span>
-                {' '}{t('inventoryPage.needsFillText', { count: stats.needsFill })}
+                <span className="font-bold">{summary!.needsFill}</span>
+                {' '}{t('inventoryPage.needsFillText', { count: summary!.needsFill })}
               </span>
             </div>
             <button
@@ -758,6 +757,27 @@ export default function PartsInventory() {
               className="flex-shrink-0 px-3 py-1.5 text-xs font-bold bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition-colors"
             >
               {t('inventoryPage.fill')}
+            </button>
+          </div>
+        )}
+
+        {/* No-photo banner: запчасти без фото */}
+        {(summary?.noPhoto ?? 0) > 0 && (
+          <div className="mb-4 flex items-center justify-between gap-3 bg-sky-50 border border-sky-200/60 rounded-2xl px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <div className="icon-tile-sm bg-sky-100 text-sky-600 flex-shrink-0">
+                <Camera className="w-3.5 h-3.5" strokeWidth={1.5} />
+              </div>
+              <span className="text-sm text-sky-800">
+                <span className="font-bold">{summary!.noPhoto}</span>
+                {' '}{t('inventoryPage.noPhotoText', { count: summary!.noPhoto })}
+              </span>
+            </div>
+            <button
+              onClick={() => navigate('/parts/inventory/no-photo')}
+              className="flex-shrink-0 px-3 py-1.5 text-xs font-bold bg-sky-600 text-white rounded-xl hover:bg-sky-700 transition-colors"
+            >
+              {t('inventoryPage.addPhotos')}
             </button>
           </div>
         )}
