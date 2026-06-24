@@ -2413,7 +2413,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         onChange={(e) => setFormData({ ...formData, selling_price: e.target.value ? Number(e.target.value) : undefined })}
                         className={`form-input flex-1 min-w-0 tabular ${
                           formData.price_currency === 'USD'
-                            ? 'border-emerald-300 bg-emerald-50/50 focus:border-emerald-400 focus:ring-emerald-200'
+                            ? 'border-emerald-300 bg-emerald-50/50 text-emerald-700 font-semibold focus:border-emerald-400 focus:ring-emerald-200'
                             : ''
                         }`}
                       />
