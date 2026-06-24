@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { BRAND } from '@/config/brand'
 
 // ============================================================================
@@ -49,18 +50,25 @@ export function Logo({ size = 'md', withText = true, framed = true, className = 
   }
 
   // Полная эмблема. framed=true → плашка (фон/рамка/тень), false → только текст + .net.
-  // RAZBORKA — всё-капс: внизу строки остаётся пустая зона подстрочных, из-за чего
-  // текст «сидит высоко». Компенсируем: верхний паддинг больше нижнего → по центру.
-  const vo = Math.round(s.name * 0.1)
   const frameStyle = framed
     ? {
         background: 'var(--cab-surface-2, #F4F5F7)',
         border: `${s.bd}px solid var(--cab-ink, #16181D)`,
         borderRadius: s.r,
-        padding: `${s.py + vo}px ${s.px}px ${Math.max(0, s.py - vo)}px`,
+        padding: `${s.py}px ${s.px}px`,
         boxShadow: '0 7px 18px -8px rgba(20,20,40,.22), 0 1px 2px rgba(20,20,40,.06)',
       }
     : {}
+
+  // RAZBORKA — всё-капс: внизу строки пустая зона подстрочных, текст «сидит высоко».
+  // text-box-trim обрезает строчный бокс ровно до капвысоты → при симметричном
+  // паддинге зазоры сверху и снизу РАВНЫЕ (совр. браузеры; в старых свойство
+  // игнорируется и текст чуть выше центра — некритично).
+  const nameStyle: CSSProperties = {
+    fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: s.name,
+    letterSpacing: '-0.01em', color: 'var(--cab-ink, #16181D)',
+    textBoxTrim: 'trim-both', textBoxEdge: 'cap alphabetic',
+  }
   return (
     <span
       className={`relative inline-flex flex-col items-center ${className}`}
@@ -80,12 +88,8 @@ export function Logo({ size = 'md', withText = true, framed = true, className = 
         {BRAND.wordmark.accent}
       </span>
 
-      {/* RAZBORKA — системный шрифт (--font-sans). Montserrat НЕ подключён в проекте,
-          поэтому раньше у части пользователей логотип «прыгал» при загрузке. */}
-      <span style={{
-        fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: s.name,
-        letterSpacing: '-0.01em', color: 'var(--cab-ink, #16181D)',
-      }}>
+      {/* RAZBORKA — системный шрифт, строчный бокс обрезан до капвысоты (nameStyle). */}
+      <span style={nameStyle}>
         {BRAND.wordmark.lead}
       </span>
     </span>
