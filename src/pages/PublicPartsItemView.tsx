@@ -240,13 +240,11 @@ export default function PublicPartsItemView() {
   const { data: item, isLoading } = useQuery({
     queryKey: ['public-parts-item', id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('parts_inventory')
-        .select('*, category:parts_categories(id,name), vehicle:parts_vehicles!vehicle_id(id,make,model,year,vin)')
-        .eq('id', id!)
-        .single()
+      // SECURITY DEFINER RPC: отдаёт только безопасные поля любой позиции по id
+      // (для QR/ссылки), не зависит от статуса/публикации и anon-колонко-грантов.
+      const { data, error } = await supabase.rpc('get_public_parts_item', { p_id: id })
       if (error) throw error
-      return data
+      return data as any
     },
     enabled: !!id,
     staleTime: 60_000,
