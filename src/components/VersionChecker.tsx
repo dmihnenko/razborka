@@ -37,18 +37,15 @@ async function reloadApp(): Promise<void> {
   window.location.href = window.location.pathname + '?v=' + Date.now()
 }
 
-// ── Показать toast обновления ─────────────────────────────────────────────────
-function showUpdateToast() {
+// ── Показать маленький toast обновления ───────────────────────────────────────
+// Версия применяется автоматически (skipWaiting+clientsClaim) при следующей
+// навигации; тост лишь уведомляет «Update #ver» и даёт применить сразу по тапу.
+function showUpdateToast(ver: string) {
   if (updateShown) return
   updateShown = true
 
-  toast('Доступно обновление', {
-    description: 'Новая версия приложения готова к установке',
-    duration: Infinity,
-    action: {
-      label: 'Обновить',
-      onClick: reloadApp,
-    },
+  toast(`Update #${ver}`, {
+    duration: 1000,
     onDismiss: () => {
       // Пользователь закрыл — дать возможность показать снова через 5 мин
       setTimeout(() => { updateShown = false }, REDISPLAY_MS)
@@ -86,7 +83,7 @@ async function checkVersion(): Promise<void> {
       // Новая версия: пишем сразу (чтобы не спамить) + pendingHash против повторного toast
       pendingHash = newHash
       localStorage.setItem(VERSION_KEY, newHash)
-      showUpdateToast()
+      showUpdateToast(newHash)
     }
   } finally {
     isChecking = false
@@ -99,9 +96,9 @@ export async function manualVersionCheck(): Promise<'updated' | 'current'> {
   if (!newHash) return 'current' // нет сети/ошибка — трактуем как «актуально»
   const stored = localStorage.getItem(VERSION_KEY)
   if (stored && newHash !== stored) {
-    pendingHash = newHash
     localStorage.setItem(VERSION_KEY, newHash)
-    showUpdateToast()
+    // Ручная проверка — пользователь сам нажал, применяем сразу (перезагрузка из сети).
+    await reloadApp()
     return 'updated'
   }
   if (!stored) localStorage.setItem(VERSION_KEY, newHash)
@@ -139,12 +136,14 @@ export default function VersionChecker() {
     const onControllerChange = () => {
       if (swControlled) return
       swControlled = true
-      // Небольшая задержка чтобы новый SW успел полностью инициализироваться
-      setTimeout(() => {
+      // Новый SW взял контроль (skipWaiting+clientsClaim) — версия применится при
+      // следующей навигации. Небольшая задержка + берём свежий hash для «Update #ver».
+      setTimeout(async () => {
         // Сбрасываем pendingHash: controllerchange — это свежий сигнал
         pendingHash = ''
         updateShown = false
-        showUpdateToast()
+        const ver = (await fetchVersionHash()) || localStorage.getItem(VERSION_KEY) || ''
+        showUpdateToast(ver)
       }, 500)
     }
 
