@@ -48,13 +48,17 @@ export function Logo({ size = 'md', withText = true, framed = true, className = 
     )
   }
 
-  // Полная эмблема. framed=true → плашка (фон/рамка/тень), false → только текст + .net
+  // Полная эмблема. framed=true → плашка (фон/рамка/тень), false → только текст + .net.
+  // Капсы Montserrat при line-height:1 занимают верх строки (под базовой линией —
+  // пустое место), поэтому при симметричном паддинге текст «прижат» к верху рамки.
+  // Компенсируем: верхний паддинг чуть больше нижнего → каркас по центру рамки.
+  const vo = Math.round(s.name * 0.1)
   const frameStyle = framed
     ? {
         background: 'var(--cab-surface-2, #F4F5F7)',
         border: `${s.bd}px solid var(--cab-ink, #16181D)`,
         borderRadius: s.r,
-        padding: `${s.py}px ${s.px}px`,
+        padding: `${s.py + vo}px ${s.px}px ${Math.max(0, s.py - vo)}px`,
         boxShadow: '0 7px 18px -8px rgba(20,20,40,.22), 0 1px 2px rgba(20,20,40,.06)',
       }
     : {}
@@ -77,8 +81,8 @@ export function Logo({ size = 'md', withText = true, framed = true, className = 
         {BRAND.wordmark.accent}
       </span>
 
-      {/* RAZBORKA — при line-height:1 капсы Montserrat уже центрируются по
-          плашке сами (проверено замером ink-границ), доп. сдвиг не нужен. */}
+      {/* RAZBORKA — вертикальное центрирование капсов в рамке делает frameStyle
+          (асимметричный паддинг vo), см. выше. */}
       <span style={{
         fontFamily: "'Montserrat', var(--font-sans)", fontWeight: 700, fontSize: s.name,
         letterSpacing: '-0.01em', color: 'var(--cab-ink, #16181D)',
