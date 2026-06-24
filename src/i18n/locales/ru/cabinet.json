@@ -82,6 +82,8 @@
     "allGoodText": "Новых задач нет — заказы обработаны, склад в порядке.",
     "kpiRevenue": "Выручка",
     "kpiCompleted": "{{n}} завершено",
+    "kpiProfit": "Прибыль",
+    "kpiProfitItems": "по {{n}} поз.",
     "kpiOrders": "Заказов",
     "kpiInProgress": "{{n}} в работе",
     "kpiParts": "Запчасти",

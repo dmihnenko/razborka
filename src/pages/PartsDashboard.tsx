@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useUserProfile, useHasAnyRole } from '@/hooks/useUserProfile'
 import {
   ShoppingCart, Inbox, Tag, AlertTriangle, DollarSign, Package, Car,
-  ArrowRight, ChevronRight, Plus, CheckCircle2, Boxes, RefreshCw, Truck,
+  ArrowRight, ChevronRight, Plus, CheckCircle2, Boxes, RefreshCw, Truck, Wallet,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getPartsOrderStatusText } from '@/utils/status'
@@ -142,15 +142,22 @@ export default function PartsDashboard() {
   const ink2 = 'var(--cab-ink-2)'
   const ink3 = 'var(--cab-ink-3)'
 
+  // Финансовые KPI — владельцу/админу выручка + прибыль; работнику «Доставка в пути».
+  const moneyKpis = canSeeFinance
+    ? [
+        { label: t('dashboard.kpiRevenue'), value: (stats?.revenueUSD ?? 0) > 0 ? `$${Math.round(stats!.revenueUSD).toLocaleString(intlLocale())}` : '—', sub: t('dashboard.kpiCompleted', { n: stats?.revenueOrders ?? stats?.orders?.completed ?? 0 }), Icon: DollarSign, to: '/parts/analytics' },
+        { label: t('dashboard.kpiProfit'), value: (stats?.profitUSD ?? 0) !== 0 ? `$${Math.round(stats!.profitUSD!).toLocaleString(intlLocale())}` : '—', sub: t('dashboard.kpiProfitItems', { n: stats?.profitItems ?? 0 }), Icon: Wallet, to: '/parts/analytics' },
+      ]
+    : [
+        { label: t('dashboard.kpiDelivery'), value: delivery.active, sub: t('dashboard.kpiDelivered', { n: delivery.delivered }), Icon: Truck, to: '/parts/shipments' },
+      ]
   const kpis = [
-    // Выручка — только для владельца/админа; работнику показываем «Доставка в пути»
-    canSeeFinance
-      ? { label: t('dashboard.kpiRevenue'), value: (stats?.revenueUSD ?? 0) > 0 ? `$${Math.round(stats!.revenueUSD).toLocaleString(intlLocale())}` : '—', sub: t('dashboard.kpiCompleted', { n: stats?.revenueOrders ?? stats?.orders?.completed ?? 0 }), Icon: DollarSign, to: '/parts/analytics' }
-      : { label: t('dashboard.kpiDelivery'), value: delivery.active, sub: t('dashboard.kpiDelivered', { n: delivery.delivered }), Icon: Truck, to: '/parts/shipments' },
+    ...moneyKpis,
     { label: t('dashboard.kpiOrders'),  value: stats?.orders?.total ?? 0, sub: t('dashboard.kpiInProgress', { n: stats?.orders?.in_progress ?? 0 }), Icon: ShoppingCart, to: '/parts/orders' },
     { label: t('dashboard.kpiParts'), value: stats?.inventory?.total ?? 0, sub: t('dashboard.kpiAvailable', { n: stats?.inventory?.available ?? 0 }), Icon: Package, to: '/parts/inventory?source=vehicles' },
     { label: t('dashboard.kpiVehicles'),     value: stats?.vehicles?.total ?? 0, sub: t('dashboard.kpiDismantled', { n: stats?.vehicles?.dismantled ?? 0 }), Icon: Car, to: '/parts/vehicles' },
   ]
+  const kpiGridCls = canSeeFinance ? 'grid grid-cols-2 lg:grid-cols-5 gap-3' : 'grid grid-cols-2 lg:grid-cols-4 gap-3'
 
   return (
     <div className="space-y-5" style={{ color: ink }}>
@@ -243,7 +250,7 @@ export default function PartsDashboard() {
       )}
 
       {/* ── Деньги / итоги ────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className={kpiGridCls}>
         {kpis.map(({ label, value, sub, Icon, to }) => (
           <Link key={label} to={to} className="cab-card cab-card-hover p-4 group">
             <div className="flex items-center justify-between mb-2.5">

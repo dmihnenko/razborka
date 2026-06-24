@@ -3,9 +3,12 @@
 -- (по o.created_at). Операционные метрики (vehicles/inventory/orders-funnel/customers/
 -- marketOrders) остаются текущим состоянием. Backward-compatible: default 'all' = старое поведение.
 --
--- Прибыль (выручка − себестоимость) НЕ добавлена осознанно: parts_inventory.purchase_price
--- (себестоимость запчасти) сейчас 0% заполнен — реальную прибыль посчитать нечем. Сначала нужно
--- завести захват себестоимости в форме добавления/продажи, затем добавить KPI.
+-- ОБНОВЛЕНО: добавлены profitUSD + profitItems. Прибыль = Σ(price_at_sale − inventory.purchase_price)
+-- по позициям завершённых заказов, где себестоимость известна (inv.purchase_price not null),
+-- тот же источник и период, что и выручка (⇒ прибыль ≤ выручка). Каждая позиция — по своей
+-- себестоимости (магазинная = закупка у поставщика, с авто = аллокация от цены машины); поле
+-- «Себестоимость» уже есть в форме запчасти. profitItems — число позиций с известной себестоимостью
+-- (для подписи «по N поз.»). Пока себестоимость не заполнена — прибыль 0 (честно, не фейк).
 
 create or replace function public.get_parts_dashboard_stats(p_company uuid, p_rate numeric default 41, p_period text default 'all')
 returns json language sql stable as $fn$
@@ -41,6 +44,21 @@ returns json language sql stable as $fn$
         and ((select start from b) is null or o.created_at >= (select start from b))),0),
     'revenueOrders', (select count(*) from public.parts_orders o
       where o.parts_company_id=p_company and o.status='completed'
+        and ((select start from b) is null or o.created_at >= (select start from b))),
+    'profitUSD', coalesce((select sum(
+        (case when oi.price_at_sale_currency='USD' then coalesce(oi.price_at_sale,0)*coalesce(oi.quantity,1)
+              else (coalesce(oi.price_at_sale,0)*coalesce(oi.quantity,1))/nullif(coalesce(o.exchange_rate_at_sale,p_rate),0) end)
+        - (case when inv.price_currency='USD' or inv.price_currency is null then coalesce(inv.purchase_price,0)*coalesce(oi.quantity,1)
+              else (coalesce(inv.purchase_price,0)*coalesce(oi.quantity,1))/nullif(coalesce(o.exchange_rate_at_sale,p_rate),0) end))
+      from public.parts_orders o
+      join public.parts_order_items oi on oi.order_id=o.id
+      join public.parts_inventory inv on inv.id=oi.inventory_item_id
+      where o.parts_company_id=p_company and o.status='completed' and inv.purchase_price is not null
+        and ((select start from b) is null or o.created_at >= (select start from b))),0),
+    'profitItems', (select count(*) from public.parts_orders o
+      join public.parts_order_items oi on oi.order_id=o.id
+      join public.parts_inventory inv on inv.id=oi.inventory_item_id
+      where o.parts_company_id=p_company and o.status='completed' and inv.purchase_price is not null
         and ((select start from b) is null or o.created_at >= (select start from b))),
     'customers', (select json_build_object('total',count(*),
         'withOrders',count(*) filter (where exists (select 1 from public.parts_orders po where po.customer_id=c.id)))

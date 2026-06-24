@@ -319,6 +319,8 @@ export interface PartsDashboardStats {
   orders: { total: number; new: number; in_progress: number; completed: number }
   revenueUSD: number
   revenueOrders?: number
+  profitUSD?: number
+  profitItems?: number
   customers: { total: number; withOrders: number }
   marketOrders: number
 }
