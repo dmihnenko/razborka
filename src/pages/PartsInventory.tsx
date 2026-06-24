@@ -2353,23 +2353,27 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   />
                 </div>
 
+                {/* Кол-во — только для магазинных (для запчасти с авто кол-во = 1). */}
+                {!formData.vehicle_id && (
+                  <div>
+                    <label className="form-label">{t('inventoryPage.quantity')}</label>
+                    <input
+                      type="number"
+                      min="1"
+                      inputMode="numeric"
+                      value={formData.quantity ?? ''}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setFormData({ ...formData, quantity: (v === '' ? undefined : Number(v)) as any })
+                      }}
+                      className="form-input tabular"
+                    />
+                  </div>
+                )}
+
+                {/* Цена продажи + Закупочная цена — в одну строку (в т.ч. на мобиле).
+                    Для запчасти с авто закупки нет — её место просто пустует. */}
                 <div className="grid grid-cols-2 gap-4">
-                  {!formData.vehicle_id && (
-                    <div>
-                      <label className="form-label">{t('inventoryPage.quantity')}</label>
-                      <input
-                        type="number"
-                        min="1"
-                        inputMode="numeric"
-                        value={formData.quantity ?? ''}
-                        onChange={(e) => {
-                          const v = e.target.value
-                          setFormData({ ...formData, quantity: (v === '' ? undefined : Number(v)) as any })
-                        }}
-                        className="form-input tabular"
-                      />
-                    </div>
-                  )}
                   <div>
                     <label className="form-label">{t('inventoryPage.sellPrice')}</label>
                     <div className="flex gap-2">
@@ -2396,30 +2400,29 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       </button>
                     </div>
                   </div>
-                </div>
 
-                {/* Закупочная цена — только для магазинных запчастей (без авто).
-                    Запчасть с разборки авто закупки не имеет (себестоимость — от авто). */}
-                {!formData.vehicle_id && (
-                  <div>
-                    <label className="form-label">
-                      {t('inventoryPage.purchasePrice')} <span className="text-gray-400 font-normal">{t('inventoryPage.purchasePriceHint')}</span>
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      inputMode="decimal"
-                      value={formData.purchase_price ?? ''}
-                      onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value ? Number(e.target.value) : undefined })}
-                      placeholder={t('inventoryPage.optionalPlaceholder')}
-                      className="form-input tabular"
-                    />
-                    {formData.purchase_price != null && formData.selling_price != null && formData.selling_price < formData.purchase_price && (
-                      <p className="mt-1 text-xs text-amber-600">{t('inventoryPage.marginNegative')}</p>
-                    )}
-                  </div>
-                )}
+                  {/* Закупочная цена — только для магазинных (с авто себестоимость от авто). */}
+                  {!formData.vehicle_id && (
+                    <div>
+                      <label className="form-label">
+                        {t('inventoryPage.purchasePrice')} <span className="text-gray-400 font-normal">{t('inventoryPage.purchasePriceHint')}</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputMode="decimal"
+                        value={formData.purchase_price ?? ''}
+                        onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value ? Number(e.target.value) : undefined })}
+                        placeholder={t('inventoryPage.optionalPlaceholder')}
+                        className="form-input tabular"
+                      />
+                      {formData.purchase_price != null && formData.selling_price != null && formData.selling_price < formData.purchase_price && (
+                        <p className="mt-1 text-xs text-amber-600">{t('inventoryPage.marginNegative')}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Sold toggle button — only when creating */}
                 {!item && (
