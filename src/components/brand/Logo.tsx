@@ -77,12 +77,11 @@ export function Logo({ size = 'md', withText = true, framed = true, className = 
         {BRAND.wordmark.accent}
       </span>
 
-      {/* RAZBORKA — translateY компенсирует оптический подъём заглавных букв
-          (метрики шрифта тянут капсы вверх → ставим ровно по центру плашки) */}
+      {/* RAZBORKA — при line-height:1 капсы Montserrat уже центрируются по
+          плашке сами (проверено замером ink-границ), доп. сдвиг не нужен. */}
       <span style={{
         fontFamily: "'Montserrat', var(--font-sans)", fontWeight: 700, fontSize: s.name,
         letterSpacing: '-0.01em', color: 'var(--cab-ink, #16181D)',
-        transform: 'translateY(0.04em)',
       }}>
         {BRAND.wordmark.lead}
       </span>
