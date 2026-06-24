@@ -177,15 +177,17 @@ export default function PartsInventory() {
     // в форму редактирования попадал товар без актуальной цены.
     ;(async () => {
       const fresh = await getPartsInventoryItem(editItemId).catch(() => null)
+      if (cancelled) return
       const item = fresh || inventory.find((i: PartsInventoryItem) => i.id === editItemId)
-      if (!cancelled && item) {
+      if (item) {
         setEditingItem(item as PartsInventoryItem)
         setIsModalOpen(true)
       }
+      // Чистим state ПОСЛЕ открытия модалки. Если делать это синхронно до await,
+      // navigate тут же ретригерит эффект → cleanup ставит cancelled=true и модалка
+      // не открывается (пользователь «выпадает» в список).
+      navigate(location.pathname + location.search, { replace: true, state: null })
     })()
-    // Чистим состояние через роутер, иначе после сохранения refetch
-    // снова триггерит эффект и модалка открывается повторно
-    navigate(location.pathname + location.search, { replace: true, state: null })
     return () => { cancelled = true }
   }, [location.state?.editItemId])
 
@@ -406,9 +408,13 @@ export default function PartsInventory() {
     } else if (sortField === 'status') {
       cmp = statusOrder[a.status] - statusOrder[b.status]
     } else if (sortField === 'price') {
-      const pa = a.selling_price || 0
-      const pb = b.selling_price || 0
-      cmp = pa - pb
+      // Сравниваем в общей валюте (USD): грн → делим на курс, иначе как есть —
+      // иначе $100 «дешевле» 1000 грн при прямом сравнении чисел.
+      const toUSD = (it: PartsInventoryItem) => {
+        const p = it.selling_price || 0
+        return it.price_currency === 'UAH' ? p / (usdRate || 41) : p
+      }
+      cmp = toUSD(a) - toUSD(b)
     }
     return sortDir === 'asc' ? cmp : -cmp
   })
@@ -2396,6 +2402,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="form-label">{t('inventoryPage.sellPrice')}</label>
+                    {/* Валюта цветом: $ → мягкий зелёный (чтобы не перепутать с грн) */}
                     <div className="flex gap-2">
                       <input
                         type="number"
@@ -2404,7 +2411,11 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         inputMode="decimal"
                         value={formData.selling_price ?? ''}
                         onChange={(e) => setFormData({ ...formData, selling_price: e.target.value ? Number(e.target.value) : undefined })}
-                        className="form-input flex-1 min-w-0 tabular"
+                        className={`form-input flex-1 min-w-0 tabular ${
+                          formData.price_currency === 'USD'
+                            ? 'border-emerald-300 bg-emerald-50/50 focus:border-emerald-400 focus:ring-emerald-200'
+                            : ''
+                        }`}
                       />
                       <button
                         type="button"
@@ -2413,7 +2424,11 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                           setFormData({ ...formData, price_currency: next })
                           sessionStorage.setItem('parts_last_currency', next)
                         }}
-                        className="cab-btn cab-btn-primary flex-shrink-0 w-10 text-center px-0"
+                        className={`cab-btn flex-shrink-0 w-12 text-center px-0 font-bold ${
+                          formData.price_currency === 'USD'
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent'
+                            : 'cab-btn-primary'
+                        }`}
                         title={t('inventoryPage.changeCurrency')}
                       >
                         {formData.price_currency === 'USD' ? '$' : 'грн'}
