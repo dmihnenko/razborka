@@ -129,6 +129,16 @@ export default function PartsInventoryItemPage() {
     returnMutation.mutate()
   }
 
+  // Копировать публичную ссылку на товар в буфер
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/public/parts-item/${id}`)
+      toast.success(t('inventoryItemPage.linkCopied'))
+    } catch {
+      toast.error(t('inventoryItemPage.linkCopyError'))
+    }
+  }
+
   /* Storage location breadcrumb */
   const { data: locations = [] } = useQuery({
     queryKey: ['parts-storage-locations', profile?.parts_company_id],
@@ -282,8 +292,8 @@ export default function PartsInventoryItemPage() {
           {/* ── Hero: статус · название · артикул · цена · продать ── */}
           <div className="flex-1 min-w-0 p-4 sm:p-5">
 
-            {/* Status badges */}
-            <div className="flex flex-wrap gap-1.5 mb-3">
+            {/* Status badges + поделиться (копирует ссылку) справа */}
+            <div className="flex flex-wrap items-center gap-1.5 mb-3">
               <span className={STATUS_CLS[item.status]}>
                 {item.status === 'available' && <span className="status-dot status-dot-pulse bg-green-500" />}
                 {item.status === 'sold'      && <CheckCircle2 className="w-3 h-3" />}
@@ -295,6 +305,14 @@ export default function PartsInventoryItemPage() {
                   {t('inventoryItemPage.lowStock')}
                 </span>
               )}
+              <button
+                onClick={handleCopyLink}
+                aria-label={t('inventoryItemPage.share')}
+                title={t('inventoryItemPage.share')}
+                className="ml-auto btn-icon-sm text-gray-400 hover:text-primary hover:bg-[var(--cab-signal-weak)]"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Name */}

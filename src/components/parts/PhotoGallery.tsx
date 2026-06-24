@@ -164,7 +164,7 @@ export default function PhotoGallery({ photos, alt: altProp, mainAspect = 'aspec
             draggable={false}
           />
 
-          {/* HD-переключатель — справа сверху (вместо лупы) */}
+          {/* HD-переключатель — справа сверху */}
           <button
             type="button"
             onClick={e => { e.stopPropagation(); setHd(v => !v) }}
