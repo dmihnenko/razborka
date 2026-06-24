@@ -244,24 +244,8 @@ export default function PartsInventoryItemPage() {
             {item.name}
           </h1>
 
-          {/* Actions — Поделиться и QR. На мобиле скрыты: они есть ниже (в блоке
-              статуса и в сайдбаре с QR), чтобы не дублировать в шапке. */}
-          <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
-            <button
-              onClick={() => setShareOpen(true)}
-              className="btn-icon"
-              title={t('inventoryItemPage.share')}
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setQrOpen(true)}
-              className="btn-icon"
-              title={t('inventoryItemPage.qrLabel')}
-            >
-              <QrCode className="w-4 h-4" />
-            </button>
-          </div>
+          {/* QR и «Поделиться» в шапке НЕ дублируем — они есть ниже: на десктопе в
+              правом сайдбаре, на мобиле в блоке статуса и в том же сайдбаре. */}
         </div>
       </div>
 
@@ -319,34 +303,33 @@ export default function PartsInventoryItemPage() {
             {/* Name */}
             <h2 className="heading-2 leading-tight mb-3">{item.name}</h2>
 
-            {/* Артикул (внутренний SKU — для поиска сотрудниками) */}
-            {item.article && (
-              <div className="mb-4">
-                <p className="kicker mb-1.5">{t('inventoryItemPage.article')}</p>
-                <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-white border border-[color:var(--cab-border-strong)]">
-                  <span className="font-mono font-bold tracking-wider text-gray-800 tabular">{item.article}</span>
-                </span>
-              </div>
-            )}
-
-            {/* Part number */}
-            {item.part_number && (
-              <div className="mb-4">
-                <p className="kicker mb-1.5">{t('inventoryItemPage.originalNumber')}</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(item.part_number!.toUpperCase())
-                    toast.success(t('inventoryItemPage.toastNumberCopied'))
-                  }}
-                  title={t('inventoryItemPage.clickToCopy')}
-                  className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-[color:var(--cab-border-strong)] hover:border-[color:var(--cab-ink-3)] active:scale-95 transition-all"
-                >
-                  <span className="font-mono font-bold tracking-wider text-gray-800 uppercase tabular">
-                    {item.part_number.toUpperCase()}
-                  </span>
-                  <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-primary transition-colors" />
-                </button>
+            {/* Артикул + оригинальный номер — компактно «Метка: №», без бордера,
+                каждый своей строкой; номер кликабелен (копирует). */}
+            {(item.article || item.part_number) && (
+              <div className="mb-4 space-y-1 text-sm">
+                {item.article && (
+                  <p className="text-gray-600">
+                    {t('inventoryItemPage.article')}:{' '}
+                    <span className="font-mono font-bold text-gray-900 tabular">{item.article}</span>
+                  </p>
+                )}
+                {item.part_number && (
+                  <p className="text-gray-600 flex items-center gap-1.5 flex-wrap">
+                    <span>{t('inventoryItemPage.originalNumber')}:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(item.part_number!.toUpperCase())
+                        toast.success(t('inventoryItemPage.toastNumberCopied'))
+                      }}
+                      title={t('inventoryItemPage.clickToCopy')}
+                      className="group inline-flex items-center gap-1 font-mono font-bold uppercase text-gray-900 hover:text-primary transition-colors"
+                    >
+                      {item.part_number.toUpperCase()}
+                      <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-primary transition-colors" />
+                    </button>
+                  </p>
+                )}
               </div>
             )}
 
