@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronRight, Copy, FileText, Package, ShoppingCart, Tag } from 'lucide-react'
+import { ChevronRight, Copy, FileText, Package, Share2, ShoppingCart, Tag } from 'lucide-react'
 import { toast } from 'sonner'
 import { getMarketPart, getRelatedParts } from '@/services/marketplaceService'
 import type { MarketPart } from '@/types/marketplace'
@@ -101,6 +101,24 @@ export default function MarketProductPage() {
     toast.success(t('productPage.numberCopied'))
   }
 
+  const handleShare = async () => {
+    const url = window.location.href
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: part.name, url })
+        return
+      } catch {
+        // отмена/недоступно — копируем ссылку
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success(t('productPage.linkCopied'))
+    } catch {
+      toast.error(t('productPage.linkCopyError'))
+    }
+  }
+
 
   return (
     <div>
@@ -132,28 +150,41 @@ export default function MarketProductPage() {
 
         {/* Цена + характеристики */}
         <div className="mk-card p-4 order-2">
-            <div className="flex flex-wrap gap-1.5 mb-2.5">
+            <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
               {conditionBadge(part.condition)}
               <span className="mk-badge mk-badge-neutral">{t('productPage.original')}</span>
               {part.quantity > 0 && <span className="mk-badge mk-badge-new">{t('productPage.inStock')}</span>}
               {part.categoryName && (
                 <span className="mk-badge mk-badge-neutral"><Tag className="w-3 h-3" strokeWidth={1.5} aria-hidden="true" /> {part.categoryName}</span>
               )}
+              <button
+                type="button"
+                onClick={handleShare}
+                aria-label={t('productPage.share')}
+                title={t('productPage.share')}
+                className="ml-auto inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors mk-link"
+                style={{ color: 'var(--mk-text-3)' }}
+              >
+                <Share2 className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
+              </button>
             </div>
 
             <h1 className="text-[17px] font-extrabold leading-snug tracking-tight mb-1" style={{ color: 'var(--mk-text)' }}>{part.name}</h1>
 
-            {/* Коды: артикул (всегда) + OEM (если есть) — без фона, номер кликабелен (копирует) */}
-            <div className="mt-2 mb-3 space-y-0.5 text-sm" style={{ color: 'var(--mk-text-2)' }}>
+            {/* Коды: артикул + OEM — в одну строку, без фона/бордера; номер кликабелен
+                (копирует). Если ширины не хватает — OEM переносится на след. строку. */}
+            <div className="mt-2 mb-3 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm" style={{ color: 'var(--mk-text-2)' }}>
               {part.article && (
-                <p>
+                <span>
                   {t('productPage.article')}{' '}
                   <span className="font-mono font-bold" style={{ color: 'var(--mk-text)' }}>{part.article}</span>
-                </p>
+                </span>
               )}
               {part.partNumber && (
-                <p>
-                  OEM:{' '}
+                <span>
+                  {/* Полный текст «Оригинальный номер»; на узких экранах — «OEM» */}
+                  <span className="hidden sm:inline">{t('productPage.oemFull')}:</span>
+                  <span className="sm:hidden">OEM:</span>{' '}
                   <button
                     type="button" onClick={copyPartNumber} title={t('productPage.clickToCopy')}
                     aria-label={t('productPage.copyOemAria', { number: part.partNumber.toUpperCase() })}
@@ -163,7 +194,7 @@ export default function MarketProductPage() {
                     {part.partNumber.toUpperCase()}
                     <Copy className="w-3 h-3" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
                   </button>
-                </p>
+                </span>
               )}
             </div>
 
