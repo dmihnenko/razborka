@@ -767,27 +767,6 @@ export default function PartsInventory() {
           </div>
         )}
 
-        {/* No-photo banner: запчасти без фото */}
-        {(summary?.noPhoto ?? 0) > 0 && (
-          <div className="mb-4 flex items-center justify-between gap-3 bg-sky-50 border border-sky-200/60 rounded-2xl px-4 py-3">
-            <div className="flex items-center gap-2.5">
-              <div className="icon-tile-sm bg-sky-100 text-sky-600 flex-shrink-0">
-                <Camera className="w-3.5 h-3.5" strokeWidth={1.5} />
-              </div>
-              <span className="text-sm text-sky-800">
-                <span className="font-bold">{summary!.noPhoto}</span>
-                {' '}{t('inventoryPage.noPhotoText', { count: summary!.noPhoto })}
-              </span>
-            </div>
-            <button
-              onClick={() => navigate('/parts/inventory/no-photo')}
-              className="flex-shrink-0 px-3 py-1.5 text-xs font-bold bg-sky-600 text-white rounded-xl hover:bg-sky-700 transition-colors"
-            >
-              {t('inventoryPage.addPhotos')}
-            </button>
-          </div>
-        )}
-
         {/* Status chips + cost line */}
         <div className="flex items-center justify-between gap-3 mb-4">
           {/* Chip-фильтры по статусу */}
@@ -979,7 +958,12 @@ export default function PartsInventory() {
                 className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left active:bg-slate-50 transition-colors"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-gray-900 truncate">{item.name}</div>
+                  <div className="font-semibold text-gray-900 truncate flex items-center gap-1.5">
+                    {!((item.photos as ImgbbPhoto[] | undefined)?.length) && (
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" strokeWidth={2} aria-label={t('inventoryPage.noPhotoMark')} />
+                    )}
+                    <span className="truncate">{item.name}</span>
+                  </div>
                   <div className="text-xs font-mono text-gray-400 truncate mt-0.5">
                     {item.part_number || t('inventoryPage.noNumber')}
                   </div>
@@ -1029,8 +1013,11 @@ export default function PartsInventory() {
                       </td>
                       {/* Название */}
                       <td className="px-2 py-2">
-                        <div className="font-semibold text-gray-900 group-hover/row:text-primary transition-colors truncate">
-                          {item.name}
+                        <div className="font-semibold text-gray-900 group-hover/row:text-primary transition-colors truncate flex items-center gap-1.5">
+                          {!((item.photos as ImgbbPhoto[] | undefined)?.length) && (
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" strokeWidth={2} aria-label={t('inventoryPage.noPhotoMark')} />
+                          )}
+                          <span className="truncate">{item.name}</span>
                         </div>
                       </td>
                       {/* Оригинальный номер */}
