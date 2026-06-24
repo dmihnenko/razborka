@@ -123,7 +123,8 @@ export default function ContextSwitcher({ current, excludeIds = [], variant = 'b
     )
   }
 
-  // ── Мобильный: [Разборка/Админ — активный, тап→другой] + [Мои авто] ──
+  // ── Мобильный: ДВЕ отдельные кнопки —
+  //    [Разборка] постоянная  +  [свитчер Админ ⇄ Мои авто]. ──
   if (variant === 'mobile') {
     const adminC = CONTEXTS.find(c => c.id === 'admin')!
     const partsC = CONTEXTS.find(c => c.id === 'parts')!
@@ -132,18 +133,21 @@ export default function ContextSwitcher({ current, excludeIds = [], variant = 'b
     const hasParts = has('parts') && !excludeIds.includes('parts')
     const hasUser  = has('user')  && !excludeIds.includes('user')
 
-    // Показываем активный оп-раздел (в «Мои авто» — предпочтительный Разборка)
-    const opShown: Ctx = current === 'admin' ? adminC : current === 'parts' ? partsC : (hasParts ? partsC : adminC)
-    // Тап: есть оба → переключаем на другой; иначе идём в показанный
-    const opTarget: Ctx =
-      current === 'admin' ? (hasParts ? partsC : adminC)
-      : current === 'parts' ? (hasAdmin ? adminC : partsC)
-      : opShown
-    const opActive = current === 'admin' || current === 'parts'
-    const showOp = hasAdmin || hasParts
+    // Свитчер показывает активный из {Админ, Мои авто}; в Разборке — по умолчанию Админ.
+    const swShown: Ctx | null =
+      current === 'admin' ? adminC
+      : current === 'user' ? userC
+      : (hasAdmin ? adminC : hasUser ? userC : null)
+    // Тап по свитчеру: из Админа → Мои авто, из Мои авто → Админ, из Разборки → в показанный.
+    let swTarget: Ctx | null = swShown
+    if (current === 'admin') swTarget = hasUser ? userC : swShown
+    else if (current === 'user') swTarget = hasAdmin ? adminC : swShown
+    const swActive = current === 'admin' || current === 'user'
 
+    // Самостоятельные кнопки. Активная — с акцентом, неактивная — обычная (с бордером).
     const seg = (c: Ctx, active: boolean, onClick: () => void) => {
       const Icon = c.icon
+      const isAdminBtn = c.id === 'admin'
       return (
         <button
           key={c.id}
@@ -151,10 +155,10 @@ export default function ContextSwitcher({ current, excludeIds = [], variant = 'b
           onClick={onClick}
           title={c.label}
           aria-pressed={active}
-          className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[13px] font-semibold transition-colors active:scale-[0.98] flex-shrink-0"
+          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border text-[13px] font-semibold transition-colors active:scale-[0.98] flex-shrink-0"
           style={active
-            ? { background: 'var(--cab-surface)', color: 'var(--cab-ink)', boxShadow: '0 1px 2px rgba(16,24,40,.14)' }
-            : { color: 'var(--cab-ink-3)' }}
+            ? { background: isAdminBtn ? 'var(--cab-ink)' : 'var(--cab-signal-weak)', color: isAdminBtn ? '#fff' : 'var(--cab-signal)', borderColor: 'transparent' }
+            : { background: 'var(--cab-surface)', color: 'var(--cab-ink)', borderColor: 'var(--cab-border)' }}
         >
           <Icon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.8} />
           <span className="truncate">{c.label}</span>
@@ -162,12 +166,11 @@ export default function ContextSwitcher({ current, excludeIds = [], variant = 'b
       )
     }
 
-    if (!showOp && !hasUser) return null
+    if (!hasParts && !swShown) return null
     return (
-      <div className="inline-flex items-center gap-1 p-0.5 rounded-xl"
-        style={{ background: 'var(--cab-surface-2)', border: '1px solid var(--cab-border)' }}>
-        {showOp && seg(opShown, opActive, () => switchTo(opTarget))}
-        {hasUser && seg(userC, current === 'user', () => switchTo(userC))}
+      <div className="inline-flex items-center gap-2">
+        {hasParts && seg(partsC, current === 'parts', () => switchTo(partsC))}
+        {swShown && swTarget && seg(swShown, swActive, () => switchTo(swTarget))}
       </div>
     )
   }
