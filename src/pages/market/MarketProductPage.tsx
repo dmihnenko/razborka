@@ -171,30 +171,30 @@ export default function MarketProductPage() {
 
             <h1 className="text-[17px] font-extrabold leading-snug tracking-tight mb-1" style={{ color: 'var(--mk-text)' }}>{part.name}</h1>
 
-            {/* Коды: артикул + OEM — в одну строку, без фона/бордера; номер кликабелен
-                (копирует). Если ширины не хватает — OEM переносится на след. строку. */}
-            <div className="mt-2 mb-3 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm" style={{ color: 'var(--mk-text-2)' }}>
+            {/* Коды: артикул — обычной строкой; OEM — отдельным блоком с бордером
+                (подпись + номер + копирование в рамке), кликабелен (копирует номер). */}
+            <div className="mt-2 mb-3 space-y-1.5 text-sm">
               {part.article && (
-                <span>
+                <p style={{ color: 'var(--mk-text-2)' }}>
                   {t('productPage.article')}{' '}
                   <span className="font-mono font-bold" style={{ color: 'var(--mk-text)' }}>{part.article}</span>
-                </span>
+                </p>
               )}
               {part.partNumber && (
-                <span>
+                <button
+                  type="button" onClick={copyPartNumber} title={t('productPage.clickToCopy')}
+                  aria-label={t('productPage.copyOemAria', { number: part.partNumber.toUpperCase() })}
+                  className="inline-flex items-center gap-2 rounded-lg border px-2.5 py-1.5 transition-colors hover:bg-[var(--mk-surface-2)]"
+                  style={{ borderColor: 'var(--mk-border)' }}
+                >
                   {/* Полный текст «Оригинальный номер»; на узких экранах — «OEM» */}
-                  <span className="hidden sm:inline">{t('productPage.oemFull')}:</span>
-                  <span className="sm:hidden">OEM:</span>{' '}
-                  <button
-                    type="button" onClick={copyPartNumber} title={t('productPage.clickToCopy')}
-                    aria-label={t('productPage.copyOemAria', { number: part.partNumber.toUpperCase() })}
-                    className="font-mono font-bold uppercase inline-flex items-center gap-1 hover:underline"
-                    style={{ color: 'var(--mk-text)' }}
-                  >
-                    {part.partNumber.toUpperCase()}
-                    <Copy className="w-3 h-3" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
-                  </button>
-                </span>
+                  <span className="text-xs mk-meta">
+                    <span className="hidden sm:inline">{t('productPage.oemFull')}:</span>
+                    <span className="sm:hidden">OEM:</span>
+                  </span>
+                  <span className="font-mono font-bold uppercase" style={{ color: 'var(--mk-text)' }}>{part.partNumber.toUpperCase()}</span>
+                  <Copy className="w-3 h-3 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
+                </button>
               )}
             </div>
 
@@ -234,7 +234,7 @@ export default function MarketProductPage() {
                     {[part.vehicle.make, part.vehicle.model].filter(Boolean).join(' ')}
                     {part.vehicle.year && <span className="font-medium mk-meta"> · {t('productPage.yearShort', { year: part.vehicle.year })}</span>}
                   </p>
-                  {part.vehicle.vin && <p className="text-[11px] font-mono mt-0.5 select-all mk-meta">VIN: {part.vehicle.vin}</p>}
+                  {/* VIN на публичном маркете НЕ показываем — только марка/модель/год. */}
                 </div>
               </div>
             )}

@@ -37,7 +37,6 @@ export interface MarketPartVehicle {
   make: string
   model: string
   year?: number | null
-  vin?: string | null
 }
 
 /** Публичная карточка запчасти (только безопасные поля) */

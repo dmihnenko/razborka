@@ -39,7 +39,8 @@ const COMPANY_JOIN = `company:parts_companies!inner(id, name, phone, telegram, a
 const CATEGORY_JOIN = `category:parts_categories(id, name)`
 
 function vehicleJoin(inner: boolean) {
-  return `vehicle:parts_vehicles!vehicle_id${inner ? '!inner' : ''}(make, model, year, vin)`
+  // VIN НЕ запрашиваем — публичный маркет не должен раскрывать VIN авто-донора.
+  return `vehicle:parts_vehicles!vehicle_id${inner ? '!inner' : ''}(make, model, year)`
 }
 
 // ── Маппинг row → MarketPart ────────────────────────────────────────────────
@@ -65,7 +66,6 @@ function mapPartRow(row: any): MarketPart {
           make: row.vehicle.make,
           model: row.vehicle.model,
           year: row.vehicle.year ?? null,
-          vin: row.vehicle.vin ?? null,
         }
       : null,
     company: {
