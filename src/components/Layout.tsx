@@ -384,7 +384,7 @@ export default function Layout() {
         <div className="md:hidden bg-white border-b border-gray-200">
           <div className="px-3 flex items-center gap-2 h-[52px]">
             <div className="flex-1 min-w-0">
-              <ContextSwitcher current={currentCtx} />
+              <ContextSwitcher current={currentCtx} variant="mobile" />
             </div>
             <NotificationsBell userId={profile?.id} />
             {currentCtx === 'parts' && (

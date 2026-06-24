@@ -25,8 +25,10 @@ interface Props {
   current: ContextId
   excludeIds?: ContextId[]
   /** 'bar' — кнопка с ярлыком (шапки). 'sidebar' — компактная (иконка + chevron) для свёрнутого сайдбара.
-   *  'segment' — сегментированный переключатель из двух кнопок [Админ | Разборка/Мои авто] (для админа). */
-  variant?: 'bar' | 'sidebar' | 'segment'
+   *  'segment' — сегментированный переключатель из двух кнопок [Админ | Разборка/Мои авто] (для админа).
+   *  'mobile' — компактный для мобилы: одна кнопка операционного раздела (Разборка/Админ — активный,
+   *             тап переключает на другой) + «Мои авто» рядом; неактивный из Разборка/Админ скрыт. */
+  variant?: 'bar' | 'sidebar' | 'segment' | 'mobile'
   /** Для variant='segment': когда показывать подписи. 'lg' — только на широком (узкий md-сайдбар → иконки). */
   segLabels?: 'always' | 'lg'
 }
@@ -117,6 +119,55 @@ export default function ContextSwitcher({ current, excludeIds = [], variant = 'b
             </button>
           )
         })}
+      </div>
+    )
+  }
+
+  // ── Мобильный: [Разборка/Админ — активный, тап→другой] + [Мои авто] ──
+  if (variant === 'mobile') {
+    const adminC = CONTEXTS.find(c => c.id === 'admin')!
+    const partsC = CONTEXTS.find(c => c.id === 'parts')!
+    const userC  = CONTEXTS.find(c => c.id === 'user')!
+    const hasAdmin = has('admin') && !excludeIds.includes('admin')
+    const hasParts = has('parts') && !excludeIds.includes('parts')
+    const hasUser  = has('user')  && !excludeIds.includes('user')
+
+    // Показываем активный оп-раздел (в «Мои авто» — предпочтительный Разборка)
+    const opShown: Ctx = current === 'admin' ? adminC : current === 'parts' ? partsC : (hasParts ? partsC : adminC)
+    // Тап: есть оба → переключаем на другой; иначе идём в показанный
+    const opTarget: Ctx =
+      current === 'admin' ? (hasParts ? partsC : adminC)
+      : current === 'parts' ? (hasAdmin ? adminC : partsC)
+      : opShown
+    const opActive = current === 'admin' || current === 'parts'
+    const showOp = hasAdmin || hasParts
+
+    const seg = (c: Ctx, active: boolean, onClick: () => void) => {
+      const Icon = c.icon
+      return (
+        <button
+          key={c.id}
+          type="button"
+          onClick={onClick}
+          title={c.label}
+          aria-pressed={active}
+          className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[13px] font-semibold transition-colors active:scale-[0.98] flex-shrink-0"
+          style={active
+            ? { background: 'var(--cab-surface)', color: 'var(--cab-ink)', boxShadow: '0 1px 2px rgba(16,24,40,.14)' }
+            : { color: 'var(--cab-ink-3)' }}
+        >
+          <Icon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.8} />
+          <span className="truncate">{c.label}</span>
+        </button>
+      )
+    }
+
+    if (!showOp && !hasUser) return null
+    return (
+      <div className="inline-flex items-center gap-1 p-0.5 rounded-xl"
+        style={{ background: 'var(--cab-surface-2)', border: '1px solid var(--cab-border)' }}>
+        {showOp && seg(opShown, opActive, () => switchTo(opTarget))}
+        {hasUser && seg(userC, current === 'user', () => switchTo(userC))}
       </div>
     )
   }
