@@ -12,7 +12,7 @@ import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { InventoryCard } from '@/components/parts/InventoryCard'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import i18n from '@/i18n'
-import { getPartsInventoryPaged, getPartsInventoryItem, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
+import { getPartsInventoryPaged, getPartsInventoryItem, getPartsInventorySummary, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { deletePhotosFromImgbb } from '@/services/imgbbService'
@@ -143,6 +143,17 @@ export default function PartsInventory() {
   // Суммарный массив загруженных элементов
   const inventory: PartsInventoryItem[] = pagedData?.pages.flatMap(p => p.items) ?? []
   const totalCount = pagedData?.pages[0]?.total ?? 0
+
+  // Стоимость склада/продаж — серверный агрегат по ВСЕЙ выборке (а не по подгруженным страницам)
+  const { data: summary } = useQuery({
+    // ключ вложен в ['parts-inventory', …] — те же инвалидации, что и список, обновляют агрегат
+    queryKey: ['parts-inventory', 'summary', partsCompanyId, usdRate],
+    queryFn: () => getPartsInventorySummary(partsCompanyId!, usdRate || 41),
+    enabled: !!partsCompanyId,
+    staleTime: 60_000,
+  })
+  const stockUSD = summary?.stockUSD ?? 0
+  const soldUSD = summary?.soldUSD ?? 0
 
   // Восстановление позиции прокрутки при возврате со страницы запчасти
   useEffect(() => {
@@ -774,25 +785,25 @@ export default function PartsInventory() {
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 hidden sm:inline">{t('inventoryPage.costStock')}</span>
                 <span className="text-sm font-bold text-green-600">
-                  {stats.stockUSD === 0 ? '—' : `$${Math.round(stats.stockUSD).toLocaleString('ru-RU')}`}
+                  {stockUSD === 0 ? '—' : `$${Math.round(stockUSD).toLocaleString('ru-RU')}`}
                 </span>
                 <span className="text-xs text-gray-300">·</span>
                 <span className="text-xs text-gray-400 hidden sm:inline">{t('inventoryPage.costSold')}</span>
                 <span className="text-sm font-bold text-primary">
-                  {stats.soldUSD === 0 ? '—' : `$${Math.round(stats.soldUSD).toLocaleString('ru-RU')}`}
+                  {soldUSD === 0 ? '—' : `$${Math.round(soldUSD).toLocaleString('ru-RU')}`}
                 </span>
               </div>
             ) : statusFilter === 'available' || statusFilter === 'reserved' ? (
               <span className="text-sm font-bold text-green-600">
-                {stats.stockUSD === 0 ? '—' : `$${Math.round(stats.stockUSD).toLocaleString('ru-RU')}`}
+                {stockUSD === 0 ? '—' : `$${Math.round(stockUSD).toLocaleString('ru-RU')}`}
               </span>
             ) : statusFilter === 'sold' ? (
               <span className="text-sm font-bold text-primary">
-                {stats.soldUSD === 0 ? '—' : `$${Math.round(stats.soldUSD).toLocaleString('ru-RU')}`}
+                {soldUSD === 0 ? '—' : `$${Math.round(soldUSD).toLocaleString('ru-RU')}`}
               </span>
             ) : (
               <span className="text-sm font-bold text-primary">
-                {stats.totalUAH === 0 && stats.totalUSD === 0 ? '—' : `$${Math.round(stats.totalUSD + stats.totalUAH / (usdRate || 41)).toLocaleString('ru-RU')}`}
+                {stockUSD === 0 ? '—' : `$${Math.round(stockUSD).toLocaleString('ru-RU')}`}
               </span>
             )}
           </div>

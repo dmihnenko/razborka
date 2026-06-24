@@ -369,6 +369,21 @@ export async function getPartsInventory(partsCompanyId: string) {
   return data as PartsInventoryItem[]
 }
 
+export interface PartsInventorySummary {
+  stockUSD: number; soldUSD: number
+  availableCount: number; reservedCount: number; soldCount: number
+}
+
+/** Серверный агрегат стоимости склада/продаж по ВСЕЙ выборке (не по подгруженной странице). */
+export async function getPartsInventorySummary(partsCompanyId: string, rate = 41): Promise<PartsInventorySummary> {
+  const { data, error } = await supabase.rpc('get_parts_inventory_summary', {
+    p_company: partsCompanyId,
+    p_rate: rate,
+  })
+  if (error) throw error
+  return data as PartsInventorySummary
+}
+
 /** Экранируем значение для PostgREST or()-фильтра (запятые/скобки ломают синтаксис) */
 function sanitizeInventorySearch(s: string): string {
   return s.trim().replace(/[,()]/g, ' ').replace(/\s+/g, ' ')
