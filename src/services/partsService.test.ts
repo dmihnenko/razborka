@@ -23,6 +23,7 @@ import {
   getPartsInventoryItem,
   createPartsInventoryItem,
   updatePartsInventoryItem,
+  appendPartsItemPhotos,
   deletePartsInventoryItem,
   getPartsOrders,
   getPartsOrder,
@@ -329,6 +330,31 @@ describe('updatePartsInventoryItem', () => {
   it('виключає помилку при неудачі', async () => {
     setFromResponse(null, { message: 'update failed' })
     await expect(updatePartsInventoryItem('inv-1', { name: 'X' })).rejects.toBeDefined()
+  })
+})
+
+describe('appendPartsItemPhotos', () => {
+  it('дописує нові фото до вже наявних, не перетираючи їх', async () => {
+    // getPartsInventoryItem і updatePartsInventoryItem ділять один мок-білдер;
+    // поточний товар має одне фото, тому update має отримати [існуюче + нове].
+    const builder = setFromResponse(
+      makeInventoryItem({ photos: [{ url: 'a' }] as any }),
+      null,
+    )
+    await appendPartsItemPhotos('inv-1', [{ url: 'b' }])
+    expect(builder.update).toHaveBeenCalledWith(
+      expect.objectContaining({ photos: [{ url: 'a' }, { url: 'b' }] }),
+    )
+  })
+
+  it('пропускає дублі по url (нічого додавати — update не викликається)', async () => {
+    const builder = setFromResponse(
+      makeInventoryItem({ photos: [{ url: 'a' }] as any }),
+      null,
+    )
+    const res = await appendPartsItemPhotos('inv-1', [{ url: 'a' }])
+    expect(builder.update).not.toHaveBeenCalled()
+    expect(res).toBeDefined()
   })
 })
 

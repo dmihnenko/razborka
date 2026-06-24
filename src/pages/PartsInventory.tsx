@@ -12,7 +12,7 @@ import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { InventoryCard } from '@/components/parts/InventoryCard'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import i18n from '@/i18n'
-import { getPartsInventoryPaged, getPartsInventoryItem, getPartsInventorySummary, createPartsInventoryItem, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
+import { getPartsInventoryPaged, getPartsInventoryItem, getPartsInventorySummary, createPartsInventoryItem, updatePartsInventoryItem, appendPartsItemPhotos, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { deletePhotosFromImgbb } from '@/services/imgbbService'
@@ -274,7 +274,7 @@ export default function PartsInventory() {
   })
 
   const saveMutation = useMutation({
-    mutationFn: async ({ data, pending }: { data: CreatePartsInventoryInput; pending?: Promise<ImgbbPhoto>[] }) => {
+    mutationFn: async ({ data, pending }: { data: CreatePartsInventoryInput; pending?: Promise<ImgbbPhoto>[]; keepOpen?: boolean }) => {
       let saved: any
       if (editingItem) {
         saved = await updatePartsInventoryItem(editingItem.id, data)
@@ -284,26 +284,38 @@ export default function PartsInventory() {
       }
       // Фото, которые ещё грузились на момент сохранения — дописываем в товар в ФОНЕ
       // (пользователь не ждал выгрузку). fire-and-forget, мутация уже завершилась.
+      // appendPartsItemPhotos перечитывает актуальные фото (без гонки перезаписи),
+      // ретраит при сбоях и, если всё же не удалось — показывает видимую ошибку,
+      // а не теряет фото молча.
       if (pending && pending.length && saved?.id) {
-        const basePhotos = ((data.photos as ImgbbPhoto[] | undefined) ?? [])
         const savedId = saved.id
         Promise.allSettled(pending).then(results => {
           const extra = results
             .filter((r): r is PromiseFulfilledResult<ImgbbPhoto> => r.status === 'fulfilled')
             .map(r => r.value)
+          const failed = results.filter(r => r.status === 'rejected').length
+          // часть файлов не выгрузилась вообще — точечные ошибки уже показаны в
+          // handlePhotoSelect; здесь дублировать не нужно.
           if (!extra.length) return
-          updatePartsInventoryItem(savedId, { photos: [...basePhotos, ...extra] })
-            .then(() => queryClient.invalidateQueries({ queryKey: ['parts-inventory'] }))
-            .catch(() => { /* фон — не критично */ })
+          appendPartsItemPhotos(savedId, extra)
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+              if (failed) toast.error(t('inventoryPage.somePhotosFailed', { n: failed }))
+            })
+            .catch(() => toast.error(t('inventoryPage.photoAttachError')))
         })
       }
       return saved
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       toast.success(editingItem ? t('inventoryPage.toastUpdated') : t('inventoryPage.toastAdded'))
-      setIsModalOpen(false)
-      setEditingItem(null)
+      // keepOpen — режим «Сохранить и добавить ещё»: модалку не закрываем, форму
+      // сбрасывает сама модалка (липкие поля сохраняются).
+      if (!variables.keepOpen) {
+        setIsModalOpen(false)
+        setEditingItem(null)
+      }
     },
     onError: () => {
       toast.error(t('inventoryPage.toastSaveError'))
@@ -1609,7 +1621,7 @@ export default function PartsInventory() {
             setIsModalOpen(false)
             setEditingItem(null)
           }}
-          onSave={(data, pending) => saveMutation.mutate({ data, pending })}
+          onSave={(data, pending, keepOpen) => saveMutation.mutate({ data, pending, keepOpen })}
           onSaveBulk={(items) => saveBulkMutation.mutate(items)}
           isSaving={saveMutation.isPending || saveBulkMutation.isPending}
           photoCfg={photoCfg}
@@ -1719,7 +1731,7 @@ interface PartsInventoryModalProps {
   vehicles: any[]
   storageLocations: StorageLocation[]
   onClose: () => void
-  onSave: (data: CreatePartsInventoryInput, pendingPhotos?: Promise<ImgbbPhoto>[]) => void
+  onSave: (data: CreatePartsInventoryInput, pendingPhotos?: Promise<ImgbbPhoto>[], keepOpen?: boolean) => void
   onSaveBulk?: (items: CreatePartsInventoryInput[]) => void
   isSaving?: boolean
   initialVehicleId?: string
@@ -1739,12 +1751,24 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   const autoFilledStorage = !item && !!initialStorageLocationId
   const [autoHintDismissed, setAutoHintDismissed] = useState(false)
   const [oemCopied, setOemCopied] = useState(false)
+  // Фокус на «Название» при открытии и после «Сохранить и добавить ещё».
+  const nameInputRef = useRef<HTMLInputElement>(null)
+  // «Поколение» формы: при сбросе (добавить ещё) увеличиваем, чтобы поздно
+  // долетевшие коллбэки выгрузки фото от ПРЕДЫДУЩЕЙ позиции не попали в новую.
+  const formGenRef = useRef(0)
+  // Липкие валюта и состояние — запоминаем последний выбор на сессию (как авто/место).
+  const stickyCurrency = (item?.price_currency as 'UAH' | 'USD')
+    || (sessionStorage.getItem('parts_last_currency') as 'UAH' | 'USD' | null)
+    || 'USD'
+  const stickyCondition = item?.condition
+    || sessionStorage.getItem('parts_last_condition')
+    || 'used'
   const [bulkShared, setBulkShared] = useState({
     category_id: '',
     vehicle_id: initialVehicleId || '',
-    condition: 'used',
+    condition: stickyCondition,
     storage_location_id: initialStorageLocationId || '',
-    price_currency: 'USD' as 'UAH' | 'USD',
+    price_currency: stickyCurrency,
   })
 
   const [formData, setFormData] = useState<CreatePartsInventoryInput>({
@@ -1753,11 +1777,11 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     name: item?.name || '',
     part_number: item?.part_number || '',
     description: item?.description || '',
-    condition: item?.condition || 'used',
+    condition: stickyCondition,
     quantity: item?.quantity || 1,
     selling_price: item?.selling_price || undefined,
     purchase_price: (item as any)?.purchase_price ?? undefined,
-    price_currency: (item?.price_currency as 'UAH' | 'USD') || 'USD',
+    price_currency: stickyCurrency,
     location: item?.location || '',
     shelf: item?.shelf || '',
     bin: item?.bin || '',
@@ -1770,6 +1794,11 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   // родитель допишет их в товар после создания.
   const [pendingPhotos, setPendingPhotos] = useState<{ id: string; localUrl: string; promise: Promise<ImgbbPhoto> }[]>([])
   const uploading = pendingPhotos.length > 0
+
+  // Автофокус на «Название» при создании (single) — сразу печатать.
+  useEffect(() => {
+    if (!item && !bulkMode) nameInputRef.current?.focus()
+  }, [item, bulkMode])
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     let files = Array.from(e.target.files || [])
@@ -1788,19 +1817,24 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     }
 
     // Превью мгновенно, выгрузка в ФОНЕ — пользователь не ждёт (можно сразу сохранять).
+    const gen = formGenRef.current
     for (const file of files) {
       const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
       const localUrl = URL.createObjectURL(file)
       const promise = uploadPhoto(file, photoCfg ?? null)
       setPendingPhotos(prev => [...prev, { id, localUrl, promise }])
       promise
-        .then(uploaded => { setPhotos(prev => [...prev, uploaded]) })
+        .then(uploaded => {
+          // форму сбросили под новую позицию — это фото уже ушло в предыдущую (через
+          // inFlight), в новую его добавлять нельзя.
+          if (gen === formGenRef.current) setPhotos(prev => [...prev, uploaded])
+        })
         .catch(err => {
           if (err instanceof PhotoProviderNotConfigured) toast.error(err.message)
           else toast.error(t('inventoryPage.photoUploadError'))
         })
         .finally(() => {
-          setPendingPhotos(prev => prev.filter(p => p.id !== id))
+          if (gen === formGenRef.current) setPendingPhotos(prev => prev.filter(p => p.id !== id))
           URL.revokeObjectURL(localUrl)
         })
     }
@@ -1823,7 +1857,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SyntheticEvent, addAnother = false) => {
     e.preventDefault()
     if (bulkMode) {
       const valid = bulkItems.filter(r => r.name.trim())
@@ -1845,10 +1879,45 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
         status: r.status,
       })))
     } else {
+      // Валидация: имя без пробелов (HTML required пропускает пробелы).
+      if (!formData.name.trim()) {
+        toast.error(t('inventoryPage.nameRequired'))
+        nameInputRef.current?.focus()
+        return
+      }
       // Можно сохранять не дожидаясь выгрузки: передаём готовые фото + промисы
       // ещё грузящихся — родитель допишет их в товар в фоне.
       const inFlight = pendingPhotos.map(p => p.promise)
-      onSave({ ...formData, part_number: formData.part_number?.trim().toUpperCase() || '', photos }, inFlight)
+      onSave(
+        {
+          ...formData,
+          name: formData.name.trim(),
+          part_number: formData.part_number?.trim().toUpperCase() || '',
+          quantity: formData.quantity || 1,
+          photos,
+        },
+        inFlight,
+        addAnother,
+      )
+      if (addAnother) {
+        // Следующая позиция: новое «поколение» формы (поздние фото-коллбэки прошлой
+        // позиции не попадут в новую). Липкие поля (авто/категория/состояние/валюта/
+        // место/кол-во) сохраняем — сбрасываем только то, что у каждой позиции своё.
+        formGenRef.current += 1
+        setPhotos([])
+        setPendingPhotos([])
+        setFormData(prev => ({
+          ...prev,
+          name: '',
+          part_number: '',
+          description: '',
+          selling_price: undefined,
+          purchase_price: undefined,
+          status: undefined,
+        }))
+        setOemCopied(false)
+        nameInputRef.current?.focus()
+      }
     }
   }
 
@@ -2163,7 +2232,14 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       value={formData.vehicle_id || ''}
                       onChange={(e) => {
                         const newVehicleId = e.target.value || undefined
-                        setFormData({ ...formData, vehicle_id: newVehicleId, category_id: '' })
+                        // Запчасть с авто — закупочной цены нет (себестоимость от авто),
+                        // поэтому очищаем purchase_price при привязке к авто.
+                        setFormData({
+                          ...formData,
+                          vehicle_id: newVehicleId,
+                          category_id: '',
+                          ...(newVehicleId ? { purchase_price: undefined } : {}),
+                        })
                         if (newVehicleId) onVehicleChange?.(newVehicleId)
                         else onVehicleChange?.('')
                       }}
@@ -2206,6 +2282,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     {t('inventoryPage.nameReq')}
                   </label>
                   <input
+                    ref={nameInputRef}
                     type="text"
                     required
                     value={formData.name}
@@ -2251,7 +2328,10 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     <select
                       required
                       value={formData.condition}
-                      onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, condition: e.target.value })
+                        sessionStorage.setItem('parts_last_condition', e.target.value)
+                      }}
                       className="form-select"
                     >
                       <option value="new">{t('inventoryPage.conditionNew')}</option>
@@ -2280,8 +2360,12 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       <input
                         type="number"
                         min="1"
-                        value={formData.quantity}
-                        onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
+                        inputMode="numeric"
+                        value={formData.quantity ?? ''}
+                        onChange={(e) => {
+                          const v = e.target.value
+                          setFormData({ ...formData, quantity: (v === '' ? undefined : Number(v)) as any })
+                        }}
                         className="form-input tabular"
                       />
                     </div>
@@ -2293,13 +2377,18 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         type="number"
                         min="0"
                         step="0.01"
-                        value={formData.selling_price || ''}
+                        inputMode="decimal"
+                        value={formData.selling_price ?? ''}
                         onChange={(e) => setFormData({ ...formData, selling_price: e.target.value ? Number(e.target.value) : undefined })}
                         className="form-input flex-1 min-w-0 tabular"
                       />
                       <button
                         type="button"
-                        onClick={() => setFormData({ ...formData, price_currency: formData.price_currency === 'USD' ? 'UAH' : 'USD' })}
+                        onClick={() => {
+                          const next = formData.price_currency === 'USD' ? 'UAH' : 'USD'
+                          setFormData({ ...formData, price_currency: next })
+                          sessionStorage.setItem('parts_last_currency', next)
+                        }}
                         className="cab-btn cab-btn-primary flex-shrink-0 w-10 text-center px-0"
                         title={t('inventoryPage.changeCurrency')}
                       >
@@ -2309,20 +2398,28 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   </div>
                 </div>
 
-                <div>
-                  <label className="form-label">
-                    {t('inventoryPage.purchasePrice')} <span className="text-gray-400 font-normal">{t('inventoryPage.purchasePriceHint')}</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.purchase_price ?? ''}
-                    onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value ? Number(e.target.value) : undefined })}
-                    placeholder={t('inventoryPage.optionalPlaceholder')}
-                    className="form-input tabular"
-                  />
-                </div>
+                {/* Закупочная цена — только для магазинных запчастей (без авто).
+                    Запчасть с разборки авто закупки не имеет (себестоимость — от авто). */}
+                {!formData.vehicle_id && (
+                  <div>
+                    <label className="form-label">
+                      {t('inventoryPage.purchasePrice')} <span className="text-gray-400 font-normal">{t('inventoryPage.purchasePriceHint')}</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={formData.purchase_price ?? ''}
+                      onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value ? Number(e.target.value) : undefined })}
+                      placeholder={t('inventoryPage.optionalPlaceholder')}
+                      className="form-input tabular"
+                    />
+                    {formData.purchase_price != null && formData.selling_price != null && formData.selling_price < formData.purchase_price && (
+                      <p className="mt-1 text-xs text-amber-600">{t('inventoryPage.marginNegative')}</p>
+                    )}
+                  </div>
+                )}
 
                 {/* Sold toggle button — only when creating */}
                 {!item && (
@@ -2447,6 +2544,18 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
             >
               {t('inventoryPage.cancel')}
             </button>
+            {/* «Сохранить и добавить ещё» — только при создании одиночной позиции:
+                не закрывает модалку, очищает форму, липкие поля сохраняет. */}
+            {!item && !bulkMode && (
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={(e) => handleSubmit(e, true)}
+                className="cab-btn cab-btn-secondary disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {t('inventoryPage.saveAndAddAnother')}
+              </button>
+            )}
             <button
               type="submit"
               disabled={isSaving}

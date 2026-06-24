@@ -505,6 +505,41 @@ export async function updatePartsInventoryItem(id: string, updates: Partial<Part
   return data as PartsInventoryItem
 }
 
+/**
+ * Дозаписать фото к товару, НЕ перетирая уже привязанные.
+ *
+ * Используется для фоновой выгрузки: пользователь нажал «Добавить», не дождавшись
+ * загрузки, и фото догружаются после создания товара. Перечитываем актуальные
+ * `photos` (а не снимок на момент сабмита — иначе гонка перезаписи), добавляем новые
+ * без дублей по `url`, и сохраняем с ретраем (сетевой сбой не должен терять фото).
+ *
+ * @returns обновлённый товар; если добавлять нечего (всё уже привязано) — текущий.
+ */
+export async function appendPartsItemPhotos(
+  id: string,
+  newPhotos: Array<{ url: string }>,
+  retries = 3,
+): Promise<PartsInventoryItem> {
+  let lastErr: unknown
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const current = await getPartsInventoryItem(id)
+      const existing = ((current.photos as Array<{ url: string }> | undefined) ?? [])
+      const seen = new Set(existing.map(p => p.url))
+      const toAdd = newPhotos.filter(p => p.url && !seen.has(p.url))
+      if (!toAdd.length) return current
+      return await updatePartsInventoryItem(id, { photos: [...existing, ...toAdd] as any })
+    } catch (err) {
+      lastErr = err
+      // экспоненциальный бэкофф: 1с → 2с → 4с; последняя попытка — без ожидания
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 1000 * 2 ** attempt))
+      }
+    }
+  }
+  throw lastErr
+}
+
 export async function deletePartsInventoryItem(id: string) {
   const { error } = await supabase
     .from('parts_inventory')
