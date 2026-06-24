@@ -37,10 +37,10 @@ export default defineConfig({
     react(),
     versionJsonPlugin,
     VitePWA({
-      // 'prompt', не 'autoUpdate': новый SW НЕ активируется и НЕ перезагружает
-      // страницу автоматически. Обновление предлагается тостом (VersionChecker),
-      // применяется только по клику пользователя. Иначе страница перезагружалась
-      // при каждом возврате на вкладку (браузер проверяет SW при фокусе).
+      // 'prompt' (не 'autoUpdate'): помощник registerSW НЕ перезагружает страницу
+      // автоматически — иначе reload при каждом возврате на вкладку. Авто-применение
+      // обновлений обеспечивает workbox skipWaiting+clientsClaim ниже: новый SW
+      // активируется сам и подхватывается при следующей навигации (без резкого reload).
       registerType: 'prompt',
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
@@ -85,8 +85,14 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         cleanupOutdatedCaches: true,
-        // НЕ skipWaiting/clientsClaim: новый SW ждёт, пока пользователь не нажмёт
-        // «Обновить» — без принудительной активации и перезагрузки вкладки.
+        // Авто-обновление: новый SW активируется сразу (skipWaiting) и берёт
+        // управление открытыми вкладками (clientsClaim). Свежие файлы подхватываются
+        // при СЛЕДУЮЩЕЙ навигации/перезагрузке — без принудительного reload помощником
+        // registerSW. Устраняет «задеплоил, а в браузере висит старый бандл» (особенно
+        // когда открыто несколько вкладок). Битый старый чанк после смены SW
+        // подстрахован recoverFromChunkFailure в main.tsx.
+        skipWaiting: true,
+        clientsClaim: true,
 
         // Offline SPA: все navigate-запросы → index.html,
         // кроме API, version.json и статических файлов из /public/
