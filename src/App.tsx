@@ -74,6 +74,7 @@ const MarketProductPage = lazy(() => import('./pages/market/MarketProductPage'))
 const MarketSuppliers = lazy(() => import('./pages/market/MarketSuppliers'))
 const MarketSupplierPage = lazy(() => import('./pages/market/MarketSupplierPage'))
 const MarketCart = lazy(() => import('./pages/market/MarketCart'))
+const WaitingAccessPage = lazy(() => import('./components/WaitingAccessPage'))
 
 import { useAuth } from './hooks/useAuth'
 import { CartProvider } from './hooks/useCart'
@@ -221,6 +222,9 @@ function App() {
         {/* Корень: гость → публичный маркетплейс, авторизованный → его раздел по роли */}
         <Route path="/" element={<RootGate />} />
 
+        {/* Онбординг — выбор роли для нового пользователя (без роли) */}
+        <Route path="/welcome" element={<WelcomePage />} />
+
         {/* Приложение — требует вход */}
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="dashboard" element={<Navigate to="/" replace />} />
@@ -303,17 +307,39 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-// Корень «/» — публичный маркетплейс запчастей для ВСЕХ (гостей и залогиненных).
-// Залогиненные переходят в свой раздел кнопкой «В кабинет» в шапке маркета —
-// без принудительного авто-редиректа (раньше он бросал в админку/разборку).
+// Корень «/»: гость → публичный маркет; новый пользователь без роли → экран выбора
+// роли (онбординг); пользователь с ролью → публичный маркет (дальше «В кабинет»).
 function RootGate() {
-  const { loading } = useAuth()
+  const { user, loading } = useAuth()
+  const { data: profile, isLoading: profileLoading } = useUserProfile()
   // ВАЖНО для OAuth: при возврате с Google в URL лежит «?code=…», который supabase-js
   // обменивает на сессию во время инициализации (loading=true). Если редиректнуть
   // сразу, Navigate затрёт «?code» из адреса ДО обмена — сессия не создастся.
-  // Поэтому ждём окончания инициализации авторизации и только потом уходим на /market.
-  if (loading) return <PageLoader />
+  // Поэтому ждём окончания инициализации авторизации (и профиль, чтобы знать роли).
+  if (loading || (user && profileLoading)) return <PageLoader />
+  // Залогинен, но роли ещё нет — это новый пользователь: ведём на выбор роли.
+  if (user && !profile?.roles?.length) return <Navigate to="/welcome" replace />
   return <Navigate to="/market" replace />
+}
+
+// «/welcome» — экран приветствия с выбором роли (Авторазборка → Владелец/Работник,
+// либо Личные авто). Для залогиненного пользователя БЕЗ роли; с ролью — на маркет.
+function WelcomePage() {
+  const queryClient = useQueryClient()
+  const { user, loading } = useAuth()
+  const { data: profile, isLoading: profileLoading } = useUserProfile()
+
+  const handleLogout = async () => {
+    queryClient.clear()
+    localStorage.removeItem('tsp_profile_cache')
+    localStorage.removeItem('activeRole')
+    await supabase.auth.signOut()
+  }
+
+  if (loading || (user && profileLoading)) return <PageLoader />
+  if (!user) return <Navigate to="/login" replace />
+  if (profile?.roles?.length) return <Navigate to="/market" replace />
+  return <WaitingAccessPage profile={profile} onLogout={handleLogout} />
 }
 
 export default App
