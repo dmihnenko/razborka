@@ -247,7 +247,7 @@ export interface CreatePartsCategoryInput {
 // Types для заказов разборки
 // ============================================================================
 
-export type PartsOrderStatus = 'new' | 'in_progress' | 'completed' | 'cancelled'
+export type PartsOrderStatus = 'new' | 'assembling' | 'shipped' | 'completed' | 'cancelled' | 'in_progress'
 
 export interface PartsOrder {
   id: string

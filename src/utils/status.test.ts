@@ -8,7 +8,8 @@ import {
 describe('getPartsOrderStatusColor', () => {
   const cases: Array<[PartsOrderStatus, string]> = [
     ['new', 'blue'],
-    ['in_progress', 'yellow'],
+    ['assembling', 'amber'],
+    ['shipped', 'indigo'],
     ['completed', 'green'],
     ['cancelled', 'red'],
   ]
@@ -24,13 +25,16 @@ describe('getPartsOrderStatusText', () => {
   it('"new" → "Новый"', () => {
     expect(getPartsOrderStatusText('new')).toBe('Новый')
   })
-  it('"in_progress" → "В обработке"', () => {
-    expect(getPartsOrderStatusText('in_progress')).toBe('В обработке')
+  it('"assembling" → "Сборка"', () => {
+    expect(getPartsOrderStatusText('assembling')).toBe('Сборка')
   })
-  it('"completed" → "Выполнен"', () => {
-    expect(getPartsOrderStatusText('completed')).toBe('Выполнен')
+  it('"shipped" → "Отправлен"', () => {
+    expect(getPartsOrderStatusText('shipped')).toBe('Отправлен')
   })
-  it('"cancelled" → "Отменен"', () => {
-    expect(getPartsOrderStatusText('cancelled')).toBe('Отменен')
+  it('"completed" → "Завершён"', () => {
+    expect(getPartsOrderStatusText('completed')).toBe('Завершён')
+  })
+  it('"cancelled" → "Отменён"', () => {
+    expect(getPartsOrderStatusText('cancelled')).toBe('Отменён')
   })
 })

@@ -166,7 +166,7 @@ export default function PartsOrderDetails() {
     },
   })
 
-  const canEdit   = order && (order.status === 'new' || order.status === 'in_progress')
+  const canEdit   = order && (order.status === 'new' || order.status === 'assembling' || order.status === 'in_progress')
   const isAdmin   = useIsAdmin()
   const isOwner   = useHasRole('parts_owner') || isAdmin
   const canManage = Boolean(order) && (!!canEdit || isOwner)
@@ -343,17 +343,27 @@ export default function PartsOrderDetails() {
 
               {canManage && (
                 <div className="flex items-center gap-1.5">
-                  {/* Один шаг вперёд: новый → в работе → завершён (не показываем все статусы сразу) */}
+                  {/* Цепочка: Новый → Сборка → Отправлен → Завершён. Каждый этап — один шаг вперёд. */}
                   {order.status === 'new' && (
                     <button
-                      onClick={() => updateStatusMutation.mutate('in_progress')}
+                      onClick={() => updateStatusMutation.mutate('assembling')}
                       disabled={updateStatusMutation.isPending}
                       className="cab-btn cab-btn-sm cab-btn-primary"
                     >
-                      {t('orderDetailsPage.toWork')}
+                      {t('orderDetailsPage.toAssembling')}
                     </button>
                   )}
-                  {order.status === 'in_progress' && (
+                  {(order.status === 'assembling' || order.status === 'in_progress') && (
+                    <button
+                      onClick={() => updateStatusMutation.mutate('shipped')}
+                      disabled={updateStatusMutation.isPending}
+                      className="cab-btn cab-btn-sm cab-btn-secondary"
+                    >
+                      {t('orderDetailsPage.toShipped')}
+                    </button>
+                  )}
+                  {/* Завершить — из «Сборки» (самовывоз) и из «Отправлен» */}
+                  {(order.status === 'assembling' || order.status === 'shipped' || order.status === 'in_progress') && (
                     <button
                       onClick={() => setShowCompleteModal(true)}
                       disabled={updateStatusMutation.isPending}
@@ -362,7 +372,7 @@ export default function PartsOrderDetails() {
                       {t('orderDetailsPage.complete')}
                     </button>
                   )}
-                  {(order.status === 'new' || order.status === 'in_progress') && (
+                  {order.status !== 'completed' && order.status !== 'cancelled' && (
                     <button
                       onClick={() => updateStatusMutation.mutate('cancelled')}
                       disabled={updateStatusMutation.isPending}
@@ -667,6 +677,11 @@ export default function PartsOrderDetails() {
           setTtnCreating={setTtnCreating}
           onTtnCreated={(ttn) => {
             queryClient.invalidateQueries({ queryKey: ['parts-order', id] })
+            // Авто-переход в «Отправлен» при создании ТТН (если заказ ещё не завершён/отменён)
+            if (order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'shipped') {
+              const invIds = (order.items ?? []).map((i: any) => i.inventory_item_id).filter(Boolean)
+              updatePartsOrderStatus(order.id, 'shipped', invIds).catch(() => { /* не блокируем ТТН */ })
+            }
             // Регистрируем посылку для трекинга (раздел «Доставка»)
             if (partsCompanyId) {
               createShipment({
@@ -713,7 +728,7 @@ export default function PartsOrderDetails() {
         )}
 
         {/* ── кнопка «Завершить» ────────────────────────────────────── */}
-        {canManage && order.status !== 'completed' && order.items && order.items.length > 0 && (
+        {canManage && order.status !== 'completed' && order.status !== 'cancelled' && order.items && order.items.length > 0 && (
           <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-t border-gray-100 px-4 py-3 sm:static sm:bg-transparent sm:border-0 sm:backdrop-blur-none sm:px-0 sm:py-0 sm:flex sm:justify-end"
                style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
           >

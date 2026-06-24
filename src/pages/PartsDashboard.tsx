@@ -28,6 +28,8 @@ import OnboardingChecklist from '@/components/parts/OnboardingChecklist'
 
 const STATUS_CHIP: Record<string, string> = {
   new:         'cab-chip-signal',
+  assembling:  'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
+  shipped:     'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100',
   in_progress: 'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
   completed:   'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100',
   cancelled:   'bg-gray-100 text-gray-500 ring-1 ring-gray-200',
@@ -153,7 +155,7 @@ export default function PartsDashboard() {
       ]
   const kpis = [
     ...moneyKpis,
-    { label: t('dashboard.kpiOrders'),  value: stats?.orders?.total ?? 0, sub: t('dashboard.kpiInProgress', { n: stats?.orders?.in_progress ?? 0 }), Icon: ShoppingCart, to: '/parts/orders' },
+    { label: t('dashboard.kpiOrders'),  value: stats?.orders?.total ?? 0, sub: t('dashboard.kpiInProgress', { n: (stats?.orders?.assembling ?? 0) + (stats?.orders?.shipped ?? 0) + (stats?.orders?.in_progress ?? 0) }), Icon: ShoppingCart, to: '/parts/orders' },
     { label: t('dashboard.kpiParts'), value: stats?.inventory?.total ?? 0, sub: t('dashboard.kpiAvailable', { n: stats?.inventory?.available ?? 0 }), Icon: Package, to: '/parts/inventory?source=vehicles' },
     { label: t('dashboard.kpiVehicles'),     value: stats?.vehicles?.total ?? 0, sub: t('dashboard.kpiDismantled', { n: stats?.vehicles?.dismantled ?? 0 }), Icon: Car, to: '/parts/vehicles' },
   ]
@@ -321,9 +323,10 @@ export default function PartsDashboard() {
           <p className="text-sm font-bold mb-3" style={{ color: ink }}>{t('dashboard.funnel')}</p>
           <div className="space-y-2.5">
             {[
-              { label: t('dashboard.fNew'),     value: stats?.orders?.new ?? 0,         color: 'var(--cab-signal)' },
-              { label: t('dashboard.fInProgress'),  value: stats?.orders?.in_progress ?? 0, color: '#B45309' },
-              { label: t('dashboard.fCompleted'), value: stats?.orders?.completed ?? 0,   color: '#15803D' },
+              { label: t('dashboard.fNew'),        value: stats?.orders?.new ?? 0,        color: 'var(--cab-signal)' },
+              { label: t('dashboard.fAssembling'),  value: stats?.orders?.assembling ?? 0, color: '#B45309' },
+              { label: t('dashboard.fShipped'),     value: stats?.orders?.shipped ?? 0,    color: '#4F46E5' },
+              { label: t('dashboard.fCompleted'),   value: stats?.orders?.completed ?? 0,  color: '#15803D' },
             ].map(({ label, value, color }) => {
               const total = stats?.orders?.total || 1
               const pct = Math.round((value / total) * 100)

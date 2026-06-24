@@ -316,7 +316,7 @@ const INVENTORY_SELECT = `
 export interface PartsDashboardStats {
   vehicles: { total: number; awaiting: number; in_progress: number; dismantled: number }
   inventory: { total: number; available: number; lowStock: number; needsFill: number; valueUSD: number; valueUAH: number; fromVehicles: number; fromShop: number }
-  orders: { total: number; new: number; in_progress: number; completed: number }
+  orders: { total: number; new: number; assembling?: number; shipped?: number; in_progress: number; completed: number }
   revenueUSD: number
   revenueOrders?: number
   profitUSD?: number
@@ -600,6 +600,16 @@ export async function createPartsOrderItem(
     .single()
 
   if (error) throw error
+
+  // Авторезерв: позиция бронируется сразу при добавлении в заказ (статус «available» → «reserved»).
+  if (item.inventory_item_id) {
+    await supabase
+      .from('parts_inventory')
+      .update({ status: 'reserved' })
+      .eq('id', item.inventory_item_id)
+      .eq('status', 'available')
+  }
+
   return data
 }
 
@@ -748,13 +758,23 @@ export async function updatePartsOrderStatus(
   const { error } = await supabase.from('parts_orders').update(updateData).eq('id', orderId)
   if (error) throw error
 
+  // Синхронизация инвентаря с этапом заказа:
+  //  • cancelled — позиции возвращаются в наличие (снимаем резерв/продажу);
+  //  • new/assembling/shipped — позиции в резерве (в т.ч. возврат из «продано» при отмене завершения);
+  //  • completed — статус «sold» проставляет триггер complete_parts_order.
   if (inventoryIds.length > 0) {
-    if (status === 'cancelled' || status === 'new' || status === 'in_progress') {
+    if (status === 'cancelled') {
       await supabase
         .from('parts_inventory')
         .update({ status: 'available' })
         .in('id', inventoryIds)
         .in('status', ['reserved', 'sold'])
+    } else if (status === 'new' || status === 'assembling' || status === 'shipped' || status === 'in_progress') {
+      await supabase
+        .from('parts_inventory')
+        .update({ status: 'reserved' })
+        .in('id', inventoryIds)
+        .in('status', ['available', 'sold'])
     }
   }
 }

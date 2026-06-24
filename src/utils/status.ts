@@ -4,13 +4,19 @@
  */
 import i18n from '@/i18n'
 
-// Статусы заказов запчастей (parts_orders)
-export type PartsOrderStatus = 'new' | 'in_progress' | 'completed' | 'cancelled'
+// Статусы заказов запчастей (parts_orders):
+// Новый → Сборка → Отправлен → Завершён (+ Отменён). `in_progress` — легаси-алиас (= Сборка).
+export type PartsOrderStatus = 'new' | 'assembling' | 'shipped' | 'completed' | 'cancelled' | 'in_progress'
+
+// Последовательность этапов заказа (для кнопок-переходов и канбана).
+export const ORDER_FLOW: PartsOrderStatus[] = ['new', 'assembling', 'shipped', 'completed']
 
 export function getPartsOrderStatusColor(status: PartsOrderStatus): string {
   const colors: Record<PartsOrderStatus, string> = {
     new: 'bg-blue-100 text-blue-800',
-    in_progress: 'bg-yellow-100 text-yellow-800',
+    assembling: 'bg-amber-100 text-amber-800',
+    shipped: 'bg-indigo-100 text-indigo-800',
+    in_progress: 'bg-amber-100 text-amber-800',
     completed: 'bg-green-100 text-green-800',
     cancelled: 'bg-red-100 text-red-800',
   }
@@ -19,7 +25,8 @@ export function getPartsOrderStatusColor(status: PartsOrderStatus): string {
 
 export function getPartsOrderStatusText(status: PartsOrderStatus): string {
   const ru: Record<PartsOrderStatus, string> = {
-    new: 'Новый', in_progress: 'В обработке', completed: 'Выполнен', cancelled: 'Отменен',
+    new: 'Новый', assembling: 'Сборка', shipped: 'Отправлен',
+    in_progress: 'Сборка', completed: 'Завершён', cancelled: 'Отменён',
   }
   return i18n.t(`cabinet:status.order.${status}`, { defaultValue: ru[status] || status })
 }

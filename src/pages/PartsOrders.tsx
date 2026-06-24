@@ -31,14 +31,17 @@ import { useDroppable } from '@dnd-kit/core'
 
 // ─── Статусы для канбана ─────────────────────────────────────────────────────
 const BOARD_COLUMNS: { status: PartsOrderStatus; label: string; dot: string; ring: string }[] = [
-  { status: 'new',         label: 'Новый',    dot: 'bg-blue-500',    ring: 'ring-blue-400'   },
-  { status: 'in_progress', label: 'В работе', dot: 'bg-amber-400',   ring: 'ring-amber-400'  },
-  { status: 'completed',   label: 'Завершён', dot: 'bg-emerald-500', ring: 'ring-emerald-500'},
+  { status: 'new',         label: 'Новый',     dot: 'bg-blue-500',    ring: 'ring-blue-400'    },
+  { status: 'assembling',  label: 'Сборка',    dot: 'bg-amber-400',   ring: 'ring-amber-400'   },
+  { status: 'shipped',     label: 'Отправлен', dot: 'bg-indigo-500',  ring: 'ring-indigo-400'  },
+  { status: 'completed',   label: 'Завершён',  dot: 'bg-emerald-500', ring: 'ring-emerald-500' },
 ]
 
 // ─── Бейджи статуса ───────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
   new:         'cab-chip text-primary',
+  assembling:  'cab-chip text-amber-700',
+  shipped:     'cab-chip text-indigo-700',
   in_progress: 'cab-chip text-amber-700',
   completed:   'cab-chip text-emerald-700',
   cancelled:   'cab-chip text-red-700',
@@ -255,7 +258,7 @@ export default function PartsOrders() {
     if (currentStatus === newStatus) return
 
     // Допустимые целевые статусы (только колонки доски)
-    const validStatuses: PartsOrderStatus[] = ['new', 'in_progress', 'completed']
+    const validStatuses: PartsOrderStatus[] = ['new', 'assembling', 'shipped', 'completed']
     if (!validStatuses.includes(newStatus)) return
 
     // Собираем inventory_item_id из items
@@ -291,6 +294,8 @@ export default function PartsOrders() {
   const stats = useMemo(() => ({
     total: orders.length,
     new: orders.filter(o => o.status === 'new').length,
+    assembling: orders.filter(o => o.status === 'assembling' || o.status === 'in_progress').length,
+    shipped: orders.filter(o => o.status === 'shipped').length,
     in_progress: orders.filter(o => o.status === 'in_progress').length,
     completed: orders.filter(o => o.status === 'completed').length,
     cancelled: orders.filter(o => o.status === 'cancelled').length,
@@ -333,10 +338,10 @@ export default function PartsOrders() {
         {/* Stats — фильтр-плитки */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
           {[
-            { key: 'all',         label: t('ordersPage.statAll'),        value: stats.total,       dot: '#8B909A' },
-            { key: 'new',         label: t('ordersPage.statNew'),        value: stats.new,         dot: 'var(--cab-signal)' },
-            { key: 'in_progress', label: t('ordersPage.statInProgress'), value: stats.in_progress, dot: '#D97706' },
-            { key: 'completed',   label: t('ordersPage.statCompleted'),  value: stats.completed,   dot: '#16A34A' },
+            { key: 'all',        label: t('ordersPage.statAll'),        value: stats.total,      dot: '#8B909A' },
+            { key: 'new',        label: t('ordersPage.statNew'),        value: stats.new,        dot: 'var(--cab-signal)' },
+            { key: 'assembling', label: t('ordersPage.statAssembling'), value: stats.assembling, dot: '#D97706' },
+            { key: 'completed',  label: t('ordersPage.statCompleted'),  value: stats.completed,  dot: '#16A34A' },
           ].map(({ key, label, value, dot }) => (
             <button
               key={key}
@@ -381,11 +386,12 @@ export default function PartsOrders() {
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex flex-wrap gap-2 flex-1">
               {[
-                { key: 'all',         label: t('ordersPage.chipAll') },
-                { key: 'new',         label: t('ordersPage.chipNew') },
-                { key: 'in_progress', label: t('ordersPage.chipInProgress') },
-                { key: 'completed',   label: t('ordersPage.chipCompleted') },
-                { key: 'cancelled',   label: t('ordersPage.chipCancelled') },
+                { key: 'all',        label: t('ordersPage.chipAll') },
+                { key: 'new',        label: t('ordersPage.chipNew') },
+                { key: 'assembling', label: t('ordersPage.chipAssembling') },
+                { key: 'shipped',    label: t('ordersPage.chipShipped') },
+                { key: 'completed',  label: t('ordersPage.chipCompleted') },
+                { key: 'cancelled',  label: t('ordersPage.chipCancelled') },
               ].map(({ key, label }) => (
                 <button
                   key={key}
@@ -454,7 +460,7 @@ export default function PartsOrders() {
                   onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
                 >
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
                     {BOARD_COLUMNS.map(col => {
                       const colOrders = ordersWithOptimistic.filter(o => o.status === col.status)
                       return (
