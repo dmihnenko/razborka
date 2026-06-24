@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Car, Wrench, Package, CheckCircle2, LogOut, Sparkles, Clock, XCircle, RefreshCw, ChevronRight, ArrowLeft, Building2, Users, Phone, MapPin, AlertCircle } from 'lucide-react'
+import { Car, Package, CheckCircle2, LogOut, Sparkles, Clock, XCircle, RefreshCw, ChevronRight, ArrowLeft, Building2, Users, Phone, MapPin, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { BRAND } from '@/config/brand'
+import { Logo } from '@/components/brand/Logo'
 import { toast } from 'sonner'
 import { IMaskInput } from 'react-imask'
 
@@ -220,9 +221,7 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
                 <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
               </button>
             )}
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
-              <Wrench className="w-4 h-4 text-white" strokeWidth={1.5} />
-            </div>
+            <Logo size="sm" withText={false} />
             <span className="text-sm font-bold text-gray-900">{BRAND.name}</span>
           </div>
           <button onClick={onLogout} className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-red-600 transition-colors min-h-[44px]">

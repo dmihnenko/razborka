@@ -4,6 +4,7 @@
 --              (а с авторезервом reserved стало частым) → «Запчасть не найдена».
 -- Решение: SECURITY DEFINER RPC отдаёт ТОЛЬКО безопасные поля любой позиции по id, в обход RLS и грантов.
 -- Без purchase_price/notes/sold_price/sold_to_customer — приватные поля не утекают.
+-- VIN авто на публичной странице тоже НЕ отдаём (только в кабинете) — убран из vehicle json.
 
 create or replace function public.get_public_parts_item(p_id uuid)
 returns json language sql stable security definer set search_path to 'public' as $fn$
@@ -15,7 +16,7 @@ returns json language sql stable security definer set search_path to 'public' as
     'selling_price', pi.selling_price, 'status', pi.status,
     'parts_company_id', pi.parts_company_id,
     'category', (select json_build_object('id',c.id,'name',c.name) from public.parts_categories c where c.id=pi.category_id),
-    'vehicle', (select json_build_object('id',v.id,'make',v.make,'model',v.model,'year',v.year,'vin',v.vin) from public.parts_vehicles v where v.id=pi.vehicle_id)
+    'vehicle', (select json_build_object('id',v.id,'make',v.make,'model',v.model,'year',v.year) from public.parts_vehicles v where v.id=pi.vehicle_id)
   )
   from public.parts_inventory pi where pi.id = p_id;
 $fn$;

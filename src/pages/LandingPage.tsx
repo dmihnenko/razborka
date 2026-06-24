@@ -2,8 +2,9 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import type { Variants } from 'framer-motion'
 import { BRAND } from '@/config/brand'
+import { Logo } from '@/components/brand/Logo'
 import {
-  Wrench, Car, Package, Users, BarChart3, ShieldCheck,
+  Car, Package, Users, BarChart3, ShieldCheck,
   Smartphone, ArrowRight, CheckCircle, Zap,
 } from 'lucide-react'
 
@@ -53,17 +54,12 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 flex items-center justify-between h-14">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
-            <div
-              className="w-8 h-8 flex items-center justify-center flex-shrink-0 rounded-xl"
-              style={{ background: 'linear-gradient(180deg,#4D51D4 0%,#3538CD 100%)', boxShadow: '0 2px 8px -2px rgba(37,99,235,0.55)' }}
-            >
-              <Wrench size={15} color="white" strokeWidth={2} />
-            </div>
+            <Logo size="sm" withText={false} className="flex-shrink-0" />
             <span
               className="font-extrabold tracking-tight"
               style={{ color: '#F1F5F9', fontSize: '17px', letterSpacing: '-0.02em' }}
             >
-              {BRAND.wordmark.lead}<span style={{ color: '#4D51D4' }}>{BRAND.wordmark.accent}</span>
+              {BRAND.wordmark.lead}<span style={{ color: 'var(--logo-net, #0D9488)' }}>{BRAND.wordmark.accent}</span>
             </span>
           </div>
 
@@ -414,12 +410,7 @@ export default function LandingPage() {
         style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
       >
         <div className="inline-flex items-center gap-2 mb-2">
-          <div
-            className="w-5 h-5 rounded-md flex items-center justify-center"
-            style={{ background: 'linear-gradient(180deg,#4D51D4 0%,#3538CD 100%)' }}
-          >
-            <Wrench size={11} color="white" strokeWidth={2} />
-          </div>
+          <Logo size="sm" withText={false} className="[&>svg]:!w-5 [&>svg]:!h-5" />
           <span className="font-extrabold text-xs tracking-tight" style={{ color: '#334155', letterSpacing: '-0.01em' }}>{BRAND.name}</span>
         </div>
         <p className="text-xs" style={{ color: '#1E293B' }}>Система управления для авторазборки</p>

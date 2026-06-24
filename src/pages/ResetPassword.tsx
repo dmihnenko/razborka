@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { BRAND } from '@/config/brand'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
-import { Wrench, Lock, Eye, EyeOff } from 'lucide-react'
+import { Lock, Eye, EyeOff } from 'lucide-react'
+import { Logo } from '@/components/brand/Logo'
 
 /**
  * Страница установки нового пароля после перехода по ссылке из письма
@@ -64,10 +65,8 @@ export default function ResetPassword() {
         .input-dark{background:rgba(255,255,255,0.07);border:1px solid rgba(148,163,184,0.22);color:#F1F5F9;width:100%;height:48px;padding-left:44px}
         .input-dark::placeholder{color:#64748B}.input-dark:focus{outline:none;border-color:#4D51D4;box-shadow:0 0 0 3px rgba(59,130,246,0.18)}`}</style>
       <div style={{ width: '100%', maxWidth: '360px' }}>
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <div style={{ width: '36px', height: '36px', background: '#3538CD', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Wrench size={18} color="white" />
-          </div>
+        <div className="flex items-center justify-center gap-2.5 mb-8">
+          <Logo size="sm" withText={false} />
           <span className="brand-font text-white" style={{ fontSize: '22px', letterSpacing: '3px' }}>{BRAND.name}</span>
         </div>
 

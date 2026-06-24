@@ -5,7 +5,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import {
-  Package, Tag, FileText, Car, Phone, Mail, MapPin,
+  Package, Tag, FileText, Phone, Mail, MapPin,
   CheckCircle, Clock, AlertTriangle, DollarSign,
   ChevronLeft, ChevronRight, X, Copy,
 } from 'lucide-react'
@@ -498,8 +498,7 @@ export default function PublicPartsItemView() {
             {/* ── Карточка: автомобиль ──────────────────────────────── */}
             {item.vehicle && (
               <div className="bg-white rounded-xl shadow-sm p-4">
-                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2.5 flex items-center gap-1.5">
-                  <Car className="w-3.5 h-3.5" />
+                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2.5">
                   Снята с автомобиля
                 </h2>
                 <p className="text-base font-bold text-gray-900">
@@ -508,11 +507,7 @@ export default function PublicPartsItemView() {
                     <span className="font-normal text-gray-500 ml-1">{item.vehicle.year} г.</span>
                   )}
                 </p>
-                {item.vehicle.vin && (
-                  <p className="text-[11px] font-mono text-gray-400 mt-0.5 select-all">
-                    VIN: {item.vehicle.vin}
-                  </p>
-                )}
+                {/* VIN на публичной странице НЕ показываем (только в кабинете разборки) */}
               </div>
             )}
 

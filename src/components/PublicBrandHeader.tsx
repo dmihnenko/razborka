@@ -1,51 +1,24 @@
-import { Wrench } from 'lucide-react'
-import { BRAND } from '@/config/brand'
+import { Logo } from '@/components/brand/Logo'
 
 interface Props {
   subtitle?: string
 }
 
+// Шапка публичных страниц (QR/ссылки на запчасть, авто, локацию).
+// Светлая, с актуальной эмблемой Razborka.net (ink-монохром, без синего).
 export function PublicBrandHeader({ subtitle }: Props) {
   return (
-    <div style={{ background: '#0D1117', borderBottom: '1px solid rgba(59,130,246,0.14)' }}>
-      <div
-        className="px-4 sm:px-6"
-        style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '12px', paddingBottom: '12px' }}
-      >
-        <div
-          style={{
-            width: '30px',
-            height: '30px',
-            background: '#3538CD',
-            borderRadius: '7px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
-          <Wrench size={15} color="white" />
-        </div>
-        <div>
+    <div style={{ background: '#FFFFFF', borderBottom: '1px solid var(--cab-border, #E5E8F0)' }}>
+      <div className="px-4 sm:px-6 flex items-center gap-3 py-3">
+        <Logo size="sm" withText className="flex-shrink-0" />
+        {subtitle && (
           <span
-            style={{
-              fontFamily: 'system-ui, sans-serif',
-              fontWeight: '700',
-              color: '#F1F5F9',
-              fontSize: '14px',
-              letterSpacing: '0.5px',
-              display: 'block',
-              lineHeight: '1.2',
-            }}
+            className="min-w-0 truncate"
+            style={{ color: 'var(--cab-ink-3, #8B909A)', fontSize: '12px', fontWeight: 600 }}
           >
-            {BRAND.name}
+            {subtitle}
           </span>
-          {subtitle && (
-            <span style={{ color: '#4B5563', fontSize: '11px', fontFamily: 'system-ui, sans-serif' }}>
-              {subtitle}
-            </span>
-          )}
-        </div>
+        )}
       </div>
     </div>
   )
