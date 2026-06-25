@@ -49,3 +49,6 @@ README.md
 
 # Throwaway design exploration gallery (local only)
 design-previews/
+
+# wrangler dev cache
+.wrangler/
