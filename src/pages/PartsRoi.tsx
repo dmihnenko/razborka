@@ -195,9 +195,21 @@ function RoiRow({ r, t }: { r: VehicleRoi; t: (k: string, o?: any) => string }) 
 
       {/* Прогресс окупаемости: сплошной — вернулось, светлый — потенциал склада */}
       {inv > 0 ? (
-        <div className="h-2.5 rounded-full bg-gray-100 overflow-hidden flex mb-3" title={t('roiPage.barTitle')}>
-          <div className={status === 'paid' ? 'bg-emerald-500/80' : 'bg-amber-400/80'} style={{ width: `${realizedFrac * 100}%` }} />
-          <div className="bg-amber-300/40" style={{ width: `${stockFrac * 100}%` }} />
+        <div className="mb-3">
+          <div className="h-2.5 rounded-full bg-gray-100 overflow-hidden flex" title={t('roiPage.barTitle')}>
+            <div className={status === 'paid' ? 'bg-emerald-500/80' : 'bg-amber-400/80'} style={{ width: `${realizedFrac * 100}%` }} />
+            <div className="bg-amber-300/40" style={{ width: `${stockFrac * 100}%` }} />
+          </div>
+          <div className="flex items-center gap-3 mt-1.5 text-[var(--fs-2xs)] text-gray-500">
+            <span className="inline-flex items-center gap-1">
+              <span className={`w-2 h-2 rounded-sm ${status === 'paid' ? 'bg-emerald-500/80' : 'bg-amber-400/80'}`} />
+              {t('roiPage.realized')}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="w-2 h-2 rounded-sm bg-amber-300/60" />
+              {t('roiPage.stock')}
+            </span>
+          </div>
         </div>
       ) : (
         <p className="text-xs text-gray-400 mb-3 italic">{t('roiPage.noPriceNote')}</p>
@@ -218,7 +230,7 @@ function RoiRow({ r, t }: { r: VehicleRoi; t: (k: string, o?: any) => string }) 
 function Metric({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
   return (
     <div className="min-w-0">
-      <p className="text-xs text-gray-400">{label}</p>
+      <p className="text-xs text-gray-500">{label}</p>
       <p className={`font-semibold tabular-nums truncate ${valueClass ?? 'text-gray-800'}`}>{value}</p>
     </div>
   )

@@ -185,8 +185,8 @@ export default function PartsAnalytics() {
 
                     return (
                       <div key={month} className="flex flex-col items-center gap-1 flex-1 min-w-0 group">
-                        <span className="text-xs font-semibold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap tabular">
-                          {formatPrice(mdata.revenue, 'USD')}
+                        <span className="text-[var(--fs-2xs)] font-semibold text-gray-500 whitespace-nowrap tabular-nums leading-none">
+                          {mdata.revenue > 0 ? formatPrice(mdata.revenue, 'USD') : ''}
                         </span>
                         <div className="w-full flex items-end" style={{ height: '120px' }}>
                           <div
@@ -196,7 +196,7 @@ export default function PartsAnalytics() {
                           />
                         </div>
                         <span className="text-xs text-gray-500 leading-none truncate w-full text-center">{month.replace(' г.', '')}</span>
-                        <span className="kicker leading-none">{mdata.orders}</span>
+                        <span className="kicker leading-none whitespace-nowrap">{t('analyticsPage.ordersShort', { n: mdata.orders })}</span>
                       </div>
                     )
                   })}
