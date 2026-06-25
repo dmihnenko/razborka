@@ -48,6 +48,13 @@ export function useAuth() {
       if (event === 'SIGNED_OUT') {
         localStorage.removeItem('tsp_profile_cache')
         localStorage.removeItem('activeRole')
+        // Чистим SW-кеши с приватными данными тенанта — чтобы на общем устройстве
+        // следующий пользователь не достал их из Cache Storage.
+        if (typeof caches !== 'undefined') {
+          caches.keys()
+            .then(keys => Promise.all(keys.filter(k => k.startsWith('supabase-')).map(k => caches.delete(k))))
+            .catch(() => {})
+        }
       }
       setUser(cachedUser)
       setLoading(false)

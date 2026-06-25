@@ -100,27 +100,35 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//, /^\/version\.json/, /^\/public\//],
 
         runtimeCaching: [
-          // ── Supabase Auth / Storage / Realtime ───────────────────────────────
-          // Критичные эндпоинты: всегда NetworkFirst, не кешировать долго
+          // ── Supabase Auth ─────────────────────────────────────────────────────
+          // НИКОГДА не кешировать: ответы содержат токены/сессии. На общем устройстве
+          // кеш auth = утечка сессии следующему пользователю.
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/(auth|storage|realtime)\/.*/i,
+            urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*/i,
+            handler: 'NetworkOnly'
+          },
+
+          // ── Supabase Storage / Realtime ───────────────────────────────────────
+          // Приватные файлы тенанта: короткий офлайн-фолбэк, не хранить долго.
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/(storage|realtime)\/.*/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-critical',
+              cacheName: 'supabase-storage',
               networkTimeoutSeconds: 5,
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 5  // 5 минут
+                maxAgeSeconds: 60  // 1 минута
               },
-              cacheableResponse: { statuses: [0, 200] }
+              cacheableResponse: { statuses: [200] }
             }
           },
 
           // ── Supabase REST API (запросы данных) ────────────────────────────────
           // NetworkFirst: данные меняются мутациями (удаление/создание/продажа),
           // поэтому после изменения рефетч ДОЛЖЕН получить свежий ответ, а не кэш.
-          // Кэш — только офлайн-фолбэк. (react-query держит свой память-кэш, так
-          // что лишних сетевых запросов немного.)
+          // Кэш — только короткий офлайн-фолбэк (приватные данные тенанта, не держим
+          // долго на общем устройстве). react-query держит свой память-кэш.
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
             handler: 'NetworkFirst',
@@ -129,9 +137,9 @@ export default defineConfig({
               networkTimeoutSeconds: 3,
               expiration: {
                 maxEntries: 300,
-                maxAgeSeconds: 60 * 30
+                maxAgeSeconds: 60 * 2  // 2 минуты
               },
-              cacheableResponse: { statuses: [0, 200] }
+              cacheableResponse: { statuses: [200] }
             }
           },
 
@@ -147,7 +155,7 @@ export default defineConfig({
                 maxEntries: 30,
                 maxAgeSeconds: 60 * 2  // 2 минуты
               },
-              cacheableResponse: { statuses: [0, 200] }
+              cacheableResponse: { statuses: [200] }
             }
           },
 

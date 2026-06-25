@@ -41,7 +41,8 @@ jobs:
           # Build-time (Vite)
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_IMGBB_API_KEY: ${{ secrets.VITE_IMGBB_API_KEY }}
+          # VITE_IMGBB_API_KEY убран из клиента — загрузка идёт через Edge `upload-image`
+          # (ключ в секрете IMGBB_API_KEY на стороне Supabase). См. docs/security-audit-2026-06-25.md
           # Хеш сборки → /version.json (vite.config читает WORKERS_CI_COMMIT_SHA)
           WORKERS_CI_COMMIT_SHA: ${{ github.sha }}
           # Deploy-time (wrangler)

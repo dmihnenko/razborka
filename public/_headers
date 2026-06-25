@@ -5,6 +5,14 @@
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=(), usb=()
+  # Безопасное подмножество CSP: защита от clickjacking (frame-ancestors) и mixed-content.
+  # Полный fetch-allowlist (script-src/connect-src/img-src) — отдельным шагом ПОСЛЕ тестового
+  # деплоя: должен включать supabase(wss), api.imgbb.com, cloudinary, freeimage, novaposhta.ua,
+  # vpic.nhtsa.dot.gov, accounts.google.com, fonts.* — иначе ломает НП/VIN/фото/шрифты.
+  # См. docs/security-audit-2026-06-25.md (H6).
+  Content-Security-Policy: frame-ancestors 'none'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests
   Cache-Control: public, max-age=0, must-revalidate
 
 # Хешированные ассеты — кэшируем навсегда (имя меняется при сборке)

@@ -1,3 +1,5 @@
+import { supabase } from '@/lib/supabase'
+
 /**
  * Оптимизация изображения перед загрузкой
  * Уменьшает размер и качество для экономии места и ускорения загрузки
@@ -76,35 +78,26 @@ async function optimizeImage(file: File): Promise<File> {
 }
 
 /**
- * Загрузка изображения на imgBB с предварительной оптимизацией
- * Использует API key из переменных окружения
+ * Загрузка изображения с предварительной оптимизацией.
+ * Идёт через серверный прокси (Edge Function `upload-image`) — ключ ImgBB хранится
+ * только на сервере и не попадает в клиентский бандл. Требуется аутентификация.
  */
 export async function uploadToImgBB(file: File): Promise<string> {
-  const apiKey = import.meta.env.VITE_IMGBB_API_KEY
-
-  if (!apiKey) {
-    throw new Error('imgBB API key not configured. Please set VITE_IMGBB_API_KEY in .env file')
-  }
-
   // Оптимизируем изображение перед загрузкой
   const optimizedFile = await optimizeImage(file)
 
   const formData = new FormData()
   formData.append('image', optimizedFile)
-  formData.append('key', apiKey)
 
-  const response = await fetch('https://api.imgbb.com/1/upload', {
-    method: 'POST',
-    body: formData,
-  })
+  const { data, error } = await supabase.functions.invoke('upload-image', { body: formData })
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.error?.message || 'Failed to upload image to imgBB')
+  if (error) {
+    throw new Error(error.message || 'Не удалось загрузить изображение')
   }
-
-  const data = await response.json()
-  return data.data.url
+  if (!data?.url) {
+    throw new Error((data as any)?.error || 'Сервер не вернул ссылку на изображение')
+  }
+  return data.url as string
 }
 
 /**

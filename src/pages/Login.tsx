@@ -70,27 +70,31 @@ export default function Login() {
     }
 
     if (data.user) {
-      // Отправляем уведомление админу о новой регистрации
-      try {
-        const token = data.session?.access_token || ''
-        await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-user-registered`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              userId: data.user.id,
-              username: null,
-              email: authEmail,
-              fullName: null,
-            }),
-          }
-        )
-      } catch (err) {
-        console.error('Failed to send admin notification:', err)
+      // Уведомление админу о новой регистрации — только при наличии сессии
+      // (Edge-функция требует валидный JWT; при включённом email-подтверждении
+      // сессии ещё нет — тогда уведомление просто пропускаем).
+      const token = data.session?.access_token
+      if (token) {
+        try {
+          await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-user-registered`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                userId: data.user.id,
+                username: null,
+                email: authEmail,
+                fullName: null,
+              }),
+            }
+          )
+        } catch (err) {
+          console.error('Failed to send admin notification:', err)
+        }
       }
 
       if (data.session) {

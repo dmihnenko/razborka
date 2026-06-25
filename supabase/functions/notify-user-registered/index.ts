@@ -24,12 +24,13 @@ serve(async (req) => {
   }
 
   try {
-    const { userId, username, email, fullName } = await req.json()
-
-    if (!username && !email) {
+    // ── Авторизация: вызывающий ОБЯЗАН быть аутентифицирован ──
+    // Иначе любой аноним мог бы спамить/подделывать «регистрации» в админ-панели.
+    const jwt = (req.headers.get('Authorization') ?? '').replace('Bearer ', '').trim()
+    if (!jwt) {
       return new Response(
-        JSON.stringify({ error: 'Missing username or email' }),
-        { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
     }
 
@@ -45,41 +46,49 @@ serve(async (req) => {
       }
     )
 
-    // Get admin role id first
-    const { data: adminRole, error: adminRoleError } = await supabaseAdmin
-      .from('roles')
-      .select('id')
-      .eq('name', 'admin')
-      .single()
-
-    if (adminRoleError || !adminRole) {
-      console.error('Failed to get admin role:', adminRoleError)
-      throw new Error('Admin role not found')
+    // Верифицируем токен и достаём личность вызывающего
+    const { data: { user: caller }, error: callerErr } = await supabaseAdmin.auth.getUser(jwt)
+    if (callerErr || !caller) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+      )
     }
 
-    // Get all admin user ids
-    const { data: adminUserRoles, error: adminRolesError } = await supabaseAdmin
+    const { userId, username, email, fullName } = await req.json()
+
+    if (!username && !email) {
+      return new Response(
+        JSON.stringify({ error: 'Missing username or email' }),
+        { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Является ли вызывающий админом? Только админ вправе слать уведомление о ДРУГОМ
+    // пользователе (создание юзера в админке). Обычный пользователь может уведомить
+    // только о САМОМ СЕБЕ (саморегистрация) — иначе подмена/спам.
+    const { data: callerRoles } = await supabaseAdmin
       .from('user_roles')
-      .select('user_id')
-      .eq('role_id', adminRole.id)
+      .select('roles(name)')
+      .eq('user_id', caller.id)
+    const callerIsAdmin = (callerRoles ?? []).some((r: any) => r.roles?.name === 'admin')
 
-    if (adminRolesError) {
-      console.error('Failed to get admin users:', adminRolesError)
-      throw new Error('Failed to get admin users')
+    const subject = callerIsAdmin
+      ? { id: userId || null, username: username || email, fullName: fullName, email: email }
+      : { id: caller.id, username: username || caller.email, fullName: fullName, email: caller.email }
+
+    if (!callerIsAdmin && userId && userId !== caller.id) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
+        { status: 403, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+      )
     }
-
-    console.log('Found admin users:', adminUserRoles)
 
     // Send notification through Realtime to all admins
     const message = {
       type: 'user_registered',
       timestamp: new Date().toISOString(),
-      user: {
-        id: userId,
-        username: username || email,
-        fullName: fullName,
-        email: email
-      }
+      user: subject
     }
 
     // Broadcast to admin channel - this will reach all connected admins
