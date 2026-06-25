@@ -60,18 +60,15 @@ export function Logo({ size = 'md', withText = true, framed = true, className = 
       }
     : {}
 
-  // RAZBORKA — всё-капс: внизу строки пустая зона подстрочных, текст «сидит высоко».
-  // Центрирование по капвысоте — классом .brand-wordmark (capsize: line-height:1 +
-  // отрицательные margin псевдоэлементов). Работает во ВСЕХ браузерах, включая мобильные
-  // без поддержки text-box-trim (см. src/index.css). Раньше тут был text-box-trim, из-за
-  // которого на части мобильных RAZBORKA уезжала вверх от центра рамки.
+  // RAZBORKA — простое центрирование: flex по обеим осям + line-height:1, без capsize/
+  // text-box-trim (они давали сбой выравнивания в рамке на части мобильных).
   const nameStyle: CSSProperties = {
     fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: s.name,
-    letterSpacing: '-0.01em', color: 'var(--cab-ink, #16181D)',
+    letterSpacing: '-0.01em', color: 'var(--cab-ink, #16181D)', lineHeight: 1,
   }
   return (
     <span
-      className={`relative inline-flex flex-col items-center ${className}`}
+      className={`relative inline-flex items-center justify-center ${className}`}
       aria-label={BRAND.name}
       style={{ ...frameStyle, lineHeight: 1 }}
     >
@@ -88,8 +85,8 @@ export function Logo({ size = 'md', withText = true, framed = true, className = 
         {BRAND.wordmark.accent}
       </span>
 
-      {/* RAZBORKA — системный шрифт, строчный бокс обрезан до капвысоты (.brand-wordmark). */}
-      <span className="brand-wordmark" style={nameStyle}>
+      {/* RAZBORKA — системный шрифт, центрируется flex-контейнером. */}
+      <span style={nameStyle}>
         {BRAND.wordmark.lead}
       </span>
     </span>

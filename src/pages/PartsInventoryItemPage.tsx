@@ -303,10 +303,10 @@ export default function PartsInventoryItemPage() {
             {/* Name */}
             <h2 className="heading-2 leading-tight mb-3">{item.name}</h2>
 
-            {/* Артикул + оригинальный номер — компактно «Метка: №», без бордера,
-                каждый своей строкой; номер кликабелен (копирует). */}
+            {/* Артикул + оригинальный номер — в одну строку, если ширина позволяет;
+                иначе переносится. Номер кликабелен (копирует). */}
             {(item.article || item.part_number) && (
-              <div className="mb-4 space-y-1 text-sm">
+              <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
                 {item.article && (
                   <p className="text-gray-600">
                     {t('inventoryItemPage.article')}:{' '}
@@ -338,7 +338,7 @@ export default function PartsInventoryItemPage() {
               <div className="flex-1 p-3.5 rounded-xl bg-[color:var(--cab-surface-2)] border border-[color:var(--cab-border)] flex flex-col justify-center">
                 {isSold ? (
                   <>
-                    <p className="kicker mb-1">{t('inventoryItemPage.soldFor')}</p>
+                    <p className="kicker mb-2">{t('inventoryItemPage.soldFor')}</p>
                     <p className="text-2xl font-bold text-gray-500 tabular">
                       {item.sold_price
                         ? formatPrice(item.sold_price, (item.price_currency as 'UAH' | 'USD') || 'USD')
@@ -347,7 +347,7 @@ export default function PartsInventoryItemPage() {
                   </>
                 ) : item.selling_price ? (
                   <>
-                    <p className="kicker mb-1">{t('inventoryItemPage.sellingPrice')}</p>
+                    <p className="kicker mb-2">{t('inventoryItemPage.sellingPrice')}</p>
                     <p className="text-3xl font-bold text-primary leading-none tabular">
                       {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
                     </p>
