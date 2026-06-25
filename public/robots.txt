@@ -1,2 +1,19 @@
 User-agent: *
 Allow: /
+
+# Приватное/тонкое — не индексировать (за авторизацией или дубли)
+Disallow: /admin
+Disallow: /parts/
+Disallow: /users
+Disallow: /support
+Disallow: /profile
+Disallow: /welcome
+Disallow: /my-vehicles
+Disallow: /login
+Disallow: /reset-password
+Disallow: /vehicle-access
+Disallow: /market/cart
+Disallow: /public/parts-customer
+Disallow: /public/personal-vehicle
+
+Sitemap: https://razborka.net/sitemap.xml
