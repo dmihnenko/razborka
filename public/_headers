@@ -12,7 +12,7 @@
   # img-src https: — пользовательские фото приходят с разных хостингов, не ограничиваем домен.
   # script-src 'unsafe-inline' — 2 инлайн-скрипта в index.html (тема + проверка SW); дальнейшее
   # ужесточение (хеши/вынос в файлы) — см. docs/security-audit-2026-06-25.md (H6).
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.imgbb.com https://api.cloudinary.com https://freeimage.host https://api.novaposhta.ua https://vpic.nhtsa.dot.gov; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.imgbb.com https://api.cloudinary.com https://freeimage.host https://api.novaposhta.ua https://vpic.nhtsa.dot.gov https://cloudflareinsights.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
   Cache-Control: public, max-age=0, must-revalidate
 
 # Хешированные ассеты — кэшируем навсегда (имя меняется при сборке)
