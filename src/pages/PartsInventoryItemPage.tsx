@@ -475,7 +475,7 @@ export default function PartsInventoryItemPage() {
                 {(item.vehicle as any).year ? ` (${(item.vehicle as any).year})` : ''}
               </p>
               {(item.vehicle as any).vin && (
-                <p className="text-xs text-gray-400 font-mono mt-0.5 tabular">
+                <p className="text-xs text-gray-500 font-mono mt-0.5 tabular">
                   VIN: {(item.vehicle as any).vin}
                 </p>
               )}
@@ -561,7 +561,7 @@ export default function PartsInventoryItemPage() {
             <button
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
-              className="cab-btn cab-btn-danger cab-btn-sm gap-1.5"
+              className="cab-btn cab-btn-ghost cab-btn-sm gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700"
             >
               <Trash2 className="w-4 h-4" /> {t('inventoryItemPage.delete')}
             </button>

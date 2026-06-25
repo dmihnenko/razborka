@@ -25,19 +25,9 @@ function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase()
 }
 
-/** Цвет аватара по имени (детерминированный) */
-const AVATAR_COLORS = [
-  'bg-blue-100 text-blue-700',
-  'bg-violet-100 text-violet-700',
-  'bg-emerald-100 text-emerald-700',
-  'bg-amber-100 text-amber-700',
-  'bg-rose-100 text-rose-700',
-  'bg-cyan-100 text-cyan-700',
-]
-function avatarColor(name: string): string {
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+/** Единый аватар (ink/индиго) — без радуги */
+function avatarColor(_name: string): string {
+  return 'bg-[var(--cab-surface-2)] text-[var(--cab-ink-2)]'
 }
 
 export default function PartsCustomers() {
@@ -214,9 +204,9 @@ export default function PartsCustomers() {
           <div className="cab-card p-4">
             <div className="flex items-start justify-between mb-3">
               <p className="kicker">{t('customersPage.statAvgCheck')}</p>
-              <DollarSign className="w-4 h-4 text-violet-500" strokeWidth={1.5} />
+              <DollarSign className="w-4 h-4 text-[var(--cab-signal)]" strokeWidth={1.5} />
             </div>
-            <p className="text-xl font-extrabold text-violet-600 tabular" style={{ letterSpacing: '-0.025em' }}>
+            <p className="text-xl font-extrabold text-[var(--cab-signal)] tabular" style={{ letterSpacing: '-0.025em' }}>
               {formatCurrency(stats.avgSpent)}
             </p>
           </div>

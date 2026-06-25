@@ -19,20 +19,7 @@ function getInitials(name?: string | null): string {
   return name.slice(0, 2).toUpperCase()
 }
 
-const AVATAR_COLORS = [
-  'bg-blue-100 text-blue-700',
-  'bg-violet-100 text-violet-700',
-  'bg-emerald-100 text-emerald-700',
-  'bg-amber-100 text-amber-700',
-  'bg-rose-100 text-rose-700',
-  'bg-cyan-100 text-cyan-700',
-]
-function avatarColor(name?: string | null): string {
-  if (!name) return AVATAR_COLORS[0]
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
-}
+const AVATAR_CLASS = 'bg-[var(--cab-surface-2)] text-[var(--cab-ink-2)]'
 
 function roleBadge(role?: string | null) {
   switch (role) {
@@ -208,7 +195,7 @@ export default function PartsEmployees() {
             {filteredEmployees.map(employee => (
               <div key={employee.id} className="cab-card cab-card-hover p-4 flex items-start gap-4">
                 {/* Аватар */}
-                <span className={`avatar-lg flex-shrink-0 ${avatarColor(employee.full_name)}`}>
+                <span className={`avatar-lg flex-shrink-0 ${AVATAR_CLASS}`}>
                   {getInitials(employee.full_name)}
                 </span>
 
@@ -222,14 +209,14 @@ export default function PartsEmployees() {
                   </div>
 
                   {employee.username && (
-                    <p className="text-xs text-gray-400 mb-1.5">@{employee.username}</p>
+                    <p className="text-xs text-gray-500 mb-1.5">@{employee.username}</p>
                   )}
 
                   <div className="space-y-1">
                     {employee.email && (
                       <a
                         href={`mailto:${employee.email}`}
-                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-primary transition-colors"
+                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-[var(--cab-signal)] transition-colors"
                       >
                         <Mail className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
                         <span className="truncate">{employee.email}</span>
@@ -238,7 +225,7 @@ export default function PartsEmployees() {
                     {employee.phone && (
                       <a
                         href={`tel:${employee.phone}`}
-                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-primary transition-colors"
+                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-[var(--cab-signal)] transition-colors"
                       >
                         <Phone className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
                         {employee.phone}
@@ -272,7 +259,7 @@ export default function PartsEmployees() {
                       {/* Имя + аватар */}
                       <td className="table-cell">
                         <div className="flex items-center gap-3 min-w-0">
-                          <span className={`avatar-md flex-shrink-0 ${avatarColor(employee.full_name)}`}>
+                          <span className={`avatar-md flex-shrink-0 ${AVATAR_CLASS}`}>
                             {getInitials(employee.full_name)}
                           </span>
                           <div className="min-w-0">
@@ -280,7 +267,7 @@ export default function PartsEmployees() {
                               {employee.full_name || t('employeesPage.noName')}
                             </p>
                             {employee.username && (
-                              <p className="text-xs text-gray-400">@{employee.username}</p>
+                              <p className="text-xs text-gray-500">@{employee.username}</p>
                             )}
                           </div>
                         </div>
@@ -296,7 +283,7 @@ export default function PartsEmployees() {
                         {employee.email ? (
                           <a
                             href={`mailto:${employee.email}`}
-                            className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-primary transition-colors max-w-xs"
+                            className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-[var(--cab-signal)] transition-colors max-w-xs"
                           >
                             <Mail className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
                             <span className="truncate">{employee.email}</span>
@@ -311,7 +298,7 @@ export default function PartsEmployees() {
                         {employee.phone ? (
                           <a
                             href={`tel:${employee.phone}`}
-                            className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-primary transition-colors"
+                            className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-[var(--cab-signal)] transition-colors"
                           >
                             <Phone className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
                             {employee.phone}

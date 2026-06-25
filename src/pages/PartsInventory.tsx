@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
-import { Plus, Search, Package, Grid, List, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, ChevronRight, MapPin, FolderOpen, Copy, Check } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, ChevronRight, MapPin, FolderOpen, Copy, Check, ArrowUp, ArrowDown } from 'lucide-react'
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -20,6 +20,7 @@ import { uploadPhoto, PhotoProviderNotConfigured } from '@/services/photoStorage
 import { getCompanyPhotoStorage, type PhotoStorageConfig } from '@/services/photoStorageConfig'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/utils/currency'
+import { intlLocale } from '@/i18n'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -800,27 +801,27 @@ export default function PartsInventory() {
           <div className="flex-shrink-0 text-right">
             {statusFilter === 'all' ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 hidden sm:inline">{t('inventoryPage.costStock')}</span>
+                <span className="text-xs text-gray-500 hidden sm:inline">{t('inventoryPage.costStock')}</span>
                 <span className="text-sm font-bold text-green-600">
-                  {stockUSD === 0 ? '—' : `$${Math.round(stockUSD).toLocaleString('ru-RU')}`}
+                  {stockUSD === 0 ? '—' : `$${Math.round(stockUSD).toLocaleString(intlLocale())}`}
                 </span>
                 <span className="text-xs text-gray-300">·</span>
-                <span className="text-xs text-gray-400 hidden sm:inline">{t('inventoryPage.costSold')}</span>
+                <span className="text-xs text-gray-500 hidden sm:inline">{t('inventoryPage.costSold')}</span>
                 <span className="text-sm font-bold text-primary">
-                  {soldUSD === 0 ? '—' : `$${Math.round(soldUSD).toLocaleString('ru-RU')}`}
+                  {soldUSD === 0 ? '—' : `$${Math.round(soldUSD).toLocaleString(intlLocale())}`}
                 </span>
               </div>
             ) : statusFilter === 'available' || statusFilter === 'reserved' ? (
               <span className="text-sm font-bold text-green-600">
-                {stockUSD === 0 ? '—' : `$${Math.round(stockUSD).toLocaleString('ru-RU')}`}
+                {stockUSD === 0 ? '—' : `$${Math.round(stockUSD).toLocaleString(intlLocale())}`}
               </span>
             ) : statusFilter === 'sold' ? (
               <span className="text-sm font-bold text-primary">
-                {soldUSD === 0 ? '—' : `$${Math.round(soldUSD).toLocaleString('ru-RU')}`}
+                {soldUSD === 0 ? '—' : `$${Math.round(soldUSD).toLocaleString(intlLocale())}`}
               </span>
             ) : (
               <span className="text-sm font-bold text-primary">
-                {stockUSD === 0 ? '—' : `$${Math.round(stockUSD).toLocaleString('ru-RU')}`}
+                {stockUSD === 0 ? '—' : `$${Math.round(stockUSD).toLocaleString(intlLocale())}`}
               </span>
             )}
           </div>
@@ -858,7 +859,9 @@ export default function PartsInventory() {
                   >
                     {label}
                     {sortField === field && (
-                      <span className="text-primary">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                      sortDir === 'asc'
+                        ? <ArrowUp className="text-primary w-3.5 h-3.5" strokeWidth={1.5} />
+                        : <ArrowDown className="text-primary w-3.5 h-3.5" strokeWidth={1.5} />
                     )}
                   </button>
                 ))}
@@ -964,7 +967,7 @@ export default function PartsInventory() {
                     )}
                     <span className="truncate">{item.name}</span>
                   </div>
-                  <div className="text-xs font-mono text-gray-400 truncate mt-0.5">
+                  <div className="text-xs font-mono text-gray-500 truncate mt-0.5">
                     {item.part_number || t('inventoryPage.noNumber')}
                   </div>
                 </div>
@@ -1051,7 +1054,7 @@ export default function PartsInventory() {
                         {item.vehicle ? (
                           <div className="leading-tight min-w-0">
                             <div className="text-sm font-medium text-gray-700 truncate">{item.vehicle.make} {item.vehicle.model}</div>
-                            {item.vehicle.year && <div className="text-[11px] text-gray-400">{item.vehicle.year}</div>}
+                            {item.vehicle.year && <div className="text-[11px] text-gray-500">{item.vehicle.year}</div>}
                           </div>
                         ) : (
                           <span className="text-xs text-gray-400">{t('inventoryPage.shopLabel')}</span>

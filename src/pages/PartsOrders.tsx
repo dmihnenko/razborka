@@ -8,7 +8,7 @@ import { formatDate } from '@/utils/date'
 import { PartsOrder, PartsOrderStatus } from '@/types/parts'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Search, ShoppingCart, LayoutList, Columns3 } from 'lucide-react'
-import { getPartsOrderStatusText } from '@/utils/status'
+import { getPartsOrderStatusText, statusBadgeClass } from '@/utils/status'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import i18n from '@/i18n'
@@ -36,20 +36,6 @@ const BOARD_COLUMNS: { status: PartsOrderStatus; label: string; dot: string; rin
   { status: 'shipped',     label: 'Отправлен', dot: 'bg-indigo-500',  ring: 'ring-indigo-400'  },
   { status: 'completed',   label: 'Завершён',  dot: 'bg-emerald-500', ring: 'ring-emerald-500' },
 ]
-
-// ─── Бейджи статуса ───────────────────────────────────────────────────────────
-const STATUS_BADGE: Record<string, string> = {
-  new:         'cab-chip text-primary',
-  assembling:  'cab-chip text-amber-700',
-  shipped:     'cab-chip text-indigo-700',
-  in_progress: 'cab-chip text-amber-700',
-  completed:   'cab-chip text-emerald-700',
-  cancelled:   'cab-chip text-red-700',
-}
-
-function statusBadge(status: string) {
-  return STATUS_BADGE[status] ?? 'cab-chip text-gray-600'
-}
 
 // ─── Draggable карточка на доске ─────────────────────────────────────────────
 interface BoardCardProps {
@@ -552,7 +538,7 @@ export default function PartsOrders() {
                             {formatDate(order.order_date)}
                           </td>
                           <td className="table-cell whitespace-nowrap">
-                            <span className={statusBadge(order.status)}>
+                            <span className={statusBadgeClass(order.status)}>
                               {getPartsOrderStatusText(order.status)}
                             </span>
                           </td>
@@ -597,7 +583,7 @@ export default function PartsOrders() {
                     <div className="flex items-center gap-1.5 text-xs text-gray-400">
                       <span>{formatDate(order.order_date)}</span>
                       <span>·</span>
-                      <span className={statusBadge(order.status)}>
+                      <span className={statusBadgeClass(order.status)}>
                         {getPartsOrderStatusText(order.status)}
                       </span>
                       {order.items && order.items.length > 0 && (

@@ -8,7 +8,7 @@ import {
   ArrowRight, ChevronRight, Plus, CheckCircle2, Boxes, RefreshCw, Truck, Wallet,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { getPartsOrderStatusText } from '@/utils/status'
+import { getPartsOrderStatusText, statusBadgeClass } from '@/utils/status'
 import type { PartsOrderStatus } from '@/utils/status'
 import { formatDate } from '@/utils/date'
 import { intlLocale } from '@/i18n'
@@ -26,19 +26,9 @@ import OnboardingChecklist from '@/components/parts/OnboardingChecklist'
 // воронка заказов и последние заказы. Данные — getPartsDashboardStats (RPC).
 // ============================================================================
 
-const STATUS_CHIP: Record<string, string> = {
-  new:         'cab-chip-signal',
-  assembling:  'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
-  shipped:     'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100',
-  in_progress: 'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
-  completed:   'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100',
-  cancelled:   'bg-gray-100 text-gray-500 ring-1 ring-gray-200',
-}
-
 function StatusChip({ status }: { status: PartsOrderStatus }) {
-  const cls = STATUS_CHIP[status] ?? STATUS_CHIP.cancelled
   return (
-    <span className={`cab-chip border-transparent ${cls}`}>
+    <span className={statusBadgeClass(status)}>
       {getPartsOrderStatusText(status)}
     </span>
   )
@@ -325,7 +315,7 @@ export default function PartsDashboard() {
             {[
               { label: t('dashboard.fNew'),        value: stats?.orders?.new ?? 0,        color: 'var(--cab-signal)' },
               { label: t('dashboard.fAssembling'),  value: stats?.orders?.assembling ?? 0, color: '#B45309' },
-              { label: t('dashboard.fShipped'),     value: stats?.orders?.shipped ?? 0,    color: '#4F46E5' },
+              { label: t('dashboard.fShipped'),     value: stats?.orders?.shipped ?? 0,    color: 'var(--cab-signal)' },
               { label: t('dashboard.fCompleted'),   value: stats?.orders?.completed ?? 0,  color: '#15803D' },
             ].map(({ label, value, color }) => {
               const total = stats?.orders?.total || 1

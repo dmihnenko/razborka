@@ -15,7 +15,7 @@ import {
 import { getNpApiKey } from '@/utils/npApiKey'
 import { searchCities, searchWarehouses, NpCity, NpWarehouse, createTtn } from '@/services/npService'
 import { formatCurrency, formatPrice } from '@/utils/currency'
-import { getPartsOrderStatusText } from '@/utils/status'
+import { getPartsOrderStatusText, statusBadgeClass } from '@/utils/status'
 import {
   updatePartsOrderTotal, getAvailablePartsInventory,
   getPartsCustomersDropdown, updatePartsOrder, updatePartsOrderStatus,
@@ -30,14 +30,6 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { moveToTrash } from '@/services/trashService'
 import { getEntityActivity } from '@/services/activityLogService'
 import { History } from 'lucide-react'
-
-/* ── локальная карта статус → badge-класс ────────────────────── */
-const STATUS_BADGE: Record<string, string> = {
-  new:         'badge badge-blue',
-  in_progress: 'badge badge-yellow',
-  completed:   'badge badge-green',
-  cancelled:   'badge badge-gray',
-}
 
 export default function PartsOrderDetails() {
   const { t } = useTranslation('cabinet')
@@ -308,7 +300,7 @@ export default function PartsOrderDetails() {
     )
   }
 
-  const statusBadgeCls = STATUS_BADGE[order.status] ?? 'badge badge-gray'
+  const statusBadgeCls = statusBadgeClass(order.status)
 
   return (
     <div className="min-h-dvh bg-gray-50 pb-[calc(64px+env(safe-area-inset-bottom,0px))] sm:pb-6">
@@ -376,7 +368,7 @@ export default function PartsOrderDetails() {
                     <button
                       onClick={() => updateStatusMutation.mutate('cancelled')}
                       disabled={updateStatusMutation.isPending}
-                      className="cab-btn cab-btn-sm cab-btn-secondary text-red-700"
+                      className="cab-btn cab-btn-sm cab-btn-danger"
                     >
                       {t('orderDetailsPage.cancel')}
                     </button>

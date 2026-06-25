@@ -185,7 +185,7 @@ export default function ProfileSettings() {
           </div>
           <div className="p-5 space-y-3">
             <div>
-              <label className="form-label flex items-center gap-1.5"><Send className="w-3.5 h-3.5 text-sky-500" /> Telegram</label>
+              <label className="form-label flex items-center gap-1.5"><Send className="w-3.5 h-3.5 text-[var(--cab-ink-3)]" /> Telegram</label>
               <input
                 type="text"
                 value={contactForm.telegram}
@@ -193,10 +193,10 @@ export default function ProfileSettings() {
                 placeholder="@username или https://t.me/username"
                 className="form-input"
               />
-              <p className="text-[11px] text-gray-400 mt-1">Чтобы покупатели могли написать вам в Telegram</p>
+              <p className="text-xs text-gray-500 mt-1">Чтобы покупатели могли написать вам в Telegram</p>
             </div>
             <div>
-              <label className="form-label flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-green-500" /> Телефон</label>
+              <label className="form-label flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-[var(--cab-ink-3)]" /> Телефон</label>
               <input
                 type="tel"
                 value={contactForm.phone}
@@ -206,7 +206,7 @@ export default function ProfileSettings() {
               />
             </div>
             <div>
-              <label className="form-label flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-orange-500" /> Адрес / город</label>
+              <label className="form-label flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[var(--cab-ink-3)]" /> Адрес / город</label>
               <input
                 type="text"
                 value={contactForm.address}
@@ -216,7 +216,7 @@ export default function ProfileSettings() {
               />
             </div>
             <div>
-              <label className="form-label flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-blue-500" /> Email</label>
+              <label className="form-label flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-[var(--cab-ink-3)]" /> Email</label>
               <input
                 type="email"
                 value={contactForm.email}

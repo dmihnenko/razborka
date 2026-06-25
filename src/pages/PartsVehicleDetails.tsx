@@ -31,22 +31,12 @@ const STATUS_BTN_ACTIVE: Record<PartsVehicleStatus, string> = {
   dismantled:  'bg-emerald-100 text-emerald-800 border border-emerald-300',
 }
 
-const STATUS_LABELS: Record<PartsVehicleStatus, string> = {
-  awaiting:    'Ожидает',
-  in_progress: 'В процессе',
-  dismantled:  'Разобран',
-}
-
 // ── Статусы запчастей ─────────────────────────────────────────────────────────
 const PART_STATUS_BADGE: Record<string, string> = {
-  available: 'cab-chip text-emerald-700 bg-emerald-50 border-emerald-200',
-  sold:      'cab-chip',
-  reserved:  'cab-chip text-amber-700 bg-amber-50 border-amber-200',
-}
-const PART_STATUS_LABELS: Record<string, string> = {
-  available: 'В наличии',
-  sold:      'Продано',
-  reserved:  'Резерв',
+  available: 'badge badge-green',
+  sold:      'badge badge-gray',
+  reserved:  'badge badge-yellow',
+  damaged:   'badge badge-red',
 }
 
 // ── Строка характеристики hero-карточки ──────────────────────────────────────
@@ -66,6 +56,16 @@ export default function PartsVehicleDetails() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { t } = useTranslation('cabinet')
+  const statusLabels: Record<PartsVehicleStatus, string> = {
+    awaiting:    t('vehicleDetailsPage.status_awaiting'),
+    in_progress: t('vehicleDetailsPage.status_in_progress'),
+    dismantled:  t('vehicleDetailsPage.status_dismantled'),
+  }
+  const partStatusLabels: Record<string, string> = {
+    available: t('vehicleDetailsPage.partStatus_available'),
+    sold:      t('vehicleDetailsPage.partStatus_sold'),
+    reserved:  t('vehicleDetailsPage.partStatus_reserved'),
+  }
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isAddPartOpen, setIsAddPartOpen] = useState(false)
   const [sellPart, setSellPart] = useState<PartsInventoryItem | null>(null)
@@ -324,7 +324,7 @@ export default function PartsVehicleDetails() {
           <div className="mb-5">
             <p className="kicker text-gray-400 mb-2">{t('vehicleDetailsPage.dismantleStatus')}</p>
             <div className="flex flex-wrap gap-2">
-              {(Object.keys(STATUS_LABELS) as PartsVehicleStatus[]).map(status => (
+              {(Object.keys(statusLabels) as PartsVehicleStatus[]).map(status => (
                 <button
                   key={status}
                   onClick={() => statusMutation.mutate(status)}
@@ -461,7 +461,7 @@ export default function PartsVehicleDetails() {
                           <td className="table-cell">
                             <div className="font-semibold text-gray-900 leading-tight">{part.name}</div>
                             {part.part_number && (
-                              <div className="text-xs text-gray-400 font-mono mt-0.5">
+                              <div className="text-xs text-gray-500 font-mono mt-0.5">
                                 № {part.part_number}
                               </div>
                             )}
@@ -495,8 +495,8 @@ export default function PartsVehicleDetails() {
                                 )}
                           </td>
                           <td className="table-cell text-center">
-                            <span className={PART_STATUS_BADGE[part.status] ?? 'cab-chip'}>
-                              {PART_STATUS_LABELS[part.status] ? t(`vehicleDetailsPage.partStatus_${part.status}`) : part.status}
+                            <span className={PART_STATUS_BADGE[part.status] ?? 'badge badge-gray'}>
+                              {partStatusLabels[part.status] ? t(`vehicleDetailsPage.partStatus_${part.status}`) : part.status}
                             </span>
                           </td>
                           <td className="table-cell w-28 pr-3 text-right" onClick={(e) => e.stopPropagation()}>
@@ -546,8 +546,8 @@ export default function PartsVehicleDetails() {
                           <span className="font-semibold text-sm text-gray-900 truncate leading-tight">
                             {part.name}
                           </span>
-                          <span className={`${PART_STATUS_BADGE[part.status] ?? 'cab-chip'} flex-shrink-0`}>
-                            {PART_STATUS_LABELS[part.status] ? t(`vehicleDetailsPage.partStatus_${part.status}`) : part.status}
+                          <span className={`${PART_STATUS_BADGE[part.status] ?? 'badge badge-gray'} flex-shrink-0`}>
+                            {partStatusLabels[part.status] ? t(`vehicleDetailsPage.partStatus_${part.status}`) : part.status}
                           </span>
                         </div>
                         <div className="flex items-center justify-between mt-1 gap-2">

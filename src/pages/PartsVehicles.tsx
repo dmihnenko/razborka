@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import i18n from '@/i18n'
+import i18n, { intlLocale } from '@/i18n'
 import { Spinner } from '@/components/ui/Spinner'
 import { Plus, Search, Car, Filter, Grid, List, Download, Upload, FileSpreadsheet, X, ChevronDown, CheckSquare, Square } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -119,12 +119,6 @@ function buildPlan(parsedVehicles: ParsedVehicle[], existing: PartsVehicle[], ex
   })
 }
 
-const statusLabels: Record<PartsVehicleStatus, string> = {
-  awaiting: i18n.t('cabinet:vehiclesPage.statusAwaiting'),
-  in_progress: i18n.t('cabinet:vehiclesPage.statusInProgress'),
-  dismantled: i18n.t('cabinet:vehiclesPage.statusDismantled'),
-}
-
 const statusBadge: Record<PartsVehicleStatus, string> = {
   awaiting:    'cab-chip text-amber-700 bg-amber-50 border-amber-200',
   in_progress: 'cab-chip cab-chip-signal',
@@ -145,11 +139,17 @@ export default function PartsVehicles() {
   const [searchQuery, setSearchQuery] = useState('')
   const { rate: globalRate } = usePartsExchangeRate()
 
+  const statusLabels: Record<PartsVehicleStatus, string> = {
+    awaiting: t('vehiclesPage.statusAwaiting'),
+    in_progress: t('vehiclesPage.statusInProgress'),
+    dismantled: t('vehiclesPage.statusDismantled'),
+  }
+
   const formatPriceUSD = (vehicle: PartsVehicle) => {
     if (!vehicle.purchase_price) return '—'
     const rate = vehicle.exchange_rate || globalRate || 41
     const usd = vehicle.purchase_price / rate
-    return '$' + usd.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+    return '$' + usd.toLocaleString(intlLocale(), { minimumFractionDigits: 0, maximumFractionDigits: 0 })
   }
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -683,7 +683,7 @@ export default function PartsVehicles() {
                 </button>
                 <button
                   onClick={(e) => handleDelete(vehicle.id, e)}
-                  className="cab-btn cab-btn-danger cab-btn-sm"
+                  className="cab-btn cab-btn-ghost cab-btn-sm text-red-600 hover:bg-red-50 hover:text-red-700"
                 >
                   {t('vehiclesPage.delete')}
                 </button>

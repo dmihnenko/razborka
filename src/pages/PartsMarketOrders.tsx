@@ -176,7 +176,7 @@ function MarketOrderCard({
               <button
                 onClick={() => onDelete(order)}
                 disabled={isDeleting}
-                className="cab-btn cab-btn-ghost cab-btn-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                className="cab-btn cab-btn-sm cab-btn-danger disabled:opacity-50"
                 title={t('marketOrdersPage.deleteTitle')}
               >
                 {isDeleting ? <Spinner size="sm" /> : <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />}
@@ -284,7 +284,7 @@ export default function PartsMarketOrders() {
             <button
               key={key}
               onClick={() => setStatusFilter(key)}
-              className={`chip ${statusFilter === key ? 'chip-active' : ''}`}
+              className={statusFilter === key ? 'cab-chip cab-chip-signal' : 'cab-chip'}
             >
               {label}
               {key === 'active' && activeCount > 0 && (

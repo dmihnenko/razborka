@@ -14,7 +14,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { formatCurrency, formatPrice } from '@/utils/currency'
-import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
+import { statusBadgeClass, getPartsOrderStatusText } from '@/utils/status'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import {
   getPartsInventory,
@@ -443,7 +443,7 @@ export default function PartsCustomerProfile() {
                         {t('customerProfilePage.itemsPcs', { count: order.items?.length || 0 })}
                       </td>
                       <td className="table-cell">
-                        <span className={`cab-chip ${getPartsOrderStatusColor(order.status)}`}>
+                        <span className={statusBadgeClass(order.status)}>
                           {getPartsOrderStatusText(order.status)}
                         </span>
                       </td>
@@ -469,7 +469,7 @@ export default function PartsCustomerProfile() {
                       <p className="text-sm font-semibold text-gray-900 truncate">
                         {order.order_number}
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-gray-500">
                         {new Date(order.order_date).toLocaleDateString('ru-RU')}
                         {' · '}
                         {formatDistanceToNow(new Date(order.created_at), { addSuffix: true, locale: ru })}
@@ -479,7 +479,7 @@ export default function PartsCustomerProfile() {
                       <span className="text-sm font-bold text-primary tabular-nums">
                         {formatCurrency(order.total_amount)}
                       </span>
-                      <span className={`cab-chip ${getPartsOrderStatusColor(order.status)}`}>
+                      <span className={statusBadgeClass(order.status)}>
                         {getPartsOrderStatusText(order.status)}
                       </span>
                     </div>
@@ -493,7 +493,7 @@ export default function PartsCustomerProfile() {
                           <span className="truncate flex-1 mr-2">
                             {item.inventory_item?.name || t('customerProfilePage.part')}
                             {item.inventory_item?.part_number && (
-                              <span className="text-gray-400 font-mono ml-1">
+                              <span className="text-gray-500 font-mono ml-1">
                                 #{item.inventory_item.part_number}
                               </span>
                             )}
@@ -762,7 +762,7 @@ export default function PartsCustomerProfile() {
                                       <span className="text-xs text-gray-300">·</span>
                                     )}
                                     {item.part_number && (
-                                      <span className="text-xs font-mono text-gray-400">{item.part_number}</span>
+                                      <span className="text-xs font-mono text-gray-500">{item.part_number}</span>
                                     )}
                                   </div>
                                 </div>
@@ -776,10 +776,10 @@ export default function PartsCustomerProfile() {
                                   <button
                                     onClick={() => addToCart(item)}
                                     disabled={!!inCart && inCart.quantity >= inCart.maxQty}
-                                    className={`w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0 transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                                    className={`w-9 h-9 flex items-center justify-center rounded-lg flex-shrink-0 transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                                       inCart
                                         ? 'bg-green-600 text-white shadow-sm'
-                                        : 'bg-gray-900 text-white hover:bg-gray-700'
+                                        : 'bg-[var(--cab-ink)] text-white hover:bg-gray-700'
                                     }`}
                                   >
                                     <Plus className="w-4 h-4" />
@@ -813,7 +813,7 @@ export default function PartsCustomerProfile() {
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-gray-900 leading-tight">{item.name}</p>
                               {item.vehicleInfo && (
-                                <p className="text-xs text-gray-400 mt-0.5 truncate">{item.vehicleInfo}</p>
+                                <p className="text-xs text-gray-500 mt-0.5 truncate">{item.vehicleInfo}</p>
                               )}
                             </div>
                             <button
@@ -827,7 +827,7 @@ export default function PartsCustomerProfile() {
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => updateCartQty(item.id, item.quantity - 1)}
-                                className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                                className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
                               >
                                 <Minus className="w-3 h-3 text-gray-600" />
                               </button>
@@ -837,7 +837,7 @@ export default function PartsCustomerProfile() {
                               <button
                                 onClick={() => updateCartQty(item.id, item.quantity + 1)}
                                 disabled={item.quantity >= item.maxQty}
-                                className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                               >
                                 <Plus className="w-3 h-3 text-gray-600" />
                               </button>
