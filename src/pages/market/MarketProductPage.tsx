@@ -14,6 +14,7 @@ import PhotoGallery from '@/components/parts/PhotoGallery'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { SellerContactCard } from '@/components/market/SellerContactCard'
 import { MarketProductCard } from '@/components/market/MarketProductCard'
+import { usePageMeta } from '@/hooks/usePageMeta'
 
 // ============================================================================
 // Карточка товара (Graphite) — /market/part/:id
@@ -59,6 +60,23 @@ export default function MarketProductPage() {
   })
 
   const galleryPhotos = useMemo(() => (part ? toGalleryPhotos(part) : []), [part])
+
+  // Мета вкладки — согласовано с edge (worker computeMeta, route.type==='product').
+  const vehicle = part?.vehicle
+    ? [part.vehicle.make, part.vehicle.model, part.vehicle.year].filter(Boolean).join(' ')
+    : ''
+  const metaTitle = part
+    ? `${part.name}${vehicle ? ' — ' + vehicle : ''} | Razborka.net`
+    : undefined
+  const metaDescription = part
+    ? [
+        part.name,
+        `Состояние: ${PARTS_CONDITION_LABELS[part.condition] ?? part.condition}`,
+        part.sellingPrice ? `Цена ${formatPrice(part.sellingPrice, part.priceCurrency)}` : '',
+        vehicle ? `Авто: ${vehicle}` : '',
+      ].filter(Boolean).join('. ') + '.'
+    : undefined
+  usePageMeta(metaTitle, metaDescription)
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-24"><Spinner size="lg" /></div>

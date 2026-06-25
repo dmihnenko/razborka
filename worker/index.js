@@ -9,7 +9,7 @@
 
 const SITE = 'https://razborka.net'
 const BRAND = 'Razborka.net'
-const DEFAULT_OG = SITE + '/pwa-512x512.png'
+const DEFAULT_OG = SITE + '/og-default.png' // баннер 1200×630 (фолбэк для страниц без фото)
 
 // ── утилиты ──────────────────────────────────────────────────────────────────
 const escapeHtml = (s) => String(s ?? '')
@@ -173,6 +173,11 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url)
     const p = url.pathname
+
+    // 0. www → apex (канонический хост, без дублей в индексе)
+    if (url.hostname === 'www.razborka.net') {
+      return Response.redirect(SITE + p + url.search, 301)
+    }
 
     // 1. прокси курса
     if (p === '/api/privatbank-rate') {

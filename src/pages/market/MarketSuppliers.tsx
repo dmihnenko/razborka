@@ -5,6 +5,7 @@ import { AlertCircle, MapPin, Search, Store } from 'lucide-react'
 import { getMarketSuppliers } from '@/services/marketplaceService'
 import { SupplierCard, pluralizeParts } from '@/components/market/SupplierCard'
 import EmptyState from '@/components/ui/EmptyState'
+import { usePageMeta } from '@/hooks/usePageMeta'
 
 // ============================================================================
 // /market/suppliers — список разборок (Graphite)
@@ -14,6 +15,10 @@ const CITY_KEY = 'tsp_market_supplier_city'
 
 export function MarketSuppliers() {
   const { t } = useTranslation('market')
+  usePageMeta(
+    'Авторазборки Украины — Razborka.net',
+    'Список авторазборок: контакты, города, наличие запчастей.',
+  )
   const [search, setSearch] = useState('')
   const [city, setCityState] = useState<string>(() => {
     try { return localStorage.getItem(CITY_KEY) || '' } catch { return '' }

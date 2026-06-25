@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import type { Variants } from 'framer-motion'
 import { BRAND } from '@/config/brand'
 import { Logo } from '@/components/brand/Logo'
+import { usePageMeta } from '@/hooks/usePageMeta'
 import {
   Car, Package, Users, BarChart3, ShieldCheck,
   Smartphone, ArrowRight, CheckCircle, Zap,
@@ -34,6 +35,10 @@ const stagger: Variants = {
 
 export default function LandingPage() {
   const navigate = useNavigate()
+  usePageMeta(
+    'Razborka.net — учёт авторазборки и маркет автозапчастей',
+    'Razborka.net: учёт склада авторазборки, витрина запчастей и маркет б/у и новых автозапчастей от проверенных разборок Украины.',
+  )
 
   return (
     <div

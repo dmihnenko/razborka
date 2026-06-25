@@ -10,6 +10,7 @@ import {
 import { MarketProductCard } from '@/components/market/MarketProductCard'
 import { SupplierCard } from '@/components/market/SupplierCard'
 import EmptyState from '@/components/ui/EmptyState'
+import { usePageMeta } from '@/hooks/usePageMeta'
 
 // ============================================================================
 // Главная маркета (/market) — Graphite. Чистый монохром, акцент сдержанный.
@@ -47,6 +48,10 @@ export function MarketHome() {
   const navigate = useNavigate()
   const { t } = useTranslation('market')
   const [search, setSearch] = useState('')
+  usePageMeta(
+    'Razborka.net — маркет б/у и новых запчастей от авторазборок',
+    'Купить б/у и новые автозапчасти от проверенных авторазборок Украины. Каталог по марке, модели и году, прямой контакт с разборкой.',
+  )
   const reduce = useReducedMotion()
   const anim = (delay: number) => reduce ? {} : {
     initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 },

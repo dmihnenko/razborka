@@ -21,6 +21,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/utils/currency'
 import { Logo } from '@/components/brand/Logo'
+import { usePageMeta } from '@/hooks/usePageMeta'
 import type { Tariff } from '@/types/business'
 import { DEMO_LIMITS } from '@/types/business'
 
@@ -158,6 +159,10 @@ export function BusinessLanding() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { t } = useTranslation('business')
+  usePageMeta(
+    'Для авторазборок — Razborka.net',
+    'Подключите авторазборку к Razborka.net: учёт склада, витрина запчастей, заявки покупателей.',
+  )
 
   // Открывать лендинг всегда сверху (React Router не сбрасывает скролл при переходе
   // с маркета, иначе попадаешь в середину страницы — на тарифы).

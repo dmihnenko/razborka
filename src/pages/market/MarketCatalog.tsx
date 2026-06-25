@@ -9,6 +9,7 @@ import { FilterBar } from '@/components/market/FilterBar'
 import { MarketProductCard } from '@/components/market/MarketProductCard'
 import EmptyState from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
+import { usePageMeta } from '@/hooks/usePageMeta'
 
 // ============================================================================
 // /market/catalog — каталог (Graphite). Фильтры синхронятся с URL.
@@ -70,6 +71,10 @@ function SkeletonCard() {
 
 export function MarketCatalog() {
   const { t } = useTranslation('market')
+  usePageMeta(
+    'Каталог автозапчастей — Razborka.net',
+    'Каталог б/у и новых автозапчастей от авторазборок. Фильтр по марке, модели, году и состоянию.',
+  )
   const [searchParams, setSearchParams] = useSearchParams()
   const [filters, setFilters] = useState<MarketFilters>(() => filtersFromParams(searchParams))
 

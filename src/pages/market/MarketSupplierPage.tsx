@@ -9,6 +9,7 @@ import { cleanPhone, telegramHref } from '@/components/market/SellerContactCard'
 import { pluralizeParts } from '@/components/market/SupplierCard'
 import EmptyState from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
+import { usePageMeta } from '@/hooks/usePageMeta'
 
 // ============================================================================
 // /market/supplier/:id — страница разборки (Graphite)
@@ -34,6 +35,18 @@ export function MarketSupplierPage() {
   const { data: supplier, isLoading: supplierLoading, isError: supplierError } = useQuery({
     queryKey: ['market', 'supplier', id], queryFn: () => getMarketSupplier(id!), enabled: !!id, staleTime: 5 * 60 * 1000,
   })
+
+  // Мета вкладки — согласовано с edge (worker computeMeta, route.type==='supplier').
+  usePageMeta(
+    supplier ? `${supplier.name} — авторазборка${supplier.city ? ', ' + supplier.city : ''} | Razborka.net` : undefined,
+    supplier
+      ? [
+          supplier.name,
+          supplier.availableParts != null ? `${supplier.availableParts} запчастей в наличии` : '',
+          supplier.address,
+        ].filter(Boolean).join('. ') + '.'
+      : undefined,
+  )
 
   const { data: partsData, isLoading: partsLoading, isFetching: partsFetching } = useQuery({
     queryKey: ['market', 'parts', { companyId: id, search, page }],
