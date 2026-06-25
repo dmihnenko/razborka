@@ -3,14 +3,19 @@ import { ArrowRight } from 'lucide-react'
 
 export type StatColor = 'indigo' | 'blue' | 'orange' | 'emerald' | 'purple' | 'gray' | 'red'
 
+// Ink & Signal: нейтральные плитки + индиго-акцент (signal). Без радужной палитры.
+// Все «цветные» значения сведены к одному из двух стилей — signal (индиго) либо нейтраль.
+const SIGNAL = { icon: 'text-indigo-600', bg: 'bg-indigo-50',  text: 'text-indigo-600' }
+const NEUTRAL = { icon: 'text-gray-600',  bg: 'bg-gray-100',   text: 'text-gray-500' }
+
 const COLOR: Record<StatColor, { icon: string; bg: string; text: string }> = {
-  indigo:  { icon: 'text-indigo-600',  bg: 'bg-indigo-50',  text: 'text-indigo-600' },
-  blue:    { icon: 'text-blue-600',    bg: 'bg-blue-50',    text: 'text-blue-600' },
-  orange:  { icon: 'text-orange-600',  bg: 'bg-orange-50',  text: 'text-orange-600' },
-  emerald: { icon: 'text-emerald-600', bg: 'bg-emerald-50', text: 'text-emerald-600' },
-  purple:  { icon: 'text-purple-600',  bg: 'bg-purple-50',  text: 'text-purple-600' },
-  gray:    { icon: 'text-gray-600',    bg: 'bg-gray-100',   text: 'text-gray-600' },
-  red:     { icon: 'text-red-600',     bg: 'bg-red-50',     text: 'text-red-600' },
+  indigo:  SIGNAL,
+  blue:    SIGNAL,
+  orange:  NEUTRAL,
+  emerald: NEUTRAL,
+  purple:  SIGNAL,
+  gray:    NEUTRAL,
+  red:     NEUTRAL,
 }
 
 interface StatCardProps {
@@ -29,10 +34,10 @@ export function StatCard({ label, value, sub, icon: Icon, color = 'indigo', to, 
   const body = (
     <>
       <div className="flex items-center justify-between">
-        <div className={`w-9 h-9 rounded-xl ${c.bg} flex items-center justify-center`}>
+        <div className={`icon-tile w-9 h-9 ${c.bg}`}>
           <Icon className={`w-[18px] h-[18px] ${c.icon}`} strokeWidth={1.5} />
         </div>
-        {to && <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-0.5 transition-all" strokeWidth={1.5} />}
+        {to && <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-500 group-hover:translate-x-0.5 transition-all" strokeWidth={1.5} />}
       </div>
       <div>
         {loading
@@ -44,10 +49,10 @@ export function StatCard({ label, value, sub, icon: Icon, color = 'indigo', to, 
     </>
   )
 
-  const cls = 'group bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5 flex flex-col gap-3 transition-all'
+  const cls = 'stat-card group !justify-start gap-3'
 
   return to
-    ? <Link to={to} className={`${cls} hover:shadow-md hover:border-gray-200`}>{body}</Link>
+    ? <Link to={to} className={`${cls} hover:border-gray-200`}>{body}</Link>
     : <div className={cls}>{body}</div>
 }
 

@@ -36,8 +36,6 @@ const getRoleBadgeClass = (roleName?: string): string => {
     case 'admin':        return 'badge badge-red';
     case 'parts_owner':  return 'badge badge-yellow';
     case 'parts_worker': return 'badge badge-green';
-    case 'store_owner':  return 'badge badge-orange';
-    case 'store_worker': return 'badge badge-blue';
     default:             return 'badge badge-gray';
   }
 };
@@ -292,7 +290,7 @@ export default function Users() {
                           {user.is_active ? 'Активен' : 'Неактивен'}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-0.5 truncate">
+                      <p className="text-xs text-gray-500 mt-0.5 truncate">
                         {user.email}{user.username ? <span className="font-mono"> · @{user.username}</span> : null}
                       </p>
                       <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
@@ -346,20 +344,20 @@ export default function Users() {
                             <p className="text-sm font-semibold text-gray-900 truncate">
                               {user.full_name || <span className="text-gray-400 font-normal">Имя не указано</span>}
                             </p>
-                            <p className="text-xs text-gray-400 truncate">
+                            <p className="text-xs text-gray-500 truncate">
                               {user.email}{user.username ? <span className="font-mono"> · @{user.username}</span> : null}
                             </p>
                           </div>
                         </td>
-                        <td className="hidden md:table-cell px-4 py-3 text-sm border-b border-gray-100">
+                        <td className="hidden md:table-cell px-3 py-2 text-sm border-b border-gray-100">
                           <RoleCell user={user} />
                         </td>
-                        <td className="hidden lg:table-cell px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
+                        <td className="hidden lg:table-cell px-3 py-2 text-sm text-gray-700 border-b border-gray-100">
                           {company
                             ? <span className="badge badge-gray max-w-[160px] truncate">{company}</span>
-                            : <span className="text-gray-300">—</span>}
+                            : <span className="text-gray-400">—</span>}
                         </td>
-                        <td className="hidden sm:table-cell px-4 py-3 text-sm border-b border-gray-100">
+                        <td className="hidden sm:table-cell px-3 py-2 text-sm border-b border-gray-100">
                           <span className={`badge ${user.is_active ? 'badge-green' : 'badge-gray'}`}>
                             {user.is_active ? 'Активен' : 'Неактивен'}
                           </span>

@@ -37,7 +37,7 @@ export default function AdminAnalytics() {
       {/* Заголовок + диапазон */}
       <div className="page-header">
         <div>
-          <p className="kicker text-purple-600 mb-1">Платформа</p>
+          <p className="kicker mb-1">Платформа</p>
           <h1 className="page-title">Аналитика платформы</h1>
           <p className="page-subtitle">Динамика за выбранный период</p>
         </div>
@@ -63,9 +63,9 @@ export default function AdminAnalytics() {
       {/* График динамики */}
       <div className="card p-4 sm:p-5">
         <p className="kicker text-slate-400 mb-1">Тренды</p>
-        <h2 className="text-sm font-bold text-gray-800 mb-3">Динамика по месяцам</h2>
+        <h2 className="text-base font-bold text-gray-800 mb-3">Динамика по месяцам</h2>
         {isLoading ? (
-          <div className="h-64 bg-gray-50 dark:bg-slate-800/50 rounded-xl animate-pulse" />
+          <div className="h-64 bg-gray-50 rounded-xl animate-pulse" />
         ) : (
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={data?.series || []} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
@@ -74,7 +74,7 @@ export default function AdminAnalytics() {
               <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 12 }} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Line type="monotone" dataKey="users" name="Пользователи" stroke="#6366F1" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="users" name="Пользователи" stroke="var(--brand-600)" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="orders" name="Заказы" stroke="#F59E0B" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
@@ -85,9 +85,9 @@ export default function AdminAnalytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="card p-4 sm:p-5">
           <p className="kicker text-slate-400 mb-1">Роли</p>
-          <h2 className="text-sm font-bold text-gray-800 mb-3">Пользователи по ролям</h2>
+          <h2 className="text-base font-bold text-gray-800 mb-3">Пользователи по ролям</h2>
           {isLoading ? (
-            <div className="h-56 bg-gray-50 dark:bg-slate-800/50 rounded-xl animate-pulse" />
+            <div className="h-56 bg-gray-50 rounded-xl animate-pulse" />
           ) : (data?.roles?.length ? (
             <ResponsiveContainer width="100%" height={224}>
               <PieChart>
@@ -107,7 +107,7 @@ export default function AdminAnalytics() {
 
         <div className="card p-4 sm:p-5">
           <p className="kicker text-slate-400 mb-1">Общее</p>
-          <h2 className="text-sm font-bold text-gray-800 mb-3">Сводка</h2>
+          <h2 className="text-base font-bold text-gray-800 mb-3">Сводка</h2>
           <dl className="grid-hairline text-sm">
             <Row label="Всего пользователей" value={stats?.users} />
             <Row label="Активных" value={stats?.activeUsers} />

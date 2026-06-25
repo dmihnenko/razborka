@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BRAND } from '@/config/brand'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Lock, Eye, EyeOff } from 'lucide-react'
@@ -14,7 +13,8 @@ import { Logo } from '@/components/brand/Logo'
 export default function ResetPassword() {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
-  const [show, setShow] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [ready, setReady] = useState(false)
   const [email, setEmail] = useState('')
@@ -60,75 +60,149 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="login-root flex min-h-dvh items-center justify-center px-4" style={{ background: '#0D1117' }}>
-      <style>{`.login-root{font-family:'DM Sans',system-ui,sans-serif}.brand-font{font-family:'Bebas Neue',sans-serif}
-        .input-dark{background:rgba(255,255,255,0.07);border:1px solid rgba(148,163,184,0.22);color:#F1F5F9;width:100%;height:48px;padding-left:44px}
-        .input-dark::placeholder{color:#64748B}.input-dark:focus{outline:none;border-color:#4D51D4;box-shadow:0 0 0 3px rgba(59,130,246,0.18)}`}</style>
-      <div style={{ width: '100%', maxWidth: '360px' }}>
-        <div className="flex items-center justify-center gap-2.5 mb-8">
-          <Logo size="sm" withText={false} />
-          <span className="brand-font text-white" style={{ fontSize: '22px', letterSpacing: '3px' }}>{BRAND.name}</span>
+    <div
+      className="flex min-h-dvh"
+      style={{
+        fontFamily: 'var(--font-sans)',
+        background: 'var(--cab-bg)',
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
+      }}
+    >
+      <div className="flex-1 flex flex-col overflow-y-auto" style={{ minWidth: 0 }}>
+        <div
+          className="m-auto w-full"
+          style={{
+            maxWidth: '400px',
+            padding: 'clamp(24px, 5vw, 48px) clamp(16px, 4vw, 40px)',
+          }}
+        >
+          {/* Logo */}
+          <div className="flex items-center justify-center mb-4">
+            <Logo size="sm" withText />
+          </div>
+
+          {/* Карточка формы — единый стиль Ink & Signal */}
+          <div className="cab-card p-5 sm:p-6">
+            <div className="mb-6 text-center">
+              <h1
+                className="text-gray-900 font-extrabold mb-1.5"
+                style={{ fontSize: 'clamp(20px, 4vw, 24px)', letterSpacing: '-0.03em' }}
+              >
+                Новый пароль
+              </h1>
+              <p className="text-sm leading-relaxed text-gray-500">
+                Придумайте новый пароль для входа в систему
+              </p>
+              {email && (
+                <p className="mt-2 text-sm font-semibold text-gray-900 break-all">
+                  {email}
+                </p>
+              )}
+            </div>
+
+            {!ready ? (
+              <p className="text-sm leading-relaxed text-gray-500 text-center">
+                Проверяем ссылку из письма… Если страница не загружается, откройте ссылку из письма заново.
+              </p>
+            ) : (
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+                {/* Новый пароль */}
+                <div>
+                  <label htmlFor="new-password" className="form-label">
+                    Новый пароль
+                  </label>
+                  <div className="relative">
+                    <Lock
+                      size={15}
+                      strokeWidth={1.5}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"
+                      aria-hidden="true"
+                    />
+                    <input
+                      id="new-password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      placeholder="Минимум 6 символов"
+                      className="form-input w-full pl-10 pr-12"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(v => !v)}
+                      tabIndex={-1}
+                      aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-9 h-9 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                      {showPassword
+                        ? <EyeOff size={16} strokeWidth={1.5} aria-hidden="true" />
+                        : <Eye size={16} strokeWidth={1.5} aria-hidden="true" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Повтор пароля */}
+                <div>
+                  <label htmlFor="confirm-password" className="form-label">
+                    Повторите пароль
+                  </label>
+                  <div className="relative">
+                    <Lock
+                      size={15}
+                      strokeWidth={1.5}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"
+                      aria-hidden="true"
+                    />
+                    <input
+                      id="confirm-password"
+                      type={showConfirm ? 'text' : 'password'}
+                      value={confirm}
+                      onChange={(e) => setConfirm(e.target.value)}
+                      required
+                      placeholder="Повторите пароль"
+                      className="form-input w-full pl-10 pr-12"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm(v => !v)}
+                      tabIndex={-1}
+                      aria-label={showConfirm ? 'Скрыть подтверждение пароля' : 'Показать подтверждение пароля'}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-9 h-9 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                      {showConfirm
+                        ? <EyeOff size={16} strokeWidth={1.5} aria-hidden="true" />
+                        : <Eye size={16} strokeWidth={1.5} aria-hidden="true" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="cab-btn cab-btn-primary cab-btn-lg w-full mt-2"
+                  style={{ letterSpacing: '-0.01em' }}
+                >
+                  {loading ? 'Сохранение…' : 'Сохранить пароль'}
+                </button>
+
+                <div className="mt-1 text-center">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/login')}
+                    className="inline-flex items-center justify-center min-h-[44px] px-2 text-sm font-semibold text-[var(--cab-signal)] hover:text-[var(--cab-signal-hover)] transition-colors duration-150 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                  >
+                    Вернуться ко входу
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
-
-        <h2 style={{ color: '#F1F5F9', fontSize: '22px', fontWeight: 600, marginBottom: '4px', textAlign: 'center' }}>Новый пароль</h2>
-        <p style={{ color: '#94A3B8', fontSize: '13px', marginBottom: email ? '8px' : '24px', textAlign: 'center' }}>
-          Придумайте новый пароль для входа в систему
-        </p>
-        {email && (
-          <p style={{ color: '#F1F5F9', fontSize: '14px', fontWeight: 600, marginBottom: '24px', textAlign: 'center', wordBreak: 'break-all' }}>
-            {email}
-          </p>
-        )}
-
-        {!ready ? (
-          <p style={{ color: '#94A3B8', fontSize: '13px', textAlign: 'center' }}>
-            Проверяем ссылку из письма… Если страница не загружается, откройте ссылку из письма заново.
-          </p>
-        ) : (
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div className="field" style={{ position: 'relative' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748B' }} />
-              <input
-                type={show ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="Новый пароль (мин. 6)"
-                className="input-dark rounded-lg text-sm"
-                style={{ paddingRight: '44px' }}
-                autoComplete="new-password"
-              />
-              <button type="button" onClick={() => setShow(v => !v)} tabIndex={-1}
-                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#64748B', background: 'none', border: 'none', cursor: 'pointer' }}>
-                {show ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-            <div className="field" style={{ position: 'relative' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748B' }} />
-              <input
-                type={show ? 'text' : 'password'}
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                required
-                placeholder="Повторите пароль"
-                className="input-dark rounded-lg text-sm"
-                autoComplete="new-password"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg,#3538CD 0%,#2A2DA8 100%)', letterSpacing: '0.4px' }}
-            >
-              {loading ? 'Сохранение…' : 'Сохранить пароль'}
-            </button>
-            <button type="button" onClick={() => navigate('/login')}
-              style={{ color: '#4D51D4', fontSize: '13px', background: 'none', border: 'none', cursor: 'pointer' }}>
-              Вернуться ко входу
-            </button>
-          </form>
-        )}
       </div>
     </div>
   )

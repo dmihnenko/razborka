@@ -18,10 +18,10 @@ const FEATURES_PARTS = [
 ]
 
 const HIGHLIGHTS = [
-  { icon: ShieldCheck, title: 'Безопасно',   desc: 'Supabase RLS — каждая компания видит только свои данные', color: 'bg-indigo-50 text-indigo-600' },
-  { icon: Smartphone,  title: 'Мобильный',   desc: 'PWA — работает как приложение на iOS и Android',          color: 'bg-green-50 text-green-600' },
-  { icon: BarChart3,   title: 'Аналитика',   desc: 'Графики доходов, статистика по клиентам и услугам',       color: 'bg-purple-50 text-purple-600' },
-  { icon: Users,       title: 'Мультироль',  desc: 'Администратор, менеджер, механик — у каждого свой доступ', color: 'bg-orange-50 text-orange-600' },
+  { icon: ShieldCheck, title: 'Безопасно',  desc: 'Supabase RLS — каждая компания видит только свои данные' },
+  { icon: Smartphone,  title: 'Мобильный',  desc: 'PWA — работает как приложение на iOS и Android' },
+  { icon: BarChart3,   title: 'Аналитика',  desc: 'Графики доходов, статистика по клиентам и услугам' },
+  { icon: Users,       title: 'Мультироль', desc: 'Администратор, менеджер, механик — у каждого свой доступ' },
 ]
 
 const fadeUp: Variants = {
@@ -38,50 +38,26 @@ export default function LandingPage() {
   return (
     <div
       className="min-h-dvh flex flex-col"
-      style={{ background: '#080C14', fontFamily: 'var(--font-sans)' }}
+      style={{ background: 'var(--cab-bg)', fontFamily: 'var(--font-sans)' }}
     >
 
       {/* ── NAV ─────────────────────────────────────────────── */}
-      <nav
-        className="sticky top-0 z-40"
-        style={{
-          borderBottom: '1px solid rgba(59,130,246,0.1)',
-          background: 'rgba(8,12,20,0.88)',
-          backdropFilter: 'blur(14px)',
-          WebkitBackdropFilter: 'blur(14px)',
-        }}
-      >
+      <nav className="sticky top-0 z-40 border-b border-gray-200 bg-white/85 backdrop-blur-md">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 flex items-center justify-between h-14">
           {/* Logo */}
-          <div className="flex items-center gap-2.5">
-            <Logo size="sm" withText={false} className="flex-shrink-0" />
-            <span
-              className="font-extrabold tracking-tight"
-              style={{ color: '#F1F5F9', fontSize: '17px', letterSpacing: '-0.02em' }}
-            >
-              {BRAND.wordmark.lead}<span style={{ color: 'var(--logo-net, #0D9488)' }}>{BRAND.wordmark.accent}</span>
-            </span>
-          </div>
+          <Logo size="sm" withText className="flex-shrink-0" />
 
           {/* Nav actions */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigate('/market')}
-              className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.97]"
-              style={{ color: '#94A3B8', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
-              onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.color = '#E2E8F0'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.15)' }}
-              onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.color = '#94A3B8'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.08)' }}
+              className="hidden sm:inline-flex btn-secondary"
             >
               <Package size={14} strokeWidth={1.5} /> Каталог
             </button>
             <button
               onClick={() => navigate('/login')}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl text-white transition-all duration-200 active:scale-[0.97]"
-              style={{
-                background: 'linear-gradient(180deg,#4D51D4 0%,#3538CD 100%)',
-                boxShadow: '0 1px 2px rgba(37,99,235,0.35), 0 4px 12px -2px rgba(37,99,235,0.35)',
-                border: 'none',
-              }}
+              className="btn-primary"
             >
               Войти
             </button>
@@ -94,14 +70,15 @@ export default function LandingPage() {
         className="relative overflow-hidden flex-shrink-0"
         style={{ padding: 'clamp(72px,10vw,112px) 16px clamp(60px,8vw,88px)' }}
       >
-        {/* Grid pattern */}
+        {/* Grid pattern (нежный индиго) */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundImage:
-              'linear-gradient(rgba(59,130,246,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.07) 1px,transparent 1px)',
+              'linear-gradient(rgba(53,56,205,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(53,56,205,0.05) 1px,transparent 1px)',
             backgroundSize: '48px 48px',
           }}
+          aria-hidden="true"
         />
         {/* Glow orb */}
         <div
@@ -109,13 +86,15 @@ export default function LandingPage() {
           style={{
             top: '-220px', left: '50%', transform: 'translateX(-50%)',
             width: '860px', height: '640px', borderRadius: '50%',
-            background: 'radial-gradient(circle,rgba(37,99,235,0.15) 0%,transparent 65%)',
+            background: 'radial-gradient(circle,rgba(53,56,205,0.08) 0%,transparent 65%)',
           }}
+          aria-hidden="true"
         />
         {/* Bottom fade */}
         <div
           className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
-          style={{ background: 'linear-gradient(to bottom,transparent,#080C14)' }}
+          style={{ background: 'linear-gradient(to bottom,transparent,var(--cab-bg))' }}
+          aria-hidden="true"
         />
 
         <motion.div
@@ -126,19 +105,8 @@ export default function LandingPage() {
         >
           {/* Pill badge */}
           <motion.div variants={fadeUp} className="inline-flex items-center gap-2 mb-8">
-            <span
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold"
-              style={{
-                background: 'rgba(37,99,235,0.13)',
-                border: '1px solid rgba(37,99,235,0.28)',
-                color: '#93C5FD',
-                letterSpacing: '0.02em',
-              }}
-            >
-              <span
-                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                style={{ background: '#4D51D4', boxShadow: '0 0 6px #4D51D4' }}
-              />
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-[var(--cab-signal-weak)] text-[var(--cab-signal)]">
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-[var(--cab-signal)]" />
               CRM для автобизнеса
             </span>
           </motion.div>
@@ -146,12 +114,11 @@ export default function LandingPage() {
           {/* Headline */}
           <motion.h1
             variants={fadeUp}
-            className="font-extrabold mb-6"
+            className="font-extrabold mb-6 text-gray-900"
             style={{
               fontSize: 'clamp(42px,7.5vw,84px)',
               lineHeight: '1.0',
               letterSpacing: '-0.035em',
-              color: '#F1F5F9',
             }}
           >
             Управляй<br />
@@ -162,8 +129,8 @@ export default function LandingPage() {
           {/* Subtitle */}
           <motion.p
             variants={fadeUp}
-            className="mx-auto mb-10 leading-relaxed"
-            style={{ color: '#64748B', fontSize: 'clamp(15px,2vw,17px)', maxWidth: '520px' }}
+            className="mx-auto mb-10 leading-relaxed text-gray-600"
+            style={{ fontSize: 'clamp(15px,2vw,17px)', maxWidth: '520px' }}
           >
             Полная система управления для авторазборки.
             Автомобили на разборку, склад запчастей, заказы клиентов — всё в одном месте.
@@ -176,27 +143,15 @@ export default function LandingPage() {
           >
             <button
               onClick={() => navigate('/login')}
-              className="inline-flex items-center justify-center gap-2 font-semibold text-white text-sm rounded-xl px-7 py-3.5 active:scale-[0.97] transition-all duration-200"
-              style={{
-                background: 'linear-gradient(135deg,#4D51D4 0%,#3538CD 55%,#2A2DA8 100%)',
-                boxShadow: '0 2px 4px rgba(37,99,235,0.35),0 8px 20px -4px rgba(37,99,235,0.5)',
-                minWidth: 'min(240px,80vw)',
-                border: 'none',
-              }}
+              className="btn-primary btn-lg"
+              style={{ minWidth: 'min(240px,80vw)' }}
             >
-              Начать работу <ArrowRight size={16} strokeWidth={2} />
+              Начать работу <ArrowRight size={16} strokeWidth={1.5} />
             </button>
             <button
               onClick={() => navigate('/market')}
-              className="inline-flex items-center justify-center gap-2 font-semibold text-sm rounded-xl px-7 py-3.5 active:scale-[0.97] transition-all duration-200"
-              style={{
-                color: '#CBD5E1',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                minWidth: 'min(240px,80vw)',
-              }}
-              onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.09)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.2)' }}
-              onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)' }}
+              className="btn-secondary btn-lg"
+              style={{ minWidth: 'min(240px,80vw)' }}
             >
               <Package size={16} strokeWidth={1.5} /> Каталог запчастей
             </button>
@@ -214,90 +169,63 @@ export default function LandingPage() {
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
         >
           {/* Авторазборка */}
-          <div
-            className="sm:col-span-2 lg:col-span-1 rounded-2xl p-6 flex flex-col gap-5"
-            style={{
-              background: 'linear-gradient(135deg,rgba(21,128,61,0.12) 0%,rgba(15,23,42,0.7) 100%)',
-              border: '1px solid rgba(34,197,94,0.18)',
-            }}
-          >
+          <div className="card sm:col-span-2 lg:col-span-1 flex flex-col gap-5">
             <div className="flex items-center gap-3">
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'rgba(21,128,61,0.2)', border: '1px solid rgba(34,197,94,0.25)' }}
-              >
-                <Package size={20} color="#4ADE80" strokeWidth={1.5} />
-              </div>
+              <span className="icon-tile bg-[var(--cab-signal-weak)] text-[var(--cab-signal)]">
+                <Package size={20} strokeWidth={1.5} />
+              </span>
               <div>
-                <div className="font-extrabold text-base" style={{ color: '#F1F5F9', letterSpacing: '-0.02em' }}>Авторазборка</div>
-                <div className="text-xs" style={{ color: '#475569' }}>Учёт запчастей и продаж</div>
+                <div className="font-extrabold text-base text-gray-900" style={{ letterSpacing: '-0.02em' }}>Авторазборка</div>
+                <div className="text-xs text-gray-500">Учёт запчастей и продаж</div>
               </div>
             </div>
             <div className="flex flex-col gap-2.5">
               {FEATURES_PARTS.map(f => (
                 <div key={f} className="flex items-center gap-2.5">
-                  <CheckCircle size={14} strokeWidth={2} style={{ color: '#4ADE80', flexShrink: 0 }} />
-                  <span className="text-sm font-medium" style={{ color: '#CBD5E1' }}>{f}</span>
+                  <CheckCircle size={14} strokeWidth={1.5} className="text-[var(--cab-signal)] flex-shrink-0" />
+                  <span className="text-sm font-medium text-gray-700">{f}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Личные авто */}
-          <div
-            className="rounded-2xl p-6 flex flex-col gap-4"
-            style={{
-              background: 'linear-gradient(135deg,rgba(30,64,175,0.15) 0%,rgba(15,23,42,0.7) 100%)',
-              border: '1px solid rgba(59,130,246,0.18)',
-            }}
-          >
+          <div className="card flex flex-col gap-4">
             <div className="flex items-center gap-3">
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'rgba(37,99,235,0.18)', border: '1px solid rgba(59,130,246,0.25)' }}
-              >
-                <Car size={20} color="#60A5FA" strokeWidth={1.5} />
-              </div>
+              <span className="icon-tile bg-[var(--cab-signal-weak)] text-[var(--cab-signal)]">
+                <Car size={20} strokeWidth={1.5} />
+              </span>
               <div>
-                <div className="font-extrabold text-base" style={{ color: '#F1F5F9', letterSpacing: '-0.02em' }}>Личные авто</div>
-                <div className="text-xs" style={{ color: '#475569' }}>Учёт автомобилей владельцев</div>
+                <div className="font-extrabold text-base text-gray-900" style={{ letterSpacing: '-0.02em' }}>Личные авто</div>
+                <div className="text-xs text-gray-500">Учёт автомобилей владельцев</div>
               </div>
             </div>
-            <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
+            <p className="text-sm leading-relaxed text-gray-600">
               Ведите историю ТО, ремонтов и расходов по каждому автомобилю. Клиент видит свой
               профиль через публичную ссылку.
             </p>
           </div>
 
           {/* Маркетплейс */}
-          <div
-            className="rounded-2xl p-6 flex flex-col gap-4"
-            style={{
-              background: 'linear-gradient(135deg,rgba(88,28,135,0.15) 0%,rgba(15,23,42,0.7) 100%)',
-              border: '1px solid rgba(139,92,246,0.18)',
-            }}
-          >
+          <div className="card flex flex-col gap-4">
             <div className="flex items-center gap-3">
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'rgba(139,92,246,0.18)', border: '1px solid rgba(139,92,246,0.25)' }}
-              >
-                <Zap size={20} color="#C084FC" strokeWidth={1.5} />
-              </div>
+              <span className="icon-tile bg-[var(--cab-signal-weak)] text-[var(--cab-signal)]">
+                <Zap size={20} strokeWidth={1.5} />
+              </span>
               <div>
-                <div className="font-extrabold text-base" style={{ color: '#F1F5F9', letterSpacing: '-0.02em' }}>Маркетплейс</div>
-                <div className="text-xs" style={{ color: '#475569' }}>Публичный каталог</div>
+                <div className="font-extrabold text-base text-gray-900" style={{ letterSpacing: '-0.02em' }}>Маркетплейс</div>
+                <div className="text-xs text-gray-500">Публичный каталог</div>
               </div>
             </div>
-            <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
+            <p className="text-sm leading-relaxed text-gray-600">
               Публикуйте запчасти в общем каталоге — покупатели найдут нужную деталь без регистрации.
             </p>
             <button
               onClick={() => navigate('/market')}
-              className="mt-auto inline-flex items-center gap-1.5 text-xs font-bold transition-colors duration-150"
-              style={{ color: '#C084FC', background: 'none', border: 'none', cursor: 'pointer', padding: 0, width: 'fit-content' }}
+              className="mt-auto inline-flex items-center gap-1.5 text-xs font-bold text-[var(--cab-signal)] hover:text-[var(--cab-signal-hover)] transition-colors duration-150 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+              style={{ width: 'fit-content', minHeight: '28px' }}
             >
-              Открыть каталог <ArrowRight size={13} strokeWidth={2} />
+              Открыть каталог <ArrowRight size={13} strokeWidth={1.5} />
             </button>
           </div>
         </motion.div>
@@ -310,8 +238,8 @@ export default function LandingPage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="font-extrabold text-center mb-8"
-          style={{ color: '#F1F5F9', fontSize: 'clamp(22px,4vw,32px)', letterSpacing: '-0.03em' }}
+          className="font-extrabold text-center mb-8 text-gray-900"
+          style={{ fontSize: 'clamp(22px,4vw,32px)', letterSpacing: '-0.03em' }}
         >
           Почему <span className="text-gradient-brand">{BRAND.name}</span>
         </motion.h2>
@@ -323,24 +251,18 @@ export default function LandingPage() {
           whileInView="visible"
           viewport={{ once: true, margin: '-60px' }}
         >
-          {HIGHLIGHTS.map(({ icon: Icon, title, desc, color }) => (
+          {HIGHLIGHTS.map(({ icon: Icon, title, desc }) => (
             <motion.div
               key={title}
               variants={fadeUp}
-              className="rounded-2xl p-5 flex flex-col gap-3 transition-all duration-200 hover:-translate-y-1"
-              style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.07)',
-              }}
-              onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(59,130,246,0.05)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(59,130,246,0.18)' }}
-              onMouseOut={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.07)' }}
+              className="card card-interactive flex flex-col gap-3"
             >
-              <div className={`icon-tile ${color}`}>
+              <span className="icon-tile bg-[var(--cab-signal-weak)] text-[var(--cab-signal)]">
                 <Icon size={18} strokeWidth={1.5} />
-              </div>
+              </span>
               <div>
-                <div className="font-bold text-sm mb-1" style={{ color: '#F1F5F9' }}>{title}</div>
-                <div className="text-xs leading-relaxed" style={{ color: '#475569' }}>{desc}</div>
+                <div className="font-bold text-sm mb-1 text-gray-900">{title}</div>
+                <div className="text-xs leading-relaxed text-gray-600">{desc}</div>
               </div>
             </motion.div>
           ))}
@@ -354,66 +276,42 @@ export default function LandingPage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-40px' }}
           transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="mx-auto max-w-xl text-center rounded-3xl p-10 sm:p-14 relative overflow-hidden"
-          style={{
-            background: 'linear-gradient(135deg,rgba(30,58,95,0.45) 0%,rgba(15,23,42,0.7) 100%)',
-            border: '1px solid rgba(59,130,246,0.2)',
-          }}
+          className="cab-card mx-auto max-w-xl text-center relative overflow-hidden p-10 sm:p-14"
         >
-          {/* Subtle glow behind card */}
           <div
-            className="absolute inset-0 pointer-events-none"
-            style={{ background: 'radial-gradient(circle at 50% 0%,rgba(37,99,235,0.1) 0%,transparent 70%)' }}
-          />
-
-          <div className="relative">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5"
-              style={{
-                background: 'linear-gradient(180deg,#4D51D4 0%,#3538CD 100%)',
-                boxShadow: '0 4px 16px -4px rgba(37,99,235,0.6)',
-              }}
-            >
-              <Car size={26} color="white" strokeWidth={1.5} />
-            </div>
-
-            <h2
-              className="font-extrabold mb-3"
-              style={{ color: '#F1F5F9', fontSize: 'clamp(22px,4vw,30px)', letterSpacing: '-0.03em' }}
-            >
-              Готовы начать?
-            </h2>
-            <p className="mb-8 leading-relaxed" style={{ color: '#64748B', fontSize: '15px' }}>
-              Войдите в систему и начните управлять своим автобизнесом прямо сейчас.
-            </p>
-
-            <button
-              onClick={() => navigate('/login')}
-              className="inline-flex items-center justify-center gap-2 text-white font-semibold rounded-xl px-8 py-3.5 active:scale-[0.97] transition-all duration-200"
-              style={{
-                background: 'linear-gradient(135deg,#4D51D4 0%,#3538CD 55%,#2A2DA8 100%)',
-                boxShadow: '0 2px 4px rgba(37,99,235,0.35),0 8px 24px -4px rgba(37,99,235,0.55)',
-                border: 'none',
-                minWidth: 'min(220px,80vw)',
-                fontSize: '15px',
-              }}
-            >
-              Войти в {BRAND.name} <ArrowRight size={16} strokeWidth={2} />
-            </button>
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5"
+            style={{ background: 'var(--brand-gradient)', boxShadow: '0 4px 16px -4px rgba(53,56,205,0.45)' }}
+          >
+            <Car size={26} color="white" strokeWidth={1.5} />
           </div>
+
+          <h2
+            className="font-extrabold mb-3 text-gray-900"
+            style={{ fontSize: 'clamp(22px,4vw,30px)', letterSpacing: '-0.03em' }}
+          >
+            Готовы начать?
+          </h2>
+          <p className="mb-8 leading-relaxed text-gray-600" style={{ fontSize: '15px' }}>
+            Войдите в систему и начните управлять своим автобизнесом прямо сейчас.
+          </p>
+
+          <button
+            onClick={() => navigate('/login')}
+            className="btn-primary btn-lg"
+            style={{ minWidth: 'min(220px,80vw)' }}
+          >
+            Войти в {BRAND.name} <ArrowRight size={16} strokeWidth={1.5} />
+          </button>
         </motion.div>
       </section>
 
       {/* ── FOOTER ──────────────────────────────────────────── */}
-      <footer
-        className="mt-auto py-6 px-4 text-center"
-        style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
-      >
+      <footer className="mt-auto py-6 px-4 text-center border-t border-gray-200">
         <div className="inline-flex items-center gap-2 mb-2">
           <Logo size="sm" withText={false} className="[&>svg]:!w-5 [&>svg]:!h-5" />
-          <span className="font-extrabold text-xs tracking-tight" style={{ color: '#334155', letterSpacing: '-0.01em' }}>{BRAND.name}</span>
+          <span className="font-extrabold text-xs tracking-tight text-gray-900" style={{ letterSpacing: '-0.01em' }}>{BRAND.name}</span>
         </div>
-        <p className="text-xs" style={{ color: '#1E293B' }}>Система управления для авторазборки</p>
+        <p className="text-xs text-gray-500">Система управления для авторазборки</p>
       </footer>
 
     </div>

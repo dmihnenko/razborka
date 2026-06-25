@@ -13,12 +13,12 @@ import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface Role { id: string; name: string; display_name: string; description: string | null; is_active: boolean }
-type Step = 1 | 2 | 3
+type Step = 1 | 2
 
 const STEPS = [
   { num: 1, label: 'Профиль' },
   { num: 2, label: 'Роль' },
-]
+] as const
 
 export default function UserEdit() {
   const { id } = useParams<{ id: string }>()
@@ -173,16 +173,16 @@ export default function UserEdit() {
   }
 
   if (isLoading) return (
-    <div className="min-h-dvh bg-[#FAFAFA] flex items-center justify-center">
-      <span className="w-5 h-5 border-2 border-gray-200 border-t-indigo-500 rounded-full animate-spin" />
+    <div className="min-h-dvh bg-[var(--cab-bg)] flex items-center justify-center">
+      <span className="w-5 h-5 border-2 border-gray-200 rounded-full animate-spin" style={{ borderTopColor: 'var(--cab-signal)' }} />
     </div>
   )
 
   if (!userProfile) return (
-    <div className="min-h-dvh bg-[#FAFAFA] flex items-center justify-center">
+    <div className="min-h-dvh bg-[var(--cab-bg)] flex items-center justify-center">
       <div className="text-center">
         <p className="text-gray-500 mb-4">Пользователь не найден</p>
-        <button onClick={() => navigate(-1)} className="text-indigo-600 hover:underline text-sm">← Назад</button>
+        <button onClick={() => navigate(-1)} className="text-sm hover:underline" style={{ color: 'var(--cab-signal)' }}>← Назад</button>
       </div>
     </div>
   )
@@ -190,16 +190,16 @@ export default function UserEdit() {
   const avatarLetter = (userProfile.full_name || userProfile.username || userProfile.email || '?').charAt(0).toUpperCase()
 
   return (
-    <div className="min-h-dvh bg-[#FAFAFA] flex flex-col">
+    <div className="min-h-dvh bg-[var(--cab-bg)] flex flex-col">
       {/* Хедер */}
       <div className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-gray-200/80 shadow-sm">
         <div className="px-4 h-14 flex items-center gap-3">
-          <button onClick={handleBack} className="p-1.5 rounded-xl hover:bg-gray-100 text-gray-400 min-h-[44px] min-w-[44px] flex items-center justify-center">
+          <button onClick={handleBack} className="p-1.5 rounded-xl hover:bg-gray-100 text-gray-500 min-h-[44px] min-w-[44px] flex items-center justify-center">
             <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
           </button>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-gray-800 truncate">{userProfile.full_name || userProfile.username || userProfile.email}</p>
-            <p className="text-[11px] text-gray-400">Шаг {step} из {totalSteps}</p>
+            <p className="text-[11px] text-gray-500">Шаг {step} из {totalSteps}</p>
           </div>
           {step === totalSteps ? (
             <button onClick={() => updateMutation.mutate()} disabled={!canSave || updateMutation.isPending}
@@ -217,91 +217,104 @@ export default function UserEdit() {
 
         {/* Прогресс */}
         <div className="px-4 pb-3 flex items-center gap-2">
-          {STEPS.slice(0, 2).map((s, i) => (
-            <div key={s.num} className="flex items-center gap-2 flex-1">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all ${
-                step > s.num ? 'bg-indigo-600 text-white' : step === s.num ? 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-600' : 'bg-gray-100 text-gray-400'
-              }`}>
-                {step > s.num ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : s.num}
+          {STEPS.map((s, i) => {
+            const done = step > s.num
+            const active = step === s.num
+            return (
+              <div key={s.num} className="flex items-center gap-2 flex-1">
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all"
+                  style={
+                    done
+                      ? { background: 'var(--cab-signal)', color: '#fff' }
+                      : active
+                      ? { background: 'var(--cab-signal-weak)', color: 'var(--cab-signal)', boxShadow: '0 0 0 2px var(--cab-signal)' }
+                      : { background: '#F3F4F6', color: '#9CA3AF' }
+                  }
+                >
+                  {done ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : s.num}
+                </div>
+                <span className="text-xs font-medium" style={active ? { color: 'var(--cab-signal)' } : { color: '#9CA3AF' }}>{s.label}</span>
+                {i < STEPS.length - 1 && (
+                  <div className="flex-1 h-0.5 rounded-full" style={done ? { background: 'var(--cab-signal)' } : { background: '#E5E7EB' }} />
+                )}
               </div>
-              <span className={`text-xs font-medium ${step === s.num ? 'text-indigo-700' : 'text-gray-400'}`}>{s.label}</span>
-              {i < totalSteps - 1 && <div className={`flex-1 h-0.5 rounded-full ${step > s.num ? 'bg-indigo-600' : 'bg-gray-200'}`} />}
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-5 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] max-w-lg mx-auto w-full">
 
         {/* Карточка пользователя */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-lg font-bold flex-shrink-0 shadow-sm">
+        <div className="card p-4 mb-5 flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold flex-shrink-0 shadow-sm" style={{ background: 'var(--brand-gradient)' }}>
             {avatarLetter}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-gray-900 truncate">{userProfile.full_name || 'Имя не указано'}</p>
-            <p className="text-xs text-gray-400 truncate">{userProfile.email}</p>
+            <p className="text-xs text-gray-500 truncate">{userProfile.email}</p>
           </div>
-          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${userProfile.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+          <span className={`badge flex-shrink-0 ${userProfile.is_active ? 'badge-green' : 'badge-gray'}`}>
             {userProfile.is_active ? 'Активен' : 'Неактивен'}
           </span>
         </div>
 
         {/* ─── ШАГ 1: Профиль ─── */}
         {step === 1 && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="card p-0 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+              <div className="icon-tile-sm bg-blue-50">
                 <User className="w-4 h-4 text-blue-600" strokeWidth={1.5} />
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-800">Профиль</p>
-                <p className="text-xs text-gray-400">Личные данные</p>
+                <p className="text-xs text-gray-500">Личные данные</p>
               </div>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">ФИО</label>
+                <label className="form-label">ФИО</label>
                 <input type="text" value={formData.full_name} onChange={e => setFormData(p => ({ ...p, full_name: e.target.value }))}
                   placeholder="Иванов Иван Иванович"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+                  className="form-input" />
               </div>
               {isAdmin && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Логин (username)</label>
+                  <label className="form-label">Логин (username)</label>
                   <input type="text" value={formData.username}
                     onChange={e => setFormData(p => ({ ...p, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') }))}
                     placeholder="username" autoComplete="off"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
-                  <p className="text-xs text-gray-400 mt-1">Только латиница, цифры, _ (3-30 символов)</p>
+                    className="form-input font-mono" />
+                  <p className="text-xs text-gray-500 mt-1">Только латиница, цифры, _ (3-30 символов)</p>
                 </div>
               )}
               {isAdmin && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Email</label>
+                  <label className="form-label">Email</label>
                   <input type="email" value={formData.email}
                     onChange={e => setFormData(p => ({ ...p, email: e.target.value }))}
                     placeholder="email@example.com" autoComplete="off"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
-                  <p className="text-xs text-gray-400 mt-1">Используется для входа и восстановления пароля</p>
+                    className="form-input" />
+                  <p className="text-xs text-gray-500 mt-1">Используется для входа и восстановления пароля</p>
                 </div>
               )}
               {isAdmin && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Новый пароль</label>
+                  <label className="form-label">Новый пароль</label>
                   <input type="text" value={formData.password}
                     onChange={e => setFormData(p => ({ ...p, password: e.target.value }))}
                     placeholder="Оставьте пустым, чтобы не менять" autoComplete="new-password"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
-                  <p className="text-xs text-gray-400 mt-1">Минимум 6 символов. Заполняйте только при смене пароля</p>
+                    className="form-input" />
+                  <p className="text-xs text-gray-500 mt-1">Минимум 6 символов. Заполняйте только при смене пароля</p>
                 </div>
               )}
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Телефон</label>
+                <label className="form-label">Телефон</label>
                 <IMaskInput mask="+380 00 000-00-00" value={formData.phone}
                   onAccept={v => setFormData(p => ({ ...p, phone: String(v) }))}
                   placeholder="+380 XX XXX-XX-XX"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+                  className="form-input" />
               </div>
             </div>
           </div>
@@ -309,14 +322,14 @@ export default function UserEdit() {
 
         {/* ─── ШАГ 2: Роли ─── */}
         {step === 2 && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-visible">
+          <div className="card p-0 overflow-visible">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
-                <Shield className="w-4 h-4 text-purple-600" strokeWidth={1.5} />
+              <div className="icon-tile-sm" style={{ background: 'var(--cab-signal-weak)' }}>
+                <Shield className="w-4 h-4" strokeWidth={1.5} style={{ color: 'var(--cab-signal)' }} />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-800">Роль <span className="text-red-400">*</span></p>
-                <p className="text-xs text-gray-400">Права доступа</p>
+                <p className="text-sm font-bold text-gray-800">Роль <span className="text-red-500">*</span></p>
+                <p className="text-xs text-gray-500">Права доступа</p>
               </div>
             </div>
             <div className="p-5">
@@ -332,10 +345,10 @@ export default function UserEdit() {
 
         {/* ── Действия над аккаунтом ── */}
         {isAdmin && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mt-5">
+          <div className="card p-0 overflow-hidden mt-5">
             <div className="px-5 py-4 border-b border-gray-100">
               <p className="text-sm font-bold text-gray-800">Действия</p>
-              <p className="text-xs text-gray-400">Управление аккаунтом</p>
+              <p className="text-xs text-gray-500">Управление аккаунтом</p>
             </div>
             <div className="p-4 flex flex-wrap gap-2">
               {!targetIsAdmin && (

@@ -17,7 +17,7 @@ import type { CompanySubscription, Subscription } from '@/types/subscription'
 import { durationLabel } from '@/config/subscriptionPlans'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
-import { useBlockScroll } from '@/hooks/useBlockScroll'
+import Modal from '@/components/ui/Modal'
 
 const DURATION_OPTIONS = [
   { value: 1,  label: '1 месяц' },
@@ -48,10 +48,10 @@ function subStatus(sub: CompanySubscription): 'active' | 'expiring' | 'expired' 
 }
 
 const STATUS_STYLE = {
-  active:   { label: 'Активна',     cls: 'bg-green-100 text-green-700' },
-  expiring: { label: 'Истекает',    cls: 'bg-amber-100 text-amber-700' },
-  expired:  { label: 'Просрочена',  cls: 'bg-red-100 text-red-700' },
-  inactive: { label: 'Неактивна',   cls: 'bg-gray-100 text-gray-500' },
+  active:   { label: 'Активна',     cls: 'badge badge-green' },
+  expiring: { label: 'Истекает',    cls: 'badge badge-yellow' },
+  expired:  { label: 'Просрочена',  cls: 'badge badge-red' },
+  inactive: { label: 'Неактивна',   cls: 'badge badge-gray' },
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
@@ -175,15 +175,15 @@ export default function Subscriptions() {
       {/* ── Stats row ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
-          { label: 'Активных',   value: stats?.total_active || 0,   icon: CheckCircle2, color: '#16A34A', bg: '#F0FDF4' },
-          { label: 'Месячных',   value: stats?.total_monthly || 0,  icon: Calendar,     color: '#3538CD', bg: '#EFF6FF' },
-          { label: 'Годовых',    value: stats?.total_yearly || 0,   icon: TrendingUp,   color: '#7C3AED', bg: '#F5F3FF' },
-          { label: 'Бессрочных', value: stats?.total_lifetime || 0, icon: Infinity,     color: '#D97706', bg: '#FFFBEB' },
-          { label: 'Доход/мес',  value: `${(stats?.revenue_this_month || 0).toLocaleString()} грн.`, icon: CreditCard, color: '#059669', bg: '#F0FDF4' },
-        ].map(({ label, value, icon: Icon, color, bg }) => (
-          <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: bg }}>
-              <Icon className="w-4 h-4" style={{ color }} />
+          { label: 'Активных',   value: stats?.total_active || 0,   icon: CheckCircle2, signal: true },
+          { label: 'Месячных',   value: stats?.total_monthly || 0,  icon: Calendar,     signal: false },
+          { label: 'Годовых',    value: stats?.total_yearly || 0,   icon: TrendingUp,   signal: false },
+          { label: 'Бессрочных', value: stats?.total_lifetime || 0, icon: Infinity,     signal: false },
+          { label: 'Доход/мес',  value: `${(stats?.revenue_this_month || 0).toLocaleString()} грн.`, icon: CreditCard, signal: true },
+        ].map(({ label, value, icon: Icon, signal }) => (
+          <div key={label} className="stat-card !min-h-0 !flex-row !items-center gap-3 p-4">
+            <div className={`icon-tile w-9 h-9 ${signal ? 'bg-indigo-50' : 'bg-gray-100'}`}>
+              <Icon className={`w-4 h-4 ${signal ? 'text-indigo-600' : 'text-gray-500'}`} strokeWidth={1.5} />
             </div>
             <div className="min-w-0">
               <p className="text-lg font-bold text-gray-900 leading-tight">{value}</p>
@@ -302,10 +302,8 @@ export default function Subscriptions() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
                           <span className="font-semibold text-gray-900 text-sm truncate">{sub.company?.name || '—'}</span>
-                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
-                            Разборка
-                          </span>
-                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${stStyle.cls}`}>{stStyle.label}</span>
+                          <span className="badge badge-orange">Разборка</span>
+                          <span className={stStyle.cls}>{stStyle.label}</span>
                         </div>
                         <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
                           <span className="font-medium text-gray-700">{sub.subscription?.name || '—'}</span>
@@ -346,20 +344,20 @@ export default function Subscriptions() {
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button
                           onClick={() => setRenewing(sub)}
-                          className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-50 rounded-xl transition-colors"
+                          className="w-9 h-9 flex items-center justify-center text-green-600 hover:bg-green-50 rounded-xl transition-colors"
                           title={st === 'active' || st === 'expiring' ? 'Продлить' : 'Активировать / продлить'}>
                           <RotateCw className="w-4 h-4" />
                         </button>
                         {sub.is_active && !isExpired(sub) && (
                           <button
                             onClick={async () => { if (await showConfirm({ message: `Деактивировать подписку для ${sub.company?.name}?`, danger: true })) deactivateMutation.mutate(sub.id) }}
-                            className="w-8 h-8 flex items-center justify-center text-amber-500 hover:bg-amber-50 rounded-xl transition-colors" title="Деактивировать">
+                            className="w-9 h-9 flex items-center justify-center text-amber-500 hover:bg-amber-50 rounded-xl transition-colors" title="Деактивировать">
                             <XCircle className="w-4 h-4" />
                           </button>
                         )}
                         <button
                           onClick={async () => { if (await showConfirm({ message: `Удалить подписку для ${sub.company?.name}?`, danger: true })) deleteMutation.mutate(sub.id) }}
-                          className="w-8 h-8 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-xl transition-colors" title="Удалить">
+                          className="w-9 h-9 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-xl transition-colors" title="Удалить">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -492,54 +490,51 @@ export default function Subscriptions() {
 // ─── Renew / Activate Modal ───────────────────────────────────────────────────
 
 function RenewModal({ sub, onClose, onConfirm, isPending }: { sub: CompanySubscription; onClose: () => void; onConfirm: (months: number) => void; isPending: boolean }) {
-  useBlockScroll(true)
   const [months, setMonths] = useState(1)
   const base = sub.end_date && new Date(sub.end_date) > new Date() ? new Date(sub.end_date) : new Date()
   const preview = new Date(base); preview.setMonth(preview.getMonth() + months)
   const opts = [{ v: 1, l: '1 месяц' }, { v: 3, l: '3 месяца' }, { v: 6, l: '6 месяцев' }, { v: 12, l: '1 год' }]
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 px-3 py-3 sm:p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-bold text-gray-900">Продление подписки</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
-        </div>
-        <div className="p-5 space-y-4">
-          <div className="text-sm">
-            <p className="font-semibold text-gray-900">{sub.company?.name}</p>
-            <p className="text-gray-500 text-xs mt-0.5">
-              {sub.subscription?.name} · до {sub.end_date ? new Date(sub.end_date).toLocaleDateString('ru-RU') : '∞'}
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {opts.map(o => (
-              <button key={o.v} onClick={() => setMonths(o.v)}
-                className={`py-2.5 text-sm font-semibold rounded-xl border-2 transition-all ${months === o.v ? 'border-primary bg-primary/5 text-primary' : 'border-gray-100 text-gray-600 hover:border-gray-200'}`}>
-                {o.l}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-gray-500">
-            Новая дата окончания: <span className="font-semibold text-gray-700">{preview.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
-          </p>
-        </div>
-        <div className="px-5 py-4 border-t border-gray-100 flex gap-2">
-          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl">Отмена</button>
-          <button onClick={() => onConfirm(months)} disabled={isPending}
-            className="flex-1 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl disabled:opacity-50">
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="sm"
+      title="Продление подписки"
+      footer={
+        <>
+          <button onClick={onClose} className="cab-btn cab-btn-secondary flex-1">Отмена</button>
+          <button onClick={() => onConfirm(months)} disabled={isPending} className="cab-btn cab-btn-primary flex-1">
             {isPending ? 'Сохранение…' : 'Продлить'}
           </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="text-sm">
+          <p className="font-semibold text-gray-900">{sub.company?.name}</p>
+          <p className="text-gray-500 text-xs mt-0.5">
+            {sub.subscription?.name} · до {sub.end_date ? new Date(sub.end_date).toLocaleDateString('ru-RU') : '∞'}
+          </p>
         </div>
+        <div className="grid grid-cols-2 gap-2">
+          {opts.map(o => (
+            <button key={o.v} onClick={() => setMonths(o.v)}
+              className={`py-2.5 text-sm font-semibold rounded-xl border-2 transition-all ${months === o.v ? 'border-primary bg-primary/5 text-primary' : 'border-gray-100 text-gray-600 hover:border-gray-200'}`}>
+              {o.l}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500">
+          Новая дата окончания: <span className="font-semibold text-gray-700">{preview.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+        </p>
       </div>
-    </div>
+    </Modal>
   )
 }
 
 // ─── Assign Modal ─────────────────────────────────────────────────────────────
 
 function AssignModal({ plans, companies, form, onFormChange, onSubmit, onClose, isPending, selectedPlan }: any) {
-  useBlockScroll(true)
-
   const endDatePreview = (() => {
     if (!selectedPlan) return null
     if (selectedPlan.type === 'lifetime') return 'Бессрочно'
@@ -549,28 +544,35 @@ function AssignModal({ plans, companies, form, onFormChange, onSubmit, onClose, 
   })()
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 px-3 py-3 sm:p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
-          <h2 className="font-bold text-gray-900">Назначить подписку</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="md"
+      title="Назначить подписку"
+      footer={
+        <>
+          <button onClick={onClose} className="cab-btn cab-btn-secondary flex-1">Отмена</button>
+          <button onClick={onSubmit} disabled={isPending || !form.companyId || !form.subscriptionId} className="cab-btn cab-btn-primary flex-1">
+            {isPending ? 'Сохранение...' : 'Назначить'}
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {/* Company */}
+        <div>
+          <label className="form-label">Компания *</label>
+          <select value={form.companyId} onChange={e => onFormChange({ ...form, companyId: e.target.value })}
+            className="form-input">
+            <option value="">Выберите компанию...</option>
+            {companies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
         </div>
 
-        <div className="p-5 space-y-4 overflow-y-auto flex-1">
-          {/* Company */}
-          <div>
-            <label className="text-sm font-semibold text-gray-700 block mb-2">Компания *</label>
-            <select value={form.companyId} onChange={e => onFormChange({ ...form, companyId: e.target.value })}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white">
-              <option value="">Выберите компанию...</option>
-              {companies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
-
-          {/* Plan */}
-          <div>
-            <label className="text-sm font-semibold text-gray-700 block mb-2">Тарифный план *</label>
-            <div className="space-y-2">
+        {/* Plan */}
+        <div>
+          <label className="form-label">Тарифный план *</label>
+          <div className="space-y-2">
               {plans.filter((p: Subscription) => p.company_type === form.companyType).map((p: Subscription) => {
                 const isSelected = form.subscriptionId === p.id
                 return (
@@ -589,47 +591,38 @@ function AssignModal({ plans, companies, form, onFormChange, onSubmit, onClose, 
                     </div>
                   </button>
                 )
-              })}
-            </div>
+            })}
           </div>
-
-          {/* Duration (if not lifetime) */}
-          {selectedPlan && selectedPlan.type !== 'lifetime' && (
-            <div>
-              <label className="text-sm font-semibold text-gray-700 block mb-2">Длительность</label>
-              <div className="grid grid-cols-2 gap-2">
-                {DURATION_OPTIONS.map(opt => (
-                  <button key={opt.value} type="button"
-                    onClick={() => onFormChange({ ...form, months: opt.value })}
-                    className={`py-2.5 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${form.months === opt.value ? 'border-primary bg-primary/5 text-primary' : 'border-gray-100 text-gray-600 hover:border-gray-200'}`}>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              {endDatePreview && (
-                <p className="mt-2 text-xs text-gray-500">
-                  Дата окончания: <span className="font-semibold text-gray-700">{endDatePreview}</span>
-                </p>
-              )}
-            </div>
-          )}
-
-          {selectedPlan?.type === 'lifetime' && (
-            <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800">
-              ✓ Бессрочная подписка — без даты окончания
-            </div>
-          )}
         </div>
 
-        <div className="px-5 py-4 border-t border-gray-100 flex gap-2 flex-shrink-0">
-          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Отмена</button>
-          <button onClick={onSubmit} disabled={isPending || !form.companyId || !form.subscriptionId}
-            className="flex-1 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl disabled:opacity-50 transition-colors">
-            {isPending ? 'Сохранение...' : 'Назначить'}
-          </button>
-        </div>
+        {/* Duration (if not lifetime) */}
+        {selectedPlan && selectedPlan.type !== 'lifetime' && (
+          <div>
+            <label className="form-label">Длительность</label>
+            <div className="grid grid-cols-2 gap-2">
+              {DURATION_OPTIONS.map(opt => (
+                <button key={opt.value} type="button"
+                  onClick={() => onFormChange({ ...form, months: opt.value })}
+                  className={`py-2.5 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${form.months === opt.value ? 'border-primary bg-primary/5 text-primary' : 'border-gray-100 text-gray-600 hover:border-gray-200'}`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {endDatePreview && (
+              <p className="mt-2 text-xs text-gray-500">
+                Дата окончания: <span className="font-semibold text-gray-700">{endDatePreview}</span>
+              </p>
+            )}
+          </div>
+        )}
+
+        {selectedPlan?.type === 'lifetime' && (
+          <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800">
+            Бессрочная подписка — без даты окончания
+          </div>
+        )}
       </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -638,7 +631,6 @@ function AssignModal({ plans, companies, form, onFormChange, onSubmit, onClose, 
 import { supabase } from '@/lib/supabase'
 
 function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose: () => void; onSaved: () => void }) {
-  useBlockScroll(true)
   const [form, setForm] = useState({
     name:             plan.name,
     description:      plan.description || '',
@@ -680,65 +672,65 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
   type StringFormKey = { [K in keyof typeof form]: (typeof form)[K] extends string ? K : never }[keyof typeof form]
   const field = (label: string, key: StringFormKey, type = 'text', hint?: string) => (
     <div>
-      <label className="text-sm font-semibold text-gray-700 block mb-1">{label}</label>
-      {hint && <p className="text-xs text-gray-400 mb-1">{hint}</p>}
+      <label className="form-label">{label}</label>
+      {hint && <p className="text-xs text-gray-500 mb-1">{hint}</p>}
       <input
         type={type}
         value={form[key]}
         onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+        className="form-input"
       />
     </div>
   )
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 px-3 py-3 sm:p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
-          <h2 className="font-bold text-gray-900">Редактировать план: {plan.name}</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
-        </div>
-        <div className="p-5 space-y-4 overflow-y-auto flex-1">
-          {field('Название', 'name')}
-          {field('Описание', 'description')}
-          {field('Цена (грн./мес)', 'price', 'number')}
-          <div className="grid grid-cols-2 gap-2">
-            {field('Машины', 'max_vehicles', 'number')}
-            {field('Запчасти', 'max_parts', 'number')}
-          </div>
-          {field('Сотрудников (max_workers)', 'max_workers', 'number', 'Пусто = без лимита')}
-          {field('Порядок', 'sort_order', 'number')}
-          {/* Аналитика тоггл */}
-          <div className="flex items-center justify-between py-2">
-            <div>
-              <p className="text-sm font-semibold text-gray-700">Аналитика и окупаемость</p>
-              <p className="text-xs text-gray-400 mt-0.5">Включить модуль аналитики для этого тарифа</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setForm(f => ({ ...f, has_analytics: !f.has_analytics }))}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
-                form.has_analytics ? 'bg-primary' : 'bg-gray-200'
-              }`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                form.has_analytics ? 'translate-x-6' : 'translate-x-1'
-              }`} />
-            </button>
-          </div>
-          <p className="text-xs text-gray-400">
-            Пустой лимит = без ограничения (например, тариф «Персональный»).
-            Срок (месяц / год −15%) выбирается владельцем при оформлении.
-          </p>
-        </div>
-        <div className="px-5 py-4 border-t border-gray-100 flex gap-2 flex-shrink-0">
-          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Отмена</button>
-          <button onClick={handleSave} disabled={saving || !form.name.trim() || !form.price}
-            className="flex-1 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl disabled:opacity-50 transition-colors">
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="md"
+      title={`Редактировать план: ${plan.name}`}
+      footer={
+        <>
+          <button onClick={onClose} className="cab-btn cab-btn-secondary flex-1">Отмена</button>
+          <button onClick={handleSave} disabled={saving || !form.name.trim() || !form.price} className="cab-btn cab-btn-primary flex-1">
             {saving ? 'Сохранение...' : 'Сохранить'}
           </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {field('Название', 'name')}
+        {field('Описание', 'description')}
+        {field('Цена (грн./мес)', 'price', 'number')}
+        <div className="grid grid-cols-2 gap-2">
+          {field('Машины', 'max_vehicles', 'number')}
+          {field('Запчасти', 'max_parts', 'number')}
         </div>
+        {field('Сотрудников (max_workers)', 'max_workers', 'number', 'Пусто = без лимита')}
+        {field('Порядок', 'sort_order', 'number')}
+        {/* Аналитика тоггл */}
+        <div className="flex items-center justify-between py-2">
+          <div>
+            <p className="text-sm font-semibold text-gray-700">Аналитика и окупаемость</p>
+            <p className="text-xs text-gray-500 mt-0.5">Включить модуль аналитики для этого тарифа</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setForm(f => ({ ...f, has_analytics: !f.has_analytics }))}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
+              form.has_analytics ? 'bg-primary' : 'bg-gray-200'
+            }`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+              form.has_analytics ? 'translate-x-6' : 'translate-x-1'
+            }`} />
+          </button>
+        </div>
+        <p className="text-xs text-gray-500">
+          Пустой лимит = без ограничения (например, тариф «Персональный»).
+          Срок (месяц / год −15%) выбирается владельцем при оформлении.
+        </p>
       </div>
-    </div>
+    </Modal>
   )
 }

@@ -45,14 +45,16 @@ export default function AdminPanel() {
     },
   ]
 
-  // Цвета для плашек быстрых ссылок (icon-tile + badge-*)
+  // Ink & Signal: плашки быстрых ссылок — индиго-акцент (signal) либо нейтраль.
+  const SIGNAL = { iconCls: 'text-indigo-600', tileBg: 'bg-indigo-50' }
+  const NEUTRAL = { iconCls: 'text-gray-500',  tileBg: 'bg-gray-100' }
   const colorMap: Record<string, { iconCls: string; tileBg: string }> = {
-    indigo:  { iconCls: 'text-indigo-600',  tileBg: 'bg-indigo-50' },
-    blue:    { iconCls: 'text-blue-600',    tileBg: 'bg-blue-50' },
-    orange:  { iconCls: 'text-orange-600',  tileBg: 'bg-orange-50' },
-    emerald: { iconCls: 'text-emerald-600', tileBg: 'bg-emerald-50' },
-    purple:  { iconCls: 'text-purple-600',  tileBg: 'bg-purple-50' },
-    gray:    { iconCls: 'text-gray-500',    tileBg: 'bg-gray-100' },
+    indigo:  SIGNAL,
+    blue:    SIGNAL,
+    orange:  NEUTRAL,
+    emerald: NEUTRAL,
+    purple:  SIGNAL,
+    gray:    NEUTRAL,
   }
 
   const quickLinks = [
@@ -75,7 +77,7 @@ export default function AdminPanel() {
       <div className="page-header">
         <div>
           <h1 className="page-title">
-            {greeting}, {profile?.full_name?.split(' ')[0] || 'Администратор'} 👋
+            {greeting}, {profile?.full_name?.split(' ')[0] || 'Администратор'}
           </h1>
           <p className="page-subtitle">Панель управления · {BRAND.name}</p>
         </div>
@@ -117,7 +119,7 @@ export default function AdminPanel() {
                   <p className="text-sm font-semibold text-gray-800 group-hover:text-gray-900 truncate">
                     {link.name}
                   </p>
-                  <p className="text-[11px] text-gray-400 truncate mt-0.5">{link.desc}</p>
+                  <p className="text-[11px] text-gray-500 truncate mt-0.5">{link.desc}</p>
                 </div>
               </Link>
             )

@@ -21,14 +21,14 @@ interface UserFormData {
   parts_company_id: string
 }
 
-function getRoleBadgeColor(roleName?: string) {
-  const colors: Record<string, string> = {
-    admin: 'bg-red-100 text-red-700 border-red-200',
-    parts_owner: 'bg-orange-100 text-orange-700 border-orange-200',
-    parts_worker: 'bg-amber-100 text-amber-700 border-amber-200',
-    user: 'bg-gray-100 text-gray-600 border-gray-200',
+function getRoleBadgeClass(roleName?: string) {
+  const classes: Record<string, string> = {
+    admin: 'badge-red',
+    parts_owner: 'badge-orange',
+    parts_worker: 'badge-yellow',
+    user: 'badge-gray',
   }
-  return colors[roleName || ''] || 'bg-gray-100 text-gray-600 border-gray-200'
+  return `badge ${classes[roleName || ''] || 'badge-gray'}`
 }
 
 function shouldShowPartsCompany(roleNames: string[]) {
@@ -164,7 +164,7 @@ export default function UserCreate() {
     && (!needsPartsCompany || !!formData.parts_company_id)
 
   return (
-    <div className="min-h-dvh bg-gray-50">
+    <div className="min-h-dvh bg-[var(--cab-bg)]">
       {/* Хедер */}
       <div className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
@@ -211,10 +211,10 @@ export default function UserCreate() {
           <div className="lg:col-span-2 space-y-4">
 
             {/* Доступ в систему */}
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <div className="card p-0 overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                  <Lock className="w-4 h-4 text-purple-700" />
+                <div className="icon-tile-sm" style={{ background: 'var(--cab-signal-weak)' }}>
+                  <Lock className="w-4 h-4" strokeWidth={1.5} style={{ color: 'var(--cab-signal)' }} />
                 </div>
                 <div>
                   <h2 className="text-sm font-semibold text-gray-900">Доступ в систему</h2>
@@ -223,22 +223,22 @@ export default function UserCreate() {
               </div>
               <div className="p-5 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label className="form-label">
                     Логин <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={formData.username}
                     onChange={e => setFormData({ ...formData, username: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="form-input"
                     placeholder="username"
                     autoComplete="off"
                   />
-                  <p className="text-xs text-gray-400 mt-1">Основной идентификатор для входа</p>
+                  <p className="text-xs text-gray-500 mt-1">Основной идентификатор для входа</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    <label className="form-label">
                       Пароль <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -246,44 +246,44 @@ export default function UserCreate() {
                         type={showPassword ? 'text' : 'password'}
                         value={formData.password}
                         onChange={e => setFormData({ ...formData, password: e.target.value })}
-                        className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="form-input pr-10"
                         placeholder="Минимум 6 символов"
                         autoComplete="new-password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                         aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.5} /> : <Eye className="w-4 h-4" strokeWidth={1.5} />}
                       </button>
                     </div>
                     {formData.password.length > 0 && formData.password.length < 6 && (
-                      <p className="text-xs text-red-500 mt-1">Минимум 6 символов</p>
+                      <p className="form-error">Минимум 6 символов</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                    <label className="form-label">Email</label>
                     <input
                       type="email"
                       value={formData.email}
                       onChange={e => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="form-input"
                       placeholder="user@example.com"
                       autoComplete="off"
                     />
-                    <p className="text-xs text-gray-400 mt-1">Опционально, для восстановления</p>
+                    <p className="text-xs text-gray-500 mt-1">Опционально, для восстановления</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Профиль */}
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <div className="card p-0 overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <User className="w-4 h-4 text-blue-700" />
+                <div className="icon-tile-sm bg-blue-50">
+                  <User className="w-4 h-4 text-blue-600" strokeWidth={1.5} />
                 </div>
                 <div>
                   <h2 className="text-sm font-semibold text-gray-900">Профиль</h2>
@@ -292,22 +292,22 @@ export default function UserCreate() {
               </div>
               <div className="p-5 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">ФИО</label>
+                  <label className="form-label">ФИО</label>
                   <input
                     type="text"
                     value={formData.full_name}
                     onChange={e => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="form-input"
                     placeholder="Иванов Иван Иванович"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Телефон</label>
+                  <label className="form-label">Телефон</label>
                   <IMaskInput
                     mask="+380 00 000-00-00"
                     value={formData.phone}
                     onAccept={v => setFormData({ ...formData, phone: String(v) })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="form-input"
                     placeholder="+380 XX XXX-XX-XX"
                   />
                 </div>
@@ -316,10 +316,10 @@ export default function UserCreate() {
 
             {/* Привязка к компании */}
             {shouldShowPartsCompany(selectedRoleNames) && (
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div className="card p-0 overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
-                    <Building2 className="w-4 h-4 text-green-700" />
+                  <div className="icon-tile-sm bg-green-50">
+                    <Building2 className="w-4 h-4 text-green-600" strokeWidth={1.5} />
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-gray-900">Привязка к компании</h2>
@@ -329,14 +329,14 @@ export default function UserCreate() {
                 <div className="p-5 space-y-4">
                   {shouldShowPartsCompany(selectedRoleNames) && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      <label className="form-label">
                         Авторазборка {selectedRoleNames.some(n => ['parts_owner','parts_worker'].includes(n)) ? <span className="text-red-500">*</span> : ''}
                       </label>
                       <select
                         value={formData.parts_company_id}
                         onChange={e => setFormData({ ...formData, parts_company_id: e.target.value })}
                         disabled={isPartsOwner && !isAdmin}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white disabled:bg-gray-50"
+                        className="form-input disabled:bg-gray-50"
                       >
                         <option value="">Выберите авторазборку</option>
                         {partsCompanies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -350,10 +350,10 @@ export default function UserCreate() {
 
           {/* Правая колонка — роли */}
           <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden lg:sticky lg:top-24">
+            <div className="card p-0 overflow-hidden lg:sticky lg:top-24">
               <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-purple-700" />
+                <div className="icon-tile-sm" style={{ background: 'var(--cab-signal-weak)' }}>
+                  <Shield className="w-4 h-4" strokeWidth={1.5} style={{ color: 'var(--cab-signal)' }} />
                 </div>
                 <div>
                   <h2 className="text-sm font-semibold text-gray-900">Роли</h2>
@@ -368,18 +368,18 @@ export default function UserCreate() {
                   onChange={(ids, pid) => setFormData({ ...formData, role_ids: ids, primary_role_id: pid })}
                 />
                 {formData.role_ids.length === 0 && (
-                  <p className="text-xs text-red-500 text-center py-2 mt-1">Выберите хотя бы одну роль</p>
+                  <p className="form-error text-center py-2 mt-1">Выберите хотя бы одну роль</p>
                 )}
               </div>
             </div>
 
             {/* Итог */}
             {formData.role_ids.length > 0 && (
-              <div className="bg-purple-50 rounded-2xl border border-purple-200 p-4">
-                <p className="text-xs font-semibold text-purple-700 mb-2">Итог</p>
+              <div className="card p-4" style={{ background: 'var(--cab-signal-weak)' }}>
+                <p className="text-xs font-semibold mb-2" style={{ color: 'var(--cab-signal)' }}>Итог</p>
                 <div className="flex flex-wrap gap-1.5">
                   {allowedRoles.filter(r => formData.role_ids.includes(r.id)).map(role => (
-                    <span key={role.id} className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${getRoleBadgeColor(role.name)}`}>
+                    <span key={role.id} className={getRoleBadgeClass(role.name)}>
                       {role.display_name}{formData.primary_role_id === role.id ? ' · осн.' : ''}
                     </span>
                   ))}

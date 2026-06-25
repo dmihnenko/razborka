@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Car, Lock } from 'lucide-react'
+import { Car, Lock, Loader2 } from 'lucide-react'
 import { PublicBrandHeader } from '@/components/PublicBrandHeader'
 import { validateVehicleShareCode } from '@/services/personalVehicles'
 
@@ -59,103 +59,106 @@ export default function VehicleAccessPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col" style={{ background: '#0D1117' }}>
+    <div
+      className="min-h-dvh flex flex-col"
+      style={{ background: 'var(--cab-bg)', fontFamily: 'var(--font-sans)' }}
+    >
       <PublicBrandHeader subtitle="Доступ по коду" />
       <div className="flex-1 flex items-center justify-center px-4 py-8">
-      <div className="max-w-md w-full">
-        <div style={{ background: '#161B27', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '16px', overflow: 'hidden' }}>
-          {/* Header */}
-          <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #1e3063 100%)', padding: '40px 32px', textAlign: 'center' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '72px', height: '72px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', marginBottom: '16px' }}>
-              <Car style={{ width: '36px', height: '36px', color: '#93C5FD' }} />
-            </div>
-            <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#F1F5F9', marginBottom: '6px' }}>Доступ к автомобилю</h1>
-            <p style={{ color: '#93C5FD', fontSize: '14px' }}>Введите 4-значный код доступа</p>
-          </div>
-
-          {/* Форма */}
-          <div className="px-8 py-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', color: '#9CA3AF', marginBottom: '8px', textAlign: 'center', letterSpacing: '0.3px' }}>
-                  КОД ДОСТУПА
-                </label>
-                <div className="relative">
-                  <Lock style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', width: '18px', height: '18px', color: '#4B5563' }} />
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="\d{4}"
-                    value={code}
-                    onChange={handleCodeChange}
-                    style={{
-                      width: '100%',
-                      paddingLeft: '48px',
-                      paddingRight: '16px',
-                      paddingTop: '16px',
-                      paddingBottom: '16px',
-                      textAlign: 'center',
-                      fontSize: '32px',
-                      fontWeight: '700',
-                      letterSpacing: '0.4em',
-                      background: 'rgba(255,255,255,0.04)',
-                      border: `2px solid ${error ? '#EF4444' : 'rgba(255,255,255,0.1)'}`,
-                      borderRadius: '10px',
-                      color: '#F1F5F9',
-                      outline: 'none',
-                      transition: 'border-color 0.2s, box-shadow 0.2s',
-                    }}
-                    onFocus={e => { e.currentTarget.style.borderColor = error ? '#EF4444' : '#4D51D4'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)' }}
-                    onBlur={e => { e.currentTarget.style.borderColor = error ? '#EF4444' : 'rgba(255,255,255,0.1)'; e.currentTarget.style.boxShadow = 'none' }}
-                    placeholder="0000"
-                    maxLength={4}
-                    required
-                    autoFocus
-                  />
-                </div>
-                {error && (
-                  <p style={{ marginTop: '8px', fontSize: '13px', color: '#F87171', textAlign: 'center' }}>
-                    {error}
-                  </p>
-                )}
+        <div className="max-w-md w-full">
+          <div className="cab-card overflow-hidden">
+            {/* Шапка карточки */}
+            <div className="px-8 pt-8 pb-6 text-center border-b border-[var(--cab-border)]">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 bg-[var(--cab-signal-weak)]">
+                <Car className="w-8 h-8 text-[var(--cab-signal)]" strokeWidth={1.5} />
               </div>
-
-              <button
-                type="submit"
-                disabled={loading || code.length !== 4}
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  background: 'linear-gradient(135deg, #3538CD 0%, #2A2DA8 100%)',
-                  color: 'white',
-                  fontSize: '15px',
-                  fontWeight: '600',
-                  borderRadius: '10px',
-                  border: 'none',
-                  cursor: loading || code.length !== 4 ? 'not-allowed' : 'pointer',
-                  opacity: loading || code.length !== 4 ? 0.5 : 1,
-                  transition: 'opacity 0.2s, transform 0.15s',
-                }}
-                onMouseOver={e => { if (!loading && code.length === 4) e.currentTarget.style.transform = 'translateY(-1px)' }}
-                onMouseOut={e => { e.currentTarget.style.transform = 'none' }}
+              <h1
+                className="text-gray-900 font-extrabold mb-1.5"
+                style={{ fontSize: 'clamp(20px, 4vw, 24px)', letterSpacing: '-0.03em' }}
               >
-                {loading ? 'Проверка...' : 'Получить доступ'}
-              </button>
-            </form>
+                Доступ к автомобилю
+              </h1>
+              <p className="text-sm text-gray-500">Введите 4-значный код доступа</p>
+            </div>
 
-            <div style={{ marginTop: '24px', textAlign: 'center' }}>
-              <p style={{ fontSize: '13px', color: '#4B5563', marginBottom: '8px' }}>
-                Код можно получить у владельца автомобиля
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', fontSize: '11px', color: '#374151' }}>
-                <span>• 4 цифры</span>
-                <span>• Безопасно</span>
-                <span>• Только для чтения</span>
+            {/* Форма */}
+            <div className="px-8 py-8">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="access-code" className="form-label text-center">
+                    Код доступа
+                  </label>
+                  <div className="relative">
+                    <Lock
+                      className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+                      strokeWidth={1.5}
+                      aria-hidden="true"
+                    />
+                    <input
+                      id="access-code"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="\d{4}"
+                      value={code}
+                      onChange={handleCodeChange}
+                      disabled={loading}
+                      className={`w-full rounded-xl bg-white text-gray-900 text-center font-extrabold outline-none transition-all duration-150 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 ${
+                        error
+                          ? 'border-2 border-red-500'
+                          : 'border-2 border-[var(--cab-border)] focus-visible:border-[var(--cab-signal)]'
+                      }`}
+                      style={{
+                        paddingLeft: '48px',
+                        paddingRight: '16px',
+                        paddingTop: '16px',
+                        paddingBottom: '16px',
+                        fontSize: '32px',
+                        letterSpacing: '0.4em',
+                      }}
+                      placeholder="0000"
+                      maxLength={4}
+                      required
+                      autoFocus
+                      aria-invalid={!!error}
+                      aria-describedby={error ? 'access-code-error' : undefined}
+                    />
+                  </div>
+                  {error && (
+                    <p id="access-code-error" className="mt-2 text-sm text-red-600 text-center" role="alert">
+                      {error}
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || code.length !== 4}
+                  className="cab-btn cab-btn-primary cab-btn-lg w-full"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} aria-hidden="true" />
+                      Проверка…
+                    </>
+                  ) : (
+                    'Получить доступ'
+                  )}
+                </button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <p className="text-sm text-gray-500 mb-2">
+                  Код можно получить у владельца автомобиля
+                </p>
+                <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
+                  <span>• 4 цифры</span>
+                  <span>• Безопасно</span>
+                  <span>• Только для чтения</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
       </div>
     </div>
   )
