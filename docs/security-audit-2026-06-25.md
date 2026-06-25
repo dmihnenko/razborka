@@ -11,15 +11,17 @@
 | H3 `subscriptions` | ✅ Запись только admin |
 | H4 `notify-user-registered` | ✅ Проверка JWT + личность из токена; задеплоено |
 | H5 ImgBB-ключ в бандле | ✅ Перенесён в Edge `upload-image` (секрет `IMGBB_API_KEY`); убран из клиента/CI. **Требуется ротация старого ключа в панели ImgBB (вручную)** |
-| H6 нет CSP/HSTS | ✅ Добавлено безопасное подмножество (frame-ancestors/HSTS/Permissions-Policy). Полный fetch-allowlist — follow-up (нужен тест-деплой) |
+| H6 нет CSP/HSTS | ✅ Полный CSP: script/style/img/font/connect-src allowlist (supabase+wss, imgbb/cloudinary/freeimage, novaposhta, NHTSA VIN), frame-ancestors/HSTS/Permissions-Policy. script-src оставлен 'unsafe-inline' (2 инлайн-скрипта в index.html) — дальнейшее ужесточение хешами опционально |
 | M1 `notifications` UPDATE без CHECK | ✅ Добавлен WITH CHECK |
 | M2 `parts_storage_locations` anon | ✅ Сужено до `is_active AND market_published` |
 | M3 `plain_password` | ✅ Колонка удалена (users+user_profiles), функция `create_user_account` не пишет пароль |
 | M4 SW кеширует приватку | ✅ auth→NetworkOnly, storage/REST коротко, очистка `supabase-*` при logout |
-| L1 `vehicle_share_links.code` перебор | ⏳ Follow-up (нужен SECURITY DEFINER RPC валидации кода) |
+| L1 `vehicle_share_links.code` перебор | ✅ anon-чтение таблицы кодов убрано; резолв кода и проверка шар-линка — через SECURITY DEFINER RPC (`validate_vehicle_share_code`, `vehicle_has_active_share`, `vehicle_share_code_taken`); проверено на проде (anon видит только расшаренные авто) |
 | L2 опасные disable-RLS файлы | ✅ Перенесены в `database/_archive_DANGEROUS_do_not_run/` |
 
-Миграции: `database/migrations/2026-06-25_security_hardening.sql`, `2026-06-25_drop_plain_password.sql` (применены через Management API, сверены `pg_policies`). Edge: `notify-user-registered`, `upload-image` (задеплоены).
+Миграции: `2026-06-25_security_hardening.sql`, `2026-06-25_drop_plain_password.sql`, `2026-06-25_share_links_hardening.sql` (применены через Management API, сверены `pg_policies` + anon-REST). Edge: `notify-user-registered`, `upload-image` (задеплоены).
+
+**Остаётся вручную:** ротация старого ImgBB-ключа в панели ImgBB (он был в бандле до этого релиза).
 
 ---
 

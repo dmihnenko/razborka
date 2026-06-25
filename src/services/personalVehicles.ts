@@ -392,14 +392,11 @@ export async function createVehicleShareLink(
   while (!isUnique) {
     code = String(Math.floor(1000 + Math.random() * 9000))
 
-    const { data } = await supabase
-      .from('vehicle_share_links')
-      .select('id')
-      .eq('code', code)
-      .eq('is_active', true)
-      .maybeSingle()
+    // Глобальная уникальность кода проверяется через SECURITY DEFINER RPC:
+    // владелец напрямую видит только свои коды, поэтому проверку делает функция.
+    const { data: taken } = await supabase.rpc('vehicle_share_code_taken', { p_code: code })
 
-    isUnique = !data
+    isUnique = !taken
   }
 
   const linkData: any = {
@@ -456,24 +453,11 @@ export async function deactivateVehicleShareLink(linkId: string): Promise<void> 
  * Валидация кода доступа (возвращает ID автомобиля или null)
  */
 export async function validateVehicleShareCode(code: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('vehicle_share_links')
-    .select('vehicle_id, expires_at')
-    .eq('code', code)
-    .eq('is_active', true)
-    .maybeSingle()
-
+  // Резолв через SECURITY DEFINER RPC: таблица кодов не читается напрямую (anon её
+  // больше не видит — закрыт перебор 4-значных кодов). RPC проверяет is_active + срок.
+  const { data, error } = await supabase.rpc('validate_vehicle_share_code', { p_code: code })
   if (error || !data) return null
-
-  // Проверить срок действия
-  if (data.expires_at) {
-    const expiresAt = new Date(data.expires_at)
-    if (expiresAt < new Date()) {
-      return null
-    }
-  }
-
-  return data.vehicle_id
+  return data as string
 }
 
 /**
