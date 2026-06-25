@@ -146,6 +146,27 @@
    ═══════════════════════════════════════════════════════════════ */
 @layer components {
 
+  /* ── Логотип: центрирование «RAZBORKA» по капвысоте (capsize) ──────────
+     Заглавный текст в строке «сидит высоко» (внизу пустая зона подстрочных).
+     Раньше центрировали через text-box-trim, но оно НЕ поддерживается частью
+     мобильных браузеров → там RAZBORKA уезжала вверх от центра рамки. Этот приём
+     (line-height:1 + отрицательные margin псевдоэлементов) обрезает строчный бокс
+     до капвысоты во ВСЕХ браузерах → при симметричном паддинге зазоры сверху/снизу
+     равные. Значения em-метрики усреднены под системные шрифты (SF Pro/Roboto/Segoe). */
+  .brand-wordmark {
+    display: inline-block;
+    line-height: 1;
+  }
+  .brand-wordmark::before,
+  .brand-wordmark::after {
+    content: '';
+    display: block;
+    height: 0;
+    width: 0;
+  }
+  .brand-wordmark::before { margin-bottom: -0.14em; }  /* срез сверху: ascent − capHeight */
+  .brand-wordmark::after  { margin-top: -0.15em; }     /* срез снизу: descent */
+
   /* ── Buttons ───────────────────────────────────────────── */
   .btn {
     @apply inline-flex items-center justify-center gap-2 font-semibold rounded-md

@@ -61,13 +61,13 @@ export function Logo({ size = 'md', withText = true, framed = true, className = 
     : {}
 
   // RAZBORKA — всё-капс: внизу строки пустая зона подстрочных, текст «сидит высоко».
-  // text-box-trim обрезает строчный бокс ровно до капвысоты → при симметричном
-  // паддинге зазоры сверху и снизу РАВНЫЕ (совр. браузеры; в старых свойство
-  // игнорируется и текст чуть выше центра — некритично).
+  // Центрирование по капвысоте — классом .brand-wordmark (capsize: line-height:1 +
+  // отрицательные margin псевдоэлементов). Работает во ВСЕХ браузерах, включая мобильные
+  // без поддержки text-box-trim (см. src/index.css). Раньше тут был text-box-trim, из-за
+  // которого на части мобильных RAZBORKA уезжала вверх от центра рамки.
   const nameStyle: CSSProperties = {
     fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: s.name,
     letterSpacing: '-0.01em', color: 'var(--cab-ink, #16181D)',
-    textBoxTrim: 'trim-both', textBoxEdge: 'cap alphabetic',
   }
   return (
     <span
@@ -88,8 +88,8 @@ export function Logo({ size = 'md', withText = true, framed = true, className = 
         {BRAND.wordmark.accent}
       </span>
 
-      {/* RAZBORKA — системный шрифт, строчный бокс обрезан до капвысоты (nameStyle). */}
-      <span style={nameStyle}>
+      {/* RAZBORKA — системный шрифт, строчный бокс обрезан до капвысоты (.brand-wordmark). */}
+      <span className="brand-wordmark" style={nameStyle}>
         {BRAND.wordmark.lead}
       </span>
     </span>
