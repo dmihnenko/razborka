@@ -11,6 +11,25 @@ export type PartsOrderStatus = 'new' | 'assembling' | 'shipped' | 'completed' | 
 // Последовательность этапов заказа (для кнопок-переходов и канбана).
 export const ORDER_FLOW: PartsOrderStatus[] = ['new', 'assembling', 'shipped', 'completed']
 
+/**
+ * ЕДИНЫЙ источник класса статус-бейджа заказа (A1 дизайн-аудита).
+ * Возвращает ГОТОВЫЙ self-contained класс на базе `badge badge-*` (поддержаны тёмной
+ * темой в index.css). Использовать как `<span className={statusBadgeClass(status)}>{text}</span>`
+ * во ВСЕХ местах вместо разъехавшихся `cab-chip text-*` / `badge-*` / `bg-*-100`.
+ */
+export function statusBadgeClass(status: string): string {
+  const map: Record<string, string> = {
+    new: 'badge badge-blue',
+    assembling: 'badge badge-orange',
+    in_progress: 'badge badge-orange',
+    shipped: 'badge badge-purple',
+    completed: 'badge badge-green',
+    cancelled: 'badge badge-red',
+  }
+  return map[status] || 'badge badge-gray'
+}
+
+/** @deprecated Использовать statusBadgeClass() — единый бейдж. Оставлено для обратной совместимости. */
 export function getPartsOrderStatusColor(status: PartsOrderStatus): string {
   const colors: Record<PartsOrderStatus, string> = {
     new: 'bg-blue-100 text-blue-800',

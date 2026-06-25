@@ -11,7 +11,7 @@
 @layer base {
   :root {
     /* Brand */
-    --brand:         37 99% 235%;   /* fallback — real value via Tailwind */
+    --brand:         239 60% 51%;   /* индиго-сигнал #3538CD (валидный HSL) */
     --radius:        12px;
 
     /* shadcn/ui HSL tokens — light mode */
@@ -75,6 +75,21 @@
     /* Типографика — базовый размер (мягкий fluid). Inter крупнее по x-height,
        поэтому база чуть ниже (15→16px), чтобы UI был плотным и аккуратным. */
     --app-font-size: clamp(15px, 13.8px + 0.4vw, 16px);
+
+    /* Единый токен приглушённого текста — контраст ≈4.8:1 (WCAG AA) на белом.
+       Использовать вместо text-gray-400 (≈2.6:1) для СОДЕРЖАТЕЛЬНОГО вторичного текста. */
+    --text-muted: #64748B;
+
+    /* Типографическая шкала (rem от --app-font-size — масштабируется единообразно).
+       НЕ задавать размеры текста px-литералами в компонентах — брать из этих токенов. */
+    --fs-2xs:  0.6875rem;  /* ~11px — микро-метки/kicker (минимум) */
+    --fs-xs:   0.75rem;    /* ~12px */
+    --fs-sm:   0.8125rem;  /* ~13px — минимум для содержательного текста */
+    --fs-base: 0.875rem;   /* ~14px — body */
+    --fs-md:   1rem;       /* ~16px */
+    --fs-lg:   1.125rem;
+    --fs-xl:   1.375rem;
+    --fs-2xl:  1.75rem;
 
     /* Шрифты — единый источник (tailwind fontFamily читает эти переменные).
        Apple → системный SF Pro (нативный iOS-вид). Windows/Android → Inter Variable
@@ -287,8 +302,8 @@
   .cab-nav:hover { background: var(--cab-surface-2); color: var(--cab-ink); }
   .cab-nav-active, .cab-nav-active:hover { background: var(--cab-ink); color: #fff; }
   .cab-group-label {
-    @apply text-[10px] font-bold uppercase;
-    letter-spacing: 0.12em; color: var(--cab-ink-3); padding: 0 0.7rem;
+    @apply font-bold uppercase;
+    font-size: var(--fs-2xs); letter-spacing: 0.12em; color: var(--cab-ink-2); padding: 0 0.7rem;
   }
 
   /* Кнопки страницы товара (стиль «индустриальный», токены со scoped-обёртки) */
@@ -423,7 +438,7 @@
   }
   .form-input {
     @apply w-full px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-lg
-           text-gray-900 placeholder-gray-400
+           text-gray-900 placeholder-gray-500
            focus:outline-none focus:border-primary
            transition-all duration-200;
     box-shadow: 0 1px 2px rgba(15,23,42,0.04);
@@ -517,7 +532,7 @@
   /* ── Kicker — IBM Plex Mono метки (цифры/лейблы над заголовками) ── */
   .kicker {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -900,7 +915,7 @@
 /* ── Dark: focus ring ── */
 .dark *:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--brand-600), 0 0 0 5px rgb(17 115 212 / 0.3) !important;
+  box-shadow: 0 0 0 2px var(--brand-600), 0 0 0 5px rgb(53 56 205 / 0.3) !important;
 }
 
 /* ── Dark: scrollbar ── */
@@ -961,7 +976,7 @@
 .dark .form-input:focus,
 .dark .form-select:focus {
   border-color: var(--brand-600) !important;
-  box-shadow: 0 0 0 4px rgb(17 115 212 / 0.2) !important;
+  box-shadow: 0 0 0 4px rgb(53 56 205 / 0.2) !important;
 }
 .dark .empty-state-icon {
   background: #111827 !important;
@@ -1052,7 +1067,7 @@
 .spinner {
   display: inline-block;
   width: 36px; height: 36px;
-  border: 3px solid rgb(17 115 212 / 0.15);
+  border: 3px solid rgb(53 56 205 / 0.14);
   border-top-color: var(--brand-600);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
@@ -1118,7 +1133,7 @@ svg.lucide {
 /* Поля форм в модалках — одинаковый стиль */
 .modal-input {
   @apply w-full px-3.5 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900
-         placeholder-gray-400 focus:outline-none focus:bg-white focus:border-primary
+         placeholder-gray-500 focus:outline-none focus:bg-white focus:border-primary
          transition-all;
 }
 .modal-input:focus {

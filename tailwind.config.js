@@ -74,7 +74,7 @@ export default {
         sidebar: {
           DEFAULT:     '#0C1220',
           hover:       '#162035',
-          active:      '#1173D4',   /* = brand-600 */
+          active:      '#3538CD',   /* = brand-600 (индиго-сигнал) */
           border:      'rgba(255,255,255,0.07)',
           text:        '#94A3B8',
           'text-active': '#FFFFFF',
@@ -84,12 +84,12 @@ export default {
           DEFAULT: '#0E1C3D',
           deep:    '#0A1530',
         },
-        // Brand
+        // Brand — индиго-сигнал «Ink & Signal» (#3538CD = --brand-600)
         brand: {
-          DEFAULT: '#1173D4',
-          hover:   '#0E5FB0',
-          light:   '#EAF4FE',
-          glow:    '#1E86E5',
+          DEFAULT: '#3538CD',
+          hover:   '#2A2DA8',
+          light:   '#ECEDFB',
+          glow:    '#4D51D4',
         },
       },
       borderRadius: {
@@ -109,8 +109,8 @@ export default {
         dialog:         '0 20px 60px rgba(0,0,0,.15)',
         // Keep existing project-specific shadows
         float:          '0 4px 12px -2px rgba(15,23,42,0.08), 0 16px 32px -12px rgba(15,23,42,0.14)',
-        'glow-blue':    '0 1px 2px rgba(37,99,235,0.35), 0 4px 12px -2px rgba(37,99,235,0.35)',
-        'glow-blue-lg': '0 2px 4px rgba(37,99,235,0.35), 0 8px 20px -4px rgba(37,99,235,0.45)',
+        'glow-blue':    '0 1px 2px rgba(53,56,205,0.35), 0 4px 12px -2px rgba(53,56,205,0.35)',
+        'glow-blue-lg': '0 2px 4px rgba(53,56,205,0.35), 0 8px 20px -4px rgba(53,56,205,0.45)',
       },
       keyframes: {
         'fade-in':  { from: { opacity: '0' }, to: { opacity: '1' } },
