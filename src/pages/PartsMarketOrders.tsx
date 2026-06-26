@@ -28,12 +28,14 @@ const STATUS_LABEL_KEYS: Record<MarketplaceOrderStatus, string> = {
   new: 'statusNew',
   viewed: 'statusViewed',
   closed: 'statusClosed',
+  cancelled: 'statusCancelled',
 }
 
 const STATUS_CHIPS: Record<MarketplaceOrderStatus, string> = {
   new: 'cab-chip cab-chip-signal',
   viewed: 'cab-chip bg-amber-50 text-amber-700 border-amber-200',
   closed: 'cab-chip',
+  cancelled: 'cab-chip bg-rose-50 text-rose-700 border-rose-200',
 }
 
 /** Группируем позиции по авто (с какой машины) — удобно собирать заказ */
@@ -254,11 +256,12 @@ export default function PartsMarketOrders() {
     return <PartsAccessDenied />
   }
 
-  // Активные = неоформленные (без созданного заказа); Архив = оформленные
-  const activeCount = orders.filter((o) => !o.convertedOrderId).length
+  // Активные = неоформленные и НЕ отменённые; Архив = оформленные ИЛИ отменённые покупателем
+  const isArchived = (o: typeof orders[number]) => !!o.convertedOrderId || o.status === 'cancelled'
+  const activeCount = orders.filter((o) => !isArchived(o)).length
   const visibleOrders = statusFilter === 'active'
-    ? orders.filter((o) => !o.convertedOrderId)
-    : orders.filter((o) => o.convertedOrderId)
+    ? orders.filter((o) => !isArchived(o))
+    : orders.filter((o) => isArchived(o))
 
   return (
     <div className="min-h-dvh bg-gray-50">

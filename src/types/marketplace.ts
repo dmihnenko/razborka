@@ -5,7 +5,7 @@
 export type MarketCondition = 'new' | 'used' | 'damaged'
 export type MarketCurrency = 'UAH' | 'USD'
 export type MarketSort = 'new' | 'price_asc' | 'price_desc'
-export type MarketplaceOrderStatus = 'new' | 'viewed' | 'closed'
+export type MarketplaceOrderStatus = 'new' | 'viewed' | 'closed' | 'cancelled'
 
 /** Фото из jsonb-колонки parts_inventory.photos (imgbb) */
 export interface MarketPhoto {

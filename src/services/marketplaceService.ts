@@ -453,6 +453,16 @@ export async function getMyMarketplaceOrders(): Promise<MyMarketplaceOrder[]> {
   })
 }
 
+/**
+ * Покупатель отменяет свою заявку с маркета (статус → 'cancelled').
+ * RPC `cancel_my_marketplace_order` проверяет владельца и допустимость отмены,
+ * снимает бронь и уведомляет разборку. Бросает исключение при нарушении правил.
+ */
+export async function cancelMyMarketplaceOrder(orderId: string): Promise<void> {
+  const { error } = await supabase.rpc('cancel_my_marketplace_order', { p_id: orderId })
+  if (error) throw error
+}
+
 export async function updateMarketplaceOrderStatus(
   id: string,
   status: MarketplaceOrderStatus

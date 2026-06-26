@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import {
   Package,
   ShoppingBag,
@@ -11,11 +12,14 @@ import {
   Phone,
   Send,
   Store,
+  XCircle,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ru, uk } from 'date-fns/locale'
-import { getMyMarketplaceOrders } from '@/services/marketplaceService'
+import { getMyMarketplaceOrders, cancelMyMarketplaceOrder } from '@/services/marketplaceService'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { useConfirm } from '@/hooks/useConfirm'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import EmptyState from '@/components/ui/EmptyState'
 import { formatPrice } from '@/utils/currency'
 import type { MyMarketplaceOrder } from '@/types/marketplace'
@@ -23,11 +27,12 @@ import i18n from '@/i18n'
 
 const NO_IMAGE_URL = '/noimage_final.png'
 
-// Бейдж статуса заявки маркета (new / viewed / closed) — цвета как в кабинете разборки.
+// Бейдж статуса заявки маркета (new / viewed / closed / cancelled) — цвета как в кабинете разборки.
 const STATUS_CHIP: Record<string, string> = {
   new: 'bg-blue-50 text-blue-700 border-blue-200',
   viewed: 'bg-amber-50 text-amber-700 border-amber-200',
   closed: 'bg-gray-100 text-gray-600 border-gray-200',
+  cancelled: 'bg-rose-50 text-rose-700 border-rose-200',
 }
 
 function dateLocale() {
@@ -46,11 +51,28 @@ function totalsByCurrency(order: MyMarketplaceOrder): { currency: 'UAH' | 'USD';
   return Array.from(map.entries()).map(([currency, sum]) => ({ currency, sum }))
 }
 
-function OrderCard({ order }: { order: MyMarketplaceOrder }) {
+function OrderCard({
+  order,
+  onCancel,
+  canceling,
+}: {
+  order: MyMarketplaceOrder
+  onCancel: (order: MyMarketplaceOrder) => void
+  canceling: boolean
+}) {
   const { t } = useTranslation('cabinet')
   const [itemsOpen, setItemsOpen] = useState(false)
 
-  const statusKey = order.status === 'closed' ? 'statusClosed' : order.status === 'viewed' ? 'statusViewed' : 'statusNew'
+  const statusKey =
+    order.status === 'cancelled'
+      ? 'statusCancelled'
+      : order.status === 'closed'
+        ? 'statusClosed'
+        : order.status === 'viewed'
+          ? 'statusViewed'
+          : 'statusNew'
+  // Покупатель может отменить только пока разборка не приняла/не закрыла заявку.
+  const canCancel = order.status === 'new' || order.status === 'viewed'
   const totals = totalsByCurrency(order)
 
   return (
@@ -170,6 +192,21 @@ function OrderCard({ order }: { order: MyMarketplaceOrder }) {
           <p className="text-xs text-gray-600">{order.comment}</p>
         </div>
       )}
+
+      {/* Отмена заявки — только пока разборка не приняла/не закрыла её */}
+      {canCancel && (
+        <div className="border-t border-gray-100 px-4 py-2.5">
+          <button
+            type="button"
+            onClick={() => onCancel(order)}
+            disabled={canceling}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <XCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
+            {t('myOrdersPage.cancelOrder')}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -177,6 +214,8 @@ function OrderCard({ order }: { order: MyMarketplaceOrder }) {
 export default function MyOrders() {
   const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
+  const queryClient = useQueryClient()
+  const { confirm: showConfirm, dialogProps } = useConfirm()
 
   const {
     data: orders = [],
@@ -188,6 +227,27 @@ export default function MyOrders() {
     queryFn: getMyMarketplaceOrders,
     enabled: !!profile?.id,
   })
+
+  const cancelMutation = useMutation({
+    mutationFn: (order: MyMarketplaceOrder) => cancelMyMarketplaceOrder(order.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-orders'] })
+      toast.success(t('myOrdersPage.cancelled'))
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : t('myOrdersPage.cancelled'))
+    },
+  })
+
+  const handleCancel = async (order: MyMarketplaceOrder) => {
+    const ok = await showConfirm({
+      title: t('myOrdersPage.cancelOrder'),
+      message: t('myOrdersPage.cancelConfirm'),
+      confirmText: t('myOrdersPage.cancelOrder'),
+      danger: true,
+    })
+    if (ok) cancelMutation.mutate(order)
+  }
 
   return (
     <div className="py-1 sm:py-2">
@@ -249,11 +309,18 @@ export default function MyOrders() {
         ) : (
           <div className="space-y-4">
             {orders.map((order) => (
-              <OrderCard key={order.id} order={order} />
+              <OrderCard
+                key={order.id}
+                order={order}
+                onCancel={handleCancel}
+                canceling={cancelMutation.isPending && cancelMutation.variables?.id === order.id}
+              />
             ))}
           </div>
         )}
       </div>
+
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }
