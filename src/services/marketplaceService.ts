@@ -8,6 +8,7 @@ import type {
   MarketPhoto,
   MarketplaceOrder,
   MarketplaceOrderStatus,
+  MyMarketplaceOrder,
   CartItem,
 } from '@/types/marketplace'
 import {
@@ -397,6 +398,59 @@ export async function getMarketplaceOrders(companyId: string): Promise<Marketpla
 
   if (error) throw error
   return (data || []).map(mapOrderRow)
+}
+
+// ── Кабинет клиента («Мои заказы») ─────────────────────────────────────────
+
+/**
+ * Заказы текущего покупателя для личного кабинета («Мои заказы»).
+ * RLS (`market_orders_select_own`) отдаёт ТОЛЬКО заказы с `user_id = auth.uid()`,
+ * поэтому отдельный фильтр не обязателен — но добавляем `.eq('user_id', uid)`
+ * для явности (и чтобы гостевые заказы без user_id точно не подмешались).
+ * Возвращает пустой массив для незалогиненного пользователя.
+ */
+export async function getMyMarketplaceOrders(): Promise<MyMarketplaceOrder[]> {
+  const { data: auth } = await supabase.auth.getUser()
+  const uid = auth?.user?.id
+  if (!uid) return []
+
+  const { data, error } = await supabase
+    .from('marketplace_orders')
+    .select(
+      `id, status, total_amount, created_at, comment,
+       parts_companies(name, phone, telegram, city),
+       marketplace_order_items(name, selling_price, price_currency, quantity, photo_url)`
+    )
+    .eq('user_id', uid)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+
+  return (data || []).map((row: any): MyMarketplaceOrder => {
+    const c = row.parts_companies
+    return {
+      id: row.id,
+      status: row.status as MarketplaceOrderStatus,
+      totalAmount: row.total_amount ?? 0,
+      createdAt: row.created_at,
+      comment: row.comment ?? null,
+      company: c
+        ? {
+            name: c.name ?? '',
+            phone: c.phone ?? null,
+            telegram: c.telegram ?? null,
+            city: c.city ?? null,
+          }
+        : null,
+      items: ((row.marketplace_order_items || []) as any[]).map((it) => ({
+        name: it.name,
+        sellingPrice: it.selling_price ?? null,
+        priceCurrency: it.price_currency === 'USD' ? 'USD' : 'UAH',
+        quantity: it.quantity ?? 1,
+        photoUrl: it.photo_url ?? null,
+      })),
+    }
+  })
 }
 
 export async function updateMarketplaceOrderStatus(

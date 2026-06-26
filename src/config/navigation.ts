@@ -37,6 +37,7 @@ export const PARTS_NAV_GROUPS: { id: 'work' | 'base' | 'system'; label: string }
 // Меню для администратора
 export const adminMenu: MenuItem[] = [
   { name: 'Мои авто', href: '/my-vehicles', icon: Car },
+  { name: 'Мои заказы', href: '/my-orders', icon: Package },
   { name: 'Поддержка', href: '/admin/support', icon: MessageCircle },
 ];
 
@@ -82,6 +83,7 @@ export const partsWorkerMenu: MenuItem[] = [
 // Общее меню для обычного пользователя
 export const userMenu: MenuItem[] = [
   { name: 'Мои автомобили', href: '/my-vehicles', icon: Car, mobileHidden: true },
+  { name: 'Мои заказы', href: '/my-orders', icon: Package, mobileHidden: true },
 ];
 
 // Маппинг ролей на меню

@@ -28,6 +28,7 @@ const Support = lazy(() => import('./pages/Support'))
 const AdminSupport = lazy(() => import('./pages/AdminSupport'))
 const MyVehicles = lazy(() => import('./pages/MyVehicles'))
 const MyVehiclesArchive = lazy(() => import('./pages/MyVehiclesArchive'))
+const MyOrders = lazy(() => import('./pages/MyOrders'))
 const PublicPersonalVehicleView = lazy(() => import('./pages/PublicPersonalVehicleView'))
 const VehicleAccessPage = lazy(() => import('./pages/VehicleAccessPage'))
 const ProfileSettings = lazy(() => import('./pages/ProfileSettings'))
@@ -238,6 +239,7 @@ function App() {
           {/* Личные автомобили */}
           <Route path="my-vehicles" element={<MyVehicles />} />
           <Route path="my-vehicles/archive" element={<MyVehiclesArchive />} />
+          <Route path="my-orders" element={<MyOrders />} />
 
           {/* Parts (Авторазборка) - Полностью отдельная система */}
           <Route path="parts/dashboard" element={<PartsDashboard />} />

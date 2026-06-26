@@ -137,6 +137,34 @@ export interface MarketplaceOrder {
   convertedOrderId?: string | null
 }
 
+/** Позиция в заказе кабинета клиента (marketplace_order_items, минимум полей) */
+export interface MyMarketplaceOrderItem {
+  name: string
+  sellingPrice?: number | null
+  priceCurrency: MarketCurrency
+  quantity: number
+  photoUrl?: string | null
+}
+
+/** Контакты разборки, у которой оформлен заказ (безопасные поля parts_companies) */
+export interface MyMarketplaceOrderCompany {
+  name: string
+  phone?: string | null
+  telegram?: string | null
+  city?: string | null
+}
+
+/** Заказ покупателя в его личном кабинете «Мои заказы» (RLS отдаёт только свои). */
+export interface MyMarketplaceOrder {
+  id: string
+  status: MarketplaceOrderStatus
+  totalAmount: number
+  createdAt: string
+  comment?: string | null
+  company: MyMarketplaceOrderCompany | null
+  items: MyMarketplaceOrderItem[]
+}
+
 /** Фильтры каталога */
 export interface MarketFilters {
   search?: string

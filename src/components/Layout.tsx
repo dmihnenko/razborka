@@ -50,6 +50,7 @@ const NAV_KEY: Record<string, string> = {
   '/profile': 'nav.profile',
   '/parts/trash': 'nav.trash',
   '/my-vehicles': 'nav.myVehicles',
+  '/my-orders': 'nav.myOrders',
 }
 
 export default function Layout() {
@@ -175,7 +176,7 @@ export default function Layout() {
   const canParts = userRoleSet.has('parts_owner') || userRoleSet.has('parts_worker') || userRoleSet.has('admin')
   if (location.pathname.startsWith('/parts') && canParts) {
     roleNames = [userRoleSet.has('parts_worker') && !userRoleSet.has('parts_owner') ? 'parts_worker' : 'parts_owner']
-  } else if (location.pathname.startsWith('/my-vehicles')) {
+  } else if (location.pathname.startsWith('/my-vehicles') || location.pathname.startsWith('/my-orders')) {
     roleNames = ['user']
   }
 

@@ -19,12 +19,34 @@
     "support": "Поддержка",
     "profile": "Профиль",
     "trash": "Корзина",
-    "myVehicles": "Мои авто"
+    "myVehicles": "Мои авто",
+    "myOrders": "Мои заказы"
   },
   "groups": {
     "work": "Работа",
     "base": "База",
     "system": "Система"
+  },
+  "myOrdersPage": {
+    "title": "Мои заказы",
+    "subtitle": "Заказы, оформленные на маркете запчастей",
+    "subtitleCount": "Заказов: {{count}}",
+    "statusNew": "Новый",
+    "statusViewed": "Принят",
+    "statusClosed": "Закрыт",
+    "toggleShow": "Показать позиции",
+    "toggleHide": "Скрыть позиции",
+    "itemsCount": "Позиции ({{count}})",
+    "total": "Итого",
+    "qtyShort": "шт",
+    "call": "Позвонить",
+    "telegram": "Telegram",
+    "emptyTitle": "У вас пока нет заказов",
+    "emptyDescription": "Оформите заказ в каталоге запчастей — и он появится здесь для отслеживания.",
+    "toCatalog": "В каталог",
+    "errorTitle": "Не удалось загрузить заказы",
+    "errorDescription": "Проверьте подключение и попробуйте позже.",
+    "retry": "Повторить"
   },
   "roiPage": {
     "title": "Окупаемость авто",

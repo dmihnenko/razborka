@@ -19,12 +19,34 @@
     "support": "Підтримка",
     "profile": "Профіль",
     "trash": "Кошик",
-    "myVehicles": "Мої авто"
+    "myVehicles": "Мої авто",
+    "myOrders": "Мої замовлення"
   },
   "groups": {
     "work": "Робота",
     "base": "База",
     "system": "Система"
+  },
+  "myOrdersPage": {
+    "title": "Мої замовлення",
+    "subtitle": "Замовлення, оформлені на маркеті запчастин",
+    "subtitleCount": "Замовлень: {{count}}",
+    "statusNew": "Нове",
+    "statusViewed": "Прийнято",
+    "statusClosed": "Закрито",
+    "toggleShow": "Показати позиції",
+    "toggleHide": "Сховати позиції",
+    "itemsCount": "Позиції ({{count}})",
+    "total": "Разом",
+    "qtyShort": "шт",
+    "call": "Зателефонувати",
+    "telegram": "Telegram",
+    "emptyTitle": "У вас поки немає замовлень",
+    "emptyDescription": "Оформіть замовлення в каталозі запчастин — і воно з’явиться тут для відстеження.",
+    "toCatalog": "До каталогу",
+    "errorTitle": "Не вдалося завантажити замовлення",
+    "errorDescription": "Перевірте підключення та спробуйте пізніше.",
+    "retry": "Повторити"
   },
   "roiPage": {
     "title": "Окупність авто",
