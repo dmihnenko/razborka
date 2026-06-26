@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useMutation } from '@tanstack/react-query'
@@ -6,6 +6,7 @@ import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
 import { CheckCircle2, Minus, Package, Plus, Send, ShoppingCart, Store, Trash2 } from 'lucide-react'
 import { useCart, type CartGroup } from '@/hooks/useCart'
+import { useUserProfile } from '@/hooks/useUserProfile'
 import { submitMarketOrders } from '@/services/marketplaceService'
 import type { CartItem, MarketCurrency } from '@/types/marketplace'
 import { formatPrice } from '@/utils/currency'
@@ -101,12 +102,22 @@ function CompanyGroup({ group }: { group: CartGroup }) {
 export function MarketCart() {
   const { t } = useTranslation('market')
   const { items, clear, totalCount, groupedByCompany } = useCart()
+  const { data: profile } = useUserProfile()
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
   const [comment, setComment] = useState('')
   const [phoneError, setPhoneError] = useState<string | null>(null)
   const [nameError, setNameError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
+
+  // Префилл имени/телефона из профиля залогиненного покупателя (один раз, не затирая ввод)
+  const prefilledRef = useRef(false)
+  useEffect(() => {
+    if (prefilledRef.current || !profile) return
+    prefilledRef.current = true
+    if (profile.full_name && !name) setName(profile.full_name)
+    if (profile.phone && !phone) setPhone(profile.phone)
+  }, [profile, name, phone])
 
   const groups = groupedByCompany()
   const phoneDigits = phone.replace(/\D/g, '')
@@ -125,9 +136,16 @@ export function MarketCart() {
     setPhoneError(null)
     if (!nameValid) { setNameError(t('cartPage.nameRequired')); return }
     setNameError(null)
+
+    // Если у залогиненного покупателя заполнена доставка НП — добавляем строку в начало комментария
+    const userComment = comment.trim()
+    const deliveryParts = [profile?.np_city, profile?.np_warehouse].filter(Boolean)
+    const deliveryLine = deliveryParts.length ? `Доставка Нова Пошта: ${deliveryParts.join(', ')}` : ''
+    const finalComment = [deliveryLine, userComment].filter(Boolean).join('\n') || undefined
+
     mutation.mutate({
       groups: groups.map(g => ({ companyId: g.companyId, items: g.items })),
-      buyer: { phone: phone.trim(), name: name.trim(), comment: comment.trim() || undefined },
+      buyer: { phone: phone.trim(), name: name.trim(), comment: finalComment },
     })
   }
 

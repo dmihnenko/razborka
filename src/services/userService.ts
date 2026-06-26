@@ -21,6 +21,10 @@ export interface UserProfile {
   username: string | null
   is_active: boolean
   parts_company_id: string | null
+  np_city: string | null
+  np_city_ref: string | null
+  np_warehouse: string | null
+  np_warehouse_ref: string | null
   user_roles?: UserRole[]
 }
 
@@ -41,6 +45,8 @@ export interface UpdateProfileParams {
   userId: string
   full_name: string
   phone: string
+  np_city?: string
+  np_warehouse?: string
 }
 
 // Получить профиль пользователя с ролями
@@ -106,12 +112,23 @@ export async function updateUserRoles(params: UpdateUserRolesParams): Promise<vo
 
 // Обновить профиль текущего пользователя (ProfileSettings)
 export async function updateProfile(params: UpdateProfileParams): Promise<void> {
+  const patch: Record<string, unknown> = {
+    full_name: params.full_name,
+    phone: params.phone,
+  }
+  // Данные доставки Новой Почты — обычные текстовые поля (без НП-автокомплита);
+  // ref-поля пока не используем.
+  if (params.np_city !== undefined) {
+    patch.np_city = params.np_city.trim() || null
+    patch.np_city_ref = null
+  }
+  if (params.np_warehouse !== undefined) {
+    patch.np_warehouse = params.np_warehouse.trim() || null
+    patch.np_warehouse_ref = null
+  }
   const { error } = await supabase
     .from('user_profiles')
-    .update({
-      full_name: params.full_name,
-      phone: params.phone,
-    })
+    .update(patch)
     .eq('id', params.userId)
   if (error) throw error
 }

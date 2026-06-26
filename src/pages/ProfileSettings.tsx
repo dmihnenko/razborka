@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { User, Lock, Eye, EyeOff, Save, ChevronRight, Send, Phone, MapPin, Mail } from 'lucide-react'
+import { User, Lock, Eye, EyeOff, Save, ChevronRight, Send, Phone, MapPin, Mail, Truck, Building2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { updateProfile, changePassword } from '../services/userService'
 import { getPartsCompanyContacts, updatePartsCompanyContacts } from '../services/companyService'
@@ -52,6 +52,20 @@ export default function ProfileSettings() {
     phone: profile?.phone || '',
   })
 
+  // Данные доставки (Нова Пошта) — обычные текстовые поля
+  const [deliveryForm, setDeliveryForm] = useState({
+    np_city: profile?.np_city || '',
+    np_warehouse: profile?.np_warehouse || '',
+  })
+  useEffect(() => {
+    if (profile) {
+      setDeliveryForm({
+        np_city: profile.np_city || '',
+        np_warehouse: profile.np_warehouse || '',
+      })
+    }
+  }, [profile?.np_city, profile?.np_warehouse])
+
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -75,6 +89,24 @@ export default function ProfileSettings() {
       toast.success('Профиль обновлён')
     },
     onError: (e: any) => toast.error(e.message || 'Ошибка при обновлении профиля'),
+  })
+
+  // Сохранение данных доставки (Нова Пошта)
+  const saveDeliveryMutation = useMutation({
+    mutationFn: async () => {
+      await updateProfile({
+        userId: profile!.id,
+        full_name: profile?.full_name || '',
+        phone: profile?.phone || '',
+        np_city: deliveryForm.np_city,
+        np_warehouse: deliveryForm.np_warehouse,
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] })
+      toast.success('Данные доставки сохранены')
+    },
+    onError: (e: any) => toast.error(e.message || 'Ошибка при сохранении доставки'),
   })
 
   // Смена пароля
@@ -166,6 +198,51 @@ export default function ProfileSettings() {
             >
               <Save className="w-4 h-4" />
               {updateProfileMutation.isPending ? 'Сохранение...' : 'Сохранить'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Доставка (Нова Пошта) — для предзаполнения заказов на маркете */}
+      <div className="cab-card overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+          <div className="icon-tile-sm bg-slate-100">
+            <Truck className="w-4 h-4 text-slate-700" strokeWidth={1.5} />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">Доставка (Нова Пошта)</h2>
+            <p className="text-xs text-gray-500">Подставим в ваши заказы на маркете</p>
+          </div>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="form-label flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[var(--cab-ink-3)]" strokeWidth={1.5} /> Город</label>
+            <input
+              type="text"
+              value={deliveryForm.np_city}
+              onChange={e => setDeliveryForm(f => ({ ...f, np_city: e.target.value }))}
+              className="form-input"
+              placeholder="Київ"
+            />
+          </div>
+          <div>
+            <label className="form-label flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5 text-[var(--cab-ink-3)]" strokeWidth={1.5} /> Отделение Новой Почты</label>
+            <input
+              type="text"
+              value={deliveryForm.np_warehouse}
+              onChange={e => setDeliveryForm(f => ({ ...f, np_warehouse: e.target.value }))}
+              className="form-input"
+              placeholder="Відділення №5"
+            />
+          </div>
+          <div className="flex justify-end">
+            <button
+              onClick={() => saveDeliveryMutation.mutate()}
+              disabled={saveDeliveryMutation.isPending}
+              className="cab-btn cab-btn-primary"
+            >
+              <Save className="w-4 h-4" />
+              {saveDeliveryMutation.isPending ? 'Сохранение...' : 'Сохранить'}
             </button>
           </div>
         </div>
