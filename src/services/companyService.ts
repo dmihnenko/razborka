@@ -76,6 +76,23 @@ export async function updatePartsCompanyContacts(
   throw error
 }
 
+// ── Курс USD разборки: режим авто (глобальный ПриватБанк) или свой ──
+export interface CompanyRateSettings { mode: 'auto' | 'manual'; manualRate: number | null }
+
+export async function getCompanyRate(companyId: string): Promise<CompanyRateSettings> {
+  const { data, error } = await supabase
+    .from('parts_companies').select('usd_rate_mode, usd_rate').eq('id', companyId).single()
+  if (error) throw error
+  const d = data as any
+  return { mode: d?.usd_rate_mode === 'manual' ? 'manual' : 'auto', manualRate: d?.usd_rate ?? null }
+}
+
+/** Владелец/админ задаёт режим курса своей разборки (auto/manual) и, для manual, своё значение. */
+export async function setCompanyRate(mode: 'auto' | 'manual', rate?: number): Promise<void> {
+  const { error } = await supabase.rpc('set_company_rate', { p_mode: mode, p_rate: rate ?? null })
+  if (error) throw error
+}
+
 // Создать компанию и привязать к пользователю
 export async function createCompanyAndAssign(params: CreateCompanyParams): Promise<CreateCompanyResult> {
   const { data: company, error: createError } = await supabase

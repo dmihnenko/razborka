@@ -2,13 +2,14 @@ import { useState, useEffect, useRef } from 'react'
 import {
   RefreshCw, Save, CheckCircle,
   Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2,
-  Phone, Send, Truck, MapPin, X,
+  Phone, Send, Truck, MapPin, X, DollarSign,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { PHOTO_SERVICES, getCompanyPhotoStorage, saveCompanyPhotoStorage, isProviderConfigured, type PhotoStorageConfig, type PhotoProvider } from '@/services/photoStorageConfig'
 import { getNpApiKey, setNpApiKey } from '@/utils/npApiKey'
@@ -22,10 +23,11 @@ import i18n from '@/i18n'
 import { TELEGRAM_BOT_USERNAME, telegramConnectLink } from '@/config/telegram'
 import { manualVersionCheck } from '@/components/VersionChecker'
 
-type PanelId = 'contacts' | 'imgbb' | 'np' | 'telegram'
+type PanelId = 'contacts' | 'rate' | 'imgbb' | 'np' | 'telegram'
 
 const PANEL_TITLE_KEYS: Record<PanelId, string> = {
   contacts: 'settingsPage.panelContacts',
+  rate: 'settingsPage.panelRate',
   imgbb: 'settingsPage.panelImgbb',
   np: 'settingsPage.panelNp',
   telegram: 'settingsPage.panelTelegram',
@@ -38,6 +40,44 @@ export default function PartsSettings() {
   const partsCompanyId = profile?.parts_company_id
 
   const [panel, setPanel] = useState<PanelId | null>(null)
+
+  /* ── Курс доллара: авто (глобальный ПриватБанк) или свой курс разборки ── */
+  const { rate, mode, manualRate, globalRate, date, isStale, setCompanyRate } = usePartsExchangeRate()
+  const [rateMode, setRateMode] = useState<'auto' | 'manual'>(mode)
+  const [manualInput, setManualInput] = useState<string>('')
+  const [savingRate, setSavingRate] = useState(false)
+
+  // Синхронизировать локальный выбор с эффективным режимом из хука при открытии панели
+  useEffect(() => {
+    if (panel === 'rate') {
+      setRateMode(mode)
+      setManualInput(manualRate != null ? String(manualRate) : (globalRate != null ? String(globalRate) : ''))
+    }
+
+  }, [panel])
+
+  const handleSaveRate = async () => {
+    setSavingRate(true)
+    try {
+      if (rateMode === 'manual') {
+        const val = Number(manualInput.replace(',', '.'))
+        if (!Number.isFinite(val) || val <= 0) {
+          toast.error(t('settingsPage.toastInvalidRate'))
+          return
+        }
+        await setCompanyRate('manual', val)
+        toast.success(t('settingsPage.rateSavedManual', { rate: val }))
+      } else {
+        await setCompanyRate('auto')
+        toast.success(t('settingsPage.rateSavedAuto'))
+      }
+      setPanel(null)
+    } catch {
+      toast.error(t('settingsPage.toastError'))
+    } finally {
+      setSavingRate(false)
+    }
+  }
 
   const [checkingUpdate, setCheckingUpdate] = useState(false)
   const handleCheckUpdates = async () => {
@@ -270,6 +310,17 @@ export default function PartsSettings() {
       title: t('settingsPage.cardContactsTitle'), sub: t('settingsPage.cardContactsSub'), onClick: () => setPanel('contacts'),
     },
     {
+      id: 'rate', Icon: DollarSign, iconBg: 'bg-[var(--cab-surface-2)]', iconColor: 'text-[var(--cab-ink-2)]',
+      title: t('settingsPage.cardRateTitle'),
+      sub: `${rate ?? '—'} ₴/$ · ${mode === 'manual' ? t('settingsPage.sourceManual') : t('settingsPage.sourcePrivat')}`,
+      badge: mode === 'manual'
+        ? { cls: 'cab-chip', text: t('settingsPage.rateChipManual') }
+        : (isStale
+            ? { cls: 'cab-chip text-amber-700 bg-amber-50 border-amber-200', text: t('settingsPage.badgeUpdate') }
+            : { cls: 'cab-chip text-emerald-700 bg-emerald-50 border-emerald-200', text: t('settingsPage.badgeToday') }),
+      onClick: () => setPanel('rate'),
+    },
+    {
       id: 'imgbb', Icon: Key, iconBg: 'bg-[var(--cab-surface-2)]', iconColor: 'text-[var(--cab-ink-2)]',
       title: t('settingsPage.cardPhotoTitle'), sub: PHOTO_SERVICES.find(s => s.id === photoCfg.provider)?.name || t('settingsPage.cardPhotoSubFallback'), badge: imgbbConnected ? connectedBadge : notSetBadge,
       onClick: () => setPanel('imgbb'),
@@ -364,6 +415,69 @@ export default function PartsSettings() {
 
             <button onClick={() => saveContactsMutation.mutate()} disabled={saveContactsMutation.isPending || !contactsDirty} className="cab-btn cab-btn-primary w-full">
               <Save className="w-4 h-4" /> {t('settingsPage.save')}
+            </button>
+          </div>
+        )
+
+      case 'rate':
+        return (
+          <div className="space-y-4">
+            {/* Текущий эффективный курс */}
+            <div className="rounded-xl bg-[var(--cab-surface-2)] p-3">
+              <p className="text-2xl font-bold text-gray-900 tabular">{rate ?? '—'} <span className="text-base font-semibold text-gray-500">₴/$</span></p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {mode === 'manual'
+                  ? t('settingsPage.rateModeManualHint')
+                  : (date
+                      ? t('settingsPage.rateModeAutoHint', { date })
+                      : t('settingsPage.rateModeAutoHintNoDate'))}
+              </p>
+            </div>
+
+            {/* Сегмент-переключатель: Авто / Свой */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setRateMode('auto')}
+                className={`cab-chip flex-1 justify-center cursor-pointer ${rateMode === 'auto' ? 'text-[var(--cab-signal)] bg-[var(--cab-signal-weak)] border-[var(--cab-signal)]' : ''}`}
+              >
+                {t('settingsPage.modePrivat')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setRateMode('manual')}
+                className={`cab-chip flex-1 justify-center cursor-pointer ${rateMode === 'manual' ? 'text-[var(--cab-signal)] bg-[var(--cab-signal-weak)] border-[var(--cab-signal)]' : ''}`}
+              >
+                {t('settingsPage.modeManual')}
+              </button>
+            </div>
+
+            {rateMode === 'auto' ? (
+              <div className="rounded-xl bg-slate-50 p-3 space-y-1">
+                <p className="text-sm font-semibold text-gray-800">
+                  {t('settingsPage.rateAutoCurrent', { rate: globalRate ?? '—', date: date ?? '—' })}
+                </p>
+                <p className="text-xs text-gray-500">{t('settingsPage.rateAutoUpdates')}</p>
+              </div>
+            ) : (
+              <div>
+                <label className="form-label">{t('settingsPage.rateManualField')}</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.01"
+                  value={manualInput}
+                  onChange={e => setManualInput(e.target.value)}
+                  placeholder={globalRate != null ? String(globalRate) : '41.5'}
+                  className="form-input w-40 tabular"
+                />
+                <p className="text-xs text-gray-500 mt-1">{t('settingsPage.rateManualHint')}</p>
+              </div>
+            )}
+
+            <button onClick={handleSaveRate} disabled={savingRate} className="cab-btn cab-btn-primary w-full disabled:opacity-60">
+              <Save className="w-4 h-4" /> {savingRate ? t('settingsPage.saving') : t('settingsPage.save')}
             </button>
           </div>
         )
