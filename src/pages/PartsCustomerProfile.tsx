@@ -178,7 +178,8 @@ export default function PartsCustomerProfile() {
   const { rate: usdRate } = usePartsExchangeRate()
 
   const cartTotalUAH = cart.reduce((s, i) => {
-    const inUAH = i.currency === 'USD' ? i.price * usdRate : i.price
+    // USD-позиция без курса — пропускаем конвертацию (без NaN; пересчитается, когда курс придёт)
+    const inUAH = i.currency === 'USD' ? (usdRate != null ? i.price * usdRate : 0) : i.price
     return s + inUAH * i.quantity
   }, 0)
   const hasUSD = cart.some(i => i.currency === 'USD')
@@ -867,9 +868,9 @@ export default function PartsCustomerProfile() {
                         <>
                           {hasUSD && (
                             <div className="flex justify-between items-center text-xs text-gray-400">
-                              <span>{t('customerProfilePage.usdItems', { rate: usdRate })}</span>
+                              <span>{t('customerProfilePage.usdItems', { rate: usdRate ?? '—' })}</span>
                               <span className="tabular-nums">
-                                {formatCurrency(cart.filter(i => i.currency === 'USD').reduce((s, i) => s + i.price * i.quantity, 0) * usdRate)}
+                                {usdRate != null ? formatCurrency(cart.filter(i => i.currency === 'USD').reduce((s, i) => s + i.price * i.quantity, 0) * usdRate) : '—'}
                               </span>
                             </div>
                           )}

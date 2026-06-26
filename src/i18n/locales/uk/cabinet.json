@@ -227,6 +227,7 @@
     "confirmDelete": "Видалити заявку від «{{name}}»? Заброньований товар повернеться в маркет.",
     "toastConverted": "Замовлення створено із заявки",
     "toastConvertError": "Не вдалося оформити замовлення із заявки",
+    "toastRateLoading": "Курс ще завантажується, спробуйте за секунду",
     "filterActive": "Активні",
     "filterArchive": "Архів",
     "emptyActiveTitle": "Активних заявок немає",
@@ -335,6 +336,7 @@
     "phonePlaceholder": "Телефон",
     "invalidAmount": "Введіть коректну суму",
     "enterCustomerName": "Введіть ім'я клієнта",
+    "rateLoading": "Курс ще завантажується, спробуйте за секунду",
     "bulkSellTitle": "Продати зарезервовані запчастини",
     "bulkSellSubtitle": "Вкажіть кількість і ціну продажу для кожної позиції",
     "qtyShort": "к-сть:",
@@ -1140,7 +1142,8 @@
     "toastSold": "Запчастину продано, замовлення створено",
     "toastSaveError": "Помилка під час збереження: {{msg}}",
     "toastInvalidAmount": "Введіть коректну суму",
-    "toastEnterName": "Введіть ім'я клієнта"
+    "toastEnterName": "Введіть ім'я клієнта",
+    "toastRateLoading": "Курс ще завантажується, спробуйте за секунду"
   },
   "customerModal": {
     "titleEdit": "Редагувати клієнта",

@@ -79,7 +79,7 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
 
       const { error: completeError } = await supabase
         .from('parts_orders')
-        .update({ status: 'completed', exchange_rate_at_sale: usdRate })
+        .update({ status: 'completed', ...(usdRate != null ? { exchange_rate_at_sale: usdRate } : {}) })
         .eq('id', order.id)
       if (completeError) throw completeError
 
@@ -114,6 +114,11 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
     }
     if (showNewCustomer && !newCustomerName.trim()) {
       toast.error(t('sellPartModal.toastEnterName'))
+      return
+    }
+    // Продажа в USD требует курс — если он ещё не загрузился, не фиксируем сделку без курса
+    if (sellCurrency === 'USD' && usdRate == null) {
+      toast.error(t('sellPartModal.toastRateLoading'))
       return
     }
     sellMutation.mutate({

@@ -52,3 +52,4 @@ design-previews/
 
 # wrangler dev cache
 .wrangler/
+.dev.vars

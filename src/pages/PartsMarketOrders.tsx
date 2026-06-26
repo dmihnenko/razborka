@@ -320,7 +320,11 @@ export default function PartsMarketOrders() {
                 isDeleting={
                   deleteMutation.isPending && deleteMutation.variables?.id === order.id
                 }
-                onConvert={(o) => convertMutation.mutate(o)}
+                onConvert={(o) => {
+                  // Курс ещё не загружен — не оформляем заказ без курса (сумма посчитается некорректно)
+                  if (rate == null) { toast.error(t('marketOrdersPage.toastRateLoading')); return }
+                  convertMutation.mutate(o)
+                }}
                 onOpenOrder={(orderId) => navigate(`/parts/orders/${orderId}`)}
                 isConverting={
                   convertMutation.isPending && convertMutation.variables?.id === order.id

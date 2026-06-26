@@ -5,9 +5,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useUserProfile, useHasAnyRole } from '@/hooks/useUserProfile'
 import {
   ShoppingCart, Inbox, Tag, AlertTriangle, DollarSign, Package, Car,
-  ArrowRight, ChevronRight, Plus, CheckCircle2, Boxes, RefreshCw, Truck, Wallet,
+  ArrowRight, ChevronRight, Plus, CheckCircle2, Boxes, Truck, Wallet,
 } from 'lucide-react'
-import { toast } from 'sonner'
 import { getPartsOrderStatusText, statusBadgeClass } from '@/utils/status'
 import type { PartsOrderStatus } from '@/utils/status'
 import { formatDate } from '@/utils/date'
@@ -16,7 +15,6 @@ import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { getPartsDashboardStats, type DashboardPeriod } from '@/services/partsService'
 import { getShipments, type PartsShipment } from '@/services/shipmentsService'
 import { supabase } from '@/lib/supabase'
-import ExchangeRateWidget from '@/components/parts/ExchangeRateWidget'
 import OnboardingChecklist from '@/components/parts/OnboardingChecklist'
 
 
@@ -47,21 +45,12 @@ export default function PartsDashboard() {
   const canSeeFinance = useHasAnyRole(['parts_owner', 'admin'])
   // Период для финансовых метрик (выручка). Операционные счётчики — всегда текущее состояние.
   const [period, setPeriod] = useState<DashboardPeriod>('all')
-  const { rate: usdRate, isStale: rateStale, fetching: rateFetching, fetchPrivatBank } = usePartsExchangeRate()
-
-  const handleUpdateRate = async () => {
-    try {
-      const r = await fetchPrivatBank()
-      toast.success(t('dashboard.rateUpdated', { rate: r }))
-    } catch {
-      toast.error(t('dashboard.rateError'))
-    }
-  }
+  const { rate: usdRate } = usePartsExchangeRate() // курс глобальный, обновляется кроном (read-only)
 
   const { data: stats } = useQuery({
-    queryKey: ['parts-dashboard-stats', partsCompanyId, period],
-    queryFn: () => getPartsDashboardStats(partsCompanyId!, usdRate || 41, period),
-    enabled: !!partsCompanyId,
+    queryKey: ['parts-dashboard-stats', partsCompanyId, period, usdRate],
+    queryFn: () => getPartsDashboardStats(partsCompanyId!, usdRate!, period),
+    enabled: !!partsCompanyId && usdRate != null,
     staleTime: 5 * 60 * 1000,
   })
 
@@ -127,9 +116,6 @@ export default function PartsDashboard() {
     { key: 'low-stock',  count: stats?.inventory?.lowStock ?? 0, label: t('dashboard.actLowStock'),  Icon: AlertTriangle, to: '/parts/inventory?source=vehicles' },
   ].filter(a => a.count > 0)
 
-  // Курс нужно обновить, если он не на сегодня и уже утро (≥9:00)
-  const rateNeedsUpdate = rateStale && new Date().getHours() >= 9
-
   const ink = 'var(--cab-ink)'
   const ink2 = 'var(--cab-ink-2)'
   const ink3 = 'var(--cab-ink-3)'
@@ -161,15 +147,11 @@ export default function PartsDashboard() {
           <h1 className="page-title mt-0.5">{t('dashboard.title')}</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleUpdateRate}
-            disabled={rateFetching}
-            title={t('dashboard.updateRate')}
-            className={`cab-btn cab-btn-secondary cab-btn-sm${rateStale ? ' border-amber-400 text-amber-700 bg-amber-50' : ''}`}
-          >
-            <RefreshCw className={`w-4 h-4 ${rateFetching ? 'animate-spin' : ''}`} strokeWidth={1.5} />
-            <span className="tabular-nums">{usdRate} ₴/$</span>
-          </button>
+          {/* Курс — read-only (обновляется автоматически кроном) */}
+          <span className="cab-btn cab-btn-secondary cab-btn-sm cursor-default" title={t('dashboard.updateRate')}>
+            <DollarSign className="w-4 h-4" strokeWidth={1.5} />
+            <span className="tabular-nums">{usdRate != null ? `${usdRate} ₴/$` : '—'}</span>
+          </span>
           <button onClick={() => navigate('/parts/vehicles')} className="cab-btn cab-btn-secondary cab-btn-sm hidden sm:inline-flex">
             <Car className="w-4 h-4" strokeWidth={1.5} /> {t('dashboard.vehicles')}
           </button>
@@ -183,12 +165,9 @@ export default function PartsDashboard() {
       {partsCompanyId && <OnboardingChecklist partsCompanyId={partsCompanyId} />}
 
       {/* ── Требует действия ──────────────────────────────── */}
-      {(actions.length > 0 || rateNeedsUpdate) ? (
+      {actions.length > 0 ? (
         <div className="space-y-3">
           <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: ink3 }}>{t('dashboard.needsAction')}</p>
-
-          {/* Напоминание обновить курс — отдельно от карточек-действий */}
-          <ExchangeRateWidget />
 
           {actions.length > 0 && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

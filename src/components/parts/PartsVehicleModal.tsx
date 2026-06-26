@@ -37,7 +37,8 @@ function calcTotals(rows: PriceRow[], rate: number) {
       totalUAH += amt * rate
     } else {
       totalUAH += amt
-      totalUSD += amt / rate
+      // Курс не задан (0/NaN) — не делим, чтобы не получить Infinity
+      totalUSD += rate > 0 ? amt / rate : 0
     }
   }
   return { totalUSD, totalUAH }
@@ -67,17 +68,24 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
   // Initialize price rows from existing vehicle data
   const [priceRows, setPriceRows] = useState<PriceRow[]>(() => {
     if (vehicle?.purchase_price && vehicle.purchase_price > 0) {
-      const rate = vehicle.exchange_rate || globalRate || 41
-      // stored as UAH — show as one USD row if divisible nicely, else UAH
-      const asUSD = vehicle.purchase_price / rate
-      const rounded = Math.round(asUSD)
-      const isCleanUSD = Math.abs(rounded - asUSD) < 0.5
-      return [newRow({ amount: isCleanUSD ? String(rounded) : String(vehicle.purchase_price), currency: isCleanUSD ? 'USD' : 'UAH' })]
+      const rate = vehicle.exchange_rate || globalRate
+      // Курс известен → пробуем показать как USD-строку; иначе оставляем грн (без хардкода/NaN)
+      if (rate) {
+        const asUSD = vehicle.purchase_price / rate
+        const rounded = Math.round(asUSD)
+        const isCleanUSD = Math.abs(rounded - asUSD) < 0.5
+        return [newRow({ amount: isCleanUSD ? String(rounded) : String(vehicle.purchase_price), currency: isCleanUSD ? 'USD' : 'UAH' })]
+      }
+      return [newRow({ amount: String(vehicle.purchase_price), currency: 'UAH' })]
     }
     return [newRow()]
   })
 
-  const [exchangeRate, setExchangeRate] = useState<number>(vehicle?.exchange_rate || globalRate || 41)
+  const [exchangeRate, setExchangeRate] = useState<number>(vehicle?.exchange_rate || globalRate || 0)
+  // Если модалка открылась до загрузки курса разборки — подхватываем его, как только он придёт
+  useEffect(() => {
+    if (!vehicle?.exchange_rate && !exchangeRate && globalRate != null) setExchangeRate(globalRate)
+  }, [globalRate, vehicle?.exchange_rate, exchangeRate])
   const [loading, setLoading] = useState(false)
   const [vinLoading, setVinLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -405,7 +413,7 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
                     <input
                       type="number"
                       value={exchangeRate}
-                      onChange={e => setExchangeRate(Number(e.target.value) || 41)}
+                      onChange={e => setExchangeRate(Number(e.target.value) || 0)}
                       min="1"
                       className="form-input w-16 px-2 py-1 text-sm text-center"
                     />

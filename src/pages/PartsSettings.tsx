@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  RefreshCw, Save, DollarSign, AlertTriangle, CheckCircle,
+  RefreshCw, Save, CheckCircle,
   Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2,
-  Phone, Send, Info, Truck, MapPin, X,
+  Phone, Send, Truck, MapPin, X,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -10,8 +10,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
-import { formatDate } from '@/utils/date'
-import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { PHOTO_SERVICES, getCompanyPhotoStorage, saveCompanyPhotoStorage, isProviderConfigured, type PhotoStorageConfig, type PhotoProvider } from '@/services/photoStorageConfig'
 import { getNpApiKey, setNpApiKey } from '@/utils/npApiKey'
 import { getNpConfig, setNpConfig, NpSenderConfig } from '@/utils/npConfig'
@@ -24,11 +22,10 @@ import i18n from '@/i18n'
 import { TELEGRAM_BOT_USERNAME, telegramConnectLink } from '@/config/telegram'
 import { manualVersionCheck } from '@/components/VersionChecker'
 
-type PanelId = 'contacts' | 'rate' | 'imgbb' | 'np' | 'telegram'
+type PanelId = 'contacts' | 'imgbb' | 'np' | 'telegram'
 
 const PANEL_TITLE_KEYS: Record<PanelId, string> = {
   contacts: 'settingsPage.panelContacts',
-  rate: 'settingsPage.panelRate',
   imgbb: 'settingsPage.panelImgbb',
   np: 'settingsPage.panelNp',
   telegram: 'settingsPage.panelTelegram',
@@ -51,19 +48,6 @@ export default function PartsSettings() {
     // 'updated' — VersionChecker сам покажет toast с кнопкой «Обновить»
   }
 
-  const {
-    rate,
-    date,
-    source,
-    isStale,
-    fetching,
-    fetchError,
-    fetchPrivatBank,
-    setManualRate,
-  } = usePartsExchangeRate()
-
-  const [manualInput, setManualInput] = useState<string>(String(rate))
-  const [rateMode, setRateMode] = useState<'privat' | 'manual'>('privat')
   const [npKeyInput, setNpKeyInput] = useState<string>(getNpApiKey)
 
   /* ── Хранилище фото (per-company): провайдер + ключи ───────────── */
@@ -259,26 +243,6 @@ export default function PartsSettings() {
     toast.success(trimmed ? t('settingsPage.toastNpKeySaved') : t('settingsPage.toastNpKeyRemoved'))
   }
 
-  const handleFetchPrivatBank = async () => {
-    try {
-      const fetched = await fetchPrivatBank()
-      setManualInput(String(fetched))
-      toast.success(t('settingsPage.toastPrivatRate', { rate: fetched }))
-    } catch {
-      toast.error(fetchError || t('settingsPage.toastRateFetchError'))
-    }
-  }
-
-  const handleSaveManual = () => {
-    const val = parseFloat(manualInput.replace(',', '.'))
-    if (!val || val <= 0) {
-      toast.error(t('settingsPage.toastInvalidRate'))
-      return
-    }
-    setManualRate(val)
-    toast.success(t('settingsPage.toastRateSet', { rate: val }))
-  }
-
   if (!partsCompanyId) return <PartsAccessDenied />
 
   /* ── статусы интеграций ── */
@@ -304,12 +268,6 @@ export default function PartsSettings() {
     {
       id: 'contacts', Icon: Phone, iconBg: 'bg-[var(--cab-surface-2)]', iconColor: 'text-[var(--cab-signal)]',
       title: t('settingsPage.cardContactsTitle'), sub: t('settingsPage.cardContactsSub'), onClick: () => setPanel('contacts'),
-    },
-    {
-      id: 'rate', Icon: DollarSign, iconBg: 'bg-[var(--cab-surface-2)]', iconColor: 'text-[var(--cab-ink-2)]',
-      title: t('settingsPage.cardRateTitle'), sub: `${rate} ₴/$ · ${isStale ? t('settingsPage.cardRateSubStale') : t('settingsPage.cardRateSubFresh')}`,
-      badge: isStale ? { cls: 'cab-chip text-amber-700 bg-amber-50 border-amber-200', text: t('settingsPage.badgeUpdate') } : { cls: 'cab-chip text-emerald-700 bg-emerald-50 border-emerald-200', text: t('settingsPage.badgeToday') },
-      onClick: () => setPanel('rate'),
     },
     {
       id: 'imgbb', Icon: Key, iconBg: 'bg-[var(--cab-surface-2)]', iconColor: 'text-[var(--cab-ink-2)]',
@@ -407,59 +365,6 @@ export default function PartsSettings() {
             <button onClick={() => saveContactsMutation.mutate()} disabled={saveContactsMutation.isPending || !contactsDirty} className="cab-btn cab-btn-primary w-full">
               <Save className="w-4 h-4" /> {t('settingsPage.save')}
             </button>
-          </div>
-        )
-
-      case 'rate':
-        return (
-          <div>
-            <div className={`alert mb-4 ${isStale ? 'alert-warning' : 'alert-success'}`}>
-              {isStale ? <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" /> : <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />}
-              <div>
-                <p className="text-sm font-semibold">{t('settingsPage.currentRate')} <span className="tabular text-base font-bold">{rate} ₴/$</span></p>
-                {date && (
-                  <p className="text-xs mt-0.5 opacity-80">
-                    {isStale ? t('settingsPage.rateSetStale', { date: formatDate(date) }) : t('settingsPage.rateSetToday', { date: formatDate(date), source: source === 'privatbank' ? t('settingsPage.sourcePrivat') : t('settingsPage.sourceManual') })}
-                  </p>
-                )}
-                {!date && <p className="text-xs mt-0.5 opacity-80">{t('settingsPage.rateDefault')}</p>}
-              </div>
-            </div>
-
-            <div className="flex gap-2 mb-3">
-              <button type="button" onClick={() => setRateMode('privat')} className={`chip${rateMode === 'privat' ? ' active' : ''}`}>{t('settingsPage.modePrivat')}</button>
-              <button type="button" onClick={() => setRateMode('manual')} className={`chip${rateMode === 'manual' ? ' active' : ''}`}>{t('settingsPage.modeManual')}</button>
-            </div>
-
-            {rateMode === 'privat' ? (
-              <div>
-                <button onClick={handleFetchPrivatBank} disabled={fetching} className="cab-btn cab-btn-primary w-full">
-                  <RefreshCw className={`w-4 h-4 ${fetching ? 'animate-spin' : ''}`} />
-                  {fetching ? t('settingsPage.fetchingRate') : t('settingsPage.fetchPrivatRate')}
-                </button>
-                {fetchError && <p className="form-error mt-1.5">{fetchError}</p>}
-                <p className="text-xs text-gray-400 mt-1.5">{t('settingsPage.rateUsdUahHint')}</p>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <input type="number" value={manualInput} onChange={e => setManualInput(e.target.value)} min="1" step="0.01" className="form-input tabular pr-10" placeholder="41.50" />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">₴/$</span>
-                </div>
-                <button onClick={handleSaveManual} className="cab-btn cab-btn-primary flex-shrink-0"><Save className="w-4 h-4" /> {t('settingsPage.save')}</button>
-              </div>
-            )}
-
-            <details className="mt-3">
-              <summary className="text-xs text-primary cursor-pointer select-none hover:underline inline-flex items-center gap-1">
-                <Info className="w-3.5 h-3.5" /> {t('settingsPage.howRateWorks')}
-              </summary>
-              <ul className="mt-2 space-y-1 list-disc list-inside text-xs text-gray-500">
-                <li>{t('settingsPage.rateInfo1')}</li>
-                <li>{t('settingsPage.rateInfo2')}</li>
-                <li>{t('settingsPage.rateInfo3')}</li>
-              </ul>
-            </details>
           </div>
         )
 

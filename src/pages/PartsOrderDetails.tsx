@@ -188,7 +188,9 @@ export default function PartsOrderDetails() {
 
   const computedTotalUAH = (order?.items ?? []).reduce((sum, item: any) => {
     const amount = (item.price_at_sale || 0) * (item.quantity || 1)
-    return sum + (getItemCurrency(item) === 'USD' ? amount * (exchangeRate || 41) : amount)
+    if (getItemCurrency(item) !== 'USD') return sum + amount
+    // USD → грн: курс ещё не загружен — пропускаем (без NaN; пересчитается, когда курс придёт)
+    return exchangeRate != null ? sum + amount * exchangeRate : sum
   }, 0)
 
   /* ── Префилл стоимости ТТН из итога заказа ─────────────────── */

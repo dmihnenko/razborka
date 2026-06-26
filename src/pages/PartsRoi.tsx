@@ -54,8 +54,8 @@ export default function PartsRoi() {
   const { data = [], isLoading } = useQuery({
     queryKey: ['vehicle-roi', partsCompanyId, globalRate],
     staleTime: 1000 * 60 * 30,
-    enabled: !!partsCompanyId,
-    queryFn: () => getVehicleRoi(partsCompanyId!, globalRate),
+    enabled: !!partsCompanyId && globalRate != null,
+    queryFn: () => getVehicleRoi(partsCompanyId!, globalRate!),
   })
 
   // Сводка по всем авто (для KPI). Вложено — только там, где есть цена покупки.

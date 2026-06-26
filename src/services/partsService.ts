@@ -328,7 +328,7 @@ export interface PartsDashboardStats {
 /** Агрегаты дашборда одним RPC (вместо ~6 запросов с клиентской агрегацией полных таблиц). */
 export type DashboardPeriod = 'today' | '7d' | 'month' | 'all'
 
-export async function getPartsDashboardStats(partsCompanyId: string, rate = 41, period: DashboardPeriod = 'all'): Promise<PartsDashboardStats> {
+export async function getPartsDashboardStats(partsCompanyId: string, rate: number, period: DashboardPeriod = 'all'): Promise<PartsDashboardStats> {
   const { data, error } = await supabase.rpc('get_parts_dashboard_stats', {
     p_company: partsCompanyId,
     p_rate: rate,
@@ -339,7 +339,7 @@ export async function getPartsDashboardStats(partsCompanyId: string, rate = 41, 
 }
 
 /** Аналитика разборки одним серверным RPC (вместо нескольких клиентских запросов). */
-export async function getPartsAnalytics(partsCompanyId: string, rate = 41): Promise<any> {
+export async function getPartsAnalytics(partsCompanyId: string, rate: number): Promise<any> {
   const { data, error } = await supabase.rpc('get_parts_analytics', {
     p_company: partsCompanyId,
     p_rate: rate,
@@ -349,7 +349,7 @@ export async function getPartsAnalytics(partsCompanyId: string, rate = 41): Prom
 }
 
 /** Окупаемость авто: на каждое авто — вложено (цена авто), возвращено, остаток, прибыль, %. */
-export async function getVehicleRoi(partsCompanyId: string, rate = 41): Promise<VehicleRoi[]> {
+export async function getVehicleRoi(partsCompanyId: string, rate: number): Promise<VehicleRoi[]> {
   const { data, error } = await supabase.rpc('get_vehicle_roi', {
     p_company: partsCompanyId,
     p_rate: rate,
@@ -379,7 +379,7 @@ export interface PartsInventorySummary {
 }
 
 /** Серверный агрегат стоимости склада/продаж по ВСЕЙ выборке (не по подгруженной странице). */
-export async function getPartsInventorySummary(partsCompanyId: string, rate = 41): Promise<PartsInventorySummary> {
+export async function getPartsInventorySummary(partsCompanyId: string, rate: number): Promise<PartsInventorySummary> {
   const { data, error } = await supabase.rpc('get_parts_inventory_summary', {
     p_company: partsCompanyId,
     p_rate: rate,
@@ -667,7 +667,7 @@ export async function createPartsOrderItem(
   return data
 }
 
-export async function updatePartsOrderTotal(orderId: string, exchangeRate: number = 41) {
+export async function updatePartsOrderTotal(orderId: string, exchangeRate?: number | null) {
   const { data: items } = await supabase
     .from('parts_order_items')
     .select('price_at_sale, quantity, price_at_sale_currency')
@@ -676,7 +676,8 @@ export async function updatePartsOrderTotal(orderId: string, exchangeRate: numbe
   const total = (items || []).reduce((s: number, i: any) => {
     const currency = i.price_at_sale_currency || 'UAH'
     const amount = (i.price_at_sale || 0) * (i.quantity || 1)
-    const amountUAH = currency === 'USD' ? amount * exchangeRate : amount
+    // USD → грн только при известном курсе; иначе считаем сумму без USD-позиций (без хардкода)
+    const amountUAH = currency === 'USD' ? (exchangeRate != null ? amount * exchangeRate : 0) : amount
     return s + amountUAH
   }, 0)
 

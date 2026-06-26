@@ -149,8 +149,8 @@ export default function PartsInventory() {
   const { data: summary } = useQuery({
     // ключ вложен в ['parts-inventory', …] — те же инвалидации, что и список, обновляют агрегат
     queryKey: ['parts-inventory', 'summary', partsCompanyId, usdRate],
-    queryFn: () => getPartsInventorySummary(partsCompanyId!, usdRate || 41),
-    enabled: !!partsCompanyId,
+    queryFn: () => getPartsInventorySummary(partsCompanyId!, usdRate!),
+    enabled: !!partsCompanyId && usdRate != null,
     staleTime: 60_000,
   })
   const stockUSD = summary?.stockUSD ?? 0
@@ -413,7 +413,9 @@ export default function PartsInventory() {
       // иначе $100 «дешевле» 1000 грн при прямом сравнении чисел.
       const toUSD = (it: PartsInventoryItem) => {
         const p = it.selling_price || 0
-        return it.price_currency === 'UAH' ? p / (usdRate || 41) : p
+        // Курс ещё не загружен — не нормализуем грн (сравниваем как есть, без NaN)
+        if (it.price_currency === 'UAH') return usdRate != null ? p / usdRate : p
+        return p
       }
       cmp = toUSD(a) - toUSD(b)
     }
@@ -438,19 +440,24 @@ export default function PartsInventory() {
     }, 0),
     availableUSD: inventory.filter((i: PartsInventoryItem) => i.status === 'available').reduce((sum: number, item: PartsInventoryItem) => {
       const price = item.selling_price || 0
-      return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum + price * item.quantity / (usdRate || 41)
+      if (item.price_currency === 'USD' || !item.price_currency) return sum + price * item.quantity
+      // Грн → USD: курс ещё не загружен — пропускаем конвертацию (без NaN)
+      return usdRate != null ? sum + price * item.quantity / usdRate : sum
     }, 0),
     reservedUSD: inventory.filter((i: PartsInventoryItem) => i.status === 'reserved').reduce((sum: number, item: PartsInventoryItem) => {
       const price = item.selling_price || 0
-      return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum + price * item.quantity / (usdRate || 41)
+      if (item.price_currency === 'USD' || !item.price_currency) return sum + price * item.quantity
+      return usdRate != null ? sum + price * item.quantity / usdRate : sum
     }, 0),
     stockUSD: inventory.filter((i: PartsInventoryItem) => i.status === 'available' || i.status === 'reserved').reduce((sum: number, item: PartsInventoryItem) => {
       const price = item.selling_price || 0
-      return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum + price * item.quantity / (usdRate || 41)
+      if (item.price_currency === 'USD' || !item.price_currency) return sum + price * item.quantity
+      return usdRate != null ? sum + price * item.quantity / usdRate : sum
     }, 0),
     soldUSD: inventory.filter((i: PartsInventoryItem) => i.status === 'sold').reduce((sum: number, item: PartsInventoryItem) => {
       const price = item.sold_price ?? item.selling_price ?? 0
-      return (item.price_currency === 'USD' || !item.price_currency) ? sum + price * item.quantity : sum + price * item.quantity / (usdRate || 41)
+      if (item.price_currency === 'USD' || !item.price_currency) return sum + price * item.quantity
+      return usdRate != null ? sum + price * item.quantity / usdRate : sum
     }, 0),
   }
 
@@ -493,7 +500,7 @@ export default function PartsInventory() {
       // Complete the order — trigger complete_parts_order() sets inventory status='sold' and decrements quantity
       const { error: completeError } = await supabase
         .from('parts_orders')
-        .update({ status: 'completed', exchange_rate_at_sale: usdRate })
+        .update({ status: 'completed', ...(usdRate != null ? { exchange_rate_at_sale: usdRate } : {}) })
         .eq('id', order.id)
       if (completeError) throw completeError
 
@@ -552,7 +559,7 @@ export default function PartsInventory() {
       await updatePartsOrderTotal(order.id, usdRate)
       const { error: completeError } = await supabase
         .from('parts_orders')
-        .update({ status: 'completed', exchange_rate_at_sale: usdRate })
+        .update({ status: 'completed', ...(usdRate != null ? { exchange_rate_at_sale: usdRate } : {}) })
         .eq('id', order.id)
       if (completeError) throw completeError
       for (const row of rows) {
@@ -1349,6 +1356,11 @@ export default function PartsInventory() {
                     toast.error(t('inventoryPage.enterCustomerName'))
                     return
                   }
+                  // Продажа в USD требует курс — если он ещё не загрузился, не фиксируем сделку без курса
+                  if (sellCurrency === 'USD' && usdRate == null) {
+                    toast.error(t('inventoryPage.rateLoading'))
+                    return
+                  }
                   sellMutation.mutate({
                     item: sellingItem,
                     price,
@@ -1511,6 +1523,11 @@ export default function PartsInventory() {
                   }
                   if (bulkShowNewCustomer && !bulkNewCustomerName.trim()) {
                     toast.error(t('inventoryPage.enterCustomerName'))
+                    return
+                  }
+                  // Если в продаже есть USD-позиции, курс обязателен — иначе сумма посчитается некорректно
+                  if (bulkRows.some(r => r.currency === 'USD') && usdRate == null) {
+                    toast.error(t('inventoryPage.rateLoading'))
                     return
                   }
                   bulkSellMutation.mutate({

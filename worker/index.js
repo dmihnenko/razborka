@@ -168,8 +168,32 @@ async function buildSitemap(env) {
   return new Response(body, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } })
 }
 
+// ── крон: обновление глобального курса USD (анти-спам: только крон бьёт ПриватБанк) ──
+async function updateGlobalRate(env) {
+  try {
+    const res = await fetch('https://api.privatbank.ua/p24api/pubinfo?json&exchange&coursid=5')
+    const list = await res.json()
+    const usd = (list || []).find((i) => i.ccy === 'USD' && i.base_ccy === 'UAH')
+    const rate = parseFloat(usd?.sale)
+    if (!rate || isNaN(rate) || rate <= 0) return
+    await fetch(env.SUPABASE_URL + '/rest/v1/rpc/set_global_usd_rate', {
+      method: 'POST',
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + env.SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ p_rate: rate, p_source: 'privatbank', p_secret: env.CRON_RATE_SECRET }),
+    })
+  } catch { /* best-effort: следующий запуск крона повторит */ }
+}
+
 // ── точка входа ──────────────────────────────────────────────────────────────
 export default {
+  // Крон (wrangler triggers.crons: 06:30 и 12:30 UTC ≈ 9:30 и 15:30 Киев)
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(updateGlobalRate(env))
+  },
+
   async fetch(request, env, ctx) {
     const url = new URL(request.url)
     const p = url.pathname

@@ -147,7 +147,8 @@ export default function PartsVehicles() {
 
   const formatPriceUSD = (vehicle: PartsVehicle) => {
     if (!vehicle.purchase_price) return '—'
-    const rate = vehicle.exchange_rate || globalRate || 41
+    const rate = vehicle.exchange_rate || globalRate
+    if (!rate) return '—' // курс ещё не загружен — показываем «—» вместо NaN
     const usd = vehicle.purchase_price / rate
     return '$' + usd.toLocaleString(intlLocale(), { minimumFractionDigits: 0, maximumFractionDigits: 0 })
   }
@@ -187,8 +188,8 @@ export default function PartsVehicles() {
   // Окупаемость по каждому авто (тот же RPC, что и страница «Окупаемость авто»)
   const { data: roiList = [] } = useQuery({
     queryKey: ['vehicle-roi', partsCompanyId, globalRate],
-    queryFn: () => getVehicleRoi(partsCompanyId!, globalRate),
-    enabled: !!partsCompanyId,
+    queryFn: () => getVehicleRoi(partsCompanyId!, globalRate!),
+    enabled: !!partsCompanyId && globalRate != null,
     staleTime: 5 * 60 * 1000,
   })
   const roiByVehicle = useMemo(

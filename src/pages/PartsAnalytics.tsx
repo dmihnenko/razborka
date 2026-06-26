@@ -29,8 +29,8 @@ export default function PartsAnalytics() {
   const { data } = useQuery({
     queryKey: ['parts-analytics', partsCompanyId, globalRate],
     staleTime: 1000 * 60 * 30,
-    queryFn: () => getPartsAnalytics(partsCompanyId!, globalRate),
-    enabled: !!partsCompanyId,
+    queryFn: () => getPartsAnalytics(partsCompanyId!, globalRate!),
+    enabled: !!partsCompanyId && globalRate != null,
   })
 
   // Transform server monthly array → [label, {revenue, orders}][] for the chart

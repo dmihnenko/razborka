@@ -76,26 +76,6 @@ export async function updatePartsCompanyContacts(
   throw error
 }
 
-// ── Курс USD разборки (хранится в parts_companies, общий для команды/устройств) ──
-export interface PartsUsdRate { rate: number | null; date: string | null; source: string | null }
-
-export async function getPartsUsdRate(companyId: string): Promise<PartsUsdRate> {
-  const { data, error } = await supabase
-    .from('parts_companies')
-    .select('usd_rate, usd_rate_date, usd_rate_source')
-    .eq('id', companyId)
-    .single()
-  if (error) throw error
-  const d = data as any
-  return { rate: d?.usd_rate ?? null, date: d?.usd_rate_date ?? null, source: d?.usd_rate_source ?? null }
-}
-
-/** Обновить курс своей компании через SECURITY DEFINER RPC (может любой член компании). */
-export async function setPartsUsdRate(rate: number, source: 'manual' | 'privatbank' = 'manual'): Promise<void> {
-  const { error } = await supabase.rpc('set_parts_usd_rate', { p_rate: rate, p_source: source })
-  if (error) throw error
-}
-
 // Создать компанию и привязать к пользователю
 export async function createCompanyAndAssign(params: CreateCompanyParams): Promise<CreateCompanyResult> {
   const { data: company, error: createError } = await supabase

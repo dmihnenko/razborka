@@ -444,7 +444,7 @@ export async function deleteMarketplaceOrder(order: MarketplaceOrder): Promise<v
 export async function convertMarketplaceOrderToPartsOrder(
   order: MarketplaceOrder,
   partsCompanyId: string,
-  exchangeRate: number
+  exchangeRate?: number | null
 ): Promise<{ orderId: string }> {
   if (order.convertedOrderId) return { orderId: order.convertedOrderId }
 
