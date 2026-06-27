@@ -1,46 +1,27 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Archive, Car, Edit, Package, ShoppingBag, ChevronLeft, Clock, User } from 'lucide-react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
-import { formatDistanceToNow } from 'date-fns'
+import { Plus, Archive, Car, Edit, Package, User } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getPersonalVehicles } from '@/services/personalVehicles'
-import { getMyMarketplaceOrders, cancelMyMarketplaceOrder } from '@/services/marketplaceService'
+import { getMyMarketplaceOrders } from '@/services/marketplaceService'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { useConfirm } from '@/hooks/useConfirm'
 import PersonalVehicleModal from '@/components/personal-vehicles/PersonalVehicleModal'
 import ShareLinkModal from '@/components/personal-vehicles/ShareLinkModal'
 import EmptyState from '@/components/ui/EmptyState'
-import ConfirmDialog from '@/components/ui/ConfirmDialog'
-import OrderCard, { STATUS_CHIP, totalsByCurrency, dateLocale } from '@/components/orders/OrderCard'
 import ProfileSettings from '@/pages/ProfileSettings'
-import { formatPrice } from '@/utils/currency'
-import type { MyMarketplaceOrder } from '@/types/marketplace'
+import MyOrdersPanel from '@/components/orders/MyOrdersPanel'
 
 const NO_IMAGE_URL = '/noimage_final.png'
 
-// Короткие RU-подписи статусов для рейла (страница «Мои авто» — на русском).
-const STATUS_LABEL: Record<string, string> = {
-  new: 'Новая',
-  viewed: 'Просмотрена',
-  closed: 'Закрыта',
-  cancelled: 'Отменена',
-}
+type CabinetTab = 'vehicles' | 'orders' | 'profile'
 
 export default function MyVehicles() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
-  const { confirm: showConfirm, dialogProps } = useConfirm()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [shareVehicleId, setShareVehicleId] = useState<string | null>(null)
-  // null — показываем сетку авто (главный вид); id — показываем выбранный заказ справа.
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
-  // Раздел кабинета (когда заказ не выбран): авто или профиль.
-  const [tab, setTab] = useState<'vehicles' | 'profile'>('vehicles')
-
-  const openVehicles = () => { setSelectedOrderId(null); setTab('vehicles') }
-  const openProfile = () => { setSelectedOrderId(null); setTab('profile') }
+  const [tab, setTab] = useState<CabinetTab>('vehicles')
 
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: ['personal-vehicles', profile?.id],
@@ -49,34 +30,12 @@ export default function MyVehicles() {
     staleTime: 0,
   })
 
-  const { data: orders = [], isLoading: ordersLoading } = useQuery({
+  // Лёгкий запрос только ради счётчика заказов в рейле (ключ общий с панелью — кэш переиспользуется).
+  const { data: orders = [] } = useQuery({
     queryKey: ['my-orders', profile?.id],
     queryFn: getMyMarketplaceOrders,
     enabled: !!profile?.id,
   })
-
-  const cancelMutation = useMutation({
-    mutationFn: (order: MyMarketplaceOrder) => cancelMyMarketplaceOrder(order.id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-orders'] })
-      toast.success('Заявка отменена')
-    },
-    onError: (e: unknown) => {
-      toast.error(e instanceof Error ? e.message : 'Не удалось отменить заявку')
-    },
-  })
-
-  const handleCancel = async (order: MyMarketplaceOrder) => {
-    const ok = await showConfirm({
-      title: 'Отменить заявку',
-      message: 'Вы уверены, что хотите отменить эту заявку?',
-      confirmText: 'Отменить заявку',
-      danger: true,
-    })
-    if (ok) cancelMutation.mutate(order)
-  }
-
-  const selectedOrder = orders.find((o) => o.id === selectedOrderId) || null
 
   const handleEdit = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -174,113 +133,48 @@ export default function MyVehicles() {
     )
   }
 
-  // ── Левый рейл: кнопка «Мои авто» + меню заказов ────────────────────
-  const rail = (
-    <aside className="lg:w-72 lg:shrink-0 space-y-3">
-      {/* Навигация кабинета: авто и профиль */}
-      <div className="space-y-2">
-        <button
-          onClick={openVehicles}
-          className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border transition-colors text-left ${
-            selectedOrderId === null && tab === 'vehicles'
-              ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-              : 'bg-white border-gray-100 text-gray-700 hover:border-blue-200 hover:bg-blue-50/50'
-          }`}
-        >
-          <Car className="w-5 h-5 shrink-0" strokeWidth={1.5} />
-          <span className="font-semibold text-sm">Мои авто</span>
-          <span
-            className={`ml-auto text-xs font-medium tabular-nums ${
-              selectedOrderId === null && tab === 'vehicles' ? 'text-blue-100' : 'text-gray-400'
-            }`}
-          >
-            {vehicles.length}
+  // ── Кнопка раздела в левом рейле ─────────────────────────────────────
+  const NavButton = ({
+    id,
+    icon: Icon,
+    label,
+    count,
+  }: {
+    id: CabinetTab
+    icon: typeof Car
+    label: string
+    count?: number
+  }) => {
+    const isActive = tab === id
+    return (
+      <button
+        onClick={() => setTab(id)}
+        className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border transition-colors text-left ${
+          isActive
+            ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+            : 'bg-white border-gray-100 text-gray-700 hover:border-blue-200 hover:bg-blue-50/50'
+        }`}
+      >
+        <Icon className="w-5 h-5 shrink-0" strokeWidth={1.5} />
+        <span className="font-semibold text-sm">{label}</span>
+        {count !== undefined && count > 0 && (
+          <span className={`ml-auto text-xs font-medium tabular-nums ${isActive ? 'text-blue-100' : 'text-gray-400'}`}>
+            {count}
           </span>
-        </button>
-
-        <button
-          onClick={openProfile}
-          className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border transition-colors text-left ${
-            selectedOrderId === null && tab === 'profile'
-              ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-              : 'bg-white border-gray-100 text-gray-700 hover:border-blue-200 hover:bg-blue-50/50'
-          }`}
-        >
-          <User className="w-5 h-5 shrink-0" strokeWidth={1.5} />
-          <span className="font-semibold text-sm">Профиль</span>
-        </button>
-      </div>
-
-      {/* Меню заказов с разборки */}
-      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-        <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-gray-100">
-          <Package className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
-          <span className="text-sm font-semibold text-gray-700">Заказы с разборки</span>
-          {orders.length > 0 && (
-            <span className="ml-auto text-xs font-medium text-gray-400 tabular-nums">{orders.length}</span>
-          )}
-        </div>
-
-        {ordersLoading ? (
-          <div className="p-3 space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-12 rounded-lg bg-gray-100 animate-shimmer" />
-            ))}
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="px-3.5 py-5 text-center">
-            <ShoppingBag className="w-6 h-6 text-gray-300 mx-auto mb-2" strokeWidth={1.5} />
-            <p className="text-xs text-gray-400 mb-3">Пока нет заказов с разборок</p>
-            <button onClick={() => navigate('/market/catalog')} className="btn-secondary btn-sm w-full justify-center">
-              В каталог запчастей
-            </button>
-          </div>
-        ) : (
-          <div className="max-h-[60vh] overflow-y-auto divide-y divide-gray-50">
-            {orders.map((o) => {
-              const active = o.id === selectedOrderId
-              const totals = totalsByCurrency(o)
-              return (
-                <button
-                  key={o.id}
-                  onClick={() => setSelectedOrderId(o.id)}
-                  className={`w-full text-left px-3.5 py-2.5 transition-colors ${
-                    active ? 'bg-blue-50' : 'hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-gray-800 truncate">
-                      {o.company?.name || 'Заказ'}
-                    </span>
-                    <span
-                      className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${
-                        STATUS_CHIP[o.status] || STATUS_CHIP.closed
-                      }`}
-                    >
-                      {STATUS_LABEL[o.status] || o.status}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 mt-1">
-                    <span className="flex items-center gap-1 text-[11px] text-gray-400 min-w-0">
-                      <Clock className="w-3 h-3 shrink-0" />
-                      <span className="truncate">
-                        {formatDistanceToNow(new Date(o.createdAt), { addSuffix: true, locale: dateLocale() })}
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-xs font-bold text-blue-600 tabular-nums">
-                      {totals.map((tt) => formatPrice(tt.sum, tt.currency)).join(' · ')}
-                    </span>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
         )}
-      </div>
+      </button>
+    )
+  }
+
+  const rail = (
+    <aside className="lg:w-72 lg:shrink-0 space-y-2">
+      <NavButton id="vehicles" icon={Car} label="Мои авто" count={vehicles.length} />
+      <NavButton id="orders" icon={Package} label="Заказы с разборки" count={orders.length} />
+      <NavButton id="profile" icon={User} label="Профиль" />
     </aside>
   )
 
-  // ── Контент справа: сетка авто (по умолчанию) или выбранный заказ ────
+  // ── Раздел «Мои авто» ────────────────────────────────────────────────
   const vehiclesView = (
     <div className="space-y-5">
       <header className="card p-5 sm:p-6">
@@ -344,20 +238,24 @@ export default function MyVehicles() {
     </div>
   )
 
-  const orderView = selectedOrder && (
-    <div className="space-y-4">
-      <button
-        onClick={() => setSelectedOrderId(null)}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors"
-      >
-        <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
-        К моим авто
-      </button>
-      <OrderCard
-        order={selectedOrder}
-        onCancel={handleCancel}
-        canceling={cancelMutation.isPending && cancelMutation.variables?.id === selectedOrder.id}
-      />
+  // ── Раздел «Заказы с разборки» ───────────────────────────────────────
+  const ordersView = (
+    <div className="space-y-5">
+      <header className="card p-5 sm:p-6">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <div className="icon-tile-lg bg-blue-50 text-blue-600 shrink-0">
+            <Package className="w-6 h-6" strokeWidth={1.5} />
+          </div>
+          <div className="min-w-0">
+            <h1 className="page-title">Заказы с разборки</h1>
+            <p className="page-subtitle">
+              Ваши заявки на запчасти
+              {orders.length > 0 && ` · ${orders.length}`}
+            </p>
+          </div>
+        </div>
+      </header>
+      <MyOrdersPanel />
     </div>
   )
 
@@ -366,7 +264,7 @@ export default function MyVehicles() {
       <div className="lg:flex lg:gap-6 space-y-4 lg:space-y-0">
         {rail}
         <div className="flex-1 min-w-0">
-          {selectedOrder ? orderView : tab === 'profile' ? <ProfileSettings /> : vehiclesView}
+          {tab === 'orders' ? ordersView : tab === 'profile' ? <ProfileSettings /> : vehiclesView}
         </div>
       </div>
 
@@ -386,8 +284,6 @@ export default function MyVehicles() {
           userId={profile.id}
         />
       )}
-
-      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }
