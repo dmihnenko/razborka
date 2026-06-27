@@ -17,7 +17,7 @@ interface Ctx {
 
 const CONTEXTS: Ctx[] = [
   { id: 'parts', label: 'Разборка',  desc: 'Кабинет авторазборки',   icon: Store,  path: '/parts/dashboard' },
-  { id: 'user',  label: 'Мои авто',  desc: 'Личные автомобили',      icon: Car,    path: '/my-vehicles' },
+  { id: 'user',  label: 'Мои авто',  desc: 'Авто и заказы с разборок', icon: Car,    path: '/my-vehicles' },
   { id: 'admin', label: 'Админ',     desc: 'Панель администратора',  icon: Shield, path: '/admin' },
 ]
 
