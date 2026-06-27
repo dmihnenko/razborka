@@ -15,6 +15,8 @@ export interface FilterBarProps {
   onChange: (next: MarketFilters) => void
   categories?: MarketCategory[]
   carCatalog?: MarketMakeFacet[]
+  /** Показывать фильтр по цене (за фиче-флагом market_price_filter) */
+  showPriceFilter?: boolean
 }
 
 const SORT_OPTIONS: { value: MarketSort; labelKey: string }[] = [
@@ -25,7 +27,7 @@ const SORT_OPTIONS: { value: MarketSort; labelKey: string }[] = [
 
 const FIELD_LABEL = 'block text-xs font-semibold mb-1.5'
 
-export function FilterBar({ value, onChange, categories = [], carCatalog = [] }: FilterBarProps) {
+export function FilterBar({ value, onChange, categories = [], carCatalog = [], showPriceFilter = false }: FilterBarProps) {
   const { t } = useTranslation('market')
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState(value.search ?? '')
@@ -55,7 +57,7 @@ export function FilterBar({ value, onChange, categories = [], carCatalog = [] }:
   const onModelChange = (model: string) => patch({ model: model || undefined, year: undefined })
   const onYearChange = (year: string) => patch({ year: year ? Number(year) : undefined })
 
-  const activeCount = [value.search, value.categoryId, value.condition, value.make, value.model, value.year]
+  const activeCount = [value.search, value.categoryId, value.condition, value.make, value.model, value.year, value.minPrice, value.maxPrice]
     .filter(v => v != null && v !== '').length
 
   return (
@@ -162,6 +164,28 @@ export function FilterBar({ value, onChange, categories = [], carCatalog = [] }:
               {(['new', 'used', 'damaged'] as const).map(c => <option key={c} value={c}>{PARTS_CONDITION_LABELS[c]}</option>)}
             </select>
           </div>
+
+          {/* Цена (за фиче-флагом market_price_filter) */}
+          {showPriceFilter && (
+            <div className="col-span-2">
+              <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }}>Цена, ₴</label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number" inputMode="numeric" min={0} placeholder="от"
+                  value={value.minPrice ?? ''}
+                  onChange={e => patch({ minPrice: e.target.value ? Number(e.target.value) : undefined })}
+                  className="mk-input" aria-label="Цена от"
+                />
+                <span className="mk-meta">—</span>
+                <input
+                  type="number" inputMode="numeric" min={0} placeholder="до"
+                  value={value.maxPrice ?? ''}
+                  onChange={e => patch({ maxPrice: e.target.value ? Number(e.target.value) : undefined })}
+                  className="mk-input" aria-label="Цена до"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Сортировка */}
           <div>

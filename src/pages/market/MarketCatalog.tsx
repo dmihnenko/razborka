@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, PackageSearch } from 'lucide-react'
 import type { MarketCondition, MarketFilters, MarketSort } from '@/types/marketplace'
 import { getMarketCategories, getMarketCarCatalog, getMarketParts, MARKET_PAGE_SIZE } from '@/services/marketplaceService'
 import { FilterBar } from '@/components/market/FilterBar'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { MarketProductCard } from '@/components/market/MarketProductCard'
 import EmptyState from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
@@ -23,6 +24,8 @@ function filtersFromParams(params: URLSearchParams): MarketFilters {
   const sort = params.get('sort') as MarketSort | null
   const page = parseInt(params.get('page') ?? '', 10)
   const year = parseInt(params.get('year') ?? '', 10)
+  const minP = parseInt(params.get('min') ?? '', 10)
+  const maxP = parseInt(params.get('max') ?? '', 10)
   return {
     search: params.get('search')?.trim() || undefined,
     categoryId: params.get('category') || undefined,
@@ -31,6 +34,8 @@ function filtersFromParams(params: URLSearchParams): MarketFilters {
     year: Number.isFinite(year) && year > 0 ? year : undefined,
     condition: condition && CONDITIONS.includes(condition) ? condition : undefined,
     sort: sort && SORTS.includes(sort) ? sort : undefined,
+    minPrice: Number.isFinite(minP) && minP >= 0 ? minP : undefined,
+    maxPrice: Number.isFinite(maxP) && maxP >= 0 ? maxP : undefined,
     page: Number.isFinite(page) && page > 1 ? page : 1,
     pageSize: MARKET_PAGE_SIZE,
   }
@@ -45,6 +50,8 @@ function paramsFromFilters(f: MarketFilters): Record<string, string> {
   if (f.year) out.year = String(f.year)
   if (f.condition) out.condition = f.condition
   if (f.sort && f.sort !== 'new') out.sort = f.sort
+  if (f.minPrice != null) out.min = String(f.minPrice)
+  if (f.maxPrice != null) out.max = String(f.maxPrice)
   if (f.page && f.page > 1) out.page = String(f.page)
   return out
 }
@@ -77,6 +84,7 @@ export function MarketCatalog() {
   )
   const [searchParams, setSearchParams] = useSearchParams()
   const [filters, setFilters] = useState<MarketFilters>(() => filtersFromParams(searchParams))
+  const showPriceFilter = useFeatureFlag('market_price_filter')
 
   useEffect(() => {
     const next = filtersFromParams(searchParams)
@@ -85,7 +93,8 @@ export function MarketCatalog() {
         prev.search !== next.search || prev.categoryId !== next.categoryId ||
         prev.make !== next.make || prev.model !== next.model || prev.year !== next.year ||
         prev.condition !== next.condition ||
-        prev.sort !== next.sort || (prev.page ?? 1) !== (next.page ?? 1)
+        prev.sort !== next.sort || prev.minPrice !== next.minPrice || prev.maxPrice !== next.maxPrice ||
+        (prev.page ?? 1) !== (next.page ?? 1)
       return changed ? { ...prev, ...next } : prev
     })
      
@@ -135,7 +144,7 @@ export function MarketCatalog() {
         <h1 className="mk-h1">{t('catalogPage.title')}</h1>
       </div>
 
-      <FilterBar value={filters} onChange={applyFilters} categories={categories} carCatalog={carCatalog} />
+      <FilterBar value={filters} onChange={applyFilters} categories={categories} carCatalog={carCatalog} showPriceFilter={showPriceFilter} />
 
       <div className="flex items-center gap-2 min-h-[20px]" aria-live="polite">
         {!isLoading && !isError && total > 0 && (
