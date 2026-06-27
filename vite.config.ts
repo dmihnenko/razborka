@@ -213,11 +213,16 @@ export default defineConfig({
         // immutable, а каждый релиз заново качает только код приложения.
         manualChunks(id) {
           if (!id.includes('node_modules')) return
+          // exceljs импортируется ДИНАМИЧЕСКИ (импорт/экспорт авто) — не присваиваем
+          // ему общий vendor, чтобы Rollup вынес его в отдельный async-чанк и он не
+          // тянулся на первый экран (минус ~300-500KB из vendor).
+          if (id.includes('exceljs')) return
           if (id.includes('react-router')) return 'vendor-router'
           if (id.includes('react-dom') || /[\\/]react[\\/]/.test(id) || id.includes('scheduler')) return 'vendor-react'
           if (id.includes('@supabase')) return 'vendor-supabase'
           if (id.includes('@tanstack')) return 'vendor-query'
           if (id.includes('recharts') || id.includes('d3-') || id.includes('victory')) return 'vendor-charts'
+          if (id.includes('framer-motion')) return 'vendor-motion'
           if (id.includes('lucide-react')) return 'vendor-icons'
           if (id.includes('date-fns')) return 'vendor-date'
           return 'vendor'

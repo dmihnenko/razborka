@@ -38,7 +38,7 @@ export default function MyVehicles() {
     queryKey: ['personal-vehicles', profile?.id],
     queryFn: () => getPersonalVehicles(profile!.id, false),
     enabled: !!profile?.id,
-    staleTime: 0,
+    staleTime: 60_000,
   })
 
   // Лёгкий запрос только ради счётчика заказов в рейле (ключ общий с панелью — кэш переиспользуется).
