@@ -329,6 +329,9 @@ export async function getUserByUsername(username: string): Promise<{ id: string 
 export async function updateUserLocale(userId: string, locale: 'ru' | 'uk'): Promise<void> {
   const { error } = await supabase.from('user_profiles').update({ locale }).eq('id', userId)
   if (error) throw error
+  // Дублируем язык в метаданные auth.users — чтобы письма Supabase (сброс пароля и т.п.)
+  // приходили на выбранном языке через шаблон {{ .Data.locale }}. Не критично — глушим ошибку.
+  await supabase.auth.updateUser({ data: { locale } }).catch(() => { /* noop */ })
 }
 
 /** Полное редактирование пользователя админом (email/пароль/профиль) через Edge Function. */
