@@ -6,7 +6,7 @@ import { updateProfile, changePassword } from '../services/userService'
 import { getPartsCompanyContacts, updatePartsCompanyContacts } from '../services/companyService'
 import { useUserProfile } from '@/hooks/useUserProfile'
 
-export default function ProfileSettings() {
+export default function ProfileSettings({ embedded = false }: { embedded?: boolean } = {}) {
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
 
@@ -130,12 +130,14 @@ export default function ProfileSettings() {
 
   return (
     <div className="w-full space-y-5">
-      {/* Заголовок */}
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-        <span>Настройки</span>
-        <ChevronRight className="w-4 h-4" />
-        <span className="font-semibold text-gray-900">Мой профиль</span>
-      </div>
+      {/* Заголовок (скрыт во встроенном режиме — в кабинете «Мои авто») */}
+      {!embedded && (
+        <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+          <span>Настройки</span>
+          <ChevronRight className="w-4 h-4" />
+          <span className="font-semibold text-gray-900">Мой профиль</span>
+        </div>
+      )}
 
       <div className="columns-1 lg:columns-2 gap-5 [&>*]:mb-5 [&>*]:break-inside-avoid">
 

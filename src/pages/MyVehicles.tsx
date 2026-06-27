@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Archive, Car, Edit, Package, User } from 'lucide-react'
+import { Plus, Archive, Car, Edit, Package, User, Clock } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { formatDistanceToNow } from 'date-fns'
 import { getPersonalVehicles } from '@/services/personalVehicles'
 import { getMyMarketplaceOrders } from '@/services/marketplaceService'
 import { useUserProfile } from '@/hooks/useUserProfile'
@@ -10,8 +11,18 @@ import ShareLinkModal from '@/components/personal-vehicles/ShareLinkModal'
 import EmptyState from '@/components/ui/EmptyState'
 import ProfileSettings from '@/pages/ProfileSettings'
 import MyOrdersPanel from '@/components/orders/MyOrdersPanel'
+import { STATUS_CHIP, totalsByCurrency, dateLocale } from '@/components/orders/OrderCard'
+import { formatPrice } from '@/utils/currency'
 
 const NO_IMAGE_URL = '/noimage_final.png'
+
+// Короткие RU-подписи статусов для превью последнего заказа в рейле.
+const STATUS_LABEL: Record<string, string> = {
+  new: 'Новый',
+  viewed: 'Принят',
+  closed: 'Закрыт',
+  cancelled: 'Отменён',
+}
 
 type CabinetTab = 'vehicles' | 'orders' | 'profile'
 
@@ -166,10 +177,49 @@ export default function MyVehicles() {
     )
   }
 
+  const lastOrder = orders[0]
+  const lastOrderTotals = lastOrder ? totalsByCurrency(lastOrder) : []
+
   const rail = (
     <aside className="lg:w-72 lg:shrink-0 space-y-2">
       <NavButton id="vehicles" icon={Car} label="Мои авто" count={vehicles.length} />
       <NavButton id="orders" icon={Package} label="Заказы с разборки" count={orders.length} />
+
+      {/* Превью последнего заказа — клик открывает раздел заказов */}
+      {lastOrder && (
+        <button
+          onClick={() => setTab('orders')}
+          className="w-full text-left bg-white border border-gray-100 rounded-xl px-3.5 py-3 hover:border-blue-200 hover:bg-blue-50/40 transition-colors"
+        >
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">
+            Последний заказ
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-medium text-gray-800 truncate">
+              {lastOrder.company?.name || 'Заказ'}
+            </span>
+            <span
+              className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${
+                STATUS_CHIP[lastOrder.status] || STATUS_CHIP.closed
+              }`}
+            >
+              {STATUS_LABEL[lastOrder.status] || lastOrder.status}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-2 mt-1">
+            <span className="flex items-center gap-1 text-[11px] text-gray-400 min-w-0">
+              <Clock className="w-3 h-3 shrink-0" />
+              <span className="truncate">
+                {formatDistanceToNow(new Date(lastOrder.createdAt), { addSuffix: true, locale: dateLocale() })}
+              </span>
+            </span>
+            <span className="shrink-0 text-xs font-bold text-blue-600 tabular-nums">
+              {lastOrderTotals.map((tt) => formatPrice(tt.sum, tt.currency)).join(' · ')}
+            </span>
+          </div>
+        </button>
+      )}
+
       <NavButton id="profile" icon={User} label="Профиль" />
     </aside>
   )
@@ -264,7 +314,7 @@ export default function MyVehicles() {
       <div className="lg:flex lg:gap-6 space-y-4 lg:space-y-0">
         {rail}
         <div className="flex-1 min-w-0">
-          {tab === 'orders' ? ordersView : tab === 'profile' ? <ProfileSettings /> : vehiclesView}
+          {tab === 'orders' ? ordersView : tab === 'profile' ? <ProfileSettings embedded /> : vehiclesView}
         </div>
       </div>
 
