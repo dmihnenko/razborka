@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Archive, Car, Edit, Package, ShoppingBag, ChevronLeft, Clock } from 'lucide-react'
+import { Plus, Archive, Car, Edit, Package, ShoppingBag, ChevronLeft, Clock, User } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
@@ -13,6 +13,7 @@ import ShareLinkModal from '@/components/personal-vehicles/ShareLinkModal'
 import EmptyState from '@/components/ui/EmptyState'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import OrderCard, { STATUS_CHIP, totalsByCurrency, dateLocale } from '@/components/orders/OrderCard'
+import ProfileSettings from '@/pages/ProfileSettings'
 import { formatPrice } from '@/utils/currency'
 import type { MyMarketplaceOrder } from '@/types/marketplace'
 
@@ -35,6 +36,11 @@ export default function MyVehicles() {
   const [shareVehicleId, setShareVehicleId] = useState<string | null>(null)
   // null — показываем сетку авто (главный вид); id — показываем выбранный заказ справа.
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  // Раздел кабинета (когда заказ не выбран): авто или профиль.
+  const [tab, setTab] = useState<'vehicles' | 'profile'>('vehicles')
+
+  const openVehicles = () => { setSelectedOrderId(null); setTab('vehicles') }
+  const openProfile = () => { setSelectedOrderId(null); setTab('profile') }
 
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: ['personal-vehicles', profile?.id],
@@ -171,25 +177,39 @@ export default function MyVehicles() {
   // ── Левый рейл: кнопка «Мои авто» + меню заказов ────────────────────
   const rail = (
     <aside className="lg:w-72 lg:shrink-0 space-y-3">
-      {/* Кнопка перехода к карточкам авто */}
-      <button
-        onClick={() => setSelectedOrderId(null)}
-        className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border transition-colors text-left ${
-          selectedOrderId === null
-            ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-            : 'bg-white border-gray-100 text-gray-700 hover:border-blue-200 hover:bg-blue-50/50'
-        }`}
-      >
-        <Car className="w-5 h-5 shrink-0" strokeWidth={1.5} />
-        <span className="font-semibold text-sm">Мои авто</span>
-        <span
-          className={`ml-auto text-xs font-medium tabular-nums ${
-            selectedOrderId === null ? 'text-blue-100' : 'text-gray-400'
+      {/* Навигация кабинета: авто и профиль */}
+      <div className="space-y-2">
+        <button
+          onClick={openVehicles}
+          className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border transition-colors text-left ${
+            selectedOrderId === null && tab === 'vehicles'
+              ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+              : 'bg-white border-gray-100 text-gray-700 hover:border-blue-200 hover:bg-blue-50/50'
           }`}
         >
-          {vehicles.length}
-        </span>
-      </button>
+          <Car className="w-5 h-5 shrink-0" strokeWidth={1.5} />
+          <span className="font-semibold text-sm">Мои авто</span>
+          <span
+            className={`ml-auto text-xs font-medium tabular-nums ${
+              selectedOrderId === null && tab === 'vehicles' ? 'text-blue-100' : 'text-gray-400'
+            }`}
+          >
+            {vehicles.length}
+          </span>
+        </button>
+
+        <button
+          onClick={openProfile}
+          className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border transition-colors text-left ${
+            selectedOrderId === null && tab === 'profile'
+              ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+              : 'bg-white border-gray-100 text-gray-700 hover:border-blue-200 hover:bg-blue-50/50'
+          }`}
+        >
+          <User className="w-5 h-5 shrink-0" strokeWidth={1.5} />
+          <span className="font-semibold text-sm">Профиль</span>
+        </button>
+      </div>
 
       {/* Меню заказов с разборки */}
       <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
@@ -345,7 +365,9 @@ export default function MyVehicles() {
     <div className="py-1 sm:py-2">
       <div className="lg:flex lg:gap-6 space-y-4 lg:space-y-0">
         {rail}
-        <div className="flex-1 min-w-0">{selectedOrder ? orderView : vehiclesView}</div>
+        <div className="flex-1 min-w-0">
+          {selectedOrder ? orderView : tab === 'profile' ? <ProfileSettings /> : vehiclesView}
+        </div>
       </div>
 
       {/* Модалки */}

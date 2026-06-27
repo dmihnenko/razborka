@@ -9,6 +9,9 @@ import { useAlert } from '../CustomAlert'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
+/** Максимум фото в одном альбоме (USA / Port / Arrival) */
+const MAX_PHOTOS_PER_ALBUM = 10
+
 interface Props {
   vehicleId: string
   vehicle: PersonalVehicle
@@ -26,17 +29,31 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate, 
   const [uploadProgress, setUploadProgress] = useState(0)
 
   const currentPhotos = vehicle[activeAlbum]
+  const albumFull = (currentPhotos?.length || 0) >= MAX_PHOTOS_PER_ALBUM
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!isOwner) return
+
+    // Лимит фото на альбом (USA / Port / Arrival)
+    const existing = vehicle[activeAlbum]?.length || 0
+    const remaining = MAX_PHOTOS_PER_ALBUM - existing
+    if (remaining <= 0) {
+      showAlert(`В этом альбоме максимум ${MAX_PHOTOS_PER_ALBUM} фото. Удалите лишние, чтобы добавить новые.`, 'error')
+      return
+    }
+    let files = acceptedFiles
+    if (acceptedFiles.length > remaining) {
+      files = acceptedFiles.slice(0, remaining)
+      showAlert(`Лимит ${MAX_PHOTOS_PER_ALBUM} фото на альбом — загрузим только ${remaining}.`, 'info')
+    }
 
     setUploading(true)
     setUploadProgress(0)
 
     try {
-      for (let i = 0; i < acceptedFiles.length; i++) {
-        const file = acceptedFiles[i]
-        
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+
         const validation = validateImageFile(file)
         if (!validation.valid) {
           showAlert(`${file.name}: ${validation.error}`, 'error')
@@ -44,7 +61,7 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate, 
         }
 
         const url = await uploadToImgBB(file)
-        
+
         const photo: VehiclePhoto = {
           url,
           uploadedAt: new Date().toISOString(),
@@ -52,7 +69,7 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate, 
         }
 
         await addVehiclePhoto(vehicleId, activeAlbum, photo)
-        setUploadProgress(((i + 1) / acceptedFiles.length) * 100)
+        setUploadProgress(((i + 1) / files.length) * 100)
       }
 
       onUpdate()
@@ -63,7 +80,7 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate, 
       setUploading(false)
       setUploadProgress(0)
     }
-  }, [vehicleId, activeAlbum, isOwner, onUpdate])
+  }, [vehicleId, activeAlbum, isOwner, onUpdate, vehicle])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -137,13 +154,23 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate, 
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            {ALBUM_LABELS[album]} ({vehicle[album]?.length || 0})
+            {ALBUM_LABELS[album]} ({vehicle[album]?.length || 0}/{MAX_PHOTOS_PER_ALBUM})
           </button>
         ))}
       </div>
 
+      {/* Лимит достигнут */}
+      {isOwner && albumFull && (
+        <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center bg-gray-50">
+          <p className="text-gray-600 font-medium text-sm">
+            Достигнут лимит {MAX_PHOTOS_PER_ALBUM} фото в этом альбоме
+          </p>
+          <p className="text-gray-400 text-xs mt-1">Удалите лишние фото, чтобы добавить новые</p>
+        </div>
+      )}
+
       {/* Drag & Drop зона */}
-      {isOwner && (
+      {isOwner && !albumFull && (
         <div
           {...getRootProps()}
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
@@ -171,6 +198,9 @@ export default function VehicleGallery({ vehicleId, vehicle, isOwner, onUpdate, 
               </p>
               <p className="text-gray-500 text-sm">или нажмите для выбора файлов</p>
               <p className="text-gray-400 text-xs mt-2">JPEG, PNG, GIF, WebP (макс. 10MB)</p>
+              <p className="text-gray-400 text-xs mt-1">
+                Можно добавить ещё {MAX_PHOTOS_PER_ALBUM - (currentPhotos?.length || 0)} из {MAX_PHOTOS_PER_ALBUM}
+              </p>
             </div>
           )}
         </div>
