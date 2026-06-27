@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Archive, Car, Edit, Package, User, Clock } from 'lucide-react'
+import { Plus, Archive, Car, Edit, Package, User, Clock, ShoppingBag } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import { getPersonalVehicles } from '@/services/personalVehicles'
@@ -185,8 +185,19 @@ export default function MyVehicles() {
       <NavButton id="vehicles" icon={Car} label="Мои авто" count={vehicles.length} />
       <NavButton id="orders" icon={Package} label="Заказы с разборки" count={orders.length} />
 
-      {/* Превью последнего заказа — клик открывает раздел заказов */}
-      {lastOrder && (
+      {/* Превью последнего заказа — клик открывает раздел заказов; если заказов нет — плашка с кнопкой в маркет */}
+      {!lastOrder ? (
+        <div className="bg-white border border-gray-100 rounded-xl px-3.5 py-5 text-center">
+          <ShoppingBag className="w-6 h-6 text-gray-300 mx-auto mb-2" strokeWidth={1.5} />
+          <p className="text-xs text-gray-400 mb-3">Пока нет заказов с разборок</p>
+          <button
+            onClick={() => navigate('/market/catalog')}
+            className="btn-secondary btn-sm w-full justify-center"
+          >
+            В каталог запчастей
+          </button>
+        </div>
+      ) : (
         <button
           onClick={() => setTab('orders')}
           className="w-full text-left bg-white border border-gray-100 rounded-xl px-3.5 py-3 hover:border-blue-200 hover:bg-blue-50/40 transition-colors"
