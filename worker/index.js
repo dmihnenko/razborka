@@ -22,6 +22,12 @@ const clip = (s, n) => { s = String(s ?? '').replace(/\s+/g, ' ').trim(); return
 const COND_RU = { new: 'Новая', used: 'Б/У', damaged: 'Под восстановление' }
 const COND_SCHEMA = { new: 'NewCondition', used: 'UsedCondition', damaged: 'RefurbishedCondition' }
 
+// JSON-LD хлебные крошки: items = [[name, url], ...]
+const breadcrumb = (items) => ({
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+  itemListElement: items.map(([name, url], i) => ({ '@type': 'ListItem', position: i + 1, name, item: url })),
+})
+
 async function supa(env, path, init = {}) {
   const url = env.SUPABASE_URL + path
   const headers = { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + env.SUPABASE_ANON_KEY, ...(init.headers || {}) }
@@ -70,7 +76,8 @@ async function computeMeta(route, env, pathname) {
     ],
   }
   if (route.type === 'catalog') return { ...base, title: `Каталог автозапчастей — ${BRAND}`,
-    description: 'Каталог б/у и новых автозапчастей от авторазборок. Фильтр по марке, модели, году и состоянию.' }
+    description: 'Каталог б/у и новых автозапчастей от авторазборок. Фильтр по марке, модели, году и состоянию.',
+    jsonld: [breadcrumb([['Главная', SITE + '/'], ['Каталог', SITE + '/market/catalog']])] }
   if (route.type === 'suppliers') return { ...base, title: `Авторазборки Украины — ${BRAND}`,
     description: 'Список авторазборок: контакты, города, наличие запчастей. Прямая связь с разборкой.' }
   if (route.type === 'business') return { ...base, title: `Для авторазборок — ${BRAND}`,
@@ -82,7 +89,7 @@ async function computeMeta(route, env, pathname) {
 
   if (route.type === 'product') {
     const it = await rpc(env, 'get_public_parts_item', { p_id: route.id })
-    if (!it || !it.name) return { ...base, robots: 'noindex,follow', title: BRAND, description: 'Запчасть не найдена.' }
+    if (!it || !it.name) return { ...base, robots: 'noindex,follow', notFound: true, title: 'Запчасть не найдена — ' + BRAND, description: 'Запчасть не найдена или снята с продажи.' }
     const v = it.vehicle || {}
     const veh = [v.make, v.model, v.year].filter(Boolean).join(' ')
     const cur = it.price_currency === 'USD' ? '$' : '₴'
@@ -105,14 +112,15 @@ async function computeMeta(route, env, pathname) {
         description: it.description ? clip(it.description, 300) : description,
         ...(veh ? { brand: { '@type': 'Brand', name: v.make || veh } } : {}),
         ...(offer ? { offers: offer } : {}),
-      }],
+      },
+      breadcrumb([['Главная', SITE + '/'], ['Каталог', SITE + '/market/catalog'], [clip(it.name, 60), canon]])],
     }
   }
 
   if (route.type === 'supplier') {
     let s = null
     try { const list = await rpc(env, 'get_market_suppliers', {}); s = (list || []).find((x) => x.id === route.id) } catch {}
-    if (!s) return { ...base, title: `Авторазборка — ${BRAND}`, description: 'Авторазборка на Razborka.net.' }
+    if (!s) return { ...base, robots: 'noindex,follow', notFound: true, title: `Авторазборка не найдена — ${BRAND}`, description: 'Авторазборка не найдена.' }
     const title = clip(`${s.name} — авторазборка${s.city ? ', ' + s.city : ''}`, 65) + ` | ${BRAND}`
     const description = clip([s.name, s.available_parts != null && `${s.available_parts} запчастей в наличии`, s.address].filter(Boolean).join('. ') + '.', 175)
     return {
@@ -137,6 +145,7 @@ function injectMeta(res, meta) {
     `<meta property="og:description" content="${escapeHtml(meta.description)}">` +
     `<meta property="og:url" content="${escapeHtml(meta.canonical)}">` +
     `<meta property="og:image" content="${escapeHtml(meta.ogImage)}">` +
+    `<meta property="og:locale" content="ru_RU">` +
     `<meta name="twitter:card" content="summary_large_image">` +
     `<meta name="twitter:title" content="${escapeHtml(meta.title)}">` +
     `<meta name="twitter:description" content="${escapeHtml(meta.description)}">` +
@@ -249,8 +258,9 @@ export default {
         headers.delete('content-encoding')
         headers.delete('etag')
         headers.set('cache-control', 'public, max-age=300, must-revalidate')
-        const resp = new Response(out.body, { status: 200, headers })
-        ctx.waitUntil(cache.put(cacheKey, resp.clone()))
+        // Несуществующая сущность → честный 404 (а не soft-404 200+noindex), не кешируем
+        const resp = new Response(out.body, { status: meta.notFound ? 404 : 200, headers })
+        if (!meta.notFound) ctx.waitUntil(cache.put(cacheKey, resp.clone()))
         return resp
       } catch {
         return env.ASSETS.fetch(request) // на любой сбой — обычная статика, сайт не падает

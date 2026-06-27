@@ -1,19 +1,18 @@
 User-agent: *
 Allow: /
 
-# Приватное/тонкое — не индексировать (за авторизацией или дубли)
+# Приватное (за авторизацией / персональные данные) — запрет краулинга
 Disallow: /admin
 Disallow: /parts/
 Disallow: /users
 Disallow: /support
 Disallow: /profile
-Disallow: /welcome
 Disallow: /my-vehicles
-Disallow: /login
-Disallow: /reset-password
-Disallow: /vehicle-access
-Disallow: /market/cart
 Disallow: /public/parts-customer
 Disallow: /public/personal-vehicle
+
+# Тонкие публичные страницы в robots НЕ закрываем — воркер отдаёт им
+# <meta robots="noindex">, и краулер должен иметь доступ, чтобы его увидеть:
+# /market/cart, /login, /welcome, /reset-password, /vehicle-access
 
 Sitemap: https://razborka.net/sitemap.xml
