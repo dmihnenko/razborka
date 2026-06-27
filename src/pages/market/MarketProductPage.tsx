@@ -103,7 +103,7 @@ export default function MarketProductPage() {
   const handleAddToCart = () => {
     addItem({
       inventoryId: part.id, name: part.name, sellingPrice: part.sellingPrice, priceCurrency: part.priceCurrency,
-      photoUrl: photo, quantity: 1, companyId: part.company.id, companyName: part.company.name, condition: part.condition,
+      photoUrl: photo, quantity: 1, maxQty: part.quantity, companyId: part.company.id, companyName: part.company.name, condition: part.condition,
     })
     toast.success(t('productPage.addedToCart'), { position: 'top-center' })
   }

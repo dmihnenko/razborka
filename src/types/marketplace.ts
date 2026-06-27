@@ -102,6 +102,8 @@ export interface CartItem {
   priceCurrency: MarketCurrency
   photoUrl?: string | null
   quantity: number
+  /** Остаток на складе — кап количества в корзине (защита от заказа больше, чем есть) */
+  maxQty?: number
   companyId: string
   companyName: string
   condition?: string

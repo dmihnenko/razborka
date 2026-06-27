@@ -51,6 +51,7 @@ export function MarketProductCard({ part }: MarketProductCardProps) {
       priceCurrency: part.priceCurrency,
       photoUrl: photo,
       quantity: 1,
+      maxQty: part.quantity,
       companyId: part.company.id,
       companyName: part.company.name,
       condition: part.condition,

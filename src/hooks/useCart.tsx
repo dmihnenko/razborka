@@ -66,14 +66,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addItem = useCallback((item: CartItem) => {
     setItems(prev => {
       const existing = prev.find(i => i.inventoryId === item.inventoryId)
+      // Кап по остатку: maxQty из новой позиции или из уже лежащей
+      const cap = item.maxQty ?? existing?.maxQty ?? Infinity
       if (existing) {
         return prev.map(i =>
           i.inventoryId === item.inventoryId
-            ? { ...i, quantity: i.quantity + (item.quantity || 1) }
+            ? { ...i, maxQty: item.maxQty ?? i.maxQty, quantity: Math.min(i.quantity + (item.quantity || 1), cap) }
             : i
         )
       }
-      return [...prev, { ...item, quantity: item.quantity || 1 }]
+      return [...prev, { ...item, quantity: Math.min(item.quantity || 1, cap) }]
     })
   }, [])
 
@@ -85,7 +87,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems(prev =>
       qty <= 0
         ? prev.filter(i => i.inventoryId !== inventoryId)
-        : prev.map(i => (i.inventoryId === inventoryId ? { ...i, quantity: qty } : i))
+        : prev.map(i => (i.inventoryId === inventoryId
+            ? { ...i, quantity: Math.min(qty, i.maxQty ?? Infinity) }  // кап по остатку
+            : i))
     )
   }, [])
 
