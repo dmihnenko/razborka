@@ -100,7 +100,7 @@ begin
     url     := 'https://hwckvddevjucuzxdoqqh.supabase.co/functions/v1/telegram-bot',
     headers := jsonb_build_object(
                  'Content-Type', 'application/json',
-                 'x-internal-secret', 'de788aa221ec499a9307fd41c24d8b462c943e96cda74aa79592091e7a13dd14'),
+                 'x-internal-secret', (select value from public.app_private where key='notify_secret')),
     body    := jsonb_build_object('company_id', p_company_id, 'text', v_text)
   );
 
