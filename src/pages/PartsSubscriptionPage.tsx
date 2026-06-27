@@ -12,6 +12,7 @@ import { useCompanySubscription, useSubscriptionLimits } from '@/hooks/useSubscr
 import {
   getSubscriptionTiers, getMyLatestRequest, createSubscriptionRequest,
 } from '@/services/subscriptionService'
+import { startLiqpayCheckout } from '@/services/liqpayService'
 import UsageMeter from '@/components/subscription/UsageMeter'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import {
@@ -61,6 +62,13 @@ export default function PartsSubscriptionPage() {
     },
     onError: (e: Error & { message?: string }) =>
       toast.error(e?.message || 'Не удалось отправить заявку'),
+  })
+
+  // Онлайн-оплата картой через LiqPay (редиректит на страницу LiqPay; активация — по серверному callback)
+  const payMutation = useMutation({
+    mutationFn: () => startLiqpayCheckout(selectedTierId!, months),
+    onError: (e: Error & { message?: string }) =>
+      toast.error(e?.message || 'Не удалось начать оплату'),
   })
 
   if (isLoading) return (
@@ -354,21 +362,29 @@ export default function PartsSubscriptionPage() {
               </div>
             )}
 
-            {/* CTA — отправить заявку */}
+            {/* CTA — оплата картой (LiqPay) + резервный путь через администратора */}
             {selectedTier && !selectedTier.is_custom && (
-              <div className="mt-5">
+              <div className="mt-5 space-y-2">
+                <button
+                  onClick={() => payMutation.mutate()}
+                  disabled={payMutation.isPending || !companyId}
+                  className="cab-btn cab-btn-primary cab-btn-lg w-full justify-center"
+                >
+                  <CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />
+                  {payMutation.isPending
+                    ? 'Переход к оплате…'
+                    : `Оплатить картой · ${durationLabel(months)} · ${fmtPrice(tierTermPrice(selectedTier.price, months))}`}
+                </button>
                 <button
                   onClick={() => requestMutation.mutate()}
                   disabled={requestMutation.isPending || !companyId}
-                  className="cab-btn cab-btn-primary cab-btn-lg w-full justify-center"
+                  className="cab-btn cab-btn-ghost w-full justify-center"
                 >
                   <Send className="w-4 h-4" strokeWidth={1.5} />
-                  {requestMutation.isPending
-                    ? 'Отправка…'
-                    : `Оставить заявку · ${selectedTier.name} · ${durationLabel(months)} · ${fmtPrice(tierTermPrice(selectedTier.price, months))}`}
+                  {requestMutation.isPending ? 'Отправка…' : 'Оставить заявку (оплата через администратора)'}
                 </button>
-                <p className="text-xs text-gray-400 text-center mt-2">
-                  Оплата и активация — через администратора.
+                <p className="text-xs text-gray-400 text-center">
+                  Оплата картой — через LiqPay. Подписка активируется автоматически после подтверждения платежа.
                 </p>
               </div>
             )}

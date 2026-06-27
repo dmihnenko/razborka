@@ -18,6 +18,25 @@ const escapeHtml = (s) => String(s ?? '')
 const escapeXml = (s) => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 const clip = (s, n) => { s = String(s ?? '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s }
+const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json; charset=utf-8' } })
+
+// ── LiqPay: base64(UTF-8) и подпись base64(sha1(private + data + private)) ──────
+function b64encodeUtf8(str) {
+  const bytes = new TextEncoder().encode(str)
+  let bin = ''; for (const b of bytes) bin += String.fromCharCode(b)
+  return btoa(bin)
+}
+function b64decodeUtf8(b64) {
+  const bin = atob(b64); const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return new TextDecoder().decode(bytes)
+}
+async function liqpaySign(privateKey, data) {
+  const digest = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(privateKey + data + privateKey))
+  const bytes = new Uint8Array(digest)
+  let bin = ''; for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
+  return btoa(bin)
+}
 
 const COND_RU = { new: 'Новая', used: 'Б/У', damaged: 'Под восстановление' }
 const COND_SCHEMA = { new: 'NewCondition', used: 'UsedCondition', damaged: 'RefurbishedCondition' }
@@ -220,6 +239,62 @@ export default {
       } catch {
         return new Response('[]', { status: 502, headers: { 'content-type': 'application/json; charset=utf-8', 'access-control-allow-origin': '*' } })
       }
+    }
+
+    // 1b. LiqPay: подпись checkout (приватный ключ только на сервере).
+    if (p === '/api/liqpay-checkout' && request.method === 'POST') {
+      try {
+        if (!env.LIQPAY_PUBLIC_KEY || !env.LIQPAY_PRIVATE_KEY) return json({ error: 'liqpay_not_configured' }, 503)
+        const auth = request.headers.get('authorization') || ''
+        const body = await request.json().catch(() => ({}))
+        const orderId = body.order_id
+        if (!orderId || !auth.startsWith('Bearer ')) return json({ error: 'bad_request' }, 400)
+        // pending-платёж читаем ПОД ТОКЕНОМ пользователя (RLS отдаёт только свой) — сумма из БД, не от клиента
+        const rows = await fetch(
+          env.SUPABASE_URL + '/rest/v1/subscription_payments?order_id=eq.' + encodeURIComponent(orderId) +
+          '&status=eq.pending&select=order_id,amount,description',
+          { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: auth } },
+        ).then((r) => r.json()).catch(() => null)
+        const row = rows && rows[0]
+        if (!row) return json({ error: 'not_found' }, 404)
+        const params = {
+          public_key: env.LIQPAY_PUBLIC_KEY, version: '3', action: 'pay',
+          amount: Number(row.amount), currency: 'UAH',
+          description: row.description || 'Подписка Razborka.net',
+          order_id: row.order_id,
+          server_url: SITE + '/api/liqpay-callback',
+          result_url: SITE + '/parts/subscription?paid=' + encodeURIComponent(row.order_id),
+          language: 'uk',
+        }
+        const data = b64encodeUtf8(JSON.stringify(params))
+        const signature = await liqpaySign(env.LIQPAY_PRIVATE_KEY, data)
+        return json({ data, signature, url: 'https://www.liqpay.ua/api/3/checkout' })
+      } catch { return json({ error: 'server_error' }, 500) }
+    }
+
+    // 1c. LiqPay: серверный callback — ЕДИНСТВЕННЫЙ источник активации подписки.
+    // Проверяем HMAC-подпись приватным ключом (доверяем серверу LiqPay, а не клиенту).
+    if (p === '/api/liqpay-callback' && request.method === 'POST') {
+      try {
+        if (!env.LIQPAY_PRIVATE_KEY) return new Response('not configured', { status: 503 })
+        const form = await request.formData()
+        const data = form.get('data'); const signature = form.get('signature')
+        if (!data || !signature) return new Response('bad request', { status: 400 })
+        const expected = await liqpaySign(env.LIQPAY_PRIVATE_KEY, data)
+        if (expected !== signature) return new Response('bad signature', { status: 400 })
+        const payload = JSON.parse(b64decodeUtf8(data))
+        // Применяем в БД: RPC идемпотентен, сверяет сумму и защищён внутренним секретом.
+        await fetch(env.SUPABASE_URL + '/rest/v1/rpc/liqpay_apply_callback', {
+          method: 'POST',
+          headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + env.SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            p_order_id: payload.order_id, p_status: payload.status,
+            p_liqpay_id: String(payload.payment_id || payload.transaction_id || ''),
+            p_amount: payload.amount, p_secret: env.LIQPAY_CALLBACK_SECRET,
+          }),
+        })
+        return new Response('ok', { status: 200 })  // LiqPay ждёт 200; при сбое у них ретраи
+      } catch { return new Response('ok', { status: 200 }) }
     }
 
     // 2. sitemap (с edge-кешем)
