@@ -55,6 +55,7 @@ export default function PartsCompanies() {
       const { data, error } = await supabase
         .from('parts_companies')
         .select('*')
+        .is('deleted_at', null)   // скрываем мягко удалённые (хранятся 6 мес до очистки)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as PartsCompany[];
@@ -116,19 +117,16 @@ export default function PartsCompanies() {
     }
   });
 
-  // Удаление разборки
+  // Удаление разборки — МЯГКОЕ: данные хранятся 6 месяцев, потом крон удалит окончательно.
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('parts_companies')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.rpc('admin_soft_delete_company', { p_company_id: id });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-parts-companies'] });
       queryClient.invalidateQueries({ queryKey: ['parts_companies'] });
-      toast.success('Разборка удалена');
+      toast.success('Разборка удалена (данные хранятся 6 месяцев)');
     },
     onError: (error: Error & { message?: string }) => {
       toast.error(error.message || 'Ошибка при удалении разборки');
@@ -174,7 +172,7 @@ export default function PartsCompanies() {
 
   const handleDelete = async (company: PartsCompany) => {
     const ok = await showConfirm({
-      message: `Вы уверены, что хотите удалить разборку «${company.name}»? Это действие нельзя отменить.`,
+      message: `Удалить разборку «${company.name}»? Данные (заявки, заказы, склад) сохранятся 6 месяцев — за это время удаление можно отменить, потом всё удалится окончательно.`,
       danger: true
     });
     if (!ok) return;
