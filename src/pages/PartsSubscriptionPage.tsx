@@ -10,9 +10,10 @@ import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useCompanySubscription, useSubscriptionLimits } from '@/hooks/useSubscription'
 import {
-  getSubscriptionTiers, getMyLatestRequest, createSubscriptionRequest,
+  getSubscriptionTiers, getMyLatestRequest, createSubscriptionRequest, submitPaymentProof,
 } from '@/services/subscriptionService'
 import { startLiqpayCheckout } from '@/services/liqpayService'
+import { uploadToImgBB, validateImageFile } from '@/utils/imageStorage'
 import UsageMeter from '@/components/subscription/UsageMeter'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import {
@@ -27,6 +28,8 @@ export default function PartsSubscriptionPage() {
 
   const [months, setMonths] = useState(1)
   const [selectedTierId, setSelectedTierId] = useState<string | null>(null)
+  const [proofNote, setProofNote] = useState('')
+  const [proofUploading, setProofUploading] = useState(false)
 
   const { data: companySub, isLoading } = useCompanySubscription()
   const { usage, limits, isExpiringSoon, daysLeft: subDaysLeft } = useSubscriptionLimits()
@@ -70,6 +73,24 @@ export default function PartsSubscriptionPage() {
     onError: (e: Error & { message?: string }) =>
       toast.error(e?.message || 'Не удалось начать оплату'),
   })
+
+  // Клиент прикладывает скрин оплаты к заявке (ручной путь — админ подтвердит)
+  const handleProofUpload = async (file: File | undefined) => {
+    if (!file || !latestReq) return
+    const v = validateImageFile(file)
+    if (!v.valid) { toast.error(v.error || 'Неверный файл'); return }
+    setProofUploading(true)
+    try {
+      const url = await uploadToImgBB(file)
+      await submitPaymentProof(latestReq.id, url, proofNote)
+      qc.invalidateQueries({ queryKey: ['my-sub-request'] })
+      toast.success('Скриншот оплаты отправлен администратору')
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Не удалось отправить')
+    } finally {
+      setProofUploading(false)
+    }
+  }
 
   if (isLoading) return (
     <div className="flex justify-center items-center min-h-[60vh]">
@@ -210,6 +231,43 @@ export default function PartsSubscriptionPage() {
                 Администратор подтвердит подписку в ближайшее время.
               </p>
             </div>
+          </div>
+
+          {/* Оплата: клиент прикладывает скриншот, админ получает его и подтверждает */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            {latestReq?.payment_proof_url ? (
+              <div className="flex items-center gap-2 text-sm text-emerald-700">
+                <CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />
+                Скриншот оплаты отправлен. Ожидайте подтверждения администратора.
+                <a href={latestReq.payment_proof_url} target="_blank" rel="noopener noreferrer"
+                   className="underline text-emerald-700/80 ml-1">посмотреть</a>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-gray-900 mb-1">Уже оплатили?</p>
+                <p className="text-xs text-gray-500 mb-2">
+                  Прикрепите скриншот оплаты — администратор подтвердит подписку.
+                </p>
+                <textarea
+                  value={proofNote}
+                  onChange={e => setProofNote(e.target.value)}
+                  placeholder="Комментарий (необязательно): когда и как оплатили"
+                  rows={2}
+                  className="form-input w-full mb-2 text-sm"
+                />
+                <label className={`cab-btn cab-btn-primary cursor-pointer ${proofUploading ? 'opacity-60 pointer-events-none' : ''}`}>
+                  <Send className="w-4 h-4" strokeWidth={1.5} />
+                  {proofUploading ? 'Отправка…' : 'Прикрепить скриншот оплаты'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={proofUploading}
+                    onChange={e => handleProofUpload(e.target.files?.[0])}
+                  />
+                </label>
+              </>
+            )}
           </div>
         </div>
       ) : (

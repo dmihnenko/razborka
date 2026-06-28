@@ -296,6 +296,14 @@ export async function createSubscriptionRequest(input: {
   if (error) throw error
 }
 
+/** Клиент прикладывает скрин оплаты к своей заявке (+ уведомление админу в telegram). */
+export async function submitPaymentProof(requestId: string, url: string, note: string) {
+  const { error } = await supabase.rpc('submit_payment_proof', {
+    p_request_id: requestId, p_url: url, p_note: note,
+  })
+  if (error) throw error
+}
+
 /** Последняя заявка компании (для показа статуса владельцу) */
 export async function getMyLatestRequest(companyType: 'parts', companyId: string) {
   const { data, error } = await supabase

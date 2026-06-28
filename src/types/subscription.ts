@@ -75,6 +75,8 @@ export interface SubscriptionRequest {
   created_at: string
   processed_at: string | null
   processed_by: string | null
+  payment_proof_url?: string | null
+  client_note?: string | null
   // join / derived
   plan?: { name: string; type: string } | null
   company_name?: string

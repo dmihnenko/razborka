@@ -236,6 +236,17 @@ export default function Subscriptions() {
                         <span>·</span>
                         <span>{new Date(r.created_at).toLocaleDateString('ru-RU')}</span>
                       </div>
+                      {(r.payment_proof_url || r.client_note) && (
+                        <div className="mt-1.5 flex items-center gap-2 flex-wrap text-xs">
+                          {r.payment_proof_url && (
+                            <a href={r.payment_proof_url} target="_blank" rel="noopener noreferrer"
+                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium hover:bg-emerald-100">
+                              🧾 Скрин оплаты
+                            </a>
+                          )}
+                          {r.client_note && <span className="text-gray-500 italic truncate">«{r.client_note}»</span>}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button
