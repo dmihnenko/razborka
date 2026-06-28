@@ -199,7 +199,7 @@ export default function Support() {
     <div className="h-dvh bg-gray-50 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-3 sm:px-4 py-3 sm:py-4 flex-shrink-0">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{t('supportPage.title')}</h1>
@@ -215,7 +215,7 @@ export default function Support() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden max-w-7xl mx-auto w-full">
+      <div className="flex-1 overflow-hidden w-full">
         <div className="h-full flex">
           {/* Список чатов */}
           <div 

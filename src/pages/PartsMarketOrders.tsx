@@ -314,7 +314,7 @@ export default function PartsMarketOrders() {
             }
           />
         ) : (
-          <div className="max-w-3xl mx-auto space-y-3">
+          <div className="space-y-3">
             {visibleOrders.map((order) => (
               <MarketOrderCard
                 key={order.id}

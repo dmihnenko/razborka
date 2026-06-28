@@ -131,7 +131,7 @@ export default function PartsActivityLog() {
     <div className="min-h-dvh bg-gray-50">
       <PartsPageHeader title={i18n.t('cabinet:pages.activity')} backPath="/parts/dashboard" />
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
+      <div className="px-4 sm:px-6 py-6">
         {/* Счётчик */}
         {total > 0 && (
           <p className="text-sm text-gray-500 mb-4">
