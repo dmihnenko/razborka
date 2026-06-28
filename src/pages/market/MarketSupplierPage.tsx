@@ -7,6 +7,7 @@ import { getMarketParts, getMarketSupplier, MARKET_PAGE_SIZE } from '@/services/
 import { MarketProductCard } from '@/components/market/MarketProductCard'
 import { cleanPhone, telegramHref } from '@/components/market/SellerContactCard'
 import { pluralizeParts } from '@/components/market/SupplierCard'
+import CompanyReviews from '@/components/market/CompanyReviews'
 import EmptyState from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
 import { usePageMeta } from '@/hooks/usePageMeta'
@@ -135,6 +136,9 @@ export function MarketSupplierPage() {
           </div>
         )}
       </div>
+
+      {/* Отзывы (под фиче-флагом market_reviews) */}
+      <CompanyReviews companyId={id!} />
 
       {/* Товары */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
