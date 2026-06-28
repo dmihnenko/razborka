@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, PackageSearch } from 'lucide-react'
 import type { MarketCondition, MarketFilters, MarketSort } from '@/types/marketplace'
@@ -11,6 +11,7 @@ import { MarketProductCard } from '@/components/market/MarketProductCard'
 import EmptyState from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
 import { usePageMeta } from '@/hooks/usePageMeta'
+import { slugify } from '@/utils/slug'
 
 // ============================================================================
 // /market/catalog — каталог (Graphite). Фильтры синхронятся с URL.
@@ -78,13 +79,40 @@ function SkeletonCard() {
 
 export function MarketCatalog() {
   const { t } = useTranslation('market')
-  usePageMeta(
-    'Каталог автозапчастей — Razborka.net',
-    'Каталог б/у и новых автозапчастей от авторазборок. Фильтр по марке, модели, году и состоянию.',
-  )
+  const pathParams = useParams<{ makeSlug?: string; modelSlug?: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
   const [filters, setFilters] = useState<MarketFilters>(() => filtersFromParams(searchParams))
   const showPriceFilter = useFeatureFlag('market_price_filter')
+
+  const { data: carCatalog = [] } = useQuery({ queryKey: ['market-car-catalog'], queryFn: getMarketCarCatalog, staleTime: 5 * 60 * 1000 })
+
+  // SEO-лендинг по марке/модели (/market/catalog/tesla/model-3): резолвим slug → название
+  const landing = useMemo(() => {
+    if (!pathParams.makeSlug) return null
+    const mk = (carCatalog as any[]).find((m) => slugify(m.make) === pathParams.makeSlug)
+    if (!mk) return null
+    const md = pathParams.modelSlug ? (mk.models || []).find((x: any) => slugify(x.model) === pathParams.modelSlug) : null
+    return { make: mk.make as string, model: md ? (md.model as string) : undefined }
+  }, [pathParams.makeSlug, pathParams.modelSlug, carCatalog])
+
+  const landingLabel = landing ? [landing.make, landing.model].filter(Boolean).join(' ') : ''
+
+  usePageMeta(
+    landing ? `${t('catalogPage.brandTitlePrefix')} ${landingLabel} — Razborka.net`
+            : 'Каталог автозапчастей — Razborka.net',
+    landing ? `${t('catalogPage.brandTitlePrefix')} ${landingLabel} ${t('catalogPage.brandMetaSuffix')}`
+            : 'Каталог б/у и новых автозапчастей от авторазборок. Фильтр по марке, модели, году и состоянию.',
+  )
+
+  // Применяем марку/модель из пути к фильтрам (как только справочник загрузился)
+  useEffect(() => {
+    if (!landing) return
+    setFilters(prev =>
+      prev.make === landing.make && prev.model === landing.model
+        ? prev
+        : { ...prev, make: landing.make, model: landing.model, page: 1 },
+    )
+  }, [landing])
 
   useEffect(() => {
     const next = filtersFromParams(searchParams)
@@ -116,7 +144,6 @@ export function MarketCatalog() {
     placeholderData: keepPreviousData,
   })
   const { data: categories = [] } = useQuery({ queryKey: ['market-categories'], queryFn: getMarketCategories, staleTime: 5 * 60 * 1000 })
-  const { data: carCatalog = [] } = useQuery({ queryKey: ['market-car-catalog'], queryFn: getMarketCarCatalog, staleTime: 5 * 60 * 1000 })
 
   const items = data?.items ?? []
   const total = data?.total ?? 0
@@ -141,7 +168,7 @@ export function MarketCatalog() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="mk-h1">{t('catalogPage.title')}</h1>
+        <h1 className="mk-h1">{landing ? `${t('catalogPage.brandTitlePrefix')} ${landingLabel}` : t('catalogPage.title')}</h1>
       </div>
 
       <FilterBar value={filters} onChange={applyFilters} categories={categories} carCatalog={carCatalog} showPriceFilter={showPriceFilter} />

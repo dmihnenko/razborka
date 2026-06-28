@@ -215,6 +215,9 @@ function App() {
         <Route path="/market" element={<MarketLayout />}>
           <Route index element={<MarketHome />} />
           <Route path="catalog" element={<MarketCatalog />} />
+          {/* SEO-лендинги по марке/модели: /market/catalog/tesla[/model-3] */}
+          <Route path="catalog/:makeSlug" element={<MarketCatalog />} />
+          <Route path="catalog/:makeSlug/:modelSlug" element={<MarketCatalog />} />
           <Route path="part/:id" element={<MarketProductPage />} />
           <Route path="suppliers" element={<MarketSuppliers />} />
           <Route path="supplier/:id" element={<MarketSupplierPage />} />

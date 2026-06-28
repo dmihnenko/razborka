@@ -15,4 +15,8 @@ Disallow: /public/personal-vehicle
 # <meta robots="noindex">, и краулер должен иметь доступ, чтобы его увидеть:
 # /market/cart, /login, /welcome, /reset-password, /vehicle-access
 
+# Yandex: схлопывать рекламные/трекинговые параметры в один URL (без дублей в индексе).
+# ?lng НЕ чистим — это язык (ru/uk), он значимый для hreflang.
+Clean-param: utm_source&utm_medium&utm_campaign&utm_term&utm_content&fbclid&gclid&yclid
+
 Sitemap: https://razborka.net/sitemap.xml

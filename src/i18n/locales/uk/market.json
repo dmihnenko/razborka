@@ -30,6 +30,8 @@
   },
   "catalogPage": {
     "title": "Каталог запчастин",
+    "brandTitlePrefix": "Запчастини",
+    "brandMetaSuffix": "від авторозборок. Б/в та нові, доставка Новою Поштою.",
     "found": "Знайдено",
     "resultsOne": "{{n}} товар",
     "resultsFew": "{{n}} товари",

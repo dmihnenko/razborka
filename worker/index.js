@@ -47,6 +47,34 @@ const breadcrumb = (items) => ({
   itemListElement: items.map(([name, url], i) => ({ '@type': 'ListItem', position: i + 1, name, item: url })),
 })
 
+// slug для SEO-URL марки/модели (детерминированный — одинаков в воркере, sitemap и клиенте)
+const slugify = (s) => String(s ?? '').toLowerCase().trim()
+  .replace(/[^a-z0-9а-яёіїєґ]+/gi, '-').replace(/^-+|-+$/g, '')
+
+// ── серверный SEO-body (контент в сыром HTML для краулеров без JS) ──────────────
+// Инжектится в <div id="root">…</div>; React при гидратации заменит его (createRoot
+// очищает контейнер) — пользователи видят обычное приложение, краулер без JS видит контент.
+const A = (href, text) => `<a href="${escapeHtml(href)}">${escapeHtml(text)}</a>`
+const seoBody = (h1, parts) => `<main><h1>${escapeHtml(h1)}</h1>${parts.filter(Boolean).join('')}</main>`
+
+// каталог авто (марки/модели с доступными товарами) — для перелинковки и landing.
+// Кеш — на уровне supa() (cf cacheTtl 120с), без module-level кеша (избегаем staleness
+// на всё время жизни изолята Cloudflare).
+async function getCarCatalog(env) {
+  try {
+    const data = await rpc(env, 'get_market_car_catalog', {})
+    return Array.isArray(data) ? data : []
+  } catch { return [] }
+}
+// HTML-блок ссылок на марки (только с count>0), для главной/каталога
+function makesLinksHtml(catalog, uk) {
+  const makes = (catalog || []).filter((m) => (m.count || 0) > 0)
+  if (!makes.length) return ''
+  const label = uk ? 'Запчастини за маркою' : 'Запчасти по марке'
+  const links = makes.map((m) => A(SITE + '/market/catalog/' + slugify(m.make), m.make)).join(' · ')
+  return `<nav aria-label="${escapeHtml(label)}"><h2>${escapeHtml(label)}</h2>${links}</nav>`
+}
+
 async function supa(env, path, init = {}) {
   const url = env.SUPABASE_URL + path
   const headers = { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + env.SUPABASE_ANON_KEY, ...(init.headers || {}) }
@@ -65,6 +93,9 @@ function matchRoute(p) {
   if (p === '/market/catalog') return { type: 'catalog' }
   if (p === '/market/suppliers') return { type: 'suppliers' }
   let m
+  // SEO-лендинги по марке/модели: /market/catalog/tesla[/model-3]
+  if ((m = p.match(/^\/market\/catalog\/([^/]+)\/([^/]+)$/))) return { type: 'brand', makeSlug: m[1], modelSlug: m[2] }
+  if ((m = p.match(/^\/market\/catalog\/([^/]+)$/))) return { type: 'brand', makeSlug: m[1] }
   if ((m = p.match(/^\/market\/part\/([^/]+)$/))) return { type: 'product', id: m[1] }
   if ((m = p.match(/^\/public\/parts-item\/([^/]+)$/))) return { type: 'product', id: m[1], dedupePart: true }
   if ((m = p.match(/^\/market\/supplier\/([^/]+)$/))) return { type: 'supplier', id: m[1] }
@@ -97,8 +128,16 @@ async function computeMeta(route, env, pathname, lang) {
   const bcHome = uk ? 'Головна' : 'Главная'
   const bcCat = 'Каталог'
 
-  if (route.type === 'home') return {
+  if (route.type === 'home') {
+    const catalog = await getCarCatalog(env)
+    const h1 = uk ? 'Маркет автозапчастин від авторозборок України' : 'Маркет автозапчастей от авторазборок Украины'
+    const intro = uk
+      ? 'Купуйте вживані та нові автозапчастини напряму від перевірених авторозборок. Каталог за маркою, моделлю та роком, прямий контакт з розборкою, доставка Новою Поштою.'
+      : 'Покупайте б/у и новые автозапчасти напрямую от проверенных авторазборок. Каталог по марке, модели и году, прямой контакт с разборкой, доставка Новой Почтой.'
+    const homeNav = `<nav>${A(catUrl, bcCat)} · ${A(SITE + '/market/suppliers' + q, uk ? 'Авторозборки' : 'Авторазборки')} · ${A(SITE + '/business' + q, uk ? 'Для авторозборок' : 'Для авторазборок')}</nav>`
+    return {
     ...base,
+    body: seoBody(h1, [`<p>${escapeHtml(intro)}</p>`, homeNav, makesLinksHtml(catalog, uk)]),
     title: uk ? `${BRAND} — маркет вживаних і нових запчастин від авторозборок`
               : `${BRAND} — маркет б/у и новых запчастей от авторазборок`,
     description: uk
@@ -109,23 +148,65 @@ async function computeMeta(route, env, pathname, lang) {
       { '@context': 'https://schema.org', '@type': 'WebSite', name: BRAND, url: SITE,
         potentialAction: { '@type': 'SearchAction', target: SITE + '/market/catalog?q={query}', 'query-input': 'required name=query' } },
     ],
+    }
   }
-  if (route.type === 'catalog') return { ...base,
+  if (route.type === 'catalog') {
+    const catalog = await getCarCatalog(env)
+    return { ...base,
+    body: seoBody(uk ? 'Каталог автозапчастин' : 'Каталог автозапчастей', [`<p>${escapeHtml(uk ? 'Б/в та нові автозапчастини від авторозборок. Оберіть марку, модель, рік і стан.' : 'Б/у и новые автозапчасти от авторазборок. Выберите марку, модель, год и состояние.')}</p>`, makesLinksHtml(catalog, uk)]),
     title: uk ? `Каталог автозапчастин — ${BRAND}` : `Каталог автозапчастей — ${BRAND}`,
     description: uk ? 'Каталог вживаних і нових автозапчастин від авторозборок. Фільтр за маркою, моделлю, роком і станом.'
                     : 'Каталог б/у и новых автозапчастей от авторазборок. Фильтр по марке, модели, году и состоянию.',
     jsonld: [breadcrumb([[bcHome, homeUrl], [bcCat, catUrl]])] }
+  }
   if (route.type === 'suppliers') return { ...base,
+    body: seoBody(uk ? 'Авторозборки України' : 'Авторазборки Украины', [`<p>${escapeHtml(uk ? 'Перелік авторозборок: контакти, міста, наявність запчастин. Прямий контакт з розборкою.' : 'Список авторазборок: контакты, города, наличие запчастей. Прямой контакт с разборкой.')}</p>`, `<nav>${A(catUrl, uk ? 'Каталог запчастин' : 'Каталог запчастей')}</nav>`]),
     title: uk ? `Авторозборки України — ${BRAND}` : `Авторазборки Украины — ${BRAND}`,
     description: uk ? 'Список авторозборок: контакти, міста, наявність запчастин. Прямий зв’язок з розборкою.'
                     : 'Список авторазборок: контакты, города, наличие запчастей. Прямая связь с разборкой.' }
   if (route.type === 'business') return { ...base,
+    body: seoBody(uk ? 'Razborka.net для авторозборок' : 'Razborka.net для авторазборок', [`<p>${escapeHtml(uk ? 'Облік складу, вітрина запчастин у маркеті, заявки покупців, інтеграція з Новою Поштою та Telegram.' : 'Учёт склада, витрина запчастей в маркете, заявки покупателей, интеграция с Новой Почтой и Telegram.')}</p>`, `<p>${A(SITE + '/business/apply' + q, uk ? 'Підключити авторозборку' : 'Подключить авторозборку')}</p>`]),
     title: uk ? `Для авторозборок — ${BRAND}` : `Для авторазборок — ${BRAND}`,
     description: uk ? 'Підключіть авторозборку до Razborka.net: облік складу, вітрина запчастин, заявки покупців.'
                     : 'Подключите авторазборку к Razborka.net: учёт склада, витрина запчастей, заявки покупателей.' }
   if (route.type === 'location') return { ...base,
     title: uk ? `Запчастини на складі — ${BRAND}` : `Запчасти на складе — ${BRAND}`,
     description: uk ? 'Запчастини в цьому місці зберігання авторозборки.' : 'Запчасти в этом месте хранения авторазборки.' }
+  if (route.type === 'brand') {
+    const catalog = await getCarCatalog(env)
+    const makeEntry = (catalog || []).find((m) => slugify(m.make) === route.makeSlug && (m.count || 0) > 0)
+    if (!makeEntry) return { ...base, robots: 'noindex,follow', altBase: undefined, notFound: true,
+      title: (uk ? 'Нічого не знайдено — ' : 'Ничего не найдено — ') + BRAND,
+      description: uk ? 'За цією маркою поки немає запчастин.' : 'По этой марке пока нет запчастей.' }
+    const make = makeEntry.make
+    const modelEntry = route.modelSlug
+      ? (makeEntry.models || []).find((mm) => slugify(mm.model) === route.modelSlug && (mm.count || 0) > 0)
+      : null
+    if (route.modelSlug && !modelEntry) return { ...base, robots: 'noindex,follow', altBase: undefined, notFound: true,
+      title: (uk ? 'Нічого не знайдено — ' : 'Ничего не найдено — ') + BRAND,
+      description: uk ? 'За цією моделлю поки немає запчастин.' : 'По этой модели пока нет запчастей.' }
+    const model = modelEntry ? modelEntry.model : null
+    const label = [make, model].filter(Boolean).join(' ')
+    const cnt = modelEntry ? modelEntry.count : makeEntry.count
+    const h1 = uk ? `Запчастини ${label}` : `Запчасти ${label}`
+    const cntTxt = uk ? `${cnt} запчастин у наявності` : `${cnt} запчастей в наличии`
+    let links = ''
+    if (!model) {
+      const models = (makeEntry.models || []).filter((mm) => (mm.count || 0) > 0)
+      links = models.length ? `<nav><h2>${escapeHtml(uk ? 'Моделі' : 'Модели')}</h2>` +
+        models.map((mm) => A(SITE + '/market/catalog/' + route.makeSlug + '/' + slugify(mm.model), `${make} ${mm.model}`)).join(' · ') + '</nav>' : ''
+    } else {
+      links = `<nav>${A(SITE + '/market/catalog/' + route.makeSlug, uk ? `Усі запчастини ${make}` : `Все запчасти ${make}`)}</nav>`
+    }
+    const bc = [[bcHome, homeUrl], [bcCat, catUrl], [make, SITE + '/market/catalog/' + route.makeSlug + q]]
+    if (model) bc.push([label, SITE + '/market/catalog/' + route.makeSlug + '/' + route.modelSlug + q])
+    return { ...base,
+      title: `${h1} — ${BRAND}`,
+      description: uk ? `Купити запчастини ${label} від авторозборок: ${cntTxt}. Б/в та нові, доставка Новою Поштою.`
+                      : `Купить запчасти ${label} от авторазборок: ${cntTxt}. Б/у и новые, доставка Новой Почтой.`,
+      body: seoBody(h1, [`<p>${escapeHtml((uk ? `Запчастини ${label} від перевірених авторозборок. ` : `Запчасти ${label} от проверенных авторазборок. `) + cntTxt + '.')}</p>`, links]),
+      jsonld: [breadcrumb(bc)] }
+  }
   if (route.type === 'noindex') return { ...base, robots: 'noindex,follow', altBase: undefined, title: BRAND,
     description: 'Razborka.net — маркет автозапчастей от авторазборок.' }
 
@@ -144,21 +225,50 @@ async function computeMeta(route, env, pathname, lang) {
     const L = uk ? { cond: 'Стан', price: 'Ціна', veh: 'Авто', num: 'Номер' } : { cond: 'Состояние', price: 'Цена', veh: 'Авто', num: 'Номер' }
     const description = clip([it.name, cond && `${L.cond}: ${cond}`, price && `${L.price} ${price}`, veh && `${L.veh}: ${veh}`, it.part_number && `${L.num}: ${it.part_number}`].filter(Boolean).join('. ') + '.', 175)
     const canon = altBase + q // дедуп: /public/parts-item → /market/part (+язык)
+    const co = it.company || null
+    const seller = co ? { '@type': 'AutoPartsStore', name: co.name } : undefined
+    const priceValidUntil = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10)
     const offer = it.selling_price ? {
       '@type': 'Offer', price: Number(it.selling_price), priceCurrency: it.price_currency || 'UAH',
       availability: it.status === 'available' ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       itemCondition: 'https://schema.org/' + (COND_SCHEMA[it.condition] || 'UsedCondition'), url: canon,
+      priceValidUntil,
+      ...(seller ? { seller } : {}),
+      ...(co && co.warranty_enabled && co.warranty_days ? { warranty: { '@type': 'WarrantyPromise',
+        durationOfWarranty: { '@type': 'QuantitativeValue', value: co.warranty_days, unitCode: 'DAY' } } } : {}),
+      shippingDetails: { '@type': 'OfferShippingDetails',
+        shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'UA' },
+        deliveryTime: { '@type': 'ShippingDeliveryTime', transitTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 3, unitCode: 'DAY' } } },
     } : undefined
+    const rating = it.rating && it.rating.count > 0
+      ? { '@type': 'AggregateRating', ratingValue: it.rating.avg, reviewCount: it.rating.count } : undefined
+    // SEO-body товара (контент в сыром HTML)
+    const facts = [cond && `${L.cond}: ${cond}`, price && `${L.price}: ${price}`, veh && `${L.veh}: ${veh}`, it.part_number && `${L.num}: ${it.part_number}`].filter(Boolean)
+    const sellerLink = co ? `<p>${escapeHtml(uk ? 'Продавець' : 'Продавец')}: ${A(SITE + '/market/supplier/' + co.id + q, co.name)}</p>` : ''
+    const brandLink = veh && v.make ? `<p>${A(SITE + '/market/catalog/' + slugify(v.make) + (v.model ? '/' + slugify(v.model) : '') + q, (uk ? 'Усі запчастини ' : 'Все запчасти ') + [v.make, v.model].filter(Boolean).join(' '))}</p>` : ''
+    const body = seoBody(it.name, [
+      img !== DEFAULT_OG ? `<img src="${escapeHtml(img)}" alt="${escapeHtml([it.name, veh].filter(Boolean).join(' '))}" width="600" height="450" loading="lazy">` : '',
+      facts.length ? `<ul>${facts.map((f) => `<li>${escapeHtml(f)}</li>`).join('')}</ul>` : '',
+      it.description ? `<p>${escapeHtml(clip(it.description, 600))}</p>` : '',
+      sellerLink, brandLink,
+    ])
+    const pbc = [[bcHome, homeUrl], [bcCat, catUrl]]
+    if (veh && v.make) {
+      pbc.push([v.make, SITE + '/market/catalog/' + slugify(v.make) + q])
+      if (v.model) pbc.push([[v.make, v.model].join(' '), SITE + '/market/catalog/' + slugify(v.make) + '/' + slugify(v.model) + q])
+    }
+    pbc.push([clip(it.name, 60), canon])
     return {
-      ...base, canonical: canon, ogType: 'product', ogImage: img, title, description,
+      ...base, canonical: canon, ogType: 'product', ogImage: img, title, description, body,
       jsonld: [{
         '@context': 'https://schema.org', '@type': 'Product', name: it.name,
         image: img !== DEFAULT_OG ? img : undefined, sku: it.part_number || undefined,
         description: it.description ? clip(it.description, 300) : description,
         ...(veh ? { brand: { '@type': 'Brand', name: v.make || veh } } : {}),
+        ...(rating ? { aggregateRating: rating } : {}),
         ...(offer ? { offers: offer } : {}),
       },
-      breadcrumb([[bcHome, homeUrl], [bcCat, catUrl], [clip(it.name, 60), canon]])],
+      breadcrumb(pbc)],
     }
   }
 
@@ -171,8 +281,14 @@ async function computeMeta(route, env, pathname, lang) {
     const title = clip(`${s.name} — ${uk ? 'авторозборка' : 'авторазборка'}${s.city ? ', ' + s.city : ''}`, 65) + ` | ${BRAND}`
     const partsTxt = s.available_parts != null ? (uk ? `${s.available_parts} запчастин у наявності` : `${s.available_parts} запчастей в наличии`) : null
     const description = clip([s.name, partsTxt, s.address].filter(Boolean).join('. ') + '.', 175)
+    const sFacts = [s.city && `${uk ? 'Місто' : 'Город'}: ${s.city}`, s.address, partsTxt, s.phone && `${uk ? 'Телефон' : 'Телефон'}: ${s.phone}`].filter(Boolean)
+    const body = seoBody(s.name, [
+      `<p>${escapeHtml((uk ? 'Авторозборка' : 'Авторазборка') + (s.city ? ', ' + s.city : '') + '.')}</p>`,
+      sFacts.length ? `<ul>${sFacts.map((f) => `<li>${escapeHtml(f)}</li>`).join('')}</ul>` : '',
+      `<nav>${A(catUrl, uk ? 'Каталог запчастин' : 'Каталог запчастей')} · ${A(SITE + '/market/suppliers' + q, uk ? 'Усі авторозборки' : 'Все авторазборки')}</nav>`,
+    ])
     return {
-      ...base, ogType: 'profile', title, description,
+      ...base, ogType: 'profile', title, description, body,
       jsonld: [{
         '@context': 'https://schema.org', '@type': 'AutoPartsStore', name: s.name, url: canonical,
         ...(s.phone ? { telephone: s.phone } : {}),
@@ -209,27 +325,66 @@ function injectMeta(res, meta) {
     (meta.robots ? `<meta name="robots" content="${escapeHtml(meta.robots)}">` : '') +
     (meta.jsonld ? `<script type="application/ld+json">${JSON.stringify(meta.jsonld.length === 1 ? meta.jsonld[0] : meta.jsonld).replace(/</g, '\\u003c')}</script>` : '')
 
-  return new HTMLRewriter()
+  const rewriter = new HTMLRewriter()
     .on('html', { element(e) { e.setAttribute('lang', uk ? 'uk' : 'ru') } })
     .on('title', { element(e) { e.setInnerContent(meta.title) } })
     .on('meta[name="description"]', { element(e) { e.setAttribute('content', meta.description) } })
     .on('head', { element(e) { e.append(head, { html: true }) } })
-    .transform(res)
+  // Серверный SEO-body внутрь #root: краулер без JS видит контент; React при гидратации
+  // (createRoot) очищает контейнер и рендерит приложение — пользователь не замечает.
+  if (meta.body) {
+    rewriter.on('#root', { element(e) { e.setInnerContent(meta.body, { html: true }) } })
+  }
+  return rewriter.transform(res)
 }
 
 // ── sitemap.xml ──────────────────────────────────────────────────────────────
+// <url> с hreflang-альтернативами (ru/uk/x-default), lastmod и image:image.
+function sitemapUrl(path, opts = {}) {
+  const loc = SITE + path
+  const alts =
+    `<xhtml:link rel="alternate" hreflang="ru" href="${escapeXml(loc)}"/>` +
+    `<xhtml:link rel="alternate" hreflang="uk" href="${escapeXml(loc + '?lng=uk')}"/>` +
+    `<xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(loc)}"/>`
+  const lastmod = opts.lastmod ? `<lastmod>${escapeXml(opts.lastmod)}</lastmod>` : ''
+  const image = opts.image ? `<image:image><image:loc>${escapeXml(opts.image)}</image:loc></image:image>` : ''
+  return `  <url><loc>${escapeXml(loc)}</loc>${alts}${lastmod}${image}</url>`
+}
+
 async function buildSitemap(env) {
-  const urls = ['/', '/market', '/market/catalog', '/market/suppliers', '/business']
+  const entries = ['/', '/market', '/market/catalog', '/market/suppliers', '/business'].map((p) => sitemapUrl(p))
+
+  // товары: lastmod из created_at + image из фото
   try {
-    const parts = await supa(env, '/rest/v1/market_inventory?select=id&limit=50000')
-    for (const r of parts || []) urls.push('/market/part/' + r.id)
+    const parts = await supa(env, '/rest/v1/market_inventory?select=id,created_at,photos,photo_url&limit=50000')
+    for (const r of parts || []) {
+      const img = (r.photos && r.photos[0] && (r.photos[0].medium_url || r.photos[0].url)) || r.photo_url || null
+      entries.push(sitemapUrl('/market/part/' + r.id, { lastmod: r.created_at || undefined, image: img || undefined }))
+    }
   } catch {}
+
+  // авторазборки
   try {
     const sup = await rpc(env, 'get_market_suppliers', {})
-    for (const s of sup || []) urls.push('/market/supplier/' + s.id)
+    for (const s of sup || []) entries.push(sitemapUrl('/market/supplier/' + s.id))
   } catch {}
-  const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls.map((u) => `  <url><loc>${escapeXml(SITE + u)}</loc></url>`).join('\n') +
+
+  // SEO-лендинги: марка и марка/модель (только с доступными товарами)
+  try {
+    const catalog = await getCarCatalog(env)
+    for (const m of catalog || []) {
+      if ((m.count || 0) <= 0) continue
+      const ms = slugify(m.make)
+      entries.push(sitemapUrl('/market/catalog/' + ms))
+      for (const mm of m.models || []) {
+        if ((mm.count || 0) > 0) entries.push(sitemapUrl('/market/catalog/' + ms + '/' + slugify(mm.model)))
+      }
+    }
+  } catch {}
+
+  const body = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n` +
+    entries.join('\n') +
     `\n</urlset>\n`
   return new Response(body, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } })
 }
@@ -314,6 +469,26 @@ export default {
     // 0. www → apex (канонический хост, без дублей в индексе)
     if (url.hostname === 'www.razborka.net') {
       return Response.redirect(SITE + p + url.search, 301)
+    }
+
+    // 0c. IndexNow: мгновенный пинг новых/изменённых URL (вызывается Supabase-вебхуком).
+    //     Файл-ключ /<key>.txt кладётся в public/ как статика при активации.
+    //     Защита: внутренний секрет (как у крон-RPC). Тело: { urls: ["/market/part/.."] }.
+    if (p === '/api/indexnow' && request.method === 'POST') {
+      try {
+        if (!env.INDEXNOW_KEY) return json({ error: 'indexnow_not_configured' }, 503)
+        const body = await request.json().catch(() => ({}))
+        if (body.secret !== env.CRON_RATE_SECRET) return json({ error: 'forbidden' }, 403)
+        const list = Array.isArray(body.urls) ? body.urls.slice(0, 1000) : []
+        const urlList = list.map((u) => (String(u).startsWith('http') ? u : SITE + u))
+        if (!urlList.length) return json({ ok: true, count: 0 })
+        const res = await fetch('https://api.indexnow.org/indexnow', {
+          method: 'POST', headers: { 'content-type': 'application/json; charset=utf-8' },
+          body: JSON.stringify({ host: 'razborka.net', key: env.INDEXNOW_KEY,
+            keyLocation: SITE + '/' + env.INDEXNOW_KEY + '.txt', urlList }),
+        })
+        return json({ ok: res.ok, status: res.status, count: urlList.length })
+      } catch { return json({ error: 'server_error' }, 500) }
     }
 
     // 1. прокси курса

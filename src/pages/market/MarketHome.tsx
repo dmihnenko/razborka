@@ -11,6 +11,7 @@ import { MarketProductCard } from '@/components/market/MarketProductCard'
 import { SupplierCard } from '@/components/market/SupplierCard'
 import EmptyState from '@/components/ui/EmptyState'
 import { usePageMeta } from '@/hooks/usePageMeta'
+import { slugify } from '@/utils/slug'
 
 // ============================================================================
 // Главная маркета (/market) — Graphite. Чистый монохром, акцент сдержанный.
@@ -101,7 +102,7 @@ export function MarketHome() {
           <SectionHead id="mk-makes-title" title={t('home.makes')} to="/market/catalog" linkLabel={t('home.allMakes')} />
           <div className="mk-scroller sm:flex-wrap pb-1 -mb-1">
             {topMakes.map(make => (
-              <Link key={make} to={`/market/catalog?make=${encodeURIComponent(make)}`} className="mk-chip">
+              <Link key={make} to={`/market/catalog/${slugify(make)}`} className="mk-chip">
                 <Car className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> {make}
               </Link>
             ))}
