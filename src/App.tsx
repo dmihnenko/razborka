@@ -74,6 +74,7 @@ const MarketCatalog = lazy(() => import('./pages/market/MarketCatalog'))
 const MarketProductPage = lazy(() => import('./pages/market/MarketProductPage'))
 const MarketSuppliers = lazy(() => import('./pages/market/MarketSuppliers'))
 const MarketSupplierPage = lazy(() => import('./pages/market/MarketSupplierPage'))
+const MarketFavorites = lazy(() => import('./pages/market/MarketFavorites'))
 const MarketCart = lazy(() => import('./pages/market/MarketCart'))
 const WaitingAccessPage = lazy(() => import('./components/WaitingAccessPage'))
 
@@ -217,6 +218,7 @@ function App() {
           <Route path="part/:id" element={<MarketProductPage />} />
           <Route path="suppliers" element={<MarketSuppliers />} />
           <Route path="supplier/:id" element={<MarketSupplierPage />} />
+          <Route path="favorites" element={<MarketFavorites />} />
           <Route path="cart" element={<MarketCart />} />
         </Route>
 

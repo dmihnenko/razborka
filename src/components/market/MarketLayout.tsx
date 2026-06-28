@@ -1,7 +1,7 @@
 import { Suspense, useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { LayoutDashboard, LogIn, Search, ShoppingCart } from 'lucide-react'
+import { LayoutDashboard, LogIn, Search, ShoppingCart, Heart } from 'lucide-react'
 import { Logo } from '@/components/brand/Logo'
 import { BRAND } from '@/config/brand'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
@@ -9,6 +9,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { CartProvider, useCart } from '@/hooks/useCart'
 import { useAuth } from '@/hooks/useAuth'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { getDefaultRouteForRoles } from '@/config/navigation'
 
 // ============================================================================
@@ -37,6 +38,7 @@ function MarketLayoutInner() {
     ? '/parts/dashboard'
     : getDefaultRouteForRoles(roleNames)
   const { totalCount } = useCart()
+  const showFav = useFeatureFlag('market_favorites')
   const [search, setSearch] = useState('')
   const isHome = location.pathname === '/market' || location.pathname === '/market/'
   // Каталог и разборки имеют свой поиск/листинг — поиск в шапке скрываем, чтобы не дублировать.
@@ -121,6 +123,11 @@ function MarketLayoutInner() {
 
             <div className="flex items-center gap-1.5 sm:gap-2 ml-auto flex-shrink-0">
               <LanguageSwitcher />
+              {showFav && (
+                <Link to="/market/favorites" className="mk-icon-btn" aria-label="Избранное">
+                  <Heart className="w-5 h-5" aria-hidden="true" />
+                </Link>
+              )}
               <Link to="/market/cart" className="mk-icon-btn relative" aria-label={`Корзина${totalCount ? `, товаров: ${totalCount}` : ' (пусто)'}`}>
                 <ShoppingCart className="w-5 h-5" aria-hidden="true" />
                 {totalCount > 0 && (

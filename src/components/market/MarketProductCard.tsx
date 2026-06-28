@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Car, MapPin, Package, Plus } from 'lucide-react'
+import { Car, MapPin, Package, Plus, Heart } from 'lucide-react'
 import { toast } from 'sonner'
 import type { MarketPart } from '@/types/marketplace'
 import { useCart } from '@/hooks/useCart'
+import { useFavorites } from '@/hooks/useFavorites'
 import { formatPrice } from '@/utils/currency'
 import { PARTS_CONDITION_LABELS } from '@/utils/status'
 
@@ -23,7 +24,15 @@ const CONDITION_BADGE: Record<string, string> = {
 
 export function MarketProductCard({ part }: MarketProductCardProps) {
   const { addItem } = useCart()
+  const fav = useFavorites()
   const [imgError, setImgError] = useState(false)
+
+  const handleFav = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!fav.canUse) { toast.error('Войдите, чтобы добавить в избранное', { position: 'top-center' }); return }
+    fav.toggle(part.id)
+  }
 
   const p0 = part.photos?.[0]
   const photo = part.photoUrl || p0?.thumb_url || p0?.url || null
@@ -86,6 +95,19 @@ export function MarketProductCard({ part }: MarketProductCardProps) {
             <span className={['mk-badge mk-photo-badge', CONDITION_BADGE[part.condition] ?? 'mk-badge-neutral'].join(' ')}>
               {conditionLabel}
             </span>
+          )}
+          {fav.enabled && (
+            <button
+              type="button"
+              onClick={handleFav}
+              aria-label={fav.isFavorite(part.id) ? 'Убрать из избранного' : 'В избранное'}
+              aria-pressed={fav.isFavorite(part.id)}
+              className="absolute top-2 right-2 w-8 h-8 rounded-full inline-flex items-center justify-center bg-white/85 backdrop-blur-sm shadow-sm transition-colors hover:bg-white"
+            >
+              <Heart className="w-4 h-4" strokeWidth={1.5}
+                fill={fav.isFavorite(part.id) ? '#ef4444' : 'none'}
+                color={fav.isFavorite(part.id) ? '#ef4444' : 'var(--mk-text-2)'} />
+            </button>
           )}
         </div>
 

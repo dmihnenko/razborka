@@ -173,6 +173,17 @@ export async function getRelatedParts(
   return (data || []).map(mapPartRow)
 }
 
+/** Запчасти по списку id (для «Избранного»). Доступные/опубликованные — через market_inventory. */
+export async function getMarketPartsByIds(ids: string[]): Promise<MarketPart[]> {
+  if (!ids.length) return []
+  const { data, error } = await supabase
+    .from('market_inventory')
+    .select(`${PART_LIST_FIELDS}, ${COMPANY_JOIN}, ${CATEGORY_JOIN}, ${vehicleJoin(false)}`)
+    .in('id', ids)
+  if (error) throw error
+  return (data || []).map(mapPartRow)
+}
+
 // ── Разборки (поставщики) ───────────────────────────────────────────────────
 
 const SUPPLIER_FIELDS = 'id, name, phone, telegram, address, city, email, description'
