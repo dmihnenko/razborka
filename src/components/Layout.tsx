@@ -143,6 +143,20 @@ export default function Layout() {
     }
   }, [primaryRole, profile?.roles])
 
+  // Закрепляем контекст при входе в кабинет, чтобы общие страницы (/support, /profile)
+  // НЕ сбрасывали меню разборки на дефолт (баг «пропадают пункты / становлюсь работником»).
+  useEffect(() => {
+    const roles = new Set((profile?.roles || []).map((r: any) => r.name))
+    const canP = roles.has('parts_owner') || roles.has('parts_worker') || roles.has('admin')
+    const p = location.pathname
+    if (p.startsWith('/parts') && canP) {
+      const wo = roles.has('parts_worker') && !roles.has('parts_owner') && !roles.has('admin')
+      localStorage.setItem('activeRole', wo ? 'parts_worker' : 'parts_owner')
+    } else if (p.startsWith('/my-vehicles') || p.startsWith('/my-orders')) {
+      localStorage.setItem('activeRole', 'user')
+    }
+  }, [location.pathname, profile?.roles])
+
   // Получаем меню на основе активной роли
   // Поддерживаем переключение для ВСЕХ пользователей с несколькими ролями
   let roleNames: string[] = []
