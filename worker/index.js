@@ -253,11 +253,58 @@ async function updateGlobalRate(env) {
   } catch { /* best-effort: следующий запуск крона повторит */ }
 }
 
+// ── крон: авто-синк статусов Новой Почты (ключ NP у каждой разборки свой) ──────
+async function syncNpShipments(env) {
+  const rpc = (fn, body) => fetch(env.SUPABASE_URL + '/rest/v1/rpc/' + fn, {
+    method: 'POST',
+    headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + env.SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  try {
+    const rows = await rpc('get_shipments_to_sync', { p_secret: env.CRON_RATE_SECRET })
+      .then((r) => r.json()).catch(() => null)
+    if (!Array.isArray(rows) || !rows.length) return
+
+    // группируем по ключу NP (= по компании) и бьём НП ключом каждой компании
+    const byKey = new Map()
+    for (const r of rows) {
+      if (!byKey.has(r.api_key)) byKey.set(r.api_key, [])
+      byKey.get(r.api_key).push(r)
+    }
+    const updates = []
+    for (const [apiKey, list] of byKey) {
+      // НП getStatusDocuments принимает до 100 документов за вызов
+      for (let i = 0; i < list.length; i += 100) {
+        const chunk = list.slice(i, i + 100)
+        try {
+          const resp = await fetch('https://api.novaposhta.ua/v2.0/json/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              apiKey, modelName: 'TrackingDocument', calledMethod: 'getStatusDocuments',
+              methodProperties: { Documents: chunk.map((r) => ({ DocumentNumber: r.ttn, Phone: '' })) },
+            }),
+            signal: AbortSignal.timeout(8000),
+          }).then((r) => r.json())
+          if (!resp || !resp.success) continue
+          const byTtn = new Map((resp.data || []).map((d) => [String(d.Number), d]))
+          for (const r of chunk) {
+            const d = byTtn.get(String(r.ttn))
+            if (d && d.StatusCode) updates.push({ id: r.id, status: d.Status || '', status_code: String(d.StatusCode) })
+          }
+        } catch { /* пропускаем чанк, повторим в след. запуск */ }
+      }
+    }
+    if (updates.length) await rpc('apply_shipment_statuses', { p_secret: env.CRON_RATE_SECRET, p_updates: updates })
+  } catch { /* best-effort */ }
+}
+
 // ── точка входа ──────────────────────────────────────────────────────────────
 export default {
-  // Крон (wrangler triggers.crons: 06:30 и 12:30 UTC ≈ 9:30 и 15:30 Киев)
+  // Крон: курс USD (06:30/12:30 UTC) + синк Новой Почты (каждые 30 мин)
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(updateGlobalRate(env))
+    if (event.cron === '*/30 * * * *') ctx.waitUntil(syncNpShipments(env))
+    else ctx.waitUntil(updateGlobalRate(env))
   },
 
   async fetch(request, env, ctx) {
