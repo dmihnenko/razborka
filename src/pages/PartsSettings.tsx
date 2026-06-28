@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  RefreshCw, Save, CheckCircle,
+  Save, CheckCircle,
   Key, ExternalLink, Tag, Warehouse, ChevronRight, Trash2,
   Phone, Send, Truck, MapPin, X, DollarSign,
 } from 'lucide-react'
@@ -21,7 +21,6 @@ import { toast } from 'sonner'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import i18n from '@/i18n'
 import { TELEGRAM_BOT_USERNAME, telegramConnectLink } from '@/config/telegram'
-import { manualVersionCheck } from '@/components/VersionChecker'
 
 type PanelId = 'contacts' | 'rate' | 'imgbb' | 'np' | 'telegram'
 
@@ -79,14 +78,6 @@ export default function PartsSettings() {
     }
   }
 
-  const [checkingUpdate, setCheckingUpdate] = useState(false)
-  const handleCheckUpdates = async () => {
-    setCheckingUpdate(true)
-    const r = await manualVersionCheck()
-    setCheckingUpdate(false)
-    if (r === 'current') toast.success(t('settingsPage.toastLatestVersion'))
-    // 'updated' — VersionChecker сам покажет toast с кнопкой «Обновить»
-  }
 
   const [npKeyInput, setNpKeyInput] = useState<string>(getNpApiKey)
 
@@ -665,16 +656,6 @@ export default function PartsSettings() {
           ))}
         </div>
 
-        {/* Обновления приложения — ручная проверка (авто-проверка раз в 12 ч + при возврате на вкладку) */}
-        <div className="cab-card p-4 mt-3 sm:mt-4 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-gray-900">{t('settingsPage.updates')}</p>
-            <p className="text-xs text-gray-500 mt-0.5 truncate">{t('settingsPage.updatesSub')}</p>
-          </div>
-          <button onClick={handleCheckUpdates} disabled={checkingUpdate} className="cab-btn cab-btn-secondary cab-btn-sm flex-shrink-0">
-            <RefreshCw className={`w-4 h-4 ${checkingUpdate ? 'animate-spin' : ''}`} strokeWidth={1.5} /> {t('settingsPage.checkUpdates')}
-          </button>
-        </div>
       </div>
 
       {/* ── Модалка раздела (top-sheet) ── */}

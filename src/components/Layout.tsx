@@ -175,7 +175,10 @@ export default function Layout() {
   const userRoleSet = new Set((profile?.roles || []).map((r: any) => r.name))
   const canParts = userRoleSet.has('parts_owner') || userRoleSet.has('parts_worker') || userRoleSet.has('admin')
   if (location.pathname.startsWith('/parts') && canParts) {
-    roleNames = [userRoleSet.has('parts_worker') && !userRoleSet.has('parts_owner') ? 'parts_worker' : 'parts_owner']
+    // Меню сотрудника — только для чистого parts_worker (без owner и без admin).
+    // Админ/владелец видят полное меню разборки (включая «Подписка», «Аналитика»...).
+    const workerOnly = userRoleSet.has('parts_worker') && !userRoleSet.has('parts_owner') && !userRoleSet.has('admin')
+    roleNames = [workerOnly ? 'parts_worker' : 'parts_owner']
   } else if (location.pathname.startsWith('/my-vehicles') || location.pathname.startsWith('/my-orders')) {
     roleNames = ['user']
   }
