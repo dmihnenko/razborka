@@ -421,9 +421,9 @@ export async function getPartsInventoryPaged(
     query = query.eq('vehicle_id', vehicleId)
   }
   if (source === 'vehicles') {
-    query = query.not('vehicle_id', 'is', null)
+    query = query.eq('is_shop', false)   // разборка (с авто или без — главное не магазин)
   } else if (source === 'shop') {
-    query = query.is('vehicle_id', null)
+    query = query.eq('is_shop', true)    // магазин (наполняется отдельным меню)
   }
   if (search?.trim()) {
     const s = sanitizeInventorySearch(search)
