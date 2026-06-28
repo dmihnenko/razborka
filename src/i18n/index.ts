@@ -35,7 +35,10 @@ i18n
     defaultNS: 'common',
     interpolation: { escapeValue: false },
     detection: {
-      order: ['localStorage', 'navigator'],
+      // querystring (?lng=uk) — первым: даёт рабочие языковые URL для SEO (hreflang) и
+      // расшаривания ссылок. У залогиненных локаль из БД всё равно перекрывает (useSyncProfileLocale).
+      order: ['querystring', 'localStorage', 'navigator'],
+      lookupQuerystring: 'lng',
       lookupLocalStorage: LANG_STORAGE_KEY,
       caches: ['localStorage'],
     },

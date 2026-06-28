@@ -79,45 +79,71 @@ function matchRoute(p) {
   return null
 }
 
-// ── вычисление мета ──────────────────────────────────────────────────────────
-async function computeMeta(route, env, pathname) {
-  const canonical = SITE + pathname.replace(/\/+$/, '')
-  const base = { canonical, ogImage: DEFAULT_OG, ogType: 'website', robots: null, jsonld: null }
+const COND_UK = { new: 'Нова', used: 'Б/в', damaged: 'Під відновлення' }
+
+// ── вычисление мета (lang: 'ru' | 'uk') ───────────────────────────────────────
+async function computeMeta(route, env, pathname, lang) {
+  const uk = lang === 'uk'
+  const q = uk ? '?lng=uk' : ''
+  const cleanPath = pathname.replace(/\/+$/, '') || '/'
+  // altBase — канонический URL БЕЗ языкового параметра (для hreflang-альтернатив)
+  const altBase = route.type === 'product' ? SITE + '/market/part/' + route.id
+    : cleanPath === '/' ? SITE + '/'
+    : SITE + cleanPath
+  const canonical = altBase + q
+  const base = { canonical, altBase, lang, ogImage: DEFAULT_OG, ogType: 'website', robots: null, jsonld: null }
+  const homeUrl = SITE + '/' + q
+  const catUrl = SITE + '/market/catalog' + q
+  const bcHome = uk ? 'Головна' : 'Главная'
+  const bcCat = 'Каталог'
 
   if (route.type === 'home') return {
-    ...base, canonical: SITE + '/',
-    title: `${BRAND} — маркет б/у и новых запчастей от авторазборок`,
-    description: 'Купить б/у и новые автозапчасти от проверенных авторазборок Украины. Каталог по марке, модели и году, прямой контакт с разборкой.',
+    ...base,
+    title: uk ? `${BRAND} — маркет вживаних і нових запчастин від авторозборок`
+              : `${BRAND} — маркет б/у и новых запчастей от авторазборок`,
+    description: uk
+      ? 'Купити вживані та нові автозапчастини від перевірених авторозборок України. Каталог за маркою, моделлю та роком, прямий контакт з розборкою.'
+      : 'Купить б/у и новые автозапчасти от проверенных авторазборок Украины. Каталог по марке, модели и году, прямой контакт с разборкой.',
     jsonld: [
       { '@context': 'https://schema.org', '@type': 'Organization', name: BRAND, url: SITE, logo: DEFAULT_OG },
       { '@context': 'https://schema.org', '@type': 'WebSite', name: BRAND, url: SITE,
         potentialAction: { '@type': 'SearchAction', target: SITE + '/market/catalog?q={query}', 'query-input': 'required name=query' } },
     ],
   }
-  if (route.type === 'catalog') return { ...base, title: `Каталог автозапчастей — ${BRAND}`,
-    description: 'Каталог б/у и новых автозапчастей от авторазборок. Фильтр по марке, модели, году и состоянию.',
-    jsonld: [breadcrumb([['Главная', SITE + '/'], ['Каталог', SITE + '/market/catalog']])] }
-  if (route.type === 'suppliers') return { ...base, title: `Авторазборки Украины — ${BRAND}`,
-    description: 'Список авторазборок: контакты, города, наличие запчастей. Прямая связь с разборкой.' }
-  if (route.type === 'business') return { ...base, title: `Для авторазборок — ${BRAND}`,
-    description: 'Подключите авторазборку к Razborka.net: учёт склада, витрина запчастей, заявки покупателей.' }
-  if (route.type === 'location') return { ...base, title: `Запчасти на складе — ${BRAND}`,
-    description: 'Запчасти в этом месте хранения авторазборки.' }
-  if (route.type === 'noindex') return { ...base, robots: 'noindex,follow', title: BRAND,
+  if (route.type === 'catalog') return { ...base,
+    title: uk ? `Каталог автозапчастин — ${BRAND}` : `Каталог автозапчастей — ${BRAND}`,
+    description: uk ? 'Каталог вживаних і нових автозапчастин від авторозборок. Фільтр за маркою, моделлю, роком і станом.'
+                    : 'Каталог б/у и новых автозапчастей от авторазборок. Фильтр по марке, модели, году и состоянию.',
+    jsonld: [breadcrumb([[bcHome, homeUrl], [bcCat, catUrl]])] }
+  if (route.type === 'suppliers') return { ...base,
+    title: uk ? `Авторозборки України — ${BRAND}` : `Авторазборки Украины — ${BRAND}`,
+    description: uk ? 'Список авторозборок: контакти, міста, наявність запчастин. Прямий зв’язок з розборкою.'
+                    : 'Список авторазборок: контакты, города, наличие запчастей. Прямая связь с разборкой.' }
+  if (route.type === 'business') return { ...base,
+    title: uk ? `Для авторозборок — ${BRAND}` : `Для авторазборок — ${BRAND}`,
+    description: uk ? 'Підключіть авторозборку до Razborka.net: облік складу, вітрина запчастин, заявки покупців.'
+                    : 'Подключите авторазборку к Razborka.net: учёт склада, витрина запчастей, заявки покупателей.' }
+  if (route.type === 'location') return { ...base,
+    title: uk ? `Запчастини на складі — ${BRAND}` : `Запчасти на складе — ${BRAND}`,
+    description: uk ? 'Запчастини в цьому місці зберігання авторозборки.' : 'Запчасти в этом месте хранения авторазборки.' }
+  if (route.type === 'noindex') return { ...base, robots: 'noindex,follow', altBase: undefined, title: BRAND,
     description: 'Razborka.net — маркет автозапчастей от авторазборок.' }
 
   if (route.type === 'product') {
     const it = await rpc(env, 'get_public_parts_item', { p_id: route.id })
-    if (!it || !it.name) return { ...base, robots: 'noindex,follow', notFound: true, title: 'Запчасть не найдена — ' + BRAND, description: 'Запчасть не найдена или снята с продажи.' }
+    if (!it || !it.name) return { ...base, robots: 'noindex,follow', altBase: undefined, notFound: true,
+      title: (uk ? 'Запчастину не знайдено — ' : 'Запчасть не найдена — ') + BRAND,
+      description: uk ? 'Запчастину не знайдено або знято з продажу.' : 'Запчасть не найдена или снята с продажи.' }
     const v = it.vehicle || {}
     const veh = [v.make, v.model, v.year].filter(Boolean).join(' ')
     const cur = it.price_currency === 'USD' ? '$' : '₴'
     const price = it.selling_price ? `${Number(it.selling_price).toLocaleString('uk-UA')} ${cur}` : ''
-    const cond = COND_RU[it.condition] || ''
+    const cond = (uk ? COND_UK : COND_RU)[it.condition] || ''
     const img = (it.photos && it.photos[0] && (it.photos[0].medium_url || it.photos[0].url)) || it.photo_url || DEFAULT_OG
     const title = clip([it.name, veh].filter(Boolean).join(' — '), 65) + ` | ${BRAND}`
-    const description = clip([it.name, cond && `Состояние: ${cond}`, price && `Цена ${price}`, veh && `Авто: ${veh}`, it.part_number && `Номер: ${it.part_number}`].filter(Boolean).join('. ') + '.', 175)
-    const canon = SITE + '/market/part/' + route.id // дедуп: /public/parts-item → /market/part
+    const L = uk ? { cond: 'Стан', price: 'Ціна', veh: 'Авто', num: 'Номер' } : { cond: 'Состояние', price: 'Цена', veh: 'Авто', num: 'Номер' }
+    const description = clip([it.name, cond && `${L.cond}: ${cond}`, price && `${L.price} ${price}`, veh && `${L.veh}: ${veh}`, it.part_number && `${L.num}: ${it.part_number}`].filter(Boolean).join('. ') + '.', 175)
+    const canon = altBase + q // дедуп: /public/parts-item → /market/part (+язык)
     const offer = it.selling_price ? {
       '@type': 'Offer', price: Number(it.selling_price), priceCurrency: it.price_currency || 'UAH',
       availability: it.status === 'available' ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
@@ -132,16 +158,19 @@ async function computeMeta(route, env, pathname) {
         ...(veh ? { brand: { '@type': 'Brand', name: v.make || veh } } : {}),
         ...(offer ? { offers: offer } : {}),
       },
-      breadcrumb([['Главная', SITE + '/'], ['Каталог', SITE + '/market/catalog'], [clip(it.name, 60), canon]])],
+      breadcrumb([[bcHome, homeUrl], [bcCat, catUrl], [clip(it.name, 60), canon]])],
     }
   }
 
   if (route.type === 'supplier') {
     let s = null
     try { const list = await rpc(env, 'get_market_suppliers', {}); s = (list || []).find((x) => x.id === route.id) } catch {}
-    if (!s) return { ...base, robots: 'noindex,follow', notFound: true, title: `Авторазборка не найдена — ${BRAND}`, description: 'Авторазборка не найдена.' }
-    const title = clip(`${s.name} — авторазборка${s.city ? ', ' + s.city : ''}`, 65) + ` | ${BRAND}`
-    const description = clip([s.name, s.available_parts != null && `${s.available_parts} запчастей в наличии`, s.address].filter(Boolean).join('. ') + '.', 175)
+    if (!s) return { ...base, robots: 'noindex,follow', altBase: undefined, notFound: true,
+      title: (uk ? 'Авторозборку не знайдено — ' : 'Авторазборка не найдена — ') + BRAND,
+      description: uk ? 'Авторозборку не знайдено.' : 'Авторазборка не найдена.' }
+    const title = clip(`${s.name} — ${uk ? 'авторозборка' : 'авторазборка'}${s.city ? ', ' + s.city : ''}`, 65) + ` | ${BRAND}`
+    const partsTxt = s.available_parts != null ? (uk ? `${s.available_parts} запчастин у наявності` : `${s.available_parts} запчастей в наличии`) : null
+    const description = clip([s.name, partsTxt, s.address].filter(Boolean).join('. ') + '.', 175)
     return {
       ...base, ogType: 'profile', title, description,
       jsonld: [{
@@ -156,15 +185,23 @@ async function computeMeta(route, env, pathname) {
 
 // ── HTMLRewriter-инъекция ────────────────────────────────────────────────────
 function injectMeta(res, meta) {
+  const uk = meta.lang === 'uk'
+  // hreflang-альтернативы (только для индексируемых страниц: есть altBase)
+  const alts = meta.altBase
+    ? `<link rel="alternate" hreflang="ru" href="${escapeHtml(meta.altBase)}">` +
+      `<link rel="alternate" hreflang="uk" href="${escapeHtml(meta.altBase + '?lng=uk')}">` +
+      `<link rel="alternate" hreflang="x-default" href="${escapeHtml(meta.altBase)}">`
+    : ''
   const head =
     `<link rel="canonical" href="${escapeHtml(meta.canonical)}">` +
+    alts +
     `<meta property="og:type" content="${escapeHtml(meta.ogType)}">` +
     `<meta property="og:site_name" content="${BRAND}">` +
     `<meta property="og:title" content="${escapeHtml(meta.title)}">` +
     `<meta property="og:description" content="${escapeHtml(meta.description)}">` +
     `<meta property="og:url" content="${escapeHtml(meta.canonical)}">` +
     `<meta property="og:image" content="${escapeHtml(meta.ogImage)}">` +
-    `<meta property="og:locale" content="ru_RU">` +
+    `<meta property="og:locale" content="${uk ? 'uk_UA' : 'ru_RU'}">` +
     `<meta name="twitter:card" content="summary_large_image">` +
     `<meta name="twitter:title" content="${escapeHtml(meta.title)}">` +
     `<meta name="twitter:description" content="${escapeHtml(meta.description)}">` +
@@ -173,6 +210,7 @@ function injectMeta(res, meta) {
     (meta.jsonld ? `<script type="application/ld+json">${JSON.stringify(meta.jsonld.length === 1 ? meta.jsonld[0] : meta.jsonld).replace(/</g, '\\u003c')}</script>` : '')
 
   return new HTMLRewriter()
+    .on('html', { element(e) { e.setAttribute('lang', uk ? 'uk' : 'ru') } })
     .on('title', { element(e) { e.setInnerContent(meta.title) } })
     .on('meta[name="description"]', { element(e) { e.setAttribute('content', meta.description) } })
     .on('head', { element(e) { e.append(head, { html: true }) } })
@@ -314,8 +352,10 @@ export default {
     // content-type. Не завязываемся на Accept/sec-fetch-dest — иначе краулеры с Accept:*/*
     // (часть соц-ботов, curl) не получат мета.
     if (route && request.method === 'GET') {
+      const lang = url.searchParams.get('lng') === 'uk' ? 'uk' : 'ru'
       const cache = caches.default
-      const cacheKey = new Request(url.origin + p, request)
+      // язык в ключе кеша — иначе ru/uk ответы перепутаются
+      const cacheKey = new Request(url.origin + p + (lang === 'uk' ? '?lng=uk' : ''), request)
       const hit = await cache.match(cacheKey)
       if (hit) return hit
       try {
@@ -323,8 +363,8 @@ export default {
         const ct = assetRes.headers.get('content-type') || ''
         if (!ct.includes('text/html')) return assetRes
         let meta
-        try { meta = await computeMeta(route, env, p) }
-        catch { meta = { title: BRAND, description: 'Razborka.net — маркет автозапчастей от авторазборок.', canonical: SITE + p, ogImage: DEFAULT_OG, ogType: 'website', robots: null, jsonld: null } }
+        try { meta = await computeMeta(route, env, p, lang) }
+        catch { meta = { title: BRAND, description: 'Razborka.net — маркет автозапчастей от авторазборок.', canonical: SITE + p, altBase: undefined, lang, ogImage: DEFAULT_OG, ogType: 'website', robots: null, jsonld: null } }
         const out = injectMeta(assetRes, meta)
         const headers = new Headers(out.headers)
         // Тело меняется при инъекции → снять заголовки исходного (возможно сжатого) ответа,
