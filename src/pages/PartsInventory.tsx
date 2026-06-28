@@ -74,6 +74,7 @@ export default function PartsInventory() {
   const [editingItem, setEditingItem] = useState<PartsInventoryItem | null>(null)
   const [sellingItem, setSellingItem] = useState<PartsInventoryItem | null>(null)
   const [sellPrice, setSellPrice] = useState('')
+  const [sellQty, setSellQty] = useState(1)
   const [sellCurrency, setSellCurrency] = useState<'UAH' | 'USD'>('USD')
   const [sellCustomerId, setSellCustomerId] = useState<string>('')
   const [showNewCustomer, setShowNewCustomer] = useState(false)
@@ -283,7 +284,9 @@ export default function PartsInventory() {
         saved = await updatePartsInventoryItem(editingItem.id, data)
       } else {
         if (!canCreate.part()) throw new Error(t('inventoryPage.limitReachedError'))
-        saved = await createPartsInventoryItem(data, partsCompanyId!)
+        // Источник определяется вкладкой: «Запчасти» → разборка (false), «Магазин» → true.
+        // Товар, добавленный через Запчасти, ВСЕГДА разборка — даже без привязки к авто.
+        saved = await createPartsInventoryItem({ ...data, is_shop: sourceFilter === 'shop' }, partsCompanyId!)
       }
       // Фото, которые ещё грузились на момент сохранения — дописываем в товар в ФОНЕ
       // (пользователь не ждал выгрузку). fire-and-forget, мутация уже завершилась.
@@ -328,7 +331,7 @@ export default function PartsInventory() {
   const saveBulkMutation = useMutation({
     mutationFn: async (items: CreatePartsInventoryInput[]) => {
       for (const item of items) {
-        await createPartsInventoryItem(item, partsCompanyId!)
+        await createPartsInventoryItem({ ...item, is_shop: sourceFilter === 'shop' }, partsCompanyId!)
       }
     },
     onSuccess: (_, items) => {
@@ -462,14 +465,20 @@ export default function PartsInventory() {
   }
 
   const sellMutation = useMutation({
-    mutationFn: async ({ item, price, currency, customerId, newCustomer }: {
+    mutationFn: async ({ item, price, currency, qty, customerId, newCustomer }: {
       item: PartsInventoryItem
       price: number
       currency: 'UAH' | 'USD'
+      qty: number
       customerId?: string
       newCustomer?: { name: string; phone: string }
     }) => {
       let resolvedCustomerId: string | null = customerId || null
+
+      // Сколько штук продаём (для многоштучного товара). Не больше остатка на складе.
+      const soldQty = Math.max(1, Math.min(qty || 1, item.quantity))
+      // Полностью ли уходит позиция (после продажи остаток = 0) — тогда помечаем «продано».
+      const fullySold = item.quantity - soldQty <= 0
 
       // Create new customer if provided
       if (newCustomer?.name?.trim()) {
@@ -489,7 +498,7 @@ export default function PartsInventory() {
       // Add item to order
       await createPartsOrderItem(order.id, {
         inventory_item_id: item.id,
-        quantity: 1,
+        quantity: soldQty,
         price_at_sale: price,
         price_at_sale_currency: currency,
       })
@@ -504,12 +513,17 @@ export default function PartsInventory() {
         .eq('id', order.id)
       if (completeError) throw completeError
 
-      // Only update fields not handled by the trigger (sold_price currency, customer link)
-      return updatePartsInventoryItem(item.id, {
-        sold_price: price,
-        price_currency: currency,
-        sold_to_customer_id: resolvedCustomerId || undefined,
-      })
+      // Метку покупателя/цены продажи ставим ТОЛЬКО при полной продаже позиции.
+      // При частичной (продали часть многоштучного товара) позиция остаётся в наличии —
+      // триггер уже вычел количество, статус не трогаем.
+      if (fullySold) {
+        return updatePartsInventoryItem(item.id, {
+          sold_price: price,
+          price_currency: currency,
+          sold_to_customer_id: resolvedCustomerId || undefined,
+        })
+      }
+      return null
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
@@ -518,6 +532,7 @@ export default function PartsInventory() {
       toast.success(t('inventoryPage.toastSold'))
       setSellingItem(null)
       setSellPrice('')
+      setSellQty(1)
       setSellCustomerId('')
       setShowNewCustomer(false)
       setNewCustomerName('')
@@ -563,11 +578,15 @@ export default function PartsInventory() {
         .eq('id', order.id)
       if (completeError) throw completeError
       for (const row of rows) {
-        await updatePartsInventoryItem(row.item.id, {
-          sold_price: parseFloat(row.price) || undefined,
-          price_currency: row.currency,
-          sold_to_customer_id: resolvedCustomerId || undefined,
-        })
+        // Метку «продано» ставим только при полной продаже позиции; при частичной
+        // (продали часть многоштучного товара) позиция остаётся в наличии.
+        if (row.item.quantity - row.quantity <= 0) {
+          await updatePartsInventoryItem(row.item.id, {
+            sold_price: parseFloat(row.price) || undefined,
+            price_currency: row.currency,
+            sold_to_customer_id: resolvedCustomerId || undefined,
+          })
+        }
       }
     },
     onSuccess: () => {
@@ -625,6 +644,7 @@ export default function PartsInventory() {
     e.stopPropagation()
     setSellingItem(item)
     setSellPrice(item.selling_price ? String(item.selling_price) : '')
+    setSellQty(1)
     setSellCurrency((item.price_currency as 'UAH' | 'USD') || 'USD')
     setSellCustomerId('')
     setShowNewCustomer(false)
@@ -1280,6 +1300,29 @@ export default function PartsInventory() {
                 </div>
               </div>
 
+              {/* Количество — только для многоштучного товара (qty > 1) */}
+              {sellingItem.quantity > 1 && (
+                <div>
+                  <label className="form-label">
+                    {t('inventoryPage.sellQty')}{' '}
+                    <span className="text-gray-400 font-normal">
+                      {t('inventoryPage.inStock', { n: sellingItem.quantity })}
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={sellingItem.quantity}
+                    step={1}
+                    value={sellQty}
+                    onChange={(e) =>
+                      setSellQty(Math.max(1, Math.min(sellingItem.quantity, parseInt(e.target.value) || 1)))
+                    }
+                    className="form-input"
+                  />
+                </div>
+              )}
+
               {/* Customer selection */}
               <div>
                 <label className="form-label">{t('inventoryPage.customer')} <span className="text-gray-400 font-normal">{t('inventoryPage.optional')}</span></label>
@@ -1365,6 +1408,7 @@ export default function PartsInventory() {
                     item: sellingItem,
                     price,
                     currency: sellCurrency,
+                    qty: sellQty,
                     customerId: sellCustomerId || undefined,
                     newCustomer: showNewCustomer ? { name: newCustomerName, phone: newCustomerPhone } : undefined,
                   })

@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRightLeft, Tag, History, User } from 'lucide-react'
+import { Tag, History, User, CheckCircle2, Trash2 } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
@@ -24,16 +24,23 @@ interface ActionIconProps {
 }
 
 function ActionIcon({ action }: ActionIconProps) {
-  if (action === 'status_change') {
+  if (action === 'order_closed') {
     return (
-      <span className="flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-700 flex-shrink-0">
-        <ArrowRightLeft className="w-4 h-4" />
+      <span className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex-shrink-0">
+        <CheckCircle2 className="w-4 h-4" />
+      </span>
+    )
+  }
+  if (action === 'inventory_deleted') {
+    return (
+      <span className="flex items-center justify-center w-9 h-9 rounded-full bg-red-50 text-red-600 flex-shrink-0">
+        <Trash2 className="w-4 h-4" />
       </span>
     )
   }
   if (action === 'price_change') {
     return (
-      <span className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex-shrink-0">
+      <span className="flex items-center justify-center w-9 h-9 rounded-full bg-amber-50 text-amber-600 flex-shrink-0">
         <Tag className="w-4 h-4" />
       </span>
     )
@@ -46,8 +53,10 @@ function ActionIcon({ action }: ActionIconProps) {
 }
 
 function actionLabel(action: string): string {
-  if (action === 'status_change') return i18n.t('cabinet:activityPage.actionStatusChange')
+  if (action === 'order_closed') return i18n.t('cabinet:activityPage.actionOrderClosed')
+  if (action === 'inventory_deleted') return i18n.t('cabinet:activityPage.actionInventoryDeleted')
   if (action === 'price_change') return i18n.t('cabinet:activityPage.actionPriceChange')
+  if (action === 'status_change') return i18n.t('cabinet:activityPage.actionStatusChange')
   return action
 }
 
@@ -90,24 +99,45 @@ function LogItem({ entry }: { entry: ActivityLogEntry }) {
 
 const PAGE_SIZE = 50
 
+// Журнал «уменьшение товара»: фильтры по типу записи.
+type ActivityFilter = 'all' | 'price' | 'closed' | 'deleted'
+
+const FILTER_ACTIONS: Record<ActivityFilter, string[] | undefined> = {
+  all: ['price_change', 'order_closed', 'inventory_deleted'],
+  price: ['price_change'],
+  closed: ['order_closed'],
+  deleted: ['inventory_deleted'],
+}
+
 export default function PartsActivityLog() {
   const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
   const isOwner = profile?.roles?.some((r: any) => r.name === 'parts_owner')
 
+  const [filter, setFilter] = useState<ActivityFilter>('all')
   const [page, setPage] = useState(0)
 
   // Все уже загруженные записи, накопленные постранично
   const [allItems, setAllItems] = useState<ActivityLogEntry[]>([])
 
+  // При смене фильтра — сбрасываем накопленные записи и пагинацию
+  useEffect(() => {
+    setPage(0)
+    setAllItems([])
+  }, [filter])
+
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['parts-activity-log', partsCompanyId, page],
+    queryKey: ['parts-activity-log', partsCompanyId, filter, page],
     staleTime: 1000 * 60 * 2,
     enabled: !!partsCompanyId && !!isOwner,
     queryFn: async () => {
       if (!partsCompanyId) return { items: [], total: 0 }
-      const result = await getActivityLog(partsCompanyId, { page, pageSize: PAGE_SIZE })
+      const result = await getActivityLog(partsCompanyId, {
+        page,
+        pageSize: PAGE_SIZE,
+        actions: FILTER_ACTIONS[filter],
+      })
       if (page === 0) {
         setAllItems(result.items)
       } else {
@@ -132,6 +162,31 @@ export default function PartsActivityLog() {
       <PartsPageHeader title={i18n.t('cabinet:pages.activity')} backPath="/parts/dashboard" />
 
       <div className="px-4 sm:px-6 py-6">
+        {/* Подзаголовок — назначение журнала */}
+        <p className="text-sm text-gray-500 mb-3">{t('activityPage.subtitle')}</p>
+
+        {/* Фильтры по типу записи */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {([
+            ['all', t('activityPage.filterAll')],
+            ['price', t('activityPage.filterPrice')],
+            ['closed', t('activityPage.filterClosed')],
+            ['deleted', t('activityPage.filterDeleted')],
+          ] as [ActivityFilter, string][]).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setFilter(key)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                filter === key
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Счётчик */}
         {total > 0 && (
           <p className="text-sm text-gray-500 mb-4">

@@ -17,17 +17,24 @@ const DEFAULT_PAGE_SIZE = 50
 
 export async function getActivityLog(
   partsCompanyId: string,
-  opts?: { page?: number; pageSize?: number }
+  opts?: { page?: number; pageSize?: number; actions?: string[] }
 ): Promise<{ items: ActivityLogEntry[]; total: number }> {
   const page = opts?.page ?? 0
   const pageSize = opts?.pageSize ?? DEFAULT_PAGE_SIZE
   const from = page * pageSize
   const to = from + pageSize - 1
 
-  const { data, error, count } = await supabase
+  let query = supabase
     .from('parts_activity_log')
     .select('*', { count: 'exact' })
     .eq('parts_company_id', partsCompanyId)
+
+  // Фильтр по типу записи (журнал «уменьшение товара»: цена / закрытый заказ / удаление)
+  if (opts?.actions && opts.actions.length > 0) {
+    query = query.in('action', opts.actions)
+  }
+
+  const { data, error, count } = await query
     .order('created_at', { ascending: false })
     .range(from, to)
 

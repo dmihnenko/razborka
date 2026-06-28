@@ -181,6 +181,9 @@ export interface CreatePartsInventoryInput {
   notes?: string
   storage_location_id?: string
   status?: PartsInventoryStatus
+  // Разборка (false) vs Магазин (true). Определяется вкладкой, через которую добавляют:
+  // «Запчасти» → false, «Магазин» → true. По умолчанию (БД) — false.
+  is_shop?: boolean
 }
 
 // ============================================================================
