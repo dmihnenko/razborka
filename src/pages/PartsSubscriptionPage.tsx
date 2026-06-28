@@ -138,7 +138,7 @@ export default function PartsSubscriptionPage() {
               {isLifetime ? (
                 <p className="page-subtitle mt-1.5 flex items-center gap-1.5">
                   <InfinityIcon className="w-4 h-4" strokeWidth={1.5} />
-                  Бессрочная подписка
+                  Бессрочная подписка · оформление не требуется
                 </p>
               ) : endDate ? (
                 <p className="page-subtitle mt-1.5 flex items-center gap-1.5 flex-wrap">
@@ -205,17 +205,7 @@ export default function PartsSubscriptionPage() {
       </div>
 
       {/* ── Выбор тарифа ──────────────────────────────────────── */}
-      {isLifetime ? (
-        <div className="cab-card p-4">
-          <div className="empty-state py-10">
-            <div className="empty-state-icon">
-              <InfinityIcon className="w-8 h-8 text-gray-400" strokeWidth={1.5} />
-            </div>
-            <p className="empty-state-title">У вас бессрочная подписка</p>
-            <p className="empty-state-text">Оформление не требуется</p>
-          </div>
-        </div>
-      ) : pending ? (
+      {isLifetime ? null : pending ? (
         <div className="cab-card p-4 border-amber-200">
           <div className="flex items-start gap-4">
             <div className="icon-tile bg-amber-100 flex-shrink-0">
