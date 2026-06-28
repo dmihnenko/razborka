@@ -89,25 +89,17 @@ export async function updateUserProfile(params: UpdateUserProfileParams): Promis
   if (profileError) throw profileError
 }
 
-// Обновить роли пользователя
+// Обновить роли пользователя — АТОМАРНО через SECURITY DEFINER RPC.
+// Раньше был delete + upsert двумя запросами: при правке СВОИХ ролей delete снимал
+// admin, upsert падал с 403 (is_admin стал false) и роли стирались. RPC делает всё в
+// одной транзакции, проверяет права до удаления и запрещает снять admin с самого себя.
 export async function updateUserRoles(params: UpdateUserRolesParams): Promise<void> {
-  const { error: deleteError } = await supabase
-    .from('user_roles')
-    .delete()
-    .eq('user_id', params.userId)
-  if (deleteError) throw deleteError
-
-  if (params.role_ids.length > 0) {
-    const { error: insertError } = await supabase.from('user_roles').upsert(
-      params.role_ids.map(roleId => ({
-        user_id: params.userId,
-        role_id: roleId,
-        is_primary: roleId === params.primary_role_id,
-      })),
-      { onConflict: 'user_id,role_id' }
-    )
-    if (insertError) throw insertError
-  }
+  const { error } = await supabase.rpc('admin_set_user_roles', {
+    p_user_id: params.userId,
+    p_role_ids: params.role_ids,
+    p_primary_role_id: params.primary_role_id ?? null,
+  })
+  if (error) throw error
 }
 
 // Обновить профиль текущего пользователя (ProfileSettings)
@@ -269,19 +261,13 @@ export async function updateUserRolesFull(params: {
   primaryRoleId?: string
   parts_company_id?: string | null
 }): Promise<void> {
-  const { error: deleteError } = await supabase.from('user_roles').delete().eq('user_id', params.userId)
-  if (deleteError) throw deleteError
-
-  if (params.roleIds.length > 0) {
-    const { error: insertError } = await supabase.from('user_roles').insert(
-      params.roleIds.map(roleId => ({
-        user_id: params.userId,
-        role_id: roleId,
-        is_primary: roleId === params.primaryRoleId,
-      }))
-    )
-    if (insertError) throw insertError
-  }
+  // Атомарно через RPC (см. updateUserRoles) — без риска стереть роли при сбое вставки.
+  const { error: rolesError } = await supabase.rpc('admin_set_user_roles', {
+    p_user_id: params.userId,
+    p_role_ids: params.roleIds,
+    p_primary_role_id: params.primaryRoleId ?? null,
+  })
+  if (rolesError) throw rolesError
 
   const { error: updateError } = await supabase
     .from('user_profiles')
