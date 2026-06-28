@@ -30,11 +30,11 @@ import { useSortable } from '@dnd-kit/sortable'
 import { useDroppable } from '@dnd-kit/core'
 
 // ─── Статусы для канбана ─────────────────────────────────────────────────────
-const BOARD_COLUMNS: { status: PartsOrderStatus; label: string; dot: string; ring: string }[] = [
-  { status: 'new',         label: 'Новый',     dot: 'bg-blue-500',    ring: 'ring-blue-400'    },
-  { status: 'assembling',  label: 'Сборка',    dot: 'bg-amber-400',   ring: 'ring-amber-400'   },
-  { status: 'shipped',     label: 'Отправлен', dot: 'bg-indigo-500',  ring: 'ring-indigo-400'  },
-  { status: 'completed',   label: 'Завершён',  dot: 'bg-emerald-500', ring: 'ring-emerald-500' },
+const BOARD_COLUMNS: { status: PartsOrderStatus; label: string; dot: string }[] = [
+  { status: 'new',         label: 'Новый',     dot: 'bg-blue-500'    },
+  { status: 'assembling',  label: 'Сборка',    dot: 'bg-amber-400'   },
+  { status: 'shipped',     label: 'Отправлен', dot: 'bg-indigo-500'  },
+  { status: 'completed',   label: 'Завершён',  dot: 'bg-emerald-500' },
 ]
 
 // ─── Draggable карточка на доске ─────────────────────────────────────────────
@@ -87,7 +87,6 @@ interface BoardColumnProps {
   status: PartsOrderStatus
   label: string
   dot: string
-  ring: string
   orders: PartsOrder[]
   formatUSD: (v?: number | null) => string
   computeOrderUSD: (o: PartsOrder) => number | null
@@ -95,9 +94,12 @@ interface BoardColumnProps {
   activeId: string | null
 }
 
-function BoardColumn({ status, label, dot, ring, orders, formatUSD, computeOrderUSD, onCardClick, activeId }: BoardColumnProps) {
+function BoardColumn({ status, label, dot, orders, formatUSD, computeOrderUSD, onCardClick, activeId }: BoardColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
   const { t } = useTranslation('cabinet')
+
+  // Сумма заказов колонки (USD-нормализовано) — как в Twenty: этап + кол-во + сумма.
+  const totalUSD = orders.reduce((s, o) => s + (computeOrderUSD(o) ?? 0), 0)
 
   return (
     <div
@@ -105,13 +107,16 @@ function BoardColumn({ status, label, dot, ring, orders, formatUSD, computeOrder
       className="flex flex-col min-h-[200px] rounded-xl p-3 transition-colors"
       style={{ background: isOver ? 'var(--cab-signal-weak)' : 'var(--cab-surface-2)', boxShadow: isOver ? '0 0 0 1px var(--cab-signal)' : undefined }}
     >
-      {/* Заголовок колонки */}
+      {/* Заголовок колонки: точка · название · кол-во · сумма */}
       <div className="flex items-center gap-2 mb-3 px-1">
         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
         <span className="text-sm font-bold" style={{ color: 'var(--cab-ink)' }}>{label}</span>
-        <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ring-1 ${ring} bg-white`} style={{ color: 'var(--cab-ink-2)' }}>
-          {orders.length}
-        </span>
+        <span className="text-xs font-semibold" style={{ color: 'var(--cab-ink-3)' }}>{orders.length}</span>
+        {totalUSD > 0 && (
+          <span className="ml-auto text-xs font-semibold tabular-nums" style={{ color: 'var(--cab-ink-2)' }}>
+            {formatUSD(totalUSD)}
+          </span>
+        )}
       </div>
 
       {/* Карточки */}
@@ -455,7 +460,6 @@ export default function PartsOrders() {
                           status={col.status}
                           label={t(`ordersPage.boardCol_${col.status}`)}
                           dot={col.dot}
-                          ring={col.ring}
                           orders={colOrders}
                           formatUSD={formatUSD}
                           computeOrderUSD={computeOrderUSD}
