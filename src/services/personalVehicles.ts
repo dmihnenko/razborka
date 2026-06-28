@@ -377,6 +377,25 @@ export async function deleteVehiclePhoto(
   if (error) throw error
 }
 
+// Алфавит кода доступа — без неоднозначных символов (I, O, 0, 1, L).
+const SHARE_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789' // 31 символ
+const SHARE_CODE_LEN = 8
+
+/**
+ * Криптостойкий код доступа (8 симв., ~31^8 ≈ 8.5·10¹¹ вариантов).
+ * Старый код был 4 цифры (9000 вариантов) — перебирался через анонимный RPC за секунды.
+ * Длинный код делает перебор бессмысленным без всякого rate-limit.
+ */
+function generateShareCode(): string {
+  const bytes = new Uint8Array(SHARE_CODE_LEN)
+  crypto.getRandomValues(bytes)
+  let out = ''
+  for (let i = 0; i < SHARE_CODE_LEN; i++) {
+    out += SHARE_CODE_ALPHABET[bytes[i] % SHARE_CODE_ALPHABET.length]
+  }
+  return out
+}
+
 /**
  * Создать код доступа
  */
@@ -385,12 +404,12 @@ export async function createVehicleShareLink(
   userId: string,
   expiresInDays?: number
 ): Promise<VehicleShareLink> {
-  // Генерировать уникальный 4-значный код
+  // Генерировать уникальный криптостойкий код
   let code: string
   let isUnique = false
 
   while (!isUnique) {
-    code = String(Math.floor(1000 + Math.random() * 9000))
+    code = generateShareCode()
 
     // Глобальная уникальность кода проверяется через SECURITY DEFINER RPC:
     // владелец напрямую видит только свои коды, поэтому проверку делает функция.
@@ -453,9 +472,11 @@ export async function deactivateVehicleShareLink(linkId: string): Promise<void> 
  * Валидация кода доступа (возвращает ID автомобиля или null)
  */
 export async function validateVehicleShareCode(code: string): Promise<string | null> {
+  // Нормализуем: новый код — заглавные A–Z/2–9; старый 4-значный числовой не меняется.
+  const normalized = code.trim().toUpperCase()
   // Резолв через SECURITY DEFINER RPC: таблица кодов не читается напрямую (anon её
-  // больше не видит — закрыт перебор 4-значных кодов). RPC проверяет is_active + срок.
-  const { data, error } = await supabase.rpc('validate_vehicle_share_code', { p_code: code })
+  // больше не видит). RPC проверяет is_active + срок.
+  const { data, error } = await supabase.rpc('validate_vehicle_share_code', { p_code: normalized })
   if (error || !data) return null
   return data as string
 }

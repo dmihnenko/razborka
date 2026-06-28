@@ -20,10 +20,11 @@ export default function VehicleAccessPage() {
   }, [searchParams])
 
   const handleAccess = async (accessCode: string) => {
-    const trimmedCode = accessCode.trim()
+    // Новый код — 8 симв. (A–Z/2–9); старые ссылки с 4-значным числовым кодом ещё работают.
+    const trimmedCode = accessCode.trim().toUpperCase()
 
-    if (!/^\d{4}$/.test(trimmedCode)) {
-      setError('Код должен состоять из 4 цифр')
+    if (!/^[A-Z0-9]{4,8}$/.test(trimmedCode)) {
+      setError('Неверный формат кода')
       return
     }
 
@@ -53,7 +54,8 @@ export default function VehicleAccessPage() {
   }
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 4)
+    // Буквы+цифры, до 8 симв., в верхний регистр (старые числовые коды тоже проходят).
+    const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8)
     setCode(value)
     setError('')
   }
@@ -78,7 +80,7 @@ export default function VehicleAccessPage() {
               >
                 Доступ к автомобилю
               </h1>
-              <p className="text-sm text-gray-500">Введите 4-значный код доступа</p>
+              <p className="text-sm text-gray-500">Введите код доступа</p>
             </div>
 
             {/* Форма */}
@@ -97,8 +99,10 @@ export default function VehicleAccessPage() {
                     <input
                       id="access-code"
                       type="text"
-                      inputMode="numeric"
-                      pattern="\d{4}"
+                      inputMode="text"
+                      autoCapitalize="characters"
+                      autoComplete="off"
+                      pattern="[A-Za-z0-9]{4,8}"
                       value={code}
                       onChange={handleCodeChange}
                       disabled={loading}
@@ -112,11 +116,11 @@ export default function VehicleAccessPage() {
                         paddingRight: '16px',
                         paddingTop: '16px',
                         paddingBottom: '16px',
-                        fontSize: '32px',
-                        letterSpacing: '0.4em',
+                        fontSize: '28px',
+                        letterSpacing: '0.3em',
                       }}
-                      placeholder="0000"
-                      maxLength={4}
+                      placeholder="--------"
+                      maxLength={8}
                       required
                       autoFocus
                       aria-invalid={!!error}
@@ -132,7 +136,7 @@ export default function VehicleAccessPage() {
 
                 <button
                   type="submit"
-                  disabled={loading || code.length !== 4}
+                  disabled={loading || code.length < 4}
                   className="cab-btn cab-btn-primary cab-btn-lg w-full"
                 >
                   {loading ? (
@@ -151,7 +155,7 @@ export default function VehicleAccessPage() {
                   Код можно получить у владельца автомобиля
                 </p>
                 <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
-                  <span>• 4 цифры</span>
+                  <span>• Код или ссылка</span>
                   <span>• Безопасно</span>
                   <span>• Только для чтения</span>
                 </div>
