@@ -149,6 +149,26 @@ export async function adminSetCompanySubscription(
   if (error) throw error
 }
 
+export interface SubscriptionPayment {
+  id: string
+  company: string | null
+  plan: string | null
+  months: number
+  amount: number
+  currency: string
+  provider: string
+  status: string
+  created_at: string
+  paid_at: string | null
+}
+
+/** Админ: история платежей подписок (LiqPay + ручные назначения). */
+export async function getSubscriptionPayments(limit = 100): Promise<SubscriptionPayment[]> {
+  const { data, error } = await supabase.rpc('admin_get_subscription_payments', { p_limit: limit })
+  if (error) throw error
+  return (data ?? []) as SubscriptionPayment[]
+}
+
 export async function deactivateSubscription(id: string) {
   const { error } = await supabase
     .from('company_subscriptions')

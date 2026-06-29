@@ -11,7 +11,7 @@ import {
   deactivateSubscription, deleteCompanySubscription, assignSubscription, adminSetCompanySubscription,
   getPartsCompanies,
   getSubscriptionRequests, approveSubscriptionRequest, rejectSubscriptionRequest,
-  getPartsCompaniesUsage,
+  getPartsCompaniesUsage, getSubscriptionPayments,
 } from '@/services/subscriptionService'
 import type { CompanySubscription, Subscription } from '@/types/subscription'
 import { durationLabel } from '@/config/subscriptionPlans'
@@ -58,7 +58,7 @@ const STATUS_STYLE = {
 // ─── component ────────────────────────────────────────────────────────────────
 
 export default function Subscriptions() {
-  const [activeTab, setActiveTab] = useState<'companies' | 'plans' | 'requests'>('companies')
+  const [activeTab, setActiveTab] = useState<'companies' | 'plans' | 'requests' | 'payments'>('companies')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [renewing, setRenewing] = useState<CompanySubscription | null>(null)
@@ -79,6 +79,7 @@ export default function Subscriptions() {
   const { data: partsCompanies = [] } = useQuery({ queryKey: ['parts-companies-list'], queryFn: getPartsCompanies })
   const { data: requests = [] } = useQuery({ queryKey: ['subscription-requests'], queryFn: () => getSubscriptionRequests('pending') })
   const { data: partsUsageMap = {} } = useQuery({ queryKey: ['parts-companies-usage'], queryFn: getPartsCompaniesUsage, staleTime: 2 * 60 * 1000 })
+  const { data: payments = [], isLoading: paymentsLoading } = useQuery({ queryKey: ['subscription-payments'], queryFn: () => getSubscriptionPayments(200), enabled: activeTab === 'payments' })
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['company-subscriptions'] })
@@ -137,7 +138,9 @@ export default function Subscriptions() {
       const q = search.toLowerCase()
       list = list.filter(s => s.company?.name?.toLowerCase().includes(q) || s.subscription?.name?.toLowerCase().includes(q))
     }
-    if (statusFilter !== 'all') {
+    if (statusFilter === 'demo') {
+      list = list.filter(s => s.subscription?.is_demo)
+    } else if (statusFilter !== 'all') {
       list = list.filter(s => subStatus(s) === statusFilter)
     }
     return list
@@ -205,6 +208,7 @@ export default function Subscriptions() {
           {[
             { key: 'requests',  label: `Заявки (${requests.length})` },
             { key: 'companies', label: `Компании (${allSubs.length})` },
+            { key: 'payments',  label: 'Платежи' },
             { key: 'plans',     label: 'Тарифные планы' },
           ].map(t => (
             <button key={t.key} onClick={() => setActiveTab(t.key as any)}
@@ -296,6 +300,7 @@ export default function Subscriptions() {
                 <option value="expiring">Истекают</option>
                 <option value="expired">Просроченные</option>
                 <option value="inactive">Неактивные</option>
+                <option value="demo">Демо (бесплатные)</option>
               </select>
             </div>
 
@@ -334,7 +339,11 @@ export default function Subscriptions() {
                               <span className="font-semibold text-gray-900 truncate">{sub.company?.name || '—'}</span>
                             </div>
                           </td>
-                          <td className="table-cell whitespace-nowrap">{sub.subscription?.name || '—'}</td>
+                          <td className="table-cell whitespace-nowrap">
+                            {sub.subscription?.is_demo
+                              ? <span className="badge badge-gray">Демо</span>
+                              : (sub.subscription?.name || '—')}
+                          </td>
                           <td className="table-cell"><span className={stStyle.cls}>{stStyle.label}</span></td>
                           <td className="table-cell whitespace-nowrap">
                             <span className="text-gray-600">{sub.end_date ? new Date(sub.end_date).toLocaleDateString('ru-RU') : '∞'}</span>
@@ -382,6 +391,61 @@ export default function Subscriptions() {
                         </tr>
                       )
                     })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Payments tab ── */}
+        {activeTab === 'payments' && (
+          <div>
+            {paymentsLoading ? (
+              <div className="flex justify-center py-12"><Spinner size="lg" /></div>
+            ) : payments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <CreditCard className="w-12 h-12 text-gray-200 mb-3" />
+                <p className="font-medium text-gray-500">Платежей пока нет</p>
+                <p className="text-sm text-gray-400 mt-1">Здесь появятся оплаты картой (LiqPay) и ручные назначения платных тарифов</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr>
+                      <th className="table-header-cell">Дата</th>
+                      <th className="table-header-cell">Компания</th>
+                      <th className="table-header-cell">Тариф</th>
+                      <th className="table-header-cell">Срок</th>
+                      <th className="table-header-cell text-right">Сумма</th>
+                      <th className="table-header-cell">Способ</th>
+                      <th className="table-header-cell">Статус</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.map(p => (
+                      <tr key={p.id} className="table-row">
+                        <td className="table-cell whitespace-nowrap">{new Date(p.paid_at || p.created_at).toLocaleDateString('ru-RU')}</td>
+                        <td className="table-cell">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                            <span className="font-semibold text-gray-900 truncate">{p.company || '—'}</span>
+                          </div>
+                        </td>
+                        <td className="table-cell whitespace-nowrap">{p.plan || '—'}</td>
+                        <td className="table-cell whitespace-nowrap">{p.months ? `${p.months} мес.` : '—'}</td>
+                        <td className="table-cell text-right tabular-nums whitespace-nowrap font-semibold">{Math.round(p.amount).toLocaleString('ru-RU')} {p.currency === 'UAH' ? '₴' : p.currency}</td>
+                        <td className="table-cell whitespace-nowrap">
+                          <span className="badge badge-gray">{p.provider === 'manual' ? 'Вручную' : p.provider === 'liqpay' ? 'LiqPay' : p.provider}</span>
+                        </td>
+                        <td className="table-cell">
+                          <span className={`badge ${p.status === 'paid' ? 'badge-green' : p.status === 'pending' ? 'badge-yellow' : 'badge-gray'}`}>
+                            {p.status === 'paid' ? 'Оплачен' : p.status === 'pending' ? 'Ожидает' : p.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
