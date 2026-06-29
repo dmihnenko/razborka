@@ -244,7 +244,7 @@ export default function UserEdit() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-5 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] max-w-lg mx-auto w-full">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] max-w-3xl mx-auto w-full">
 
         {/* Карточка пользователя */}
         <div className="card p-4 mb-5 flex items-center gap-3">
