@@ -1,16 +1,15 @@
 import { useState, useMemo } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import {
-  CreditCard, TrendingUp, Plus, Trash2, Calendar, Building2,
-  CheckCircle2, XCircle, Search, X, Infinity, Edit2, RotateCw, Car, Package, User,
-  Bell, ChevronRight,
+  CreditCard, Plus, Trash2, Building2,
+  CheckCircle2, XCircle, Search, X, Edit2, RotateCw, Car, Package, User,
+  Bell, ChevronRight, ChevronLeft, Layers, Check,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   getSubscriptionPlans, getAllCompanySubscriptions, getSubscriptionStats,
   deactivateSubscription, deleteCompanySubscription, assignSubscription, adminSetCompanySubscription,
-  getPartsCompanies,
   getSubscriptionRequests, approveSubscriptionRequest, rejectSubscriptionRequest,
   getPartsCompaniesUsage, getSubscriptionPayments,
 } from '@/services/subscriptionService'
@@ -21,11 +20,11 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import Modal from '@/components/ui/Modal'
 
 const DURATION_OPTIONS = [
-  { value: 1,  label: '1 месяц' },
-  { value: 2,  label: '2 месяца' },
-  { value: 3,  label: '3 месяца' },
-  { value: 6,  label: '6 месяцев' },
-  { value: 12, label: '12 месяцев (год)' },
+  { value: 1,  label: '1 мес' },
+  { value: 2,  label: '2 мес' },
+  { value: 3,  label: '3 мес' },
+  { value: 6,  label: '6 мес' },
+  { value: 12, label: '12 мес' },
 ]
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -50,41 +49,59 @@ function subStatus(sub: CompanySubscription): 'active' | 'expiring' | 'expired' 
 }
 
 const STATUS_STYLE = {
-  active:   { label: 'Активна',     cls: 'badge badge-green' },
-  expiring: { label: 'Истекает',    cls: 'badge badge-yellow' },
-  expired:  { label: 'Просрочена',  cls: 'badge badge-red' },
-  inactive: { label: 'Неактивна',   cls: 'badge badge-gray' },
+  active:   { label: 'Активна',    cls: 'badge badge-green',  dot: 'bg-green-500', rail: 'before:bg-green-400' },
+  expiring: { label: 'Истекает',   cls: 'badge badge-yellow', dot: 'bg-amber-500', rail: 'before:bg-amber-400' },
+  expired:  { label: 'Просрочена', cls: 'badge badge-red',    dot: 'bg-red-500',   rail: 'before:bg-red-400' },
+  inactive: { label: 'Неактивна',  cls: 'badge badge-gray',   dot: 'bg-gray-400',  rail: 'before:bg-gray-300' },
+}
+
+// Инициалы компании для аватара-бокса
+function initials(name?: string | null): string {
+  if (!name) return '—'
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  if (words.length === 0) return '—'
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
+  return (words[0][0] + words[1][0]).toUpperCase()
+}
+
+// Цвет прогресс-бара лимита по заполнению
+function barColor(used: number, max: number | null | undefined): string {
+  if (max == null) return 'var(--cab-signal)'
+  if (used >= max) return '#DC2626'
+  const pct = used / max
+  if (pct >= 0.9) return '#DC2626'
+  if (pct >= 0.7) return '#D97706'
+  return '#16A34A'
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
 
 export default function Subscriptions() {
-  const [activeTab, setActiveTab] = useState<'companies' | 'plans' | 'requests' | 'payments'>('companies')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null)
   const [renewing, setRenewing] = useState<CompanySubscription | null>(null)
-  const [isAssignOpen, setIsAssignOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<Subscription | null>(null)
-  const [assignForm, setAssignForm] = useState({
-    companyType: 'parts' as const,
-    companyId: '',
-    subscriptionId: '',
-    months: 1,
-  })
+  const [requestsOpen, setRequestsOpen] = useState(false)
+  const [plansOpen, setPlansOpen] = useState(false)
+  // Состояние выбора в детальной панели (план + срок)
+  const [draftPlanId, setDraftPlanId] = useState<string>('')
+  const [draftMonths, setDraftMonths] = useState<number>(1)
+
   const queryClient = useQueryClient()
   const { confirm: showConfirm, dialogProps } = useConfirm()
 
   const { data: plans = [], isLoading: plansLoading } = useQuery({ queryKey: ['subscription-plans'], queryFn: getSubscriptionPlans })
   const { data: allSubs = [],  isLoading: subsLoading  } = useQuery({ queryKey: ['company-subscriptions'], queryFn: getAllCompanySubscriptions })
   const { data: stats } = useQuery({ queryKey: ['subscription-stats'], queryFn: getSubscriptionStats })
-  const { data: partsCompanies = [] } = useQuery({ queryKey: ['parts-companies-list'], queryFn: getPartsCompanies })
   const { data: requests = [] } = useQuery({ queryKey: ['subscription-requests'], queryFn: () => getSubscriptionRequests('pending') })
   const { data: partsUsageMap = {} } = useQuery({ queryKey: ['parts-companies-usage'], queryFn: getPartsCompaniesUsage, staleTime: 2 * 60 * 1000 })
-  const { data: payments = [], isLoading: paymentsLoading } = useQuery({ queryKey: ['subscription-payments'], queryFn: () => getSubscriptionPayments(200), enabled: activeTab === 'payments' })
+  const { data: payments = [] } = useQuery({ queryKey: ['subscription-payments'], queryFn: () => getSubscriptionPayments(200) })
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['company-subscriptions'] })
     queryClient.invalidateQueries({ queryKey: ['subscription-stats'] })
+    queryClient.invalidateQueries({ queryKey: ['subscription-payments'] })
   }
 
   const approveMutation = useMutation({
@@ -102,7 +119,7 @@ export default function Subscriptions() {
     // через защищённый RPC: end_date считает сервер (months → срок; null → бессрочно)
     mutationFn: ({ companyId, planId, months }: { companyId: string; planId: string; months: number | null }) =>
       adminSetCompanySubscription(companyId, planId, months),
-    onSuccess: () => { invalidate(); toast.success('Подписка назначена'); setIsAssignOpen(false); setAssignForm({ companyType: 'parts', companyId: '', subscriptionId: '', months: 1 }) },
+    onSuccess: () => { invalidate(); toast.success('Подписка назначена') },
     onError: (e: any) => toast.error(e.message || 'Ошибка'),
   })
 
@@ -114,7 +131,7 @@ export default function Subscriptions() {
 
   const deleteMutation = useMutation({
     mutationFn: deleteCompanySubscription,
-    onSuccess: () => { invalidate(); toast.success('Удалено') },
+    onSuccess: () => { invalidate(); toast.success('Удалено'); setSelectedCompanyId(null) },
     onError: () => toast.error('Ошибка удаления'),
   })
 
@@ -132,7 +149,7 @@ export default function Subscriptions() {
     onError: (e: any) => toast.error(e.message || 'Ошибка продления'),
   })
 
-  // Filtered company subscriptions
+  // Filtered company subscriptions (для списка слева)
   const filtered = useMemo(() => {
     let list = allSubs as CompanySubscription[]
     if (search.trim()) {
@@ -160,422 +177,364 @@ export default function Subscriptions() {
     return c
   }, [allSubs])
 
-  const companies  = partsCompanies
-  const filteredPlans = plans.filter(p => p.company_type === assignForm.companyType)
-  const selectedPlan  = plans.find(p => p.id === assignForm.subscriptionId)
+  // Выбранная подписка
+  const selected = useMemo(
+    () => (allSubs as CompanySubscription[]).find(s => s.company_id === selectedCompanyId) || null,
+    [allSubs, selectedCompanyId],
+  )
 
-  // Открыть модалку назначения, опционально предзаполнив компанию (быстрое назначение из строки)
-  const openAssignFor = (companyId = '') => {
-    setAssignForm(f => ({ ...f, companyId, subscriptionId: '', months: 1 }))
-    setIsAssignOpen(true)
+  // Планы для разборок (company_type='parts')
+  const partsPlans = useMemo(() => plans.filter(p => p.company_type === 'parts'), [plans])
+
+  // Платежи выбранной компании (по совпадению имени)
+  const selectedPayments = useMemo(() => {
+    if (!selected?.company?.name) return []
+    return payments.filter((p: any) => p.company === selected.company?.name).slice(0, 5)
+  }, [payments, selected])
+
+  // Синхронизировать черновик при смене выбранной компании
+  const syncDraft = (sub: CompanySubscription | null) => {
+    setDraftPlanId(sub?.subscription_id || '')
+    setDraftMonths(1)
+  }
+  const selectCompany = (companyId: string) => {
+    const sub = (allSubs as CompanySubscription[]).find(s => s.company_id === companyId) || null
+    setSelectedCompanyId(companyId)
+    syncDraft(sub)
+    setPlansOpen(false)
   }
 
-  const handleAssignSubmit = () => {
-    if (!assignForm.companyId || !assignForm.subscriptionId) { toast.error('Выберите компанию и план'); return }
-    const plan = plans.find(p => p.id === assignForm.subscriptionId)
-    // Бессрочно: lifetime-планы и бесплатные (Демо/Премиум, price=0). Остальные — на N месяцев.
+  // Назначить выбранный план (с учётом бессрочных/бесплатных)
+  const handleAssign = () => {
+    if (!selectedCompanyId || !draftPlanId) { toast.error('Выберите тариф'); return }
+    const plan = plans.find(p => p.id === draftPlanId)
     const termless = plan?.type === 'lifetime' || plan?.price === 0
-    const months = termless ? null : Math.max(1, assignForm.months || 1)
-    assignMutation.mutate({ companyId: assignForm.companyId, planId: assignForm.subscriptionId, months })
+    const months = termless ? null : Math.max(1, draftMonths || 1)
+    assignMutation.mutate({ companyId: selectedCompanyId, planId: draftPlanId, months })
   }
+
+  const draftPlan = plans.find(p => p.id === draftPlanId)
+  const draftTermless = draftPlan ? (draftPlan.type === 'lifetime' || draftPlan.price === 0) : false
+  const draftTotal = draftPlan && !draftTermless ? draftPlan.price * (draftMonths || 1) : 0
+
+  // KPI: «требуют внимания сейчас» = истекают + просрочено + заявки
+  const attention = statusCounts.expiring + statusCounts.expired + requests.length
 
   return (
-    <div className="w-full space-y-5 pb-10">
+    <div className="w-full space-y-5 pb-12">
 
-      {/* ── Page header ── */}
-      <div className="flex items-center justify-between gap-4">
+      {/* ── Тонкая шапка: заголовок + инлайн-KPI + действие ── */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
+          <p className="kicker mb-1">Биллинг · авторазборки</p>
           <h1 className="page-title">Подписки</h1>
-          <p className="page-subtitle">Управление тарифами авторазборок</p>
         </div>
-        <button onClick={() => openAssignFor()}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors">
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Назначить</span>
-        </button>
+
+        <div className="flex items-center gap-5">
+          {/* Инлайн-KPI */}
+          <div className="hidden sm:flex items-stretch">
+            <div className="flex flex-col px-4 border-r border-gray-200">
+              <span className="text-base font-bold tabular-nums tracking-tight text-gray-900">
+                {(stats?.revenue_this_month || 0).toLocaleString('ru-RU')} ₴
+              </span>
+              <span className="text-[11px] uppercase tracking-wide text-gray-500 mt-0.5">Доход / мес</span>
+            </div>
+            <div className="flex flex-col px-4 border-r border-gray-200">
+              <span className="text-base font-bold tabular-nums tracking-tight text-gray-900">{stats?.total_active || 0}</span>
+              <span className="text-[11px] uppercase tracking-wide text-gray-500 mt-0.5">Активных</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => attention > 0 && setStatusFilter('expiring')}
+              className="flex flex-col px-4 text-left disabled:cursor-default"
+              disabled={attention === 0}
+            >
+              <span className={`text-base font-bold tabular-nums tracking-tight ${attention > 0 ? 'text-amber-600' : 'text-gray-900'}`}>{attention}</span>
+              <span className="text-[11px] uppercase tracking-wide text-gray-500 mt-0.5">Требуют внимания</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPlansOpen(o => !o)}
+              className="cab-btn cab-btn-secondary cab-btn-lg shrink-0"
+            >
+              <Layers className="w-4 h-4" />
+              <span className="hidden sm:inline">Тарифные планы</span>
+            </button>
+            {selectedCompanyId && (
+              <button
+                type="button"
+                onClick={() => { setSelectedCompanyId(null); syncDraft(null) }}
+                className="cab-btn cab-btn-primary cab-btn-lg shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Новой компании</span>
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* ── Stats row ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {[
-          { label: 'Активных',   value: stats?.total_active || 0,   icon: CheckCircle2, signal: true },
-          { label: 'Месячных',   value: stats?.total_monthly || 0,  icon: Calendar,     signal: false },
-          { label: 'Годовых',    value: stats?.total_yearly || 0,   icon: TrendingUp,   signal: false },
-          { label: 'Бессрочных', value: stats?.total_lifetime || 0, icon: Infinity,     signal: false },
-          { label: 'Доход/мес',  value: `${(stats?.revenue_this_month || 0).toLocaleString()} грн.`, icon: CreditCard, signal: true },
-        ].map(({ label, value, icon: Icon, signal }) => (
-          <div key={label} className="stat-card !min-h-0 !flex-row !items-center gap-3 p-4">
-            <div className={`icon-tile w-9 h-9 ${signal ? 'bg-indigo-50' : 'bg-gray-100'}`}>
-              <Icon className={`w-4 h-4 ${signal ? 'text-indigo-600' : 'text-gray-500'}`} strokeWidth={1.5} />
+      {/* ── Баннер очереди заявок ── */}
+      {requests.length > 0 && (
+        <div className="rounded-2xl bg-white border-l-4 border-amber-400 border-y border-r border-y-amber-200 border-r-amber-200 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setRequestsOpen(o => !o)}
+            className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-amber-50/50 transition-colors"
+          >
+            <span className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <Bell className="w-4.5 h-4.5 text-amber-600" strokeWidth={1.75} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-gray-900 text-sm">
+                {requests.length} {requests.length === 1 ? 'заявка ждёт' : requests.length < 5 ? 'заявки ждут' : 'заявок ждут'} подтверждения
+              </p>
+              <p className="text-xs text-gray-500">Нажмите, чтобы {requestsOpen ? 'свернуть' : 'подтвердить или отклонить'}</p>
             </div>
-            <div className="min-w-0">
-              <p className="text-lg font-bold text-gray-900 leading-tight">{value}</p>
-              <p className="text-xs text-gray-500 truncate">{label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+            <ChevronRight className={`w-5 h-5 text-amber-400 flex-shrink-0 transition-transform ${requestsOpen ? 'rotate-90' : ''}`} strokeWidth={1.75} />
+          </button>
 
-      {/* ── Баннер: заявки ждут подтверждения (самое срочное решение) ── */}
-      {requests.length > 0 && activeTab !== 'requests' && (
-        <button onClick={() => setActiveTab('requests')}
-          className="w-full flex items-center gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-left hover:bg-amber-100 transition-colors">
-          <span className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-            <Bell className="w-5 h-5 text-amber-600" strokeWidth={1.5} />
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-amber-900">
-              {requests.length} {requests.length === 1 ? 'заявка ждёт' : requests.length < 5 ? 'заявки ждут' : 'заявок ждут'} подтверждения
-            </p>
-            <p className="text-sm text-amber-700">Нажмите, чтобы рассмотреть</p>
-          </div>
-          <ChevronRight className="w-5 h-5 text-amber-500 flex-shrink-0" strokeWidth={1.5} />
-        </button>
+          {requestsOpen && (
+            <div className="px-4 pb-4 pt-1 space-y-2.5 border-t border-amber-100">
+              {requests.map((r: any) => (
+                <div key={r.id}
+                  className="rounded-xl border border-gray-200 bg-white p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <Building2 className="w-4 h-4 text-gray-500" strokeWidth={1.75} />
+                      </span>
+                      <span className="font-bold text-gray-900 text-sm truncate">{r.company_name}</span>
+                      <span className="badge badge-gray">Разборка</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 flex-wrap pl-9">
+                      <span className="font-semibold text-gray-700">{r.plan?.name || 'Тариф'}</span>
+                      <span className="text-gray-300">·</span>
+                      <span>{durationLabel(r.months)}</span>
+                      <span className="text-gray-300">·</span>
+                      <span>{new Date(r.created_at).toLocaleDateString('ru-RU')}</span>
+                    </div>
+                    {(r.payment_proof_url || r.client_note) && (
+                      <div className="mt-2 flex items-center gap-2 flex-wrap text-xs pl-9">
+                        {r.payment_proof_url && (
+                          <a href={r.payment_proof_url} target="_blank" rel="noopener noreferrer"
+                             className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-semibold hover:bg-emerald-100 transition-colors">
+                            <CreditCard className="w-3.5 h-3.5" /> Скрин оплаты
+                          </a>
+                        )}
+                        {r.client_note && <span className="text-gray-500 italic truncate">«{r.client_note}»</span>}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0 sm:flex-col sm:w-36">
+                    <button
+                      onClick={() => approveMutation.mutate(r.id)}
+                      disabled={approveMutation.isPending}
+                      className="cab-btn cab-btn-success cab-btn-sm flex-1 sm:w-full"
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> Подтвердить
+                    </button>
+                    <button
+                      onClick={() => rejectMutation.mutate(r.id)}
+                      disabled={rejectMutation.isPending}
+                      className="cab-btn cab-btn-danger cab-btn-sm flex-1 sm:w-full"
+                    >
+                      <XCircle className="w-4 h-4" /> Отклонить
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
-      {/* ── Tabs ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="flex border-b border-gray-100">
-          {[
-            { key: 'requests',  label: `Заявки (${requests.length})` },
-            { key: 'companies', label: `Компании (${allSubs.length})` },
-            { key: 'payments',  label: 'Платежи' },
-            { key: 'plans',     label: 'Тарифные планы' },
-          ].map(t => (
-            <button key={t.key} onClick={() => setActiveTab(t.key as any)}
-              className={`px-5 py-3.5 text-sm font-semibold transition-colors ${activeTab === t.key ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-800'}`}>
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {/* ── Requests tab ── */}
-        {activeTab === 'requests' && (
-          <div className="p-4">
-            {requests.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-14 text-center">
-                <CheckCircle2 className="w-12 h-12 text-gray-200 mb-3" />
-                <p className="font-medium text-gray-500">Нет новых заявок</p>
-                <p className="text-sm text-gray-400 mt-1">Заявки владельцев на подписку появятся здесь</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-50">
-                {requests.map((r: any) => (
-                  <div key={r.id} className="py-3.5 flex items-center gap-3 flex-wrap">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <span className="font-semibold text-gray-900 text-sm truncate">{r.company_name}</span>
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                          Разборка
-                        </span>
+      {/* ── Раскрываемая секция «Тарифные планы» ── */}
+      {plansOpen && (
+        <div className="card p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-bold uppercase tracking-wide text-gray-500">Тарифные планы</p>
+            <button type="button" onClick={() => setPlansOpen(false)} className="btn-icon-sm"><X className="w-4 h-4" /></button>
+          </div>
+          {plansLoading ? (
+            <div className="flex justify-center py-10"><Spinner size="lg" /></div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {plans.map(plan => {
+                const companiesOnPlan = allSubs.filter(s => s.subscription_id === plan.id && s.is_active).length
+                const typeLabel = plan.type === 'lifetime' ? 'Бессрочный' : plan.price === 0 ? 'Демо' : 'Месячный'
+                const free = plan.price === 0
+                return (
+                  <div key={plan.id}
+                    className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white overflow-hidden transition-all hover:border-gray-300 hover:shadow-sm">
+                    <span className="absolute inset-x-0 top-0 h-1" style={{ background: 'var(--brand-gradient)' }} />
+                    <div className="p-5 flex flex-col flex-1">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="kicker">{typeLabel}</span>
+                        <button onClick={() => setEditingPlan(plan)}
+                          className="btn-icon-sm opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+                          title="Редактировать план">
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
-                        <span className="font-medium text-gray-700">{r.plan?.name || 'Тариф'}</span>
-                        <span>·</span>
-                        <span>Срок: {durationLabel(r.months)}</span>
-                        <span>·</span>
-                        <span>{new Date(r.created_at).toLocaleDateString('ru-RU')}</span>
+                      <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
+                      <div className="mt-2 mb-4 flex items-baseline gap-1">
+                        <span className="text-3xl font-extrabold text-gray-900 tracking-tight tabular-nums">{plan.price.toLocaleString()}</span>
+                        <span className="text-sm text-gray-500">грн{plan.type === 'lifetime' ? ' · навсегда' : free ? '' : '/мес'}</span>
                       </div>
-                      {(r.payment_proof_url || r.client_note) && (
-                        <div className="mt-1.5 flex items-center gap-2 flex-wrap text-xs">
-                          {r.payment_proof_url && (
-                            <a href={r.payment_proof_url} target="_blank" rel="noopener noreferrer"
-                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium hover:bg-emerald-100">
-                              🧾 Скрин оплаты
-                            </a>
-                          )}
-                          {r.client_note && <span className="text-gray-500 italic truncate">«{r.client_note}»</span>}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <button
-                        onClick={() => approveMutation.mutate(r.id)}
-                        disabled={approveMutation.isPending}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        <CheckCircle2 className="w-4 h-4" /> Подтвердить
-                      </button>
-                      <button
-                        onClick={() => rejectMutation.mutate(r.id)}
-                        disabled={rejectMutation.isPending}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        <XCircle className="w-4 h-4" /> Отклонить
-                      </button>
+                      <div className="space-y-2 mb-4 flex-1">
+                        {plan.is_custom ? (
+                          <p className="text-sm font-medium text-gray-500">Индивидуальные условия</p>
+                        ) : (
+                          ([
+                            [Car, 'Машин', plan.max_vehicles],
+                            [Package, 'Запчастей', plan.max_parts],
+                            [User, 'Сотрудников', plan.max_workers],
+                          ] as const).map(([Icon, label, val]) => (
+                            <div key={label} className="flex items-center justify-between text-sm">
+                              <span className="flex items-center gap-2 text-gray-500">
+                                <Icon className="w-4 h-4 text-gray-400" strokeWidth={1.75} /> {label}
+                              </span>
+                              <span className="font-bold text-gray-900 tabular-nums">{val ?? '∞'}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <div className="pt-3 border-t border-gray-100 flex items-center gap-1.5 text-xs">
+                        <Layers className="w-3.5 h-3.5 text-gray-400" strokeWidth={1.75} />
+                        {companiesOnPlan > 0
+                          ? <span className="text-gray-600">На плане: <b className="text-gray-900">{companiesOnPlan}</b></span>
+                          : <span className="text-gray-400">Никто не подписан</span>}
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Companies tab ── */}
-        {activeTab === 'companies' && (
-          <div>
-            {/* Toolbar: поиск + быстрые фильтр-чипы со счётчиками */}
-            <div className="p-4 border-b border-gray-100 space-y-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input type="text" placeholder="Поиск компании..." value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-                {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {([
-                  ['all', 'Все', statusCounts.all, false],
-                  ['active', 'Активные', statusCounts.active, false],
-                  ['expiring', 'Истекают', statusCounts.expiring, true],
-                  ['expired', 'Просрочено', statusCounts.expired, true],
-                  ['demo', 'Демо', statusCounts.demo, false],
-                ] as const).map(([key, label, count, warn]) => {
-                  const on = statusFilter === key
-                  return (
-                    <button key={key} onClick={() => setStatusFilter(key)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors ${
-                        on ? 'bg-primary text-white border-primary'
-                           : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
-                      {label}
-                      <span className={`text-xs font-bold px-1.5 rounded-full ${
-                        on ? 'bg-white/25' : warn && count > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
-                        {count}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
+                )
+              })}
             </div>
+          )}
+        </div>
+      )}
 
-            {subsLoading ? (
-              <div className="flex justify-center py-12"><Spinner size="lg" /></div>
-            ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <CreditCard className="w-12 h-12 text-gray-200 mb-3" />
-                <p className="font-medium text-gray-500">Подписки не найдены</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr>
-                      <th className="table-header-cell">Компания</th>
-                      <th className="table-header-cell">План</th>
-                      <th className="table-header-cell">Статус</th>
-                      <th className="table-header-cell">Действует до</th>
-                      <th className="table-header-cell">Загрузка</th>
-                      <th className="table-header-cell text-right">Цена</th>
-                      <th className="table-header-cell text-right">Действия</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map(sub => {
-                      const st = subStatus(sub)
-                      const stStyle = STATUS_STYLE[st]
-                      const dl = daysLeft(sub.end_date)
-                      const usage = partsUsageMap[sub.company_id]
-                      return (
-                        <tr key={sub.id} className="table-row">
-                          <td className="table-cell">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
-                              <span className="font-semibold text-gray-900 truncate">{sub.company?.name || '—'}</span>
-                            </div>
-                          </td>
-                          <td className="table-cell whitespace-nowrap">
-                            {sub.subscription?.is_demo
-                              ? <span className="badge badge-gray">Демо</span>
-                              : (sub.subscription?.name || '—')}
-                          </td>
-                          <td className="table-cell"><span className={stStyle.cls}>{stStyle.label}</span></td>
-                          <td className="table-cell whitespace-nowrap">
-                            <span className="text-gray-600">{sub.end_date ? new Date(sub.end_date).toLocaleDateString('ru-RU') : '∞'}</span>
-                            {dl !== null && dl <= 30 && (
-                              <span className={`ml-1.5 font-semibold ${dl <= 7 ? 'text-red-600' : 'text-amber-600'}`}>
-                                {dl === 0 ? 'сегодня' : `${dl} дн.`}
-                              </span>
-                            )}
-                          </td>
-                          <td className="table-cell">
-                            {usage && sub.subscription ? (
-                              <div className="flex items-center gap-3 text-xs whitespace-nowrap">
-                                {([
-                                  ['Запч', usage.parts, sub.subscription.max_parts],
-                                  ['Авто', usage.vehicles, sub.subscription.max_vehicles],
-                                ] as const).map(([label, used, max]) => (
-                                  <span key={label}>{label} <b className={max != null && used >= max ? 'text-red-600' : 'text-gray-700'}>{used}/{max ?? '∞'}</b></span>
-                                ))}
-                              </div>
-                            ) : <span className="text-gray-300">—</span>}
-                          </td>
-                          <td className="table-cell text-right tabular-nums whitespace-nowrap">{sub.subscription?.price?.toLocaleString() || 0} ₴</td>
-                          <td className="table-cell">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button onClick={() => openAssignFor(sub.company_id)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-primary border border-primary/30 hover:bg-primary/10 rounded-lg transition-colors">
-                                <Edit2 className="w-3.5 h-3.5" /> Изменить
-                              </button>
-                              <button onClick={() => setRenewing(sub)} title="Продлить"
-                                className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-50 rounded-lg transition-colors">
-                                <RotateCw className="w-4 h-4" />
-                              </button>
-                              {sub.is_active && !isExpired(sub) && (
-                                <button onClick={async () => { if (await showConfirm({ message: `Деактивировать подписку для ${sub.company?.name}?`, danger: true })) deactivateMutation.mutate(sub.id) }}
-                                  title="Деактивировать" className="w-8 h-8 flex items-center justify-center text-amber-500 hover:bg-amber-50 rounded-lg transition-colors">
-                                  <XCircle className="w-4 h-4" />
-                                </button>
-                              )}
-                              <button onClick={async () => { if (await showConfirm({ message: `Удалить подписку для ${sub.company?.name}?`, danger: true })) deleteMutation.mutate(sub.id) }}
-                                title="Удалить" className="w-8 h-8 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-lg transition-colors">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+      {/* ── Двухпанельный грид master-detail ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4 items-start">
+
+        {/* LEFT — список компаний */}
+        <div className={`card overflow-hidden ${selectedCompanyId ? 'hidden lg:block' : ''}`}>
+          {/* Поиск */}
+          <div className="p-3.5 pb-2.5">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input type="text" placeholder="Поиск компании…" value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="form-input !pl-9 !pr-8 !py-2" />
+              {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>}
+            </div>
           </div>
-        )}
 
-        {/* ── Payments tab ── */}
-        {activeTab === 'payments' && (
-          <div>
-            {paymentsLoading ? (
-              <div className="flex justify-center py-12"><Spinner size="lg" /></div>
-            ) : payments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <CreditCard className="w-12 h-12 text-gray-200 mb-3" />
-                <p className="font-medium text-gray-500">Платежей пока нет</p>
-                <p className="text-sm text-gray-400 mt-1">Здесь появятся оплаты картой (LiqPay) и ручные назначения платных тарифов</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr>
-                      <th className="table-header-cell">Дата</th>
-                      <th className="table-header-cell">Компания</th>
-                      <th className="table-header-cell">Тариф</th>
-                      <th className="table-header-cell">Срок</th>
-                      <th className="table-header-cell text-right">Сумма</th>
-                      <th className="table-header-cell">Способ</th>
-                      <th className="table-header-cell">Статус</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {payments.map(p => (
-                      <tr key={p.id} className="table-row">
-                        <td className="table-cell whitespace-nowrap">{new Date(p.paid_at || p.created_at).toLocaleDateString('ru-RU')}</td>
-                        <td className="table-cell">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
-                            <span className="font-semibold text-gray-900 truncate">{p.company || '—'}</span>
-                          </div>
-                        </td>
-                        <td className="table-cell whitespace-nowrap">{p.plan || '—'}</td>
-                        <td className="table-cell whitespace-nowrap">{p.months ? `${p.months} мес.` : '—'}</td>
-                        <td className="table-cell text-right tabular-nums whitespace-nowrap font-semibold">{Math.round(p.amount).toLocaleString('ru-RU')} {p.currency === 'UAH' ? '₴' : p.currency}</td>
-                        <td className="table-cell whitespace-nowrap">
-                          <span className="badge badge-gray">{p.provider === 'manual' ? 'Вручную' : p.provider === 'liqpay' ? 'LiqPay' : p.provider}</span>
-                        </td>
-                        <td className="table-cell">
-                          <span className={`badge ${p.status === 'paid' ? 'badge-green' : p.status === 'pending' ? 'badge-yellow' : 'badge-gray'}`}>
-                            {p.status === 'paid' ? 'Оплачен' : p.status === 'pending' ? 'Ожидает' : p.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+          {/* Фильтр-чипы со счётчиками */}
+          <div className="flex flex-wrap gap-1.5 px-3.5 pb-3 border-b border-gray-100">
+            {([
+              ['all', 'Все', statusCounts.all, false],
+              ['active', 'Активные', statusCounts.active, false],
+              ['expiring', 'Истекают', statusCounts.expiring, true],
+              ['expired', 'Просрочено', statusCounts.expired, true],
+              ['demo', 'Демо', statusCounts.demo, false],
+            ] as const).map(([key, label, count, warn]) => {
+              const on = statusFilter === key
+              return (
+                <button key={key} onClick={() => setStatusFilter(key)} className={`chip ${on ? 'chip-active' : ''}`}>
+                  {label}
+                  <span className={`text-[10px] font-bold px-1 rounded-full tabular-nums ${
+                    on ? 'bg-white/25 text-white' : warn && count > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
           </div>
-        )}
 
-        {/* ── Plans tab ── */}
-        {activeTab === 'plans' && (
-          <div className="p-4 sm:p-5">
-            {plansLoading ? (
-              <div className="flex justify-center py-12"><Spinner size="lg" /></div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {plans.map(plan => {
-                  const clr = { color: '#16A34A', bg: '#F0FDF4' }
-                  const companiesOnPlan = allSubs.filter(s => s.subscription_id === plan.id && s.is_active).length
+          {/* Прокручиваемый список */}
+          {subsLoading ? (
+            <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+          ) : filtered.length === 0 ? (
+            <div className="empty-state !py-12">
+              <div className="empty-state-icon"><CreditCard className="w-7 h-7 text-gray-300" /></div>
+              <p className="empty-state-title">Не найдено</p>
+              <p className="empty-state-text">Измените поиск или фильтр</p>
+            </div>
+          ) : (
+            <div className="max-h-[calc(100vh-260px)] lg:max-h-[660px] overflow-y-auto">
+              {filtered.map(sub => {
+                const st = subStatus(sub)
+                const stStyle = STATUS_STYLE[st]
+                const dl = daysLeft(sub.end_date)
+                const sel = sub.company_id === selectedCompanyId
+                return (
+                  <button key={sub.id} type="button" onClick={() => selectCompany(sub.company_id)}
+                    className={`group w-full flex items-center gap-3 px-3.5 py-2.5 text-left border-b border-gray-50 relative transition-colors ${
+                      sel ? 'before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-[color:var(--cab-signal)]' : 'hover:bg-gray-50'
+                    }`}
+                    style={sel ? { backgroundColor: 'var(--cab-signal-weak)' } : undefined}>
+                    <span className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                      sel ? 'bg-white border' : 'bg-gray-100 text-gray-600'}`}
+                      style={sel ? { color: 'var(--cab-signal)', borderColor: 'var(--brand-line, #C9CCF6)' } : undefined}>
+                      {initials(sub.company?.name)}
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-[13.5px] font-semibold text-gray-900 truncate">{sub.company?.name || '—'}</span>
+                      <span className="block text-[11.5px] text-gray-500 truncate mt-0.5">
+                        {sub.subscription?.is_demo ? 'Демо' : sub.subscription?.name || '—'}
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-2 flex-shrink-0">
+                      <span className={`text-xs font-semibold min-w-[42px] text-right ${
+                        sub.end_date == null ? 'text-gray-400 font-medium'
+                          : st === 'expired' ? 'text-red-600'
+                          : st === 'expiring' ? 'text-amber-600'
+                          : 'text-gray-600'}`}>
+                        {sub.end_date == null ? '∞' : dl === 0 ? 'сегодня' : `${dl} дн.`}
+                      </span>
+                      <span className={`w-2 h-2 rounded-full ${stStyle.dot}`} />
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
 
-                  return (
-                    <div key={plan.id}
-                      className="relative rounded-2xl border-2 overflow-hidden transition-all hover:shadow-md"
-                      style={{ borderColor: clr.color + '40', backgroundColor: clr.bg }}>
-                      <div className="p-5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: clr.color }}>
-                            Разборка
-                          </span>
-                          <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                            {plan.type === 'lifetime' ? 'Бессрочный' : plan.price === 0 ? 'Демо' : 'Месячный'}
-                          </span>
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-3">{plan.name}</h3>
-
-                        {/* Price */}
-                        <div className="mb-4">
-                          <span className="text-3xl font-bold text-gray-900" style={{ letterSpacing: '-0.03em' }}>
-                            {plan.price.toLocaleString()} грн.
-                          </span>
-                          <span className="text-sm text-gray-500 ml-1">
-                            {plan.type === 'lifetime' ? 'навсегда' : plan.price === 0 ? '' : '/мес'}
-                          </span>
-                        </div>
-
-                        {/* Лимиты тарифа */}
-                        <div className="mb-4 space-y-1.5">
-                          {plan.is_custom ? (
-                            <p className="text-xs font-medium text-gray-500">Индивидуальные условия</p>
-                          ) : (
-                            <>
-                              <p className="text-xs text-gray-600 flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-gray-400" /> Машин: <span className="font-semibold">{plan.max_vehicles ?? '∞'}</span></p>
-                              <p className="text-xs text-gray-600 flex items-center gap-1.5"><Package className="w-3.5 h-3.5 text-gray-400" /> Запчастей: <span className="font-semibold">{plan.max_parts ?? '∞'}</span></p>
-                              <p className="text-xs text-gray-600 flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-gray-400" /> Сотрудников: <span className="font-semibold">{plan.max_workers ?? '∞'}</span></p>
-                            </>
-                          )}
-                          {plan.has_analytics && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
-                              <TrendingUp className="w-3 h-3" /> Аналитика
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Companies on plan + edit */}
-                        <div className="pt-3 border-t border-black/10 flex items-center justify-between">
-                          <span className="text-xs text-gray-500">
-                            {companiesOnPlan > 0
-                              ? `Используют: ${companiesOnPlan} компани${companiesOnPlan === 1 ? 'я' : 'й'}`
-                              : 'Никто не подписан'
-                            }
-                          </span>
-                          <button
-                            onClick={() => setEditingPlan(plan)}
-                            className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary transition-colors px-2 py-1 rounded-lg hover:bg-primary/10"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                            Изменить
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        )}
+        {/* RIGHT — детальная панель */}
+        <div className={`card ${selectedCompanyId ? '' : 'hidden lg:block'}`}>
+          {!selected ? (
+            <div className="empty-state !py-24">
+              <div className="empty-state-icon"><Layers className="w-7 h-7 text-gray-300" /></div>
+              <p className="empty-state-title">Выберите компанию слева</p>
+              <p className="empty-state-text">Чтобы посмотреть и изменить подписку</p>
+            </div>
+          ) : (
+            <DetailPanel
+              sub={selected}
+              partsPlans={partsPlans}
+              usage={partsUsageMap[selected.company_id]}
+              payments={selectedPayments}
+              draftPlanId={draftPlanId}
+              draftMonths={draftMonths}
+              draftTermless={draftTermless}
+              draftTotal={draftTotal}
+              assignPending={assignMutation.isPending}
+              onBack={() => { setSelectedCompanyId(null); syncDraft(null) }}
+              onPickPlan={id => { setDraftPlanId(id); setDraftMonths(1) }}
+              onPickMonths={setDraftMonths}
+              onAssign={handleAssign}
+              onRenew={() => setRenewing(selected)}
+              onDeactivate={async () => { if (await showConfirm({ message: `Деактивировать подписку для ${selected.company?.name}?`, danger: true })) deactivateMutation.mutate(selected.id) }}
+              onDelete={async () => { if (await showConfirm({ message: `Удалить подписку для ${selected.company?.name}?`, danger: true })) deleteMutation.mutate(selected.id) }}
+            />
+          )}
+        </div>
       </div>
 
       {/* ── Plan Edit Modal ── */}
@@ -584,20 +543,6 @@ export default function Subscriptions() {
           plan={editingPlan}
           onClose={() => setEditingPlan(null)}
           onSaved={() => queryClient.invalidateQueries({ queryKey: ['subscription-plans'] })}
-        />
-      )}
-
-      {/* ── Assign Modal ── */}
-      {isAssignOpen && (
-        <AssignModal
-          plans={filteredPlans}
-          companies={companies}
-          form={assignForm}
-          onFormChange={setAssignForm}
-          onSubmit={handleAssignSubmit}
-          onClose={() => setIsAssignOpen(false)}
-          isPending={assignMutation.isPending}
-          selectedPlan={selectedPlan}
         />
       )}
 
@@ -614,6 +559,228 @@ export default function Subscriptions() {
       <ConfirmDialog {...dialogProps} />
     </div>
   )
+}
+
+// ─── Detail Panel ─────────────────────────────────────────────────────────────
+
+function DetailPanel({
+  sub, partsPlans, usage, payments,
+  draftPlanId, draftMonths, draftTermless, draftTotal, assignPending,
+  onBack, onPickPlan, onPickMonths, onAssign, onRenew, onDeactivate, onDelete,
+}: {
+  sub: CompanySubscription
+  partsPlans: Subscription[]
+  usage?: { parts: number; vehicles: number; workers?: number }
+  payments: any[]
+  draftPlanId: string
+  draftMonths: number
+  draftTermless: boolean
+  draftTotal: number
+  assignPending: boolean
+  onBack: () => void
+  onPickPlan: (id: string) => void
+  onPickMonths: (m: number) => void
+  onAssign: () => void
+  onRenew: () => void
+  onDeactivate: () => void
+  onDelete: () => void
+}) {
+  const st = subStatus(sub)
+  const stStyle = STATUS_STYLE[st]
+  const dl = daysLeft(sub.end_date)
+  const isDemo = sub.subscription?.is_demo
+  const changed = draftPlanId && draftPlanId !== sub.subscription_id
+
+  // Подзаголовок: «План · действует до DD.MM (N дн.)» / «Бессрочно» / «Демо»
+  const subline = isDemo
+    ? 'Демо-доступ'
+    : sub.end_date == null
+      ? 'Бессрочно'
+      : `действует до ${new Date(sub.end_date).toLocaleDateString('ru-RU')}`
+
+  // Лимиты текущей подписки
+  const limits: Array<[string, number, number | null | undefined]> = sub.subscription ? [
+    ['Запчасти', usage?.parts ?? 0, sub.subscription.max_parts],
+    ['Авто', usage?.vehicles ?? 0, sub.subscription.max_vehicles],
+    ['Сотрудники', usage?.workers ?? 0, sub.subscription.max_workers],
+  ] : []
+
+  return (
+    <div className="p-5 sm:p-6">
+      {/* Кнопка назад (мобайл) */}
+      <button type="button" onClick={onBack}
+        className="lg:hidden inline-flex items-center gap-1 text-sm font-semibold text-gray-500 hover:text-gray-900 mb-4">
+        <ChevronLeft className="w-4 h-4" /> К списку
+      </button>
+
+      {/* Заголовок */}
+      <div className="flex items-start justify-between gap-4 pb-5 border-b border-gray-100">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="w-11 h-11 rounded-xl text-white flex items-center justify-center text-base font-bold flex-shrink-0"
+            style={{ backgroundColor: 'var(--cab-signal)' }}>
+            {initials(sub.company?.name)}
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold text-gray-900 tracking-tight truncate">{sub.company?.name || '—'}</h2>
+            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5 flex-wrap">
+              <span className="font-semibold text-gray-700">{isDemo ? 'Демо' : sub.subscription?.name || '—'}</span>
+              <span className="text-gray-300">·</span>
+              <span>{subline}</span>
+              {dl != null && sub.end_date != null && (
+                <>
+                  <span className="text-gray-300">·</span>
+                  <span className={st === 'expired' ? 'text-red-600 font-semibold' : st === 'expiring' ? 'text-amber-600 font-semibold' : ''}>
+                    {dl === 0 ? 'сегодня' : `осталось ${dl} дн.`}
+                  </span>
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+        <span className={`${stStyle.cls} flex-shrink-0`}>{stStyle.label}</span>
+      </div>
+
+      {/* Лимиты */}
+      {sub.subscription && (
+        <div className="py-5 border-b border-gray-100">
+          <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-4">Лимиты</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {limits.map(([label, used, max]) => {
+              const pct = max == null ? 8 : Math.min(100, Math.round((used / Math.max(1, max)) * 100))
+              return (
+                <div key={label}>
+                  <div className="flex justify-between items-baseline mb-1.5">
+                    <span className="text-[13px] font-semibold text-gray-700">{label}</span>
+                    <span className="text-xs text-gray-500 tabular-nums">
+                      <b className="text-gray-900">{used}</b> / {max ?? '∞'}
+                    </span>
+                  </div>
+                  <div className="h-[7px] rounded-full bg-gray-100 overflow-hidden">
+                    <span className="block h-full rounded-full transition-all" style={{ width: `${pct}%`, background: barColor(used, max) }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Сменить тариф */}
+      <div className="py-5 border-b border-gray-100">
+        <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-4">Сменить тариф</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+          {partsPlans.map(p => {
+            const isCurrent = p.id === sub.subscription_id
+            const isDraft = p.id === draftPlanId
+            const free = p.price === 0
+            return (
+              <button key={p.id} type="button" onClick={() => onPickPlan(p.id)}
+                className={`relative text-left rounded-xl border-[1.5px] p-3.5 transition-all ${
+                  isDraft ? 'border-[color:var(--cab-signal)]' : 'border-gray-200 hover:border-gray-300'
+                }`}
+                style={isDraft ? { backgroundColor: 'var(--cab-signal-weak)' } : undefined}>
+                {isCurrent && (
+                  <span className="absolute top-2.5 right-2.5 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-white border"
+                    style={{ color: 'var(--cab-signal)', borderColor: 'var(--brand-line, #C9CCF6)' }}>
+                    Текущий
+                  </span>
+                )}
+                <p className="text-[13.5px] font-bold text-gray-900">{p.name}</p>
+                <p className="text-lg font-extrabold text-gray-900 mt-1.5 tabular-nums">
+                  {p.price.toLocaleString()} ₴
+                  <span className="text-xs font-medium text-gray-500"> {p.type === 'lifetime' ? '· навсегда' : free ? '' : '/мес'}</span>
+                </p>
+                <p className="text-[11.5px] text-gray-500 mt-1.5 leading-snug">
+                  {p.max_parts ?? '∞'} запчастей · {p.max_vehicles ?? '∞'} авто · {p.max_workers ?? '∞'} сотр.
+                </p>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Срок + кнопка назначить */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          {draftPlan(partsPlans, draftPlanId) && !draftTermless ? (
+            <div className="inline-flex bg-gray-100 rounded-xl p-1">
+              {DURATION_OPTIONS.map(opt => (
+                <button key={opt.value} type="button" onClick={() => onPickMonths(opt.value)}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
+                    draftMonths === opt.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+                  }`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          ) : <span className="text-xs text-gray-500">{draftTermless ? 'Бессрочно — без даты окончания' : 'Выберите тариф'}</span>}
+
+          <div className="flex items-center gap-4 ml-auto">
+            {!draftTermless && draftTotal > 0 && (
+              <span className="text-xs text-gray-500">Итого: <b className="text-sm text-gray-900 tabular-nums">{draftTotal.toLocaleString('ru-RU')} ₴</b></span>
+            )}
+            <button type="button" onClick={onAssign}
+              disabled={!draftPlanId || assignPending}
+              className="cab-btn cab-btn-primary cab-btn-sm">
+              <Check className="w-4 h-4" />
+              {assignPending ? 'Сохранение…' : changed ? 'Сменить тариф' : 'Назначить'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Действия */}
+      <div className="py-5 border-b border-gray-100">
+        <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3">Действия</p>
+        <div className="flex gap-2.5 flex-wrap">
+          <button type="button" onClick={onRenew} className="cab-btn cab-btn-secondary cab-btn-sm">
+            <RotateCw className="w-4 h-4" /> Продлить
+          </button>
+          {sub.is_active && !isExpired(sub) && (
+            <button type="button" onClick={onDeactivate} className="cab-btn cab-btn-secondary cab-btn-sm">
+              <XCircle className="w-4 h-4" /> Деактивировать
+            </button>
+          )}
+          <button type="button" onClick={onDelete} className="cab-btn cab-btn-danger cab-btn-sm">
+            <Trash2 className="w-4 h-4" /> Удалить
+          </button>
+        </div>
+      </div>
+
+      {/* История платежей */}
+      <div className="pt-5">
+        <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3">История платежей</p>
+        {payments.length === 0 ? (
+          <p className="text-sm text-gray-400 py-2">Платежей по этой компании пока нет</p>
+        ) : (
+          <div>
+            {payments.map((p: any) => (
+              <div key={p.id} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <CreditCard className="w-4 h-4 text-gray-500" strokeWidth={1.75} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-gray-700">{new Date(p.paid_at || p.created_at).toLocaleDateString('ru-RU')}</p>
+                    <p className="text-[11.5px] text-gray-500 truncate">
+                      {p.provider === 'manual' ? 'Вручную' : p.provider === 'liqpay' ? 'LiqPay' : p.provider}
+                      {p.months ? ` · ${p.months} мес.` : ''}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[13.5px] font-bold tabular-nums flex-shrink-0">
+                  {Math.round(p.amount).toLocaleString('ru-RU')} {p.currency === 'UAH' ? '₴' : p.currency}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Маленький локальный хелпер: найти план по id в списке (для проверки выбора)
+function draftPlan(list: Subscription[], id: string): Subscription | undefined {
+  return list.find(p => p.id === id)
 }
 
 // ─── Renew / Activate Modal ───────────────────────────────────────────────────
@@ -656,149 +823,6 @@ function RenewModal({ sub, onClose, onConfirm, isPending }: { sub: CompanySubscr
         <p className="text-xs text-gray-500">
           Новая дата окончания: <span className="font-semibold text-gray-700">{preview.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
         </p>
-      </div>
-    </Modal>
-  )
-}
-
-// ─── Assign Modal ─────────────────────────────────────────────────────────────
-
-function AssignModal({ plans, companies, form, onFormChange, onSubmit, onClose, isPending, selectedPlan }: any) {
-  const termless = selectedPlan && (selectedPlan.type === 'lifetime' || selectedPlan.price === 0)
-  const endDatePreview = (() => {
-    if (!selectedPlan) return null
-    if (termless) return 'Бессрочно'
-    const d = new Date()
-    d.setMonth(d.getMonth() + (form.months || 1))
-    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })
-  })()
-
-  // Поиск компании (вместо <select> — масштабируется на сотни компаний)
-  const [companyQuery, setCompanyQuery] = useState('')
-  const selectedCompany = companies.find((c: any) => c.id === form.companyId)
-  const filteredCompanies = (companyQuery.trim()
-    ? companies.filter((c: any) => c.name?.toLowerCase().includes(companyQuery.trim().toLowerCase()))
-    : companies
-  ).slice(0, 50)
-
-  return (
-    <Modal
-      isOpen
-      onClose={onClose}
-      size="md"
-      title="Назначить подписку"
-      footer={
-        <>
-          <button onClick={onClose} className="cab-btn cab-btn-secondary flex-1">Отмена</button>
-          <button onClick={onSubmit} disabled={isPending || !form.companyId || !form.subscriptionId} className="cab-btn cab-btn-primary flex-1">
-            {isPending ? 'Сохранение...' : 'Назначить'}
-          </button>
-        </>
-      }
-    >
-      <div className="space-y-4">
-        {/* Company — поиск по вводу */}
-        <div>
-          <label className="form-label">Компания *</label>
-          {selectedCompany ? (
-            <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border-2 border-primary bg-primary/5">
-              <span className="flex items-center gap-2 min-w-0">
-                <Building2 className="w-4 h-4 text-primary flex-shrink-0" strokeWidth={1.5} />
-                <span className="font-semibold text-gray-900 truncate">{selectedCompany.name}</span>
-              </span>
-              <button type="button" onClick={() => { onFormChange({ ...form, companyId: '' }); setCompanyQuery('') }}
-                className="text-xs font-semibold text-gray-500 hover:text-gray-800 flex-shrink-0">Изменить</button>
-            </div>
-          ) : (
-            <>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input autoFocus value={companyQuery} onChange={e => setCompanyQuery(e.target.value)}
-                  placeholder="Начните вводить название компании…"
-                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-              </div>
-              <div className="mt-2 max-h-56 overflow-y-auto rounded-xl border border-gray-100 divide-y divide-gray-50">
-                {filteredCompanies.length === 0 ? (
-                  <p className="px-3 py-5 text-sm text-gray-400 text-center">Компания не найдена</p>
-                ) : filteredCompanies.map((c: any) => (
-                  <button key={c.id} type="button"
-                    onClick={() => { onFormChange({ ...form, companyId: c.id }); setCompanyQuery('') }}
-                    className="w-full text-left px-3 py-2.5 text-sm text-gray-800 hover:bg-gray-50 transition-colors flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
-                    <span className="truncate">{c.name}</span>
-                  </button>
-                ))}
-              </div>
-              {companies.length > 50 && !companyQuery && (
-                <p className="mt-1 text-[11px] text-gray-400">Показаны первые 50 — уточните поиск</p>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Plan */}
-        <div>
-          <label className="form-label">Тарифный план *</label>
-          <div className="space-y-2">
-              {plans.filter((p: Subscription) => p.company_type === form.companyType).map((p: Subscription) => {
-                const isSelected = form.subscriptionId === p.id
-                return (
-                  <button key={p.id} type="button"
-                    onClick={() => onFormChange({ ...form, subscriptionId: p.id })}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${isSelected ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{p.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {p.type === 'lifetime' ? 'Бессрочный' : p.price === 0 ? 'Бесплатный · бессрочно' : 'Месячный · выбор срока ниже'}
-                      </p>
-                    </div>
-                    <div className="text-right flex-shrink-0 ml-3">
-                      <p className="text-sm font-bold text-gray-900">{p.price.toLocaleString()} грн.</p>
-                      {isSelected && <CheckCircle2 className="w-4 h-4 text-primary ml-auto mt-0.5" />}
-                    </div>
-                  </button>
-                )
-            })}
-          </div>
-        </div>
-
-        {/* Duration (only for paid monthly plans; lifetime/free → бессрочно) */}
-        {selectedPlan && !termless && (
-          <div>
-            <label className="form-label">Длительность</label>
-            <div className="grid grid-cols-3 gap-2">
-              {DURATION_OPTIONS.map(opt => (
-                <button key={opt.value} type="button"
-                  onClick={() => onFormChange({ ...form, months: opt.value })}
-                  className={`py-2.5 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${form.months === opt.value ? 'border-primary bg-primary/5 text-primary' : 'border-gray-100 text-gray-600 hover:border-gray-200'}`}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            {/* Произвольный срок */}
-            <div className="mt-2 flex items-center gap-2">
-              <label className="text-xs text-gray-500 flex-shrink-0">Другой срок:</label>
-              <input
-                type="number" min={1} max={120} step={1}
-                value={form.months}
-                onChange={e => onFormChange({ ...form, months: Math.max(1, Math.min(120, parseInt(e.target.value) || 1)) })}
-                className="form-input !py-1.5 !w-24"
-              />
-              <span className="text-xs text-gray-500">мес.</span>
-            </div>
-            {endDatePreview && (
-              <p className="mt-2 text-xs text-gray-500">
-                Дата окончания: <span className="font-semibold text-gray-700">{endDatePreview}</span>
-              </p>
-            )}
-          </div>
-        )}
-
-        {selectedPlan?.type === 'lifetime' && (
-          <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800">
-            Бессрочная подписка — без даты окончания
-          </div>
-        )}
       </div>
     </Modal>
   )
