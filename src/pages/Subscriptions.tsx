@@ -3,6 +3,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import {
   CreditCard, TrendingUp, Plus, Trash2, Calendar, Building2,
   CheckCircle2, XCircle, Search, X, Infinity, Edit2, RotateCw, Car, Package, User,
+  Bell, ChevronRight,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -146,6 +147,19 @@ export default function Subscriptions() {
     return list
   }, [allSubs, search, statusFilter])
 
+  // Счётчики для фильтр-чипов (decision-driven: видно, где требуется внимание)
+  const statusCounts = useMemo(() => {
+    const c = { all: allSubs.length, active: 0, expiring: 0, expired: 0, demo: 0 }
+    for (const s of allSubs as CompanySubscription[]) {
+      const st = subStatus(s)
+      if (st === 'active') c.active++
+      else if (st === 'expiring') c.expiring++
+      else if (st === 'expired') c.expired++
+      if (s.subscription?.is_demo) c.demo++
+    }
+    return c
+  }, [allSubs])
+
   const companies  = partsCompanies
   const filteredPlans = plans.filter(p => p.company_type === assignForm.companyType)
   const selectedPlan  = plans.find(p => p.id === assignForm.subscriptionId)
@@ -201,6 +215,23 @@ export default function Subscriptions() {
           </div>
         ))}
       </div>
+
+      {/* ── Баннер: заявки ждут подтверждения (самое срочное решение) ── */}
+      {requests.length > 0 && activeTab !== 'requests' && (
+        <button onClick={() => setActiveTab('requests')}
+          className="w-full flex items-center gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-left hover:bg-amber-100 transition-colors">
+          <span className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <Bell className="w-5 h-5 text-amber-600" strokeWidth={1.5} />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-amber-900">
+              {requests.length} {requests.length === 1 ? 'заявка ждёт' : requests.length < 5 ? 'заявки ждут' : 'заявок ждут'} подтверждения
+            </p>
+            <p className="text-sm text-amber-700">Нажмите, чтобы рассмотреть</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-amber-500 flex-shrink-0" strokeWidth={1.5} />
+        </button>
+      )}
 
       {/* ── Tabs ── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -284,24 +315,38 @@ export default function Subscriptions() {
         {/* ── Companies tab ── */}
         {activeTab === 'companies' && (
           <div>
-            {/* Toolbar */}
-            <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
+            {/* Toolbar: поиск + быстрые фильтр-чипы со счётчиками */}
+            <div className="p-4 border-b border-gray-100 space-y-3">
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type="text" placeholder="Поиск компании..." value={search}
                   onChange={e => setSearch(e.target.value)}
                   className="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
                 {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>}
               </div>
-              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white">
-                <option value="all">Все статусы</option>
-                <option value="active">Активные</option>
-                <option value="expiring">Истекают</option>
-                <option value="expired">Просроченные</option>
-                <option value="inactive">Неактивные</option>
-                <option value="demo">Демо (бесплатные)</option>
-              </select>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  ['all', 'Все', statusCounts.all, false],
+                  ['active', 'Активные', statusCounts.active, false],
+                  ['expiring', 'Истекают', statusCounts.expiring, true],
+                  ['expired', 'Просрочено', statusCounts.expired, true],
+                  ['demo', 'Демо', statusCounts.demo, false],
+                ] as const).map(([key, label, count, warn]) => {
+                  const on = statusFilter === key
+                  return (
+                    <button key={key} onClick={() => setStatusFilter(key)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors ${
+                        on ? 'bg-primary text-white border-primary'
+                           : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                      {label}
+                      <span className={`text-xs font-bold px-1.5 rounded-full ${
+                        on ? 'bg-white/25' : warn && count > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                        {count}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
             {subsLoading ? (
@@ -367,10 +412,10 @@ export default function Subscriptions() {
                           </td>
                           <td className="table-cell text-right tabular-nums whitespace-nowrap">{sub.subscription?.price?.toLocaleString() || 0} ₴</td>
                           <td className="table-cell">
-                            <div className="flex items-center justify-end gap-1">
-                              <button onClick={() => openAssignFor(sub.company_id)} title="Назначить / сменить план"
-                                className="w-8 h-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors">
-                                <Edit2 className="w-4 h-4" />
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button onClick={() => openAssignFor(sub.company_id)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-primary border border-primary/30 hover:bg-primary/10 rounded-lg transition-colors">
+                                <Edit2 className="w-3.5 h-3.5" /> Изменить
                               </button>
                               <button onClick={() => setRenewing(sub)} title="Продлить"
                                 className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-50 rounded-lg transition-colors">
@@ -628,6 +673,14 @@ function AssignModal({ plans, companies, form, onFormChange, onSubmit, onClose, 
     return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })
   })()
 
+  // Поиск компании (вместо <select> — масштабируется на сотни компаний)
+  const [companyQuery, setCompanyQuery] = useState('')
+  const selectedCompany = companies.find((c: any) => c.id === form.companyId)
+  const filteredCompanies = (companyQuery.trim()
+    ? companies.filter((c: any) => c.name?.toLowerCase().includes(companyQuery.trim().toLowerCase()))
+    : companies
+  ).slice(0, 50)
+
   return (
     <Modal
       isOpen
@@ -644,14 +697,43 @@ function AssignModal({ plans, companies, form, onFormChange, onSubmit, onClose, 
       }
     >
       <div className="space-y-4">
-        {/* Company */}
+        {/* Company — поиск по вводу */}
         <div>
           <label className="form-label">Компания *</label>
-          <select value={form.companyId} onChange={e => onFormChange({ ...form, companyId: e.target.value })}
-            className="form-input">
-            <option value="">Выберите компанию...</option>
-            {companies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          {selectedCompany ? (
+            <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border-2 border-primary bg-primary/5">
+              <span className="flex items-center gap-2 min-w-0">
+                <Building2 className="w-4 h-4 text-primary flex-shrink-0" strokeWidth={1.5} />
+                <span className="font-semibold text-gray-900 truncate">{selectedCompany.name}</span>
+              </span>
+              <button type="button" onClick={() => { onFormChange({ ...form, companyId: '' }); setCompanyQuery('') }}
+                className="text-xs font-semibold text-gray-500 hover:text-gray-800 flex-shrink-0">Изменить</button>
+            </div>
+          ) : (
+            <>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input autoFocus value={companyQuery} onChange={e => setCompanyQuery(e.target.value)}
+                  placeholder="Начните вводить название компании…"
+                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+              </div>
+              <div className="mt-2 max-h-56 overflow-y-auto rounded-xl border border-gray-100 divide-y divide-gray-50">
+                {filteredCompanies.length === 0 ? (
+                  <p className="px-3 py-5 text-sm text-gray-400 text-center">Компания не найдена</p>
+                ) : filteredCompanies.map((c: any) => (
+                  <button key={c.id} type="button"
+                    onClick={() => { onFormChange({ ...form, companyId: c.id }); setCompanyQuery('') }}
+                    className="w-full text-left px-3 py-2.5 text-sm text-gray-800 hover:bg-gray-50 transition-colors flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                    <span className="truncate">{c.name}</span>
+                  </button>
+                ))}
+              </div>
+              {companies.length > 50 && !companyQuery && (
+                <p className="mt-1 text-[11px] text-gray-400">Показаны первые 50 — уточните поиск</p>
+              )}
+            </>
+          )}
         </div>
 
         {/* Plan */}
