@@ -28,7 +28,15 @@ interface Props {
 export default function OnboardingChecklist({ partsCompanyId }: Props) {
   const { t } = useTranslation('cabinet')
   const queryClient = useQueryClient()
-  const [dismissed, setDismissed] = useState(false)
+  // Скрытие «Всё настроено» сохраняем per-company, чтобы не появлялось снова после перезагрузки.
+  const dismissKey = `onboarding_dismissed_${partsCompanyId}`
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem(dismissKey) === '1' } catch { return false }
+  })
+  const dismiss = () => {
+    setDismissed(true)
+    try { localStorage.setItem(dismissKey, '1') } catch { /* quota/private mode */ }
+  }
   const [collapsed, setCollapsed] = useState(false)
 
   // 1. Категории
@@ -158,7 +166,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
         <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" strokeWidth={1.5} />
         <span className="text-sm font-semibold text-green-700 flex-1">{t('onboarding.allDone')}</span>
         <button
-          onClick={() => setDismissed(true)}
+          onClick={dismiss}
           aria-label={t('onboarding.hide')}
           className="p-1 rounded-lg hover:bg-green-100 transition-colors text-green-500"
         >
