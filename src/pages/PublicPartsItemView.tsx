@@ -12,7 +12,7 @@ import {
 import { toast } from 'sonner'
 import { PublicBrandHeader } from '@/components/PublicBrandHeader'
 import { formatPrice } from '@/utils/currency'
-import { PARTS_CONDITION_LABELS } from '@/utils/status'
+import { PARTS_CONDITION_LABELS, conditionBadgeClass } from '@/utils/status'
 
 // ─── status helpers ────────────────────────────────────────────────────────────
 
@@ -458,7 +458,7 @@ export default function PublicPartsItemView() {
                 )}
 
                 {item.condition && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                  <span className={conditionBadgeClass(item.condition)}>
                     {PARTS_CONDITION_LABELS[item.condition] || item.condition}
                   </span>
                 )}

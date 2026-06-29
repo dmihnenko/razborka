@@ -29,6 +29,20 @@ export function statusBadgeClass(status: string): string {
   return map[status] || 'badge badge-gray'
 }
 
+/**
+ * ЕДИНЫЙ источник чипа СОСТОЯНИЯ запчасти (new/used/damaged) — пастельный бейдж
+ * на базе `badge badge-*` (как у статусов заказа; тёмная тема поддержана в index.css).
+ * Заменяет разъехавшиеся ад-хок карты `bg-green-100 text-green-800` по страницам.
+ */
+export function conditionBadgeClass(condition: string): string {
+  const map: Record<string, string> = {
+    new: 'badge badge-green',
+    used: 'badge badge-blue',
+    damaged: 'badge badge-orange',
+  }
+  return map[condition] || 'badge badge-gray'
+}
+
 /** @deprecated Использовать statusBadgeClass() — единый бейдж. Оставлено для обратной совместимости. */
 export function getPartsOrderStatusColor(status: PartsOrderStatus): string {
   const colors: Record<PartsOrderStatus, string> = {

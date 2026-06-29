@@ -4,7 +4,7 @@ import { Package, ImageIcon, Trash2, Car, Edit2, ShoppingCart, CheckSquare, Squa
 import ShareModal from '@/components/ui/ShareModal'
 import type { PartsInventoryItem, PartsInventoryStatus } from '@/types/parts'
 import { formatPrice } from '@/utils/currency'
-import { PARTS_CONDITION_LABELS } from '@/utils/status'
+import { PARTS_CONDITION_LABELS, conditionBadgeClass } from '@/utils/status'
 
 // ── Status config ────────────────────────────────────────────────────────────
 
@@ -203,7 +203,7 @@ export function InventoryCard({
             </span>
           )}
           {item.condition && (
-            <span className="text-[10px] text-gray-400">
+            <span className={`${conditionBadgeClass(item.condition)} !text-[10px] !px-1.5 !py-0`}>
               {conditionLabel}
             </span>
           )}

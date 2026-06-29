@@ -6,7 +6,7 @@ import { Package, Clock, ChevronDown, ChevronUp, Archive, Car, Phone } from 'luc
 import { PublicBrandHeader } from '@/components/PublicBrandHeader'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { getPartsOrderStatusColor, getPartsOrderStatusText } from '@/utils/status'
+import { statusBadgeClass, getPartsOrderStatusText } from '@/utils/status'
 import { formatCurrency } from '@/utils/currency'
 import { useState, useMemo } from 'react'
 
@@ -40,14 +40,14 @@ function OrderCard({ order }: { order: any }) {
                 <span className="font-mono text-xs text-gray-400 truncate">{v.vin}</span>
               )}
             </div>
-            <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${getPartsOrderStatusColor(order.status)}`}>
+            <span className={`${statusBadgeClass(order.status)} shrink-0`}>
               {getPartsOrderStatusText(order.status)}
             </span>
           </div>
         )) : (
           <div className="flex items-center justify-between gap-2 mb-1">
             <span className="text-sm text-gray-400">Без авто</span>
-            <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${getPartsOrderStatusColor(order.status)}`}>
+            <span className={`${statusBadgeClass(order.status)} shrink-0`}>
               {getPartsOrderStatusText(order.status)}
             </span>
           </div>
