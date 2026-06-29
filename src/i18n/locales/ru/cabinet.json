@@ -912,6 +912,7 @@
     "statusUpdated": "Статус обновлён",
     "statusUpdateError": "Ошибка обновления статуса",
     "timeline": "История заказа",
+    "created": "Заказ создан",
     "orderMovedToTrash": "Заказ перемещён в корзину",
     "customerSaved": "Данные клиента сохранены",
     "customerSaveError": "Ошибка сохранения данных клиента",

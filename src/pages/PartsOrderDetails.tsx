@@ -304,6 +304,12 @@ export default function PartsOrderDetails() {
 
   const statusBadgeCls = statusBadgeClass(order.status)
 
+  // Таймлайн + синтетическое событие «Заказ создан» (старейшее, в самом низу).
+  const timelineFull = [
+    ...timeline,
+    { id: '__created', detail: t('orderDetailsPage.created', { defaultValue: 'Заказ создан' }), action: 'created', created_at: order.created_at, user_name: null as string | null },
+  ]
+
   return (
     <div className="min-h-dvh bg-gray-50 pb-[calc(64px+env(safe-area-inset-bottom,0px))] sm:pb-6">
 
@@ -699,7 +705,7 @@ export default function PartsOrderDetails() {
         />
 
         {/* ── таймлайн заказа (история статусов/событий) ──────────────── */}
-        {timeline.length > 0 && (
+        {timelineFull.length > 0 && (
           <div className="cab-card p-4">
             <div className="flex items-center gap-2 mb-4">
               <span className="icon-tile-sm bg-slate-100 text-slate-600">
@@ -708,7 +714,7 @@ export default function PartsOrderDetails() {
               <h2 className="heading-3">{t('orderDetailsPage.timeline')}</h2>
             </div>
             <ol className="relative border-l border-gray-200 ml-2 space-y-4">
-              {timeline.map((e) => (
+              {timelineFull.map((e) => (
                 <li key={e.id} className="ml-4">
                   <span className="absolute -left-[5px] w-2.5 h-2.5 rounded-full bg-primary mt-1.5" />
                   <p className="text-sm text-gray-800">{e.detail || e.action}</p>

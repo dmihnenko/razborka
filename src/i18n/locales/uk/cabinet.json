@@ -912,6 +912,7 @@
     "statusUpdated": "Статус оновлено",
     "statusUpdateError": "Помилка оновлення статусу",
     "timeline": "Історія замовлення",
+    "created": "Замовлення створено",
     "orderMovedToTrash": "Замовлення переміщено до кошика",
     "customerSaved": "Дані клієнта збережено",
     "customerSaveError": "Помилка збереження даних клієнта",
