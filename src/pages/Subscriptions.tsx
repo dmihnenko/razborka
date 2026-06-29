@@ -147,6 +147,12 @@ export default function Subscriptions() {
   const filteredPlans = plans.filter(p => p.company_type === assignForm.companyType)
   const selectedPlan  = plans.find(p => p.id === assignForm.subscriptionId)
 
+  // Открыть модалку назначения, опционально предзаполнив компанию (быстрое назначение из строки)
+  const openAssignFor = (companyId = '') => {
+    setAssignForm(f => ({ ...f, companyId, subscriptionId: '', months: 1 }))
+    setIsAssignOpen(true)
+  }
+
   const handleAssignSubmit = () => {
     if (!assignForm.companyId || !assignForm.subscriptionId) { toast.error('Выберите компанию и план'); return }
     const plan = plans.find(p => p.id === assignForm.subscriptionId)
@@ -157,7 +163,7 @@ export default function Subscriptions() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-5 pb-10">
+    <div className="w-full space-y-5 pb-10">
 
       {/* ── Page header ── */}
       <div className="flex items-center justify-between gap-4">
@@ -165,7 +171,7 @@ export default function Subscriptions() {
           <h1 className="page-title">Подписки</h1>
           <p className="page-subtitle">Управление тарифами авторазборок</p>
         </div>
-        <button onClick={() => setIsAssignOpen(true)}
+        <button onClick={() => openAssignFor()}
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors">
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">Назначить</span>
@@ -301,80 +307,83 @@ export default function Subscriptions() {
                 <p className="font-medium text-gray-500">Подписки не найдены</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-50">
-                {filtered.map(sub => {
-                  const st = subStatus(sub)
-                  const stStyle = STATUS_STYLE[st]
-                  const dl = daysLeft(sub.end_date)
-                  return (
-                    <div key={sub.id} className="px-4 sm:px-5 py-3.5 flex items-center gap-3 hover:bg-gray-50/50 transition-colors">
-                      {/* Company */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                          <span className="font-semibold text-gray-900 text-sm truncate">{sub.company?.name || '—'}</span>
-                          <span className="badge badge-orange">Разборка</span>
-                          <span className={stStyle.cls}>{stStyle.label}</span>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
-                          <span className="font-medium text-gray-700">{sub.subscription?.name || '—'}</span>
-                          <span>·</span>
-                          <span>{new Date(sub.start_date).toLocaleDateString('ru-RU')}</span>
-                          <span>→</span>
-                          <span>{sub.end_date ? new Date(sub.end_date).toLocaleDateString('ru-RU') : '∞'}</span>
-                          {dl !== null && dl <= 30 && (
-                            <span className={`font-semibold ${dl <= 7 ? 'text-red-600' : 'text-amber-600'}`}>
-                              {dl === 0 ? 'Сегодня' : `${dl} ${dl === 1 ? 'день' : 'дн.'}`}
-                            </span>
-                          )}
-                        </div>
-                        {/* Загрузка против лимитов (разборка) */}
-                        {partsUsageMap[sub.company_id] && sub.subscription && (
-                          <div className="flex items-center gap-3 mt-1.5 text-[11px] text-gray-500 flex-wrap">
-                            {([
-                              ['Машины', partsUsageMap[sub.company_id].vehicles, sub.subscription.max_vehicles],
-                              ['Запчасти', partsUsageMap[sub.company_id].parts, sub.subscription.max_parts],
-                            ] as const).map(([label, used, max]) => {
-                              const over = max != null && used >= max
-                              return (
-                                <span key={label} className="inline-flex items-center gap-1">
-                                  {label}: <b className={over ? 'text-red-600' : 'text-gray-700'}>{used}/{max ?? '∞'}</b>
-                                </span>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Price */}
-                      <div className="hidden sm:block text-right flex-shrink-0 mr-2">
-                        <p className="text-sm font-bold text-gray-900">{sub.subscription?.price?.toLocaleString() || 0} грн.</p>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <button
-                          onClick={() => setRenewing(sub)}
-                          className="w-9 h-9 flex items-center justify-center text-green-600 hover:bg-green-50 rounded-xl transition-colors"
-                          title={st === 'active' || st === 'expiring' ? 'Продлить' : 'Активировать / продлить'}>
-                          <RotateCw className="w-4 h-4" />
-                        </button>
-                        {sub.is_active && !isExpired(sub) && (
-                          <button
-                            onClick={async () => { if (await showConfirm({ message: `Деактивировать подписку для ${sub.company?.name}?`, danger: true })) deactivateMutation.mutate(sub.id) }}
-                            className="w-9 h-9 flex items-center justify-center text-amber-500 hover:bg-amber-50 rounded-xl transition-colors" title="Деактивировать">
-                            <XCircle className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button
-                          onClick={async () => { if (await showConfirm({ message: `Удалить подписку для ${sub.company?.name}?`, danger: true })) deleteMutation.mutate(sub.id) }}
-                          className="w-9 h-9 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-xl transition-colors" title="Удалить">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr>
+                      <th className="table-header-cell">Компания</th>
+                      <th className="table-header-cell">План</th>
+                      <th className="table-header-cell">Статус</th>
+                      <th className="table-header-cell">Действует до</th>
+                      <th className="table-header-cell">Загрузка</th>
+                      <th className="table-header-cell text-right">Цена</th>
+                      <th className="table-header-cell text-right">Действия</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map(sub => {
+                      const st = subStatus(sub)
+                      const stStyle = STATUS_STYLE[st]
+                      const dl = daysLeft(sub.end_date)
+                      const usage = partsUsageMap[sub.company_id]
+                      return (
+                        <tr key={sub.id} className="table-row">
+                          <td className="table-cell">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                              <span className="font-semibold text-gray-900 truncate">{sub.company?.name || '—'}</span>
+                            </div>
+                          </td>
+                          <td className="table-cell whitespace-nowrap">{sub.subscription?.name || '—'}</td>
+                          <td className="table-cell"><span className={stStyle.cls}>{stStyle.label}</span></td>
+                          <td className="table-cell whitespace-nowrap">
+                            <span className="text-gray-600">{sub.end_date ? new Date(sub.end_date).toLocaleDateString('ru-RU') : '∞'}</span>
+                            {dl !== null && dl <= 30 && (
+                              <span className={`ml-1.5 font-semibold ${dl <= 7 ? 'text-red-600' : 'text-amber-600'}`}>
+                                {dl === 0 ? 'сегодня' : `${dl} дн.`}
+                              </span>
+                            )}
+                          </td>
+                          <td className="table-cell">
+                            {usage && sub.subscription ? (
+                              <div className="flex items-center gap-3 text-xs whitespace-nowrap">
+                                {([
+                                  ['Запч', usage.parts, sub.subscription.max_parts],
+                                  ['Авто', usage.vehicles, sub.subscription.max_vehicles],
+                                ] as const).map(([label, used, max]) => (
+                                  <span key={label}>{label} <b className={max != null && used >= max ? 'text-red-600' : 'text-gray-700'}>{used}/{max ?? '∞'}</b></span>
+                                ))}
+                              </div>
+                            ) : <span className="text-gray-300">—</span>}
+                          </td>
+                          <td className="table-cell text-right tabular-nums whitespace-nowrap">{sub.subscription?.price?.toLocaleString() || 0} ₴</td>
+                          <td className="table-cell">
+                            <div className="flex items-center justify-end gap-1">
+                              <button onClick={() => openAssignFor(sub.company_id)} title="Назначить / сменить план"
+                                className="w-8 h-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => setRenewing(sub)} title="Продлить"
+                                className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-50 rounded-lg transition-colors">
+                                <RotateCw className="w-4 h-4" />
+                              </button>
+                              {sub.is_active && !isExpired(sub) && (
+                                <button onClick={async () => { if (await showConfirm({ message: `Деактивировать подписку для ${sub.company?.name}?`, danger: true })) deactivateMutation.mutate(sub.id) }}
+                                  title="Деактивировать" className="w-8 h-8 flex items-center justify-center text-amber-500 hover:bg-amber-50 rounded-lg transition-colors">
+                                  <XCircle className="w-4 h-4" />
+                                </button>
+                              )}
+                              <button onClick={async () => { if (await showConfirm({ message: `Удалить подписку для ${sub.company?.name}?`, danger: true })) deleteMutation.mutate(sub.id) }}
+                                title="Удалить" className="w-8 h-8 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-lg transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
