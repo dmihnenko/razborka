@@ -149,8 +149,8 @@ export default function PartsInventory() {
   // Стоимость склада/продаж — серверный агрегат по ВСЕЙ выборке (а не по подгруженным страницам)
   const { data: summary } = useQuery({
     // ключ вложен в ['parts-inventory', …] — те же инвалидации, что и список, обновляют агрегат
-    queryKey: ['parts-inventory', 'summary', partsCompanyId, usdRate],
-    queryFn: () => getPartsInventorySummary(partsCompanyId!, usdRate!),
+    queryKey: ['parts-inventory', 'summary', partsCompanyId, usdRate, sourceFilter],
+    queryFn: () => getPartsInventorySummary(partsCompanyId!, usdRate!, sourceFilter === 'shop'),
     enabled: !!partsCompanyId && usdRate != null,
     staleTime: 60_000,
   })

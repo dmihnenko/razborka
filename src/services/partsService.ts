@@ -379,10 +379,16 @@ export interface PartsInventorySummary {
 }
 
 /** Серверный агрегат стоимости склада/продаж по ВСЕЙ выборке (не по подгруженной странице). */
-export async function getPartsInventorySummary(partsCompanyId: string, rate: number): Promise<PartsInventorySummary> {
+export async function getPartsInventorySummary(
+  partsCompanyId: string,
+  rate: number,
+  isShop?: boolean,
+): Promise<PartsInventorySummary> {
   const { data, error } = await supabase.rpc('get_parts_inventory_summary', {
     p_company: partsCompanyId,
     p_rate: rate,
+    // null = вся компания; false = разборка; true = магазин (вкладки не пересекаются)
+    p_is_shop: isShop ?? null,
   })
   if (error) throw error
   return data as PartsInventorySummary
