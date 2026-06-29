@@ -8,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   getSubscriptionPlans, getAllCompanySubscriptions, getSubscriptionStats,
-  deactivateSubscription, deleteCompanySubscription, assignSubscription,
+  deactivateSubscription, deleteCompanySubscription, assignSubscription, adminSetCompanySubscription,
   getPartsCompanies,
   getSubscriptionRequests, approveSubscriptionRequest, rejectSubscriptionRequest,
   getPartsCompaniesUsage,
@@ -21,6 +21,7 @@ import Modal from '@/components/ui/Modal'
 
 const DURATION_OPTIONS = [
   { value: 1,  label: '1 месяц' },
+  { value: 2,  label: '2 месяца' },
   { value: 3,  label: '3 месяца' },
   { value: 6,  label: '6 месяцев' },
   { value: 12, label: '12 месяцев (год)' },
@@ -96,7 +97,9 @@ export default function Subscriptions() {
   })
 
   const assignMutation = useMutation({
-    mutationFn: assignSubscription,
+    // через защищённый RPC: end_date считает сервер (months → срок; null → бессрочно)
+    mutationFn: ({ companyId, planId, months }: { companyId: string; planId: string; months: number | null }) =>
+      adminSetCompanySubscription(companyId, planId, months),
     onSuccess: () => { invalidate(); toast.success('Подписка назначена'); setIsAssignOpen(false); setAssignForm({ companyType: 'parts', companyId: '', subscriptionId: '', months: 1 }) },
     onError: (e: any) => toast.error(e.message || 'Ошибка'),
   })
@@ -147,13 +150,10 @@ export default function Subscriptions() {
   const handleAssignSubmit = () => {
     if (!assignForm.companyId || !assignForm.subscriptionId) { toast.error('Выберите компанию и план'); return }
     const plan = plans.find(p => p.id === assignForm.subscriptionId)
-    let endDate: string | undefined
-    if (plan?.type !== 'lifetime') {
-      const d = new Date()
-      d.setMonth(d.getMonth() + assignForm.months)
-      endDate = d.toISOString()
-    }
-    assignMutation.mutate({ company_id: assignForm.companyId, company_type: assignForm.companyType, subscription_id: assignForm.subscriptionId, end_date: endDate })
+    // Бессрочно: lifetime-планы и бесплатные (Демо/Премиум, price=0). Остальные — на N месяцев.
+    const termless = plan?.type === 'lifetime' || plan?.price === 0
+    const months = termless ? null : Math.max(1, assignForm.months || 1)
+    assignMutation.mutate({ companyId: assignForm.companyId, planId: assignForm.subscriptionId, months })
   }
 
   return (
@@ -546,11 +546,12 @@ function RenewModal({ sub, onClose, onConfirm, isPending }: { sub: CompanySubscr
 // ─── Assign Modal ─────────────────────────────────────────────────────────────
 
 function AssignModal({ plans, companies, form, onFormChange, onSubmit, onClose, isPending, selectedPlan }: any) {
+  const termless = selectedPlan && (selectedPlan.type === 'lifetime' || selectedPlan.price === 0)
   const endDatePreview = (() => {
     if (!selectedPlan) return null
-    if (selectedPlan.type === 'lifetime') return 'Бессрочно'
+    if (termless) return 'Бессрочно'
     const d = new Date()
-    d.setMonth(d.getMonth() + form.months)
+    d.setMonth(d.getMonth() + (form.months || 1))
     return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })
   })()
 
@@ -593,7 +594,7 @@ function AssignModal({ plans, companies, form, onFormChange, onSubmit, onClose, 
                     <div>
                       <p className="text-sm font-semibold text-gray-900">{p.name}</p>
                       <p className="text-xs text-gray-500">
-                        {p.type === 'lifetime' ? 'Бессрочный' : p.price === 0 ? 'Демо · 1 месяц' : 'Месячный · выбор срока ниже'}
+                        {p.type === 'lifetime' ? 'Бессрочный' : p.price === 0 ? 'Бесплатный · бессрочно' : 'Месячный · выбор срока ниже'}
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0 ml-3">
@@ -606,11 +607,11 @@ function AssignModal({ plans, companies, form, onFormChange, onSubmit, onClose, 
           </div>
         </div>
 
-        {/* Duration (if not lifetime) */}
-        {selectedPlan && selectedPlan.type !== 'lifetime' && (
+        {/* Duration (only for paid monthly plans; lifetime/free → бессрочно) */}
+        {selectedPlan && !termless && (
           <div>
             <label className="form-label">Длительность</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {DURATION_OPTIONS.map(opt => (
                 <button key={opt.value} type="button"
                   onClick={() => onFormChange({ ...form, months: opt.value })}
@@ -618,6 +619,17 @@ function AssignModal({ plans, companies, form, onFormChange, onSubmit, onClose, 
                   {opt.label}
                 </button>
               ))}
+            </div>
+            {/* Произвольный срок */}
+            <div className="mt-2 flex items-center gap-2">
+              <label className="text-xs text-gray-500 flex-shrink-0">Другой срок:</label>
+              <input
+                type="number" min={1} max={120} step={1}
+                value={form.months}
+                onChange={e => onFormChange({ ...form, months: Math.max(1, Math.min(120, parseInt(e.target.value) || 1)) })}
+                className="form-input !py-1.5 !w-24"
+              />
+              <span className="text-xs text-gray-500">мес.</span>
             </div>
             {endDatePreview && (
               <p className="mt-2 text-xs text-gray-500">

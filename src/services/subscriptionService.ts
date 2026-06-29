@@ -131,6 +131,24 @@ export async function assignSubscription(input: AssignSubscriptionInput) {
   return data as CompanySubscription
 }
 
+/**
+ * Админ: назначить компании план на N месяцев (null/0 = бессрочно) через защищённый
+ * SECURITY DEFINER RPC (is_admin-guard, атомарная замена). Предпочтительнее прямого
+ * assignSubscription (delete+insert на клиенте).
+ */
+export async function adminSetCompanySubscription(
+  companyId: string,
+  planId: string,
+  months: number | null,
+) {
+  const { error } = await supabase.rpc('admin_set_company_subscription', {
+    p_company_id: companyId,
+    p_plan_id: planId,
+    p_months: months,
+  })
+  if (error) throw error
+}
+
 export async function deactivateSubscription(id: string) {
   const { error } = await supabase
     .from('company_subscriptions')
