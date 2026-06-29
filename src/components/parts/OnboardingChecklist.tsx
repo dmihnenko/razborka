@@ -28,16 +28,16 @@ interface Props {
 export default function OnboardingChecklist({ partsCompanyId }: Props) {
   const { t } = useTranslation('cabinet')
   const queryClient = useQueryClient()
-  // Скрытие «Всё настроено» сохраняем per-company, чтобы не появлялось снова после перезагрузки.
-  const dismissKey = `onboarding_dismissed_${partsCompanyId}`
-  const [dismissed, setDismissed] = useState(() => {
-    try { return localStorage.getItem(dismissKey) === '1' } catch { return false }
-  })
-  const dismiss = () => {
-    setDismissed(true)
-    try { localStorage.setItem(dismissKey, '1') } catch { /* quota/private mode */ }
-  }
+  // Скрытие «Всё настроено» храним в БД (parts_companies.onboarding_dismissed) — иначе на
+  // другом устройстве/браузере появляется снова. justDismissed — мгновенное скрытие до рефетча.
+  const [justDismissed, setJustDismissed] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const dismiss = () => {
+    setJustDismissed(true)
+    supabase.rpc('dismiss_company_onboarding').then(() => {
+      queryClient.invalidateQueries({ queryKey: ['onboarding-contacts', partsCompanyId] })
+    })
+  }
 
   // 1. Категории
   const { data: categoriesCount = null } = useQuery({
@@ -87,7 +87,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
     queryFn: async () => {
       const { data } = await supabase
         .from('parts_companies')
-        .select('phone, telegram, address, telegram_chat_id')
+        .select('phone, telegram, address, telegram_chat_id, onboarding_dismissed')
         .eq('id', partsCompanyId)
         .single()
       return data
@@ -156,7 +156,8 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
   const allDone = doneCount === total
   const progressPct = Math.round((doneCount / total) * 100)
 
-  // Не показываем, если пользователь скрыл
+  // Не показываем, если пользователь скрыл (флаг из БД или только что нажал «×»)
+  const dismissed = justDismissed || !!(companyContacts as any)?.onboarding_dismissed
   if (dismissed) return null
 
   // Если всё готово — показываем «Всё настроено» (можно скрыть)
