@@ -1,15 +1,18 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Spinner } from '@/components/ui/Spinner'
 import {
   CreditCard, Plus, Trash2, Building2,
-  CheckCircle2, XCircle, Search, X, Edit2, RotateCw, Car, Package, User,
-  Bell, ChevronRight, ChevronLeft, Layers, Check,
+  CheckCircle2, XCircle, Search, X, Edit2, Car, Package, User,
+  Bell, ChevronRight, ChevronLeft, Layers, Check, BarChart3, Snowflake, Clock, Settings2,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { IMaskInput } from 'react-imask'
 import {
   getSubscriptionPlans, getAllCompanySubscriptions, getSubscriptionStats,
-  deactivateSubscription, deleteCompanySubscription, assignSubscription, adminSetCompanySubscription,
+  deactivateSubscription, deleteCompanySubscription, applyCompanySubscription,
+  getCompanyQueue, cancelCompanyQueue, getDefaultCompanyPlan, setDefaultCompanyPlan,
   getSubscriptionRequests, approveSubscriptionRequest, rejectSubscriptionRequest,
   getPartsCompaniesUsage, getSubscriptionPayments,
 } from '@/services/subscriptionService'
@@ -18,6 +21,28 @@ import { durationLabel } from '@/config/subscriptionPlans'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import Modal from '@/components/ui/Modal'
+import { supabase } from '@/lib/supabase'
+
+// Локальный тип разборки (источник левого списка — таблица parts_companies)
+interface PartsCompany {
+  id: string
+  name: string
+  address: string | null
+  phone: string | null
+  email: string | null
+  description: string | null
+  is_active: boolean
+  created_at: string
+  deleted_at?: string | null
+}
+
+interface PartsFormData {
+  name: string
+  address: string
+  phone: string
+  email: string
+  description: string
+}
 
 const DURATION_OPTIONS = [
   { value: 1,  label: '1 мес' },
@@ -80,29 +105,164 @@ export default function Subscriptions() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null)
-  const [renewing, setRenewing] = useState<CompanySubscription | null>(null)
   const [editingPlan, setEditingPlan] = useState<Subscription | null>(null)
   const [requestsOpen, setRequestsOpen] = useState(false)
   const [plansOpen, setPlansOpen] = useState(false)
   // Состояние выбора в детальной панели (план + срок)
   const [draftPlanId, setDraftPlanId] = useState<string>('')
   const [draftMonths, setDraftMonths] = useState<number>(1)
+  // CRUD компании-разборки
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingCompany, setEditingCompany] = useState<PartsCompany | null>(null)
+  const [formData, setFormData] = useState<PartsFormData>({ name: '', address: '', phone: '', email: '', description: '' })
 
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const { confirm: showConfirm, dialogProps } = useConfirm()
 
   const { data: plans = [], isLoading: plansLoading } = useQuery({ queryKey: ['subscription-plans'], queryFn: getSubscriptionPlans })
   const { data: allSubs = [],  isLoading: subsLoading  } = useQuery({ queryKey: ['company-subscriptions'], queryFn: getAllCompanySubscriptions })
+  // Полный список разборок — источник левого списка (включая неактивные и без подписки)
+  const { data: companies = [], isLoading: companiesLoading } = useQuery({
+    queryKey: ['admin-parts-companies'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('parts_companies')
+        .select('*')
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return data as PartsCompany[]
+    },
+  })
   const { data: stats } = useQuery({ queryKey: ['subscription-stats'], queryFn: getSubscriptionStats })
   const { data: requests = [] } = useQuery({ queryKey: ['subscription-requests'], queryFn: () => getSubscriptionRequests('pending') })
   const { data: partsUsageMap = {} } = useQuery({ queryKey: ['parts-companies-usage'], queryFn: getPartsCompaniesUsage, staleTime: 2 * 60 * 1000 })
   const { data: payments = [] } = useQuery({ queryKey: ['subscription-payments'], queryFn: () => getSubscriptionPayments(200) })
+  // Очередь (frozen/scheduled) выбранной компании
+  const { data: queue = [] } = useQuery({
+    queryKey: ['company-queue', selectedCompanyId],
+    queryFn: () => getCompanyQueue(selectedCompanyId!),
+    enabled: !!selectedCompanyId,
+  })
+  // Подписка по умолчанию для новых разборок
+  const { data: defaultPlan } = useQuery({ queryKey: ['default-company-plan'], queryFn: getDefaultCompanyPlan })
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['company-subscriptions'] })
     queryClient.invalidateQueries({ queryKey: ['subscription-stats'] })
     queryClient.invalidateQueries({ queryKey: ['subscription-payments'] })
+    queryClient.invalidateQueries({ queryKey: ['company-queue'] })
   }
+  const invalidateCompanies = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-parts-companies'] })
+    queryClient.invalidateQueries({ queryKey: ['parts_companies'] })
+    queryClient.invalidateQueries({ queryKey: ['company-subscriptions'] })
+  }
+
+  // ── CRUD компании (parts_companies) ──
+  const createCompanyMutation = useMutation({
+    mutationFn: async (data: PartsFormData) => {
+      const { error } = await supabase.from('parts_companies').insert({
+        name: data.name,
+        address: data.address || null,
+        phone: data.phone || null,
+        email: data.email || null,
+        description: data.description || null,
+        is_active: true,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      invalidateCompanies()
+      toast.success('Разборка создана')
+      setIsModalOpen(false)
+      resetForm()
+    },
+    onError: (e: any) => toast.error(e.message || 'Ошибка при создании разборки'),
+  })
+
+  const updateCompanyMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: PartsFormData }) => {
+      const { error } = await supabase.from('parts_companies').update({
+        name: data.name,
+        address: data.address || null,
+        phone: data.phone || null,
+        email: data.email || null,
+        description: data.description || null,
+      }).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      invalidateCompanies()
+      toast.success('Разборка обновлена')
+      setIsModalOpen(false)
+      setEditingCompany(null)
+      resetForm()
+    },
+    onError: (e: any) => toast.error(e.message || 'Ошибка при обновлении разборки'),
+  })
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      const { error } = await supabase.from('parts_companies').update({ is_active: !isActive }).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => { invalidateCompanies(); toast.success('Статус разборки изменён') },
+    onError: (e: any) => toast.error(e.message || 'Ошибка при изменении статуса'),
+  })
+
+  const deleteCompanyMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.rpc('admin_soft_delete_company', { p_company_id: id })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      invalidateCompanies()
+      toast.success('Разборка удалена (данные хранятся 6 месяцев)')
+      setSelectedCompanyId(null)
+    },
+    onError: (e: any) => toast.error(e.message || 'Ошибка при удалении разборки'),
+  })
+
+  const resetForm = () => setFormData({ name: '', address: '', phone: '', email: '', description: '' })
+
+  const handleCreate = () => {
+    resetForm()
+    setEditingCompany(null)
+    setIsModalOpen(true)
+  }
+  const handleEditCompany = (company: PartsCompany) => {
+    setEditingCompany(company)
+    setFormData({
+      name: company.name,
+      address: company.address || '',
+      phone: company.phone || '',
+      email: company.email || '',
+      description: company.description || '',
+    })
+    setIsModalOpen(true)
+  }
+  const handleDeleteCompany = async (company: PartsCompany) => {
+    const ok = await showConfirm({
+      message: `Удалить разборку «${company.name}»? Данные (заявки, заказы, склад) сохранятся 6 месяцев — за это время удаление можно отменить, потом всё удалится окончательно.`,
+      danger: true,
+    })
+    if (!ok) return
+    deleteCompanyMutation.mutate(company.id)
+  }
+  const handleSubmitCompany = () => {
+    if (!formData.name.trim()) {
+      toast.error('Введите название разборки')
+      return
+    }
+    if (editingCompany) {
+      updateCompanyMutation.mutate({ id: editingCompany.id, data: formData })
+    } else {
+      createCompanyMutation.mutate(formData)
+    }
+  }
+  const isCompanyMutating = createCompanyMutation.isPending || updateCompanyMutation.isPending
 
   const approveMutation = useMutation({
     mutationFn: approveSubscriptionRequest,
@@ -115,11 +275,11 @@ export default function Subscriptions() {
     onError: (e: any) => toast.error(e.message || 'Ошибка'),
   })
 
-  const assignMutation = useMutation({
-    // через защищённый RPC: end_date считает сервер (months → срок; null → бессрочно)
+  // ЕДИНОЕ действие «Применить тариф» — сервер сам решает: назначить/продлить/апгрейд/очередь
+  const applyMutation = useMutation({
     mutationFn: ({ companyId, planId, months }: { companyId: string; planId: string; months: number | null }) =>
-      adminSetCompanySubscription(companyId, planId, months),
-    onSuccess: () => { invalidate(); toast.success('Подписка назначена') },
+      applyCompanySubscription(companyId, planId, months),
+    onSuccess: () => { invalidate(); toast.success('Тариф применён') },
     onError: (e: any) => toast.error(e.message || 'Ошибка'),
   })
 
@@ -135,52 +295,77 @@ export default function Subscriptions() {
     onError: () => toast.error('Ошибка удаления'),
   })
 
-  // Продление/активация: продлеваем от даты окончания (если в будущем) или от сегодня
-  const renewMutation = useMutation({
-    mutationFn: ({ sub, months }: { sub: CompanySubscription; months: number }) => {
-      const base = sub.end_date && new Date(sub.end_date) > new Date() ? new Date(sub.end_date) : new Date()
-      base.setMonth(base.getMonth() + months)
-      return assignSubscription({
-        company_type: sub.company_type, company_id: sub.company_id,
-        subscription_id: sub.subscription_id, end_date: base.toISOString(),
-      })
-    },
-    onSuccess: () => { invalidate(); toast.success('Подписка продлена и активирована'); setRenewing(null) },
-    onError: (e: any) => toast.error(e.message || 'Ошибка продления'),
+  // Отменить очередь компании (frozen/scheduled)
+  const cancelQueueMutation = useMutation({
+    mutationFn: (companyId: string) => cancelCompanyQueue(companyId),
+    onSuccess: () => { invalidate(); toast.success('Очередь очищена') },
+    onError: (e: any) => toast.error(e.message || 'Ошибка'),
   })
 
-  // Filtered company subscriptions (для списка слева)
+  // Сохранить тариф по умолчанию для новых разборок
+  const defaultPlanMutation = useMutation({
+    mutationFn: ({ planId, months }: { planId: string | null; months: number | null }) =>
+      setDefaultCompanyPlan(planId, months),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['default-company-plan'] })
+      toast.success('Сохранено')
+    },
+    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+  })
+
+  // Карта подписок по company_id (LEFT JOIN: у части разборок подписки нет)
+  const subByCompanyId = useMemo(() => {
+    const m = new Map<string, CompanySubscription>()
+    for (const s of allSubs as CompanySubscription[]) m.set(s.company_id, s)
+    return m
+  }, [allSubs])
+
+  // Filtered companies (для списка слева) — все разборки + сопоставленная подписка
   const filtered = useMemo(() => {
-    let list = allSubs as CompanySubscription[]
+    let list = companies as PartsCompany[]
     if (search.trim()) {
       const q = search.toLowerCase()
-      list = list.filter(s => s.company?.name?.toLowerCase().includes(q) || s.subscription?.name?.toLowerCase().includes(q))
+      list = list.filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        (c.address ?? '').toLowerCase().includes(q) ||
+        (c.phone ?? '').includes(q) ||
+        (c.email ?? '').toLowerCase().includes(q),
+      )
     }
     if (statusFilter === 'demo') {
-      list = list.filter(s => s.subscription?.is_demo)
+      list = list.filter(c => subByCompanyId.get(c.id)?.subscription?.is_demo)
     } else if (statusFilter !== 'all') {
-      list = list.filter(s => subStatus(s) === statusFilter)
+      list = list.filter(c => {
+        const sub = subByCompanyId.get(c.id)
+        return sub ? subStatus(sub) === statusFilter : false
+      })
     }
     return list
-  }, [allSubs, search, statusFilter])
+  }, [companies, search, statusFilter, subByCompanyId])
 
-  // Счётчики для фильтр-чипов (decision-driven: видно, где требуется внимание)
+  // Счётчики для фильтр-чипов (по компаниям; статусы — только у кого есть подписка)
   const statusCounts = useMemo(() => {
-    const c = { all: allSubs.length, active: 0, expiring: 0, expired: 0, demo: 0 }
-    for (const s of allSubs as CompanySubscription[]) {
-      const st = subStatus(s)
+    const c = { all: companies.length, active: 0, expiring: 0, expired: 0, demo: 0 }
+    for (const company of companies as PartsCompany[]) {
+      const sub = subByCompanyId.get(company.id)
+      if (!sub) continue
+      const st = subStatus(sub)
       if (st === 'active') c.active++
       else if (st === 'expiring') c.expiring++
       else if (st === 'expired') c.expired++
-      if (s.subscription?.is_demo) c.demo++
+      if (sub.subscription?.is_demo) c.demo++
     }
     return c
-  }, [allSubs])
+  }, [companies, subByCompanyId])
 
-  // Выбранная подписка
-  const selected = useMemo(
-    () => (allSubs as CompanySubscription[]).find(s => s.company_id === selectedCompanyId) || null,
-    [allSubs, selectedCompanyId],
+  // Выбранная компания + её подписка (опционально)
+  const selectedCompany = useMemo(
+    () => (companies as PartsCompany[]).find(c => c.id === selectedCompanyId) || null,
+    [companies, selectedCompanyId],
+  )
+  const selectedSub = useMemo(
+    () => (selectedCompanyId ? subByCompanyId.get(selectedCompanyId) ?? null : null),
+    [subByCompanyId, selectedCompanyId],
   )
 
   // Планы для разборок (company_type='parts')
@@ -188,9 +373,9 @@ export default function Subscriptions() {
 
   // Платежи выбранной компании (по совпадению имени)
   const selectedPayments = useMemo(() => {
-    if (!selected?.company?.name) return []
-    return payments.filter((p: any) => p.company === selected.company?.name).slice(0, 5)
-  }, [payments, selected])
+    if (!selectedCompany?.name) return []
+    return payments.filter((p: any) => p.company === selectedCompany.name).slice(0, 5)
+  }, [payments, selectedCompany])
 
   // Синхронизировать черновик при смене выбранной компании
   const syncDraft = (sub: CompanySubscription | null) => {
@@ -198,19 +383,19 @@ export default function Subscriptions() {
     setDraftMonths(1)
   }
   const selectCompany = (companyId: string) => {
-    const sub = (allSubs as CompanySubscription[]).find(s => s.company_id === companyId) || null
+    const sub = subByCompanyId.get(companyId) ?? null
     setSelectedCompanyId(companyId)
     syncDraft(sub)
     setPlansOpen(false)
   }
 
-  // Назначить выбранный план (с учётом бессрочных/бесплатных)
-  const handleAssign = () => {
+  // Применить выбранный тариф (с учётом бессрочных/бесплатных)
+  const handleApply = () => {
     if (!selectedCompanyId || !draftPlanId) { toast.error('Выберите тариф'); return }
     const plan = plans.find(p => p.id === draftPlanId)
     const termless = plan?.type === 'lifetime' || plan?.price === 0
     const months = termless ? null : Math.max(1, draftMonths || 1)
-    assignMutation.mutate({ companyId: selectedCompanyId, planId: draftPlanId, months })
+    applyMutation.mutate({ companyId: selectedCompanyId, planId: draftPlanId, months })
   }
 
   const draftPlan = plans.find(p => p.id === draftPlanId)
@@ -226,8 +411,8 @@ export default function Subscriptions() {
       {/* ── Тонкая шапка: заголовок + инлайн-KPI + действие ── */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="kicker mb-1">Биллинг · авторазборки</p>
-          <h1 className="page-title">Подписки</h1>
+          <p className="kicker mb-1">Администрирование</p>
+          <h1 className="page-title">Разборки</h1>
         </div>
 
         <div className="flex items-center gap-5">
@@ -263,16 +448,14 @@ export default function Subscriptions() {
               <Layers className="w-4 h-4" />
               <span className="hidden sm:inline">Тарифные планы</span>
             </button>
-            {selectedCompanyId && (
-              <button
-                type="button"
-                onClick={() => { setSelectedCompanyId(null); syncDraft(null) }}
-                className="cab-btn cab-btn-primary cab-btn-lg shrink-0"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Новой компании</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleCreate}
+              className="cab-btn cab-btn-primary cab-btn-lg shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Создать разборку</span>
+            </button>
           </div>
         </div>
       </div>
@@ -418,6 +601,14 @@ export default function Subscriptions() {
         </div>
       )}
 
+      {/* ── Тариф по умолчанию для новых разборок ── */}
+      <DefaultPlanBar
+        plans={partsPlans}
+        value={defaultPlan ?? { plan_id: null, months: null }}
+        saving={defaultPlanMutation.isPending}
+        onSave={(planId, months) => defaultPlanMutation.mutate({ planId, months })}
+      />
+
       {/* ── Двухпанельный грид master-detail ── */}
       <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4 items-start">
 
@@ -457,7 +648,7 @@ export default function Subscriptions() {
           </div>
 
           {/* Прокручиваемый список */}
-          {subsLoading ? (
+          {(companiesLoading || subsLoading) ? (
             <div className="flex justify-center py-16"><Spinner size="lg" /></div>
           ) : filtered.length === 0 ? (
             <div className="empty-state !py-12">
@@ -467,13 +658,15 @@ export default function Subscriptions() {
             </div>
           ) : (
             <div className="max-h-[calc(100vh-260px)] lg:max-h-[660px] overflow-y-auto">
-              {filtered.map(sub => {
-                const st = subStatus(sub)
+              {filtered.map(company => {
+                const sub = subByCompanyId.get(company.id) ?? null
+                const st = sub ? subStatus(sub) : 'inactive'
                 const stStyle = STATUS_STYLE[st]
-                const dl = daysLeft(sub.end_date)
-                const sel = sub.company_id === selectedCompanyId
+                const dl = sub ? daysLeft(sub.end_date) : null
+                const sel = company.id === selectedCompanyId
+                const planLabel = sub?.subscription?.is_demo ? 'Демо' : (sub?.subscription?.name || '—')
                 return (
-                  <button key={sub.id} type="button" onClick={() => selectCompany(sub.company_id)}
+                  <button key={company.id} type="button" onClick={() => selectCompany(company.id)}
                     className={`group w-full flex items-center gap-3 px-3.5 py-2.5 text-left border-b border-gray-50 relative transition-colors ${
                       sel ? 'before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-[color:var(--cab-signal)]' : 'hover:bg-gray-50'
                     }`}
@@ -481,21 +674,20 @@ export default function Subscriptions() {
                     <span className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                       sel ? 'bg-white border' : 'bg-gray-100 text-gray-600'}`}
                       style={sel ? { color: 'var(--cab-signal)', borderColor: 'var(--brand-line, #C9CCF6)' } : undefined}>
-                      {initials(sub.company?.name)}
+                      {initials(company.name)}
                     </span>
                     <span className="flex-1 min-w-0">
-                      <span className="block text-[13.5px] font-semibold text-gray-900 truncate">{sub.company?.name || '—'}</span>
-                      <span className="block text-[11.5px] text-gray-500 truncate mt-0.5">
-                        {sub.subscription?.is_demo ? 'Демо' : sub.subscription?.name || '—'}
-                      </span>
+                      <span className="block text-[13.5px] font-semibold text-gray-900 truncate">{company.name || '—'}</span>
+                      <span className="block text-[11.5px] text-gray-500 truncate mt-0.5">{planLabel}</span>
                     </span>
                     <span className="flex items-center gap-2 flex-shrink-0">
                       <span className={`text-xs font-semibold min-w-[42px] text-right ${
-                        sub.end_date == null ? 'text-gray-400 font-medium'
+                        !sub ? 'text-gray-300 font-medium'
+                          : sub.end_date == null ? 'text-gray-400 font-medium'
                           : st === 'expired' ? 'text-red-600'
                           : st === 'expiring' ? 'text-amber-600'
                           : 'text-gray-600'}`}>
-                        {sub.end_date == null ? '∞' : dl === 0 ? 'сегодня' : `${dl} дн.`}
+                        {!sub ? '—' : sub.end_date == null ? '∞' : dl === 0 ? 'сегодня' : `${dl} дн.`}
                       </span>
                       <span className={`w-2 h-2 rounded-full ${stStyle.dot}`} />
                     </span>
@@ -508,30 +700,36 @@ export default function Subscriptions() {
 
         {/* RIGHT — детальная панель */}
         <div className={`card ${selectedCompanyId ? '' : 'hidden lg:block'}`}>
-          {!selected ? (
+          {!selectedCompany ? (
             <div className="empty-state !py-24">
               <div className="empty-state-icon"><Layers className="w-7 h-7 text-gray-300" /></div>
               <p className="empty-state-title">Выберите компанию слева</p>
-              <p className="empty-state-text">Чтобы посмотреть и изменить подписку</p>
+              <p className="empty-state-text">Чтобы посмотреть и изменить разборку и подписку</p>
             </div>
           ) : (
             <DetailPanel
-              sub={selected}
+              company={selectedCompany}
+              sub={selectedSub}
+              queue={queue}
               partsPlans={partsPlans}
-              usage={partsUsageMap[selected.company_id]}
+              usage={partsUsageMap[selectedCompany.id]}
               payments={selectedPayments}
               draftPlanId={draftPlanId}
               draftMonths={draftMonths}
               draftTermless={draftTermless}
               draftTotal={draftTotal}
-              assignPending={assignMutation.isPending}
+              applyPending={applyMutation.isPending}
               onBack={() => { setSelectedCompanyId(null); syncDraft(null) }}
               onPickPlan={id => { setDraftPlanId(id); setDraftMonths(1) }}
               onPickMonths={setDraftMonths}
-              onAssign={handleAssign}
-              onRenew={() => setRenewing(selected)}
-              onDeactivate={async () => { if (await showConfirm({ message: `Деактивировать подписку для ${selected.company?.name}?`, danger: true })) deactivateMutation.mutate(selected.id) }}
-              onDelete={async () => { if (await showConfirm({ message: `Удалить подписку для ${selected.company?.name}?`, danger: true })) deleteMutation.mutate(selected.id) }}
+              onApply={handleApply}
+              onCancelQueue={async () => { if (await showConfirm({ message: `Очистить очередь тарифов для ${selectedCompany.name}?`, danger: true })) cancelQueueMutation.mutate(selectedCompany.id) }}
+              onDeactivate={async () => { if (selectedSub && await showConfirm({ message: `Деактивировать подписку для ${selectedCompany.name}? Компания останется без активного тарифа (включится Демо при следующем входе/кроне).`, danger: true })) deactivateMutation.mutate(selectedSub.id) }}
+              onDelete={async () => { if (selectedSub && await showConfirm({ message: `Удалить подписку для ${selectedCompany.name}?`, danger: true })) deleteMutation.mutate(selectedSub.id) }}
+              onEditCompany={() => handleEditCompany(selectedCompany)}
+              onToggleCompanyActive={() => toggleActiveMutation.mutate({ id: selectedCompany.id, isActive: selectedCompany.is_active })}
+              onDeleteCompany={() => handleDeleteCompany(selectedCompany)}
+              onCompanyStats={() => navigate(`/admin/parts-companies/${selectedCompany.id}`)}
             />
           )}
         </div>
@@ -546,14 +744,99 @@ export default function Subscriptions() {
         />
       )}
 
-      {/* ── Renew / Activate Modal ── */}
-      {renewing && (
-        <RenewModal
-          sub={renewing}
-          onClose={() => setRenewing(null)}
-          onConfirm={(months) => renewMutation.mutate({ sub: renewing, months })}
-          isPending={renewMutation.isPending}
-        />
+      {/* ── Модалка разборки (top-sheet mobile / center desktop) ── */}
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-start sm:items-center justify-center z-50 px-3 py-3 sm:p-4"
+          style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}
+          onClick={e => { if (e.target === e.currentTarget) { setIsModalOpen(false); setEditingCompany(null); resetForm() } }}
+        >
+          <div className="w-full sm:max-w-md bg-white rounded-2xl shadow-2xl animate-modal-pop">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-4 border-b border-gray-100">
+              <div>
+                <p className="kicker mb-0.5">{editingCompany ? 'Редактирование' : 'Новая разборка'}</p>
+                <h2 className="heading-3">{editingCompany ? editingCompany.name : 'Создать разборку'}</h2>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-5 py-4 space-y-4 overflow-y-auto max-h-[60vh] sm:max-h-none">
+              <div>
+                <label className="form-label">Название <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  className="form-input"
+                  placeholder="Например: Разборка Автозапчасти"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="form-label">Адрес</label>
+                <input
+                  type="text"
+                  value={formData.address}
+                  onChange={e => setFormData({ ...formData, address: e.target.value })}
+                  className="form-input"
+                  placeholder="г. Киев, ул. Примерная, 123"
+                />
+              </div>
+              <div>
+                <label className="form-label">Телефон</label>
+                <IMaskInput
+                  mask="+380 00 000-00-00"
+                  value={formData.phone}
+                  onAccept={value => setFormData({ ...formData, phone: value })}
+                  type="tel"
+                  className="form-input"
+                  placeholder="+380 XX XXX-XX-XX"
+                />
+              </div>
+              <div>
+                <label className="form-label">Email</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  className="form-input"
+                  placeholder="info@example.com"
+                />
+              </div>
+              <div>
+                <label className="form-label">Описание</label>
+                <textarea
+                  value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  className="form-input resize-none"
+                  rows={3}
+                  placeholder="Краткое описание разборки..."
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div
+              className="flex gap-3 px-5 pt-3 pb-5 border-t border-gray-100"
+              style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+            >
+              <button
+                onClick={() => { setIsModalOpen(false); setEditingCompany(null); resetForm() }}
+                className="cab-btn cab-btn-secondary flex-1"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleSubmitCompany}
+                disabled={!formData.name.trim() || isCompanyMutating}
+                className="cab-btn cab-btn-primary flex-1"
+              >
+                {isCompanyMutating ? 'Сохранение…' : editingCompany ? 'Сохранить' : 'Создать'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <ConfirmDialog {...dialogProps} />
@@ -561,14 +844,97 @@ export default function Subscriptions() {
   )
 }
 
+// ─── Default plan bar (тариф по умолчанию для новых разборок) ──────────────────
+
+function DefaultPlanBar({
+  plans, value, saving, onSave,
+}: {
+  plans: Subscription[]
+  value: { plan_id: string | null; months: number | null }
+  saving: boolean
+  onSave: (planId: string | null, months: number | null) => void
+}) {
+  // локальный черновик (синхронизируется с сохранённым значением)
+  const [planId, setPlanId] = useState<string>('')
+  const [months, setMonths] = useState<number | ''>('')
+
+  // подтянуть сохранённое при загрузке/изменении
+  useEffect(() => {
+    setPlanId(value.plan_id ?? '')
+    setMonths(value.months ?? '')
+  }, [value.plan_id, value.months])
+
+  const plan = plans.find(p => p.id === planId)
+  const termless = plan ? (plan.type === 'lifetime' || plan.price === 0) : false
+  const dirty = (planId || '') !== (value.plan_id ?? '') ||
+    (termless ? false : (months === '' ? null : Number(months)) !== (value.months ?? null))
+
+  const handleSave = () => {
+    const pid = planId || null
+    const m = !pid || termless ? null : (months === '' ? null : Math.max(1, Number(months)))
+    onSave(pid, m)
+  }
+
+  return (
+    <div className="card px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+          <Settings2 className="w-4 h-4 text-gray-500" strokeWidth={1.75} />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-gray-800">Для новых разборок</p>
+          <p className="text-[11.5px] text-gray-500">Тариф, который назначится автоматически при создании</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
+        <select
+          value={planId}
+          onChange={e => setPlanId(e.target.value)}
+          className="form-input !py-2 !w-auto min-w-[140px] text-sm"
+        >
+          <option value="">Демо (по умолчанию)</option>
+          {plans.map(p => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+
+        <select
+          value={termless || !planId ? '' : String(months)}
+          onChange={e => setMonths(e.target.value === '' ? '' : Number(e.target.value))}
+          disabled={termless || !planId}
+          className="form-input !py-2 !w-auto text-sm disabled:opacity-50"
+        >
+          <option value="">Бессрочно</option>
+          {DURATION_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!dirty || saving}
+          className="cab-btn cab-btn-secondary cab-btn-sm"
+        >
+          {saving ? 'Сохранение…' : 'Сохранить'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Detail Panel ─────────────────────────────────────────────────────────────
 
 function DetailPanel({
-  sub, partsPlans, usage, payments,
-  draftPlanId, draftMonths, draftTermless, draftTotal, assignPending,
-  onBack, onPickPlan, onPickMonths, onAssign, onRenew, onDeactivate, onDelete,
+  company, sub, queue, partsPlans, usage, payments,
+  draftPlanId, draftMonths, draftTermless, draftTotal, applyPending,
+  onBack, onPickPlan, onPickMonths, onApply, onCancelQueue, onDeactivate, onDelete,
+  onEditCompany, onToggleCompanyActive, onDeleteCompany, onCompanyStats,
 }: {
-  sub: CompanySubscription
+  company: PartsCompany
+  sub: CompanySubscription | null
+  queue: CompanySubscription[]
   partsPlans: Subscription[]
   usage?: { parts: number; vehicles: number; workers?: number }
   payments: any[]
@@ -576,30 +942,57 @@ function DetailPanel({
   draftMonths: number
   draftTermless: boolean
   draftTotal: number
-  assignPending: boolean
+  applyPending: boolean
   onBack: () => void
   onPickPlan: (id: string) => void
   onPickMonths: (m: number) => void
-  onAssign: () => void
-  onRenew: () => void
+  onApply: () => void
+  onCancelQueue: () => void
   onDeactivate: () => void
   onDelete: () => void
+  onEditCompany: () => void
+  onToggleCompanyActive: () => void
+  onDeleteCompany: () => void
+  onCompanyStats: () => void
 }) {
-  const st = subStatus(sub)
+  const st = sub ? subStatus(sub) : 'inactive'
   const stStyle = STATUS_STYLE[st]
-  const dl = daysLeft(sub.end_date)
-  const isDemo = sub.subscription?.is_demo
-  const changed = draftPlanId && draftPlanId !== sub.subscription_id
+  const dl = sub ? daysLeft(sub.end_date) : null
+  const isDemo = sub?.subscription?.is_demo
+
+  // Что сделает кнопка «Применить» — предсказываем по уровню (sort_order) выбранного плана
+  const draftP = partsPlans.find(p => p.id === draftPlanId)
+  const curLevel = sub?.subscription?.sort_order ?? 0
+  const curIsDemo = !!isDemo
+  const draftLevel = draftP?.sort_order ?? 0
+  const applyLabel = (() => {
+    if (!draftPlanId) return 'Применить'
+    if (!sub || curIsDemo) return 'Назначить'
+    if (draftPlanId === sub.subscription_id) return 'Продлить'
+    if (draftLevel > curLevel) return 'Сменить тариф'         // апгрейд (текущий заморозится)
+    if (draftLevel < curLevel) return 'Добавить в очередь'    // даунгрейд (старт после текущего)
+    return 'Применить'
+  })()
 
   // Подзаголовок: «План · действует до DD.MM (N дн.)» / «Бессрочно» / «Демо»
-  const subline = isDemo
-    ? 'Демо-доступ'
-    : sub.end_date == null
-      ? 'Бессрочно'
-      : `действует до ${new Date(sub.end_date).toLocaleDateString('ru-RU')}`
+  const subline = !sub
+    ? 'Подписка не оформлена'
+    : isDemo
+      ? 'Демо-доступ'
+      : sub.end_date == null
+        ? 'Бессрочно'
+        : `действует до ${new Date(sub.end_date).toLocaleDateString('ru-RU')}`
+
+  // Контактные данные компании (показываем только заполненные)
+  const companyFields: Array<[string, string | null]> = [
+    ['Адрес', company.address],
+    ['Телефон', company.phone],
+    ['Email', company.email],
+    ['Описание', company.description],
+  ]
 
   // Лимиты текущей подписки
-  const limits: Array<[string, number, number | null | undefined]> = sub.subscription ? [
+  const limits: Array<[string, number, number | null | undefined]> = sub?.subscription ? [
     ['Запчасти', usage?.parts ?? 0, sub.subscription.max_parts],
     ['Авто', usage?.vehicles ?? 0, sub.subscription.max_vehicles],
     ['Сотрудники', usage?.workers ?? 0, sub.subscription.max_workers],
@@ -618,15 +1011,15 @@ function DetailPanel({
         <div className="flex items-center gap-3 min-w-0">
           <span className="w-11 h-11 rounded-xl text-white flex items-center justify-center text-base font-bold flex-shrink-0"
             style={{ backgroundColor: 'var(--cab-signal)' }}>
-            {initials(sub.company?.name)}
+            {initials(company.name)}
           </span>
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-gray-900 tracking-tight truncate">{sub.company?.name || '—'}</h2>
+            <h2 className="text-lg font-bold text-gray-900 tracking-tight truncate">{company.name || '—'}</h2>
             <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5 flex-wrap">
-              <span className="font-semibold text-gray-700">{isDemo ? 'Демо' : sub.subscription?.name || '—'}</span>
+              <span className="font-semibold text-gray-700">{!sub ? '—' : isDemo ? 'Демо' : sub.subscription?.name || '—'}</span>
               <span className="text-gray-300">·</span>
               <span>{subline}</span>
-              {dl != null && sub.end_date != null && (
+              {dl != null && sub?.end_date != null && (
                 <>
                   <span className="text-gray-300">·</span>
                   <span className={st === 'expired' ? 'text-red-600 font-semibold' : st === 'expiring' ? 'text-amber-600 font-semibold' : ''}>
@@ -640,8 +1033,40 @@ function DetailPanel({
         <span className={`${stStyle.cls} flex-shrink-0`}>{stStyle.label}</span>
       </div>
 
-      {/* Лимиты */}
-      {sub.subscription && (
+      {/* Компания (parts_companies) */}
+      <div className="py-5 border-b border-gray-100">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-gray-500">Компания</p>
+          <span className={company.is_active ? 'badge badge-green' : 'badge badge-gray'}>
+            {company.is_active ? 'Активна' : 'Неактивна'}
+          </span>
+        </div>
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5 mb-4">
+          {companyFields.map(([label, value]) => (
+            <div key={label} className="flex flex-col">
+              <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">{label}</dt>
+              <dd className="text-[13px] text-gray-700 break-words">{value || '—'}</dd>
+            </div>
+          ))}
+        </dl>
+        <div className="flex gap-2.5 flex-wrap">
+          <button type="button" onClick={onEditCompany} className="cab-btn cab-btn-secondary cab-btn-sm">
+            <Edit2 className="w-4 h-4" /> Редактировать
+          </button>
+          <button type="button" onClick={onCompanyStats} className="cab-btn cab-btn-secondary cab-btn-sm">
+            <BarChart3 className="w-4 h-4" /> Статистика
+          </button>
+          <button type="button" onClick={onToggleCompanyActive} className="cab-btn cab-btn-secondary cab-btn-sm">
+            <XCircle className="w-4 h-4" /> {company.is_active ? 'Деактивировать компанию' : 'Активировать компанию'}
+          </button>
+          <button type="button" onClick={onDeleteCompany} className="cab-btn cab-btn-danger cab-btn-sm">
+            <Trash2 className="w-4 h-4" /> Удалить разборку
+          </button>
+        </div>
+      </div>
+
+      {/* Лимиты / плашка «подписки нет» */}
+      {sub?.subscription ? (
         <div className="py-5 border-b border-gray-100">
           <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-4">Лимиты</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
@@ -663,14 +1088,26 @@ function DetailPanel({
             })}
           </div>
         </div>
+      ) : (
+        <div className="py-5 border-b border-gray-100">
+          <div className="rounded-xl border border-gray-200 bg-gray-50/60 px-4 py-3 flex items-center gap-3">
+            <span className="w-9 h-9 rounded-xl bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
+              <CreditCard className="w-4 h-4 text-gray-400" strokeWidth={1.75} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[13.5px] font-semibold text-gray-700">Подписка не оформлена</p>
+              <p className="text-xs text-gray-500">Выберите тариф ниже, чтобы назначить первую подписку</p>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Сменить тариф */}
+      {/* Применить тариф (единое действие: назначить / продлить / апгрейд / очередь) */}
       <div className="py-5 border-b border-gray-100">
-        <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-4">Сменить тариф</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-4">Применить тариф</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
           {partsPlans.map(p => {
-            const isCurrent = p.id === sub.subscription_id
+            const isCurrent = p.id === (sub?.subscription_id ?? '')
             const isDraft = p.id === draftPlanId
             const free = p.price === 0
             return (
@@ -717,33 +1154,83 @@ function DetailPanel({
             {!draftTermless && draftTotal > 0 && (
               <span className="text-xs text-gray-500">Итого: <b className="text-sm text-gray-900 tabular-nums">{draftTotal.toLocaleString('ru-RU')} ₴</b></span>
             )}
-            <button type="button" onClick={onAssign}
-              disabled={!draftPlanId || assignPending}
+            <button type="button" onClick={onApply}
+              disabled={!draftPlanId || applyPending}
               className="cab-btn cab-btn-primary cab-btn-sm">
               <Check className="w-4 h-4" />
-              {assignPending ? 'Сохранение…' : changed ? 'Сменить тариф' : 'Назначить'}
+              {applyPending ? 'Сохранение…' : applyLabel}
             </button>
           </div>
         </div>
+
+        {/* Подсказка: что произойдёт */}
+        {draftPlanId && sub && !curIsDemo && draftPlanId !== sub.subscription_id && (
+          <p className="text-[11.5px] text-gray-500 mt-2.5 flex items-start gap-1.5">
+            {draftLevel > curLevel ? (
+              <><Snowflake className="w-3.5 h-3.5 text-gray-400 mt-px flex-shrink-0" />Текущий тариф «{sub.subscription?.name}» заморозится — остаток дней вернётся после нового.</>
+            ) : (
+              <><Clock className="w-3.5 h-3.5 text-gray-400 mt-px flex-shrink-0" />Новый тариф встанет в очередь и стартует, когда закончится текущий «{sub.subscription?.name}».</>
+            )}
+          </p>
+        )}
       </div>
 
-      {/* Действия */}
-      <div className="py-5 border-b border-gray-100">
-        <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3">Действия</p>
-        <div className="flex gap-2.5 flex-wrap">
-          <button type="button" onClick={onRenew} className="cab-btn cab-btn-secondary cab-btn-sm">
-            <RotateCw className="w-4 h-4" /> Продлить
-          </button>
-          {sub.is_active && !isExpired(sub) && (
-            <button type="button" onClick={onDeactivate} className="cab-btn cab-btn-secondary cab-btn-sm">
-              <XCircle className="w-4 h-4" /> Деактивировать
+      {/* Очередь (frozen / scheduled) */}
+      {queue.length > 0 && (
+        <div className="py-5 border-b border-gray-100">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">Очередь</p>
+            <button type="button" onClick={onCancelQueue} className="text-xs font-semibold text-gray-400 hover:text-red-600 transition-colors">
+              Отменить очередь
             </button>
-          )}
-          <button type="button" onClick={onDelete} className="cab-btn cab-btn-danger cab-btn-sm">
-            <Trash2 className="w-4 h-4" /> Удалить
-          </button>
+          </div>
+          <div className="space-y-2">
+            {queue.map(q => {
+              const frozen = q.status === 'frozen'
+              return (
+                <div key={q.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50/60 px-3.5 py-2.5">
+                  <span className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
+                    {frozen
+                      ? <Snowflake className="w-4 h-4 text-sky-500" strokeWidth={1.75} />
+                      : <Clock className="w-4 h-4 text-gray-400" strokeWidth={1.75} />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold text-gray-800 truncate">{q.subscription?.name || '—'}</p>
+                    <p className="text-[11.5px] text-gray-500">
+                      {frozen
+                        ? `Заморожен · остаток ${q.remaining_days == null ? '∞' : `${q.remaining_days} дн.`}`
+                        : `В очереди · ${q.sched_months ?? 1} мес · старт после текущего`}
+                    </p>
+                  </div>
+                  <span className={`badge ${frozen ? 'badge-blue' : 'badge-gray'} flex-shrink-0`}>
+                    {frozen ? 'Заморожен' : 'В очереди'}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Действия подписки */}
+      {sub && (
+        <div className="py-5 border-b border-gray-100">
+          <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3">Действия подписки</p>
+          <div className="flex gap-2.5 flex-wrap">
+            {sub.is_active && !isExpired(sub) && !isDemo && (
+              <button type="button" onClick={onDeactivate} className="cab-btn cab-btn-secondary cab-btn-sm">
+                <XCircle className="w-4 h-4" /> Сбросить на Демо
+              </button>
+            )}
+            <button type="button" onClick={onDelete} className="cab-btn cab-btn-danger cab-btn-sm">
+              <Trash2 className="w-4 h-4" /> Удалить подписку
+            </button>
+          </div>
+          <p className="text-[11.5px] text-gray-400 mt-2">
+            Продление и смена тарифа — выше в блоке «Применить тариф».
+          </p>
+        </div>
+      )}
 
       {/* История платежей */}
       <div className="pt-5">
@@ -783,54 +1270,7 @@ function draftPlan(list: Subscription[], id: string): Subscription | undefined {
   return list.find(p => p.id === id)
 }
 
-// ─── Renew / Activate Modal ───────────────────────────────────────────────────
-
-function RenewModal({ sub, onClose, onConfirm, isPending }: { sub: CompanySubscription; onClose: () => void; onConfirm: (months: number) => void; isPending: boolean }) {
-  const [months, setMonths] = useState(1)
-  const base = sub.end_date && new Date(sub.end_date) > new Date() ? new Date(sub.end_date) : new Date()
-  const preview = new Date(base); preview.setMonth(preview.getMonth() + months)
-  const opts = [{ v: 1, l: '1 месяц' }, { v: 3, l: '3 месяца' }, { v: 6, l: '6 месяцев' }, { v: 12, l: '1 год' }]
-  return (
-    <Modal
-      isOpen
-      onClose={onClose}
-      size="sm"
-      title="Продление подписки"
-      footer={
-        <>
-          <button onClick={onClose} className="cab-btn cab-btn-secondary flex-1">Отмена</button>
-          <button onClick={() => onConfirm(months)} disabled={isPending} className="cab-btn cab-btn-primary flex-1">
-            {isPending ? 'Сохранение…' : 'Продлить'}
-          </button>
-        </>
-      }
-    >
-      <div className="space-y-4">
-        <div className="text-sm">
-          <p className="font-semibold text-gray-900">{sub.company?.name}</p>
-          <p className="text-gray-500 text-xs mt-0.5">
-            {sub.subscription?.name} · до {sub.end_date ? new Date(sub.end_date).toLocaleDateString('ru-RU') : '∞'}
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          {opts.map(o => (
-            <button key={o.v} onClick={() => setMonths(o.v)}
-              className={`py-2.5 text-sm font-semibold rounded-xl border-2 transition-all ${months === o.v ? 'border-primary bg-primary/5 text-primary' : 'border-gray-100 text-gray-600 hover:border-gray-200'}`}>
-              {o.l}
-            </button>
-          ))}
-        </div>
-        <p className="text-xs text-gray-500">
-          Новая дата окончания: <span className="font-semibold text-gray-700">{preview.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
-        </p>
-      </div>
-    </Modal>
-  )
-}
-
 // ─── Plan Edit Modal ──────────────────────────────────────────────────────────
-
-import { supabase } from '@/lib/supabase'
 
 function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose: () => void; onSaved: () => void }) {
   const [form, setForm] = useState({

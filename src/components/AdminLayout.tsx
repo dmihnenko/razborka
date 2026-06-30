@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Shield, Users, Settings, BarChart2, LogOut, ClipboardList,
-  Store, CreditCard, MessageCircle, LayoutGrid, Database,
+  Store, MessageCircle, LayoutGrid, Database,
   MoreHorizontal, X, Car,
 } from 'lucide-react'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
@@ -21,10 +21,9 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     { name: 'Обзор', href: '/admin', icon: LayoutGrid },
   ]},
   { title: 'Разборки', items: [
-    { name: 'Владельцы разборок', href: '/admin/parts-companies', icon: Store },
-    { name: 'Подписки',           href: '/admin/subscriptions',   icon: CreditCard },
-    { name: 'Заявки на доступ',    href: '/admin/access-requests', icon: ClipboardList },
-    { name: 'Каталог авто',        href: '/admin/car-models',      icon: Car },
+    { name: 'Разборки',         href: '/admin/subscriptions',   icon: Store },
+    { name: 'Заявки на доступ', href: '/admin/access-requests', icon: ClipboardList },
+    { name: 'Каталог авто',     href: '/admin/car-models',      icon: Car },
   ]},
   { title: 'Пользователи', items: [
     { name: 'Пользователи', href: '/admin/users', icon: Users },
@@ -41,8 +40,8 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
 // Мобильный нижний таб-бар: 4 главных + «Ещё»
 const BOTTOM_TABS: NavItem[] = [
   { name: 'Обзор',    href: '/admin',                 icon: LayoutGrid },
-  { name: 'Разборки', href: '/admin/parts-companies', icon: Store },
-  { name: 'Подписки', href: '/admin/subscriptions',   icon: CreditCard },
+  { name: 'Разборки', href: '/admin/subscriptions',   icon: Store },
+  { name: 'Заявки',   href: '/admin/access-requests', icon: ClipboardList },
   { name: 'Польз.',   href: '/admin/users',           icon: Users },
 ]
 const BOTTOM_HREFS = BOTTOM_TABS.map(t => t.href)

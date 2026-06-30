@@ -21,7 +21,6 @@ const UserCreate = lazy(() => import('./pages/UserCreate'))
 const UserEdit = lazy(() => import('./pages/UserEdit'))
 const AdminPanel = lazy(() => import('./pages/AdminPanel'))
 const Roles = lazy(() => import('./pages/Roles'))
-const PartsCompanies = lazy(() => import('./pages/PartsCompanies'))
 const PartsCompanyDetail = lazy(() => import('./pages/PartsCompanyDetail'))
 const Subscriptions = lazy(() => import('./pages/Subscriptions'))
 const Support = lazy(() => import('./pages/Support'))
@@ -277,7 +276,7 @@ function App() {
           <Route path="users/new" element={<UserCreate />} />
           <Route path="users/:id/edit" element={<UserEdit />} />
           <Route path="roles" element={<Roles />} />
-          <Route path="parts-companies" element={<PartsCompanies />} />
+          <Route path="parts-companies" element={<Navigate to="/admin/subscriptions" replace />} />
           <Route path="parts-companies/:companyId" element={<PartsCompanyDetail />} />
           <Route path="subscriptions" element={<Subscriptions />} />
           <Route path="support" element={<AdminSupport />} />

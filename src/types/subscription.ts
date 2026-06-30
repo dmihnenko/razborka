@@ -26,6 +26,9 @@ export interface Subscription {
   updated_at: string
 }
 
+/** Статус строки подписки в очереди компании */
+export type CompanySubscriptionStatus = 'active' | 'frozen' | 'scheduled' | 'ended'
+
 export interface CompanySubscription {
   id: string
   company_type: 'parts'
@@ -34,6 +37,12 @@ export interface CompanySubscription {
   start_date: string
   end_date: string | null
   is_active: boolean
+  /** Статус: active — действует; frozen — заморожен апгрейдом; scheduled — куплен наперёд; ended — завершён */
+  status: CompanySubscriptionStatus
+  /** Для frozen — остаток дней замороженного плана (возобновится при истечении текущего) */
+  remaining_days?: number | null
+  /** Для scheduled — срок в месяцах, который отработает при старте */
+  sched_months?: number | null
   created_at: string
   updated_at: string
   subscription?: Subscription

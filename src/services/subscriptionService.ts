@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { Subscription, CompanySubscription, AssignSubscriptionInput, SubscriptionStats, SubscriptionRequest } from '@/types/subscription'
+import type { Subscription, CompanySubscription, SubscriptionStats, SubscriptionRequest } from '@/types/subscription'
 
 // ============================================================================
 // SUBSCRIPTION PLANS
@@ -53,14 +53,16 @@ export async function deleteSubscriptionPlan(id: string) {
 // ============================================================================
 
 export async function getAllCompanySubscriptions() {
+  // только АКТИВНЫЕ строки — по одной на компанию (очередь frozen/scheduled грузится отдельно)
   const { data, error } = await supabase
     .from('company_subscriptions')
     .select(`
       *,
       subscription:subscriptions(*)
     `)
+    .eq('is_active', true)
     .order('created_at', { ascending: false })
-  
+
   if (error) throw error
   
   // Загружаем названия компаний
@@ -102,46 +104,23 @@ export async function getCompanySubscription(companyType: 'parts', companyId: st
   return data as CompanySubscription | null
 }
 
-export async function assignSubscription(input: AssignSubscriptionInput) {
-  // Remove all existing rows for this company (handles duplicates + avoids unique constraint issues)
-  await supabase
-    .from('company_subscriptions')
-    .delete()
-    .eq('company_type', input.company_type)
-    .eq('company_id', input.company_id)
-
-  // Insert fresh subscription
-  const { data, error } = await supabase
-    .from('company_subscriptions')
-    .insert({
-      company_type: input.company_type,
-      company_id: input.company_id,
-      subscription_id: input.subscription_id,
-      start_date: input.start_date || new Date().toISOString(),
-      end_date: input.end_date || null,
-      is_active: true
-    })
-    .select(`
-      *,
-      subscription:subscriptions(*)
-    `)
-    .single()
-
-  if (error) throw error
-  return data as CompanySubscription
-}
-
 /**
- * Админ: назначить компании план на N месяцев (null/0 = бессрочно) через защищённый
- * SECURITY DEFINER RPC (is_admin-guard, атомарная замена). Предпочтительнее прямого
- * assignSubscription (delete+insert на клиенте).
+ * Админ: ЕДИНОЕ действие «Применить тариф» через защищённый SECURITY DEFINER RPC
+ * (is_admin-guard). Сервер сам выбирает поведение по уровню тарифа (sort_order):
+ *   • нет подписки / демо  → назначить план active;
+ *   • тот же тариф         → продлить срок;
+ *   • апгрейд (выше)       → заморозить текущий (frozen), включить новый active;
+ *   • даунгрейд (ниже)     → текущий остаётся, новый встаёт в очередь (scheduled).
+ * months = null → бессрочно (для бесплатных / lifetime игнорируется).
+ * Это ЕДИНСТВЕННЫЙ путь назначения — не использовать assignSubscription (delete+insert
+ * ломает очередь/заморозку).
  */
-export async function adminSetCompanySubscription(
+export async function applyCompanySubscription(
   companyId: string,
   planId: string,
   months: number | null,
 ) {
-  const { error } = await supabase.rpc('admin_set_company_subscription', {
+  const { error } = await supabase.rpc('apply_company_subscription', {
     p_company_id: companyId,
     p_plan_id: planId,
     p_months: months,
@@ -172,9 +151,36 @@ export async function getSubscriptionPayments(limit = 100): Promise<Subscription
 export async function deactivateSubscription(id: string) {
   const { error } = await supabase
     .from('company_subscriptions')
-    .update({ is_active: false })
+    .update({ is_active: false, status: 'ended' })
     .eq('id', id)
-  
+
+  if (error) throw error
+}
+
+/**
+ * Очередь компании: замороженные (frozen) и запланированные (scheduled) строки.
+ * Используется детальной панелью для показа блока «Очередь».
+ */
+export async function getCompanyQueue(companyId: string) {
+  const { data, error } = await supabase
+    .from('company_subscriptions')
+    .select('*, subscription:subscriptions(*)')
+    .eq('company_type', 'parts')
+    .eq('company_id', companyId)
+    .in('status', ['frozen', 'scheduled'])
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data ?? []) as CompanySubscription[]
+}
+
+/** Отменить очередь компании: удалить все frozen/scheduled строки. */
+export async function cancelCompanyQueue(companyId: string) {
+  const { error } = await supabase
+    .from('company_subscriptions')
+    .delete()
+    .eq('company_type', 'parts')
+    .eq('company_id', companyId)
+    .in('status', ['frozen', 'scheduled'])
   if (error) throw error
 }
 
@@ -373,22 +379,14 @@ export async function getSubscriptionRequests(status: 'pending' | 'approved' | '
   return rows as SubscriptionRequest[]
 }
 
-/** Подтвердить заявку: назначить подписку на выбранный срок и отметить approved */
+/** Подтвердить заявку: применить тариф (через единый apply RPC) и отметить approved */
 export async function approveSubscriptionRequest(id: string) {
   const { data: req, error } = await supabase
     .from('subscription_requests').select('*').eq('id', id).single()
   if (error) throw error
 
-  const end = new Date()
-  end.setMonth(end.getMonth() + (req.months || 1))
-
-  await assignSubscription({
-    company_type: req.company_type,
-    company_id: req.company_id,
-    subscription_id: req.plan_id,
-    start_date: new Date().toISOString(),
-    end_date: end.toISOString(),
-  })
+  // через единый apply RPC: сервер сам выберет назначение/продление/апгрейд/очередь
+  await applyCompanySubscription(req.company_id, req.plan_id, req.months || 1)
 
   const { data: u } = await supabase.auth.getUser()
   const { error: uerr } = await supabase
@@ -404,5 +402,31 @@ export async function rejectSubscriptionRequest(id: string, note?: string) {
     .from('subscription_requests')
     .update({ status: 'rejected', note: note || null, processed_at: new Date().toISOString(), processed_by: u?.user?.id ?? null })
     .eq('id', id)
+  if (error) throw error
+}
+
+// ============================================================================
+// DEFAULT PLAN FOR NEW COMPANIES (подписка по умолчанию для новых разборок)
+// ============================================================================
+
+export interface DefaultCompanyPlan {
+  plan_id: string | null
+  months: number | null
+}
+
+/** Текущая настройка плана по умолчанию для новых разборок (null = Демо бессрочно). */
+export async function getDefaultCompanyPlan(): Promise<DefaultCompanyPlan> {
+  const { data, error } = await supabase.rpc('admin_get_default_company_plan')
+  if (error) throw error
+  const row = (Array.isArray(data) ? data[0] : data) as DefaultCompanyPlan | undefined
+  return { plan_id: row?.plan_id ?? null, months: row?.months ?? null }
+}
+
+/** Сохранить план по умолчанию (planId=null → Демо; months=null → бессрочно). */
+export async function setDefaultCompanyPlan(planId: string | null, months: number | null) {
+  const { error } = await supabase.rpc('admin_set_default_company_plan', {
+    p_plan_id: planId,
+    p_months: months,
+  })
   if (error) throw error
 }
