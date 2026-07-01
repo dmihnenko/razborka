@@ -229,14 +229,14 @@ export default function UserEdit() {
                       ? { background: 'var(--cab-signal)', color: '#fff' }
                       : active
                       ? { background: 'var(--cab-signal-weak)', color: 'var(--cab-signal)', boxShadow: '0 0 0 2px var(--cab-signal)' }
-                      : { background: '#F3F4F6', color: '#9CA3AF' }
+                      : { background: 'var(--cab-surface-2)', color: 'var(--cab-ink-3)' }
                   }
                 >
                   {done ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : s.num}
                 </div>
-                <span className="text-xs font-medium" style={active ? { color: 'var(--cab-signal)' } : { color: '#9CA3AF' }}>{s.label}</span>
+                <span className="text-xs font-medium" style={active ? { color: 'var(--cab-signal)' } : { color: 'var(--cab-ink-3)' }}>{s.label}</span>
                 {i < STEPS.length - 1 && (
-                  <div className="flex-1 h-0.5 rounded-full" style={done ? { background: 'var(--cab-signal)' } : { background: '#E5E7EB' }} />
+                  <div className="flex-1 h-0.5 rounded-full" style={done ? { background: 'var(--cab-signal)' } : { background: 'var(--cab-border)' }} />
                 )}
               </div>
             )

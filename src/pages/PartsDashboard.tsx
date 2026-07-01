@@ -293,9 +293,9 @@ export default function PartsDashboard() {
           <div className="space-y-2.5">
             {[
               { label: t('dashboard.fNew'),        value: stats?.orders?.new ?? 0,        color: 'var(--cab-signal)' },
-              { label: t('dashboard.fAssembling'),  value: stats?.orders?.assembling ?? 0, color: '#B45309' },
+              { label: t('dashboard.fAssembling'),  value: stats?.orders?.assembling ?? 0, color: 'var(--cab-warning)' },
               { label: t('dashboard.fShipped'),     value: stats?.orders?.shipped ?? 0,    color: 'var(--cab-signal)' },
-              { label: t('dashboard.fCompleted'),   value: stats?.orders?.completed ?? 0,  color: '#15803D' },
+              { label: t('dashboard.fCompleted'),   value: stats?.orders?.completed ?? 0,  color: 'var(--cab-success)' },
             ].map(({ label, value, color }) => {
               const total = stats?.orders?.total || 1
               const pct = Math.round((value / total) * 100)
@@ -335,11 +335,11 @@ export default function PartsDashboard() {
               <p className="text-[11px] mt-1" style={{ color: ink2 }}>{t('dashboard.delInTransit')}</p>
             </div>
             <div>
-              <p className="text-xl font-extrabold tabular-nums leading-none" style={{ color: delivery.problem > 0 ? '#DC2626' : ink3 }}>{delivery.problem}</p>
+              <p className="text-xl font-extrabold tabular-nums leading-none" style={{ color: delivery.problem > 0 ? 'var(--cab-danger)' : ink3 }}>{delivery.problem}</p>
               <p className="text-[11px] mt-1" style={{ color: ink2 }}>{t('dashboard.delProblem')}</p>
             </div>
             <div>
-              <p className="text-xl font-extrabold tabular-nums leading-none" style={{ color: '#15803D' }}>{delivery.delivered}</p>
+              <p className="text-xl font-extrabold tabular-nums leading-none" style={{ color: 'var(--cab-success)' }}>{delivery.delivered}</p>
               <p className="text-[11px] mt-1" style={{ color: ink2 }}>{t('dashboard.delDelivered')}</p>
             </div>
           </div>

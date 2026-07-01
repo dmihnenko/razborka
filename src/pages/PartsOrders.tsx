@@ -329,10 +329,10 @@ export default function PartsOrders() {
         {/* Stats — фильтр-плитки */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
           {[
-            { key: 'all',        label: t('ordersPage.statAll'),        value: stats.total,      dot: '#8B909A' },
+            { key: 'all',        label: t('ordersPage.statAll'),        value: stats.total,      dot: 'var(--cab-ink-3)' },
             { key: 'new',        label: t('ordersPage.statNew'),        value: stats.new,        dot: 'var(--cab-signal)' },
-            { key: 'assembling', label: t('ordersPage.statAssembling'), value: stats.assembling, dot: '#D97706' },
-            { key: 'completed',  label: t('ordersPage.statCompleted'),  value: stats.completed,  dot: '#16A34A' },
+            { key: 'assembling', label: t('ordersPage.statAssembling'), value: stats.assembling, dot: 'var(--cab-warning)' },
+            { key: 'completed',  label: t('ordersPage.statCompleted'),  value: stats.completed,  dot: 'var(--cab-success)' },
           ].map(({ key, label, value, dot }) => (
             <button
               key={key}

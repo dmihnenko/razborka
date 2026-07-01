@@ -963,18 +963,19 @@ export default function PartsInventory() {
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2.5">
             {filteredAndSorted.map((item) => (
-              <InventoryCard
-                key={item.id}
-                item={item}
-                statusFilter={statusFilter}
-                selectedIds={selectedIds}
-                onStatusClick={handleStatusClick}
-                onEdit={handleEdit}
-                onSell={handleSell}
-                onDelete={handleDelete}
-                onNavigate={goToItem}
-                onToggleSelect={(id, e) => toggleSelect(id, e as React.MouseEvent)}
-              />
+              <div key={item.id} className="cv-card">
+                <InventoryCard
+                  item={item}
+                  statusFilter={statusFilter}
+                  selectedIds={selectedIds}
+                  onStatusClick={handleStatusClick}
+                  onEdit={handleEdit}
+                  onSell={handleSell}
+                  onDelete={handleDelete}
+                  onNavigate={goToItem}
+                  onToggleSelect={(id, e) => toggleSelect(id, e as React.MouseEvent)}
+                />
+              </div>
             ))}
           </div>
         ) : (
@@ -985,7 +986,7 @@ export default function PartsInventory() {
               <button
                 key={item.id}
                 onClick={() => goToItem(item.id)}
-                className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left active:bg-slate-50 transition-colors"
+                className="cv-row w-full flex items-center gap-3 px-3.5 py-2.5 text-left active:bg-slate-50 transition-colors"
               >
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold text-gray-900 truncate flex items-center gap-1.5">
@@ -1028,7 +1029,7 @@ export default function PartsInventory() {
                   {filteredAndSorted.map((item) => (
                     <tr
                       key={item.id}
-                      className="hover:bg-slate-50 transition-colors group/row cursor-pointer"
+                      className="cv-row hover:bg-slate-50 transition-colors group/row cursor-pointer"
                       onClick={() => goToItem(item.id)}
                     >
                       {/* Выбор */}

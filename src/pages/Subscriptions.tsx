@@ -92,11 +92,11 @@ function initials(name?: string | null): string {
 // Цвет прогресс-бара лимита по заполнению
 function barColor(used: number, max: number | null | undefined): string {
   if (max == null) return 'var(--cab-signal)'
-  if (used >= max) return '#DC2626'
+  if (used >= max) return 'var(--cab-danger)'
   const pct = used / max
-  if (pct >= 0.9) return '#DC2626'
-  if (pct >= 0.7) return '#D97706'
-  return '#16A34A'
+  if (pct >= 0.9) return 'var(--cab-danger)'
+  if (pct >= 0.7) return 'var(--cab-warning)'
+  return 'var(--cab-success)'
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
@@ -673,7 +673,7 @@ export default function Subscriptions() {
                     style={sel ? { backgroundColor: 'var(--cab-signal-weak)' } : undefined}>
                     <span className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                       sel ? 'bg-white border' : 'bg-gray-100 text-gray-600'}`}
-                      style={sel ? { color: 'var(--cab-signal)', borderColor: 'var(--brand-line, #C9CCF6)' } : undefined}>
+                      style={sel ? { color: 'var(--cab-signal)', borderColor: 'var(--brand-200)' } : undefined}>
                       {initials(company.name)}
                     </span>
                     <span className="flex-1 min-w-0">
@@ -744,100 +744,86 @@ export default function Subscriptions() {
         />
       )}
 
-      {/* ── Модалка разборки (top-sheet mobile / center desktop) ── */}
-      {isModalOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-start sm:items-center justify-center z-50 px-3 py-3 sm:p-4"
-          style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}
-          onClick={e => { if (e.target === e.currentTarget) { setIsModalOpen(false); setEditingCompany(null); resetForm() } }}
-        >
-          <div className="w-full sm:max-w-md bg-white rounded-2xl shadow-2xl animate-modal-pop">
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 pt-4 pb-4 border-b border-gray-100">
-              <div>
-                <p className="kicker mb-0.5">{editingCompany ? 'Редактирование' : 'Новая разборка'}</p>
-                <h2 className="heading-3">{editingCompany ? editingCompany.name : 'Создать разборку'}</h2>
-              </div>
-            </div>
-
-            {/* Body */}
-            <div className="px-5 py-4 space-y-4 overflow-y-auto max-h-[60vh] sm:max-h-none">
-              <div>
-                <label className="form-label">Название <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  className="form-input"
-                  placeholder="Например: Разборка Автозапчасти"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="form-label">Адрес</label>
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={e => setFormData({ ...formData, address: e.target.value })}
-                  className="form-input"
-                  placeholder="г. Киев, ул. Примерная, 123"
-                />
-              </div>
-              <div>
-                <label className="form-label">Телефон</label>
-                <IMaskInput
-                  mask="+380 00 000-00-00"
-                  value={formData.phone}
-                  onAccept={value => setFormData({ ...formData, phone: value })}
-                  type="tel"
-                  className="form-input"
-                  placeholder="+380 XX XXX-XX-XX"
-                />
-              </div>
-              <div>
-                <label className="form-label">Email</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  className="form-input"
-                  placeholder="info@example.com"
-                />
-              </div>
-              <div>
-                <label className="form-label">Описание</label>
-                <textarea
-                  value={formData.description}
-                  onChange={e => setFormData({ ...formData, description: e.target.value })}
-                  className="form-input resize-none"
-                  rows={3}
-                  placeholder="Краткое описание разборки..."
-                />
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div
-              className="flex gap-3 px-5 pt-3 pb-5 border-t border-gray-100"
-              style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+      {/* ── Модалка разборки (единый компонент Modal) ── */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => { setIsModalOpen(false); setEditingCompany(null); resetForm() }}
+        size="md"
+        subtitle={editingCompany ? 'Редактирование' : 'Новая разборка'}
+        title={editingCompany ? editingCompany.name : 'Создать разборку'}
+        footer={
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setIsModalOpen(false); setEditingCompany(null); resetForm() }}
+              className="cab-btn cab-btn-secondary flex-1"
             >
-              <button
-                onClick={() => { setIsModalOpen(false); setEditingCompany(null); resetForm() }}
-                className="cab-btn cab-btn-secondary flex-1"
-              >
-                Отмена
-              </button>
-              <button
-                onClick={handleSubmitCompany}
-                disabled={!formData.name.trim() || isCompanyMutating}
-                className="cab-btn cab-btn-primary flex-1"
-              >
-                {isCompanyMutating ? 'Сохранение…' : editingCompany ? 'Сохранить' : 'Создать'}
-              </button>
-            </div>
+              Отмена
+            </button>
+            <button
+              onClick={handleSubmitCompany}
+              disabled={!formData.name.trim() || isCompanyMutating}
+              className="cab-btn cab-btn-primary flex-1"
+            >
+              {isCompanyMutating ? 'Сохранение…' : editingCompany ? 'Сохранить' : 'Создать'}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="form-label">Название <span style={{ color: 'var(--cab-danger)' }}>*</span></label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={e => setFormData({ ...formData, name: e.target.value })}
+              className="form-input"
+              placeholder="Например: Разборка Автозапчасти"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="form-label">Адрес</label>
+            <input
+              type="text"
+              value={formData.address}
+              onChange={e => setFormData({ ...formData, address: e.target.value })}
+              className="form-input"
+              placeholder="г. Киев, ул. Примерная, 123"
+            />
+          </div>
+          <div>
+            <label className="form-label">Телефон</label>
+            <IMaskInput
+              mask="+380 00 000-00-00"
+              value={formData.phone}
+              onAccept={value => setFormData({ ...formData, phone: value })}
+              type="tel"
+              className="form-input"
+              placeholder="+380 XX XXX-XX-XX"
+            />
+          </div>
+          <div>
+            <label className="form-label">Email</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={e => setFormData({ ...formData, email: e.target.value })}
+              className="form-input"
+              placeholder="info@example.com"
+            />
+          </div>
+          <div>
+            <label className="form-label">Описание</label>
+            <textarea
+              value={formData.description}
+              onChange={e => setFormData({ ...formData, description: e.target.value })}
+              className="form-input resize-none"
+              rows={3}
+              placeholder="Краткое описание разборки..."
+            />
           </div>
         </div>
-      )}
+      </Modal>
 
       <ConfirmDialog {...dialogProps} />
     </div>
@@ -1118,7 +1104,7 @@ function DetailPanel({
                 style={isDraft ? { backgroundColor: 'var(--cab-signal-weak)' } : undefined}>
                 {isCurrent && (
                   <span className="absolute top-2.5 right-2.5 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-white border"
-                    style={{ color: 'var(--cab-signal)', borderColor: 'var(--brand-line, #C9CCF6)' }}>
+                    style={{ color: 'var(--cab-signal)', borderColor: 'var(--brand-200)' }}>
                     Текущий
                   </span>
                 )}

@@ -50,6 +50,14 @@
     --cab-signal:        #3538CD;   /* сигнальный акцент (индиго) */
     --cab-signal-hover:  #2A2DA8;
     --cab-signal-weak:   #ECEDFB;   /* фон сигнальных чипов */
+    /* Семантические статус-цвета (мелким сигналом — не заливать крупные площади).
+       Использовать var(--cab-success/warning/danger) вместо хардкода #16A34A/#D97706/#DC2626. */
+    --cab-success:       #16A34A;
+    --cab-success-weak:  #DCFCE7;
+    --cab-warning:       #D97706;
+    --cab-warning-weak:  #FEF3C7;
+    --cab-danger:        #DC2626;
+    --cab-danger-weak:   #FEE2E2;
     --cab-radius:        10px;
     --cab-radius-sm:     8px;
     --logo-net:          #0D9488;   /* акцент уголка «.net» в логотипе (тил-зелёный) */
@@ -124,10 +132,12 @@
     font-feature-settings: 'tnum' 0;
   }
 
-  /* Focus ring — --primary (кабинет=чернила, логин/админка=бренд) */
+  /* Focus ring — --primary (кабинет=чернила, логин/админка=бренд).
+     Белый offset-слой между элементом и кольцом, чтобы фокус был виден и на
+     тёмных SOLID-кнопках (ink/primary), где кольцо иначе сливается с фоном. */
   *:focus-visible {
     @apply outline-none;
-    box-shadow: 0 0 0 2px hsl(var(--primary)), 0 0 0 4px hsl(var(--primary) / 0.15);
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px hsl(var(--ring)), 0 0 0 6px hsl(var(--ring) / 0.15);
   }
 
   /* Touch targets */
@@ -473,11 +483,19 @@
   }
   .empty-state-icon {
     @apply w-16 h-16 rounded-2xl flex items-center justify-center mb-4;
-    background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+    background: var(--cab-surface-2);
     box-shadow: inset 0 0 0 1px rgba(15,23,42,0.05), 0 1px 2px rgba(15,23,42,0.04);
   }
   .empty-state-title { @apply text-base font-bold text-gray-900 mb-1; }
   .empty-state-text  { @apply text-sm text-gray-500 max-w-xs; }
+
+  /* Нативная виртуализация рендера длинных списков (склад): браузер пропускает
+     paint/layout офф-скрин элементов. Без библиотек, безопасно для grid/list/table,
+     dnd и bulk-select. contain-intrinsic-size — примерная высота скрытого элемента
+     (браузер уточняет при прокрутке). Прогрессивное улучшение: где не поддержано —
+     рендерится обычным образом. */
+  .cv-card { content-visibility: auto; contain-intrinsic-size: auto 240px; }
+  .cv-row  { content-visibility: auto; contain-intrinsic-size: auto 44px; }
 
   /* ── Alert / notice ─────────────────────────────────────── */
   .alert {
