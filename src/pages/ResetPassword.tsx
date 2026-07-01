@@ -18,6 +18,8 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false)
   const [ready, setReady] = useState(false)
   const [email, setEmail] = useState('')
+  // Инлайн-ошибка, привязанная к полю (a11y: aria-invalid + role="alert"), в дополнение к тосту.
+  const [fieldError, setFieldError] = useState<{ field: 'password' | 'confirm'; msg: string } | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -39,12 +41,17 @@ export default function ResetPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFieldError(null)
     if (password.length < 6) {
-      toast.error('Пароль должен содержать минимум 6 символов')
+      const msg = 'Пароль должен содержать минимум 6 символов'
+      setFieldError({ field: 'password', msg })
+      toast.error(msg)
       return
     }
     if (password !== confirm) {
-      toast.error('Пароли не совпадают')
+      const msg = 'Пароли не совпадают'
+      setFieldError({ field: 'confirm', msg })
+      toast.error(msg)
       return
     }
     setLoading(true)
@@ -125,16 +132,17 @@ export default function ResetPassword() {
                       id="new-password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => { setPassword(e.target.value); if (fieldError) setFieldError(null) }}
                       required
                       placeholder="Минимум 6 символов"
                       className="form-input w-full pl-10 pr-12"
                       autoComplete="new-password"
+                      aria-invalid={fieldError?.field === 'password' || undefined}
+                      aria-describedby={fieldError?.field === 'password' ? 'new-password-error' : undefined}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(v => !v)}
-                      tabIndex={-1}
                       aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
                       className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-9 h-9 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     >
@@ -143,6 +151,9 @@ export default function ResetPassword() {
                         : <Eye size={16} strokeWidth={1.5} aria-hidden="true" />}
                     </button>
                   </div>
+                  {fieldError?.field === 'password' && (
+                    <p id="new-password-error" className="form-error" role="alert">{fieldError.msg}</p>
+                  )}
                 </div>
 
                 {/* Повтор пароля */}
@@ -161,16 +172,17 @@ export default function ResetPassword() {
                       id="confirm-password"
                       type={showConfirm ? 'text' : 'password'}
                       value={confirm}
-                      onChange={(e) => setConfirm(e.target.value)}
+                      onChange={(e) => { setConfirm(e.target.value); if (fieldError) setFieldError(null) }}
                       required
                       placeholder="Повторите пароль"
                       className="form-input w-full pl-10 pr-12"
                       autoComplete="new-password"
+                      aria-invalid={fieldError?.field === 'confirm' || undefined}
+                      aria-describedby={fieldError?.field === 'confirm' ? 'confirm-password-error' : undefined}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirm(v => !v)}
-                      tabIndex={-1}
                       aria-label={showConfirm ? 'Скрыть подтверждение пароля' : 'Показать подтверждение пароля'}
                       className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-9 h-9 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     >
@@ -179,6 +191,9 @@ export default function ResetPassword() {
                         : <Eye size={16} strokeWidth={1.5} aria-hidden="true" />}
                     </button>
                   </div>
+                  {fieldError?.field === 'confirm' && (
+                    <p id="confirm-password-error" className="form-error" role="alert">{fieldError.msg}</p>
+                  )}
                 </div>
 
                 <button

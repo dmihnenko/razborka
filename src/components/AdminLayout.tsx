@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Shield, Users, Settings, BarChart2, LogOut, ClipboardList,
@@ -55,6 +55,16 @@ export default function AdminLayout() {
   const { user, loading: authLoading } = useAuth()
   const { data: profile, isLoading } = useUserProfile()
   const [moreOpen, setMoreOpen] = useState(false)
+  const moreSheetRef = useRef<HTMLDivElement>(null)
+
+  // Шторка «Ещё» как диалог: Esc закрывает, фокус переносится внутрь при открытии.
+  useEffect(() => {
+    if (!moreOpen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMoreOpen(false) }
+    document.addEventListener('keydown', onKey)
+    moreSheetRef.current?.focus()
+    return () => document.removeEventListener('keydown', onKey)
+  }, [moreOpen])
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut()
@@ -163,7 +173,7 @@ export default function AdminLayout() {
           return (
             <Link key={tab.href} to={tab.href}
               className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-[11px] font-medium transition-colors"
-              style={{ color: active ? 'var(--cab-ink)' : 'var(--cab-ink-3)' }}>
+              style={{ color: active ? 'var(--cab-ink)' : 'var(--cab-ink-2)' }}>
               <Icon className="w-5 h-5" strokeWidth={1.5} />
               {tab.name}
             </Link>
@@ -171,22 +181,23 @@ export default function AdminLayout() {
         })}
         <button onClick={() => setMoreOpen(true)}
           className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-[11px] font-medium transition-colors"
-          style={{ color: moreActive ? 'var(--cab-ink)' : 'var(--cab-ink-3)' }}>
+          style={{ color: moreActive ? 'var(--cab-ink)' : 'var(--cab-ink-2)' }}>
           <MoreHorizontal className="w-5 h-5" strokeWidth={1.5} />
           Ещё
         </button>
       </nav>
 
-      {/* ═══ «ЕЩЁ» — нижняя шторка ═══ */}
+      {/* ═══ «ЕЩЁ» — нижняя шторка (диалог) ═══ */}
       {moreOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex items-end" onClick={() => setMoreOpen(false)}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-          <div className="relative w-full bg-white rounded-t-2xl shadow-xl p-3 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]"
+          <div ref={moreSheetRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Разделы"
+            className="relative w-full bg-white rounded-t-2xl shadow-xl p-3 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] outline-none"
             onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-3" />
             <div className="flex items-center justify-between px-2 mb-2">
               <p className="text-sm font-bold text-gray-900">Разделы</p>
-              <button onClick={() => setMoreOpen(false)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X className="w-4 h-4" /></button>
+              <button onClick={() => setMoreOpen(false)} aria-label="Закрыть" className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X className="w-4 h-4" aria-hidden="true" /></button>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {MORE_ITEMS.map(item => {

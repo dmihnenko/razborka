@@ -396,7 +396,6 @@ export default function Login() {
                         <button
                           type="button"
                           onClick={() => setShowPassword(v => !v)}
-                          tabIndex={-1}
                           aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
                           className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-9 h-9 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
@@ -435,7 +434,6 @@ export default function Login() {
                           <button
                             type="button"
                             onClick={() => setShowConfirm(v => !v)}
-                            tabIndex={-1}
                             aria-label={showConfirm ? 'Скрыть подтверждение пароля' : 'Показать подтверждение пароля'}
                             className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-9 h-9 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                           >
