@@ -1,6 +1,20 @@
 import { supabase } from '@/lib/supabase'
 import type { Tariff, PartsApplicationInput, PartsApplication } from '@/types/business'
 
+/** Строка subscriptions из БД (snake_case) — выбранные в getPublicTariffs колонки */
+interface SubscriptionRow {
+  id: string
+  name: string
+  price: number
+  description: string | null
+  max_vehicles: number | null
+  max_parts: number | null
+  max_workers: number | null
+  has_analytics: boolean | null
+  is_custom: boolean | null
+  sort_order: number | null
+}
+
 export async function getPublicTariffs(): Promise<Tariff[]> {
   const { data, error } = await supabase
     .from('subscriptions')
@@ -11,7 +25,7 @@ export async function getPublicTariffs(): Promise<Tariff[]> {
 
   if (error) throw error
 
-  return (data || []).map((row: any) => ({
+  return ((data || []) as SubscriptionRow[]).map((row) => ({
     id: row.id,
     name: row.name,
     price: row.price,

@@ -5,6 +5,7 @@ import type {
   PartsCategory,
   PartsInventoryItem,
   PartsOrder,
+  PartsOrderItem,
   CreatePartsVehicleInput,
   CreatePartsCustomerInput,
   CreatePartsInventoryInput,
@@ -91,7 +92,7 @@ export async function updateVehicleStatus(
     existing = data ?? undefined
   }
 
-  const updates: any = { status }
+  const updates: Partial<PartsVehicle> = { status }
 
   if (status === 'in_progress' && !existing?.dismantling_started_at) {
     updates.dismantling_started_at = new Date().toISOString()
@@ -338,14 +339,29 @@ export async function getPartsDashboardStats(partsCompanyId: string, rate: numbe
   return data as PartsDashboardStats
 }
 
+/** Форма ответа RPC get_parts_analytics (json_build_object на сервере). */
+export interface PartsAnalytics {
+  totalRevenue: number
+  totalOrders: number
+  completedOrders: number
+  totalSoldParts: number
+  avgCheck: number
+  inventoryValue: number
+  potentialMargin: number
+  totalVehicles: number
+  dismantledVehicles: number
+  monthly: Array<{ month: string; revenue: number; orders: number }>
+  topParts: Array<{ name: string; sold_quantity: number; revenue: number }>
+}
+
 /** Аналитика разборки одним серверным RPC (вместо нескольких клиентских запросов). */
-export async function getPartsAnalytics(partsCompanyId: string, rate: number): Promise<any> {
+export async function getPartsAnalytics(partsCompanyId: string, rate: number): Promise<PartsAnalytics> {
   const { data, error } = await supabase.rpc('get_parts_analytics', {
     p_company: partsCompanyId,
     p_rate: rate,
   })
   if (error) throw error
-  return data
+  return data as PartsAnalytics
 }
 
 /** Окупаемость авто: на каждое авто — вложено (цена авто), возвращено, остаток, прибыль, %. */
@@ -487,7 +503,7 @@ export async function createPartsInventoryItem(input: CreatePartsInventoryInput,
 
 export async function updatePartsInventoryItem(id: string, updates: Partial<PartsInventoryItem>) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { category, vehicle, ...rest } = updates as any
+  const { category, vehicle, ...rest } = updates
   // Convert empty strings to null for UUID and optional fields to avoid 400 errors
   // Only include UUID fields if explicitly provided — otherwise they'd be set to null,
   // overwriting existing values (e.g. vehicle_id gets wiped when selling a part)
@@ -679,7 +695,7 @@ export async function updatePartsOrderTotal(orderId: string, exchangeRate?: numb
     .select('price_at_sale, quantity, price_at_sale_currency')
     .eq('order_id', orderId)
 
-  const total = (items || []).reduce((s: number, i: any) => {
+  const total = (items || []).reduce((s: number, i: Pick<PartsOrderItem, 'price_at_sale' | 'quantity' | 'price_at_sale_currency'>) => {
     const currency = i.price_at_sale_currency || 'UAH'
     const amount = (i.price_at_sale || 0) * (i.quantity || 1)
     // USD → грн только при известном курсе; иначе считаем сумму без USD-позиций (без хардкода)
@@ -907,38 +923,41 @@ export async function duplicatePartsInventoryItem(
     .single()
   if (fetchErr) throw fetchErr
 
-   
-  const { id: _id, created_at: _ca, updated_at: _ua, sold_price: _sp, sold_to_customer_id: _stc, reserved_quantity: _rq, ...rest } = src as any
+  const source = src as PartsInventoryItem
+  const { id: _id, created_at: _ca, updated_at: _ua, sold_price: _sp, sold_to_customer_id: _stc, reserved_quantity: _rq, ...rest } = source
 
-  const copy: CreatePartsInventoryInput & Record<string, unknown> = {
+  const copy: Record<string, unknown> = {
     ...rest,
-    name: `${src.name} (копия)`,
+    name: `${source.name} (копия)`,
     status: 'available',
     parts_company_id: partsCompanyId,
     reserved_quantity: 0,
-    category_id: src.category_id || null,
-    vehicle_id: src.vehicle_id || null,
-    storage_location_id: src.storage_location_id || null,
-    location: src.location || null,
-    shelf: src.shelf || null,
-    bin: src.bin || null,
-    part_number: src.part_number || null,
-    description: src.description || null,
-    notes: src.notes || null,
-    purchase_price: src.purchase_price ?? null,
+    category_id: source.category_id || null,
+    vehicle_id: source.vehicle_id || null,
+    storage_location_id: source.storage_location_id || null,
+    location: source.location || null,
+    shelf: source.shelf || null,
+    bin: source.bin || null,
+    part_number: source.part_number || null,
+    description: source.description || null,
+    notes: source.notes || null,
+    purchase_price: source.purchase_price ?? null,
   }
 
-  return createPartsInventoryItem(copy as CreatePartsInventoryInput, partsCompanyId)
+  // copy собирается динамическим spread'ом (...rest + переопределения), поэтому
+  // структурно эквивалентен CreatePartsInventoryInput, но TS не может это вывести —
+  // граничный каст через unknown (не подмена типа, форма реально совпадает).
+  return createPartsInventoryItem(copy as unknown as CreatePartsInventoryInput, partsCompanyId)
 }
 
 /** Fetch all inventory items for a parts vehicle */
-export async function getPartsInventoryByVehicle(vehicleId: string): Promise<any[]> {
+export async function getPartsInventoryByVehicle(vehicleId: string): Promise<PartsInventoryItem[]> {
   const { data, error } = await supabase
     .from('parts_inventory')
     .select('*')
     .eq('vehicle_id', vehicleId)
   if (error) throw error
-  return data || []
+  return (data ?? []) as PartsInventoryItem[]
 }
 
 /**
@@ -977,11 +996,16 @@ function sanitizeSearchQuery(s: string): string {
   return s.trim().replace(/[,()%]/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
+export type CabinetSearchPart = Pick<PartsInventoryItem, 'id' | 'name' | 'part_number' | 'selling_price' | 'price_currency' | 'status'>
+export type CabinetSearchVehicle = Pick<PartsVehicle, 'id' | 'make' | 'model' | 'year' | 'vin'>
+export type CabinetSearchOrder = Pick<PartsOrder, 'id' | 'order_number' | 'status' | 'total_amount'>
+export type CabinetSearchCustomer = Pick<PartsCustomer, 'id' | 'full_name' | 'phone'>
+
 export interface CabinetSearchResult {
-  parts: any[]
-  vehicles: any[]
-  orders: any[]
-  customers: any[]
+  parts: CabinetSearchPart[]
+  vehicles: CabinetSearchVehicle[]
+  orders: CabinetSearchOrder[]
+  customers: CabinetSearchCustomer[]
 }
 
 export async function searchCabinet(

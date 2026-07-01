@@ -14,12 +14,17 @@ function toTitleCase(str: string): string {
     .replace(/(?:^|\s|-)\S/g, (c) => c.toUpperCase())
 }
 
+/** Ответ NHTSA DecodeVinValues: Results — массив плоских объектов «поле → строка». */
+interface NhtsaDecodeResponse {
+  Results?: Array<Record<string, string>>
+}
+
 export async function decodeVin(vin: string): Promise<VinDecodeResult> {
   const normalized = vin.trim().toUpperCase()
 
   const url = `https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/${encodeURIComponent(normalized)}?format=json`
 
-  let data: any
+  let data: NhtsaDecodeResponse
   try {
     const res = await fetch(url)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)

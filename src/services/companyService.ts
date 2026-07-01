@@ -40,6 +40,8 @@ export interface PartsCompanyContacts {
   email: string | null
 }
 
+type PartsCompanyContactsRow = Omit<PartsCompanyContacts, 'telegram'>
+
 export async function getPartsCompanyContacts(id: string): Promise<PartsCompanyContacts> {
   // Базовые поля грузим всегда; telegram — best-effort (колонки может не быть,
   // если миграция 012 ещё не применена).
@@ -53,10 +55,10 @@ export async function getPartsCompanyContacts(id: string): Promise<PartsCompanyC
   let telegram: string | null = null
   try {
     const tg = await supabase.from('parts_companies').select('telegram').eq('id', id).single()
-    telegram = (tg.data as any)?.telegram ?? null
+    telegram = (tg.data as { telegram: string | null } | null)?.telegram ?? null
   } catch { /* колонки нет */ }
 
-  return { ...(data as any), telegram } as PartsCompanyContacts
+  return { ...(data as PartsCompanyContactsRow), telegram }
 }
 
 export async function updatePartsCompanyContacts(
@@ -66,7 +68,7 @@ export async function updatePartsCompanyContacts(
   const { error } = await supabase.from('parts_companies').update(fields).eq('id', id)
   if (!error) return
   // Если колонки telegram нет — сохраняем остальное без неё
-  if ((error as any)?.code === '42703' || /telegram/i.test(error.message || '')) {
+  if (error.code === '42703' || /telegram/i.test(error.message || '')) {
     const { telegram, ...rest } = fields
     void telegram
     const retry = await supabase.from('parts_companies').update(rest).eq('id', id)
@@ -83,7 +85,7 @@ export async function getCompanyRate(companyId: string): Promise<CompanyRateSett
   const { data, error } = await supabase
     .from('parts_companies').select('usd_rate_mode, usd_rate').eq('id', companyId).single()
   if (error) throw error
-  const d = data as any
+  const d = data as { usd_rate_mode: string | null; usd_rate: number | null } | null
   return { mode: d?.usd_rate_mode === 'manual' ? 'manual' : 'auto', manualRate: d?.usd_rate ?? null }
 }
 

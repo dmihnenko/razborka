@@ -9,7 +9,7 @@ export interface AdminStats {
   openTickets: number
 }
 
-async function safeCount(query: any): Promise<number> {
+async function safeCount(query: PromiseLike<{ count: number | null }>): Promise<number> {
   try {
     const { count } = await query
     return count || 0
@@ -32,31 +32,55 @@ export async function getAdminStats(): Promise<AdminStats> {
   return { users, activeUsers, roles, partsCompanies, subscriptions, openTickets }
 }
 
-export async function fetchAccessRequests(filter: string) {
+/** Краткий профиль заявителя (сшивается к заявке отдельным запросом) */
+export interface AccessRequestUser {
+  id: string
+  full_name: string | null
+  username: string | null
+  email: string | null
+}
+
+/** Строка access_requests + сшитый профиль пользователя */
+export interface AccessRequest {
+  id: string
+  user_id: string
+  request_type: string
+  status: 'pending' | 'approved' | 'rejected' | string
+  company_name: string | null
+  company_address: string | null
+  company_phone: string | null
+  owner_name: string | null
+  owner_phone: string | null
+  vehicle_makes: string | null
+  rejection_reason: string | null
+  company_id: string | null
+  reviewed_at: string | null
+  created_at: string
+  user?: AccessRequestUser | null
+}
+
+export async function fetchAccessRequests(filter: string): Promise<AccessRequest[]> {
   // user_id ссылается на auth.users, поэтому встроенный join user_profiles недоступен —
   // тянем профили отдельным запросом и сшиваем.
-  let q = supabase
-    .from('access_requests')
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (filter !== 'all') q = (q as any).eq('status', filter)
-  const { data, error } = await q
+  const base = supabase.from('access_requests').select('*')
+  const filtered = filter !== 'all' ? base.eq('status', filter) : base
+  const { data, error } = await filtered.order('created_at', { ascending: false })
   if (error) throw error
 
-  const rows = data || []
-  const userIds = [...new Set(rows.map((r: any) => r.user_id).filter(Boolean))]
-  let profiles: Record<string, any> = {}
+  const rows = (data || []) as AccessRequest[]
+  const userIds = [...new Set(rows.map(r => r.user_id).filter(Boolean))]
+  let profiles: Record<string, AccessRequestUser> = {}
   if (userIds.length) {
     const { data: profs } = await supabase
       .from('user_profiles')
       .select('id, full_name, username, email')
       .in('id', userIds)
-    profiles = Object.fromEntries((profs || []).map((p: any) => [p.id, p]))
+    profiles = Object.fromEntries(((profs || []) as AccessRequestUser[]).map(p => [p.id, p]))
   }
-  return rows.map((r: any) => ({ ...r, user: profiles[r.user_id] || null }))
+  return rows.map(r => ({ ...r, user: profiles[r.user_id] || null }))
 }
 
-export async function approveAccessRequest(req: any) {
+export async function approveAccessRequest(req: AccessRequest): Promise<void> {
   const isOwner = req.request_type === 'parts_owner'
   const isWorker = req.request_type === 'parts_worker'
   let companyId: string | null = null
@@ -139,15 +163,15 @@ export interface ApproveCarModelInput {
 
 /** Список моделей каталога по статусу (admin). filter: pending|approved|rejected|all */
 export async function fetchCarModels(filter: string): Promise<CarModelRow[]> {
-  let q = supabase
+  const base = supabase
     .from('car_models')
     .select('id, make, model, sort_order, is_active, status, suggested_by, parts_company_id, rejection_reason, year_from, year_to, standard_categories, created_at')
+  const filtered = filter !== 'all' ? base.eq('status', filter) : base
+  const { data, error } = await filtered
     .order('status', { ascending: true })
     .order('make', { ascending: true })
     .order('sort_order', { ascending: true })
     .order('model', { ascending: true })
-  if (filter !== 'all') q = (q as any).eq('status', filter)
-  const { data, error } = await q
   if (error) throw error
   return (data || []) as CarModelRow[]
 }

@@ -11,25 +11,78 @@ import type {
 } from '@/types/personalVehicles'
 
 /**
+ * Форма строки personal_vehicles из БД (snake_case, как приходит из supabase)
+ */
+interface PersonalVehicleRow {
+  id: string
+  user_id: string
+  make_model: string
+  year: number
+  vin: string | null
+  photo_url: string | null
+  usd_rate: number | null
+  lot_items: PersonalCostItem[] | null
+  parts_items: PersonalCostItem[] | null
+  work_items: PersonalCostItem[] | null
+  additional_items: PersonalCostItem[] | null
+  total_cost: number | null
+  is_sold: boolean
+  sold_at: string | null
+  sale_price: number | null
+  usa_photos: VehiclePhoto[] | null
+  port_photos: VehiclePhoto[] | null
+  arrival_photos: VehiclePhoto[] | null
+  created_at: string
+  updated_at: string
+}
+
+/**
+ * Форма строки vehicle_share_links из БД (snake_case)
+ */
+interface VehicleShareLinkRow {
+  id: string
+  code: string
+  vehicle_id: string
+  user_id: string
+  created_at: string
+  expires_at: string | null
+  is_active: boolean
+}
+
+/** Частичный snake_case-апдейт для personal_vehicles */
+type PersonalVehicleUpdate = Partial<Omit<PersonalVehicleRow, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
+
+/** Частичный snake_case-набор для insert vehicle_share_links */
+type VehicleShareLinkInsert = {
+  code: string
+  vehicle_id: string
+  user_id: string
+  is_active: boolean
+  expires_at?: string
+}
+
+/**
  * Преобразование snake_case в camelCase для PersonalVehicle
  */
-function transformVehicleFromDb(dbVehicle: any): PersonalVehicle {
+function transformVehicleFromDb(dbVehicle: PersonalVehicleRow): PersonalVehicle {
   return {
     id: dbVehicle.id,
     userId: dbVehicle.user_id,
     makeModel: dbVehicle.make_model,
     year: dbVehicle.year,
-    vin: dbVehicle.vin,
-    photoUrl: dbVehicle.photo_url,
-    usdRate: dbVehicle.usd_rate,
+    // БД отдаёт null для незаполненных; домен — опциональные (undefined). Коэрсим
+    // null → undefined (truthy-проверки у потребителей идентичны).
+    vin: dbVehicle.vin ?? undefined,
+    photoUrl: dbVehicle.photo_url ?? undefined,
+    usdRate: dbVehicle.usd_rate ?? undefined,
     lotItems: dbVehicle.lot_items || [],
     partsItems: dbVehicle.parts_items || [],
     workItems: dbVehicle.work_items || [],
     additionalItems: dbVehicle.additional_items || [],
     totalCost: dbVehicle.total_cost || 0,
     isSold: dbVehicle.is_sold,
-    soldAt: dbVehicle.sold_at,
-    salePrice: dbVehicle.sale_price,
+    soldAt: dbVehicle.sold_at ?? undefined,
+    salePrice: dbVehicle.sale_price ?? undefined,
     usaPhotos: dbVehicle.usa_photos || [],
     portPhotos: dbVehicle.port_photos || [],
     arrivalPhotos: dbVehicle.arrival_photos || [],
@@ -41,14 +94,14 @@ function transformVehicleFromDb(dbVehicle: any): PersonalVehicle {
 /**
  * Преобразование snake_case в camelCase для VehicleShareLink
  */
-function transformShareLinkFromDb(dbLink: any): VehicleShareLink {
+function transformShareLinkFromDb(dbLink: VehicleShareLinkRow): VehicleShareLink {
   return {
     id: dbLink.id,
     code: dbLink.code,
     vehicleId: dbLink.vehicle_id,
     userId: dbLink.user_id,
     createdAt: dbLink.created_at,
-    expiresAt: dbLink.expires_at,
+    expiresAt: dbLink.expires_at ?? undefined,
     isActive: dbLink.is_active
   }
 }
@@ -164,7 +217,7 @@ export async function updatePersonalVehicle(
   id: string,
   input: UpdatePersonalVehicleInput
 ): Promise<void> {
-  const updateData: any = {}
+  const updateData: PersonalVehicleUpdate = {}
 
   if (input.makeModel !== undefined) updateData.make_model = input.makeModel
   if (input.year !== undefined) updateData.year = input.year
@@ -224,25 +277,25 @@ export async function addExpenseItem(
   category: CostCategory,
   item: PersonalCostItem
 ): Promise<void> {
-  const categoryFieldSnake = `${category}_items`
-  const categoryFieldCamel = `${category}Items`
+  const categoryFieldSnake = `${category}_items` as const
+  const categoryFieldCamel = `${category}Items` as const
 
   // Получить текущие расходы
   const { data: vehicle, error: fetchError } = await supabase
     .from('personal_vehicles')
     .select(categoryFieldSnake)
     .eq('id', vehicleId)
-    .single()
+    .single<Partial<Record<typeof categoryFieldSnake, PersonalCostItem[] | null>>>()
 
   if (fetchError) throw fetchError
 
-  const currentItems = (vehicle as any)[categoryFieldSnake] || []
+  const currentItems = vehicle?.[categoryFieldSnake] || []
   const updatedItems = [...currentItems, item]
 
   // Обновить расходы
-  await updatePersonalVehicle(vehicleId, {
-    [categoryFieldCamel]: updatedItems
-  } as any)
+  const update: UpdatePersonalVehicleInput = {}
+  update[categoryFieldCamel] = updatedItems
+  await updatePersonalVehicle(vehicleId, update)
 }
 
 /**
@@ -254,27 +307,27 @@ export async function updateExpenseItem(
   itemId: string,
   updatedItem: PersonalCostItem
 ): Promise<void> {
-  const categoryFieldSnake = `${category}_items`
-  const categoryFieldCamel = `${category}Items`
+  const categoryFieldSnake = `${category}_items` as const
+  const categoryFieldCamel = `${category}Items` as const
 
   // Получить текущие расходы
   const { data: vehicle, error: fetchError } = await supabase
     .from('personal_vehicles')
     .select(categoryFieldSnake)
     .eq('id', vehicleId)
-    .single()
+    .single<Partial<Record<typeof categoryFieldSnake, PersonalCostItem[] | null>>>()
 
   if (fetchError) throw fetchError
 
-  const currentItems = (vehicle as any)[categoryFieldSnake] || []
-  const updatedItems = currentItems.map((item: PersonalCostItem) =>
+  const currentItems = vehicle?.[categoryFieldSnake] || []
+  const updatedItems = currentItems.map((item) =>
     item.id === itemId ? updatedItem : item
   )
 
   // Обновить расходы
-  await updatePersonalVehicle(vehicleId, {
-    [categoryFieldCamel]: updatedItems
-  } as any)
+  const update: UpdatePersonalVehicleInput = {}
+  update[categoryFieldCamel] = updatedItems
+  await updatePersonalVehicle(vehicleId, update)
 }
 
 /**
@@ -285,31 +338,33 @@ export async function deleteExpenseItem(
   category: CostCategory,
   itemId: string
 ): Promise<void> {
-  const categoryFieldSnake = `${category}_items`
-  const categoryFieldCamel = `${category}Items`
+  const categoryFieldSnake = `${category}_items` as const
+  const categoryFieldCamel = `${category}Items` as const
 
   // Получить текущие расходы
   const { data: vehicle, error: fetchError } = await supabase
     .from('personal_vehicles')
     .select(categoryFieldSnake)
     .eq('id', vehicleId)
-    .single()
+    .single<Partial<Record<typeof categoryFieldSnake, PersonalCostItem[] | null>>>()
 
   if (fetchError) throw fetchError
 
-  const currentItems = (vehicle as any)[categoryFieldSnake] || []
-  const updatedItems = currentItems.filter((item: PersonalCostItem) => item.id !== itemId)
+  const currentItems = vehicle?.[categoryFieldSnake] || []
+  const updatedItems = currentItems.filter((item) => item.id !== itemId)
 
   // Обновить расходы
-  await updatePersonalVehicle(vehicleId, {
-    [categoryFieldCamel]: updatedItems
-  } as any)
+  const update: UpdatePersonalVehicleInput = {}
+  update[categoryFieldCamel] = updatedItems
+  await updatePersonalVehicle(vehicleId, update)
 }
 
 /**
  * Маппинг PhotoAlbum → имя колонки в БД
  */
-const ALBUM_COLUMN: Record<PhotoAlbum, string> = {
+type PhotoColumn = 'usa_photos' | 'port_photos' | 'arrival_photos'
+
+const ALBUM_COLUMN: Record<PhotoAlbum, PhotoColumn> = {
   usaPhotos: 'usa_photos',
   portPhotos: 'port_photos',
   arrivalPhotos: 'arrival_photos',
@@ -330,11 +385,11 @@ export async function addVehiclePhoto(
     .from('personal_vehicles')
     .select(col)
     .eq('id', vehicleId)
-    .single()
+    .single<Partial<Record<PhotoColumn, VehiclePhoto[] | null>>>()
 
   if (fetchError) throw fetchError
 
-  const currentPhotos = (vehicle as any)[col] || []
+  const currentPhotos = vehicle?.[col] || []
   const updatedPhotos = [...currentPhotos, photo]
 
   // Обновить фото
@@ -361,12 +416,12 @@ export async function deleteVehiclePhoto(
     .from('personal_vehicles')
     .select(col)
     .eq('id', vehicleId)
-    .single()
+    .single<Partial<Record<PhotoColumn, VehiclePhoto[] | null>>>()
 
   if (fetchError) throw fetchError
 
-  const currentPhotos = (vehicle as any)[col] || []
-  const updatedPhotos = currentPhotos.filter((_: any, index: number) => index !== photoIndex)
+  const currentPhotos = vehicle?.[col] || []
+  const updatedPhotos = currentPhotos.filter((_: VehiclePhoto, index: number) => index !== photoIndex)
 
   // Обновить фото
   const { error } = await supabase
@@ -418,7 +473,7 @@ export async function createVehicleShareLink(
     isUnique = !taken
   }
 
-  const linkData: any = {
+  const linkData: VehicleShareLinkInsert = {
     code: code!,
     vehicle_id: vehicleId,
     user_id: userId,

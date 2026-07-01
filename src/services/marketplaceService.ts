@@ -24,6 +24,20 @@ import {
 
 export const MARKET_PAGE_SIZE = 24
 
+/**
+ * Приведение результата select к форме строки БД.
+ * Динамические select-строки (с вычисляемым vehicleJoin/`!inner`) не разбираются
+ * типовым парсером supabase-js — data приходит как GenericStringError. Форма строк
+ * гарантируется самими select-константами (PART_FIELDS/JOIN'ы), поэтому здесь
+ * единая точка приведения к доменной row-форме вместо `any` в мапперах.
+ */
+function asRows<T>(data: unknown): T[] {
+  return (Array.isArray(data) ? data : []) as T[]
+}
+function asRow<T>(data: unknown): T {
+  return data as T
+}
+
 /** Безопасные публичные поля запчасти (полные — для страницы товара: с галереей photos) */
 const PART_FIELDS = `
   id, name, article, part_number, description, condition, quantity, reserved_quantity,
@@ -44,9 +58,48 @@ function vehicleJoin(inner: boolean) {
   return `vehicle:parts_vehicles!vehicle_id${inner ? '!inner' : ''}(make, model, year)`
 }
 
+// ── Формы строк БД (snake_case) для мапперов ────────────────────────────────
+
+/** Вложенный join company:parts_companies в строке market_inventory */
+interface PartCompanyJoin {
+  id?: string | null
+  name?: string | null
+  phone?: string | null
+  telegram?: string | null
+  address?: string | null
+  city?: string | null
+  email?: string | null
+  description?: string | null
+  is_active?: boolean | null
+  ship_speed?: 'today' | 'days12' | string | null
+  warranty_enabled?: boolean | null
+  warranty_days?: number | null
+}
+
+/** Строка market_inventory с join'ами category/vehicle/company */
+interface MarketPartRow {
+  id: string
+  name: string
+  article?: string | null
+  part_number?: string | null
+  description?: string | null
+  condition: string
+  quantity?: number | null
+  reserved_quantity?: number | null
+  selling_price?: number | null
+  price_currency?: string | null
+  photo_url?: string | null
+  photos?: MarketPhoto[] | null
+  status?: string | null
+  created_at?: string | null
+  category?: { id?: string | null; name?: string | null } | null
+  vehicle?: { make: string; model: string; year?: number | null } | null
+  company?: PartCompanyJoin | null
+}
+
 // ── Маппинг row → MarketPart ────────────────────────────────────────────────
 
-function mapPartRow(row: any): MarketPart {
+function mapPartRow(row: MarketPartRow): MarketPart {
   const photos: MarketPhoto[] = Array.isArray(row.photos) ? row.photos : []
   const first = photos[0]
   return {
@@ -142,7 +195,7 @@ export async function getMarketParts(
   const { data, error, count } = await query.range(from, to)
   if (error) throw error
 
-  return { items: (data || []).map(mapPartRow), total: count ?? 0 }
+  return { items: asRows<MarketPartRow>(data).map(mapPartRow), total: count ?? 0 }
 }
 
 export async function getMarketPart(id: string): Promise<MarketPart | null> {
@@ -153,7 +206,7 @@ export async function getMarketPart(id: string): Promise<MarketPart | null> {
     .maybeSingle()
 
   if (error) throw error
-  return data ? mapPartRow(data) : null
+  return data ? mapPartRow(asRow<MarketPartRow>(data)) : null
 }
 
 export async function getRelatedParts(
@@ -170,7 +223,7 @@ export async function getRelatedParts(
     .limit(limit)
 
   if (error) throw error
-  return (data || []).map(mapPartRow)
+  return asRows<MarketPartRow>(data).map(mapPartRow)
 }
 
 /** Запчасти по списку id (для «Избранного»). Доступные/опубликованные — через market_inventory. */
@@ -181,14 +234,31 @@ export async function getMarketPartsByIds(ids: string[]): Promise<MarketPart[]> 
     .select(`${PART_LIST_FIELDS}, ${COMPANY_JOIN}, ${CATEGORY_JOIN}, ${vehicleJoin(false)}`)
     .in('id', ids)
   if (error) throw error
-  return (data || []).map(mapPartRow)
+  return asRows<MarketPartRow>(data).map(mapPartRow)
 }
 
 // ── Разборки (поставщики) ───────────────────────────────────────────────────
 
 const SUPPLIER_FIELDS = 'id, name, phone, telegram, address, city, email, description'
 
-function mapSupplierRow(row: any, availableParts: number): MarketSupplier {
+/** Строка parts_companies (публичные контактные поля поставщика) */
+interface SupplierRow {
+  id: string
+  name: string
+  phone?: string | null
+  telegram?: string | null
+  address?: string | null
+  city?: string | null
+  email?: string | null
+  description?: string | null
+}
+
+/** Строка RPC get_market_suppliers: поля поставщика + агрегат доступных позиций */
+interface SupplierRpcRow extends SupplierRow {
+  available_parts?: number | string | null
+}
+
+function mapSupplierRow(row: SupplierRow, availableParts: number): MarketSupplier {
   return {
     id: row.id,
     name: row.name,
@@ -207,7 +277,7 @@ export async function getMarketSuppliers(): Promise<MarketSupplier[]> {
   // публикованные разборки + число доступных позиций агрегатом GROUP BY.
   const { data, error } = await supabase.rpc('get_market_suppliers')
   if (error) throw error
-  return (data || []).map((r: any) => mapSupplierRow(r, Number(r.available_parts) || 0))
+  return ((data || []) as SupplierRpcRow[]).map(r => mapSupplierRow(r, Number(r.available_parts) || 0))
 }
 
 export async function getMarketSupplier(id: string): Promise<MarketSupplier | null> {
@@ -229,7 +299,7 @@ export async function getMarketSupplier(id: string): Promise<MarketSupplier | nu
     .eq('status', 'available')
     .gt('selling_price', 0)
 
-  return mapSupplierRow(data, count ?? 0)
+  return mapSupplierRow(data as SupplierRow, count ?? 0)
 }
 
 // ── Категории и марки (для фильтров) ───────────────────────────────────────
@@ -245,7 +315,8 @@ export async function getMarketCategories(): Promise<MarketCategory[]> {
     if (error) throw error
 
     const map = new Map<string, MarketCategory>()
-    for (const row of (data || []) as any[]) {
+    type CategoryFacetRow = { category_id: string | null; category?: { id?: string | null; name?: string | null } | null }
+    for (const row of (data || []) as CategoryFacetRow[]) {
       const cat = row.category
       if (!cat?.id || !cat?.name) continue
       const existing = map.get(cat.id)
@@ -274,7 +345,8 @@ export async function getMarketMakes(): Promise<string[]> {
     if (error) throw error
 
     const seen = new Map<string, string>() // lower → original
-    for (const row of (data || []) as any[]) {
+    type MakeFacetRow = { vehicle?: { make?: string | null } | null }
+    for (const row of (data || []) as MakeFacetRow[]) {
       const make = (row.vehicle?.make || '').trim()
       if (!make) continue
       const key = make.toLowerCase()
@@ -358,7 +430,37 @@ export async function submitMarketOrders(
   }
 }
 
-function mapOrderRow(row: any): MarketplaceOrder {
+/** Строка marketplace_order_items с join'ом склада (для мапперов кабинета разборки) */
+interface MarketplaceOrderItemRow {
+  id: string
+  name: string
+  selling_price?: number | null
+  price_currency?: string | null
+  quantity?: number | null
+  photo_url?: string | null
+  inventory_id?: string | null
+  inventory?: {
+    location?: string | null
+    vehicle?: { make?: string | null; model?: string | null; year?: number | null } | null
+    storage_location?: { name?: string | null } | null
+  } | null
+}
+
+/** Строка marketplace_orders с вложенными items (кабинет разборки) */
+interface MarketplaceOrderRow {
+  id: string
+  parts_company_id: string
+  buyer_name?: string | null
+  buyer_phone: string
+  comment?: string | null
+  status: string
+  total_amount?: number | null
+  created_at: string
+  converted_order_id?: string | null
+  items?: MarketplaceOrderItemRow[] | null
+}
+
+function mapOrderRow(row: MarketplaceOrderRow): MarketplaceOrder {
   return {
     id: row.id,
     partsCompanyId: row.parts_company_id,
@@ -369,7 +471,7 @@ function mapOrderRow(row: any): MarketplaceOrder {
     totalAmount: row.total_amount ?? 0,
     createdAt: row.created_at,
     convertedOrderId: row.converted_order_id ?? null,
-    items: ((row.items || []) as any[]).map(it => {
+    items: (row.items || []).map(it => {
       const inv = it.inventory
       const v = inv?.vehicle
       const vehicleName = v ? [v.make, v.model, v.year].filter(Boolean).join(' ') : null
@@ -408,7 +510,7 @@ export async function getMarketplaceOrders(companyId: string): Promise<Marketpla
     .order('created_at', { ascending: false })
 
   if (error) throw error
-  return (data || []).map(mapOrderRow)
+  return ((data || []) as MarketplaceOrderRow[]).map(mapOrderRow)
 }
 
 // ── Кабинет клиента («Мои заказы») ─────────────────────────────────────────
@@ -437,7 +539,24 @@ export async function getMyMarketplaceOrders(): Promise<MyMarketplaceOrder[]> {
 
   if (error) throw error
 
-  return (data || []).map((row: any): MyMarketplaceOrder => {
+  interface MyOrderItemRow {
+    name: string
+    selling_price?: number | null
+    price_currency?: string | null
+    quantity?: number | null
+    photo_url?: string | null
+  }
+  interface MyOrderRow {
+    id: string
+    status: string
+    total_amount?: number | null
+    created_at: string
+    comment?: string | null
+    parts_companies?: { name?: string | null; phone?: string | null; telegram?: string | null; city?: string | null } | null
+    marketplace_order_items?: MyOrderItemRow[] | null
+  }
+
+  return ((data || []) as MyOrderRow[]).map((row): MyMarketplaceOrder => {
     const c = row.parts_companies
     return {
       id: row.id,
@@ -453,7 +572,7 @@ export async function getMyMarketplaceOrders(): Promise<MyMarketplaceOrder[]> {
             city: c.city ?? null,
           }
         : null,
-      items: ((row.marketplace_order_items || []) as any[]).map((it) => ({
+      items: (row.marketplace_order_items || []).map((it) => ({
         name: it.name,
         sellingPrice: it.selling_price ?? null,
         priceCurrency: it.price_currency === 'USD' ? 'USD' : 'UAH',

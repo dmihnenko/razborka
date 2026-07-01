@@ -179,7 +179,7 @@ export async function fetchUsers(params: FetchUsersParams & { onlyDeleted?: bool
 
   // Фильтр по deleted_at; если колонки ещё нет (миграция 013) — повтор без неё
   let { data: profiles, error: profilesError } = await buildQuery(true)
-  if (profilesError && ((profilesError as any).code === '42703' || /deleted_at/i.test(profilesError.message))) {
+  if (profilesError && (profilesError.code === '42703' || /deleted_at/i.test(profilesError.message))) {
     if (params.onlyDeleted) return []
     ;({ data: profiles, error: profilesError } = await buildQuery(false))
   }

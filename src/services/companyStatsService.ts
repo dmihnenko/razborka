@@ -49,7 +49,7 @@ async function fetchWorkers(col: string, id: string): Promise<CompanyWorker[]> {
   const res = await q.is('deleted_at', null)
   let data = res.data
   const error = res.error
-  if (error && ((error as any).code === '42703' || /deleted_at/i.test(error.message))) {
+  if (error && (error.code === '42703' || /deleted_at/i.test(error.message))) {
     const retry = await supabase.from('user_profiles').select('id, full_name, email, is_active').eq(col, id)
     data = retry.data
   }
@@ -65,7 +65,8 @@ async function fetchSubscription(companyType: 'parts', id: string): Promise<Comp
       .eq('company_id', id)
       .eq('is_active', true)
       .maybeSingle()
-    const s = (data as any)?.subscription
+    const row = data as { subscription: { name: string; type: string | null } | null } | null
+    const s = row?.subscription
     return s ? { name: s.name, type: s.type ?? null } : null
   } catch {
     return null

@@ -18,6 +18,11 @@ export interface PlatformAnalytics {
   totals: { users: number; orders: number }
 }
 
+/** Строка user_roles с вложенным join roles(display_name) */
+interface RoleRow {
+  roles?: { display_name: string | null } | null
+}
+
 const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 
 function monthKey(d: Date) {
@@ -27,7 +32,9 @@ function monthKey(d: Date) {
 async function fetchCreatedAt(table: string, sinceISO: string): Promise<string[]> {
   try {
     const { data } = await supabase.from(table).select('created_at').gte('created_at', sinceISO)
-    return (data || []).map((r: any) => r.created_at).filter(Boolean)
+    return ((data || []) as { created_at: string | null }[])
+      .map(r => r.created_at)
+      .filter((v): v is string => Boolean(v))
   } catch {
     return []
   }
@@ -42,10 +49,12 @@ export async function fetchPlatformAnalytics(months: number): Promise<PlatformAn
   const [usersAt, ordersAt, roleRows] = await Promise.all([
     fetchCreatedAt('user_profiles', sinceISO),
     fetchCreatedAt('parts_orders', sinceISO),
-    (async () => {
+    (async (): Promise<RoleRow[]> => {
       try {
         const { data } = await supabase.from('user_roles').select('roles(display_name)')
-        return (data || []) as any[]
+        // supabase выводит join roles как массив, но FK role_id даёт единичный объект —
+        // приводим к фактической форме RoleRow (одиночный roles), как использует код ниже.
+        return (data ?? []) as unknown as RoleRow[]
       } catch { return [] }
     })(),
   ])

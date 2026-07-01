@@ -64,9 +64,9 @@ export async function getAllCompanySubscriptions() {
     .order('created_at', { ascending: false })
 
   if (error) throw error
-  
+
   // Загружаем названия компаний
-  const subscriptions = await Promise.all((data || []).map(async (sub) => {
+  const subscriptions = await Promise.all(((data || []) as CompanySubscription[]).map(async (sub) => {
     let companyName = 'Неизвестно'
 
     const { data: company } = await supabase
@@ -199,47 +199,50 @@ export async function deleteCompanySubscription(id: string) {
 
 export async function getSubscriptionStats(): Promise<SubscriptionStats> {
   // Получаем все активные подписки
-  const { data: activeSubscriptions } = await supabase
+  const { data: activeData } = await supabase
     .from('company_subscriptions')
     .select('*, subscription:subscriptions(*)')
     .eq('is_active', true)
-  
-  const total_active = activeSubscriptions?.length || 0
-  
-  const total_monthly = activeSubscriptions?.filter(
-    sub => sub.subscription?.type === 'monthly'
-  ).length || 0
+  const activeSubscriptions = (activeData ?? []) as CompanySubscription[]
 
-  const total_yearly = activeSubscriptions?.filter(
-    sub => sub.subscription?.type === 'yearly'
-  ).length || 0
+  const total_active = activeSubscriptions.length
   
-  const total_lifetime = activeSubscriptions?.filter(
+  const total_monthly = activeSubscriptions.filter(
+    sub => sub.subscription?.type === 'monthly'
+  ).length
+
+  const total_yearly = activeSubscriptions.filter(
+    sub => sub.subscription?.type === 'yearly'
+  ).length
+
+  const total_lifetime = activeSubscriptions.filter(
     sub => sub.subscription?.type === 'lifetime'
-  ).length || 0
+  ).length
   
   // Подсчет дохода за текущий месяц (подписки созданные в этом месяце)
   const startOfMonth = new Date()
   startOfMonth.setDate(1)
   startOfMonth.setHours(0, 0, 0, 0)
   
-  const { data: monthSubscriptions } = await supabase
+  const { data: monthData } = await supabase
     .from('company_subscriptions')
     .select('*, subscription:subscriptions(*)')
     .gte('created_at', startOfMonth.toISOString())
-  
-  const revenue_this_month = monthSubscriptions?.reduce((sum, sub) => {
+  const monthSubscriptions = (monthData ?? []) as CompanySubscription[]
+
+  const revenue_this_month = monthSubscriptions.reduce((sum, sub) => {
     return sum + (sub.subscription?.price || 0)
-  }, 0) || 0
-  
+  }, 0)
+
   // Общий доход (все подписки)
-  const { data: allSubscriptions } = await supabase
+  const { data: allData } = await supabase
     .from('company_subscriptions')
     .select('*, subscription:subscriptions(*)')
-  
-  const revenue_total = allSubscriptions?.reduce((sum, sub) => {
+  const allSubscriptions = (allData ?? []) as CompanySubscription[]
+
+  const revenue_total = allSubscriptions.reduce((sum, sub) => {
     return sum + (sub.subscription?.price || 0)
-  }, 0) || 0
+  }, 0)
   
   return {
     total_active,
@@ -281,8 +284,9 @@ export async function getPartsCompaniesUsage(): Promise<Record<string, { vehicle
     supabase.from('parts_vehicles').select('parts_company_id'),
     supabase.from('parts_inventory').select('parts_company_id'),
   ])
-  ;(veh.data || []).forEach((r: any) => bump(r.parts_company_id, 'vehicles'))
-  ;(prt.data || []).forEach((r: any) => bump(r.parts_company_id, 'parts'))
+  type CompanyIdRow = { parts_company_id: string | null }
+  ;((veh.data || []) as CompanyIdRow[]).forEach(r => bump(r.parts_company_id, 'vehicles'))
+  ;((prt.data || []) as CompanyIdRow[]).forEach(r => bump(r.parts_company_id, 'parts'))
   return map
 }
 
@@ -372,21 +376,23 @@ export async function getSubscriptionRequests(status: 'pending' | 'approved' | '
   const { data, error } = await q
   if (error) throw error
 
-  const rows = await Promise.all((data || []).map(async (r: any) => {
+  const rows = await Promise.all(((data || []) as SubscriptionRequest[]).map(async (r) => {
     const { data: c } = await supabase.from('parts_companies').select('name').eq('id', r.company_id).single()
-    return { ...r, company_name: c?.name || '—' }
+    return { ...r, company_name: (c as { name: string | null } | null)?.name || '—' }
   }))
-  return rows as SubscriptionRequest[]
+  return rows
 }
 
 /** Подтвердить заявку: применить тариф (через единый apply RPC) и отметить approved */
 export async function approveSubscriptionRequest(id: string) {
-  const { data: req, error } = await supabase
+  const { data, error } = await supabase
     .from('subscription_requests').select('*').eq('id', id).single()
   if (error) throw error
+  const req = data as SubscriptionRequest
 
   // через единый apply RPC: сервер сам выберет назначение/продление/апгрейд/очередь
-  await applyCompanySubscription(req.company_id, req.plan_id, req.months || 1)
+  // plan_id у одобряемой заявки всегда задан (nullable только формально в типе).
+  await applyCompanySubscription(req.company_id, req.plan_id!, req.months || 1)
 
   const { data: u } = await supabase.auth.getUser()
   const { error: uerr } = await supabase
