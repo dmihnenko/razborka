@@ -4,6 +4,7 @@ import {
   Shield, Users, Settings, BarChart2, LogOut, ClipboardList,
   Store, MessageCircle, LayoutGrid, Database,
   MoreHorizontal, X, Car,
+  type LucideIcon,
 } from 'lucide-react'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
 import { useAuth } from '../hooks/useAuth'
@@ -13,7 +14,7 @@ import { toast } from 'sonner'
 import { LayoutSkeleton } from './LayoutSkeleton'
 import ContextSwitcher from './ContextSwitcher'
 
-interface NavItem { name: string; href: string; icon: any }
+interface NavItem { name: string; href: string; icon: LucideIcon }
 
 // Грамотное меню админа: Обзор · Разборки · Пользователи · Система
 const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
@@ -100,7 +101,7 @@ export default function AdminLayout() {
     // на всех админ-страницах автоматически становятся Ink & Signal.
     <div
       className="min-h-dvh"
-      style={{ background: 'var(--cab-bg)', ['--primary' as any]: '223 14% 10%' }}
+      style={{ background: 'var(--cab-bg)', '--primary': '223 14% 10%' } as React.CSSProperties}
     >
 
       {/* ═══ DESKTOP SIDEBAR — Ink & Signal (светлый) ═══ */}

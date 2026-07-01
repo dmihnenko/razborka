@@ -91,13 +91,15 @@ export async function uploadToImgBB(file: File): Promise<string> {
 
   const { data, error } = await supabase.functions.invoke('upload-image', { body: formData })
 
+  const result = data as { url?: string; error?: string } | null
+
   if (error) {
     throw new Error(error.message || 'Не удалось загрузить изображение')
   }
-  if (!data?.url) {
-    throw new Error((data as any)?.error || 'Сервер не вернул ссылку на изображение')
+  if (!result?.url) {
+    throw new Error(result?.error || 'Сервер не вернул ссылку на изображение')
   }
-  return data.url as string
+  return result.url
 }
 
 /**

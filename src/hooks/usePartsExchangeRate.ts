@@ -18,8 +18,9 @@ function loadCache(): GlobalRate | null {
 }
 async function fetchGlobalRate(): Promise<GlobalRate | null> {
   const { data, error } = await supabase.from('app_settings').select('value').eq('key', 'usd_rate').maybeSingle()
-  if (error || !data?.value) return null
-  try { return JSON.parse((data as any).value) } catch { return null }
+  const row = data as { value: string | null } | null
+  if (error || !row?.value) return null
+  try { return JSON.parse(row.value) } catch { return null }
 }
 
 export function usePartsExchangeRate() {

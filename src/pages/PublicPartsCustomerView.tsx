@@ -6,19 +6,48 @@ import { Package, Clock, ChevronDown, ChevronUp, Archive, Car, Phone } from 'luc
 import { PublicBrandHeader } from '@/components/PublicBrandHeader'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { statusBadgeClass, getPartsOrderStatusText } from '@/utils/status'
+import { statusBadgeClass, getPartsOrderStatusText, type PartsOrderStatus } from '@/utils/status'
 import { formatCurrency } from '@/utils/currency'
 import { useState, useMemo } from 'react'
 
 const ACTIVE_STATUSES = new Set(['new', 'in_progress'])
 
-function OrderCard({ order }: { order: any }) {
+// ── Формы строк публичного запроса заказов (нетипизированный supabase-клиент) ──
+interface PublicOrderVehicle {
+  id: string
+  make: string
+  model: string
+  year?: number | null
+  vin?: string | null
+}
+interface PublicOrderItem {
+  id: string
+  quantity: number
+  price_at_sale: number
+  subtotal: number
+  inventory_item?: {
+    name?: string | null
+    part_number?: string | null
+    vehicle?: PublicOrderVehicle | null
+  } | null
+}
+interface PublicOrder {
+  id: string
+  status: PartsOrderStatus
+  order_date: string
+  created_at: string
+  total_amount: number
+  notes?: string | null
+  items?: PublicOrderItem[] | null
+}
+
+function OrderCard({ order }: { order: PublicOrder }) {
   const [itemsOpen, setItemsOpen] = useState(false)
 
   // Уникальные авто из позиций
   const vehicles = useMemo(() => {
-    const map = new Map<string, any>()
-    order.items?.forEach((item: any) => {
+    const map = new Map<string, PublicOrderVehicle>()
+    order.items?.forEach((item) => {
       const v = item.inventory_item?.vehicle
       if (v?.id) map.set(v.id, v)
     })
@@ -29,7 +58,7 @@ function OrderCard({ order }: { order: any }) {
     <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
       {/* Header: авто+VIN слева, статус справа */}
       <div className="px-3 sm:px-4 pt-3 pb-2">
-        {vehicles.length > 0 ? vehicles.map((v: any) => (
+        {vehicles.length > 0 ? vehicles.map((v) => (
           <div key={v.id} className="flex items-center justify-between gap-2 mb-1">
             <div className="flex items-center gap-2 min-w-0 flex-wrap">
               <Car className="w-3.5 h-3.5 text-gray-400 shrink-0" />
@@ -68,7 +97,7 @@ function OrderCard({ order }: { order: any }) {
       </div>
 
       {/* Toggle items */}
-      {order.items?.length > 0 && (
+      {order.items && order.items.length > 0 && (
         <button
           onClick={() => setItemsOpen(v => !v)}
           className="w-full flex items-center gap-1.5 px-3 sm:px-4 py-1.5 border-t border-gray-100 text-xs text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors"
@@ -79,9 +108,9 @@ function OrderCard({ order }: { order: any }) {
       )}
 
       {/* Collapsible items */}
-      {itemsOpen && order.items?.length > 0 && (
+      {itemsOpen && order.items && order.items.length > 0 && (
         <div className="border-t border-gray-100 px-3 sm:px-4 py-2 bg-gray-50 space-y-2">
-          {order.items.map((item: any) => (
+          {order.items.map((item) => (
             <div key={item.id} className="flex items-start justify-between gap-2 text-xs">
               <div className="min-w-0">
                 <p className="font-medium text-gray-800 truncate">{item.inventory_item?.name || 'Запчасть'}</p>
@@ -152,7 +181,7 @@ export default function PublicPartsCustomerView() {
         .eq('customer_id', id)
         .order('order_date', { ascending: false })
       if (error) throw error
-      return data
+      return (data ?? []) as PublicOrder[]
     },
   })
 

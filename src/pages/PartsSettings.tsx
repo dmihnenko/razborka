@@ -24,6 +24,21 @@ import { TELEGRAM_BOT_USERNAME, telegramConnectLink } from '@/config/telegram'
 
 type PanelId = 'contacts' | 'rate' | 'imgbb' | 'np' | 'telegram'
 
+// Строка parts_companies с полями, выбираемыми на этой странице (snake_case из БД).
+interface CompanyContactsRow {
+  name: string | null
+  phone: string | null
+  address: string | null
+  city: string | null
+  email: string | null
+  telegram: string | null
+  description: string | null
+  telegram_chat_id: string | null
+  ship_speed: string | null
+  warranty_enabled: boolean | null
+  warranty_days: number | null
+}
+
 const PANEL_TITLE_KEYS: Record<PanelId, string> = {
   contacts: 'settingsPage.panelContacts',
   rate: 'settingsPage.panelRate',
@@ -126,7 +141,7 @@ export default function PartsSettings() {
   })
 
   // Гидрация НП-настроек из БД → localStorage + форма (общие для всех сотрудников)
-  const npDb = useHydrateNpSettings(partsCompanyId)
+  const npDb = useHydrateNpSettings(partsCompanyId ?? undefined)
   useEffect(() => {
     if (!npDb) return
     if (npDb.api_key && !npKeyInput) setNpKeyInput(npDb.api_key)
@@ -168,7 +183,7 @@ export default function PartsSettings() {
         .select('name, phone, address, city, email, telegram, description, telegram_chat_id, ship_speed, warranty_enabled, warranty_days')
         .eq('id', partsCompanyId)
         .single()
-      return data
+      return data as CompanyContactsRow | null
     },
     enabled: !!partsCompanyId,
   })
@@ -184,13 +199,13 @@ export default function PartsSettings() {
         name: company.name || '',
         phone: company.phone || '',
         address: company.address || '',
-        city: (company as any).city || '',
+        city: company.city || '',
         email: company.email || '',
-        telegram: (company as any).telegram || '',
-        description: (company as any).description || '',
-        shipSpeed: (company as any).ship_speed || 'today',
-        warrantyEnabled: (company as any).warranty_enabled ?? true,
-        warrantyDays: String((company as any).warranty_days ?? 14),
+        telegram: company.telegram || '',
+        description: company.description || '',
+        shipSpeed: company.ship_speed || 'today',
+        warrantyEnabled: company.warranty_enabled ?? true,
+        warrantyDays: String(company.warranty_days ?? 14),
       })
     }
   }, [company])
@@ -219,27 +234,28 @@ export default function PartsSettings() {
       queryClient.invalidateQueries({ queryKey: ['company-contacts-check'] })
       toast.success(t('settingsPage.toastContactsSaved'))
     },
-    onError: (e: any) => toast.error(e.message || t('settingsPage.toastError')),
+    onError: (e: unknown) => toast.error((e instanceof Error ? e.message : String(e)) || t('settingsPage.toastError')),
   })
 
   const contactsDirty = !!company && (
     contacts.name !== (company.name || '') ||
     contacts.phone !== (company.phone || '') ||
     contacts.address !== (company.address || '') ||
-    contacts.city !== ((company as any).city || '') ||
+    contacts.city !== (company.city || '') ||
     contacts.email !== (company.email || '') ||
-    contacts.telegram !== ((company as any).telegram || '') ||
-    contacts.description !== ((company as any).description || '') ||
-    contacts.shipSpeed !== ((company as any).ship_speed || 'today') ||
-    contacts.warrantyEnabled !== ((company as any).warranty_enabled ?? true) ||
-    contacts.warrantyDays !== String((company as any).warranty_days ?? 14)
+    contacts.telegram !== (company.telegram || '') ||
+    contacts.description !== (company.description || '') ||
+    contacts.shipSpeed !== (company.ship_speed || 'today') ||
+    contacts.warrantyEnabled !== (company.warranty_enabled ?? true) ||
+    contacts.warrantyDays !== String(company.warranty_days ?? 14)
   )
 
   // Чтение/запись поля выбранного провайдера в общий photoCfg
   const getProviderField = (field: 'key' | 'cloudName' | 'preset'): string => {
-    if (photoCfg.provider === 'cloudinary') return (photoCfg.cloudinary as any)?.[field] || ''
-    if (photoCfg.provider === 'freeimage') return (photoCfg.freeimage as any)?.[field] || ''
-    return (photoCfg.imgbb as any)?.[field] || ''
+    const read = (obj: Record<string, string> | undefined) => obj?.[field] || ''
+    if (photoCfg.provider === 'cloudinary') return read(photoCfg.cloudinary)
+    if (photoCfg.provider === 'freeimage') return read(photoCfg.freeimage)
+    return read(photoCfg.imgbb)
   }
   const setProviderField = (field: 'key' | 'cloudName' | 'preset', value: string) => {
     setPhotoCfg(c => {
@@ -279,7 +295,7 @@ export default function PartsSettings() {
   /* ── статусы интеграций ── */
   const imgbbConnected = isProviderConfigured(photoCfg)
   const npConnected = Boolean(npKeyInput.trim())
-  const tgConnected = Boolean((company as any)?.telegram_chat_id)
+  const tgConnected = Boolean(company?.telegram_chat_id)
 
   const connectedBadge = { cls: 'cab-chip text-emerald-700 bg-emerald-50 border-emerald-200', text: t('settingsPage.badgeConnected') }
   const notSetBadge = { cls: 'cab-chip', text: t('settingsPage.badgeNotSet') }

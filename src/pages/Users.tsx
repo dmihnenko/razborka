@@ -74,7 +74,7 @@ export default function Users() {
   const { data: currentUserProfile } = useUserProfile();
   const { hasSubscription, limits } = useSubscriptionLimits();
 
-  const isPartsOwner = currentUserProfile?.roles?.some((r: Role) => r.name === 'parts_owner');
+  const isPartsOwner = currentUserProfile?.roles?.some((r: { name: string }) => r.name === 'parts_owner');
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users', currentUserProfile?.id, isPartsOwner, view],
@@ -128,7 +128,7 @@ export default function Users() {
   const restoreMutation = useMutation({
     mutationFn: (userId: string) => restoreUserProfile(userId),
     onSuccess: () => { invalidateUsers(); toast.success('Пользователь восстановлен'); },
-    onError: (error: any) => toast.error(`Ошибка: ${error.message || 'не удалось восстановить'}`),
+    onError: (error) => toast.error(`Ошибка: ${error instanceof Error ? error.message : 'не удалось восстановить'}`),
   });
 
   const purgeMutation = useMutation({
@@ -151,7 +151,7 @@ export default function Users() {
       if (!response.ok || data?.error) throw new Error(data?.error || 'Ошибка удаления')
     },
     onSuccess: () => { invalidateUsers(); toast.success('Пользователь удалён навсегда'); },
-    onError: (error: any) => toast.error(`Ошибка: ${error.message || 'не удалось удалить'}`),
+    onError: (error) => toast.error(`Ошибка: ${error instanceof Error ? error.message : 'не удалось удалить'}`),
   });
 
   // Контекст: из админки → /admin/users/..., из основного → /users/...
@@ -238,9 +238,9 @@ export default function Users() {
           <div className="flex gap-2 flex-wrap">
             <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="form-select w-auto">
               <option value="all">Все роли</option>
-              {roles.map((r: any) => <option key={r.id} value={r.name}>{r.display_name}</option>)}
+              {roles.map((r: Role) => <option key={r.id} value={r.name}>{r.display_name}</option>)}
             </select>
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)} className="form-select w-auto">
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')} className="form-select w-auto">
               <option value="all">Все</option>
               <option value="active">Активные</option>
               <option value="inactive">Неактивные</option>
@@ -250,7 +250,7 @@ export default function Users() {
                 <option value="all">Все компании</option>
                 <option value="none">Без компании</option>
                 <optgroup label="Разборки">
-                  {partsCompanies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  {partsCompanies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </optgroup>
               </select>
             )}

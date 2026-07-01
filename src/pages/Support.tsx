@@ -102,8 +102,8 @@ export default function Support() {
       setNewChatMessage('')
       setSelectedChat(data.id)
     },
-    onError: (error: any) => {
-      toast.error(t('supportPage.toastError', { message: error.message }))
+    onError: (error) => {
+      toast.error(t('supportPage.toastError', { message: error instanceof Error ? error.message : String(error) }))
     }
   })
 
@@ -117,8 +117,8 @@ export default function Support() {
       queryClient.invalidateQueries({ queryKey: ['support_messages', selectedChat] })
       setNewMessage('')
     },
-    onError: (error: any) => {
-      toast.error(t('supportPage.toastError', { message: error.message }))
+    onError: (error) => {
+      toast.error(t('supportPage.toastError', { message: error instanceof Error ? error.message : String(error) }))
     }
   })
 
@@ -130,8 +130,8 @@ export default function Support() {
       toast.success(t('supportPage.toastTicketDeleted'))
       setSelectedChat(null)
     },
-    onError: (error: any) => {
-      toast.error(t('supportPage.toastError', { message: error.message }))
+    onError: (error) => {
+      toast.error(t('supportPage.toastError', { message: error instanceof Error ? error.message : String(error) }))
     }
   })
 
@@ -143,8 +143,8 @@ export default function Support() {
       toast.success(t('supportPage.toastChatClosed'))
       setSelectedChat(null)
     },
-    onError: (error: any) => {
-      toast.error(t('supportPage.toastError', { message: error.message }))
+    onError: (error) => {
+      toast.error(t('supportPage.toastError', { message: error instanceof Error ? error.message : String(error) }))
     }
   })
 

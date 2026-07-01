@@ -10,7 +10,7 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { getPartsCategoryTemplates, createPartsInventoryItem, getStorageLocations, updateVehicleStatus } from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { toast } from 'sonner'
-import type { PartsVehicle, PartsVehicleStatus, CreatePartsInventoryInput, StorageLocation, PartsInventoryItem } from '@/types/parts'
+import type { PartsVehicle, PartsVehicleStatus, CreatePartsInventoryInput, CreatePartsVehicleInput, StorageLocation, PartsInventoryItem } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
@@ -177,7 +177,7 @@ export default function PartsVehicleDetails() {
         .eq('vehicle_id', id)
         .order('created_at', { ascending: false })
       if (error) throw error
-      return data
+      return (data ?? []) as PartsInventoryItem[]
     },
     enabled: !!id,
   })
@@ -197,7 +197,7 @@ export default function PartsVehicleDetails() {
 
   // Update vehicle
   const updateMutation = useMutation({
-    mutationFn: async (updates: any) => {
+    mutationFn: async (updates: CreatePartsVehicleInput) => {
       const { error } = await supabase
         .from('parts_vehicles')
         .update(updates)
@@ -219,15 +219,15 @@ export default function PartsVehicleDetails() {
   const exchangeRate = vehicle?.exchange_rate || globalRate // курс авто (закупка); undefined пока не загружен
   const purchasePrice = vehicle?.purchase_price || 0
   const purchasePriceUSD = exchangeRate ? purchasePrice / exchangeRate : 0
-  const sold = parts.filter((p: any) => p.status === 'sold')
-  const totalRevenue = sold.reduce((sum: number, p: any) => {
+  const sold = parts.filter(p => p.status === 'sold')
+  const totalRevenue = sold.reduce((sum, p) => {
     const price = (p.sold_price != null ? p.sold_price : p.selling_price) || 0
     const rate = p.exchange_rate_at_sale || exchangeRate // зафиксированный на момент продажи
     // USD-позиция без курса — пропускаем (без NaN); грн — считаем как есть
     const inUAH = p.price_currency === 'UAH' ? price : (rate ? price * rate : 0)
     return sum + inUAH
   }, 0)
-  const totalRevenueUSD = sold.reduce((sum: number, p: any) => {
+  const totalRevenueUSD = sold.reduce((sum, p) => {
     const price = (p.sold_price != null ? p.sold_price : p.selling_price) || 0
     const rate = p.exchange_rate_at_sale || exchangeRate
     const inUSD = p.price_currency === 'UAH' ? (rate ? price / rate : 0) : price
@@ -263,8 +263,8 @@ export default function PartsVehicleDetails() {
     )
   }
 
-  const soldCount      = parts.filter((p: any) => p.status === 'sold').length
-  const availableCount = parts.filter((p: any) => p.status === 'available').length
+  const soldCount      = parts.filter(p => p.status === 'sold').length
+  const availableCount = parts.filter(p => p.status === 'available').length
   const recoveryPct    = purchasePrice > 0
     ? ((totalRevenue / purchasePrice) * 100).toFixed(1)
     : null
@@ -276,8 +276,8 @@ export default function PartsVehicleDetails() {
     try {
       const res = await exportSingleVehicleXlsx(vehicle, parts as PartsInventoryItem[])
       toast.success(t('vehicleDetailsPage.exportDone', { p: res.parts }))
-    } catch (e: any) {
-      toast.error(e?.message || t('vehicleDetailsPage.exportError'))
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('vehicleDetailsPage.exportError'))
     } finally {
       setExporting(false)
     }
@@ -453,7 +453,7 @@ export default function PartsVehicleDetails() {
                       </tr>
                     </thead>
                     <tbody className="grid-hairline">
-                      {parts.map((part: any) => (
+                      {parts.map((part) => (
                         <tr
                           key={part.id}
                           onClick={() => navigate(`/parts/inventory/${part.id}`)}
@@ -466,9 +466,9 @@ export default function PartsVehicleDetails() {
                                 № {part.part_number}
                               </div>
                             )}
-                            {part.photos?.length > 0 && (
+                            {(part.photos?.length ?? 0) > 0 && (
                               <div className="flex gap-1 mt-1.5 flex-wrap">
-                                {part.photos.slice(0, 4).map((photo: ImgbbPhoto, i: number) => (
+                                {(part.photos ?? []).slice(0, 4).map((photo: ImgbbPhoto, i: number) => (
                                   <img
                                     key={i}
                                     src={photo.thumb_url || photo.url}
@@ -476,9 +476,9 @@ export default function PartsVehicleDetails() {
                                     className="w-9 h-9 object-cover rounded border border-gray-200"
                                   />
                                 ))}
-                                {part.photos.length > 4 && (
+                                {(part.photos ?? []).length > 4 && (
                                   <div className="w-9 h-9 flex items-center justify-center bg-gray-100 rounded border border-gray-200 text-xs text-gray-500 font-medium">
-                                    +{part.photos.length - 4}
+                                    +{(part.photos ?? []).length - 4}
                                   </div>
                                 )}
                               </div>
@@ -522,16 +522,16 @@ export default function PartsVehicleDetails() {
 
                 {/* Mobile cards */}
                 <div className="sm:hidden divide-y divide-gray-100">
-                  {parts.map((part: any) => (
+                  {parts.map((part) => (
                     <div
                       key={part.id}
                       onClick={() => navigate(`/parts/inventory/${part.id}`)}
                       className="px-4 py-3 flex items-start gap-3 cursor-pointer active:bg-gray-50"
                     >
                       {/* Thumb */}
-                      {part.photos?.length > 0 ? (
+                      {(part.photos?.length ?? 0) > 0 ? (
                         <img
-                          src={part.photos[0].thumb_url || part.photos[0].url}
+                          src={part.photos?.[0]?.thumb_url || part.photos?.[0]?.url}
                           alt={part.name}
                           className="w-12 h-12 rounded-lg object-cover border border-gray-200 flex-shrink-0"
                         />

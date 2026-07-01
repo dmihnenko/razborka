@@ -21,6 +21,12 @@ interface RowEdit {
   description: string
 }
 
+/** Опция категории для селектов (форма supabase-select: id, name). */
+interface CategoryOption {
+  id: string
+  name: string
+}
+
 function buildLocationOptions(locations: StorageLocation[]): { id: string; label: string }[] {
   const map = new Map<string, StorageLocation>()
   locations.forEach(l => map.set(l.id, l))
@@ -60,7 +66,7 @@ export default function PartsNoPricePage() {
         .eq('parts_company_id', partsCompanyId)
         .order('name')
       if (error) throw error
-      return data
+      return (data || []) as CategoryOption[]
     },
     enabled: !!partsCompanyId,
   })
@@ -87,7 +93,7 @@ export default function PartsNoPricePage() {
             price_currency: (item.price_currency as 'USD' | 'UAH') || 'USD',
             part_number: item.part_number || '',
             category_id: item.category_id || '',
-            storage_location_id: (item as any).storage_location_id || '',
+            storage_location_id: item.storage_location_id || '',
             description: item.description || '',
           }
         }
@@ -117,7 +123,7 @@ export default function PartsNoPricePage() {
     if (row.selling_price) updates.selling_price = Number(row.selling_price)
     if (row.part_number.trim()) updates.part_number = row.part_number.trim()
     if (row.category_id) updates.category_id = row.category_id
-    if (row.storage_location_id) (updates as any).storage_location_id = row.storage_location_id
+    if (row.storage_location_id) updates.storage_location_id = row.storage_location_id
     if (row.description.trim()) updates.description = row.description.trim()
     updateMutation.mutate({ id: item.id, data: updates })
   }
@@ -358,7 +364,7 @@ export default function PartsNoPricePage() {
                                     className="form-select py-2 text-sm"
                                   >
                                     <option value="">{t('noPricePage.noCategory')}</option>
-                                    {categories.map((cat: any) => (
+                                    {categories.map((cat) => (
                                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                                     ))}
                                   </select>
@@ -509,7 +515,7 @@ export default function PartsNoPricePage() {
                             className="form-select"
                           >
                             <option value="">{t('noPricePage.noCategory')}</option>
-                            {categories.map((cat: any) => (
+                            {categories.map((cat) => (
                               <option key={cat.id} value={cat.id}>{cat.name}</option>
                             ))}
                           </select>

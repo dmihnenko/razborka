@@ -24,6 +24,23 @@ import OnboardingChecklist from '@/components/parts/OnboardingChecklist'
 // воронка заказов и последние заказы. Данные — getPartsDashboardStats (RPC).
 // ============================================================================
 
+// Строка недавнего заказа (форма supabase-select ниже: parts_orders + join customer/items).
+interface RecentOrderItem {
+  price_at_sale: number | null
+  quantity: number | null
+  price_at_sale_currency?: 'UAH' | 'USD' | null
+}
+interface RecentOrderRow {
+  id: string
+  order_number: string
+  order_date: string
+  status: PartsOrderStatus
+  total_amount: number
+  exchange_rate_at_sale: number | null
+  customer: { full_name: string | null } | null
+  items: RecentOrderItem[]
+}
+
 function StatusChip({ status }: { status: PartsOrderStatus }) {
   return (
     <span className={statusBadgeClass(status)}>
@@ -81,16 +98,18 @@ export default function PartsDashboard() {
         .eq('parts_company_id', partsCompanyId)
         .order('order_date', { ascending: false })
         .limit(6)
-      return data || []
+      // supabase выводит to-one join (customer) как массив — форма фактически
+      // объектная, поэтому граничный каст через unknown (не подмена типа).
+      return (data || []) as unknown as RecentOrderRow[]
     },
     enabled: !!partsCompanyId,
   })
 
-  const computeOrderUSD = (order: any): number | null => {
+  const computeOrderUSD = (order: RecentOrderRow): number | null => {
     if (!order.items || order.items.length === 0) return null
     const rate = order.exchange_rate_at_sale || usdRate
     if (!rate) return null
-    return order.items.reduce((sum: number, item: any) => {
+    return order.items.reduce((sum: number, item: RecentOrderItem) => {
       const amount = (item.price_at_sale ?? 0) * (item.quantity ?? 1)
       return sum + (item.price_at_sale_currency === 'USD' ? amount : amount / rate)
     }, 0)
@@ -257,7 +276,7 @@ export default function PartsDashboard() {
             </div>
           ) : (
             <div>
-              {recentOrders!.map((o: any) => {
+              {recentOrders!.map((o) => {
                 const usd = computeOrderUSD(o)
                 return (
                   <button key={o.id} onClick={() => navigate(`/parts/orders/${o.id}`)}
@@ -267,7 +286,7 @@ export default function PartsDashboard() {
                       <p className="text-sm font-semibold truncate" style={{ color: ink }}>
                         {o.order_number}
                         <span className="font-normal ml-2" style={{ color: ink3 }}>
-                          {(o.customer as any)?.full_name || t('dashboard.noCustomer')}
+                          {o.customer?.full_name || t('dashboard.noCustomer')}
                         </span>
                       </p>
                       <p className="text-[11px] mt-0.5" style={{ color: ink3 }}>{formatDate(o.order_date)}</p>

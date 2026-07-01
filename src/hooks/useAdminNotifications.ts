@@ -28,7 +28,7 @@ interface UserRegisteredPayload {
  */
 export function useAdminNotifications() {
   const { data: profile } = useUserProfile()
-  const isAdmin = profile?.roles?.some((r: any) => r.name === 'admin')
+  const isAdmin = profile?.roles?.some((r) => r.name === 'admin')
   const adminId = profile?.id
 
   // Запрашиваем разрешение на системные уведомления один раз

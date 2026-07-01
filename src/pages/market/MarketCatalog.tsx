@@ -89,9 +89,9 @@ export function MarketCatalog() {
   // SEO-лендинг по марке/модели (/market/catalog/tesla/model-3): резолвим slug → название
   const landing = useMemo(() => {
     if (!pathParams.makeSlug) return null
-    const mk = (carCatalog as any[]).find((m) => slugify(m.make) === pathParams.makeSlug)
+    const mk = carCatalog.find((m) => slugify(m.make) === pathParams.makeSlug)
     if (!mk) return null
-    const md = pathParams.modelSlug ? (mk.models || []).find((x: any) => slugify(x.model) === pathParams.modelSlug) : null
+    const md = pathParams.modelSlug ? (mk.models || []).find((x) => slugify(x.model) === pathParams.modelSlug) : null
     return { make: mk.make as string, model: md ? (md.model as string) : undefined }
   }, [pathParams.makeSlug, pathParams.modelSlug, carCatalog])
 

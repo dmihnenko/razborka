@@ -9,7 +9,7 @@ import { useUserProfile } from './useUserProfile'
  */
 export function useSyncProfileLocale() {
   const { data: profile } = useUserProfile()
-  const dbLocale: string | undefined = (profile as any)?.locale
+  const dbLocale: string | undefined = profile?.locale ?? undefined
 
   useEffect(() => {
     if (!dbLocale) return

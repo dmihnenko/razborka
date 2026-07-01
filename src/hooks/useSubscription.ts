@@ -90,7 +90,7 @@ export function useSubscriptionLimits() {
   const { data: subscription } = useCompanySubscription()
   const usage = useSubscriptionUsage()
 
-  const isPartsOwner = profile?.roles?.some((r: any) => r.name === 'parts_owner')
+  const isPartsOwner = profile?.roles?.some((r) => r.name === 'parts_owner')
   const hasSubscription = !!subscription
 
   const plan = subscription?.subscription

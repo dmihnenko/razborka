@@ -28,7 +28,7 @@ function isProblem(s: PartsShipment) {
 export default function PartsShipments() {
   const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
-  const partsCompanyId = profile?.parts_company_id
+  const partsCompanyId = profile?.parts_company_id ?? undefined
   const queryClient = useQueryClient()
   useHydrateNpSettings(partsCompanyId)
   const [tab, setTab] = useState<'active' | 'delivered' | 'problem' | 'all'>('active')
@@ -51,7 +51,7 @@ export default function PartsShipments() {
       queryClient.invalidateQueries({ queryKey: ['parts-shipments', partsCompanyId] })
       toast.success(t('shipments.statusUpdated'))
     },
-    onError: (e: any) => toast.error(e?.message || t('shipments.statusError')),
+    onError: (e) => toast.error(e instanceof Error ? e.message : t('shipments.statusError')),
   })
 
   // Массовая проверка статусов всех активных (в пути) посылок
@@ -73,7 +73,7 @@ export default function PartsShipments() {
       queryClient.invalidateQueries({ queryKey: ['parts-shipments', partsCompanyId] })
       toast.success(t('shipments.checkedAll', { n }))
     },
-    onError: (e: any) => toast.error(e?.message || t('shipments.statusError')),
+    onError: (e) => toast.error(e instanceof Error ? e.message : t('shipments.statusError')),
   })
 
   if (!partsCompanyId) return <PartsAccessDenied />

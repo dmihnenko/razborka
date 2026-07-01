@@ -200,8 +200,9 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
       }
 
       onClose()
-    } catch (err: any) {
-      const msg = err?.message || err?.details || t('vehicleModal.errorSave')
+    } catch (err) {
+      const e = (err && typeof err === 'object') ? (err as { message?: string; details?: string }) : {}
+      const msg = e.message || e.details || t('vehicleModal.errorSave')
       setError(msg)
       console.error('Error submitting vehicle:', err)
     } finally {

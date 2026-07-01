@@ -13,6 +13,39 @@ import { toast } from 'sonner'
 import { PublicBrandHeader } from '@/components/PublicBrandHeader'
 import { formatPrice } from '@/utils/currency'
 import { PARTS_CONDITION_LABELS, conditionBadgeClass } from '@/utils/status'
+import type { ImgbbPhoto } from '@/services/imgbbService'
+
+// ─── Формы публичных данных (RPC/публичные таблицы — нетипизированный клиент) ────
+
+/** Публичный набор полей позиции (SECURITY DEFINER RPC get_public_parts_item). */
+interface PublicPartsItem {
+  id: string
+  parts_company_id: string
+  name: string
+  part_number?: string | null
+  description?: string | null
+  notes?: string | null
+  condition?: string | null
+  quantity: number
+  selling_price?: number | null
+  sold_price?: number | null
+  price_currency?: 'UAH' | 'USD' | null
+  status: string
+  photos?: ImgbbPhoto[] | null
+  category?: { name: string } | null
+  vehicle?: { make: string; model: string; year?: number | null } | null
+}
+
+/** Публичные контакты разборки (parts_companies). */
+interface PublicCompany {
+  id: string
+  name: string
+  phone?: string | null
+  address?: string | null
+  email?: string | null
+  description?: string | null
+  telegram?: string | null
+}
 
 // ─── status helpers ────────────────────────────────────────────────────────────
 
@@ -63,7 +96,7 @@ function telegramHref(tg: string | null | undefined): string | null {
   return `https://t.me/${v}`                                  // username без @
 }
 
-function ContactsCard({ company, phoneRaw }: { company: any; phoneRaw: string | null }) {
+function ContactsCard({ company, phoneRaw }: { company: PublicCompany | null | undefined; phoneRaw: string | null }) {
   if (!company) return null
   const tgHref = telegramHref(company.telegram)
   return (
@@ -120,8 +153,11 @@ function ContactsCard({ company, phoneRaw }: { company: any; phoneRaw: string | 
 
 // ─── Lightbox ──────────────────────────────────────────────────────────────────
 
+/** Фото приходит как объект ImgbbPhoto/{display_url} либо как строка-URL. */
+type PhotoLike = (Partial<ImgbbPhoto> & { display_url?: string }) | string
+
 function Lightbox({ photos, startIdx, onClose }: {
-  photos: any[]
+  photos: PhotoLike[]
   startIdx: number
   onClose: () => void
 }) {
@@ -146,8 +182,9 @@ function Lightbox({ photos, startIdx, onClose }: {
   }, [onClose, prev, next])
 
   const photo = photos[idx]
-  const src = photo?.url || photo?.display_url || (typeof photo === 'string' ? photo : '')
-  const thumb = (p: any) => p?.thumb_url || p?.url || p?.display_url || (typeof p === 'string' ? p : '')
+  const src = (typeof photo === 'string' ? photo : photo?.url || photo?.display_url) || ''
+  const thumb = (p: PhotoLike) =>
+    (typeof p === 'string' ? p : p?.thumb_url || p?.url || p?.display_url) || ''
 
   return (
     <div
@@ -244,7 +281,7 @@ export default function PublicPartsItemView() {
       // (для QR/ссылки), не зависит от статуса/публикации и anon-колонко-грантов.
       const { data, error } = await supabase.rpc('get_public_parts_item', { p_id: id })
       if (error) throw error
-      return data as any
+      return data as PublicPartsItem | null
     },
     enabled: !!id,
     staleTime: 60_000,
@@ -269,22 +306,22 @@ export default function PublicPartsItemView() {
           .select('telegram')
           .eq('id', item!.parts_company_id)
           .single()
-        telegram = (tg.data as any)?.telegram ?? null
+        telegram = (tg.data as { telegram?: string | null } | null)?.telegram ?? null
       } catch { /* колонки нет — игнорируем */ }
 
-      return { ...data, telegram }
+      return { ...(data as Omit<PublicCompany, 'telegram'>), telegram } satisfies PublicCompany
     },
     enabled: !!item?.parts_company_id,
     staleTime: 5 * 60_000,
   })
 
-  const photos   = (item?.photos as any[]) || []
+  const photos: PhotoLike[] = item?.photos || []
   const currency = (item?.price_currency as 'UAH' | 'USD') || 'UAH'
   const isSold   = item?.status === 'sold'
   const phoneRaw = company?.phone ? cleanPhone(company.phone) : null
 
-  const getUrl   = (p: any) => p?.url || p?.display_url || (typeof p === 'string' ? p : '')
-  const getThumb = (p: any) => p?.thumb_url || getUrl(p)
+  const getUrl   = (p: PhotoLike) => (typeof p === 'string' ? p : p?.url || p?.display_url) || ''
+  const getThumb = (p: PhotoLike) => (typeof p === 'string' ? '' : p?.thumb_url) || getUrl(p)
 
   const prevPhoto = useCallback(
     () => setActivePhoto(i => (i - 1 + photos.length) % photos.length),

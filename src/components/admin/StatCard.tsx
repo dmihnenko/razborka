@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, type LucideIcon } from 'lucide-react'
 
 export type StatColor = 'indigo' | 'blue' | 'orange' | 'emerald' | 'purple' | 'gray' | 'red'
 
@@ -22,7 +22,7 @@ interface StatCardProps {
   label: string
   value: React.ReactNode
   sub?: string
-  icon: any
+  icon: LucideIcon
   color?: StatColor
   to?: string
   loading?: boolean

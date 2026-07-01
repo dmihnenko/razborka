@@ -97,13 +97,13 @@ export function PartsApplication() {
       toast.success(t('application.toastCreated'))
       navigate('/parts/dashboard')
     },
-    onError: (err: any) => {
-      const msg: string = err?.message ?? ''
+    onError: (err) => {
+      const msg = err instanceof Error ? err.message : ''
       if (msg.includes('COMPANY_ALREADY_EXISTS')) {
         toast.info(t('application.toastAlreadyExists'))
         navigate('/parts/dashboard')
       } else {
-        toast.error(err?.message || t('application.toastError'))
+        toast.error(msg || t('application.toastError'))
       }
     },
   })

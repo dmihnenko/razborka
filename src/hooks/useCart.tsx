@@ -41,10 +41,10 @@ function loadCart(): CartItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return []
-    const parsed = JSON.parse(raw)
+    const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(
-      (i: any) => i && typeof i.inventoryId === 'string' && typeof i.companyId === 'string'
+    return (parsed as CartItem[]).filter(
+      (i) => i && typeof i.inventoryId === 'string' && typeof i.companyId === 'string'
     )
   } catch {
     return []

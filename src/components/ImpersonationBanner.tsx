@@ -14,8 +14,8 @@ export default function ImpersonationBanner() {
     try {
       await stopImpersonation()
       window.location.href = '/admin/users'
-    } catch (e: any) {
-      toast.error(e.message || 'Ошибка возврата')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Ошибка возврата')
       window.location.href = '/login'
     }
   }

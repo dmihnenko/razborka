@@ -18,7 +18,7 @@ import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
-import type { PartsVehicle, CreatePartsVehicleInput, PartsVehicleStatus, VehicleRoi, PartsInventoryItem } from '@/types/parts'
+import type { PartsVehicle, CreatePartsVehicleInput, PartsVehicleStatus, PartsInventoryStatus, VehicleRoi, PartsInventoryItem } from '@/types/parts'
 
 /** Бейдж окупаемости авто: % возврата + цвет (окупилось/в процессе/в минусе). */
 function roiBadge(r?: VehicleRoi): { pct: number; cls: string } | null {
@@ -56,7 +56,7 @@ interface PlanItem {
 const V_STATUS_S: Record<string, string> = { awaiting: 'Ожидает', in_progress: 'В разборе', dismantled: 'Разобран' }
 const INV_STATUS_S: Record<string, string> = { available: 'В наличии', reserved: 'Резерв', sold: 'Продано', damaged: 'Брак' }
 const COND_S: Record<string, string> = { new: 'Новая', used: 'Б/У', damaged: 'Повреждённая' }
-const vNorm = (x: any): string => (x == null || x === '') ? '' : String(x).trim()
+const vNorm = (x: string | number | null | undefined): string => (x == null || x === '') ? '' : String(x).trim()
 const partKey = (pn?: string | null, name?: string | null) => ((pn || name || '').toLowerCase().trim())
 function vehKey(v: { vin?: string | null; make: string; model: string; year?: number | null }): string {
   const vin = (v.vin || '').toUpperCase().trim()
@@ -73,7 +73,7 @@ function buildPlan(parsedVehicles: ParsedVehicle[], existing: PartsVehicle[], ex
     const ex = byKey.get(vehKey(pv))
     if (!ex) return { pv, kind: 'new', diffs: [], partChanges: [], partAdds: pv.parts.length, decision: 'create' }
     const diffs: VDiff[] = []
-    const cmp = (label: string, a: any, b: any) => {
+    const cmp = (label: string, a: string | number | null | undefined, b: string | number | null | undefined) => {
       const an = vNorm(a), bn = vNorm(b)
       if (an !== bn) diffs.push({ label, from: bn || '—', to: an || '—' })
     }
@@ -101,10 +101,10 @@ function buildPlan(parsedVehicles: ParsedVehicle[], existing: PartsVehicle[], ex
         pd.push({ label: 'Кол-во', from: vNorm(exp.quantity) || '—', to: vNorm(pp.quantity) }); patch.quantity = pp.quantity
       }
       if (pp.status !== exp.status) {
-        pd.push({ label: 'Статус', from: INV_STATUS_S[exp.status] || exp.status, to: INV_STATUS_S[pp.status] || pp.status }); patch.status = pp.status as any
+        pd.push({ label: 'Статус', from: INV_STATUS_S[exp.status] || exp.status, to: INV_STATUS_S[pp.status] || pp.status }); patch.status = pp.status as PartsInventoryStatus
       }
       if (pp.condition !== exp.condition) {
-        pd.push({ label: 'Состояние', from: COND_S[exp.condition] || exp.condition, to: COND_S[pp.condition] || pp.condition }); patch.condition = pp.condition as any
+        pd.push({ label: 'Состояние', from: COND_S[exp.condition] || exp.condition, to: COND_S[pp.condition] || pp.condition }); patch.condition = pp.condition
       }
       const exLoc = exp.storage_location?.name || exp.location || ''
       if (pp.location && vNorm(pp.location) !== vNorm(exLoc)) {
@@ -229,8 +229,9 @@ export default function PartsVehicles() {
       }
       setSelectedVehicle(null)
     },
-    onError: (error: any) => {
-      const msg = error?.message || error?.details || t('vehiclesPage.saveError')
+    onError: (error) => {
+      const err = error as { message?: string; details?: string } | null
+      const msg = err?.message || err?.details || t('vehiclesPage.saveError')
       toast.error(msg)
       console.error(error)
     }
@@ -270,8 +271,8 @@ export default function PartsVehicles() {
       const all = await getPartsInventory(partsCompanyId!)
       const res = await exportVehiclesXlsx({ vehicles: list, parts: all, roi: roiByVehicle, summary: list.length > 1 })
       toast.success(t('vehiclesPage.exportDone', { v: res.vehicles, p: res.parts }))
-    } catch (e: any) {
-      toast.error(e?.message || t('vehiclesPage.exportError'))
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('vehiclesPage.exportError'))
     } finally {
       setExporting(false)
     }
@@ -339,7 +340,7 @@ export default function PartsVehicles() {
             purchase_price: pv.purchase_price, purchase_date: pv.purchase_date, exchange_rate: pv.exchange_rate,
           }, partsCompanyId!)
           created++
-          if (pv.status !== 'awaiting') { try { await updateVehicleStatus(v.id, pv.status, v as any) } catch { /* ignore */ } }
+          if (pv.status !== 'awaiting') { try { await updateVehicleStatus(v.id, pv.status, v) } catch { /* ignore */ } }
           await addParts(v.id, pv.parts, [])
         } else if (it.decision === 'update' && it.matchId) {
           if (it.diffs.length > 0) {
@@ -369,7 +370,7 @@ export default function PartsVehicles() {
       toast.success(t('vehiclesPage.importDone2', { created: r.created, updated: r.updated, parts: r.parts, skipped: r.skipped }) + (r.partsUpdated ? t('vehiclesPage.importPartsUpdated', { n: r.partsUpdated }) : ''))
       setImportOpen(false); setParsed(null); setPlan(null)
     },
-    onError: (e: any) => toast.error(e?.message || t('vehiclesPage.importError')),
+    onError: (e) => toast.error(e instanceof Error ? e.message : t('vehiclesPage.importError')),
   })
 
   // Filter vehicles

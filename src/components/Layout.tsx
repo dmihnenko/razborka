@@ -28,6 +28,12 @@ import NotificationBanner from './NotificationBanner'
 import { Logo } from './brand/Logo'
 import { BRAND } from '@/config/brand'
 
+// Роль пользователя в профиле (форма из useUserProfile: roles(id, name, ...) + is_primary).
+interface ProfileRole {
+  name: string
+  is_primary?: boolean
+}
+
 // Ключи перевода названий пунктов меню (по href) — чтобы не менять navigation.ts.
 const NAV_KEY: Record<string, string> = {
   '/parts/dashboard': 'nav.dashboard',
@@ -91,13 +97,13 @@ export default function Layout() {
 
   // Получаем PRIMARY роль пользователя
   // Приоритет ролей: admin > parts_owner > parts_worker > user
-  const getRoleByPriority = (roles: any[]) => {
+  const getRoleByPriority = (roles: ProfileRole[]) => {
     const rolePriority = ['admin', 'parts_owner', 'parts_worker', 'user']
     for (const roleName of rolePriority) {
-      const role = roles.find((r: any) => r.name === roleName)
+      const role = roles.find((r) => r.name === roleName)
       if (role) return role
     }
-    return roles.find((r: any) => r.is_primary) || roles[0]
+    return roles.find((r) => r.is_primary) || roles[0]
   }
 
   const primaryRole = profile?.roles?.length ? getRoleByPriority(profile?.roles) : null
@@ -107,7 +113,7 @@ export default function Layout() {
 
   const { data: ownerCompany } = useQuery({
     queryKey: ['owner_company_phone', ownerCompanyId],
-    enabled: !!ownerCompanyId && !!profile?.roles?.some((r: any) => r.name === 'parts_owner'),
+    enabled: !!ownerCompanyId && !!profile?.roles?.some((r: ProfileRole) => r.name === 'parts_owner'),
     queryFn: async () => {
       const { data } = await supabase
         .from('parts_companies')
@@ -120,7 +126,7 @@ export default function Layout() {
 
   // Управляем activeRole в localStorage
   useEffect(() => {
-    const allRoles = profile?.roles?.map((r: any) => r.name).filter((n: string) => n !== 'user') || []
+    const allRoles = profile?.roles?.map((r: ProfileRole) => r.name).filter((n: string) => n !== 'user') || []
 
     // Если админ зашел первый раз — устанавливаем 'user'
     if (primaryRole?.name === 'admin' && !localStorage.getItem('activeRole')) {
@@ -146,7 +152,7 @@ export default function Layout() {
   // Закрепляем контекст при входе в кабинет, чтобы общие страницы (/support, /profile)
   // НЕ сбрасывали меню разборки на дефолт (баг «пропадают пункты / становлюсь работником»).
   useEffect(() => {
-    const roles = new Set((profile?.roles || []).map((r: any) => r.name))
+    const roles = new Set((profile?.roles || []).map((r: ProfileRole) => r.name))
     const canP = roles.has('parts_owner') || roles.has('parts_worker') || roles.has('admin')
     const p = location.pathname
     if (p.startsWith('/parts') && canP) {
@@ -160,7 +166,7 @@ export default function Layout() {
   // Получаем меню на основе активной роли
   // Поддерживаем переключение для ВСЕХ пользователей с несколькими ролями
   let roleNames: string[] = []
-  const allUserRoles = profile?.roles?.map((r: any) => r.name).filter((n: string) => n !== 'user') || []
+  const allUserRoles = profile?.roles?.map((r: ProfileRole) => r.name).filter((n: string) => n !== 'user') || []
   const storedRole = localStorage.getItem('activeRole')
 
   if (primaryRole?.name === 'admin') {
@@ -186,7 +192,7 @@ export default function Layout() {
   // Контекст следует за МАРШРУТОМ (источник правды): на /parts всегда показываем
   // кабинет разборки, на /my-vehicles — «Мои авто». Иначе у админа/мультироли с
   // activeRole='user' пропадало нижнее меню при заходе на /parts/* напрямую.
-  const userRoleSet = new Set((profile?.roles || []).map((r: any) => r.name))
+  const userRoleSet = new Set((profile?.roles || []).map((r: ProfileRole) => r.name))
   const canParts = userRoleSet.has('parts_owner') || userRoleSet.has('parts_worker') || userRoleSet.has('admin')
   if (location.pathname.startsWith('/parts') && canParts) {
     // Меню сотрудника — только для чистого parts_worker (без owner и без admin).
@@ -206,7 +212,7 @@ export default function Layout() {
   const isUserCtx = currentCtx === 'user'
 
   // Сколько разделов доступно (для шапки сайдбара: несколько → свитчер, один → лого)
-  const ctxRoles = profile?.roles?.map((r: any) => r.name) || []
+  const ctxRoles = profile?.roles?.map((r: ProfileRole) => r.name) || []
   const ctxAdmin = ctxRoles.includes('admin')
   const availableCtx = [
     ctxAdmin || ctxRoles.includes('parts_owner') || ctxRoles.includes('parts_worker'),
@@ -255,7 +261,7 @@ export default function Layout() {
   }
 
   // Владелец разборки без компании — обязан заполнить данные
-  const isPartsOwnerRole = profile?.roles?.some((r: any) => r.name === 'parts_owner')
+  const isPartsOwnerRole = profile?.roles?.some((r: ProfileRole) => r.name === 'parts_owner')
   // Нужна настройка: нет компании ИЛИ есть компания но без телефона (работники не смогут найти)
   const noCompany = isPartsOwnerRole && !profile?.parts_company_id
   const hasCompanyNoPhone = ownerCompanyId && ownerCompany !== undefined && !ownerCompany?.phone

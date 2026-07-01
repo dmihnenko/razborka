@@ -5,6 +5,7 @@
 //   • Строки 11+ — запчасти авто (сортировка: в наличии → бронь → продано).
 //   • Справа — предупреждение «строки 1–10 не изменять».
 import type { PartsVehicle, PartsInventoryItem, PartsVehicleStatus, VehicleRoi } from '@/types/parts'
+import type { Worksheet, Row, CellValue } from 'exceljs'
 
 async function getExcel() {
   return (await import('exceljs')).default
@@ -63,12 +64,12 @@ function downloadBlob(buf: ArrayBuffer, name: string) {
 }
 
  
-function applyWidths(ws: any) {
+function applyWidths(ws: Worksheet) {
   SHEET_COLS.forEach((w, i) => { ws.getColumn(i + 1).width = w })
 }
 
-function writeVehicleBlock(ws: any, v: PartsVehicle, roi?: VehicleRoi) {
-  const rows: Array<[string, any, string?, any?]> = [
+function writeVehicleBlock(ws: Worksheet, v: PartsVehicle, roi?: VehicleRoi) {
+  const rows: Array<[string, CellValue, string?, CellValue?]> = [
     ['Марка', v.make],
     ['Модель', v.model],
     ['Год', v.year ?? ''],
@@ -108,7 +109,7 @@ function writeVehicleBlock(ws: any, v: PartsVehicle, roi?: VehicleRoi) {
 
 const PARTS_HEADERS = ['Название', 'OEM-номер', 'Категория', 'Состояние', 'Кол-во', 'Цена', 'Валюта', 'Статус', 'Место хранения']
 
-function writePartsHeader(ws: any) {
+function writePartsHeader(ws: Worksheet) {
   const hr = ws.getRow(10)
   hr.height = 30
   // Все 9 ячеек шапки — единое оформление и выравнивание (по центру, перенос).
@@ -123,7 +124,7 @@ function writePartsHeader(ws: any) {
   ws.views = [{ state: 'frozen', ySplit: 10 }]
 }
 
-function stylePartsBody(ws: any) {
+function stylePartsBody(ws: Worksheet) {
   ws.getColumn(6).numFmt = '# ##0.##'
   for (let i = 11; i <= ws.rowCount; i++) {
     const row = ws.getRow(i)
@@ -152,7 +153,7 @@ function sheetNamer() {
 const SUMMARY_HEADERS = ['Авто', 'Год', 'Статус', 'Цена покупки', 'Курс', 'Запчастей', 'В наличии', 'Резерв', 'Продано', 'Окуп. %']
 const SUMMARY_COLS = [28, 8, 14, 14, 9, 11, 11, 9, 10, 10]
 
-function writeSummarySheet(ws: any, vehicles: PartsVehicle[], partsByVeh: Map<string, PartsInventoryItem[]>, roi: Map<string, VehicleRoi>) {
+function writeSummarySheet(ws: Worksheet, vehicles: PartsVehicle[], partsByVeh: Map<string, PartsInventoryItem[]>, roi: Map<string, VehicleRoi>) {
   SUMMARY_COLS.forEach((w, i) => { ws.getColumn(i + 1).width = w })
 
   const title = ws.getRow(1)
@@ -163,7 +164,7 @@ function writeSummarySheet(ws: any, vehicles: PartsVehicle[], partsByVeh: Map<st
   const hr = ws.getRow(2)
   SUMMARY_HEADERS.forEach((h, i) => { hr.getCell(i + 1).value = h })
   hr.height = 22
-  hr.eachCell((c: any) => {
+  hr.eachCell((c) => {
     c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BRAND } }
     c.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 }
     c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
@@ -189,7 +190,7 @@ function writeSummarySheet(ws: any, vehicles: PartsVehicle[], partsByVeh: Map<st
     row.getCell(8).value = reserved
     row.getCell(9).value = soldN
     row.getCell(10).value = r?.payback_pct != null ? r.payback_pct : ''
-    row.eachCell((c: any) => {
+    row.eachCell((c) => {
       c.border = { bottom: { style: 'hair', color: { argb: BORDER } } }
       if (idx % 2 === 1) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: ZEBRA } }
     })
@@ -203,7 +204,7 @@ function writeSummarySheet(ws: any, vehicles: PartsVehicle[], partsByVeh: Map<st
   totalRow.getCell(7).value = tAvail
   totalRow.getCell(8).value = tReserved
   totalRow.getCell(9).value = tSold
-  totalRow.eachCell((c: any) => {
+  totalRow.eachCell((c) => {
     c.font = { bold: true, color: { argb: 'FF16181D' } }
     c.border = { top: { style: 'thin', color: { argb: 'FF5B6472' } } }
   })
@@ -293,8 +294,8 @@ export async function downloadVehiclesTemplate() {
   } as PartsVehicle)
   writePartsHeader(ws)
   const ex = ws.getRow(11)
-  ;['Фара передняя правая', '1077411-00-G', 'Оптика', 'Б/У', 1, 120, 'USD', 'В наличии', 'Стеллаж 1 / Полка 2']
-    .forEach((val, i) => { ex.getCell(i + 1).value = val as any })
+  ;(['Фара передняя правая', '1077411-00-G', 'Оптика', 'Б/У', 1, 120, 'USD', 'В наличии', 'Стеллаж 1 / Полка 2'] as CellValue[])
+    .forEach((val, i) => { ex.getCell(i + 1).value = val })
   stylePartsBody(ws)
   downloadBlob(await wb.xlsx.writeBuffer(), 'shablon_avto_zapchasti.xlsx')
 }
@@ -311,13 +312,13 @@ export interface ParsedVehicle {
   parts: ParsedPart[]; sheet: string; _error?: string
 }
 
-function cellStr(row: any, idx: number): string {
-  const v = row.getCell(idx).value
+function cellStr(row: Row, idx: number): string {
+  const v: CellValue = row.getCell(idx).value
   if (v == null) return ''
   if (typeof v === 'object') {
-    if ('text' in v) return String((v as any).text).trim()
-    if ('result' in v) return String((v as any).result).trim()
     if (v instanceof Date) return v.toISOString()
+    if ('text' in v) return String(v.text).trim()
+    if ('result' in v) return String(v.result).trim()
   }
   return String(v).trim()
 }
@@ -333,7 +334,7 @@ export async function parseVehiclesFile(file: File): Promise<{ vehicles: ParsedV
 
   const vehicles: ParsedVehicle[] = []
 
-  wb.eachSheet((ws: any) => {
+  wb.eachSheet((ws) => {
     // Карта характеристик: A→B и C→D на строках 1–9
     const m: Record<string, string> = {}
     for (let i = 1; i <= 9; i++) {

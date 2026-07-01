@@ -113,7 +113,7 @@ export default function PartsActivityLog() {
   const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
-  const isOwner = profile?.roles?.some((r: any) => r.name === 'parts_owner')
+  const isOwner = profile?.roles?.some((r) => r.name === 'parts_owner')
 
   const [filter, setFilter] = useState<ActivityFilter>('all')
   const [page, setPage] = useState(0)

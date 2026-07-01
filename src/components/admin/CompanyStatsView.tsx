@@ -5,11 +5,12 @@ import {
   ArrowLeft, Phone, MapPin, Mail, Store,
   Users, Car, Package, ShoppingCart, UserCircle,
   CreditCard, Power, PowerOff, Building2,
+  type LucideIcon,
 } from 'lucide-react'
 import type { CompanyDetail } from '@/services/companyStatsService'
 import { setCompanyActive } from '@/services/companyStatsService'
 
-const STAT_ICONS: Record<string, { Icon: any; cls: string }> = {
+const STAT_ICONS: Record<string, { Icon: LucideIcon; cls: string }> = {
   customers:    { Icon: UserCircle,    cls: 'bg-blue-50 text-blue-600' },
   workers:      { Icon: Users,         cls: 'bg-indigo-50 text-indigo-600' },
   inventory:    { Icon: Package,       cls: 'bg-orange-50 text-orange-600' },

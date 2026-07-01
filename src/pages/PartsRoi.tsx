@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Link } from 'react-router-dom'
 import {
   Wallet,
@@ -168,7 +169,7 @@ function Kpi({ icon, label, value, hint, valueClass }: {
   )
 }
 
-function RoiRow({ r, t }: { r: VehicleRoi; t: (k: string, o?: any) => string }) {
+function RoiRow({ r, t }: { r: VehicleRoi; t: TFunction<'cabinet'> }) {
   const status = classify(r)
   const { cls, Icon } = PAYBACK_META[status]
   const inv = r.investment_usd ?? 0

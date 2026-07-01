@@ -5,10 +5,21 @@ import { BRAND } from '@/config/brand'
 import { Logo } from '@/components/brand/Logo'
 import { toast } from 'sonner'
 import { IMaskInput } from 'react-imask'
+import type { UserProfile } from '@/hooks/useUserProfile'
 
 interface Props {
-  profile: any
+  profile: UserProfile | null | undefined
   onLogout: () => void
+}
+
+// Ошибка Supabase/Postgrest: сужаем неизвестную ошибку до её значимых полей.
+interface SupabaseErrorShape {
+  code?: string
+  message?: string
+  details?: string
+}
+function asSupabaseError(e: unknown): SupabaseErrorShape {
+  return (e && typeof e === 'object') ? (e as SupabaseErrorShape) : {}
 }
 
 type Step = 'select' | 'form' | 'status'
@@ -87,17 +98,18 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
           localStorage.removeItem('tsp_profile_cache')
           window.location.reload()
           return
-        } catch (e: any) {
+        } catch (e) {
           console.error('auto claim_personal_user_role error:', e)
+          const err = asSupabaseError(e)
           // Сессия удалённого аккаунта (нет в auth.users) — выходим и на логин
-          if (e?.code === '23503') {
+          if (err.code === '23503') {
             toast.error('Сессия устарела (аккаунт не найден). Войдите заново.')
             localStorage.removeItem('tsp_profile_cache')
             await supabase.auth.signOut()
             window.location.href = '/login'
             return
           }
-          toast.error(`Авто-выдача роли: ${e?.code || ''} ${e?.message || ''}`.trim())
+          toast.error(`Авто-выдача роли: ${err.code || ''} ${err.message || ''}`.trim())
           // не вышло — покажем обычный статус заявки ниже
         }
       }
@@ -125,16 +137,17 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
       toast.success('Доступ открыт!')
       localStorage.removeItem('tsp_profile_cache')
       window.location.reload()
-    } catch (e: any) {
+    } catch (e) {
       console.error('claim_personal_user_role error:', e)
+      const err = asSupabaseError(e)
       // 23503 + ссылка на users = аккаунт удалён, но в браузере осталась сессия
-      if (e?.code === '23503') {
+      if (err.code === '23503') {
         toast.error('Сессия устарела (аккаунт не найден). Войдите заново.')
         await supabase.auth.signOut()
         window.location.href = '/login'
         return
       }
-      toast.error(`Ошибка: ${e?.code || ''} ${e?.message || ''} ${e?.details || ''}`.trim())
+      toast.error(`Ошибка: ${err.code || ''} ${err.message || ''} ${err.details || ''}`.trim())
       setSubmitting(false)
     }
   }
@@ -152,7 +165,15 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error()
 
-      const payload: any = {
+      const payload: {
+        user_id: string
+        request_type: RequestType | null
+        status: 'pending'
+        company_name?: string
+        company_address?: string | null
+        company_phone?: string | null
+        owner_phone?: string
+      } = {
         user_id: user.id,
         request_type: selectedType,
         status: 'pending',
@@ -174,8 +195,8 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
       if (error) throw error
       toast.success('Заявка отправлена!')
       await loadExistingRequest()
-    } catch (e: any) {
-      toast.error(e.message || 'Ошибка при отправке')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Ошибка при отправке')
     } finally {
       setSubmitting(false)
     }

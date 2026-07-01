@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useUserProfile, useHasRole, useIsAdmin } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { formatDate } from '@/utils/date'
-import { PartsOrder, CreatePartsOrderItemInput } from '@/types/parts'
+import { PartsOrder, PartsOrderItem, CreatePartsOrderItemInput, PartsInventoryItem } from '@/types/parts'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -46,7 +46,7 @@ export default function PartsOrderDetails() {
 
   const { rate: exchangeRate } = usePartsExchangeRate()
   // НП-настройки разборки из БД → localStorage (ключ общий для всех сотрудников)
-  useHydrateNpSettings(partsCompanyId)
+  useHydrateNpSettings(partsCompanyId ?? undefined)
 
   /* ── поля «Клиент и доставка» ───────────────────────────────── */
   const [customerFullName, setCustomerFullName] = useState('')
@@ -110,7 +110,7 @@ export default function PartsOrderDetails() {
       if ((status === 'in_progress' || status === 'completed') && !order?.customer_id) {
         await createAndAttachCustomer(id!)
       }
-      const inventoryIds = (order?.items ?? []).map((i: any) => i.inventory_item_id).filter(Boolean)
+      const inventoryIds = (order?.items ?? []).map((i) => i.inventory_item_id).filter(Boolean)
       await updatePartsOrderStatus(id!, status, inventoryIds, exchangeRate)
     },
     onSuccess: () => {
@@ -121,8 +121,8 @@ export default function PartsOrderDetails() {
       setShowCompleteModal(false)
       toast.success(t('orderDetailsPage.statusUpdated'))
     },
-    onError: (err: any) => {
-      toast.error(err?.message || t('orderDetailsPage.statusUpdateError'))
+    onError: (err: unknown) => {
+      toast.error((err instanceof Error ? err.message : '') || t('orderDetailsPage.statusUpdateError'))
     },
   })
 
@@ -130,7 +130,7 @@ export default function PartsOrderDetails() {
   const deleteOrderMutation = useMutation({
     mutationFn: async () => {
       if (!id) return
-      const inventoryIds = (order?.items ?? []).map((i: any) => i.inventory_item_id).filter(Boolean)
+      const inventoryIds = (order?.items ?? []).map((i) => i.inventory_item_id).filter(Boolean)
       await moveToTrash({
         entityType: 'parts_order',
         entityId: id,
@@ -141,8 +141,8 @@ export default function PartsOrderDetails() {
       await deletePartsOrder(id, inventoryIds)
     },
     onSuccess: () => {
-      queryClient.setQueriesData({ queryKey: ['parts-orders'] }, (old: any) =>
-        Array.isArray(old) ? old.filter((o: any) => o?.id !== id) : old
+      queryClient.setQueriesData({ queryKey: ['parts-orders'] }, (old: PartsOrder[] | undefined) =>
+        Array.isArray(old) ? old.filter((o) => o?.id !== id) : old
       )
       queryClient.removeQueries({ queryKey: ['parts-order', id] })
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
@@ -168,8 +168,8 @@ export default function PartsOrderDetails() {
     if (order?.customer) {
       setCustomerFullName(order.customer.full_name || '')
       setCustomerPhone(order.customer.phone || '')
-      const city = (order.customer as any).city || ''
-      const npOffice = (order.customer as any).np_office || ''
+      const city = order.customer.city || ''
+      const npOffice = order.customer.np_office || ''
       setCustomerCity(city)
       setCustomerNpOffice(npOffice)
       if (npApiKeySet) {
@@ -177,16 +177,16 @@ export default function PartsOrderDetails() {
         setWarehouseInputValue(npOffice)
       }
       // префилл рефов из клиента
-      setNpCityRef((order.customer as any).np_city_ref || '')
-      setNpWarehouseRef((order.customer as any).np_warehouse_ref || '')
+      setNpCityRef(order.customer.np_city_ref || '')
+      setNpWarehouseRef(order.customer.np_warehouse_ref || '')
     }
   }, [order?.customer?.id])  
 
   /* ── вычисляем итог на клиенте ──────────────────────────────── */
-  const getItemCurrency = (item: any): 'UAH' | 'USD' =>
+  const getItemCurrency = (item: PartsOrderItem): 'UAH' | 'USD' =>
     item.price_at_sale_currency || item.inventory_item?.price_currency || 'USD'
 
-  const computedTotalUAH = (order?.items ?? []).reduce((sum, item: any) => {
+  const computedTotalUAH = (order?.items ?? []).reduce((sum, item: PartsOrderItem) => {
     const amount = (item.price_at_sale || 0) * (item.quantity || 1)
     if (getItemCurrency(item) !== 'USD') return sum + amount
     // USD → грн: курс ещё не загружен — пропускаем (без NaN; пересчитается, когда курс придёт)
@@ -271,7 +271,7 @@ export default function PartsOrderDetails() {
       queryClient.invalidateQueries({ queryKey: ['parts-customers-dropdown'] })
       toast.success(t('orderDetailsPage.customerSaved'))
     },
-    onError: (err: any) => toast.error(err?.message || t('orderDetailsPage.customerSaveError')),
+    onError: (err: unknown) => toast.error((err instanceof Error ? err.message : '') || t('orderDetailsPage.customerSaveError')),
   })
 
   /* ── guard: нет компании ────────────────────────────────────── */
@@ -679,7 +679,7 @@ export default function PartsOrderDetails() {
             queryClient.invalidateQueries({ queryKey: ['parts-order', id] })
             // Авто-переход в «Отправлен» при создании ТТН (если заказ ещё не завершён/отменён)
             if (order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'shipped') {
-              const invIds = (order.items ?? []).map((i: any) => i.inventory_item_id).filter(Boolean)
+              const invIds = (order.items ?? []).map((i: PartsOrderItem) => i.inventory_item_id).filter(Boolean)
               updatePartsOrderStatus(order.id, 'shipped', invIds).catch(() => { /* не блокируем ТТН */ })
             }
             // Регистрируем посылку для трекинга (раздел «Доставка»)
@@ -850,19 +850,27 @@ interface AddItemModalProps {
   onClose: () => void
 }
 
+// Строка доступного инвентаря (см. select в getAvailablePartsInventory):
+// id, name, part_number, quantity, selling_price, price_currency, category:parts_categories(name).
+// Supabase-join category приходит как объект или массив (или null).
+type AvailableInventoryRow = Pick<
+  PartsInventoryItem,
+  'id' | 'name' | 'part_number' | 'quantity' | 'selling_price' | 'price_currency'
+> & { category?: { name: string } | { name: string }[] | null }
+
 function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
   const { t } = useTranslation('cabinet')
   const queryClient = useQueryClient()
   const { rate: exchangeRate } = usePartsExchangeRate()
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedItem, setSelectedItem] = useState<any>(null)
+  const [selectedItem, setSelectedItem] = useState<AvailableInventoryRow | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [price, setPrice] = useState(0)
   const [currency, setCurrency] = useState<'UAH' | 'USD'>('UAH')
 
   const { data: inventory = [] } = useQuery({
     queryKey: ['parts-inventory-for-order', partsCompanyId],
-    queryFn: () => getAvailablePartsInventory(partsCompanyId),
+    queryFn: () => getAvailablePartsInventory(partsCompanyId) as Promise<AvailableInventoryRow[]>,
   })
 
   const filteredInventory = inventory.filter(item => {
@@ -886,10 +894,10 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
     },
   })
 
-  const handleSelectItem = (item: any) => {
+  const handleSelectItem = (item: AvailableInventoryRow) => {
     setSelectedItem(item)
     setPrice(item.selling_price || 0)
-    setCurrency((item.price_currency as 'UAH' | 'USD') || 'UAH')
+    setCurrency(item.price_currency || 'UAH')
     setQuantity(1)
   }
 
@@ -938,7 +946,9 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
             {filteredInventory.length === 0 ? (
               <div className="py-6 text-center text-sm text-gray-500">{t('orderDetailsPage.partsNotFound')}</div>
             ) : (
-              filteredInventory.map((item) => (
+              filteredInventory.map((item) => {
+                const categoryName = Array.isArray(item.category) ? item.category[0]?.name : item.category?.name
+                return (
                 <button
                   key={item.id}
                   onClick={() => handleSelectItem(item)}
@@ -949,14 +959,14 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
                   <p className="text-sm font-semibold text-gray-900">{item.name}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {item.part_number && <span>{item.part_number} · </span>}
-                    {(item.category as any)?.name && <span>{(item.category as any).name} · </span>}
+                    {categoryName && <span>{categoryName} · </span>}
                     <span>{t('orderDetailsPage.inStock', { n: item.quantity })} · </span>
                     <span className="font-semibold text-gray-700">
                       {formatPrice(item.selling_price || 0, (item.price_currency || 'USD') as 'UAH' | 'USD')}
                     </span>
                   </p>
                 </button>
-              ))
+              )})
             )}
           </div>
 
@@ -1188,7 +1198,7 @@ function ConfirmCompleteModal({ onConfirm, onClose, isLoading }: ConfirmComplete
    NpTtnBlock — блок «Доставка Новой почты»
 ══════════════════════════════════════════════════════════════════ */
 interface NpTtnBlockProps {
-  order: any
+  order: PartsOrder
   npCityRef: string
   npWarehouseRef: string
   customerFullName: string
@@ -1233,8 +1243,8 @@ function NpTtnBlock({
   const hasTtn = Boolean(order.np_ttn)
 
   // Условие для показа кнопки создания ТТН
-  const customerNpCityRef = (order.customer as any)?.np_city_ref || npCityRef
-  const customerNpWarehouseRef = (order.customer as any)?.np_warehouse_ref || npWarehouseRef
+  const customerNpCityRef = order.customer?.np_city_ref || npCityRef
+  const customerNpWarehouseRef = order.customer?.np_warehouse_ref || npWarehouseRef
   const customerName = order.customer?.full_name || customerFullName
   const customerPhone_ = order.customer?.phone || customerPhone
 
@@ -1273,8 +1283,8 @@ function NpTtnBlock({
       if (error) throw error
       setShowTtnForm(false)
       onTtnCreated(result.ttn)
-    } catch (err: any) {
-      toast.error(err?.message || t('orderDetailsPage.ttnCreateError'))
+    } catch (err) {
+      toast.error((err instanceof Error ? err.message : '') || t('orderDetailsPage.ttnCreateError'))
     } finally {
       setTtnCreating(false)
     }
@@ -1304,7 +1314,7 @@ function NpTtnBlock({
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => {
-                navigator.clipboard.writeText(order.np_ttn)
+                navigator.clipboard.writeText(order.np_ttn ?? '')
                 toast.success(t('orderDetailsPage.ttnCopied'))
               }}
               className="cab-btn cab-btn-secondary cab-btn-sm gap-1.5"

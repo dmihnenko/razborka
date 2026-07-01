@@ -41,7 +41,7 @@ export default function UserCreate() {
   const isAdmin = useIsAdmin()
   const { data: currentUserProfile } = useUserProfile()
 
-  const isPartsOwner = currentUserProfile?.roles?.some((r: any) => r.name === 'parts_owner') || false
+  const isPartsOwner = currentUserProfile?.roles?.some((r) => r.name === 'parts_owner') || false
 
   const [formData, setFormData] = useState<UserFormData>({
     email: '',
@@ -151,8 +151,8 @@ export default function UserCreate() {
       toast.success('Пользователь создан')
       navigate(-1) // возвращаемся туда откуда пришли (users или admin/users)
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Ошибка при создании пользователя')
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Ошибка при создании пользователя')
     }
   })
 
@@ -339,7 +339,7 @@ export default function UserCreate() {
                         className="form-input disabled:bg-gray-50"
                       >
                         <option value="">Выберите авторазборку</option>
-                        {partsCompanies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        {partsCompanies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                       </select>
                     </div>
                   )}

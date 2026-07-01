@@ -15,6 +15,7 @@ import {
   getCompanyQueue, cancelCompanyQueue, getDefaultCompanyPlan, setDefaultCompanyPlan,
   getSubscriptionRequests, approveSubscriptionRequest, rejectSubscriptionRequest,
   getPartsCompaniesUsage, getSubscriptionPayments,
+  type SubscriptionPayment,
 } from '@/services/subscriptionService'
 import type { CompanySubscription, Subscription } from '@/types/subscription'
 import { durationLabel } from '@/config/subscriptionPlans'
@@ -53,6 +54,11 @@ const DURATION_OPTIONS = [
 ]
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
+
+// Сообщение ошибки из неизвестного значения (catch / onError)
+function errMsg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e)
+}
 
 function daysLeft(endDate: string | null): number | null {
   if (!endDate) return null
@@ -179,7 +185,7 @@ export default function Subscriptions() {
       setIsModalOpen(false)
       resetForm()
     },
-    onError: (e: any) => toast.error(e.message || 'Ошибка при создании разборки'),
+    onError: (e: unknown) => toast.error(errMsg(e) || 'Ошибка при создании разборки'),
   })
 
   const updateCompanyMutation = useMutation({
@@ -200,7 +206,7 @@ export default function Subscriptions() {
       setEditingCompany(null)
       resetForm()
     },
-    onError: (e: any) => toast.error(e.message || 'Ошибка при обновлении разборки'),
+    onError: (e: unknown) => toast.error(errMsg(e) || 'Ошибка при обновлении разборки'),
   })
 
   const toggleActiveMutation = useMutation({
@@ -209,7 +215,7 @@ export default function Subscriptions() {
       if (error) throw error
     },
     onSuccess: () => { invalidateCompanies(); toast.success('Статус разборки изменён') },
-    onError: (e: any) => toast.error(e.message || 'Ошибка при изменении статуса'),
+    onError: (e: unknown) => toast.error(errMsg(e) || 'Ошибка при изменении статуса'),
   })
 
   const deleteCompanyMutation = useMutation({
@@ -222,7 +228,7 @@ export default function Subscriptions() {
       toast.success('Разборка удалена (данные хранятся 6 месяцев)')
       setSelectedCompanyId(null)
     },
-    onError: (e: any) => toast.error(e.message || 'Ошибка при удалении разборки'),
+    onError: (e: unknown) => toast.error(errMsg(e) || 'Ошибка при удалении разборки'),
   })
 
   const resetForm = () => setFormData({ name: '', address: '', phone: '', email: '', description: '' })
@@ -267,12 +273,12 @@ export default function Subscriptions() {
   const approveMutation = useMutation({
     mutationFn: approveSubscriptionRequest,
     onSuccess: () => { invalidate(); queryClient.invalidateQueries({ queryKey: ['subscription-requests'] }); toast.success('Заявка подтверждена, подписка назначена') },
-    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+    onError: (e: unknown) => toast.error(errMsg(e) || 'Ошибка'),
   })
   const rejectMutation = useMutation({
     mutationFn: (id: string) => rejectSubscriptionRequest(id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['subscription-requests'] }); toast.success('Заявка отклонена') },
-    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+    onError: (e: unknown) => toast.error(errMsg(e) || 'Ошибка'),
   })
 
   // ЕДИНОЕ действие «Применить тариф» — сервер сам решает: назначить/продлить/апгрейд/очередь
@@ -280,7 +286,7 @@ export default function Subscriptions() {
     mutationFn: ({ companyId, planId, months }: { companyId: string; planId: string; months: number | null }) =>
       applyCompanySubscription(companyId, planId, months),
     onSuccess: () => { invalidate(); toast.success('Тариф применён') },
-    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+    onError: (e: unknown) => toast.error(errMsg(e) || 'Ошибка'),
   })
 
   const deactivateMutation = useMutation({
@@ -299,7 +305,7 @@ export default function Subscriptions() {
   const cancelQueueMutation = useMutation({
     mutationFn: (companyId: string) => cancelCompanyQueue(companyId),
     onSuccess: () => { invalidate(); toast.success('Очередь очищена') },
-    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+    onError: (e: unknown) => toast.error(errMsg(e) || 'Ошибка'),
   })
 
   // Сохранить тариф по умолчанию для новых разборок
@@ -310,7 +316,7 @@ export default function Subscriptions() {
       queryClient.invalidateQueries({ queryKey: ['default-company-plan'] })
       toast.success('Сохранено')
     },
-    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+    onError: (e: unknown) => toast.error(errMsg(e) || 'Ошибка'),
   })
 
   // Карта подписок по company_id (LEFT JOIN: у части разборок подписки нет)
@@ -374,7 +380,7 @@ export default function Subscriptions() {
   // Платежи выбранной компании (по совпадению имени)
   const selectedPayments = useMemo(() => {
     if (!selectedCompany?.name) return []
-    return payments.filter((p: any) => p.company === selectedCompany.name).slice(0, 5)
+    return payments.filter(p => p.company === selectedCompany.name).slice(0, 5)
   }, [payments, selectedCompany])
 
   // Синхронизировать черновик при смене выбранной компании
@@ -482,7 +488,7 @@ export default function Subscriptions() {
 
           {requestsOpen && (
             <div className="px-4 pb-4 pt-1 space-y-2.5 border-t border-amber-100">
-              {requests.map((r: any) => (
+              {requests.map(r => (
                 <div key={r.id}
                   className="rounded-xl border border-gray-200 bg-white p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                   <div className="flex-1 min-w-0">
@@ -923,7 +929,7 @@ function DetailPanel({
   queue: CompanySubscription[]
   partsPlans: Subscription[]
   usage?: { parts: number; vehicles: number; workers?: number }
-  payments: any[]
+  payments: SubscriptionPayment[]
   draftPlanId: string
   draftMonths: number
   draftTermless: boolean
@@ -1225,7 +1231,7 @@ function DetailPanel({
           <p className="text-sm text-gray-400 py-2">Платежей по этой компании пока нет</p>
         ) : (
           <div>
-            {payments.map((p: any) => (
+            {payments.map(p => (
               <div key={p.id} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -1290,8 +1296,8 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
       toast.success('План обновлён')
       onSaved()
       onClose()
-    } catch (e: any) {
-      toast.error(e.message || 'Ошибка сохранения')
+    } catch (e) {
+      toast.error(errMsg(e) || 'Ошибка сохранения')
     } finally {
       setSaving(false)
     }

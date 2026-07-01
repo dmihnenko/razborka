@@ -11,7 +11,7 @@ export default function ProfileSettings({ embedded = false }: { embedded?: boole
   const { data: profile } = useUserProfile()
 
   // Контакты разборки (только для владельца разборки)
-  const isPartsOwner = profile?.roles?.some((r: any) => r.name === 'parts_owner')
+  const isPartsOwner = profile?.roles?.some((r) => r.name === 'parts_owner')
   const partsCompanyId = profile?.parts_company_id
   const showPartsContacts = !!partsCompanyId && !!isPartsOwner
 
@@ -88,7 +88,7 @@ export default function ProfileSettings({ embedded = false }: { embedded?: boole
       queryClient.invalidateQueries({ queryKey: ['userProfile'] })
       toast.success('Профиль обновлён')
     },
-    onError: (e: any) => toast.error(e.message || 'Ошибка при обновлении профиля'),
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Ошибка при обновлении профиля'),
   })
 
   // Сохранение данных доставки (Нова Пошта)
@@ -106,7 +106,7 @@ export default function ProfileSettings({ embedded = false }: { embedded?: boole
       queryClient.invalidateQueries({ queryKey: ['userProfile'] })
       toast.success('Данные доставки сохранены')
     },
-    onError: (e: any) => toast.error(e.message || 'Ошибка при сохранении доставки'),
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Ошибка при сохранении доставки'),
   })
 
   // Смена пароля
@@ -121,7 +121,7 @@ export default function ProfileSettings({ embedded = false }: { embedded?: boole
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
       toast.success('Пароль изменён')
     },
-    onError: (e: any) => toast.error(e.message || 'Ошибка при смене пароля'),
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Ошибка при смене пароля'),
   })
 
   const passwordValid =

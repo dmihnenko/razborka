@@ -4,6 +4,7 @@ import { Plus, Archive, Car, Edit, Package, User, Clock, ShoppingBag } from 'luc
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import { getPersonalVehicles } from '@/services/personalVehicles'
+import type { PersonalVehicle } from '@/types/personalVehicles'
 import { getMyMarketplaceOrders } from '@/services/marketplaceService'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import PersonalVehicleModal from '@/components/personal-vehicles/PersonalVehicleModal'
@@ -62,7 +63,7 @@ export default function MyVehicles() {
     navigate(`/public/personal-vehicle/${vehicleId}`)
   }
 
-  const renderClassicCard = (vehicle: any) => {
+  const renderClassicCard = (vehicle: PersonalVehicle) => {
     const usdRate = vehicle.usdRate || 1
     const allItems = [
       ...(vehicle.lotItems || []),

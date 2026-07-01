@@ -7,6 +7,25 @@ import { BRAND } from '@/config/brand'
 import { Spinner } from '@/components/ui/Spinner'
 import { PublicBrandHeader } from '@/components/PublicBrandHeader'
 import { formatPrice } from '@/utils/currency'
+import type { ImgbbPhoto } from '@/services/imgbbService'
+
+// ── Формы публичных данных (нетипизированный supabase-клиент) ───────────────────
+
+/** Фото приходит объектом ImgbbPhoto/{display_url} либо строкой-URL. */
+type PhotoLike = (Partial<ImgbbPhoto> & { display_url?: string }) | string
+
+/** Строка запчасти для публичного списка места хранения. */
+interface PublicLocationPart {
+  id: string
+  name: string
+  part_number?: string | null
+  selling_price?: number | null
+  price_currency?: 'UAH' | 'USD' | null
+  status: string
+  photos?: PhotoLike[] | null
+  storage_location_id?: string | null
+  category?: { id: string; name: string } | null
+}
 
 // ── Статусы запчасти ───────────────────────────────────────────────────────────
 const STATUS_LABEL: Record<string, string> = {
@@ -20,7 +39,8 @@ const STATUS_CLS: Record<string, string> = {
   damaged:   'bg-red-100 text-red-800 border-red-200',
 }
 
-const getThumb = (p: any) => p?.thumb_url || p?.url || p?.display_url || (typeof p === 'string' ? p : '')
+const getThumb = (p: PhotoLike) =>
+  (typeof p === 'string' ? p : p?.thumb_url || p?.url || p?.display_url) || ''
 
 /**
  * Публичная страница «Что лежит в этом месте хранения».
@@ -123,7 +143,9 @@ export default function PublicPartsLocationView() {
         .neq('status', 'sold')
         .order('name', { ascending: true })
       if (error) throw error
-      return data as any[]
+      // supabase выводит to-one join (category) как массив — форма фактически
+      // объектная, поэтому граничный каст через unknown.
+      return (data ?? []) as unknown as PublicLocationPart[]
     },
     enabled: subtreeIds.length > 0,
     staleTime: 30_000,
@@ -184,7 +206,7 @@ export default function PublicPartsLocationView() {
         ) : (
           <div className="bg-white rounded-xl shadow-sm divide-y divide-gray-100 overflow-hidden">
             {parts.map((p) => {
-              const photos = (p.photos as any[]) || []
+              const photos: PhotoLike[] = p.photos || []
               const subLocName = p.storage_location_id && p.storage_location_id !== location.id
                 ? locById.get(p.storage_location_id)
                 : null

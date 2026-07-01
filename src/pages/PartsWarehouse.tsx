@@ -23,6 +23,19 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface FlatNode extends StorageLocation { depth: number; childCount: number }
 
+// Позиция склада в списке выбранного места (форма supabase-select ниже).
+interface WarehouseItemRow {
+  id: string
+  name: string
+  article: string | null
+  part_number: string | null
+  selling_price: number | null
+  price_currency: 'UAH' | 'USD' | null
+  quantity: number
+  status: string
+  storage_location_id: string | null
+}
+
 const INDENT = 16
 const MAX_DEPTH = 4
 
@@ -121,7 +134,7 @@ export default function PartsWarehouse() {
   }, [selectedId, childrenMap])
 
   // Позиции выбранного места и всех вложенных подкатегорий
-  const { data: items = [], isLoading: itemsLoading } = useQuery<any[]>({
+  const { data: items = [], isLoading: itemsLoading } = useQuery<WarehouseItemRow[]>({
     queryKey: ['parts-location-items', subtreeIds],
     queryFn: async () => {
       const { data } = await supabase
@@ -130,7 +143,7 @@ export default function PartsWarehouse() {
         .eq('parts_company_id', partsCompanyId!)
         .in('storage_location_id', subtreeIds)
         .order('name')
-      return data || []
+      return (data || []) as WarehouseItemRow[]
     },
     enabled: !!partsCompanyId && subtreeIds.length > 0,
   })

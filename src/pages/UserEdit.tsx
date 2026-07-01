@@ -13,6 +13,8 @@ import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface Role { id: string; name: string; display_name: string; description: string | null; is_active: boolean }
+/** Строка user_roles из fetchUserProfileForEdit. */
+interface UserRoleRow { role_id: string; is_primary: boolean }
 type Step = 1 | 2
 
 const STEPS = [
@@ -28,7 +30,7 @@ export default function UserEdit() {
   const { data: currentUserProfile } = useUserProfile()
   const { confirm: showConfirm, dialogProps } = useConfirm()
 
-  const isPartsOwner = currentUserProfile?.roles?.some((r: any) => r.name === 'parts_owner') || false
+  const isPartsOwner = currentUserProfile?.roles?.some((r: { name: string }) => r.name === 'parts_owner') || false
 
   const [step, setStep] = useState<Step>(1)
 
@@ -47,9 +49,9 @@ export default function UserEdit() {
   useEffect(() => {
     // Сбрасываем форму при смене пользователя или при загрузке профиля
     if (userProfile) {
-      const userRoles = userProfile.user_roles || []
-      const primary = userRoles.find((r: any) => r.is_primary)
-      const roleIds = userRoles.map((r: any) => r.role_id)
+      const userRoles = (userProfile.user_roles || []) as UserRoleRow[]
+      const primary = userRoles.find(r => r.is_primary)
+      const roleIds = userRoles.map(r => r.role_id)
       setFormData({
         full_name: userProfile.full_name || '',
         phone: userProfile.phone || '',
@@ -111,7 +113,7 @@ export default function UserEdit() {
       toast.success('Сохранено')
       navigate(-1)
     },
-    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Ошибка'),
   })
 
   // ── Действия над аккаунтом (admin) ──
@@ -127,7 +129,7 @@ export default function UserEdit() {
       queryClient.invalidateQueries({ queryKey: ['admin-user-profile', id] })
       toast.success('Статус изменён')
     },
-    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Ошибка'),
   })
 
   const deleteMutation = useMutation({
@@ -137,7 +139,7 @@ export default function UserEdit() {
       toast.success('Пользователь перемещён в корзину')
       navigate(-1)
     },
-    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Ошибка'),
   })
 
   const handleImpersonate = async () => {
@@ -148,9 +150,9 @@ export default function UserEdit() {
       await startImpersonation(id!)
       toast.dismiss('imp')
       window.location.href = '/'
-    } catch (e: any) {
+    } catch (e) {
       toast.dismiss('imp')
-      toast.error(e.message || 'Не удалось войти')
+      toast.error(e instanceof Error ? e.message : 'Не удалось войти')
     }
   }
 

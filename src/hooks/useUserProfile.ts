@@ -5,13 +5,38 @@ import { useAuth } from './useAuth'
 const PROFILE_CACHE_KEY = 'tsp_profile_cache'
 const PROFILE_CACHE_TTL = 4 * 60 * 60 * 1000 // 4 часа
 
+// Роль пользователя из таблицы roles (join через user_roles).
+export interface UserRole {
+  id: string
+  name: string
+  display_name: string | null
+  description: string | null
+  is_active: boolean
+  /** Признак основной роли (из user_roles) */
+  is_primary: boolean
+}
+
+// Профиль = строка user_profiles (snake_case, клиент supabase нетипизирован)
+// + агрегированный список ролей. Ключевые поля объявлены явно; остальные поля
+// читаются через select('*') и остаются нестрогими (any-индекс) — иначе ~49
+// потребителей хука сломались бы на unknown-полях (full_name/email/phone/…),
+// что вне рамок этой правки и меняло бы поведение сборки.
+export interface UserProfile {
+  id: string
+  parts_company_id?: string | null
+  locale?: string | null
+  roles: UserRole[]
+  // остальные поля user_profiles читаются через select('*') и не типизируются здесь (см. коммент выше)
+  [key: string]: any
+}
+
 interface CachedProfile {
-  data: any
+  data: UserProfile
   userId: string
   cachedAt: number
 }
 
-function loadProfileFromCache(userId: string): any | null {
+function loadProfileFromCache(userId: string): UserProfile | null {
   try {
     const raw = localStorage.getItem(PROFILE_CACHE_KEY)
     if (!raw) return null
@@ -26,7 +51,7 @@ function loadProfileFromCache(userId: string): any | null {
   }
 }
 
-function saveProfileToCache(userId: string, data: any) {
+function saveProfileToCache(userId: string, data: UserProfile) {
   try {
     // Не кэшируем профиль без ролей — он бы провоцировал мигание экрана выбора роли.
     if (!data?.roles?.length) return
@@ -77,16 +102,21 @@ export function useUserProfile() {
       if (profileError) throw profileError
       if (!profiles || profiles.length === 0) return null
 
+      // Форма строки user_roles с встроенным объектом роли (supabase-join).
+      type UserRoleRow = {
+        is_primary: boolean
+        roles: Omit<UserRole, 'is_primary'> | null
+      }
       const { data: userRolesData } = await supabase
         .from('user_roles')
         .select('is_primary, roles(id, name, display_name, description, is_active)')
         .eq('user_id', user.id)
 
-      const roles = (userRolesData || [])
-        .filter((ur: any) => ur.roles != null)
-        .map((ur: any) => ({ ...ur.roles, is_primary: ur.is_primary }))
+      const roles: UserRole[] = ((userRolesData as UserRoleRow[] | null) || [])
+        .filter((ur): ur is UserRoleRow & { roles: Omit<UserRole, 'is_primary'> } => ur.roles != null)
+        .map((ur) => ({ ...ur.roles, is_primary: ur.is_primary }))
 
-      const result = { ...profiles[0], roles }
+      const result: UserProfile = { ...profiles[0], roles }
 
       // Сохраняем в localStorage для следующего запуска
       saveProfileToCache(user.id, result)
@@ -107,15 +137,15 @@ export function useClearProfileCache() {
 
 export function useIsAdmin() {
   const { data: profile } = useUserProfile()
-  return profile?.roles?.some((role: any) => role.name === 'admin') || false
+  return profile?.roles?.some((role) => role.name === 'admin') || false
 }
 
 export function useHasRole(roleName: string) {
   const { data: profile } = useUserProfile()
-  return profile?.roles?.some((role: any) => role.name === roleName) || false
+  return profile?.roles?.some((role) => role.name === roleName) || false
 }
 
 export function useHasAnyRole(roleNames: string[]) {
   const { data: profile } = useUserProfile()
-  return profile?.roles?.some((role: any) => roleNames.includes(role.name)) || false
+  return profile?.roles?.some((role) => roleNames.includes(role.name)) || false
 }

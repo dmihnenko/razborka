@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchAccessRequests, approveAccessRequest, rejectAccessRequest } from '@/services/adminService'
+import type { AccessRequest } from '@/services/adminService'
 import { toast } from 'sonner'
 import { CheckCircle2, XCircle, Clock, Building2, Phone, MapPin, User, Package, Car, Wrench } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 const roleLabels: Record<string, string> = {
   parts_owner: 'Владелец разборки',
@@ -10,7 +12,7 @@ const roleLabels: Record<string, string> = {
   user: 'Личные автомобили',
 }
 
-const roleIcons: Record<string, any> = {
+const roleIcons: Record<string, LucideIcon> = {
   parts_owner: Package,
   parts_worker: Package,
   user: Car,
@@ -40,12 +42,12 @@ export default function AdminAccessRequests() {
   })
 
   const approveMutation = useMutation({
-    mutationFn: (req: any) => approveAccessRequest(req),
+    mutationFn: (req: AccessRequest) => approveAccessRequest(req),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-access-requests'] })
       toast.success('Заявка одобрена')
     },
-    onError: (e: any) => toast.error(e.message || 'Ошибка при одобрении'),
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Ошибка при одобрении'),
   })
 
   const rejectMutation = useMutation({
@@ -128,7 +130,7 @@ export default function AdminAccessRequests() {
                 </tr>
               </thead>
               <tbody className="grid-hairline">
-                {requests.map((req: any) => {
+                {requests.map((req: AccessRequest) => {
                   const Icon = roleIcons[req.request_type] || User
                   const isRejecting = rejectingId === req.id
                   return (
@@ -278,7 +280,7 @@ export default function AdminAccessRequests() {
 
           {/* Mobile — карточки */}
           <div className="sm:hidden space-y-3">
-            {requests.map((req: any) => {
+            {requests.map((req: AccessRequest) => {
               const Icon = roleIcons[req.request_type] || User
               const isRejecting = rejectingId === req.id
               return (

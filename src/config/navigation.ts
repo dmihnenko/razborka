@@ -16,12 +16,13 @@ import {
   FolderTree,
   Warehouse,
   PiggyBank,
+  type LucideIcon,
 } from 'lucide-react';
 
 export interface MenuItem {
   name: string;
   href: string;
-  icon: any;
+  icon: LucideIcon;
   roles?: string[]; // Если не указано, доступно всем
   mobileHidden?: boolean; // Скрыть в мобильной версии
   group?: 'work' | 'base' | 'system'; // Смысловой блок сайдбара (кабинет разборки)

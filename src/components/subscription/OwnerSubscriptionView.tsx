@@ -59,7 +59,7 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
       qc.invalidateQueries({ queryKey: ['my-sub-request'] })
       toast.success('Заявка отправлена администратору')
     },
-    onError: (e: any) => toast.error(e?.message || 'Не удалось отправить заявку'),
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Не удалось отправить заявку'),
   })
 
   if (isLoading) return (

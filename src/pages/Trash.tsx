@@ -64,8 +64,8 @@ export default function Trash() {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       toast.success(t('trashPage.restored'))
     },
-    onError: (err: any) => {
-      toast.error(t('trashPage.restoreError', { error: err.message || t('trashPage.unknownError') }))
+    onError: (err) => {
+      toast.error(t('trashPage.restoreError', { error: err instanceof Error ? err.message : t('trashPage.unknownError') }))
     },
   })
 

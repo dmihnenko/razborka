@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { IMaskInput } from 'react-imask'
 
 interface Props {
-  profile: any
+  profile: { id: string } | null | undefined
   onLogout: () => void
   onComplete: () => void
   existingCompanyId?: string
@@ -50,7 +50,7 @@ export default function OwnerSetupPage({ profile, onLogout, onComplete, existing
         const { error: profileError } = await supabase
           .from('user_profiles')
           .update({ [field]: company.id })
-          .eq('id', profile.id)
+          .eq('id', profile!.id)
         if (profileError) throw profileError
       }
     },
@@ -60,7 +60,7 @@ export default function OwnerSetupPage({ profile, onLogout, onComplete, existing
       toast.success('Компания создана!')
       onComplete()
     },
-    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Ошибка'),
   })
 
   const Icon = Package

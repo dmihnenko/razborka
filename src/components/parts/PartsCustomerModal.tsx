@@ -7,7 +7,7 @@ import { useBlockScroll } from '@/hooks/useBlockScroll'
 interface PartsCustomerModalProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: CreatePartsCustomerInput) => Promise<any>
+  onSubmit: (data: CreatePartsCustomerInput) => Promise<unknown>
   customer?: PartsCustomer | null
 }
 

@@ -16,7 +16,7 @@ import { moveToTrash } from '@/services/trashService'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { formatPrice } from '@/utils/currency'
 import { PARTS_CONDITION_LABELS } from '@/utils/status'
-import type { PartsInventoryStatus } from '@/types/parts'
+import type { PartsInventoryStatus, PartsInventoryItem, StorageLocation } from '@/types/parts'
 import PhotoGallery from '@/components/parts/PhotoGallery'
 import SellPartModal from '@/components/parts/SellPartModal'
 import ShareModal from '@/components/ui/ShareModal'
@@ -108,11 +108,19 @@ export default function PartsInventoryItemPage() {
   /* Возврат проданной позиции в наличие (sold → available) */
   const returnMutation = useMutation({
     mutationFn: async () => {
-      await updatePartsInventoryItem(id!, {
+      // Сброс полей продажи: обнуляем nullable-колонки БД. В доменном типе эти
+      // поля опциональны (T | undefined), а тут нужно записать именно NULL,
+      // поэтому патч описываем отдельной формой записи и коэрсим к параметру.
+      const clearSale: {
+        status: PartsInventoryStatus
+        sold_price: null; sold_at: null; sold_quantity: null
+        sold_to_customer_id: null; exchange_rate_at_sale: null
+      } = {
         status: 'available',
         sold_price: null, sold_at: null, sold_quantity: null,
         sold_to_customer_id: null, exchange_rate_at_sale: null,
-      } as any)
+      }
+      await updatePartsInventoryItem(id!, clearSale as unknown as Partial<PartsInventoryItem>)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory-item', id] })
@@ -140,7 +148,7 @@ export default function PartsInventoryItemPage() {
   }
 
   /* Storage location breadcrumb */
-  const { data: locations = [] } = useQuery({
+  const { data: locations = [] } = useQuery<StorageLocation[]>({
     queryKey: ['parts-storage-locations', profile?.parts_company_id],
     queryFn: () => getStorageLocations(profile!.parts_company_id!),
     enabled: !!profile?.parts_company_id && !!item?.storage_location_id,
@@ -149,9 +157,9 @@ export default function PartsInventoryItemPage() {
 
   const locationPath: string[] = (() => {
     if (!item?.storage_location_id || locations.length === 0) return []
-    const byId = new Map(locations.map((l: any) => [l.id, l]))
+    const byId = new Map(locations.map((l) => [l.id, l]))
     const path: string[] = []
-    let cur: any = byId.get(item.storage_location_id)
+    let cur: StorageLocation | undefined = byId.get(item.storage_location_id)
     let guard = 0
     while (cur && guard++ < 20) {
       path.unshift(cur.name)
@@ -260,7 +268,7 @@ export default function PartsInventoryItemPage() {
             <div className="sm:w-64 lg:w-80 flex-shrink-0 border-b sm:border-b-0 sm:border-r border-gray-100">
               {photos.length > 0 ? (
                 <PhotoGallery
-                  photos={photos as any[]}
+                  photos={photos}
                   alt={item.name}
                   mainAspect="aspect-square"
                   objectFit="contain"
@@ -472,11 +480,11 @@ export default function PartsInventoryItemPage() {
               </p>
               <p className="text-sm font-semibold text-gray-900 group-hover:text-primary transition-colors">
                 {item.vehicle.make} {item.vehicle.model}
-                {(item.vehicle as any).year ? ` (${(item.vehicle as any).year})` : ''}
+                {item.vehicle.year ? ` (${item.vehicle.year})` : ''}
               </p>
-              {(item.vehicle as any).vin && (
+              {item.vehicle.vin && (
                 <p className="text-xs text-gray-500 font-mono mt-0.5 tabular">
-                  VIN: {(item.vehicle as any).vin}
+                  VIN: {item.vehicle.vin}
                 </p>
               )}
             </button>

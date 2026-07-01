@@ -25,6 +25,15 @@ interface Props {
   partsCompanyId: string
 }
 
+// Строка parts_companies с полями, которые читает чек-лист (snake_case из БД).
+interface CompanyContactsRow {
+  phone: string | null
+  telegram: string | null
+  address: string | null
+  telegram_chat_id: string | null
+  onboarding_dismissed: boolean | null
+}
+
 export default function OnboardingChecklist({ partsCompanyId }: Props) {
   const { t } = useTranslation('cabinet')
   const queryClient = useQueryClient()
@@ -90,7 +99,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
         .select('phone, telegram, address, telegram_chat_id, onboarding_dismissed')
         .eq('id', partsCompanyId)
         .single()
-      return data
+      return data as CompanyContactsRow | null
     },
     enabled: !!partsCompanyId,
     staleTime: 2 * 60 * 1000,
@@ -120,7 +129,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
   const hasPhoto = isProviderConfigured(photoCfg)
 
   // 7. Telegram-уведомления (бот привязан → telegram_chat_id)
-  const hasTelegram = !!(companyContacts as any)?.telegram_chat_id
+  const hasTelegram = !!companyContacts?.telegram_chat_id
 
   const addCategoriesMutation = useMutation({
     mutationFn: () => createPartsCategoriesBulk(DEFAULT_CATEGORIES, partsCompanyId),
@@ -157,7 +166,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
   const progressPct = Math.round((doneCount / total) * 100)
 
   // Не показываем, если пользователь скрыл (флаг из БД или только что нажал «×»)
-  const dismissed = justDismissed || !!(companyContacts as any)?.onboarding_dismissed
+  const dismissed = justDismissed || !!companyContacts?.onboarding_dismissed
   if (dismissed) return null
 
   // Если всё готово — показываем «Всё настроено» (можно скрыть)

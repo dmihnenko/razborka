@@ -24,6 +24,17 @@ import {
   updatePartsInventoryItem,
 } from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
+import type { PartsInventoryItem, PartsOrder } from '@/types/parts'
+
+// Строка заказа клиента с join'ами из запроса ниже (parts_orders + items + inventory_item).
+interface CustomerOrderItemRow {
+  id: string
+  quantity: number
+  price_at_sale: number
+  subtotal: number
+  inventory_item: { name: string | null; part_number: string | null } | null
+}
+type CustomerOrderRow = PartsOrder & { items: CustomerOrderItemRow[] | null }
 
 interface CartItem {
   id: string
@@ -118,7 +129,7 @@ export default function PartsCustomerProfile() {
         .eq('customer_id', id)
         .order('order_date', { ascending: false })
       if (error) throw error
-      return data
+      return (data ?? []) as CustomerOrderRow[]
     },
   })
 
@@ -128,12 +139,12 @@ export default function PartsCustomerProfile() {
     queryFn: () => getPartsInventory(partsCompanyId!),
     enabled: !!partsCompanyId && isOrderModalOpen,
   })
-  const availableInventory = inventory.filter((i: any) => i.status === 'available')
+  const availableInventory = inventory.filter(i => i.status === 'available')
 
   // Vehicle filter derived data
   const makes = useMemo(() => {
     const vehicles: Record<string, Set<string>> = {}
-    availableInventory.forEach((i: any) => {
+    availableInventory.forEach(i => {
       if (i.vehicle?.make && i.vehicle?.id) {
         if (!vehicles[i.vehicle.make]) vehicles[i.vehicle.make] = new Set()
         vehicles[i.vehicle.make].add(i.vehicle.id)
@@ -148,8 +159,8 @@ export default function PartsCustomerProfile() {
     if (!selectedMake || selectedMake === '__all__') return []
     const vehicles: Record<string, Set<string>> = {}
     availableInventory
-      .filter((i: any) => i.vehicle?.make === selectedMake)
-      .forEach((i: any) => {
+      .filter(i => i.vehicle?.make === selectedMake)
+      .forEach(i => {
         if (i.vehicle?.model && i.vehicle?.id) {
           if (!vehicles[i.vehicle.model]) vehicles[i.vehicle.model] = new Set()
           vehicles[i.vehicle.model].add(i.vehicle.id)
@@ -164,12 +175,12 @@ export default function PartsCustomerProfile() {
     if (selectedMake === null) return []
     if (selectedMake === '__all__') return availableInventory
     if (selectedModel === null) return []
-    if (selectedModel === '__all__') return availableInventory.filter((i: any) => i.vehicle?.make === selectedMake)
-    return availableInventory.filter((i: any) => i.vehicle?.make === selectedMake && i.vehicle?.model === selectedModel)
+    if (selectedModel === '__all__') return availableInventory.filter(i => i.vehicle?.make === selectedMake)
+    return availableInventory.filter(i => i.vehicle?.make === selectedMake && i.vehicle?.model === selectedModel)
   }, [availableInventory, selectedMake, selectedModel])
 
   const filteredInventory = partsSearch.trim()
-    ? vehicleFilteredInventory.filter((i: any) =>
+    ? vehicleFilteredInventory.filter(i =>
         i.name?.toLowerCase().includes(partsSearch.toLowerCase()) ||
         i.part_number?.toLowerCase().includes(partsSearch.toLowerCase())
       )
@@ -186,7 +197,7 @@ export default function PartsCustomerProfile() {
   const hasUAH = cart.some(i => i.currency === 'UAH')
   const mixedCurrencies = hasUSD && hasUAH
 
-  const addToCart = (item: any) => {
+  const addToCart = (item: PartsInventoryItem) => {
     const vinShort = item.vehicle?.vin ? '· ' + item.vehicle.vin.slice(-6) : ''
     const vehicleInfo = item.vehicle
       ? `${item.vehicle.make} ${item.vehicle.model} ${item.vehicle.year ?? ''}${vinShort}`.trim()
@@ -427,7 +438,7 @@ export default function PartsCustomerProfile() {
                   </tr>
                 </thead>
                 <tbody className="grid-hairline">
-                  {orders.map((order: any) => (
+                  {orders.map(order => (
                     <tr key={order.id} className="table-row">
                       <td className="table-cell">
                         <Link
@@ -459,7 +470,7 @@ export default function PartsCustomerProfile() {
 
             {/* Mobile — карточки */}
             <div className="sm:hidden space-y-2">
-              {orders.map((order: any) => (
+              {orders.map(order => (
                 <Link
                   key={order.id}
                   to={`/parts/orders/${order.id}`}
@@ -489,7 +500,7 @@ export default function PartsCustomerProfile() {
                   {/* Позиции заказа */}
                   {order.items && order.items.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-gray-100 space-y-1.5">
-                      {order.items.map((item: any) => (
+                      {order.items.map(item => (
                         <div key={item.id} className="flex justify-between text-xs text-gray-600">
                           <span className="truncate flex-1 mr-2">
                             {item.inventory_item?.name || t('customerProfilePage.part')}
@@ -736,7 +747,7 @@ export default function PartsCustomerProfile() {
                         </div>
                       ) : (
                         <div className="space-y-1.5">
-                          {filteredInventory.map((item: any) => {
+                          {filteredInventory.map(item => {
                             const inCart = cart.find(c => c.id === item.id)
                             const vinShort = item.vehicle?.vin ? item.vehicle.vin.slice(-6) : null
                             const vehicleLabel = item.vehicle

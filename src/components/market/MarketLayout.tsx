@@ -31,7 +31,7 @@ function MarketLayoutInner() {
   const { t } = useTranslation('market')
   const { user } = useAuth()
   const { data: profile } = useUserProfile()
-  const roleNames = (profile?.roles || []).map((r: any) => r.name)
+  const roleNames = (profile?.roles || []).map((r: { name: string }) => r.name)
   // «В кабинет» из маркета: маркет — публичная витрина разборки, поэтому владельца/работника
   // разборки ведём в кабинет разборки, даже если у него есть и роль admin.
   const dashboardHref = roleNames.includes('parts_owner') || roleNames.includes('parts_worker')

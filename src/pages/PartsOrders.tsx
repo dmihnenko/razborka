@@ -158,7 +158,7 @@ export default function PartsOrders() {
 
   const computeOrderUSD = useCallback((order: PartsOrder): number | null => {
     if (!order.items || order.items.length === 0) return null
-    const rate = (order as any).exchange_rate_at_sale || usdRate
+    const rate = (order as PartsOrder & { exchange_rate_at_sale?: number | null }).exchange_rate_at_sale || usdRate
     if (!rate) return null
     return order.items.reduce((sum, item) => {
       const amount = (item.price_at_sale ?? 0) * (item.quantity ?? 1)
@@ -254,7 +254,7 @@ export default function PartsOrders() {
 
     // Собираем inventory_item_id из items
     const inventoryIds = (order.items ?? [])
-      .map(i => (i as any).inventory_item_id as string | undefined)
+      .map(i => i.inventory_item_id as string | undefined)
       .filter((id): id is string => !!id)
 
     // Оптимистичный апдейт

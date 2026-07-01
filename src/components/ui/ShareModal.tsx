@@ -27,8 +27,12 @@ export default function ShareModal({ isOpen, onClose, url, title, subtitle, shar
     catch { toast.error('Не удалось скопировать') }
   }
   const systemShare = async () => {
-    if ((navigator as any).share) {
-      try { await (navigator as any).share({ title: shareTitle, text: shareText, url }) } catch { /* отменено */ }
+    // Web Share API есть не во всех браузерах — сужаем navigator до опционального share().
+    const nav = navigator as Navigator & {
+      share?: (data: { title?: string; text?: string; url?: string }) => Promise<void>
+    }
+    if (nav.share) {
+      try { await nav.share({ title: shareTitle, text: shareText, url }) } catch { /* отменено */ }
     } else {
       copy()
     }

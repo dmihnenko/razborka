@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { Shield, Store, Car, ChevronDown, Check } from 'lucide-react'
+import { Shield, Store, Car, ChevronDown, Check, type LucideIcon } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -11,7 +11,7 @@ interface Ctx {
   id: ContextId
   label: string
   desc: string
-  icon: any
+  icon: LucideIcon
   path: string
 }
 
@@ -54,7 +54,7 @@ export default function ContextSwitcher({ current, excludeIds = [], variant = 'b
     return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onEsc) }
   }, [open])
 
-  const roleNames: string[] = profile?.roles?.map((r: any) => r.name) || []
+  const roleNames: string[] = profile?.roles?.map((r: { name: string }) => r.name) || []
   const isAdmin = roleNames.includes('admin')
   const isParts = roleNames.includes('parts_owner') || roleNames.includes('parts_worker')
   const has = (id: ContextId) => {
@@ -92,7 +92,7 @@ export default function ContextSwitcher({ current, excludeIds = [], variant = 'b
   // ── Сегмент из двух кнопок [Админ | Разборка/Мои авто]; активная подсвечена ──
   if (variant === 'segment') {
     const adminC = CONTEXTS.find(c => c.id === 'admin')!
-    const opPrefersParts = current === 'parts' || roleNames.includes('parts_owner') || roleNames.includes('parts_worker') || !!(profile as any)?.parts_company_id
+    const opPrefersParts = current === 'parts' || roleNames.includes('parts_owner') || roleNames.includes('parts_worker') || !!profile?.parts_company_id
     const opC = (opPrefersParts ? CONTEXTS.find(c => c.id === 'parts') : CONTEXTS.find(c => c.id === 'user'))!
     const segs = [adminC, opC].filter(c => has(c.id) && !excludeIds.includes(c.id))
     if (segs.length < 2) return null

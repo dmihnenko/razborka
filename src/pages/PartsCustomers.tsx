@@ -85,9 +85,9 @@ export default function PartsCustomers() {
       queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
       toast.success(t('customersPage.toastDeleted'))
     },
-    onError: (error: any) => {
+    onError: (error) => {
       console.error('Delete parts customer mutation error:', error)
-      toast.error(t('customersPage.toastDeleteError') + (error.message || t('customersPage.noRights')))
+      toast.error(t('customersPage.toastDeleteError') + (error instanceof Error ? error.message : t('customersPage.noRights')))
     },
   })
 

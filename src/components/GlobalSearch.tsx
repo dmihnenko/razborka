@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Package, Car, ShoppingCart, Users, Search, X, Loader2, CornerDownLeft, ArrowRight } from 'lucide-react'
+import { Package, Car, ShoppingCart, Users, Search, X, Loader2, CornerDownLeft, ArrowRight, type LucideIcon } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { searchCabinet } from '@/services/partsService'
 import { adminMenu, partsOwnerMenu, partsWorkerMenu, type MenuItem } from '@/config/navigation'
@@ -24,7 +24,7 @@ function useDebounce<T>(value: T, delay: number): T {
 interface CmdItem {
   key: string
   group: string
-  icon: any
+  icon: LucideIcon
   label: string
   sub?: string
   right?: string
@@ -51,7 +51,7 @@ export default function GlobalSearch({ open, onClose }: GlobalSearchProps) {
 
   // Меню текущей роли — для группы «Перейти»
   const navMenu: MenuItem[] = useMemo(() => {
-    const roles = profile?.roles?.map((r: any) => r.name) ?? []
+    const roles = profile?.roles?.map((r: { name: string }) => r.name) ?? []
     if (roles.includes('parts_owner')) return partsOwnerMenu
     if (roles.includes('parts_worker')) return partsWorkerMenu
     if (roles.includes('admin')) return adminMenu
@@ -75,7 +75,7 @@ export default function GlobalSearch({ open, onClose }: GlobalSearchProps) {
     }
 
     if (searched && data) {
-      for (const p of data.parts as any[]) {
+      for (const p of data.parts) {
         list.push({
           key: 'part:' + p.id, group: 'Запчасти', icon: Package, label: p.name,
           sub: p.part_number ? 'Арт: ' + p.part_number : undefined,
@@ -83,7 +83,7 @@ export default function GlobalSearch({ open, onClose }: GlobalSearchProps) {
           action: () => go('/parts/inventory/' + p.id),
         })
       }
-      for (const v of data.vehicles as any[]) {
+      for (const v of data.vehicles) {
         list.push({
           key: 'veh:' + v.id, group: 'Автомобили', icon: Car,
           label: [v.make, v.model, v.year].filter(Boolean).join(' '),
@@ -91,7 +91,7 @@ export default function GlobalSearch({ open, onClose }: GlobalSearchProps) {
           action: () => go('/parts/vehicles/' + v.id),
         })
       }
-      for (const o of data.orders as any[]) {
+      for (const o of data.orders) {
         list.push({
           key: 'ord:' + o.id, group: 'Заказы', icon: ShoppingCart, label: 'Заказ #' + o.order_number,
           sub: o.status || undefined,
@@ -99,7 +99,7 @@ export default function GlobalSearch({ open, onClose }: GlobalSearchProps) {
           action: () => go('/parts/orders/' + o.id),
         })
       }
-      for (const c of data.customers as any[]) {
+      for (const c of data.customers) {
         list.push({
           key: 'cust:' + c.id, group: 'Клиенты', icon: Users, label: c.full_name,
           sub: c.phone || undefined,

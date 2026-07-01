@@ -203,7 +203,7 @@ function MarketOrderCard({
 export default function PartsMarketOrders() {
   const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
-  const partsCompanyId: string | undefined = profile?.parts_company_id
+  const partsCompanyId: string | undefined = profile?.parts_company_id ?? undefined
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { rate } = usePartsExchangeRate()

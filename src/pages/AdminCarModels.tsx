@@ -113,22 +113,22 @@ export default function AdminCarModels() {
     mutationFn: (v: { id: string; make: string; model: string; yearFrom: number | null; yearTo: number | null }) =>
       approveCarModel({ id: v.id, make: v.make, model: v.model, yearFrom: v.yearFrom, yearTo: v.yearTo }),
     onSuccess: () => { invalidate(); toast.success('Модель в каталоге') },
-    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Ошибка'),
   })
   const rejectMut = useMutation({
     mutationFn: (id: string) => rejectCarModel(id),
     onSuccess: () => { invalidate(); toast.success('Заявка отклонена') },
-    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Ошибка'),
   })
   const toggleMut = useMutation({
     mutationFn: ({ id, active }: { id: string; active: boolean }) => setCarModelActive(id, active),
     onSuccess: () => { invalidate(); toast.success('Сохранено') },
-    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Ошибка'),
   })
   const addMut = useMutation({
     mutationFn: () => addCarModel(newMake, newModel),
     onSuccess: () => { invalidate(); setNewMake(''); setNewModel(''); toast.success('Модель добавлена') },
-    onError: (e: any) => toast.error(e.message || 'Ошибка'),
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Ошибка'),
   })
 
   const pending = rows.filter((r: CarModelRow) => r.status === 'pending')

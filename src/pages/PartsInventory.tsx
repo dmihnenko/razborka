@@ -13,7 +13,7 @@ import { InventoryCard } from '@/components/parts/InventoryCard'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import i18n from '@/i18n'
 import { getPartsInventoryPaged, getPartsInventoryItem, getPartsInventorySummary, createPartsInventoryItem, updatePartsInventoryItem, appendPartsItemPhotos, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
-import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer } from '@/types/parts'
+import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer, PartsVehicle, PartsCategory } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { deletePhotosFromImgbb } from '@/services/imgbbService'
 import { uploadPhoto, PhotoProviderNotConfigured } from '@/services/photoStorage'
@@ -37,6 +37,11 @@ interface BulkRow {
   price: string
   currency: 'UAH' | 'USD'
 }
+
+// Строка выпадающего списка авто (select id, make, model, year из parts_vehicles)
+type VehicleDropdownRow = Pick<PartsVehicle, 'id' | 'make' | 'model' | 'year'>
+// Строка выпадающего списка категорий (select id, name, brand, model из parts_categories)
+type CategoryDropdownRow = Pick<PartsCategory, 'id' | 'name' | 'brand' | 'model'>
 
 const statusLabel = (s: PartsInventoryStatus): string => i18n.t(`inventoryPage.status_${s}`, { ns: 'cabinet' })
 
@@ -279,7 +284,7 @@ export default function PartsInventory() {
 
   const saveMutation = useMutation({
     mutationFn: async ({ data, pending }: { data: CreatePartsInventoryInput; pending?: Promise<ImgbbPhoto>[]; keepOpen?: boolean }) => {
-      let saved: any
+      let saved: PartsInventoryItem
       if (editingItem) {
         saved = await updatePartsInventoryItem(editingItem.id, data)
       } else {
@@ -363,8 +368,9 @@ export default function PartsInventory() {
       queryClient.invalidateQueries({ queryKey: ['trash'] })
       toast.success(t('inventoryPage.toastMovedToTrash'))
     },
-    onError: (error: any) => {
-      if (error?.status === 409 || error?.code === '23503') {
+    onError: (error: unknown) => {
+      const err = error as { status?: number; code?: string } | null
+      if (err?.status === 409 || err?.code === '23503') {
         toast.error(t('inventoryPage.toastDeleteInOrder'))
       } else {
         toast.error(t('inventoryPage.toastDeleteError'))
@@ -373,14 +379,14 @@ export default function PartsInventory() {
   })
 
   // Unique vehicles from loaded items for vehicle filter buttons (только в режиме Разборки)
-  const uniqueVehicles = sourceFilter === 'vehicles'
+  const uniqueVehicles: VehicleDropdownRow[] = sourceFilter === 'vehicles'
     ? Array.from(
         new Map(
           inventory
             .filter((i: PartsInventoryItem) => i.vehicle_id && i.vehicle)
-            .map((i: PartsInventoryItem) => [i.vehicle_id, i.vehicle])
+            .map((i: PartsInventoryItem) => [i.vehicle_id as string, i.vehicle as PartsVehicle] as const)
         ).entries()
-      ).map(([id, v]) => ({ id, ...(v as any) }))
+      ).map(([id, v]) => ({ id, make: v.make, model: v.model, year: v.year }))
     : []
 
   // If only one vehicle exists — apply it automatically, hide buttons
@@ -398,8 +404,8 @@ export default function PartsInventory() {
   const filteredAndSorted = [...filteredInventory].sort((a: PartsInventoryItem, b: PartsInventoryItem) => {
     // Фильтр «Продано» — по давности продажи: свежие продажи сверху
     if (statusFilter === 'sold') {
-      const ta = new Date((a as any).updated_at || a.created_at).getTime()
-      const tb = new Date((b as any).updated_at || b.created_at).getTime()
+      const ta = new Date(a.updated_at || a.created_at).getTime()
+      const tb = new Date(b.updated_at || b.created_at).getTime()
       return tb - ta
     }
     let cmp = 0
@@ -538,9 +544,10 @@ export default function PartsInventory() {
       setNewCustomerName('')
       setNewCustomerPhone('')
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       console.error('Sell error:', err)
-      const msg = err?.message || err?.error_description || JSON.stringify(err)
+      const e = err as { message?: string; error_description?: string } | null
+      const msg = e?.message || e?.error_description || JSON.stringify(err)
       toast.error(t('inventoryPage.toastSaveErrorMsg', { msg }))
     },
   })
@@ -602,9 +609,10 @@ export default function PartsInventory() {
       setBulkNewCustomerName('')
       setBulkNewCustomerPhone('')
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       console.error('Bulk sell error:', err)
-      const msg = err?.message || err?.error_description || JSON.stringify(err)
+      const e = err as { message?: string; error_description?: string } | null
+      const msg = e?.message || e?.error_description || JSON.stringify(err)
       toast.error(t('inventoryPage.toastBulkSellErrorMsg', { msg }))
     },
   })
@@ -923,7 +931,7 @@ export default function PartsInventory() {
               >
                 {t('inventoryPage.allVehicles')}
               </button>
-              {uniqueVehicles.map((v: any) => (
+              {uniqueVehicles.map((v) => (
                 <button
                   key={v.id}
                   onClick={() => setVehicleFilter(vehicleFilter === v.id ? 'all' : v.id)}
@@ -1661,7 +1669,7 @@ export default function PartsInventory() {
                   autoFocus
                 >
                   <option value="">{t('inventoryPage.noCategoryDash')}</option>
-                  {categories.map((cat: any) => (
+                  {(categories as CategoryDropdownRow[]).map((cat) => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
@@ -1785,11 +1793,11 @@ function buildLocationOptions(locations: StorageLocation[]): { id: string; label
 }
 
 // Module-level helper — used by both main component and modal
-function getCategoriesForVehicle(vehicleId: string, vehicles: any[], categories: any[]) {
+function getCategoriesForVehicle(vehicleId: string, vehicles: VehicleDropdownRow[], categories: CategoryDropdownRow[]) {
   const vehicle = vehicles.find(v => v.id === vehicleId)
   if (!vehicle) return categories
   const make = (vehicle.make || '').toLowerCase()
-  const relevantCats = categories.filter((cat: any) =>
+  const relevantCats = categories.filter((cat) =>
     !cat.brand || cat.brand.toLowerCase() === make
   )
   return relevantCats.length > 0 ? relevantCats : categories
@@ -1805,8 +1813,8 @@ interface ModalBulkRow {
 
 interface PartsInventoryModalProps {
   item: PartsInventoryItem | null
-  categories: any[]
-  vehicles: any[]
+  categories: CategoryDropdownRow[]
+  vehicles: VehicleDropdownRow[]
   storageLocations: StorageLocation[]
   onClose: () => void
   onSave: (data: CreatePartsInventoryInput, pendingPhotos?: Promise<ImgbbPhoto>[], keepOpen?: boolean) => void
@@ -1858,13 +1866,13 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     condition: stickyCondition,
     quantity: item?.quantity || 1,
     selling_price: item?.selling_price || undefined,
-    purchase_price: (item as any)?.purchase_price ?? undefined,
+    purchase_price: item?.purchase_price ?? undefined,
     price_currency: stickyCurrency,
     location: item?.location || '',
     shelf: item?.shelf || '',
     bin: item?.bin || '',
     notes: item?.notes || '',
-    storage_location_id: (item as any)?.storage_location_id || initialStorageLocationId || '',
+    storage_location_id: item?.storage_location_id || initialStorageLocationId || '',
   })
   const [photos, setPhotos] = useState<ImgbbPhoto[]>((item?.photos as ImgbbPhoto[]) || [])
   // Фото, которые ещё грузятся в ФОНЕ: превью сразу (localUrl) + промис выгрузки.
@@ -2015,7 +2023,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
 
               {/* Auto-filled reminder — последнее авто и/или место хранения */}
               {(autoFilledVehicle || autoFilledStorage) && !autoHintDismissed && (() => {
-                const v = (vehicles as any[]).find(x => x.id === (bulkMode ? bulkShared.vehicle_id : formData.vehicle_id))
+                const v = vehicles.find(x => x.id === (bulkMode ? bulkShared.vehicle_id : formData.vehicle_id))
                 const loc = buildLocationOptions(storageLocations).find(o => o.id === (bulkMode ? bulkShared.storage_location_id : formData.storage_location_id))
                 if (!v && !loc) return null
                 return (
@@ -2074,7 +2082,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         className="form-select"
                       >
                         <option value="">{t('inventoryPage.notLinked')}</option>
-                        {(vehicles as any[]).map((vehicle) => (
+                        {vehicles.map((vehicle) => (
                           <option key={vehicle.id} value={vehicle.id}>
                             {vehicle.make} {vehicle.model} {vehicle.year}
                           </option>
@@ -2092,7 +2100,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         {(bulkShared.vehicle_id
                           ? getCategoriesForVehicle(bulkShared.vehicle_id, vehicles, categories)
                           : categories
-                        ).map((cat: any) => (
+                        ).map((cat) => (
                           <option key={cat.id} value={cat.id}>{cat.name}</option>
                         ))}
                       </select>
@@ -2324,7 +2332,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       className="form-select"
                     >
                       <option value="">{t('inventoryPage.notLinkedToVehicle')}</option>
-                      {(vehicles as any[]).map((vehicle) => (
+                      {vehicles.map((vehicle) => (
                         <option key={vehicle.id} value={vehicle.id}>
                           {vehicle.make} {vehicle.model} {vehicle.year}
                         </option>
@@ -2348,7 +2356,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       {(formData.vehicle_id
                         ? getCategoriesForVehicle(formData.vehicle_id, vehicles, categories)
                         : categories
-                      ).map((cat: any) => (
+                      ).map((cat) => (
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
                     </select>
@@ -2442,7 +2450,9 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       value={formData.quantity ?? ''}
                       onChange={(e) => {
                         const v = e.target.value
-                        setFormData({ ...formData, quantity: (v === '' ? undefined : Number(v)) as any })
+                        // Пустое поле держим как undefined (плейсхолдер), в БД уходит quantity||1.
+                        // quantity в типе — number; коэрсим каст, поведение не меняется.
+                        setFormData({ ...formData, quantity: (v === '' ? undefined : Number(v)) as unknown as number })
                       }}
                       className="form-input tabular"
                     />
