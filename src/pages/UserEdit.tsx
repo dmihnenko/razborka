@@ -39,7 +39,7 @@ export default function UserEdit() {
   })
 
   const { data: userProfile, isLoading } = useQuery({
-    queryKey: ['user_profile', id],
+    queryKey: ['admin-user-profile', id],
     enabled: !!id,
     queryFn: () => fetchUserProfileForEdit(id!)
   })
@@ -107,7 +107,7 @@ export default function UserEdit() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
-      queryClient.invalidateQueries({ queryKey: ['user_profile'] })
+      queryClient.invalidateQueries({ queryKey: ['admin-user-profile'] })
       toast.success('Сохранено')
       navigate(-1)
     },
@@ -124,7 +124,7 @@ export default function UserEdit() {
     mutationFn: () => toggleUserActive(id!, !!userProfile?.is_active),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
-      queryClient.invalidateQueries({ queryKey: ['user_profile', id] })
+      queryClient.invalidateQueries({ queryKey: ['admin-user-profile', id] })
       toast.success('Статус изменён')
     },
     onError: (e: any) => toast.error(e.message || 'Ошибка'),
