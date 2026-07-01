@@ -38,13 +38,14 @@ const FADE_UP = (delay = 0) => ({
 })
 
 // ── Преимущества ─────────────────────────────────────────────────────────────
+// Ink & Signal: единый монохром + индиго-сигнал (без радужной палитры).
 const FEATURES = [
-  { icon: Car, color: 'text-indigo-600 bg-indigo-50', key: 'vehicles' },
-  { icon: Package, color: 'text-orange-600 bg-orange-50', key: 'parts' },
-  { icon: ShoppingBag, color: 'text-green-600 bg-green-50', key: 'marketplace' },
-  { icon: Users, color: 'text-purple-600 bg-purple-50', key: 'clients' },
-  { icon: Warehouse, color: 'text-indigo-600 bg-indigo-50', key: 'warehouse' },
-  { icon: DollarSign, color: 'text-emerald-600 bg-emerald-50', key: 'currency' },
+  { icon: Car, key: 'vehicles' },
+  { icon: Package, key: 'parts' },
+  { icon: ShoppingBag, key: 'marketplace' },
+  { icon: Users, key: 'clients' },
+  { icon: Warehouse, key: 'warehouse' },
+  { icon: DollarSign, key: 'currency' },
 ] as const
 
 // ── Тарифная карточка ─────────────────────────────────────────────────────────
@@ -66,12 +67,7 @@ function TariffCard({
     >
       {recommended && (
         <div className="absolute top-0 right-0">
-          <div
-            className="text-[10px] font-bold text-white px-3 py-1 rounded-bl-xl"
-            style={{
-              background: 'linear-gradient(135deg, #3538CD 0%, #2A2DA8 100%)',
-            }}
-          >
+          <div className="text-[10px] font-bold text-white px-3 py-1 rounded-bl-xl bg-[var(--cab-signal)]">
             {t('landing.tariffRecommended')}
           </div>
         </div>
@@ -100,27 +96,27 @@ function TariffCard({
 
         <ul className="space-y-2">
           <li className="flex items-center gap-2 text-sm text-gray-700">
-            <Car className="w-4 h-4 text-indigo-500 flex-shrink-0" strokeWidth={1.5} />
+            <Car className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
             {tariff.maxVehicles === null
               ? t('landing.tariffVehiclesUnlimited')
               : t('landing.tariffVehiclesUpTo', { count: tariff.maxVehicles })}
           </li>
           <li className="flex items-center gap-2 text-sm text-gray-700">
-            <Package className="w-4 h-4 text-orange-500 flex-shrink-0" strokeWidth={1.5} />
+            <Package className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
             {tariff.maxParts === null
               ? t('landing.tariffPartsUnlimited')
               : t('landing.tariffPartsUpTo', { count: tariff.maxParts })}
           </li>
           <li className="flex items-center gap-2 text-sm text-gray-700">
-            <Users className="w-4 h-4 text-purple-500 flex-shrink-0" strokeWidth={1.5} />
+            <Users className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
             {tariff.maxWorkers === null
               ? t('landing.tariffWorkersUnlimited')
               : t('landing.tariffWorkersUpTo', { count: tariff.maxWorkers })}
           </li>
           {tariff.hasAnalytics && (
             <li className="flex items-center gap-2 text-sm text-gray-700">
-              <BarChart3 className="w-4 h-4 text-emerald-500 flex-shrink-0" strokeWidth={1.5} />
-              <span className="badge badge-green">{t('landing.tariffAnalytics')}</span>
+              <BarChart3 className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+              <span className="badge" style={{ background: 'var(--cab-signal-weak)', color: 'var(--cab-signal)' }}>{t('landing.tariffAnalytics')}</span>
             </li>
           )}
         </ul>
@@ -191,10 +187,10 @@ export function BusinessLanding() {
   const recommendedId = tariffs.filter(t => !t.isCustom)[2]?.id
 
   return (
-    <div className="min-h-dvh bg-gray-50 flex flex-col">
+    <div className="min-h-dvh flex flex-col" style={{ background: 'var(--cab-bg)' }}>
 
       {/* ── Шапка ────────────────────────────────────────────────────── */}
-      <header className="glass border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-white/85 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-[60px]">
             <Link to="/business">
@@ -224,35 +220,37 @@ export function BusinessLanding() {
         <motion.section
           {...FADE_UP(0)}
           className="relative overflow-hidden"
-          style={{
-            background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 40%, #212391 75%, #3538CD 100%)',
-          }}
         >
-          {/* Декоративные кружки */}
+          {/* Нежная индиго grid-сетка (как на LandingPage) */}
           <div
-            className="pointer-events-none absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-20"
-            style={{ background: 'radial-gradient(circle, #60A5FA 0%, transparent 70%)' }}
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage:
+                'linear-gradient(rgba(53,56,205,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(53,56,205,0.05) 1px,transparent 1px)',
+              backgroundSize: '48px 48px',
+            }}
             aria-hidden="true"
           />
+          {/* Плавное затухание сетки снизу */}
           <div
-            className="pointer-events-none absolute bottom-0 -left-16 w-64 h-64 rounded-full opacity-10"
-            style={{ background: 'radial-gradient(circle, #93C5FD 0%, transparent 70%)' }}
+            className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
+            style={{ background: 'linear-gradient(to bottom,transparent,var(--cab-bg))' }}
             aria-hidden="true"
           />
 
           <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-white/90 text-xs font-semibold mb-6 backdrop-blur-sm">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-6 bg-[var(--cab-signal-weak)] text-[var(--cab-signal)]">
               <Zap className="w-3.5 h-3.5" strokeWidth={1.5} />
               {t('landing.heroBadge')}
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-extrabold text-white leading-tight tracking-tight">
+            <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 leading-tight tracking-tight">
               {t('landing.heroTitle1')}{' '}
               <br className="hidden sm:block" />
-              <span className="text-indigo-300">{t('landing.heroTitle2')}</span>
+              <span className="text-gradient-brand">{t('landing.heroTitle2')}</span>
             </h1>
 
-            <p className="mt-4 text-base sm:text-lg text-indigo-100/80 max-w-2xl mx-auto leading-relaxed">
+            <p className="mt-4 text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
               {t('landing.heroSubtitle')}
             </p>
 
@@ -267,15 +265,15 @@ export function BusinessLanding() {
               </button>
               <a
                 href="#tariffs"
-                className="btn-lg inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 cursor-pointer border border-white/25 text-white/90 hover:bg-white/10 hover:border-white/40"
+                className="btn-secondary btn-lg"
               >
                 {t('landing.heroSeeTariffs')}
               </a>
             </div>
 
             {/* Демо-режим тизер */}
-            <div className="mt-8 inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl px-4 py-3 text-sm text-white/80">
-              <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" strokeWidth={1.5} />
+            <div className="mt-8 inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm bg-[var(--cab-signal-weak)] text-[var(--cab-signal)]">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
               {t('landing.heroDemoTeaser', { vehicles: DEMO_LIMITS.vehicles, parts: DEMO_LIMITS.parts })}
             </div>
           </div>
@@ -295,9 +293,9 @@ export function BusinessLanding() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 stagger-children">
-            {FEATURES.map(({ icon: Icon, color, key }) => (
+            {FEATURES.map(({ icon: Icon, key }) => (
               <div key={key} className="card flex gap-4">
-                <span className={`icon-tile-lg flex-shrink-0 ${color}`}>
+                <span className="icon-tile-lg flex-shrink-0 bg-[var(--cab-signal-weak)] text-[var(--cab-signal)]">
                   <Icon className="w-6 h-6" strokeWidth={1.5} />
                 </span>
                 <div>
@@ -326,13 +324,13 @@ export function BusinessLanding() {
             </div>
 
             {/* Демо-блок */}
-            <div className="mb-8 rounded-2xl border border-indigo-200/60 bg-indigo-50 px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <span className="icon-tile bg-indigo-100 text-indigo-600 flex-shrink-0">
+            <div className="mb-8 rounded-2xl border px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center gap-3" style={{ borderColor: 'var(--cab-border)', background: 'var(--cab-signal-weak)' }}>
+              <span className="icon-tile flex-shrink-0 bg-white text-[var(--cab-signal)]">
                 <Zap className="w-5 h-5" strokeWidth={1.5} />
               </span>
               <div className="flex-1">
-                <p className="font-bold text-indigo-800 text-sm">{t('landing.demoBlockTitle')}</p>
-                <p className="text-xs text-indigo-600 mt-0.5">
+                <p className="font-bold text-sm text-[var(--cab-signal)]">{t('landing.demoBlockTitle')}</p>
+                <p className="text-xs mt-0.5 text-gray-600">
                   {t('landing.demoBlockText', {
                     vehicles: DEMO_LIMITS.vehicles,
                     parts: DEMO_LIMITS.parts,
