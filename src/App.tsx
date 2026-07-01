@@ -79,7 +79,7 @@ const WaitingAccessPage = lazy(() => import('./components/WaitingAccessPage'))
 
 import { useAuth } from './hooks/useAuth'
 import { CartProvider } from './hooks/useCart'
-import { useUserProfile } from './hooks/useUserProfile'
+import { useUserProfile, useIsAdmin } from './hooks/useUserProfile'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from './lib/supabase'
 
@@ -269,8 +269,9 @@ function App() {
           <Route path="parts/trash" element={<Trash />} />
         </Route>
 
-        {/* Admin Panel - полностью отдельный layout */}
-        <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+        {/* Admin Panel - полностью отдельный layout. Ролевой guard в роутере
+            (defense-in-depth: не полагаемся только на проверку внутри AdminLayout). */}
+        <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
           <Route index element={<AdminPanel />} />
           <Route path="users" element={<Users />} />
           <Route path="users/new" element={<UserCreate />} />
@@ -310,6 +311,25 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />
   }
 
+  return <>{children}</>
+}
+
+// Ролевой guard для /admin/* — редиректит не-админов ещё в роутере, до монтирования
+// админ-страниц (не полагаемся на проверку внутри AdminLayout как единственную защиту).
+function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth()
+  const { isLoading: profileLoading } = useUserProfile()
+  const isAdmin = useIsAdmin()
+
+  if (loading || profileLoading) {
+    return <LayoutSkeleton />
+  }
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+  if (!isAdmin) {
+    return <Navigate to="/" replace />
+  }
   return <>{children}</>
 }
 
