@@ -72,10 +72,12 @@ export default function PartsCompanyDetail() {
   })
 
   return (
-    <div className="container-mobile space-y-5">
+    <div className="page-container space-y-5">
 
       {/* ── Sticky page header ─────────────────────────────── */}
-      <div className="sticky top-0 z-20 glass -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 py-3 border-b border-gray-100">
+      {/* Отрицательные mx синхронизированы с px контейнера AdminLayout (px-4 sm:px-5),
+          чтобы шапка ровно доходила до краёв контента без двойного паддинга. */}
+      <div className="sticky top-0 z-20 glass -mx-4 sm:-mx-5 px-4 sm:px-5 py-3 border-b border-gray-100">
         <div className="page-header mb-0">
           <div className="flex items-center gap-3 min-w-0">
             <button

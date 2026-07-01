@@ -58,6 +58,9 @@
     --cab-warning-weak:  #FEF3C7;
     --cab-danger:        #DC2626;
     --cab-danger-weak:   #FEE2E2;
+    /* Бренд-цвет Telegram (для кнопок «написать в Telegram») — единый источник */
+    --tg-blue:           #229ED9;
+    --tg-blue-hover:     #1C8DC2;
     --cab-radius:        10px;
     --cab-radius-sm:     8px;
     --logo-net:          #0D9488;   /* акцент уголка «.net» в логотипе (тил-зелёный) */

@@ -76,6 +76,7 @@ const MarketSupplierPage = lazy(() => import('./pages/market/MarketSupplierPage'
 const MarketFavorites = lazy(() => import('./pages/market/MarketFavorites'))
 const MarketCart = lazy(() => import('./pages/market/MarketCart'))
 const WaitingAccessPage = lazy(() => import('./components/WaitingAccessPage'))
+const NotFound = lazy(() => import('./pages/NotFound'))
 
 import { useAuth } from './hooks/useAuth'
 import { CartProvider } from './hooks/useCart'
@@ -288,8 +289,8 @@ function App() {
           <Route path="database" element={<DatabasePage />} />
         </Route>
 
-        {/* Неизвестный путь — на главную (вместо пустой страницы) */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Неизвестный путь — светлая 404 (вместо молчаливого редиректа на «/») */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
     </BrowserRouter>

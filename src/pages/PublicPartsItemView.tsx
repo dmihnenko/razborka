@@ -107,7 +107,7 @@ function ContactsCard({ company, phoneRaw }: { company: any; phoneRaw: string | 
               href={tgHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-40 max-w-full flex items-center justify-center gap-1.5 py-2.5 bg-[#229ED9] text-white text-sm font-semibold rounded-lg hover:bg-[#1c8dc2] active:scale-[0.98] transition-all"
+              className="w-40 max-w-full flex items-center justify-center gap-1.5 py-2.5 text-white text-sm font-semibold rounded-lg active:scale-[0.98] transition-all bg-[var(--tg-blue)] hover:bg-[var(--tg-blue-hover)]"
             >
               <TelegramIcon className="w-4 h-4 fill-current" /> Telegram
             </a>

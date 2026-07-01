@@ -47,7 +47,7 @@ export default function Roles() {
   }
 
   return (
-    <div className="container-mobile">
+    <div className="page-container">
       <div className="page-header">
         <div>
           <p className="kicker mb-1">Администрирование</p>
