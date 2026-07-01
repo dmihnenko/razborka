@@ -21,29 +21,40 @@ export default function Login() {
   const [isForgotMode, setIsForgotMode] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  // Инлайн-ошибка регистрации, привязанная к полю (a11y), в дополнение к тосту.
+  const [fieldError, setFieldError] = useState<{ field: 'email' | 'password' | 'confirm'; msg: string } | null>(null)
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFieldError(null)
 
     if (password !== confirmPassword) {
-      toast.error('Пароли не совпадают')
+      const msg = 'Пароли не совпадают'
+      setFieldError({ field: 'confirm', msg })
+      toast.error(msg)
       return
     }
 
     // Валидация email (обязательное поле — вход по email)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!email.trim()) {
-      toast.error('Укажите электронную почту')
+      const msg = 'Укажите электронную почту'
+      setFieldError({ field: 'email', msg })
+      toast.error(msg)
       return
     }
     if (!emailRegex.test(email.trim())) {
-      toast.error('Введите корректный адрес электронной почты')
+      const msg = 'Введите корректный адрес электронной почты'
+      setFieldError({ field: 'email', msg })
+      toast.error(msg)
       return
     }
     if (password.length < 6) {
-      toast.error('Пароль должен содержать минимум 6 символов')
+      const msg = 'Пароль должен содержать минимум 6 символов'
+      setFieldError({ field: 'password', msg })
+      toast.error(msg)
       return
     }
 
@@ -314,13 +325,18 @@ export default function Login() {
                           id="reg-email"
                           type="email"
                           value={email}
-                          onChange={(e) => setEmail(e.target.value)}
+                          onChange={(e) => { setEmail(e.target.value); if (fieldError?.field === 'email') setFieldError(null) }}
                           autoComplete="email"
                           required
                           placeholder="email@example.com"
                           className="form-input w-full pl-10 pr-3.5"
+                          aria-invalid={fieldError?.field === 'email' || undefined}
+                          aria-describedby={fieldError?.field === 'email' ? 'reg-email-error' : undefined}
                         />
                       </div>
+                      {fieldError?.field === 'email' && (
+                        <p id="reg-email-error" className="form-error" role="alert">{fieldError.msg}</p>
+                      )}
                     </div>
                   ) : (
                     <div>
@@ -387,11 +403,13 @@ export default function Login() {
                           id="password"
                           type={showPassword ? 'text' : 'password'}
                           value={password}
-                          onChange={(e) => setPassword(e.target.value)}
+                          onChange={(e) => { setPassword(e.target.value); if (fieldError?.field === 'password') setFieldError(null) }}
                           required
                           autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
                           placeholder={isRegisterMode ? t('placeholderPasswordMin') : t('placeholderPasswordEnter')}
                           className="form-input w-full pl-10 pr-12"
+                          aria-invalid={fieldError?.field === 'password' || undefined}
+                          aria-describedby={fieldError?.field === 'password' ? 'reg-password-error' : undefined}
                         />
                         <button
                           type="button"
@@ -404,6 +422,9 @@ export default function Login() {
                             : <Eye size={16} strokeWidth={1.5} aria-hidden="true" />}
                         </button>
                       </div>
+                      {fieldError?.field === 'password' && (
+                        <p id="reg-password-error" className="form-error" role="alert">{fieldError.msg}</p>
+                      )}
                     </div>
 
                     {isRegisterMode && (
@@ -425,11 +446,13 @@ export default function Login() {
                             id="confirmPassword"
                             type={showConfirm ? 'text' : 'password'}
                             value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            onChange={(e) => { setConfirmPassword(e.target.value); if (fieldError?.field === 'confirm') setFieldError(null) }}
                             required
                             autoComplete="new-password"
                             placeholder={t('placeholderPasswordRepeat')}
                             className="form-input w-full pl-10 pr-12"
+                            aria-invalid={fieldError?.field === 'confirm' || undefined}
+                            aria-describedby={fieldError?.field === 'confirm' ? 'confirm-password-error' : undefined}
                           />
                           <button
                             type="button"
@@ -442,6 +465,9 @@ export default function Login() {
                               : <Eye size={16} strokeWidth={1.5} aria-hidden="true" />}
                           </button>
                         </div>
+                        {fieldError?.field === 'confirm' && (
+                          <p id="confirm-password-error" className="form-error" role="alert">{fieldError.msg}</p>
+                        )}
                       </div>
                     )}
                   </div>

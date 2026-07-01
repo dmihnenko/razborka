@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef } from 'react'
+import { ReactNode, useEffect, useRef, useId } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
@@ -48,6 +48,28 @@ export default function Modal({
 }: ModalProps) {
   useBlockScroll(isOpen)
   const dialogRef = useRef<HTMLDivElement>(null)
+  const titleId = useId()
+
+  // Ловушка фокуса: Tab/Shift+Tab не выходят за пределы диалога.
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key !== 'Tab') return
+    const root = dialogRef.current
+    if (!root) return
+    const focusable = root.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), textarea, input:not([disabled]), select, [tabindex]:not([tabindex="-1"])',
+    )
+    if (focusable.length === 0) return
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    const active = document.activeElement as HTMLElement | null
+    if (e.shiftKey && (active === first || active === root)) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }
 
   useEffect(() => {
     if (!isOpen || !closeOnEsc) return
@@ -84,7 +106,9 @@ export default function Modal({
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
+        onKeyDown={handleKeyDown}
         onClick={e => e.stopPropagation()}
         className={`relative bg-white w-full ${SIZE[size]} rounded-2xl shadow-2xl outline-none
           max-h-[calc(100dvh-1.5rem)] sm:max-h-[92dvh] flex flex-col overflow-hidden animate-modal-pop ${className}`}
@@ -95,7 +119,7 @@ export default function Modal({
             {icon && <div className="flex-shrink-0">{icon}</div>}
             <div className="flex-1 min-w-0">
               {title && (
-                <h2 className="text-base font-bold text-gray-900 leading-tight truncate">{title}</h2>
+                <h2 id={titleId} className="text-base font-bold text-gray-900 leading-tight truncate">{title}</h2>
               )}
               {subtitle && (
                 <p className="text-xs text-gray-400 mt-0.5 leading-snug">{subtitle}</p>
