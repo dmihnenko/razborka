@@ -53,3 +53,4 @@ design-previews/
 # wrangler dev cache
 .wrangler/
 .dev.vars
+lint-output.txt
