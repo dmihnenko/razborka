@@ -11,7 +11,8 @@ import type {
   CreatePartsInventoryInput,
   CreatePartsCategoryInput,
   PartsCategorySuggestion,
-  VehicleRoi
+  VehicleRoi,
+  PartsOrderStatus,
 } from '@/types/parts'
 
 // ============================================================================
@@ -686,6 +687,34 @@ export async function sellPart(params: {
   })
   if (error) throw error
   return data as string
+}
+
+export interface RecentPartsOrder {
+  id: string
+  order_number: string
+  order_date: string
+  status: PartsOrderStatus
+  total_amount: number
+  exchange_rate_at_sale: number | null
+  customer: { full_name: string | null } | null
+  items: { price_at_sale: number | null; quantity: number | null; price_at_sale_currency?: 'UAH' | 'USD' | null }[]
+}
+
+/** Последние заказы разборки для дашборда (вынесено из компонента в сервисный слой). */
+export async function getRecentPartsOrders(partsCompanyId: string, limit = 6): Promise<RecentPartsOrder[]> {
+  const { data, error } = await supabase
+    .from('parts_orders')
+    .select(`
+      id, order_number, order_date, status, total_amount, exchange_rate_at_sale,
+      customer:parts_customers(full_name),
+      items:parts_order_items(price_at_sale, quantity, price_at_sale_currency)
+    `)
+    .eq('parts_company_id', partsCompanyId)
+    .order('order_date', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  // supabase выводит to-one join (customer) как массив — форма фактически объектная.
+  return (data || []) as unknown as RecentPartsOrder[]
 }
 
 export async function createPartsOrderItem(

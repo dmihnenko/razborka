@@ -12,9 +12,8 @@ import type { PartsOrderStatus } from '@/utils/status'
 import { formatDate } from '@/utils/date'
 import { intlLocale } from '@/i18n'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
-import { getPartsDashboardStats, type DashboardPeriod } from '@/services/partsService'
+import { getPartsDashboardStats, getRecentPartsOrders, type DashboardPeriod } from '@/services/partsService'
 import { getShipments, type PartsShipment } from '@/services/shipmentsService'
-import { supabase } from '@/lib/supabase'
 import OnboardingChecklist from '@/components/parts/OnboardingChecklist'
 import { QueryState } from '@/components/ui/QueryState'
 
@@ -89,22 +88,7 @@ export default function PartsDashboard() {
 
   const { data: recentOrders } = useQuery({
     queryKey: ['parts-recent-activity', partsCompanyId],
-    queryFn: async () => {
-      if (!partsCompanyId) return []
-      const { data } = await supabase
-        .from('parts_orders')
-        .select(`
-          id, order_number, order_date, status, total_amount, exchange_rate_at_sale,
-          customer:parts_customers(full_name),
-          items:parts_order_items(price_at_sale, quantity, price_at_sale_currency)
-        `)
-        .eq('parts_company_id', partsCompanyId)
-        .order('order_date', { ascending: false })
-        .limit(6)
-      // supabase выводит to-one join (customer) как массив — форма фактически
-      // объектная, поэтому граничный каст через unknown (не подмена типа).
-      return (data || []) as unknown as RecentOrderRow[]
-    },
+    queryFn: () => getRecentPartsOrders(partsCompanyId!),
     enabled: !!partsCompanyId,
   })
 
