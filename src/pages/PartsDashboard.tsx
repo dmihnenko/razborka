@@ -16,6 +16,7 @@ import { getPartsDashboardStats, type DashboardPeriod } from '@/services/partsSe
 import { getShipments, type PartsShipment } from '@/services/shipmentsService'
 import { supabase } from '@/lib/supabase'
 import OnboardingChecklist from '@/components/parts/OnboardingChecklist'
+import { QueryState } from '@/components/ui/QueryState'
 
 
 // ============================================================================
@@ -64,8 +65,10 @@ export default function PartsDashboard() {
   const [period, setPeriod] = useState<DashboardPeriod>('all')
   const { rate: usdRate } = usePartsExchangeRate() // курс глобальный, обновляется кроном (read-only)
 
-  const { data: stats } = useQuery({
-    queryKey: ['parts-dashboard-stats', partsCompanyId, period, usdRate],
+  const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery({
+    // usdRate убран из ключа (передаётся в queryFn) — иначе каждое обновление курса
+    // плодило новую кэш-запись; курс глобальный, меняется кроном 2×/сутки.
+    queryKey: ['parts-dashboard-stats', partsCompanyId, period],
     queryFn: () => getPartsDashboardStats(partsCompanyId!, usdRate!, period),
     enabled: !!partsCompanyId && usdRate != null,
     staleTime: 5 * 60 * 1000,
@@ -179,6 +182,11 @@ export default function PartsDashboard() {
           </button>
         </div>
       </div>
+
+      {/* Ошибка загрузки статистики — видимое состояние с «Повторить» вместо тихих нулей */}
+      {statsError && !statsLoading && (
+        <QueryState isError onRetry={() => { void refetchStats() }}>{null}</QueryState>
+      )}
 
       {/* ── Чек-лист настройки разборки (категории, авто, фото, Telegram и т.д.) ─ */}
       {partsCompanyId && <OnboardingChecklist partsCompanyId={partsCompanyId} />}

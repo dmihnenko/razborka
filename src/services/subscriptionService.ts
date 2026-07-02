@@ -65,27 +65,18 @@ export async function getAllCompanySubscriptions() {
 
   if (error) throw error
 
-  // Загружаем названия компаний
-  const subscriptions = await Promise.all(((data || []) as CompanySubscription[]).map(async (sub) => {
-    let companyName = 'Неизвестно'
+  // Названия компаний — одним батч-запросом вместо N+1 (.single() на каждую подписку).
+  const subs = (data || []) as CompanySubscription[]
+  const ids = [...new Set(subs.map(s => s.company_id))]
+  const { data: companies } = ids.length
+    ? await supabase.from('parts_companies').select('id, name').in('id', ids)
+    : { data: [] as { id: string; name: string }[] }
+  const nameById = new Map((companies || []).map((c: { id: string; name: string }) => [c.id, c.name]))
 
-    const { data: company } = await supabase
-      .from('parts_companies')
-      .select('name')
-      .eq('id', sub.company_id)
-      .single()
-    companyName = company?.name || 'Неизвестно'
-
-    return {
-      ...sub,
-      company: {
-        id: sub.company_id,
-        name: companyName
-      }
-    }
-  }))
-  
-  return subscriptions as CompanySubscription[]
+  return subs.map(sub => ({
+    ...sub,
+    company: { id: sub.company_id, name: nameById.get(sub.company_id) || 'Неизвестно' },
+  })) as CompanySubscription[]
 }
 
 export async function getCompanySubscription(companyType: 'parts', companyId: string) {
