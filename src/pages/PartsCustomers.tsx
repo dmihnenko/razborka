@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/i18n'
 import { Spinner } from '@/components/ui/Spinner'
+import { QueryState } from '@/components/ui/QueryState'
 import { Plus, Search, Users, Phone, TrendingUp, DollarSign, Link2 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -42,7 +43,7 @@ export default function PartsCustomers() {
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
 
-  const { data: customers = [], isLoading } = useQuery({
+  const { data: customers = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['parts-customers', partsCompanyId],
     queryFn: () => getPartsCustomers(partsCompanyId!),
     enabled: !!partsCompanyId,
@@ -230,7 +231,9 @@ export default function PartsCustomers() {
         </div>
 
         {/* Customers list */}
-        {isLoading ? (
+        {isError ? (
+          <QueryState isError onRetry={() => { void refetch() }}>{null}</QueryState>
+        ) : isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Spinner size="md" />
           </div>

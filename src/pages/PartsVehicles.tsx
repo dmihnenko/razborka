@@ -2,6 +2,7 @@ import { useState, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18n, { intlLocale } from '@/i18n'
 import { Spinner } from '@/components/ui/Spinner'
+import { QueryState } from '@/components/ui/QueryState'
 import { Plus, Search, Car, Filter, Grid, List, Download, Upload, FileSpreadsheet, X, ChevronDown, CheckSquare, Square } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -179,7 +180,7 @@ export default function PartsVehicles() {
   const { canCreate, usage, limits } = useSubscriptionLimits()
 
   // Fetch vehicles
-  const { data: vehicles = [], isLoading } = useQuery({
+  const { data: vehicles = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['parts-vehicles', partsCompanyId],
     queryFn: () => getPartsVehicles(partsCompanyId!),
     enabled: !!partsCompanyId
@@ -577,7 +578,9 @@ export default function PartsVehicles() {
       </div>
 
       {/* Vehicles List/Grid */}
-      {isLoading ? (
+      {isError ? (
+        <QueryState isError onRetry={() => { void refetch() }}>{null}</QueryState>
+      ) : isLoading ? (
         <div className="flex justify-center py-16">
           <Spinner size="md" />
         </div>

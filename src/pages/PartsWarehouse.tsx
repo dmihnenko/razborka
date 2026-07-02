@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Spinner } from '@/components/ui/Spinner'
+import { QueryState } from '@/components/ui/QueryState'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Warehouse, Check, X, QrCode, ChevronLeft, ChevronRight, FolderTree, GripVertical } from 'lucide-react'
@@ -82,7 +83,7 @@ export default function PartsWarehouse() {
       return next
     })
 
-  const { data: locations = [], isLoading } = useQuery({
+  const { data: locations = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['parts-storage-locations', partsCompanyId],
     queryFn: () => getStorageLocations(partsCompanyId!),
     enabled: !!partsCompanyId,
@@ -297,7 +298,9 @@ export default function PartsWarehouse() {
       />
 
       <div className="px-4 sm:px-6 py-5">
-        {isLoading ? (
+        {isError ? (
+          <QueryState isError onRetry={() => { void refetch() }}>{null}</QueryState>
+        ) : isLoading ? (
           <div className="flex justify-center py-16"><Spinner size="xl" /></div>
         ) : locations.length === 0 && addingParentId === undefined ? (
           <div className="cab-card p-4">

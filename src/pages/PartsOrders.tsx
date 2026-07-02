@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
+import { QueryState } from '@/components/ui/QueryState'
 import { formatDate } from '@/utils/date'
 import { PartsOrder, PartsOrderStatus } from '@/types/parts'
 import { useNavigate } from 'react-router-dom'
@@ -180,7 +181,7 @@ export default function PartsOrders() {
   )
 
   // ─── Запрос заказов ──────────────────────────────────────────────────────
-  const { data: orders = [], isLoading } = useQuery({
+  const { data: orders = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['parts-orders', partsCompanyId, statusFilter],
     queryFn: async () => {
       if (!partsCompanyId) return []
@@ -415,7 +416,9 @@ export default function PartsOrders() {
         </div>
 
         {/* Список заказов */}
-        {isLoading ? (
+        {isError ? (
+          <QueryState isError onRetry={() => { void refetch() }}>{null}</QueryState>
+        ) : isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Spinner size="md" />
           </div>
