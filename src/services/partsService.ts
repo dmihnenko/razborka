@@ -828,6 +828,14 @@ export async function updatePartsOrderStatus(
   inventoryIds: string[],
   exchangeRate?: number | null
 ): Promise<void> {
+  // Отмена — атомарно через RPC: возвращает остатки завершённого заказа (quantity +
+  // sold→available) либо снимает резерв, затем ставит 'cancelled'. Симметрично списанию.
+  if (status === 'cancelled') {
+    const { error } = await supabase.rpc('cancel_parts_order', { p_order_id: orderId })
+    if (error) throw error
+    return
+  }
+
   const updateData: Record<string, unknown> = { status }
   if (status === 'completed' && exchangeRate) {
     updateData.exchange_rate_at_sale = exchangeRate
@@ -836,40 +844,31 @@ export async function updatePartsOrderStatus(
   if (error) throw error
 
   // Синхронизация инвентаря с этапом заказа:
-  //  • cancelled — позиции возвращаются в наличие (снимаем резерв/продажу);
   //  • new/assembling/shipped — позиции в резерве (в т.ч. возврат из «продано» при отмене завершения);
   //  • completed — статус «sold» проставляет триггер complete_parts_order.
   if (inventoryIds.length > 0) {
-    if (status === 'cancelled') {
-      await supabase
-        .from('parts_inventory')
-        .update({ status: 'available' })
-        .in('id', inventoryIds)
-        .in('status', ['reserved', 'sold'])
-    } else if (status === 'new' || status === 'assembling' || status === 'shipped' || status === 'in_progress') {
-      await supabase
+    if (status === 'new' || status === 'assembling' || status === 'shipped' || status === 'in_progress') {
+      const { error: invErr } = await supabase
         .from('parts_inventory')
         .update({ status: 'reserved' })
         .in('id', inventoryIds)
         .in('status', ['available', 'sold'])
+      if (invErr) throw invErr
     }
   }
 }
 
-/** Delete a parts order (also restores inventory, then hard-deletes) */
+/**
+ * Delete a parts order atomically (RPC): корректно возвращает остатки склада
+ * (для завершённого — quantity + sold→available; иначе снимает резерв), удаляет
+ * позиции и заказ в одной транзакции. `inventoryIds` больше не нужен (revert идёт
+ * по parts_order_items внутри RPC) — параметр оставлен для обратной совместимости.
+ */
 export async function deletePartsOrder(
   orderId: string,
-  inventoryIds: string[]
+  _inventoryIds?: string[]
 ): Promise<void> {
-  if (inventoryIds.length > 0) {
-    await supabase
-      .from('parts_inventory')
-      .update({ status: 'available' })
-      .in('id', inventoryIds)
-      .in('status', ['reserved', 'sold'])
-  }
-  await supabase.from('parts_order_items').delete().eq('order_id', orderId)
-  const { error } = await supabase.from('parts_orders').delete().eq('id', orderId)
+  const { error } = await supabase.rpc('delete_parts_order', { p_order_id: orderId })
   if (error) throw error
 }
 

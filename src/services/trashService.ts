@@ -145,6 +145,12 @@ export async function restoreFromTrash(item: TrashItem): Promise<void> {
         const { error: ie } = await supabase.from('parts_order_items').upsert(items)
         if (ie) throw ie
       }
+      // Удаление заказа вернуло остатки на склад (delete_parts_order). При восстановлении
+      // завершённого заказа списываем их заново, чтобы склад остался согласованным.
+      if (order?.id) {
+        const { error: re } = await supabase.rpc('reapply_order_inventory', { p_order_id: order.id })
+        if (re) throw re
+      }
       break
     }
 
