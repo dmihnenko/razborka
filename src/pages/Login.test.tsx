@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../test/mocks/supabase'
+import '@/i18n' // инициализируем i18next → t() возвращает русские тексты, а не ключи
 import Login from '@/pages/Login'
 import { BRAND } from '@/config/brand'
 import { mockSupabase } from '../test/mocks/supabase'

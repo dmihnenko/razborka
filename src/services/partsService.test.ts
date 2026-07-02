@@ -30,12 +30,15 @@ import {
   createPartsOrder,
   createPartsOrderItem,
   updatePartsOrderTotal,
+  sellPart,
+  deletePartsOrder,
+  updatePartsOrderStatus,
   getStorageLocations,
   createStorageLocation,
   updateStorageLocation,
   deleteStorageLocation,
 } from '@/services/partsService'
-import { mockSupabase, setFromResponse, setRpcResponse } from '../test/mocks/supabase'
+import { mockSupabase, setFromResponse, setRpcResponse, mockSupabaseRpc } from '../test/mocks/supabase'
 import type { PartsVehicle, PartsCustomer, PartsCategory, PartsInventoryItem, CreatePartsVehicleInput } from '@/types/parts'
 
 function makeVehicle(override?: Partial<PartsVehicle>): PartsVehicle {
@@ -628,5 +631,37 @@ describe('deleteStorageLocation', () => {
   it('виключає помилку DB', async () => {
     setFromResponse(null, { message: 'delete failed' })
     await expect(deleteStorageLocation('loc-1')).rejects.toBeDefined()
+  })
+})
+
+describe('Заказы — атомарные RPC (склад/продажа/отмена)', () => {
+  beforeEach(() => {
+    mockSupabaseRpc.mockClear()
+  })
+
+  it('sellPart вызывает RPC sell_part с корректными параметрами и возвращает id', async () => {
+    setRpcResponse('order-1')
+    const id = await sellPart({ itemId: 'i-1', price: 100, currency: 'USD', rate: 40, quantity: 2, customerId: 'c-1' })
+    expect(id).toBe('order-1')
+    expect(mockSupabaseRpc).toHaveBeenCalledWith('sell_part', expect.objectContaining({
+      p_item_id: 'i-1', p_price: 100, p_currency: 'USD', p_rate: 40, p_quantity: 2, p_customer_id: 'c-1',
+    }))
+  })
+
+  it('sellPart пробрасывает ошибку RPC', async () => {
+    setRpcResponse(null, { message: 'boom' })
+    await expect(sellPart({ itemId: 'i-1', price: 10, currency: 'UAH' })).rejects.toBeTruthy()
+  })
+
+  it('deletePartsOrder идёт через RPC delete_parts_order', async () => {
+    setRpcResponse(null)
+    await deletePartsOrder('o-1')
+    expect(mockSupabaseRpc).toHaveBeenCalledWith('delete_parts_order', { p_order_id: 'o-1' })
+  })
+
+  it('updatePartsOrderStatus(cancelled) идёт через RPC cancel_parts_order', async () => {
+    setRpcResponse(null)
+    await updatePartsOrderStatus('o-1', 'cancelled', [])
+    expect(mockSupabaseRpc).toHaveBeenCalledWith('cancel_parts_order', { p_order_id: 'o-1' })
   })
 })
