@@ -14,6 +14,7 @@ import { PublicBrandHeader } from '@/components/PublicBrandHeader'
 import { formatPrice } from '@/utils/currency'
 import { PARTS_CONDITION_LABELS, conditionBadgeClass } from '@/utils/status'
 import type { ImgbbPhoto } from '@/services/imgbbService'
+import ShareModal from '@/components/ui/ShareModal'
 
 // ─── Формы публичных данных (RPC/публичные таблицы — нетипизированный клиент) ────
 
@@ -332,24 +333,7 @@ export default function PublicPartsItemView() {
     [photos.length],
   )
 
-  const handleShare = useCallback(async () => {
-    const url = window.location.href
-    // На мобильных — нативный лист «Поделиться»; иначе копируем ссылку.
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: item?.name || 'Запчасть', url })
-        return
-      } catch {
-        // отмена/недоступно — падаем в копирование
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url)
-      toast.success('Ссылка скопирована')
-    } catch {
-      toast.error('Не удалось скопировать ссылку')
-    }
-  }, [item?.name])
+  const [showShare, setShowShare] = useState(false)
 
   if (isLoading) {
     return (
@@ -502,7 +486,7 @@ export default function PublicPartsItemView() {
 
                 <button
                   type="button"
-                  onClick={handleShare}
+                  onClick={() => setShowShare(true)}
                   aria-label="Поделиться"
                   title="Поделиться"
                   className="ml-auto inline-flex items-center justify-center w-8 h-8 rounded-md text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors"
@@ -645,6 +629,17 @@ export default function PublicPartsItemView() {
           onClose={() => setLightboxIdx(null)}
         />
       )}
+
+      {/* Поделиться — единая модалка (ссылка, мессенджеры, системный share) */}
+      <ShareModal
+        isOpen={showShare}
+        onClose={() => setShowShare(false)}
+        url={typeof window !== 'undefined' ? window.location.href : ''}
+        title="Поделиться запчастью"
+        subtitle={item.name}
+        shareTitle={item.name}
+        shareText={item.name}
+      />
     </div>
   )
 }
