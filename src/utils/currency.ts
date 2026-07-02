@@ -19,7 +19,7 @@ export function formatCurrency(amount?: number | null): string {
  */
 export function formatPrice(amount?: number | null, currency: PriceCurrency = 'UAH'): string {
   if (!amount) return '—'
-  const formatted = new Intl.NumberFormat('ru-RU', {
+  const formatted = new Intl.NumberFormat(intlLocale(), {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount)

@@ -227,7 +227,7 @@ export default function PartsCompanyDetail() {
               {detail.workers.map(w => (
                 <div key={w.id} className="card flex items-center gap-3 !p-3">
                   {/* Avatar initials */}
-                  <div className="avatar-md bg-gradient-to-br from-indigo-400 to-purple-500 text-white font-bold flex-shrink-0">
+                  <div className="avatar-md text-white font-bold flex-shrink-0" style={{ background: 'var(--cab-signal)' }}>
                     {(w.full_name?.charAt(0) || w.email?.charAt(0) || '?').toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">

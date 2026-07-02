@@ -257,7 +257,7 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
 
           {/* Приветствие */}
           <div className="text-center mb-6">
-            <div className="w-14 h-14 bg-gradient-to-br from-primary to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg" style={{ background: 'var(--cab-signal)' }}>
               <Sparkles className="w-7 h-7 text-white" strokeWidth={1.5} />
             </div>
             <h1 className="text-xl font-bold text-gray-900">

@@ -81,7 +81,7 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
       {/* ── Текущий тариф ─────────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 sm:px-6 py-5 border-b border-gray-100"
-          style={{ background: `linear-gradient(135deg, ${accent}10 0%, #fff 100%)` }}>
+          style={{ background: `${accent}12` }}>
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">

@@ -106,8 +106,8 @@ export default function NotificationsBell({ userId }: Props) {
         {unreadCount > 0 && (
           <span
             aria-hidden="true"
-            className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] px-[3px] flex items-center justify-center rounded-full bg-[#3538CD] text-white font-bold leading-none"
-            style={{ fontSize: '10px' }}
+            className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] px-[3px] flex items-center justify-center rounded-full text-white font-bold leading-none"
+            style={{ background: 'var(--cab-signal)', fontSize: '10px' }}
           >
             {badgeLabel}
           </span>

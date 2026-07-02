@@ -143,7 +143,7 @@ export function CompanyStatsView({ detail, isLoading, kind, backPath }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {detail.workers.map(w => (
               <div key={w.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0" style={{ background: 'var(--cab-signal)' }}>
                   {(w.full_name?.charAt(0) || w.email?.charAt(0) || '?').toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
