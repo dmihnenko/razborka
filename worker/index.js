@@ -544,7 +544,7 @@ export default {
         if (expected !== signature) return new Response('bad signature', { status: 400 })
         const payload = JSON.parse(b64decodeUtf8(data))
         // Применяем в БД: RPC идемпотентен, сверяет сумму и защищён внутренним секретом.
-        await fetch(env.SUPABASE_URL + '/rest/v1/rpc/liqpay_apply_callback', {
+        const applyRes = await fetch(env.SUPABASE_URL + '/rest/v1/rpc/liqpay_apply_callback', {
           method: 'POST',
           headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + env.SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -553,8 +553,18 @@ export default {
             p_amount: payload.amount, p_secret: env.LIQPAY_CALLBACK_SECRET,
           }),
         })
-        return new Response('ok', { status: 200 })  // LiqPay ждёт 200; при сбое у них ретраи
-      } catch { return new Response('ok', { status: 200 }) }
+        // КРИТИЧНО: не глотать сбой применения. RPC идемпотентен → отвечаем 500,
+        // чтобы LiqPay ретраил (иначе оплата спишется, а подписка не активируется).
+        if (!applyRes.ok) {
+          const detail = await applyRes.text().catch(() => '')
+          console.error('liqpay_apply_callback failed', applyRes.status, detail)
+          return new Response('retry', { status: 500 })
+        }
+        return new Response('ok', { status: 200 })  // LiqPay ждёт 200 при успехе
+      } catch (e) {
+        console.error('liqpay-callback error', e && e.message)
+        return new Response('retry', { status: 500 })  // ретрай, а не тихая потеря платежа
+      }
     }
 
     // 2. sitemap (с edge-кешем)
