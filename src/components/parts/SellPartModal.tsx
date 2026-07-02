@@ -3,17 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { UserPlus, X, ChevronDown } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/utils/currency'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
-import {
-  getPartsCustomers,
-  createPartsCustomer,
-  createPartsOrder,
-  createPartsOrderItem,
-  updatePartsOrderTotal,
-  updatePartsInventoryItem,
-} from '@/services/partsService'
+import { getPartsCustomers, sellPart } from '@/services/partsService'
 import type { PartsInventoryItem, PartsCustomer } from '@/types/parts'
 
 interface SellPartModalProps {
@@ -33,6 +25,8 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
   const queryClient = useQueryClient()
   const { rate: usdRate } = usePartsExchangeRate()
 
+  const maxQty = item.quantity ?? 1
+  const [sellQty, setSellQty] = useState(1)
   const [sellPrice, setSellPrice] = useState(item.selling_price ? String(item.selling_price) : '')
   const [sellCurrency, setSellCurrency] = useState<'UAH' | 'USD'>((item.price_currency as 'UAH' | 'USD') || 'USD')
   const [sellCustomerId, setSellCustomerId] = useState('')
@@ -47,53 +41,29 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
   })
 
   const sellMutation = useMutation({
-    mutationFn: async ({ price, currency, customerId, newCustomer }: {
+    mutationFn: ({ price, currency, quantity, customerId, newCustomer }: {
       price: number
       currency: 'UAH' | 'USD'
+      quantity: number
       customerId?: string
       newCustomer?: { name: string; phone: string }
-    }) => {
-      let resolvedCustomerId: string | null = customerId || null
-
-      if (newCustomer?.name?.trim()) {
-        const created = await createPartsCustomer(
-          { full_name: newCustomer.name.trim(), phone: newCustomer.phone.trim() || undefined },
-          partsCompanyId
-        )
-        resolvedCustomerId = created.id
-      }
-
-      const order = await createPartsOrder(partsCompanyId, {
-        customer_id: resolvedCustomerId,
-        order_date: new Date().toISOString(),
-      })
-
-      await createPartsOrderItem(order.id, {
-        inventory_item_id: item.id,
-        quantity: 1,
-        price_at_sale: price,
-        price_at_sale_currency: currency,
-      })
-
-      await updatePartsOrderTotal(order.id, usdRate)
-
-      const { error: completeError } = await supabase
-        .from('parts_orders')
-        .update({ status: 'completed', ...(usdRate != null ? { exchange_rate_at_sale: usdRate } : {}) })
-        .eq('id', order.id)
-      if (completeError) throw completeError
-
-      return updatePartsInventoryItem(item.id, {
-        sold_price: price,
-        price_currency: currency,
-        sold_to_customer_id: resolvedCustomerId || undefined,
-      })
-    },
+    }) => sellPart({
+      itemId: item.id,
+      price,
+      currency,
+      rate: usdRate,
+      quantity,
+      customerId: customerId || null,
+      newCustomerName: newCustomer?.name,
+      newCustomerPhone: newCustomer?.phone,
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory-item', item.id] })
       queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-dashboard-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-activity'] })
       toast.success(t('sellPartModal.toastSold'))
       onSold?.()
       onClose()
@@ -121,9 +91,11 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
       toast.error(t('sellPartModal.toastRateLoading'))
       return
     }
+    const qty = Math.max(1, Math.min(maxQty, Math.floor(sellQty) || 1))
     sellMutation.mutate({
       price,
       currency: sellCurrency,
+      quantity: qty,
       customerId: sellCustomerId || undefined,
       newCustomer: showNewCustomer ? { name: newCustomerName, phone: newCustomerPhone } : undefined,
     })
@@ -145,6 +117,25 @@ export function SellPartModal({ item, partsCompanyId, onClose, onSold }: SellPar
         </div>
 
         <div className="modal-body space-y-4">
+          {/* Количество — только для многоштучного товара (частичная продажа) */}
+          {maxQty > 1 && (
+            <div>
+              <label className="form-label">
+                {t('sellPartModal.quantity', { defaultValue: 'Количество' })}{' '}
+                <span className="text-gray-400 font-normal">/ {maxQty} {t('sellPartModal.inStock', { defaultValue: 'в наличии' })}</span>
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={maxQty}
+                step={1}
+                value={sellQty}
+                onChange={(e) => setSellQty(Math.max(1, Math.min(maxQty, parseInt(e.target.value, 10) || 1)))}
+                className="form-input tabular-nums"
+              />
+            </div>
+          )}
+
           {/* Цена */}
           <div>
             <label className="form-label">{t('sellPartModal.priceLabel')}</label>

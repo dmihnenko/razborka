@@ -659,6 +659,35 @@ export async function createPartsOrder(
   return data as PartsOrder
 }
 
+/**
+ * Атомарная продажа запчасти через RPC sell_part (одна транзакция):
+ * опц. клиент → заказ → позиция → completed (триггер спишет quantity, sold при 0).
+ * Заменяет прежние 6 нетранзакционных запросов. Возвращает id заказа.
+ */
+export async function sellPart(params: {
+  itemId: string
+  price: number
+  currency: 'UAH' | 'USD'
+  rate?: number | null
+  quantity?: number
+  customerId?: string | null
+  newCustomerName?: string
+  newCustomerPhone?: string
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('sell_part', {
+    p_item_id: params.itemId,
+    p_price: params.price,
+    p_currency: params.currency,
+    p_rate: params.rate ?? null,
+    p_quantity: params.quantity ?? 1,
+    p_customer_id: params.customerId ?? null,
+    p_new_customer_name: params.newCustomerName ?? null,
+    p_new_customer_phone: params.newCustomerPhone ?? null,
+  })
+  if (error) throw error
+  return data as string
+}
+
 export async function createPartsOrderItem(
   orderId: string,
   item: { inventory_item_id: string; quantity: number; price_at_sale: number; price_at_sale_currency?: 'UAH' | 'USD' }
