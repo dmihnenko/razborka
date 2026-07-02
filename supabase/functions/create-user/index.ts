@@ -48,8 +48,10 @@ serve(async (req) => {
       }
     )
 
-    // Проверяем авторизацию
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+    // Проверяем авторизацию — токен передаём ЯВНО в getUser(token)
+    // (getUser() без аргумента ненадёжен в edge-рантайме → "Auth session missing").
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token)
     
     if (userError || !user) {
       console.error('Auth error:', userError)
@@ -62,7 +64,7 @@ serve(async (req) => {
     console.log('Authenticated user:', user.id, user.email);
 
     // Get user data from request body
-    const { email, password, full_name, phone, role_ids, primary_role_id, sto_company_id, parts_company_id, username } = await req.json()
+    const { email, password, full_name, phone, role_ids, primary_role_id, parts_company_id, username } = await req.json()
     
     if (!password) {
       return new Response(
@@ -117,9 +119,8 @@ serve(async (req) => {
 
     const userRoleNames = rolesData?.map((role: any) => role.name) || []
     const isAdmin = userRoleNames.includes('admin')
-    const isStoOwner = userRoleNames.includes('sto_owner')
     const isPartsOwner = userRoleNames.includes('parts_owner')
-    const canCreateUsers = isAdmin || isStoOwner || isPartsOwner
+    const canCreateUsers = isAdmin || isPartsOwner
     console.log('User roles:', userRoleNames, 'canCreateUsers:', canCreateUsers)
     
     // Create Supabase admin client with service_role key for user creation
@@ -142,27 +143,25 @@ serve(async (req) => {
     }
 
     // SECURITY: только админ может задавать произвольные роли и компанию.
-    // Владелец компании (sto_owner/parts_owner) может создавать ТОЛЬКО работника
-    // СВОЕЙ компании — не доверяем role_ids/company_id из запроса для не-админа,
-    // иначе владелец мог бы выдать себе/другому роль admin или чужую компанию.
+    // Владелец разборки (parts_owner) может создавать ТОЛЬКО работника СВОЕЙ компании —
+    // не доверяем role_ids/company_id из запроса для не-админа, иначе владелец мог бы
+    // выдать себе/другому роль admin или чужую компанию.
     let finalRoleIds: string[] = Array.isArray(role_ids) ? role_ids : []
     let finalPrimaryRoleId: string | null = primary_role_id ?? null
-    let finalStoCompanyId: string | null = sto_company_id || null
     let finalPartsCompanyId: string | null = parts_company_id || null
 
     if (!isAdmin) {
       // Компания берётся из профиля вызывающего, а не из тела запроса
       const { data: callerProfile } = await supabaseAdmin
         .from('user_profiles')
-        .select('sto_company_id, parts_company_id')
+        .select('parts_company_id')
         .eq('id', user.id)
         .single()
 
-      const allowedRoleName = isStoOwner ? 'sto_worker' : 'parts_worker'
       const { data: workerRole, error: workerRoleError } = await supabaseAdmin
         .from('roles')
         .select('id')
-        .eq('name', allowedRoleName)
+        .eq('name', 'parts_worker')
         .single()
 
       if (workerRoleError || !workerRole) {
@@ -174,8 +173,7 @@ serve(async (req) => {
 
       finalRoleIds = [workerRole.id]
       finalPrimaryRoleId = workerRole.id
-      finalStoCompanyId = isStoOwner ? (callerProfile?.sto_company_id ?? null) : null
-      finalPartsCompanyId = isPartsOwner && !isStoOwner ? (callerProfile?.parts_company_id ?? null) : null
+      finalPartsCompanyId = callerProfile?.parts_company_id ?? null
     }
 
     // Генерируем email-заглушку если не указан
@@ -216,14 +214,13 @@ serve(async (req) => {
 
     // Upsert user profile (UPDATE если профиль уже создан триггером, иначе INSERT)
     // Auto-activate if company is assigned, otherwise require admin confirmation
-    const isCompanyAssigned = !!(finalStoCompanyId || finalPartsCompanyId)
+    const isCompanyAssigned = !!finalPartsCompanyId
     const profilePayload = {
       id: newUser.user.id,
       full_name: full_name || null,
       phone: phone || null,
       email: finalEmail,
       username: username || null,
-      sto_company_id: finalStoCompanyId,
       parts_company_id: finalPartsCompanyId,
       is_active: isCompanyAssigned
     }

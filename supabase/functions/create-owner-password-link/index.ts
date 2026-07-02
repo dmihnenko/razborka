@@ -24,7 +24,8 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     )
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+    const authToken = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(authToken)
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Invalid authentication token', details: userError?.message }), {
         status: 401,

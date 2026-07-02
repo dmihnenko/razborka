@@ -26,7 +26,8 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     )
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+    const authToken = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(authToken)
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Invalid authentication token', details: userError?.message }), {
         status: 401,
@@ -34,9 +35,9 @@ serve(async (req) => {
       })
     }
 
-    const { companyType, note, inviteType = 'onboarding', expiresInHours = 168 } = await req.json()
-    if (!companyType || !['sto', 'parts'].includes(companyType)) {
-      return new Response(JSON.stringify({ error: 'companyType must be sto or parts' }), {
+    const { companyType = 'parts', note, inviteType = 'onboarding', expiresInHours = 168 } = await req.json()
+    if (companyType !== 'parts') {
+      return new Response(JSON.stringify({ error: 'companyType must be parts' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })

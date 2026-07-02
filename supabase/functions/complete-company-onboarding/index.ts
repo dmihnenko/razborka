@@ -114,7 +114,7 @@ serve(async (req) => {
     }
 
     const ownerUserId = authUserData.user.id
-    const roleName = invite.company_type === 'parts' ? 'parts_owner' : 'sto_owner'
+    const roleName = 'parts_owner'
 
     const { data: ownerRole, error: ownerRoleError } = await supabaseAdmin
       .from('roles')
@@ -132,96 +132,49 @@ serve(async (req) => {
 
     let companyId: string | null = null
 
-    if (invite.company_type === 'sto') {
-      const { data: companyData, error: companyError } = await supabaseAdmin
-        .from('sto_companies')
-        .insert({
-          name: company.name,
-          address: company.address || null,
-          phone: company.phone || null,
-          email: company.email || null,
-          description: company.description || null,
-          is_active: true,
-        })
-        .select('id')
-        .single()
+    const { data: companyData, error: companyError } = await supabaseAdmin
+      .from('parts_companies')
+      .insert({
+        name: company.name,
+        address: company.address || null,
+        phone: company.phone || null,
+        email: company.email || null,
+        description: company.description || null,
+        is_active: true,
+      })
+      .select('id')
+      .single()
 
-      if (companyError || !companyData?.id) {
-        await supabaseAdmin.auth.admin.deleteUser(ownerUserId)
-        return new Response(JSON.stringify({ error: 'Failed to create STO', details: companyError?.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
+    if (companyError || !companyData?.id) {
+      await supabaseAdmin.auth.admin.deleteUser(ownerUserId)
+      return new Response(JSON.stringify({ error: 'Failed to create parts company', details: companyError?.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
-      companyId = companyData.id
+    companyId = companyData.id
 
-      const { error: profileError } = await supabaseAdmin
-        .from('user_profiles')
-        .insert({
-          id: ownerUserId,
-          email,
-          username,
-          full_name: owner.full_name,
-          phone: owner.phone || null,
-          sto_company_id: companyId,
-          parts_company_id: null,
-          is_active: true,
-        })
+    // upsert: триггер handle_new_user уже мог создать профиль при createUser → апдейтим его
+    const { error: profileError } = await supabaseAdmin
+      .from('user_profiles')
+      .upsert({
+        id: ownerUserId,
+        email,
+        username,
+        full_name: owner.full_name,
+        phone: owner.phone || null,
+        parts_company_id: companyId,
+        is_active: true,
+      }, { onConflict: 'id' })
 
-      if (profileError) {
-        await supabaseAdmin.from('sto_companies').delete().eq('id', companyId)
-        await supabaseAdmin.auth.admin.deleteUser(ownerUserId)
-        return new Response(JSON.stringify({ error: 'Failed to create owner profile', details: profileError.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-    } else {
-      const { data: companyData, error: companyError } = await supabaseAdmin
-        .from('parts_companies')
-        .insert({
-          name: company.name,
-          address: company.address || null,
-          phone: company.phone || null,
-          email: company.email || null,
-          description: company.description || null,
-          is_active: true,
-        })
-        .select('id')
-        .single()
-
-      if (companyError || !companyData?.id) {
-        await supabaseAdmin.auth.admin.deleteUser(ownerUserId)
-        return new Response(JSON.stringify({ error: 'Failed to create parts company', details: companyError?.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-
-      companyId = companyData.id
-
-      const { error: profileError } = await supabaseAdmin
-        .from('user_profiles')
-        .insert({
-          id: ownerUserId,
-          email,
-          username,
-          full_name: owner.full_name,
-          phone: owner.phone || null,
-          sto_company_id: null,
-          parts_company_id: companyId,
-          is_active: true,
-        })
-
-      if (profileError) {
-        await supabaseAdmin.from('parts_companies').delete().eq('id', companyId)
-        await supabaseAdmin.auth.admin.deleteUser(ownerUserId)
-        return new Response(JSON.stringify({ error: 'Failed to create owner profile', details: profileError.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
+    if (profileError) {
+      await supabaseAdmin.from('parts_companies').delete().eq('id', companyId)
+      await supabaseAdmin.auth.admin.deleteUser(ownerUserId)
+      return new Response(JSON.stringify({ error: 'Failed to create owner profile', details: profileError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     const { error: roleAssignError } = await supabaseAdmin
@@ -233,11 +186,7 @@ serve(async (req) => {
       })
 
     if (roleAssignError) {
-      if (invite.company_type === 'sto') {
-        await supabaseAdmin.from('sto_companies').delete().eq('id', companyId)
-      } else {
-        await supabaseAdmin.from('parts_companies').delete().eq('id', companyId)
-      }
+      await supabaseAdmin.from('parts_companies').delete().eq('id', companyId)
       await supabaseAdmin.from('user_profiles').delete().eq('id', ownerUserId)
       await supabaseAdmin.auth.admin.deleteUser(ownerUserId)
       return new Response(JSON.stringify({ error: 'Failed to assign owner role', details: roleAssignError.message }), {

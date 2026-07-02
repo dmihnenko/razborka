@@ -48,14 +48,14 @@ serve(async (req) => {
       )
     }
 
-    // Проверяем что вызывающий — admin или sto_owner или parts_owner
+    // Проверяем что вызывающий — admin или parts_owner
     const { data: callerRoles } = await supabaseAdmin
       .from('user_roles')
       .select('roles(name)')
       .eq('user_id', user.id)
 
     const roleNames = (callerRoles as any[])?.map((ur: any) => ur.roles?.name) || []
-    const canResetPassword = roleNames.includes('admin') || roleNames.includes('sto_owner') || roleNames.includes('parts_owner')
+    const canResetPassword = roleNames.includes('admin') || roleNames.includes('parts_owner')
 
     if (!canResetPassword) {
       return new Response(
