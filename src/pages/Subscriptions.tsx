@@ -15,8 +15,12 @@ import {
   getCompanyQueue, cancelCompanyQueue, getDefaultCompanyPlan, setDefaultCompanyPlan,
   getSubscriptionRequests, approveSubscriptionRequest, rejectSubscriptionRequest,
   getPartsCompaniesUsage, getSubscriptionPayments,
+  updateSubscriptionPlanFields,
   type SubscriptionPayment,
 } from '@/services/subscriptionService'
+import {
+  createPartsCompany, updatePartsCompany, setPartsCompanyActive, softDeletePartsCompany,
+} from '@/services/companyService'
 import type { CompanySubscription, Subscription } from '@/types/subscription'
 import { durationLabel } from '@/config/subscriptionPlans'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -169,7 +173,7 @@ export default function Subscriptions() {
   // ── CRUD компании (parts_companies) ──
   const createCompanyMutation = useMutation({
     mutationFn: async (data: PartsFormData) => {
-      const { error } = await supabase.from('parts_companies').insert({
+      await createPartsCompany({
         name: data.name,
         address: data.address || null,
         phone: data.phone || null,
@@ -177,7 +181,6 @@ export default function Subscriptions() {
         description: data.description || null,
         is_active: true,
       })
-      if (error) throw error
     },
     onSuccess: () => {
       invalidateCompanies()
@@ -190,14 +193,13 @@ export default function Subscriptions() {
 
   const updateCompanyMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: PartsFormData }) => {
-      const { error } = await supabase.from('parts_companies').update({
+      await updatePartsCompany(id, {
         name: data.name,
         address: data.address || null,
         phone: data.phone || null,
         email: data.email || null,
         description: data.description || null,
-      }).eq('id', id)
-      if (error) throw error
+      })
     },
     onSuccess: () => {
       invalidateCompanies()
@@ -211,8 +213,7 @@ export default function Subscriptions() {
 
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      const { error } = await supabase.from('parts_companies').update({ is_active: !isActive }).eq('id', id)
-      if (error) throw error
+      await setPartsCompanyActive(id, isActive)
     },
     onSuccess: () => { invalidateCompanies(); toast.success('Статус разборки изменён') },
     onError: (e: unknown) => toast.error(errMsg(e) || 'Ошибка при изменении статуса'),
@@ -220,8 +221,7 @@ export default function Subscriptions() {
 
   const deleteCompanyMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.rpc('admin_soft_delete_company', { p_company_id: id })
-      if (error) throw error
+      await softDeletePartsCompany(id)
     },
     onSuccess: () => {
       invalidateCompanies()
@@ -1282,7 +1282,7 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
   const handleSave = async () => {
     setSaving(true)
     try {
-      const { error } = await supabase.from('subscriptions').update({
+      await updateSubscriptionPlanFields(plan.id, {
         name:             form.name.trim(),
         description:      form.description.trim() || null,
         price:            Number(form.price),
@@ -1291,8 +1291,7 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
         max_workers:      numOrNull(form.max_workers),
         sort_order:       Number(form.sort_order) || 0,
         has_analytics:    form.has_analytics,
-      }).eq('id', plan.id)
-      if (error) throw error
+      })
       toast.success('План обновлён')
       onSaved()
       onClose()

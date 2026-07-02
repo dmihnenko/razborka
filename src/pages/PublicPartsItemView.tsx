@@ -14,28 +14,10 @@ import { PublicBrandHeader } from '@/components/PublicBrandHeader'
 import { formatPrice } from '@/utils/currency'
 import { PARTS_CONDITION_LABELS, conditionBadgeClass } from '@/utils/status'
 import type { ImgbbPhoto } from '@/services/imgbbService'
+import { getPublicPartsItem } from '@/services/marketplaceService'
 import ShareModal from '@/components/ui/ShareModal'
 
 // ─── Формы публичных данных (RPC/публичные таблицы — нетипизированный клиент) ────
-
-/** Публичный набор полей позиции (SECURITY DEFINER RPC get_public_parts_item). */
-interface PublicPartsItem {
-  id: string
-  parts_company_id: string
-  name: string
-  part_number?: string | null
-  description?: string | null
-  notes?: string | null
-  condition?: string | null
-  quantity: number
-  selling_price?: number | null
-  sold_price?: number | null
-  price_currency?: 'UAH' | 'USD' | null
-  status: string
-  photos?: ImgbbPhoto[] | null
-  category?: { name: string } | null
-  vehicle?: { make: string; model: string; year?: number | null } | null
-}
 
 /** Публичные контакты разборки (parts_companies). */
 interface PublicCompany {
@@ -277,13 +259,9 @@ export default function PublicPartsItemView() {
 
   const { data: item, isLoading } = useQuery({
     queryKey: ['public-parts-item', id],
-    queryFn: async () => {
-      // SECURITY DEFINER RPC: отдаёт только безопасные поля любой позиции по id
-      // (для QR/ссылки), не зависит от статуса/публикации и anon-колонко-грантов.
-      const { data, error } = await supabase.rpc('get_public_parts_item', { p_id: id })
-      if (error) throw error
-      return data as PublicPartsItem | null
-    },
+    // SECURITY DEFINER RPC: отдаёт только безопасные поля любой позиции по id
+    // (для QR/ссылки), не зависит от статуса/публикации и anon-колонко-грантов.
+    queryFn: () => getPublicPartsItem(id!),
     enabled: !!id,
     staleTime: 60_000,
   })

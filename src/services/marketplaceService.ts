@@ -237,6 +237,37 @@ export async function getMarketPartsByIds(ids: string[]): Promise<MarketPart[]> 
   return asRows<MarketPartRow>(data).map(mapPartRow)
 }
 
+// ── Публичная страница позиции (QR/ссылка) ──────────────────────────────────
+
+/** Публичный набор полей позиции (SECURITY DEFINER RPC get_public_parts_item). */
+export interface PublicPartsItem {
+  id: string
+  parts_company_id: string
+  name: string
+  part_number?: string | null
+  description?: string | null
+  notes?: string | null
+  condition?: string | null
+  quantity: number
+  selling_price?: number | null
+  sold_price?: number | null
+  price_currency?: 'UAH' | 'USD' | null
+  status: string
+  photos?: MarketPhoto[] | null
+  category?: { name: string } | null
+  vehicle?: { make: string; model: string; year?: number | null } | null
+}
+
+/**
+ * Публичная позиция по id (для QR/ссылки) через SECURITY DEFINER RPC:
+ * отдаёт только безопасные поля любой позиции, не зависит от статуса/публикации.
+ */
+export async function getPublicPartsItem(id: string): Promise<PublicPartsItem | null> {
+  const { data, error } = await supabase.rpc('get_public_parts_item', { p_id: id })
+  if (error) throw error
+  return data as PublicPartsItem | null
+}
+
 // ── Разборки (поставщики) ───────────────────────────────────────────────────
 
 const SUPPLIER_FIELDS = 'id, name, phone, telegram, address, city, email, description'

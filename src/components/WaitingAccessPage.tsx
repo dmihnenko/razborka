@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Car, Package, CheckCircle2, LogOut, Sparkles, Clock, XCircle, RefreshCw, ChevronRight, ArrowLeft, Building2, Users, Phone, MapPin, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { claimPersonalUserRole, createAccessRequest, deleteAccessRequest } from '@/services/accessRequestService'
 import { BRAND } from '@/config/brand'
 import { Logo } from '@/components/brand/Logo'
 import { toast } from 'sonner'
@@ -93,8 +94,7 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
       // старая заявка типа user, сразу выдаём роль и пускаем в систему.
       if (data.request_type === 'user') {
         try {
-          const { error } = await supabase.rpc('claim_personal_user_role')
-          if (error) throw error
+          await claimPersonalUserRole()
           localStorage.removeItem('tsp_profile_cache')
           window.location.reload()
           return
@@ -132,8 +132,7 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
     // Личные автомобили — без подтверждения админом: сразу выдаём роль «user»
     setSubmitting(true)
     try {
-      const { error } = await supabase.rpc('claim_personal_user_role')
-      if (error) throw error
+      await claimPersonalUserRole()
       toast.success('Доступ открыт!')
       localStorage.removeItem('tsp_profile_cache')
       window.location.reload()
@@ -191,8 +190,7 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
         payload.owner_phone = digits.length === 10 ? `+38${digits}` : `+${digits}`
       }
 
-      const { error } = await supabase.from('access_requests').insert(payload)
-      if (error) throw error
+      await createAccessRequest(payload)
       toast.success('Заявка отправлена!')
       await loadExistingRequest()
     } catch (e) {
@@ -206,7 +204,7 @@ export default function WaitingAccessPage({ profile, onLogout }: Props) {
     if (!existingRequest) return
     setSubmitting(true)
     try {
-      await supabase.from('access_requests').delete().eq('id', existingRequest.id)
+      await deleteAccessRequest(existingRequest.id)
       setExistingRequest(null)
       setSelectedType(null)
       setCompanyName('')

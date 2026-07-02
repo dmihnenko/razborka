@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { createPartsCategoriesBulk } from '@/services/partsService'
+import { dismissCompanyOnboarding } from '@/services/companyService'
 import { getCompanyPhotoStorage, isProviderConfigured } from '@/services/photoStorageConfig'
 
 const DEFAULT_CATEGORIES = [
@@ -43,9 +44,13 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
   const [collapsed, setCollapsed] = useState(false)
   const dismiss = () => {
     setJustDismissed(true)
-    supabase.rpc('dismiss_company_onboarding').then(() => {
-      queryClient.invalidateQueries({ queryKey: ['onboarding-contacts', partsCompanyId] })
-    })
+    // Инвалидация выполняется всегда (как при прежнем .then на supabase-rpc,
+    // который резолвился и на ошибке); ошибку RPC глотаем — скрытие уже локально.
+    dismissCompanyOnboarding()
+      .catch(() => { /* не критично: justDismissed уже скрыл блок */ })
+      .finally(() => {
+        queryClient.invalidateQueries({ queryKey: ['onboarding-contacts', partsCompanyId] })
+      })
   }
 
   // 1. Категории

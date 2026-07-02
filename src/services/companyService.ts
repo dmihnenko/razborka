@@ -95,6 +95,63 @@ export async function setCompanyRate(mode: 'auto' | 'manual', rate?: number): Pr
   if (error) throw error
 }
 
+// ── Админ: CRUD разборок (parts_companies) ──────────────────────────────────
+
+export interface PartsCompanyInput {
+  name: string
+  address?: string | null
+  phone?: string | null
+  email?: string | null
+  description?: string | null
+  is_active?: boolean
+}
+
+/** Админ: создать разборку. */
+export async function createPartsCompany(data: PartsCompanyInput): Promise<void> {
+  const { error } = await supabase.from('parts_companies').insert({
+    name: data.name,
+    address: data.address ?? null,
+    phone: data.phone ?? null,
+    email: data.email ?? null,
+    description: data.description ?? null,
+    is_active: data.is_active ?? true,
+  })
+  if (error) throw error
+}
+
+/** Админ: обновить данные разборки. */
+export async function updatePartsCompany(
+  id: string,
+  data: { name: string; address?: string | null; phone?: string | null; email?: string | null; description?: string | null }
+): Promise<void> {
+  const { error } = await supabase.from('parts_companies').update({
+    name: data.name,
+    address: data.address ?? null,
+    phone: data.phone ?? null,
+    email: data.email ?? null,
+    description: data.description ?? null,
+  }).eq('id', id)
+  if (error) throw error
+}
+
+/** Админ: включить/выключить разборку (передаётся ТЕКУЩЕЕ значение, инвертируется). */
+export async function setPartsCompanyActive(id: string, isActive: boolean): Promise<void> {
+  const { error } = await supabase.from('parts_companies').update({ is_active: !isActive }).eq('id', id)
+  if (error) throw error
+}
+
+/** Админ: мягкое удаление разборки (данные хранятся 6 месяцев). */
+export async function softDeletePartsCompany(id: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_soft_delete_company', { p_company_id: id })
+  if (error) throw error
+}
+
+/** Скрыть онбординг-чек-лист текущей разборки (parts_companies.onboarding_dismissed). */
+export async function dismissCompanyOnboarding(): Promise<void> {
+  const { error } = await supabase.rpc('dismiss_company_onboarding')
+  if (error) throw error
+}
+
 // Создать компанию и привязать к пользователю
 export async function createCompanyAndAssign(params: CreateCompanyParams): Promise<CreateCompanyResult> {
   const { data: company, error: createError } = await supabase

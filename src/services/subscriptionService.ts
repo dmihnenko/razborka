@@ -39,6 +39,31 @@ export async function updateSubscriptionPlan(id: string, updates: Partial<Subscr
   return data as Subscription
 }
 
+/**
+ * Обновить поля тарифного плана (без возврата строки).
+ * Плоский update по id — совпадает с формой инлайн-вызова в редакторе плана
+ * (в отличие от updateSubscriptionPlan, который делает .select().single()).
+ */
+export async function updateSubscriptionPlanFields(
+  id: string,
+  fields: {
+    name: string
+    description: string | null
+    price: number
+    max_vehicles: number | null
+    max_parts: number | null
+    max_workers: number | null
+    sort_order: number
+    has_analytics: boolean
+  }
+) {
+  const { error } = await supabase
+    .from('subscriptions')
+    .update(fields)
+    .eq('id', id)
+  if (error) throw error
+}
+
 export async function deleteSubscriptionPlan(id: string) {
   const { error } = await supabase
     .from('subscriptions')
