@@ -8,6 +8,7 @@ import { Users, ShoppingCart } from 'lucide-react'
 import { fetchPlatformAnalytics } from '@/services/adminAnalyticsService'
 import { getAdminStats } from '@/services/adminService'
 import StatCard from '@/components/admin/StatCard'
+import { CHART_CATEGORICAL, CHART_AXIS, CHART_GRID, CHART_TOOLTIP_BORDER, CHART_ACCENT } from '@/utils/chartPalette'
 
 const RANGES = [
   { id: 3, label: '3 мес' },
@@ -15,7 +16,7 @@ const RANGES = [
   { id: 12, label: '12 мес' },
 ] as const
 
-const PIE_COLORS = ['#6366F1', '#3538CD', '#F59E0B', '#10B981', '#EC4899', '#8B5CF6', '#64748B', '#06B6D4']
+const PIE_COLORS = CHART_CATEGORICAL
 
 export default function AdminAnalytics() {
   const [months, setMonths] = useState<number>(6)
@@ -69,13 +70,13 @@ export default function AdminAnalytics() {
         ) : (
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={data?.series || []} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} allowDecimals={false} />
-              <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 12 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: CHART_AXIS }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: CHART_AXIS }} axisLine={false} tickLine={false} allowDecimals={false} />
+              <Tooltip contentStyle={{ borderRadius: 10, border: `1px solid ${CHART_TOOLTIP_BORDER}`, fontSize: 12 }} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Line type="monotone" dataKey="users" name="Пользователи" stroke="var(--brand-600)" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="orders" name="Заказы" stroke="#F59E0B" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="orders" name="Заказы" stroke={CHART_ACCENT} strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         )}
@@ -94,7 +95,7 @@ export default function AdminAnalytics() {
                 <Pie data={data.roles} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={45} paddingAngle={2}>
                   {data.roles.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                 </Pie>
-                <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 12 }} />
+                <Tooltip contentStyle={{ borderRadius: 10, border: `1px solid ${CHART_TOOLTIP_BORDER}`, fontSize: 12 }} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
               </PieChart>
             </ResponsiveContainer>
