@@ -74,8 +74,14 @@ export default function ContextSwitcher({ current, excludeIds = [], variant = 'b
     if (c.id === current) return
     if (c.id === 'admin') localStorage.removeItem('activeRole')
     else localStorage.setItem('activeRole', roleFor(c.id))
-    localStorage.removeItem('tsp_profile_cache')
-    queryClient.clear()
+    // Профиль и роли — глобальные для пользователя и НЕ должны сбрасываться при
+    // смене раздела. Раньше здесь были queryClient.clear() + удаление
+    // tsp_profile_cache → на целевом маршруте профиль пуст, isAdmin=false →
+    // выброс в «Выберите направление». Теперь чистим только данные покидаемого
+    // контекста, сохраняя userProfile (и его localStorage-кэш как initialData).
+    queryClient.removeQueries({
+      predicate: (q) => String(q.queryKey?.[0] ?? '') !== 'userProfile',
+    })
     navigate(c.path)
   }
 
