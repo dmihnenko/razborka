@@ -129,22 +129,24 @@ export default function VersionChecker() {
     }
     document.addEventListener('visibilitychange', onVisibility)
 
-    // 4. Service Worker обновился и взял контроль над страницей →
-    //    гарантированно новая версия активна, показываем toast напрямую
-    //    (не делаем fetch version.json — SW уже сменился)
+    // 4. Service Worker обновился и взял контроль над страницей.
+    //    ВАЖНО: в памяти окна всё ещё СТАРЫЙ бандл. Пассивный тост его не сменит —
+    //    установленный PWA может навсегда застрять на старой версии (а при рассинхроне
+    //    старый фронт + новый бэкенд/RLS запросы падают → выброс в «Выберите
+    //    направление»). Поэтому при смене контроллера ОДИН раз перезагружаемся на
+    //    свежую версию через reloadApp() (снимает SW-кэш данных, грузит из сети).
+    //    Guard hadController исключает лишнюю перезагрузку при ПЕРВОЙ установке SW —
+    //    тогда старого кода ещё нет и перезагружаться незачем.
+    const hadController = 'serviceWorker' in navigator && !!navigator.serviceWorker.controller
     let swControlled = false
     const onControllerChange = () => {
       if (swControlled) return
       swControlled = true
-      // Новый SW взял контроль (skipWaiting+clientsClaim) — версия применится при
-      // следующей навигации. Небольшая задержка + берём свежий hash для «Update #ver».
-      setTimeout(async () => {
-        // Сбрасываем pendingHash: controllerchange — это свежий сигнал
-        pendingHash = ''
-        updateShown = false
-        const ver = (await fetchVersionHash()) || localStorage.getItem(VERSION_KEY) || ''
-        showUpdateToast(ver)
-      }, 500)
+      if (!hadController) return // первая установка SW на этой странице — reload не нужен
+      pendingHash = ''
+      updateShown = false
+      toast('Обновление…', { duration: 1500 })
+      setTimeout(() => { void reloadApp() }, 800)
     }
 
     if ('serviceWorker' in navigator) {
