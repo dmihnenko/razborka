@@ -149,8 +149,15 @@ export default function AdminLayout() {
 
       {/* ═══ MOBILE TOP BAR ═══ */}
       <header className="md:hidden sticky top-0 z-20 bg-white" style={{ borderBottom: '1px solid var(--cab-border)' }}>
-        <div className="h-14 px-2 flex items-center justify-between gap-2">
-          <div className="flex-1 min-w-0"><ContextSwitcher current="admin" variant="mobile" /></div>
+        <div className="h-14 px-3 flex items-center justify-between gap-2">
+          {/* Смена раздела вынесена в нижнее меню («Ещё») — в шапке только заголовок. */}
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: 'var(--cab-ink)', color: '#fff' }}>
+              <Shield className="w-4 h-4" strokeWidth={1.7} />
+            </span>
+            <span className="text-sm font-semibold truncate" style={{ color: 'var(--cab-ink)' }}>Админпанель</span>
+          </div>
           <button onClick={handleLogout}
             className="p-2 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors">
             <LogOut className="w-5 h-5" strokeWidth={1.5} />
@@ -199,6 +206,22 @@ export default function AdminLayout() {
             <div className="flex items-center justify-between px-2 mb-2">
               <p className="text-sm font-bold text-gray-900">Разделы</p>
               <button onClick={() => setMoreOpen(false)} aria-label="Закрыть" className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X className="w-4 h-4" aria-hidden="true" /></button>
+            </div>
+            {/* Смена раздела — как в остальном приложении, в нижнем меню */}
+            <p className="px-2 pb-1.5 text-[11px] font-bold uppercase tracking-[0.08em]" style={{ color: 'var(--cab-ink-3)' }}>Сменить раздел</p>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <Link to="/parts/dashboard" onClick={() => { localStorage.setItem('activeRole', 'parts_owner'); setMoreOpen(false) }}
+                className="flex items-center gap-2.5 px-3 py-3 rounded-xl border transition-colors"
+                style={{ background: 'var(--cab-surface-2)', borderColor: 'var(--cab-border)', color: 'var(--cab-ink-2)' }}>
+                <Store className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
+                <span className="text-sm font-medium truncate">Разборка</span>
+              </Link>
+              <Link to="/my-vehicles" onClick={() => { localStorage.setItem('activeRole', 'user'); setMoreOpen(false) }}
+                className="flex items-center gap-2.5 px-3 py-3 rounded-xl border transition-colors"
+                style={{ background: 'var(--cab-surface-2)', borderColor: 'var(--cab-border)', color: 'var(--cab-ink-2)' }}>
+                <Car className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
+                <span className="text-sm font-medium truncate">Мои авто</span>
+              </Link>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {MORE_ITEMS.map(item => {
