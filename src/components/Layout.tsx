@@ -8,6 +8,7 @@ import {
   X,
   Search,
   Store,
+  Car,
 } from 'lucide-react'
 import GlobalSearch from './GlobalSearch'
 import { LayoutSkeleton } from './LayoutSkeleton'
@@ -281,14 +282,21 @@ export default function Layout() {
 
   // ── Мобильные пункты (без mobileHidden) ──────────────────────────────────
   const mobileNavItems = filteredNavigation.filter(item => !item.mobileHidden)
-  // Если ≤4 — все в нижнем баре; иначе первые 4 + кнопка «Меню» (5-й слот)
-  const showMobileSheet = mobileNavItems.length > 4
-  const mobileBarItems = showMobileSheet ? mobileNavItems.slice(0, 4) : mobileNavItems
-  const mobileSheetItems = showMobileSheet ? mobileNavItems.slice(4) : []
 
-  // Показывать ли ссылку на /admin в шторке
+  // Контекст-ссылки в нижней шторке (смена раздела вынесена в нижнее меню, не в шапку):
+  //  • «Админ» — если пользователь админ и /admin нет в самом меню;
+  //  • «Мои авто» — если доступен раздел личных авто (админ или роль user).
   const adminInNav = filteredNavigation.some(i => i.href === '/admin')
   const showAdminInSheet = isAdmin && !adminInNav
+  const showUserCtxInSheet = ctxAdmin || ctxRoles.includes('user')
+  const hasCtxLinks = showAdminInSheet || showUserCtxInSheet
+
+  // Если ≤4 пункта — все в нижнем баре; иначе первые 4 + кнопка «Меню» (5-й слот).
+  // Кнопку «Меню» показываем и когда основных пунктов ≤4, но есть контекст-ссылки
+  // (Админ/Мои авто) — иначе шторку не открыть.
+  const showMobileSheet = mobileNavItems.length > 4 || hasCtxLinks
+  const mobileBarItems = showMobileSheet ? mobileNavItems.slice(0, 4) : mobileNavItems
+  const mobileSheetItems = showMobileSheet ? mobileNavItems.slice(4) : []
 
   return (
     <div
@@ -408,7 +416,15 @@ export default function Layout() {
         <div className="md:hidden bg-white border-b border-gray-200">
           <div className="px-3 flex items-center gap-2 h-[52px]">
             <div className="flex-1 min-w-0">
-              <ContextSwitcher current={currentCtx} variant="mobile" />
+              {/* Смена раздела вынесена в нижнее меню. В «Мои авто» нижнего меню нет —
+                  там оставляем дропдаун-свитчер для возврата в Разборку/Админ. */}
+              {isUserCtx ? (
+                <ContextSwitcher current={currentCtx} />
+              ) : (
+                <Link to="/parts/dashboard" aria-label={BRAND.name} className="inline-flex items-center min-w-0">
+                  <Logo size="sm" withText />
+                </Link>
+              )}
             </div>
             <NotificationsBell userId={profile?.id} />
             {currentCtx === 'parts' && (
@@ -532,6 +548,17 @@ export default function Layout() {
                   </Link>
                 )
               })}
+              {/* Смена раздела «Мои авто» — прямо в нижнем меню */}
+              {showUserCtxInSheet && (
+                <Link
+                  to="/my-vehicles"
+                  onClick={() => { localStorage.setItem('activeRole', 'user'); setSheetOpen(false) }}
+                  className="flex flex-col items-center justify-center gap-1.5 px-1 py-3 rounded-xl min-h-[64px] bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors active:scale-[0.96]"
+                >
+                  <Car className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
+                  <span className="text-center text-[11px] font-medium leading-tight">{t('chrome.myCars', { defaultValue: 'Мои авто' })}</span>
+                </Link>
+              )}
               {/* Ссылка на Панель администратора в шторке */}
               {showAdminInSheet && (
                 <Link
