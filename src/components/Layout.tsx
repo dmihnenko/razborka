@@ -283,13 +283,16 @@ export default function Layout() {
   // ── Мобильные пункты (без mobileHidden) ──────────────────────────────────
   const mobileNavItems = filteredNavigation.filter(item => !item.mobileHidden)
 
-  // Контекст-ссылки в нижней шторке (смена раздела вынесена в нижнее меню, не в шапку):
-  //  • «Админ» — если пользователь админ и /admin нет в самом меню;
-  //  • «Мои авто» — если доступен раздел личных авто (админ или роль user).
+  // Контекст-ссылки в нижней шторке (смена раздела ВЕЗДЕ вынесена в нижнее меню, не в шапку).
+  // Показываем ссылку на раздел, только если он доступен И это НЕ текущий раздел:
+  //  • «Разборка» — если есть доступ к кабинету разборки (админ/parts_*);
+  //  • «Мои авто» — если доступен раздел личных авто (админ или роль user);
+  //  • «Админ» — если пользователь админ и /admin нет в самом меню.
   const adminInNav = filteredNavigation.some(i => i.href === '/admin')
   const showAdminInSheet = isAdmin && !adminInNav
-  const showUserCtxInSheet = ctxAdmin || ctxRoles.includes('user')
-  const hasCtxLinks = showAdminInSheet || showUserCtxInSheet
+  const showPartsCtxInSheet = (ctxAdmin || ctxRoles.includes('parts_owner') || ctxRoles.includes('parts_worker')) && currentCtx !== 'parts'
+  const showUserCtxInSheet = (ctxAdmin || ctxRoles.includes('user')) && currentCtx !== 'user'
+  const hasCtxLinks = showAdminInSheet || showPartsCtxInSheet || showUserCtxInSheet
 
   // Если ≤4 пункта — все в нижнем баре; иначе первые 4 + кнопка «Меню» (5-й слот).
   // Кнопку «Меню» показываем и когда основных пунктов ≤4, но есть контекст-ссылки
@@ -416,15 +419,10 @@ export default function Layout() {
         <div className="md:hidden bg-white border-b border-gray-200">
           <div className="px-3 flex items-center gap-2 h-[52px]">
             <div className="flex-1 min-w-0">
-              {/* Смена раздела вынесена в нижнее меню. В «Мои авто» нижнего меню нет —
-                  там оставляем дропдаун-свитчер для возврата в Разборку/Админ. */}
-              {isUserCtx ? (
-                <ContextSwitcher current={currentCtx} />
-              ) : (
-                <Link to="/parts/dashboard" aria-label={BRAND.name} className="inline-flex items-center min-w-0">
-                  <Logo size="sm" withText />
-                </Link>
-              )}
+              {/* Смена раздела вынесена в нижнее меню у всех ролей — в шапке только логотип. */}
+              <Link to={isUserCtx ? '/my-vehicles' : '/parts/dashboard'} aria-label={BRAND.name} className="inline-flex items-center min-w-0">
+                <Logo size="sm" withText />
+              </Link>
             </div>
             <NotificationsBell userId={profile?.id} />
             {currentCtx === 'parts' && (
@@ -456,10 +454,9 @@ export default function Layout() {
       </div>
 
       {/* ════════════════════════════════════════════
-          MOBILE BOTTOM NAV (md:hidden, fixed)
+          MOBILE BOTTOM NAV (md:hidden, fixed) — во всех разделах, включая «Мои авто»
           ════════════════════════════════════════════ */}
-      {!isUserCtx && (
-        <nav
+      <nav
           className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 flex items-stretch"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
@@ -495,7 +492,6 @@ export default function Layout() {
             </button>
           )}
         </nav>
-      )}
 
       {/* ════════════════════════════════════════════
           MOBILE SHEET — доп. пункты меню (снизу)
@@ -548,6 +544,20 @@ export default function Layout() {
                   </Link>
                 )
               })}
+              {/* Смена раздела «Разборка» — прямо в нижнем меню */}
+              {showPartsCtxInSheet && (
+                <Link
+                  to="/parts/dashboard"
+                  onClick={() => {
+                    localStorage.setItem('activeRole', (ctxRoles.includes('parts_worker') && !ctxRoles.includes('parts_owner')) ? 'parts_worker' : 'parts_owner')
+                    setSheetOpen(false)
+                  }}
+                  className="flex flex-col items-center justify-center gap-1.5 px-1 py-3 rounded-xl min-h-[64px] bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors active:scale-[0.96]"
+                >
+                  <Store className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
+                  <span className="text-center text-[11px] font-medium leading-tight">{t('chrome.parts', { defaultValue: 'Разборка' })}</span>
+                </Link>
+              )}
               {/* Смена раздела «Мои авто» — прямо в нижнем меню */}
               {showUserCtxInSheet && (
                 <Link
