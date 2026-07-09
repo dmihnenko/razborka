@@ -13,6 +13,8 @@ import { supabase } from '../lib/supabase'
 import { toast } from 'sonner'
 import { LayoutSkeleton } from './LayoutSkeleton'
 import ContextSwitcher from './ContextSwitcher'
+import { Logo } from './brand/Logo'
+import { BRAND } from '@/config/brand'
 
 interface NavItem { name: string; href: string; icon: LucideIcon }
 
@@ -150,13 +152,11 @@ export default function AdminLayout() {
       {/* ═══ MOBILE TOP BAR ═══ */}
       <header className="md:hidden sticky top-0 z-20 bg-white" style={{ borderBottom: '1px solid var(--cab-border)' }}>
         <div className="h-14 px-3 flex items-center justify-between gap-2">
-          {/* Смена раздела вынесена в нижнее меню («Ещё») — в шапке только заголовок. */}
-          <div className="flex-1 min-w-0 flex items-center gap-2">
-            <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: 'var(--cab-ink)', color: '#fff' }}>
-              <Shield className="w-4 h-4" strokeWidth={1.7} />
-            </span>
-            <span className="text-sm font-semibold truncate" style={{ color: 'var(--cab-ink)' }}>Админпанель</span>
+          {/* Смена раздела вынесена в нижнее меню («Ещё») — в шапке только логотип. */}
+          <div className="flex-1 min-w-0">
+            <Link to="/admin" aria-label={BRAND.name} className="inline-flex items-center min-w-0">
+              <Logo size="sm" withText />
+            </Link>
           </div>
           <button onClick={handleLogout}
             className="p-2 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors">
