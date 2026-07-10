@@ -182,7 +182,9 @@ export default function MyVehicles() {
   const lastOrderTotals = lastOrder ? totalsByCurrency(lastOrder) : []
 
   const rail = (
-    <aside className="lg:w-72 lg:shrink-0 space-y-2">
+    // На мобиле (<md) навигация — в нижнем баре приложения, поэтому внутристраничный
+    // рейл (Мои авто / Заказы с разборки / Последний заказ / Профиль) прячем; показываем с md.
+    <aside className="hidden md:block lg:w-72 lg:shrink-0 space-y-2">
       <NavButton id="vehicles" icon={Car} label="Мои авто" count={vehicles.length} />
       <NavButton id="orders" icon={Package} label="Заказы с разборки" count={orders.length} />
 
