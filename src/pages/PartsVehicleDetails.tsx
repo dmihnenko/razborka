@@ -374,7 +374,7 @@ export default function PartsVehicleDetails() {
                 className="cab-btn cab-btn-primary cab-btn-sm"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{t('vehicleDetailsPage.add')}</span>
+                <span>{t('vehicleDetailsPage.addPart')}</span>
               </button>
             </div>
 
