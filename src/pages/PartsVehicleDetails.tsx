@@ -7,16 +7,15 @@ import { Edit, TrendingUp, TrendingDown, Plus, Settings, Tag, Sparkles, X, Car, 
 import { exportSingleVehicleXlsx } from '@/utils/vehiclesXlsx'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { getPartsCategoryTemplates, createPartsInventoryItem, getStorageLocations, updateVehicleStatus } from '@/services/partsService'
+import { getPartsCategoryTemplates, updateVehicleStatus } from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { toast } from 'sonner'
-import type { PartsVehicle, PartsVehicleStatus, CreatePartsInventoryInput, CreatePartsVehicleInput, StorageLocation, PartsInventoryItem } from '@/types/parts'
+import type { PartsVehicle, PartsVehicleStatus, CreatePartsVehicleInput, PartsInventoryItem } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import PartsVehicleModal from '@/components/parts/PartsVehicleModal'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import SellPartModal from '@/components/parts/SellPartModal'
 import { formatPrice } from '@/utils/currency'
-import { PartsInventoryModal } from '@/pages/PartsInventory'
 
 // ── Статусы разборки ──────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<PartsVehicleStatus, string> = {
@@ -67,7 +66,6 @@ export default function PartsVehicleDetails() {
     reserved:  t('vehicleDetailsPage.partStatus_reserved'),
   }
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [isAddPartOpen, setIsAddPartOpen] = useState(false)
   const [sellPart, setSellPart] = useState<PartsInventoryItem | null>(null)
   const [suggestionDismissed, setSuggestionDismissed] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -89,27 +87,6 @@ export default function PartsVehicleDetails() {
       return data as PartsVehicle
     },
     enabled: !!id,
-  })
-
-  // Fetch all company categories (for add-part modal + template suggestion)
-  const { data: categories = [] } = useQuery({
-    queryKey: ['parts-categories', partsCompanyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('parts_categories')
-        .select('id, name')
-        .eq('parts_company_id', partsCompanyId)
-        .order('name')
-      if (error) throw error
-      return data
-    },
-    enabled: !!partsCompanyId && isAddPartOpen,
-  })
-
-  const { data: storageLocations = [] } = useQuery({
-    queryKey: ['storage-locations', partsCompanyId],
-    queryFn: () => getStorageLocations(partsCompanyId!),
-    enabled: !!partsCompanyId && isAddPartOpen,
   })
 
   // Fetch brand-level template categories for suggestion banner
@@ -140,32 +117,9 @@ export default function PartsVehicleDetails() {
     t => !myCategoryNames.includes(t.name.toLowerCase()),
   )
 
-  // Add part mutation
-  const addPartMutation = useMutation({
-    mutationFn: (data: CreatePartsInventoryInput) =>
-      createPartsInventoryItem({ ...data, vehicle_id: data.vehicle_id || id }, partsCompanyId!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vehicle-parts', id] })
-      toast.success(t('vehicleDetailsPage.toastPartAdded'))
-      setIsAddPartOpen(false)
-    },
-    onError: () => toast.error(t('vehicleDetailsPage.toastAddError')),
-  })
-
-  const addBulkMutation = useMutation({
-    mutationFn: (items: CreatePartsInventoryInput[]) =>
-      Promise.all(
-        items.map(data =>
-          createPartsInventoryItem({ ...data, vehicle_id: data.vehicle_id || id }, partsCompanyId!),
-        ),
-      ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vehicle-parts', id] })
-      toast.success(t('vehicleDetailsPage.toastPartsAdded'))
-      setIsAddPartOpen(false)
-    },
-    onError: () => toast.error(t('vehicleDetailsPage.toastAddError')),
-  })
+  // Добавление запчасти к авто — на отдельной странице (авто предвыбрано, возврат сюда).
+  const goAddPart = () =>
+    navigate(`/parts/inventory/new?source=vehicles&vehicle=${id}&returnTo=${encodeURIComponent(`/parts/vehicles/${id}`)}`)
 
   // Fetch parts for this vehicle
   const { data: parts = [] } = useQuery({
@@ -416,7 +370,7 @@ export default function PartsVehicleDetails() {
                 )}
               </h2>
               <button
-                onClick={() => setIsAddPartOpen(true)}
+                onClick={goAddPart}
                 className="cab-btn cab-btn-primary cab-btn-sm"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -432,7 +386,7 @@ export default function PartsVehicleDetails() {
                 <p className="empty-state-title">{t('vehicleDetailsPage.partsEmpty')}</p>
                 <p className="empty-state-text">{t('vehicleDetailsPage.partsEmptyText')}</p>
                 <button
-                  onClick={() => setIsAddPartOpen(true)}
+                  onClick={goAddPart}
                   className="mt-4 cab-btn cab-btn-primary cab-btn-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -763,21 +717,6 @@ export default function PartsVehicleDetails() {
         }}
         vehicle={vehicle}
       />
-
-      {isAddPartOpen && (
-        <PartsInventoryModal
-          item={null}
-          categories={categories}
-          vehicles={[vehicle]}
-          storageLocations={storageLocations as StorageLocation[]}
-          onClose={() => setIsAddPartOpen(false)}
-          onSave={data => addPartMutation.mutate(data)}
-          onSaveBulk={items => addBulkMutation.mutate(items)}
-          isSaving={addPartMutation.isPending || addBulkMutation.isPending}
-          initialVehicleId={id}
-        />
-      )}
-
 
       {sellPart && partsCompanyId && (
         <SellPartModal

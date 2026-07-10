@@ -30,6 +30,9 @@ export default function PartsInventoryEdit() {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
   const source: 'shop' | 'vehicles' = searchParams.get('source') === 'shop' ? 'shop' : 'vehicles'
+  // Опционально: предвыбор авто и путь возврата (напр. добавление запчасти со страницы авто).
+  const vehicleParam = searchParams.get('vehicle') || undefined
+  const returnTo = searchParams.get('returnTo') || undefined
   const queryClient = useQueryClient()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
@@ -85,7 +88,14 @@ export default function PartsInventoryEdit() {
     staleTime: 1000 * 60 * 5,
   })
 
-  const goBack = () => navigate(`/parts/inventory?source=${source}`)
+  const goBack = () => navigate(returnTo || `/parts/inventory?source=${source}`)
+
+  // Обновляем и списки авто — если запчасть привязана к авто, страница авто должна освежиться.
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+    queryClient.invalidateQueries({ queryKey: ['vehicle-parts'] })
+    queryClient.invalidateQueries({ queryKey: ['parts-vehicle'] })
+  }
 
   const saveMutation = useMutation({
     mutationFn: async ({ data, pending }: { data: CreatePartsInventoryInput; pending?: Promise<ImgbbPhoto>[]; keepOpen?: boolean }) => {
@@ -107,7 +117,7 @@ export default function PartsInventoryEdit() {
           if (!extra.length) return
           appendPartsItemPhotos(savedId, extra)
             .then(() => {
-              queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+              invalidateAll()
               if (failed) toast.error(t('inventoryPage.somePhotosFailed', { n: failed }))
             })
             .catch(() => toast.error(t('inventoryPage.photoAttachError')))
@@ -116,7 +126,7 @@ export default function PartsInventoryEdit() {
       return saved
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      invalidateAll()
       toast.success(item ? t('inventoryPage.toastUpdated') : t('inventoryPage.toastAdded'))
       // keepOpen — «Сохранить и добавить ещё»: остаёмся на странице, форму сбрасывает модалка.
       if (!variables.keepOpen) goBack()
@@ -131,7 +141,7 @@ export default function PartsInventoryEdit() {
       }
     },
     onSuccess: (_data, items) => {
-      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      invalidateAll()
       toast.success(t('inventoryPage.toastBulkAdded', { n: items.length }))
       goBack()
     },
@@ -166,7 +176,7 @@ export default function PartsInventoryEdit() {
         onSave={(data, pending, keepOpen) => saveMutation.mutate({ data, pending, keepOpen })}
         onSaveBulk={(items) => saveBulkMutation.mutate(items)}
         isSaving={saveMutation.isPending || saveBulkMutation.isPending}
-        initialVehicleId={item ? undefined : lastVehicleId}
+        initialVehicleId={item ? undefined : (vehicleParam || lastVehicleId)}
         onVehicleChange={(vid) => {
           if (vid) sessionStorage.setItem('parts_last_vehicle_id', vid)
           else sessionStorage.removeItem('parts_last_vehicle_id')
