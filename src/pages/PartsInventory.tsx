@@ -646,7 +646,7 @@ export default function PartsInventory() {
               className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" strokeWidth={2} />
-              <span className="hidden sm:inline">{t('inventoryPage.add')}</span>
+              <span>{t('inventoryPage.add')}</span>
             </button>
           </>
         }
