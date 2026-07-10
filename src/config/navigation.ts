@@ -80,10 +80,12 @@ export const partsWorkerMenu: MenuItem[] = [
   { name: 'Профиль', href: '/profile', icon: CircleUser, group: 'system' },
 ];
 
-// Общее меню для обычного пользователя.
-// Единый кабинет: «Мои авто» (карточки авто) + меню заказов с разборки внутри страницы.
+// Меню обычного пользователя (раздел «Мои авто»).
+// Порядок = мобильный нижний бар: Мои авто / Заявки с разборки / Профиль.
 export const userMenu: MenuItem[] = [
-  { name: 'Мои авто', href: '/my-vehicles', icon: Car, mobileHidden: true },
+  { name: 'Мои авто', href: '/my-vehicles', icon: Car },
+  { name: 'Заявки с разборки', href: '/my-orders', icon: ShoppingBag },
+  { name: 'Профиль', href: '/profile', icon: CircleUser },
 ];
 
 // Маппинг ролей на меню
