@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { QueryState } from '@/components/ui/QueryState'
-import { Plus, Search, Package, Grid, List, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, ChevronRight, MapPin, FolderOpen, Copy, Check, ArrowUp, ArrowDown } from 'lucide-react'
+import { Plus, Search, Package, Grid, List, AlertTriangle, Camera, X, Tag, ClipboardList, Trash2, DollarSign, UserPlus, ChevronDown, ChevronRight, MapPin, FolderOpen, Copy, Check, ArrowUp, ArrowDown, ArrowLeft, Upload } from 'lucide-react'
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -13,12 +13,12 @@ import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { InventoryCard } from '@/components/parts/InventoryCard'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import i18n from '@/i18n'
-import { getPartsInventoryPaged, getPartsInventoryItem, getPartsInventorySummary, createPartsInventoryItem, updatePartsInventoryItem, appendPartsItemPhotos, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
+import { getPartsInventoryPaged, getPartsInventorySummary, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer, PartsVehicle, PartsCategory } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { deletePhotosFromImgbb } from '@/services/imgbbService'
 import { uploadPhoto, PhotoProviderNotConfigured } from '@/services/photoStorage'
-import { getCompanyPhotoStorage, type PhotoStorageConfig } from '@/services/photoStorageConfig'
+import { type PhotoStorageConfig } from '@/services/photoStorageConfig'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/utils/currency'
 import { intlLocale } from '@/i18n'
@@ -76,8 +76,6 @@ export default function PartsInventory() {
     () => ((typeof localStorage !== 'undefined' && localStorage.getItem('parts_inventory_view')) as ViewMode) || 'list'
   )
   useEffect(() => { try { localStorage.setItem('parts_inventory_view', viewMode) } catch { /* ignore */ } }, [viewMode])
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<PartsInventoryItem | null>(null)
   const [sellingItem, setSellingItem] = useState<PartsInventoryItem | null>(null)
   const [sellPrice, setSellPrice] = useState('')
   const [sellQty, setSellQty] = useState(1)
@@ -86,12 +84,6 @@ export default function PartsInventory() {
   const [showNewCustomer, setShowNewCustomer] = useState(false)
   const [newCustomerName, setNewCustomerName] = useState('')
   const [newCustomerPhone, setNewCustomerPhone] = useState('')
-  const [lastVehicleId, setLastVehicleId] = useState<string>(
-    () => sessionStorage.getItem('parts_last_vehicle_id') || ''
-  )
-  const [lastStorageLocationId, setLastStorageLocationId] = useState<string>(
-    () => sessionStorage.getItem('parts_last_storage_location_id') || ''
-  )
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isBulkSellOpen, setIsBulkSellOpen] = useState(false)
   const [bulkRows, setBulkRows] = useState<BulkRow[]>([])
@@ -177,28 +169,12 @@ export default function PartsInventory() {
     })
   }, [isLoading])  
 
-  // Auto-open edit modal when navigated back with editItemId in state
+  // Навигация с editItemId в state (напр. из «Без цены или номера») → открываем
+  // страницу редактирования. Свежий товар по id грузит уже сама PartsInventoryEdit.
   useEffect(() => {
     const editItemId = location.state?.editItemId
     if (!editItemId) return
-    let cancelled = false
-    // Берём СВЕЖИЙ товар по id: пагинированный список мог быть устаревшим
-    // (напр. после заполнения цены/номера в «Без цены или номера»), из-за чего
-    // в форму редактирования попадал товар без актуальной цены.
-    ;(async () => {
-      const fresh = await getPartsInventoryItem(editItemId).catch(() => null)
-      if (cancelled) return
-      const item = fresh || inventory.find((i: PartsInventoryItem) => i.id === editItemId)
-      if (item) {
-        setEditingItem(item as PartsInventoryItem)
-        setIsModalOpen(true)
-      }
-      // Чистим state ПОСЛЕ открытия модалки. Если делать это синхронно до await,
-      // navigate тут же ретригерит эффект → cleanup ставит cancelled=true и модалка
-      // не открывается (пользователь «выпадает» в список).
-      navigate(location.pathname + location.search, { replace: true, state: null })
-    })()
-    return () => { cancelled = true }
+    navigate(`/parts/inventory/${editItemId}/edit?source=${sourceFilter}`, { replace: true })
   }, [location.state?.editItemId])
 
   // Auto-open sell modal when navigated with sellItemId in state (from item page)
@@ -247,35 +223,11 @@ export default function PartsInventory() {
     enabled: !!partsCompanyId
   })
 
-  // Get vehicles for dropdown in modal
-  const { data: vehicles = [] } = useQuery({
-    queryKey: ['parts-vehicles-dropdown', partsCompanyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('parts_vehicles')
-        .select('id, make, model, year')
-        .eq('parts_company_id', partsCompanyId)
-        .order('created_at', { ascending: false })
-      if (error) throw error
-      return data
-    },
-    enabled: !!partsCompanyId && isModalOpen
-  })
-
-  // Get storage locations for dropdown in modal and bulk operations
+  // Get storage locations for bulk-операций (перемещение группы в место хранения)
   const { data: storageLocations = [] } = useQuery({
     queryKey: ['parts-storage-locations', partsCompanyId],
     queryFn: () => getStorageLocations(partsCompanyId!),
-    enabled: !!partsCompanyId && (isModalOpen || isBulkLocationOpen),
-  })
-
-  // Конфиг хранилища фото компании (per-company). null до применения миграции —
-  // тогда uploadPhoto откатится на локальный конфиг.
-  const { data: photoCfg = null } = useQuery({
-    queryKey: ['parts-company-photo-storage', partsCompanyId],
-    queryFn: () => getCompanyPhotoStorage(partsCompanyId!),
-    enabled: !!partsCompanyId,
-    staleTime: 1000 * 60 * 5,
+    enabled: !!partsCompanyId && isBulkLocationOpen,
   })
 
   // Get customers for sell modal
@@ -283,73 +235,6 @@ export default function PartsInventory() {
     queryKey: ['parts-customers', partsCompanyId],
     queryFn: () => getPartsCustomers(partsCompanyId!),
     enabled: !!partsCompanyId && (!!sellingItem || isBulkSellOpen),
-  })
-
-  const saveMutation = useMutation({
-    mutationFn: async ({ data, pending }: { data: CreatePartsInventoryInput; pending?: Promise<ImgbbPhoto>[]; keepOpen?: boolean }) => {
-      let saved: PartsInventoryItem
-      if (editingItem) {
-        saved = await updatePartsInventoryItem(editingItem.id, data)
-      } else {
-        if (!canCreate.part()) throw new Error(t('inventoryPage.limitReachedError'))
-        // Источник определяется вкладкой: «Запчасти» → разборка (false), «Магазин» → true.
-        // Товар, добавленный через Запчасти, ВСЕГДА разборка — даже без привязки к авто.
-        saved = await createPartsInventoryItem({ ...data, is_shop: sourceFilter === 'shop' }, partsCompanyId!)
-      }
-      // Фото, которые ещё грузились на момент сохранения — дописываем в товар в ФОНЕ
-      // (пользователь не ждал выгрузку). fire-and-forget, мутация уже завершилась.
-      // appendPartsItemPhotos перечитывает актуальные фото (без гонки перезаписи),
-      // ретраит при сбоях и, если всё же не удалось — показывает видимую ошибку,
-      // а не теряет фото молча.
-      if (pending && pending.length && saved?.id) {
-        const savedId = saved.id
-        Promise.allSettled(pending).then(results => {
-          const extra = results
-            .filter((r): r is PromiseFulfilledResult<ImgbbPhoto> => r.status === 'fulfilled')
-            .map(r => r.value)
-          const failed = results.filter(r => r.status === 'rejected').length
-          // часть файлов не выгрузилась вообще — точечные ошибки уже показаны в
-          // handlePhotoSelect; здесь дублировать не нужно.
-          if (!extra.length) return
-          appendPartsItemPhotos(savedId, extra)
-            .then(() => {
-              queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-              if (failed) toast.error(t('inventoryPage.somePhotosFailed', { n: failed }))
-            })
-            .catch(() => toast.error(t('inventoryPage.photoAttachError')))
-        })
-      }
-      return saved
-    },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success(editingItem ? t('inventoryPage.toastUpdated') : t('inventoryPage.toastAdded'))
-      // keepOpen — режим «Сохранить и добавить ещё»: модалку не закрываем, форму
-      // сбрасывает сама модалка (липкие поля сохраняются).
-      if (!variables.keepOpen) {
-        setIsModalOpen(false)
-        setEditingItem(null)
-      }
-    },
-    onError: () => {
-      toast.error(t('inventoryPage.toastSaveError'))
-    }
-  })
-
-  const saveBulkMutation = useMutation({
-    mutationFn: async (items: CreatePartsInventoryInput[]) => {
-      for (const item of items) {
-        await createPartsInventoryItem({ ...item, is_shop: sourceFilter === 'shop' }, partsCompanyId!)
-      }
-    },
-    onSuccess: (_, items) => {
-      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      toast.success(t('inventoryPage.toastBulkAdded', { n: items.length }))
-      setIsModalOpen(false)
-    },
-    onError: () => {
-      toast.error(t('inventoryPage.toastSaveError'))
-    }
   })
 
   const deleteMutation = useMutation({
@@ -647,8 +532,7 @@ export default function PartsInventory() {
 
   const handleEdit = (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
-    setEditingItem(item)
-    setIsModalOpen(true)
+    navigate(`/parts/inventory/${item.id}/edit?source=${sourceFilter}`)
   }
 
   const handleSell = (item: PartsInventoryItem, e: React.MouseEvent) => {
@@ -758,10 +642,7 @@ export default function PartsInventory() {
         actions={
           <>
             <button
-              onClick={() => {
-                setEditingItem(null)
-                setIsModalOpen(true)
-              }}
+              onClick={() => navigate(`/parts/inventory/new?source=${sourceFilter}`)}
               className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" strokeWidth={2} />
@@ -965,7 +846,7 @@ export default function PartsInventory() {
               </p>
               {!debouncedSearch && statusFilter === 'all' && (
                 <button
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={() => navigate(`/parts/inventory/new?source=${sourceFilter}`)}
                   className="mt-3 cab-btn cab-btn-ghost cab-btn-sm text-primary"
                 >
                   {t('inventoryPage.addFirst')}
@@ -1701,41 +1582,7 @@ export default function PartsInventory() {
         </div>
       )}
 
-      {/* Modal */}
-      {isModalOpen && (
-        <PartsInventoryModal
-          item={editingItem}
-          categories={categories}
-          vehicles={vehicles}
-          storageLocations={storageLocations as StorageLocation[]}
-          onClose={() => {
-            setIsModalOpen(false)
-            setEditingItem(null)
-          }}
-          onSave={(data, pending, keepOpen) => saveMutation.mutate({ data, pending, keepOpen })}
-          onSaveBulk={(items) => saveBulkMutation.mutate(items)}
-          isSaving={saveMutation.isPending || saveBulkMutation.isPending}
-          photoCfg={photoCfg}
-          initialVehicleId={editingItem ? undefined : lastVehicleId}
-          onVehicleChange={(id) => {
-            setLastVehicleId(id)
-            if (id) {
-              sessionStorage.setItem('parts_last_vehicle_id', id)
-            } else {
-              sessionStorage.removeItem('parts_last_vehicle_id')
-            }
-          }}
-          initialStorageLocationId={editingItem ? undefined : lastStorageLocationId}
-          onStorageChange={(id) => {
-            setLastStorageLocationId(id)
-            if (id) {
-              sessionStorage.setItem('parts_last_storage_location_id', id)
-            } else {
-              sessionStorage.removeItem('parts_last_storage_location_id')
-            }
-          }}
-        />
-      )}
+      {/* Добавление/редактирование запчасти — на отдельной странице (PartsInventoryEdit) */}
       <ConfirmDialog {...dialogProps} />
     </div>
   )
@@ -1830,9 +1677,11 @@ interface PartsInventoryModalProps {
   initialStorageLocationId?: string
   onStorageChange?: (id: string) => void
   photoCfg?: PhotoStorageConfig | null
+  /** Рендер как полноценная страница (в маршруте), а не модальное окно. */
+  asPage?: boolean
 }
 
-export function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange, initialStorageLocationId, onStorageChange, photoCfg }: PartsInventoryModalProps) {
+export function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange, initialStorageLocationId, onStorageChange, photoCfg, asPage }: PartsInventoryModalProps) {
   const { t } = useTranslation('cabinet')
   const [bulkMode, setBulkMode] = useState(false)
   const [showPasteArea, setShowPasteArea] = useState(false)
@@ -2013,17 +1862,29 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   }
 
   return (
-    <div className="modal-overlay">
-      <div className="absolute inset-0" />
-      <div className="modal-sheet w-full max-w-none sm:max-w-5xl z-10 h-[100dvh] sm:h-[94dvh] rounded-none sm:rounded-2xl flex flex-col overflow-hidden">
-        <div className="modal-handle sm:hidden" />
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <div className="modal-header flex-shrink-0">
+    <div className={asPage ? '' : 'modal-overlay'}>
+      {!asPage && <div className="absolute inset-0" />}
+      <div className={asPage
+        ? 'w-full max-w-3xl mx-auto'
+        : 'modal-sheet w-full max-w-none sm:max-w-5xl z-10 h-[100dvh] sm:h-[94dvh] rounded-none sm:rounded-2xl flex flex-col overflow-hidden'}>
+        {!asPage && <div className="modal-handle sm:hidden" />}
+        <form onSubmit={handleSubmit} className={asPage ? 'flex flex-col' : 'flex flex-col flex-1 min-h-0'}>
+          <div className={asPage ? 'flex items-center gap-3 mb-4' : 'modal-header flex-shrink-0'}>
+            {asPage && (
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label={t('inventoryPage.cancel')}
+                className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors flex-shrink-0"
+              >
+                <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+            )}
             <h3 className="text-base font-bold text-gray-900">
               {item ? t('inventoryPage.editPart') : t('inventoryPage.addPart')}
             </h3>
           </div>
-          <div className="modal-body flex-1 overflow-y-auto min-h-0">
+          <div className={asPage ? '' : 'modal-body flex-1 overflow-y-auto min-h-0'}>
             <div className="space-y-4">
 
               {/* Auto-filled reminder — последнее авто и/или место хранения */}
@@ -2571,23 +2432,38 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 <div>
                   <label className="form-label">{t('inventoryPage.photos')} <span className="text-gray-400 font-normal">({photos.length + pendingPhotos.length}/{MAX_PHOTOS})</span></label>
                   {(photos.length + pendingPhotos.length) >= MAX_PHOTOS ? (
-                    <div className="flex items-center justify-center gap-2 w-full h-11 border-2 border-dashed border-gray-200 bg-gray-50 rounded-xl text-sm font-medium text-gray-400">
+                    <div className="flex items-center justify-center gap-2 w-full h-24 sm:h-28 border-2 border-dashed border-gray-200 bg-gray-50 rounded-xl text-sm font-medium text-gray-400">
                       {t('inventoryPage.photoLimitReached', { max: MAX_PHOTOS })}
                     </div>
                   ) : (
-                  <label className="flex items-center justify-center gap-2 w-full h-11 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer transition-colors hover:border-slate-400 hover:bg-slate-50">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handlePhotoSelect}
-                      className="sr-only"
-                    />
-                    <Camera className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm font-medium text-gray-500">
-                      {t('inventoryPage.addPhoto', { remaining: MAX_PHOTOS - photos.length - pendingPhotos.length })}
-                    </span>
-                  </label>
+                  <div className="space-y-2">
+                    {/* Крупная зона выбора файлов (галерея/проводник) */}
+                    <label className="flex flex-col items-center justify-center gap-1.5 w-full h-24 sm:h-28 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer transition-colors hover:border-blue-400 hover:bg-gray-50">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handlePhotoSelect}
+                        className="sr-only"
+                      />
+                      <Upload className="w-7 h-7 sm:w-8 sm:h-8 text-gray-400" strokeWidth={1.5} />
+                      <span className="text-sm font-medium text-gray-600">
+                        {t('inventoryPage.addPhoto', { remaining: MAX_PHOTOS - photos.length - pendingPhotos.length })}
+                      </span>
+                    </label>
+                    {/* Снять фото камерой (мобилка) — capture открывает камеру напрямую */}
+                    <label className="sm:hidden flex items-center justify-center gap-2 w-full h-10 border border-gray-200 rounded-xl cursor-pointer text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handlePhotoSelect}
+                        className="sr-only"
+                      />
+                      <Camera className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
+                      {t('inventoryPage.takePhoto', { defaultValue: 'Сделать фото' })}
+                    </label>
+                  </div>
                   )}
                   {(photos.length > 0 || pendingPhotos.length > 0) && (
                     <div className="mt-2 flex gap-2 flex-wrap">
@@ -2641,11 +2517,11 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
             </div>
 
             </div>
-          <div className="modal-footer flex-shrink-0">
+          <div className={asPage ? 'flex items-center justify-end gap-2 mt-5 pt-4 border-t border-gray-100' : 'modal-footer flex-shrink-0'}>
             <button
               type="button"
               onClick={onClose}
-              className="modal-btn-cancel"
+              className={asPage ? 'cab-btn cab-btn-secondary' : 'modal-btn-cancel'}
             >
               {t('inventoryPage.cancel')}
             </button>
