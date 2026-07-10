@@ -125,8 +125,11 @@ export default function MarketProductPage() {
       try {
         await navigator.share({ title: part.name, url })
         return
-      } catch {
-        // отмена/недоступно — копируем ссылку
+      } catch (err) {
+        // Пользователь отменил системный шэр — это НЕ ошибка: тихо выходим,
+        // не копируем и не показываем тост. Иначе (шэр упал/недоступен) —
+        // проваливаемся ниже к копированию в буфер.
+        if (err instanceof Error && err.name === 'AbortError') return
       }
     }
     try {
