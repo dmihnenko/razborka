@@ -687,8 +687,9 @@ export default function PartsInventory() {
           </div>
         )}
 
-        {/* Status chips + cost line — на мобиле стоимость переносим под чипы (не влезала в строку) */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mb-4">
+        {/* Status chips + cost line. Суммы стоимости — только на десктопе (sm+);
+            на мобиле они засоряли интерфейс, статистика видна в других местах. */}
+        <div className="flex items-center justify-between gap-3 mb-4">
           {/* Chip-фильтры по статусу */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 flex-1 min-w-0 scrollbar-hide">
             <button
@@ -716,8 +717,8 @@ export default function PartsInventory() {
               {t('inventoryPage.chipSold')} ({stats.sold})
             </button>
           </div>
-          {/* Стоимость */}
-          <div className="flex-shrink-0 text-right">
+          {/* Стоимость — скрыта на мобиле (только sm+) */}
+          <div className="flex-shrink-0 text-right hidden sm:block">
             {statusFilter === 'all' ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-500 hidden sm:inline">{t('inventoryPage.costStock')}</span>
