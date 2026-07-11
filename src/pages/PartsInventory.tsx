@@ -762,9 +762,10 @@ export default function PartsInventory() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Сортировка — кнопки-чипы (как чипы статусов), на мобиле горизонтальный скролл.
-                  Тап по активному чипу переключает направление (стрелка ↑/↓). */}
-              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide flex-1 min-w-0 sm:flex-none pb-0.5">
+              {/* Сортировка — кнопки-чипы (как чипы статусов). Тап по активному чипу
+                  переключает направление (↑/↓). Не сокращаем: на мобиле «Статус» и
+                  «Цена» скрыты (если не влезают), «Дата»/«Название» — всегда. */}
+              <div className="flex items-center gap-1.5 min-w-0">
                 {([['date', t('inventoryPage.sortDate')], ['name', t('inventoryPage.sortName')], ['status', t('inventoryPage.sortStatus')], ['price', t('inventoryPage.sortPrice')]] as const).map(([field, label]) => (
                   <button
                     key={field}
@@ -774,7 +775,7 @@ export default function PartsInventory() {
                       else { setSortField(field); setSortDir(field === 'date' ? 'desc' : 'asc') }
                     }}
                     title={field === 'date' ? t('inventoryPage.sortDateTitle') : field === 'name' ? t('inventoryPage.sortNameTitle') : field === 'status' ? t('inventoryPage.sortStatusTitle') : t('inventoryPage.sortPriceTitle')}
-                    className={`chip flex-shrink-0 ${sortField === field ? 'chip-active' : ''}`}
+                    className={`chip flex-shrink-0 ${(field === 'status' || field === 'price') ? 'hidden sm:inline-flex' : ''} ${sortField === field ? 'chip-active' : ''}`}
                   >
                     {label}
                     {sortField === field && (
@@ -786,8 +787,8 @@ export default function PartsInventory() {
                 ))}
               </div>
 
-              {/* Плитка/список — справа, фиксированные */}
-              <div className="flex bg-gray-100 rounded-xl p-1 gap-0.5 flex-shrink-0">
+              {/* Плитка/список — на мобиле прижаты вправо */}
+              <div className="flex bg-gray-100 rounded-xl p-1 gap-0.5 flex-shrink-0 ml-auto sm:ml-0">
                 <button
                   onClick={() => setViewMode('list')}
                   className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
