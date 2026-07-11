@@ -762,61 +762,32 @@ export default function PartsInventory() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Сортировка (мобайл): компактный выпадающий список поля + кнопка направления */}
-              <div className="flex items-center gap-1.5 sm:hidden">
-                <select
-                  value={sortField}
-                  onChange={(e) => {
-                    const field = e.target.value as 'date' | 'name' | 'status' | 'price'
-                    // дата по умолчанию — новые сверху (desc); остальные — по возрастанию (asc)
-                    setSortField(field)
-                    setSortDir(field === 'date' ? 'desc' : 'asc')
-                  }}
-                  aria-label={t('inventoryPage.sortLabel', { defaultValue: 'Сортировка' })}
-                  className="form-select !w-auto h-9 py-1.5 pl-3 pr-8 text-sm"
-                >
-                  <option value="date">{t('inventoryPage.sortDate')}</option>
-                  <option value="name">{t('inventoryPage.sortName')}</option>
-                  <option value="status">{t('inventoryPage.sortStatus')}</option>
-                  <option value="price">{t('inventoryPage.sortPrice')}</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
-                  title={sortDir === 'asc' ? t('inventoryPage.sortAsc', { defaultValue: 'По возрастанию' }) : t('inventoryPage.sortDesc', { defaultValue: 'По убыванию' })}
-                  aria-label={t('inventoryPage.sortDir', { defaultValue: 'Направление сортировки' })}
-                  className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 text-primary hover:bg-gray-50 transition-colors flex-shrink-0"
-                >
-                  {sortDir === 'asc' ? <ArrowUp className="w-4 h-4" strokeWidth={1.5} /> : <ArrowDown className="w-4 h-4" strokeWidth={1.5} />}
-                </button>
-              </div>
-
-              {/* Сортировка (десктоп): сегментированный переключатель полей */}
-              <div className="hidden sm:flex bg-gray-100 rounded-xl p-1 gap-0.5">
+              {/* Сортировка — кнопки-чипы (как чипы статусов), на мобиле горизонтальный скролл.
+                  Тап по активному чипу переключает направление (стрелка ↑/↓). */}
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide flex-1 min-w-0 sm:flex-none pb-0.5">
                 {([['date', t('inventoryPage.sortDate')], ['name', t('inventoryPage.sortName')], ['status', t('inventoryPage.sortStatus')], ['price', t('inventoryPage.sortPrice')]] as const).map(([field, label]) => (
                   <button
                     key={field}
                     onClick={() => {
                       if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+                      // дата по умолчанию — новые сверху (desc); остальные — по возрастанию (asc)
                       else { setSortField(field); setSortDir(field === 'date' ? 'desc' : 'asc') }
                     }}
                     title={field === 'date' ? t('inventoryPage.sortDateTitle') : field === 'name' ? t('inventoryPage.sortNameTitle') : field === 'status' ? t('inventoryPage.sortStatusTitle') : t('inventoryPage.sortPriceTitle')}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-0.5 ${
-                      sortField === field ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`chip flex-shrink-0 ${sortField === field ? 'chip-active' : ''}`}
                   >
                     {label}
                     {sortField === field && (
                       sortDir === 'asc'
-                        ? <ArrowUp className="text-primary w-3.5 h-3.5" strokeWidth={1.5} />
-                        : <ArrowDown className="text-primary w-3.5 h-3.5" strokeWidth={1.5} />
+                        ? <ArrowUp className="w-3.5 h-3.5" strokeWidth={2} />
+                        : <ArrowDown className="w-3.5 h-3.5" strokeWidth={2} />
                     )}
                   </button>
                 ))}
               </div>
 
-              {/* Плитка/список — на мобиле прижаты вправо (ml-auto) */}
-              <div className="flex bg-gray-100 rounded-xl p-1 gap-0.5 ml-auto sm:ml-0">
+              {/* Плитка/список — справа, фиксированные */}
+              <div className="flex bg-gray-100 rounded-xl p-1 gap-0.5 flex-shrink-0">
                 <button
                   onClick={() => setViewMode('list')}
                   className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
