@@ -528,6 +528,12 @@
     background-image: none;
     background-color: hsl(var(--primary));   /* в кабинете --primary=чернила, в логине/админке=бренд */
   }
+  /* Активный чип НЕ должен темнеть текст на hover: .chip:hover{text-gray-900}
+     (псевдокласс специфичнее) перебивал text-white, а на мобиле hover «залипает»
+     после тапа → тёмный текст на тёмном фоне. Держим белый текст и на hover. */
+  .chip.active:hover, .chip-active:hover {
+    @apply text-white border-transparent;
+  }
 
   /* ── Kicker — IBM Plex Mono метки (цифры/лейблы над заголовками) ── */
   .kicker {

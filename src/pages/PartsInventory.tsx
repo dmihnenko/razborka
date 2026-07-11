@@ -687,8 +687,8 @@ export default function PartsInventory() {
           </div>
         )}
 
-        {/* Status chips + cost line */}
-        <div className="flex items-center justify-between gap-3 mb-4">
+        {/* Status chips + cost line — на мобиле стоимость переносим под чипы (не влезала в строку) */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mb-4">
           {/* Chip-фильтры по статусу */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 flex-1 min-w-0 scrollbar-hide">
             <button
