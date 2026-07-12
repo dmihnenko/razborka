@@ -3,8 +3,13 @@ import { useEffect, useRef, useState } from 'react'
 interface Options {
   /** Действие обновления (напр. queryClient.invalidateQueries). Промис держит спиннер. */
   onRefresh: () => Promise<unknown> | void
-  /** Скролл-контейнер. Если не задан — скролл документа (window). */
-  scrollRef?: React.RefObject<HTMLElement | null>
+  /**
+   * Скролл-контейнер (сам DOM-элемент).
+   *  - `undefined` — скролл документа (window);
+   *  - `null` — контейнер ещё не смонтирован (жест не вешаем, ждём);
+   *  - элемент — вешаем на него.
+   */
+  scrollEl?: HTMLElement | null
   disabled?: boolean
   /** Порог срабатывания, px (после сопротивления). */
   threshold?: number
@@ -15,19 +20,24 @@ interface Options {
  * фиксированной высоты со своим скроллом, PWA standalone гасит браузерный жест.
  * Ловим протяжку вниз у верха контейнера и по отпусканию за порогом зовём onRefresh.
  */
-export function usePullToRefresh({ onRefresh, scrollRef, disabled, threshold = 70 }: Options) {
+export function usePullToRefresh({ onRefresh, scrollEl, disabled, threshold = 70 }: Options) {
   const [pull, setPull] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   // Жестовое состояние — в ref (обработчики не должны зависеть от ререндеров).
   const st = useRef({ startY: 0, active: false, pulling: false, pull: 0, refreshing: false })
+  // scrollEl передаётся аргументом, но берём его признак «оконный» стабильно.
+  const useWindowScroll = scrollEl === undefined
 
   useEffect(() => {
     if (disabled) return
     if (typeof window === 'undefined' || !('ontouchstart' in window)) return
+    // Контейнер указан, но ещё не смонтирован — ждём (эффект перезапустится, когда появится).
+    if (!useWindowScroll && !scrollEl) return
 
+    const el = scrollEl as HTMLElement | null
     const getScrollTop = () =>
-      scrollRef?.current ? scrollRef.current.scrollTop : (window.scrollY || document.documentElement.scrollTop || 0)
-    const target: EventTarget = scrollRef?.current ?? window
+      useWindowScroll ? (window.scrollY || document.documentElement.scrollTop || 0) : (el?.scrollTop ?? 0)
+    const target: EventTarget = useWindowScroll ? window : (el as HTMLElement)
 
     const onStart = (e: TouchEvent) => {
       const s = st.current
@@ -77,7 +87,7 @@ export function usePullToRefresh({ onRefresh, scrollRef, disabled, threshold = 7
       target.removeEventListener('touchend', finish as EventListener)
       target.removeEventListener('touchcancel', finish as EventListener)
     }
-  }, [disabled, onRefresh, scrollRef, threshold])
+  }, [disabled, onRefresh, scrollEl, useWindowScroll, threshold])
 
   return { pull, refreshing, threshold }
 }

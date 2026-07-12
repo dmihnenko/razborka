@@ -67,7 +67,11 @@ export default function Layout() {
   const { t } = useTranslation('cabinet')
   const location = useLocation()
   const { hasAnalytics } = useSubscriptionLimits()
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  // Элемент скролла в state — чтобы pull-to-refresh перепривязался, когда контейнер
+  // появится после скелета (иначе хук биндится к window и жест не ловится).
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null)
+  const setScrollNode = useCallback((el: HTMLDivElement | null) => { scrollRef.current = el; setScrollEl(el) }, [])
   const isAdmin = useIsAdmin()
 
   // Сброс прокрутки внутреннего контейнера при переходе между страницами,
@@ -84,7 +88,7 @@ export default function Layout() {
 
   // Pull-to-refresh (мобайл): протяжка вниз у верха → мягкий рефетч активных запросов.
   const handlePullRefresh = useCallback(() => queryClient.invalidateQueries(), [queryClient])
-  const { pull, refreshing } = usePullToRefresh({ onRefresh: handlePullRefresh, scrollRef })
+  const { pull, refreshing } = usePullToRefresh({ onRefresh: handlePullRefresh, scrollEl })
 
   // Шторка мобильного «Меню» (доп. пункты)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -382,7 +386,7 @@ export default function Layout() {
       {/* ════════════════════════════════════════════
           SCROLLABLE COLUMN
           ════════════════════════════════════════════ */}
-      <div ref={scrollRef} className="flex-1 overflow-auto flex flex-col min-w-0">
+      <div ref={setScrollNode} className="flex-1 overflow-auto flex flex-col min-w-0">
 
         {/* ── DESKTOP TOP BAR для «Мои авто» (без сайдбара) ── */}
         {isUserCtx && (
