@@ -20,6 +20,12 @@ const escapeXml = (s) => String(s ?? '')
 const clip = (s, n) => { s = String(s ?? '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s }
 const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json; charset=utf-8' } })
 
+// Краулеры/соц-боты: только им отдаём видимый SEO-body внутрь #root. Живым
+// пользователям #root оставляем пустым — React монтируется без вспышки текста
+// (и если бандл не загрузился, не показываем ложную «текстовую страницу»).
+const BOT_RE = /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|facebot|twitterbot|telegram|whatsapp|linkedin|pinterest|embedly|quora|slackbot|vkshare|google-inspectiontool|lighthouse|yandex|baidu|duckduck|applebot|semrush|ahrefs|petalbot|ia_archiver|mediapartners/i
+const isBot = (ua) => BOT_RE.test(ua || '')
+
 // ── LiqPay: base64(UTF-8) и подпись base64(sha1(private + data + private)) ──────
 function b64encodeUtf8(str) {
   const bytes = new TextEncoder().encode(str)
@@ -300,7 +306,7 @@ async function computeMeta(route, env, pathname, lang) {
 }
 
 // ── HTMLRewriter-инъекция ────────────────────────────────────────────────────
-function injectMeta(res, meta) {
+function injectMeta(res, meta, includeBody) {
   const uk = meta.lang === 'uk'
   // hreflang-альтернативы (только для индексируемых страниц: есть altBase)
   const alts = meta.altBase
@@ -330,9 +336,10 @@ function injectMeta(res, meta) {
     .on('title', { element(e) { e.setInnerContent(meta.title) } })
     .on('meta[name="description"]', { element(e) { e.setAttribute('content', meta.description) } })
     .on('head', { element(e) { e.append(head, { html: true }) } })
-  // Серверный SEO-body внутрь #root: краулер без JS видит контент; React при гидратации
-  // (createRoot) очищает контейнер и рендерит приложение — пользователь не замечает.
-  if (meta.body) {
+  // Серверный SEO-body внутрь #root — ТОЛЬКО для краулеров (includeBody). Живому
+  // пользователю #root оставляем пустым: React (createRoot) рендерит приложение без
+  // вспышки текста, а при сбое загрузки бандла не показываем ложную текстовую страницу.
+  if (meta.body && includeBody) {
     rewriter.on('#root', { element(e) { e.setInnerContent(meta.body, { html: true }) } })
   }
   return rewriter.transform(res)
@@ -588,8 +595,11 @@ export default {
       const cache = caches.default
       // язык в ключе кеша — иначе ru/uk ответы перепутаются
       const cacheKey = new Request(url.origin + p + (lang === 'uk' ? '?lng=uk' : ''), request)
+      // Бот получает видимый SEO-body (и его версию не кешируем — она отличается);
+      // живому пользователю отдаём чистый #root и кешируем именно эту версию.
+      const bot = isBot(request.headers.get('user-agent') || '')
       const hit = await cache.match(cacheKey)
-      if (hit) return hit
+      if (hit && !bot) return hit
       try {
         const assetRes = await env.ASSETS.fetch(request) // SPA-fallback → index.html
         const ct = assetRes.headers.get('content-type') || ''
@@ -597,7 +607,7 @@ export default {
         let meta
         try { meta = await computeMeta(route, env, p, lang) }
         catch { meta = { title: BRAND, description: 'Razborka.net — маркет автозапчастей от авторазборок.', canonical: SITE + p, altBase: undefined, lang, ogImage: DEFAULT_OG, ogType: 'website', robots: null, jsonld: null } }
-        const out = injectMeta(assetRes, meta)
+        const out = injectMeta(assetRes, meta, bot)
         const headers = new Headers(out.headers)
         // Тело меняется при инъекции → снять заголовки исходного (возможно сжатого) ответа,
         // иначе клиент попытается распаковать уже-распакованное (битая страница). CF пересожмёт сам.
@@ -607,7 +617,7 @@ export default {
         headers.set('cache-control', 'public, max-age=300, must-revalidate')
         // Несуществующая сущность → честный 404 (а не soft-404 200+noindex), не кешируем
         const resp = new Response(out.body, { status: meta.notFound ? 404 : 200, headers })
-        if (!meta.notFound) ctx.waitUntil(cache.put(cacheKey, resp.clone()))
+        if (!meta.notFound && !bot) ctx.waitUntil(cache.put(cacheKey, resp.clone()))
         return resp
       } catch {
         return env.ASSETS.fetch(request) // на любой сбой — обычная статика, сайт не падает
