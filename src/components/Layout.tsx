@@ -87,7 +87,14 @@ export default function Layout() {
   const queryClient = useQueryClient()
 
   // Pull-to-refresh (мобайл): протяжка вниз у верха → мягкий рефетч активных запросов.
-  const handlePullRefresh = useCallback(() => queryClient.invalidateQueries(), [queryClient])
+  const handlePullRefresh = useCallback(async () => {
+    const started = Date.now()
+    // Форсируем рефетч активных запросов (мимо staleTime) и ждём завершения.
+    await queryClient.refetchQueries({ type: 'active' })
+    const left = 500 - (Date.now() - started)
+    if (left > 0) await new Promise(r => setTimeout(r, left)) // спиннер заметен
+    toast.success(t('chrome.refreshed', { defaultValue: 'Обновлено' }))
+  }, [queryClient, t])
   const { pull, refreshing } = usePullToRefresh({ onRefresh: handlePullRefresh, scrollEl })
 
   // Шторка мобильного «Меню» (доп. пункты)

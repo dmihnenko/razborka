@@ -1,6 +1,7 @@
 import { Suspense, useCallback, useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { PullToRefreshIndicator } from '@/components/ui/PullToRefreshIndicator'
 import { useTranslation } from 'react-i18next'
@@ -44,7 +45,13 @@ function MarketLayoutInner() {
   const showFav = useFeatureFlag('market_favorites')
   // Pull-to-refresh (мобайл, скролл документа): протяжка вниз → мягкий рефетч.
   const qc = useQueryClient()
-  const handlePullRefresh = useCallback(() => qc.invalidateQueries(), [qc])
+  const handlePullRefresh = useCallback(async () => {
+    const started = Date.now()
+    await qc.refetchQueries({ type: 'active' })
+    const left = 500 - (Date.now() - started)
+    if (left > 0) await new Promise(r => setTimeout(r, left))
+    toast.success(t('common.refreshed', { defaultValue: 'Обновлено' }))
+  }, [qc, t])
   const { pull, refreshing } = usePullToRefresh({ onRefresh: handlePullRefresh })
   const [search, setSearch] = useState('')
   const isHome = location.pathname === '/market' || location.pathname === '/market/'
