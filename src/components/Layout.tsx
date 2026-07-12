@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   LogOut,
@@ -26,6 +26,8 @@ import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { useAdminNotifications } from '../hooks/useAdminNotifications'
 import { useSubscriptionLimits } from '../hooks/useSubscription'
 import NotificationBanner from './NotificationBanner'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
+import { PullToRefreshIndicator } from './ui/PullToRefreshIndicator'
 import { Logo } from './brand/Logo'
 import { BRAND } from '@/config/brand'
 
@@ -79,6 +81,10 @@ export default function Layout() {
   // иначе на жёстком обновлении (Ctrl+Shift+F5) мелькает экран приветствия/выбора роли.
   const showSkeleton = authLoading || (!!user && !profile)
   const queryClient = useQueryClient()
+
+  // Pull-to-refresh (мобайл): протяжка вниз у верха → мягкий рефетч активных запросов.
+  const handlePullRefresh = useCallback(() => queryClient.invalidateQueries(), [queryClient])
+  const { pull, refreshing } = usePullToRefresh({ onRefresh: handlePullRefresh, scrollRef })
 
   // Шторка мобильного «Меню» (доп. пункты)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -309,6 +315,7 @@ export default function Layout() {
       // логин/админку не задевает. Фон — --cab-bg.
       style={{ '--primary': '223 14% 10%', background: 'var(--cab-bg)' } as React.CSSProperties}
     >
+      <PullToRefreshIndicator pull={pull} refreshing={refreshing} />
 
       {/* ════════════════════════════════════════════
           DESKTOP SIDEBAR — Ink & Signal, md:w-16 → lg:w-64

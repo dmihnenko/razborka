@@ -1,5 +1,8 @@
-import { Suspense, useState, type FormEvent } from 'react'
+import { Suspense, useCallback, useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
+import { PullToRefreshIndicator } from '@/components/ui/PullToRefreshIndicator'
 import { useTranslation } from 'react-i18next'
 import { LayoutDashboard, LogIn, Search, ShoppingCart, Heart } from 'lucide-react'
 import { Logo } from '@/components/brand/Logo'
@@ -39,6 +42,10 @@ function MarketLayoutInner() {
     : getDefaultRouteForRoles(roleNames)
   const { totalCount } = useCart()
   const showFav = useFeatureFlag('market_favorites')
+  // Pull-to-refresh (мобайл, скролл документа): протяжка вниз → мягкий рефетч.
+  const qc = useQueryClient()
+  const handlePullRefresh = useCallback(() => qc.invalidateQueries(), [qc])
+  const { pull, refreshing } = usePullToRefresh({ onRefresh: handlePullRefresh })
   const [search, setSearch] = useState('')
   const isHome = location.pathname === '/market' || location.pathname === '/market/'
   // Каталог и разборки имеют свой поиск/листинг — поиск в шапке скрываем, чтобы не дублировать.
@@ -81,6 +88,7 @@ function MarketLayoutInner() {
 
   return (
     <div className="market min-h-dvh flex flex-col">
+      <PullToRefreshIndicator pull={pull} refreshing={refreshing} />
 
       {/* ── Шапка ──────────────────────────────────────────────────────── */}
       <header
