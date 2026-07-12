@@ -28,8 +28,10 @@ export interface PartsApplication {
   rejectionReason?: string
 }
 
+// Лимиты демо-режима — ДОЛЖНЫ совпадать с планом «Демо» в БД (subscriptions),
+// который триггер assign_demo_subscription_to_parts выдаёт новой разборке.
 export const DEMO_LIMITS = {
-  vehicles: 2,
-  parts: 10,
+  vehicles: 3,
+  parts: 50,
   workers: 2,
 } as const
