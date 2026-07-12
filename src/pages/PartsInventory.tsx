@@ -763,8 +763,8 @@ export default function PartsInventory() {
 
             <div className="flex items-center gap-2">
               {/* Сортировка — кнопки-чипы (как чипы статусов). Тап по активному чипу
-                  переключает направление (↑/↓). Не сокращаем: на мобиле «Статус» и
-                  «Цена» скрыты (если не влезают), «Дата»/«Название» — всегда. */}
+                  переключает направление (↑/↓). Не сокращаем: на мобиле скрыт только
+                  «Статус»; «Дата»/«Название»/«Цена» — всегда. */}
               <div className="flex items-center gap-1.5 min-w-0">
                 {([['date', t('inventoryPage.sortDate')], ['name', t('inventoryPage.sortName')], ['status', t('inventoryPage.sortStatus')], ['price', t('inventoryPage.sortPrice')]] as const).map(([field, label]) => (
                   <button
@@ -775,7 +775,7 @@ export default function PartsInventory() {
                       else { setSortField(field); setSortDir(field === 'date' ? 'desc' : 'asc') }
                     }}
                     title={field === 'date' ? t('inventoryPage.sortDateTitle') : field === 'name' ? t('inventoryPage.sortNameTitle') : field === 'status' ? t('inventoryPage.sortStatusTitle') : t('inventoryPage.sortPriceTitle')}
-                    className={`chip flex-shrink-0 ${(field === 'status' || field === 'price') ? 'hidden sm:inline-flex' : ''} ${sortField === field ? 'chip-active' : ''}`}
+                    className={`chip flex-shrink-0 ${field === 'status' ? 'hidden sm:inline-flex' : ''} ${sortField === field ? 'chip-active' : ''}`}
                   >
                     {label}
                     {sortField === field && (
