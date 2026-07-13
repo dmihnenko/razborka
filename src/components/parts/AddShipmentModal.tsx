@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { X, Search, Check } from 'lucide-react'
 import {
   createShipment, addShipmentItems, searchInventoryForShipment,
-  trackTtn, refreshShipmentStatus, type InventoryPick,
+  trackTtn, refreshShipmentStatus, formatTtn, vehicleLabel, type InventoryPick,
 } from '@/services/shipmentsService'
 import { getNpApiKey } from '@/utils/npApiKey'
 
@@ -34,7 +34,7 @@ export default function AddShipmentModal({ partsCompanyId, onClose }: Props) {
 
   const createM = useMutation({
     mutationFn: async () => {
-      const num = ttn.trim()
+      const num = ttn.replace(/\D/g, '')
       if (!num) throw new Error(t('shipments.ttnRequired', { defaultValue: 'Введите номер ТТН' }))
       const id = await createShipment({
         parts_company_id: partsCompanyId,
@@ -80,8 +80,8 @@ export default function AddShipmentModal({ partsCompanyId, onClose }: Props) {
         <div className="modal-body space-y-4">
           <div>
             <label className="form-label">{t('shipments.ttnLabel', { defaultValue: 'Номер ТТН' })}</label>
-            <input value={ttn} onChange={e => setTtn(e.target.value)} className="form-input"
-              placeholder="20450000000000" autoFocus inputMode="numeric" />
+            <input value={ttn} onChange={e => setTtn(formatTtn(e.target.value))} className="form-input tabular-nums"
+              placeholder="59 0017 0979 2706" autoFocus inputMode="numeric" />
           </div>
 
           <div>
@@ -101,7 +101,9 @@ export default function AddShipmentModal({ partsCompanyId, onClose }: Props) {
                 {selected.map(s => (
                   <span key={s.id} className="inline-flex items-center gap-1 pl-2 pr-1 py-1 rounded-lg text-xs font-medium"
                     style={{ background: 'var(--cab-signal-weak)', color: 'var(--cab-signal)' }}>
-                    <span className="truncate max-w-[160px]">{s.name}</span>
+                    <span className="truncate max-w-[190px]">
+                      {s.name}{vehicleLabel(s.vehicle) ? ` · ${vehicleLabel(s.vehicle)}` : ''}
+                    </span>
                     <button type="button" onClick={() => toggle(s)} aria-label={t('shipments.close', { defaultValue: 'Убрать' })}>
                       <X className="w-3 h-3" strokeWidth={2} />
                     </button>
@@ -133,7 +135,11 @@ export default function AddShipmentModal({ partsCompanyId, onClose }: Props) {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm truncate" style={{ color: 'var(--cab-ink)' }}>{it.name}</span>
-                      {it.part_number && <span className="block text-[11px] text-gray-400 truncate">{it.part_number}</span>}
+                      {(it.part_number || vehicleLabel(it.vehicle)) && (
+                        <span className="block text-[11px] text-gray-400 truncate">
+                          {[it.part_number, vehicleLabel(it.vehicle)].filter(Boolean).join(' · ')}
+                        </span>
+                      )}
                     </span>
                   </button>
                 )

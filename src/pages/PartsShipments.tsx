@@ -9,7 +9,7 @@ import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { Spinner } from '@/components/ui/Spinner'
 import { formatDate } from '@/utils/date'
-import { getShipments, trackTtn, refreshShipmentStatus, type PartsShipment } from '@/services/shipmentsService'
+import { getShipments, trackTtn, refreshShipmentStatus, formatTtn, vehicleLabel, type PartsShipment } from '@/services/shipmentsService'
 import AddShipmentModal from '@/components/parts/AddShipmentModal'
 import { useHydrateNpSettings } from '@/hooks/useHydrateNpSettings'
 import { getNpApiKey } from '@/utils/npApiKey'
@@ -162,7 +162,7 @@ export default function PartsShipments() {
                 style={{ borderBottom: '1px solid var(--cab-border)' }}>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold tabular-nums" style={{ color: ink }}>{s.ttn}</span>
+                    <span className="text-sm font-bold tabular-nums" style={{ color: ink }}>{formatTtn(s.ttn)}</span>
                     <a href={`https://novaposhta.ua/tracking/?cargo_number=${s.ttn}`} target="_blank" rel="noreferrer"
                       className="inline-flex" style={{ color: ink3 }} title={t('shipments.openNp')}>
                       <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -176,7 +176,10 @@ export default function PartsShipments() {
                     <p className="text-[11px] mt-0.5 truncate flex items-center gap-1" style={{ color: ink3 }}>
                       <Package className="w-3 h-3 flex-shrink-0" strokeWidth={1.5} />
                       <span className="truncate">
-                        {s.items.map(i => i.item?.name).filter(Boolean).slice(0, 3).join(', ')}
+                        {s.items.map(i => {
+                          const v = vehicleLabel(i.item?.vehicle)
+                          return i.item?.name ? (v ? `${i.item.name} (${v})` : i.item.name) : null
+                        }).filter(Boolean).slice(0, 3).join(', ')}
                         {s.items.length > 3 && ` +${s.items.length - 3}`}
                       </span>
                     </p>

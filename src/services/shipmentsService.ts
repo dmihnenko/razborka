@@ -7,10 +7,29 @@ import { supabase } from '@/lib/supabase'
 
 const NP_API_URL = 'https://api.novaposhta.ua/v2.0/json/'
 
+/** Маска ТТН: 14 цифр группами 2-4-4-4 → «59 0017 0979 2706». Для хранения/НП снимаем пробелы. */
+export function formatTtn(v: string): string {
+  const d = String(v ?? '').replace(/\D/g, '').slice(0, 14)
+  return [d.slice(0, 2), d.slice(2, 6), d.slice(6, 10), d.slice(10, 14)].filter(Boolean).join(' ')
+}
+
+/** Краткое авто-происхождение запчасти (для отличия «с какой машины»). */
+export interface VehicleBrief {
+  make: string | null
+  model: string | null
+  year: number | null
+}
+
 /** Позиция склада, привязанная к ТТН (опционально). */
 export interface ShipmentItemRef {
   inventory_item_id: string
-  item: { id: string; name: string; part_number: string | null } | null
+  item: { id: string; name: string; part_number: string | null; vehicle: VehicleBrief | null } | null
+}
+
+/** Метка авто: «Make Model Year» или '' если авто не привязано. */
+export function vehicleLabel(v: VehicleBrief | null | undefined): string {
+  if (!v) return ''
+  return [v.make, v.model, v.year].filter(Boolean).join(' ')
 }
 
 export interface PartsShipment {
@@ -36,7 +55,7 @@ export interface PartsShipment {
 export async function getShipments(partsCompanyId: string): Promise<PartsShipment[]> {
   const { data, error } = await supabase
     .from('parts_shipments')
-    .select('*, items:parts_shipment_items(inventory_item_id, item:parts_inventory(id, name, part_number))')
+    .select('*, items:parts_shipment_items(inventory_item_id, item:parts_inventory(id, name, part_number, vehicle:parts_vehicles(make, model, year)))')
     .eq('parts_company_id', partsCompanyId)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -69,16 +88,21 @@ export async function addShipmentItems(
   if (error) throw error
 }
 
-export interface InventoryPick { id: string; name: string; part_number: string | null }
+export interface InventoryPick {
+  id: string
+  name: string
+  part_number: string | null
+  vehicle: VehicleBrief | null
+}
 
-/** Поиск позиций склада для выбора в ТТН (по названию/номеру). */
+/** Поиск позиций склада для выбора в ТТН (по названию/номеру), с авто-происхождением. */
 export async function searchInventoryForShipment(
   partsCompanyId: string,
   query: string,
 ): Promise<InventoryPick[]> {
   let q = supabase
     .from('parts_inventory')
-    .select('id, name, part_number')
+    .select('id, name, part_number, vehicle:parts_vehicles(make, model, year)')
     .eq('parts_company_id', partsCompanyId)
     .order('created_at', { ascending: false })
     .limit(20)
@@ -86,7 +110,7 @@ export async function searchInventoryForShipment(
   if (term) q = q.or(`name.ilike.%${term}%,part_number.ilike.%${term}%`)
   const { data, error } = await q
   if (error) throw error
-  return (data as InventoryPick[]) ?? []
+  return (data as unknown as InventoryPick[]) ?? []
 }
 
 export interface NpTrackStatus {
