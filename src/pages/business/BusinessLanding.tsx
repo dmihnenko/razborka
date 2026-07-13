@@ -16,7 +16,7 @@ import {
   Warehouse,
   Zap,
 } from 'lucide-react'
-import { getPublicTariffs } from '@/services/businessService'
+import { getPublicTariffs, getDefaultCompanyPlanPublic } from '@/services/businessService'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/utils/currency'
@@ -170,6 +170,23 @@ export function BusinessLanding() {
     staleTime: 5 * 60_000,
   })
 
+  // Эффективный тариф по умолчанию для новых разборок (Демо или триал N мес).
+  const { data: defaultPlan } = useQuery({
+    queryKey: ['publicDefaultPlan'],
+    queryFn: getDefaultCompanyPlanPublic,
+    staleTime: 5 * 60_000,
+  })
+  // Промо-инфа для тизера/блока: пока грузится — фолбэк на DEMO_LIMITS.
+  const fmtLimit = (n: number | null | undefined) => (n == null ? '∞' : String(n))
+  const promo = {
+    isTrial: !!defaultPlan && !defaultPlan.is_demo && !!defaultPlan.months,
+    name: defaultPlan?.name ?? '',
+    months: defaultPlan?.months ?? 0,
+    vehicles: fmtLimit(defaultPlan ? defaultPlan.max_vehicles : DEMO_LIMITS.vehicles),
+    parts: fmtLimit(defaultPlan ? defaultPlan.max_parts : DEMO_LIMITS.parts),
+    workers: fmtLimit(defaultPlan ? defaultPlan.max_workers : DEMO_LIMITS.workers),
+  }
+
   const handleApply = () => {
     if (user) {
       navigate('/business/apply')
@@ -274,7 +291,9 @@ export function BusinessLanding() {
             {/* Демо-режим тизер */}
             <div className="mt-8 inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm bg-[var(--cab-signal-weak)] text-[var(--cab-signal)]">
               <CheckCircle2 className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-              {t('landing.heroDemoTeaser', { vehicles: DEMO_LIMITS.vehicles, parts: DEMO_LIMITS.parts })}
+              {promo.isTrial
+                ? t('landing.heroTrialTeaser', { months: promo.months, plan: promo.name })
+                : t('landing.heroDemoTeaser', { vehicles: promo.vehicles, parts: promo.parts })}
             </div>
           </div>
         </motion.section>
@@ -329,13 +348,15 @@ export function BusinessLanding() {
                 <Zap className="w-5 h-5" strokeWidth={1.5} />
               </span>
               <div className="flex-1">
-                <p className="font-bold text-sm text-[var(--cab-signal)]">{t('landing.demoBlockTitle')}</p>
+                <p className="font-bold text-sm text-[var(--cab-signal)]">
+                  {promo.isTrial
+                    ? t('landing.trialBlockTitle', { months: promo.months, plan: promo.name })
+                    : t('landing.demoBlockTitle')}
+                </p>
                 <p className="text-xs mt-0.5 text-gray-600">
-                  {t('landing.demoBlockText', {
-                    vehicles: DEMO_LIMITS.vehicles,
-                    parts: DEMO_LIMITS.parts,
-                    workers: DEMO_LIMITS.workers,
-                  })}
+                  {promo.isTrial
+                    ? t('landing.trialBlockText', { months: promo.months, plan: promo.name, vehicles: promo.vehicles, parts: promo.parts, workers: promo.workers })
+                    : t('landing.demoBlockText', { vehicles: promo.vehicles, parts: promo.parts, workers: promo.workers })}
                 </p>
               </div>
               <button

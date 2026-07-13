@@ -1,5 +1,12 @@
 import { supabase } from '@/lib/supabase'
-import type { Tariff, PartsApplicationInput, PartsApplication } from '@/types/business'
+import type { Tariff, PartsApplicationInput, PartsApplication, PublicDefaultPlan } from '@/types/business'
+
+/** Эффективный тариф по умолчанию для новых разборок (Демо или триал N мес). */
+export async function getDefaultCompanyPlanPublic(): Promise<PublicDefaultPlan | null> {
+  const { data, error } = await supabase.rpc('get_default_company_plan_public')
+  if (error) throw error
+  return (data as PublicDefaultPlan | null) ?? null
+}
 
 /** Строка subscriptions из БД (snake_case) — выбранные в getPublicTariffs колонки */
 interface SubscriptionRow {

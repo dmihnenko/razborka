@@ -28,10 +28,23 @@ export interface PartsApplication {
   rejectionReason?: string
 }
 
-// Лимиты демо-режима — ДОЛЖНЫ совпадать с планом «Демо» в БД (subscriptions),
-// который триггер assign_demo_subscription_to_parts выдаёт новой разборке.
+// Лимиты демо-режима — фолбэк на время загрузки. Реальные лимиты берём с сервера
+// (getDefaultCompanyPlanPublic), т.к. админ может назначить триал платного тарифа.
 export const DEMO_LIMITS = {
   vehicles: 3,
   parts: 50,
   workers: 2,
 } as const
+
+/** Эффективный план по умолчанию для новых разборок (публичный, для лендинга). */
+export interface PublicDefaultPlan {
+  name: string
+  price: number
+  is_demo: boolean
+  max_vehicles: number | null
+  max_parts: number | null
+  max_workers: number | null
+  has_analytics: boolean
+  /** Срок триала в месяцах; null = бессрочно (демо/бесплатный). */
+  months: number | null
+}
