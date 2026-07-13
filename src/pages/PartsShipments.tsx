@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { RefreshCw, ExternalLink, PackageOpen } from 'lucide-react'
+import { RefreshCw, ExternalLink, PackageOpen, Plus, Package } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
@@ -10,6 +10,7 @@ import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { Spinner } from '@/components/ui/Spinner'
 import { formatDate } from '@/utils/date'
 import { getShipments, trackTtn, refreshShipmentStatus, type PartsShipment } from '@/services/shipmentsService'
+import AddShipmentModal from '@/components/parts/AddShipmentModal'
 import { useHydrateNpSettings } from '@/hooks/useHydrateNpSettings'
 import { getNpApiKey } from '@/utils/npApiKey'
 
@@ -32,6 +33,7 @@ export default function PartsShipments() {
   const queryClient = useQueryClient()
   useHydrateNpSettings(partsCompanyId)
   const [tab, setTab] = useState<'active' | 'delivered' | 'problem' | 'all'>('active')
+  const [addOpen, setAddOpen] = useState(false)
 
   const { data: shipments = [], isLoading } = useQuery({
     queryKey: ['parts-shipments', partsCompanyId],
@@ -100,15 +102,25 @@ export default function PartsShipments() {
         subtitle={t('pages.shipmentsSub', { n: counts.all })}
         backPath="/parts/dashboard"
         actions={
-          <button
-            onClick={() => refreshAllMutation.mutate()}
-            disabled={refreshAllMutation.isPending || counts.active === 0}
-            className="cab-btn cab-btn-sm cab-btn-primary"
-            title={t('shipments.checkAll')}
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshAllMutation.isPending ? 'animate-spin' : ''}`} strokeWidth={1.5} />
-            <span className="hidden sm:inline">{t('shipments.checkAll')}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => refreshAllMutation.mutate()}
+              disabled={refreshAllMutation.isPending || counts.active === 0}
+              className="cab-btn cab-btn-sm cab-btn-secondary"
+              title={t('shipments.checkAll')}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshAllMutation.isPending ? 'animate-spin' : ''}`} strokeWidth={1.5} />
+              <span className="hidden sm:inline">{t('shipments.checkAll')}</span>
+            </button>
+            <button
+              onClick={() => setAddOpen(true)}
+              className="cab-btn cab-btn-sm cab-btn-primary"
+              title={t('shipments.addTitle', { defaultValue: 'Добавить ТТН' })}
+            >
+              <Plus className="w-3.5 h-3.5" strokeWidth={2} />
+              <span className="hidden sm:inline">{t('shipments.addTitle', { defaultValue: 'Добавить ТТН' })}</span>
+            </button>
+          </div>
         }
       />
 
@@ -160,6 +172,15 @@ export default function PartsShipments() {
                     {s.recipient_name || '—'}
                     {s.order_id && <Link to={`/parts/orders/${s.order_id}`} className="ml-2 font-semibold" style={{ color: 'var(--cab-signal)' }}>{t('shipments.order')}</Link>}
                   </p>
+                  {s.items && s.items.length > 0 && (
+                    <p className="text-[11px] mt-0.5 truncate flex items-center gap-1" style={{ color: ink3 }}>
+                      <Package className="w-3 h-3 flex-shrink-0" strokeWidth={1.5} />
+                      <span className="truncate">
+                        {s.items.map(i => i.item?.name).filter(Boolean).slice(0, 3).join(', ')}
+                        {s.items.length > 3 && ` +${s.items.length - 3}`}
+                      </span>
+                    </p>
+                  )}
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className={`text-xs font-semibold ${isProblem(s) ? 'text-red-700' : isDelivered(s) ? 'text-emerald-700' : ''}`}
@@ -177,6 +198,10 @@ export default function PartsShipments() {
           </div>
         )}
       </div>
+
+      {addOpen && partsCompanyId && (
+        <AddShipmentModal partsCompanyId={partsCompanyId} onClose={() => setAddOpen(false)} />
+      )}
     </div>
   )
 }
