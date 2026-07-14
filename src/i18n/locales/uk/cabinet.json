@@ -212,7 +212,18 @@
     "close": "Закрити",
     "cancel": "Скасувати",
     "saving": "Збереження…",
-    "add": "Додати"
+    "add": "Додати",
+    "ttnCopied": "Номер скопійовано — вставте в пошук НП",
+    "colStatus": "Статус",
+    "colOrder": "№ Замовлення",
+    "colClient": "Клієнт",
+    "colPhone": "Телефон",
+    "colCity": "Місто",
+    "colWarehouse": "Відділення",
+    "colCod": "Накладений платіж",
+    "colCreated": "Створено",
+    "notFound": "ТТН не знайдено",
+    "backToList": "До списку"
   },
   "ordersPage": {
     "noOrders": "Немає замовлень",

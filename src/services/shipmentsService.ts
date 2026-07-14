@@ -26,6 +26,13 @@ export interface ShipmentItemRef {
   item: { id: string; name: string; part_number: string | null; vehicle: VehicleBrief | null } | null
 }
 
+/** Заказ, к которому привязана ТТН (если есть) — для №заказа и клиента. */
+export interface ShipmentOrderRef {
+  id: string
+  order_number: string | null
+  customer: { full_name: string | null; phone: string | null } | null
+}
+
 /** Метка авто: «Make Model Year» или '' если авто не привязано. */
 export function vehicleLabel(v: VehicleBrief | null | undefined): string {
   if (!v) return ''
@@ -50,20 +57,45 @@ export interface PartsShipment {
   created_at: string
   /** Запчасти в накладной (необязательно) */
   items?: ShipmentItemRef[]
+  /** Привязанный заказ (если ТТН создана из заказа) */
+  order?: ShipmentOrderRef | null
 }
+
+/** Эффективный клиент ТТН: из заказа, иначе получатель. */
+export function shipmentClient(s: PartsShipment): string {
+  return s.order?.customer?.full_name || s.recipient_name || ''
+}
+/** Эффективный телефон ТТН: из заказа, иначе получатель. */
+export function shipmentPhone(s: PartsShipment): string {
+  return s.order?.customer?.phone || s.recipient_phone || ''
+}
+
+const SHIPMENT_SELECT =
+  '*, items:parts_shipment_items(inventory_item_id, item:parts_inventory(id, name, part_number, vehicle:parts_vehicles(make, model, year))), order:parts_orders(id, order_number, customer:parts_customers(full_name, phone))'
 
 export async function getShipments(partsCompanyId: string): Promise<PartsShipment[]> {
   const { data, error } = await supabase
     .from('parts_shipments')
-    .select('*, items:parts_shipment_items(inventory_item_id, item:parts_inventory(id, name, part_number, vehicle:parts_vehicles(make, model, year)))')
+    .select(SHIPMENT_SELECT)
     .eq('parts_company_id', partsCompanyId)
     .order('created_at', { ascending: false })
   if (error) throw error
-  return (data as PartsShipment[]) ?? []
+  return (data as unknown as PartsShipment[]) ?? []
 }
 
-// Поля таблицы parts_shipments для вставки (без агрегата items).
-type ShipmentInsert = Omit<PartsShipment, 'id' | 'created_at' | 'status_updated_at' | 'last_checked_at' | 'items'>
+/** Одна ТТН по id — для страницы информации. */
+export async function getShipment(id: string): Promise<PartsShipment | null> {
+  const { data, error } = await supabase
+    .from('parts_shipments')
+    .select(SHIPMENT_SELECT)
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  return (data as unknown as PartsShipment | null) ?? null
+}
+
+// Поля таблицы parts_shipments для вставки (без агрегатов items/order).
+type ShipmentInsert = Omit<PartsShipment, 'id' | 'created_at' | 'status_updated_at' | 'last_checked_at' | 'items' | 'order'>
 
 /** Создать ТТН, вернуть её id (для привязки запчастей). */
 export async function createShipment(input: ShipmentInsert): Promise<string> {

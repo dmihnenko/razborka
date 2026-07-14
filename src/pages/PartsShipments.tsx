@@ -9,7 +9,7 @@ import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { Spinner } from '@/components/ui/Spinner'
 import { formatDate } from '@/utils/date'
-import { getShipments, trackTtn, refreshShipmentStatus, formatTtn, vehicleLabel, type PartsShipment } from '@/services/shipmentsService'
+import { getShipments, trackTtn, refreshShipmentStatus, formatTtn, vehicleLabel, shipmentClient, shipmentPhone, type PartsShipment } from '@/services/shipmentsService'
 import AddShipmentModal from '@/components/parts/AddShipmentModal'
 import { useHydrateNpSettings } from '@/hooks/useHydrateNpSettings'
 import { getNpApiKey } from '@/utils/npApiKey'
@@ -77,6 +77,13 @@ export default function PartsShipments() {
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : t('shipments.statusError')),
   })
+
+  // «Открыть на НП» + копируем номер (сайт НП не всегда автозаполняет поиск из URL).
+  const openNp = (ttn: string) => {
+    navigator.clipboard?.writeText(ttn).catch(() => { /* ignore */ })
+    toast.success(t('shipments.ttnCopied', { defaultValue: 'Номер скопирован — вставьте в поиск НП' }))
+    window.open(`https://novaposhta.ua/tracking/?cargo_number=${ttn}`, '_blank', 'noopener')
+  }
 
   if (!partsCompanyId) return <PartsAccessDenied />
 
@@ -162,16 +169,30 @@ export default function PartsShipments() {
                 style={{ borderBottom: '1px solid var(--cab-border)' }}>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold tabular-nums" style={{ color: ink }}>{formatTtn(s.ttn)}</span>
-                    <a href={`https://novaposhta.ua/tracking/?cargo_number=${s.ttn}`} target="_blank" rel="noreferrer"
+                    <Link to={`/parts/shipments/${s.id}`}
+                      className="text-sm font-bold tabular-nums hover:underline" style={{ color: ink }}>
+                      {formatTtn(s.ttn)}
+                    </Link>
+                    <button type="button" onClick={() => openNp(s.ttn)}
                       className="inline-flex" style={{ color: ink3 }} title={t('shipments.openNp')}>
                       <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.5} />
-                    </a>
+                    </button>
                   </div>
-                  <p className="text-xs mt-0.5 truncate" style={{ color: ink2 }}>
-                    {s.recipient_name || '—'}
-                    {s.order_id && <Link to={`/parts/orders/${s.order_id}`} className="ml-2 font-semibold" style={{ color: 'var(--cab-signal)' }}>{t('shipments.order')}</Link>}
-                  </p>
+                  {(() => {
+                    const client = shipmentClient(s), phone = shipmentPhone(s)
+                    if (!client && !phone && !s.order) return null
+                    return (
+                      <p className="text-xs mt-0.5 truncate flex items-center gap-2 flex-wrap" style={{ color: ink2 }}>
+                        {client && <span className="truncate">{client}</span>}
+                        {phone && <span className="tabular-nums">{phone}</span>}
+                        {s.order && (
+                          <Link to={`/parts/orders/${s.order.id}`} className="font-semibold" style={{ color: 'var(--cab-signal)' }}>
+                            №{s.order.order_number}
+                          </Link>
+                        )}
+                      </p>
+                    )
+                  })()}
                   {s.items && s.items.length > 0 && (
                     <p className="text-[11px] mt-0.5 truncate flex items-center gap-1" style={{ color: ink3 }}>
                       <Package className="w-3 h-3 flex-shrink-0" strokeWidth={1.5} />

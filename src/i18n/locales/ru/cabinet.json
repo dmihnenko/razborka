@@ -212,7 +212,18 @@
     "close": "Закрыть",
     "cancel": "Отмена",
     "saving": "Сохранение…",
-    "add": "Добавить"
+    "add": "Добавить",
+    "ttnCopied": "Номер скопирован — вставьте в поиск НП",
+    "colStatus": "Статус",
+    "colOrder": "№ Заказа",
+    "colClient": "Клиент",
+    "colPhone": "Телефон",
+    "colCity": "Город",
+    "colWarehouse": "Отделение",
+    "colCod": "Наложенный платёж",
+    "colCreated": "Создана",
+    "notFound": "ТТН не найдена",
+    "backToList": "К списку"
   },
   "ordersPage": {
     "noOrders": "Нет заказов",
