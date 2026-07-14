@@ -88,15 +88,25 @@ export default function PartsShipmentDetails() {
         subtitle={shipment.status || t('shipments.noData')}
         backPath="/parts/shipments"
         actions={
-          <button
-            onClick={() => refreshMutation.mutate()}
-            disabled={refreshMutation.isPending}
-            className="cab-btn cab-btn-sm cab-btn-primary"
-            title={t('shipments.refresh')}
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshMutation.isPending ? 'animate-spin' : ''}`} strokeWidth={1.5} />
-            <span className="hidden sm:inline">{t('shipments.refresh')}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={openNp}
+              className="cab-btn cab-btn-sm cab-btn-secondary"
+              title={t('shipments.openNp')}
+            >
+              <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.5} />
+              <span className="hidden sm:inline">{t('shipments.openNp')}</span>
+            </button>
+            <button
+              onClick={() => refreshMutation.mutate()}
+              disabled={refreshMutation.isPending}
+              className="cab-btn cab-btn-sm cab-btn-primary"
+              title={t('shipments.refresh')}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshMutation.isPending ? 'animate-spin' : ''}`} strokeWidth={1.5} />
+              <span className="hidden sm:inline">{t('shipments.refresh')}</span>
+            </button>
+          </div>
         }
       />
 
@@ -132,10 +142,6 @@ export default function PartsShipmentDetails() {
             <Row label={t('shipments.colCod', { defaultValue: 'Наложенный платёж' })}>{cod.toLocaleString('ru-RU')} ₴</Row>
           )}
           <Row label={t('shipments.colCreated', { defaultValue: 'Создана' })}>{formatDate(shipment.created_at)}</Row>
-
-          <button onClick={openNp} className="cab-btn cab-btn-secondary cab-btn-sm mt-3">
-            <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.5} /> {t('shipments.openNp')}
-          </button>
         </div>
 
         {shipment.items && shipment.items.length > 0 && (
