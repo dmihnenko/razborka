@@ -93,8 +93,7 @@ export default function Layout() {
     await queryClient.refetchQueries({ type: 'active' })
     const left = 500 - (Date.now() - started)
     if (left > 0) await new Promise(r => setTimeout(r, left)) // спиннер заметен
-    toast.success(t('chrome.refreshed', { defaultValue: 'Обновлено' }))
-  }, [queryClient, t])
+  }, [queryClient])
   const { pull, refreshing } = usePullToRefresh({ onRefresh: handlePullRefresh, scrollEl })
 
   // Шторка мобильного «Меню» (доп. пункты)

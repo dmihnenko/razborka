@@ -1,7 +1,6 @@
 import { Suspense, useCallback, useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { PullToRefreshIndicator } from '@/components/ui/PullToRefreshIndicator'
 import { useTranslation } from 'react-i18next'
@@ -50,8 +49,7 @@ function MarketLayoutInner() {
     await qc.refetchQueries({ type: 'active' })
     const left = 500 - (Date.now() - started)
     if (left > 0) await new Promise(r => setTimeout(r, left))
-    toast.success(t('common.refreshed', { defaultValue: 'Обновлено' }))
-  }, [qc, t])
+  }, [qc])
   const { pull, refreshing } = usePullToRefresh({ onRefresh: handlePullRefresh })
   const [search, setSearch] = useState('')
   const isHome = location.pathname === '/market' || location.pathname === '/market/'
