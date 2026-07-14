@@ -81,7 +81,7 @@ export default function AddShipmentModal({ partsCompanyId, onClose }: Props) {
           <div>
             <label className="form-label">{t('shipments.ttnLabel', { defaultValue: 'Номер ТТН' })}</label>
             <input value={ttn} onChange={e => setTtn(formatTtn(e.target.value))} className="form-input tabular-nums"
-              placeholder="59 0017 0979 2706" autoFocus inputMode="numeric" />
+              placeholder="00 0000 0000 0000" autoFocus inputMode="numeric" />
           </div>
 
           <div>
