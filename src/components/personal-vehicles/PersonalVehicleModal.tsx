@@ -19,6 +19,7 @@ export default function PersonalVehicleModal({ isOpen, onClose, onSuccess, userI
     year: new Date().getFullYear(),
     vin: '',
     photoUrl: '',
+    carfaxUrl: '',
     usdRate: undefined
   })
   const [uploading, setUploading] = useState(false)
@@ -166,6 +167,20 @@ export default function PersonalVehicleModal({ isOpen, onClose, onSuccess, userI
             {formData.vin && formData.vin.length !== 17 && (
               <p className="text-red-600 text-xs sm:text-sm mt-1">VIN должен содержать 17 символов</p>
             )}
+          </div>
+
+          <div>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+              Ссылка на CarFax отчёт <span className="text-gray-400 font-normal">(необязательно)</span>
+            </label>
+            <input
+              type="url"
+              inputMode="url"
+              value={formData.carfaxUrl}
+              onChange={(e) => setFormData({ ...formData, carfaxUrl: e.target.value })}
+              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="https://www.carfax.com/..."
+            />
           </div>
 
           <div>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Share2, Trash2, DollarSign, Upload, Images } from 'lucide-react'
+import { ArrowLeft, Share2, Trash2, DollarSign, Upload, Images, FileText } from 'lucide-react'
 import { PublicBrandHeader } from '@/components/PublicBrandHeader'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPersonalVehicleById, deletePersonalVehicle, markVehicleAsSold, updatePersonalVehicle } from '@/services/personalVehicles'
@@ -30,6 +30,8 @@ export default function PublicPersonalVehicleView() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showPhotoMenu, setShowPhotoMenu] = useState(false)
   const [showPhotoPicker, setShowPhotoPicker] = useState(false)
+  const [showCarfaxModal, setShowCarfaxModal] = useState(false)
+  const [carfaxInput, setCarfaxInput] = useState('')
 
   const { data: vehicle, isLoading } = useQuery({
     queryKey: ['personal-vehicle', vehicleId],
@@ -70,6 +72,18 @@ export default function PublicPersonalVehicleView() {
     onError: (error) => {
       console.error('Failed to update photo:', error)
       alert('Ошибка при обновлении фото')
+    }
+  })
+
+  const saveCarfaxMutation = useMutation({
+    mutationFn: (url: string) => updatePersonalVehicle(vehicleId!, { carfaxUrl: url }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['personal-vehicle', vehicleId] })
+      setShowCarfaxModal(false)
+    },
+    onError: (error) => {
+      console.error('Failed to save carfax:', error)
+      alert('Ошибка при сохранении ссылки')
     }
   })
 
@@ -290,6 +304,30 @@ export default function PublicPersonalVehicleView() {
                   </div>
                 )}
 
+                {(vehicle.carfaxUrl || (isOwner && !vehicle.isSold)) && (
+                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">CarFax</p>
+                      {vehicle.carfaxUrl ? (
+                        <a href={vehicle.carfaxUrl} target="_blank" rel="noreferrer"
+                          className="text-sm font-semibold inline-flex items-center gap-1.5" style={{ color: 'var(--cab-signal)' }}>
+                          <FileText className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} /> Открыть отчёт
+                        </a>
+                      ) : (
+                        <p className="text-sm text-gray-400">Не добавлен</p>
+                      )}
+                    </div>
+                    {isOwner && !vehicle.isSold && (
+                      <button
+                        onClick={() => { setCarfaxInput(vehicle.carfaxUrl || ''); setShowCarfaxModal(true) }}
+                        className="flex-shrink-0 text-xs font-semibold text-gray-600 hover:text-gray-900 px-2.5 py-1.5 rounded border border-gray-200 hover:bg-white transition-colors"
+                      >
+                        {vehicle.carfaxUrl ? 'Изменить' : 'Добавить'}
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {vehicle.isSold && vehicle.salePrice ? (() => {
                   // Рассчитываем Grand Total один раз
                   const usdRate = vehicle.usdRate || 1
@@ -489,6 +527,42 @@ export default function PublicPersonalVehicleView() {
           vehicleId={vehicle.id}
           userId={vehicle.userId}
         />
+      )}
+
+      {showCarfaxModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowCarfaxModal(false)}>
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-4">Ссылка на CarFax отчёт</h3>
+            <input
+              type="url"
+              inputMode="url"
+              value={carfaxInput}
+              onChange={(e) => setCarfaxInput(e.target.value)}
+              className="form-input"
+              placeholder="https://www.carfax.com/..."
+              autoFocus
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => saveCarfaxMutation.mutate(carfaxInput.trim())}
+                disabled={saveCarfaxMutation.isPending}
+                className="btn-primary flex-1"
+              >
+                {saveCarfaxMutation.isPending ? 'Сохранение...' : 'Сохранить'}
+              </button>
+              <button onClick={() => setShowCarfaxModal(false)} className="btn-secondary flex-1">Отмена</button>
+            </div>
+            {vehicle.carfaxUrl && (
+              <button
+                onClick={() => saveCarfaxMutation.mutate('')}
+                disabled={saveCarfaxMutation.isPending}
+                className="mt-3 text-xs text-red-600 hover:underline"
+              >
+                Удалить ссылку
+              </button>
+            )}
+          </div>
+        </div>
       )}
 
       {showSellModal && (

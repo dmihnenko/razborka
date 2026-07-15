@@ -20,6 +20,7 @@ interface PersonalVehicleRow {
   year: number
   vin: string | null
   photo_url: string | null
+  carfax_url: string | null
   usd_rate: number | null
   lot_items: PersonalCostItem[] | null
   parts_items: PersonalCostItem[] | null
@@ -74,6 +75,7 @@ function transformVehicleFromDb(dbVehicle: PersonalVehicleRow): PersonalVehicle 
     // null → undefined (truthy-проверки у потребителей идентичны).
     vin: dbVehicle.vin ?? undefined,
     photoUrl: dbVehicle.photo_url ?? undefined,
+    carfaxUrl: dbVehicle.carfax_url ?? undefined,
     usdRate: dbVehicle.usd_rate ?? undefined,
     lotItems: dbVehicle.lot_items || [],
     partsItems: dbVehicle.parts_items || [],
@@ -185,6 +187,7 @@ export async function createPersonalVehicle(
   const vehicleData = {
     user_id: userId,
     make_model: input.makeModel,
+    carfax_url: input.carfaxUrl || null,
     year: input.year,
     vin: input.vin || null,
     photo_url: input.photoUrl || null,
@@ -223,6 +226,7 @@ export async function updatePersonalVehicle(
   if (input.year !== undefined) updateData.year = input.year
   if (input.vin !== undefined) updateData.vin = input.vin || null
   if (input.photoUrl !== undefined) updateData.photo_url = input.photoUrl || null
+  if (input.carfaxUrl !== undefined) updateData.carfax_url = input.carfaxUrl || null
   if (input.usdRate !== undefined) updateData.usd_rate = input.usdRate || null
   if (input.lotItems !== undefined) updateData.lot_items = input.lotItems
   if (input.partsItems !== undefined) updateData.parts_items = input.partsItems

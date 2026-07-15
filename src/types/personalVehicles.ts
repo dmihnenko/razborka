@@ -28,6 +28,7 @@ export interface PersonalVehicle {
   year: number
   vin?: string
   photoUrl?: string
+  carfaxUrl?: string
   usdRate?: number
   lotItems: PersonalCostItem[]
   partsItems: PersonalCostItem[]
@@ -59,6 +60,7 @@ export interface CreatePersonalVehicleInput {
   year: number
   vin?: string
   photoUrl?: string
+  carfaxUrl?: string
   usdRate?: number
 }
 
@@ -67,6 +69,7 @@ export interface UpdatePersonalVehicleInput {
   year?: number
   vin?: string
   photoUrl?: string
+  carfaxUrl?: string
   usdRate?: number
   lotItems?: PersonalCostItem[]
   partsItems?: PersonalCostItem[]
