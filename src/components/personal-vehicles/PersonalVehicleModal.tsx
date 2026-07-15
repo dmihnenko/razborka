@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useDropzone } from 'react-dropzone'
 import { X, Upload } from 'lucide-react'
 import { uploadToImgBB, validateImageFile } from '@/utils/imageStorage'
 import type { CreatePersonalVehicleInput } from '@/types/personalVehicles'
 import { useAlert } from '../CustomAlert'
 import { useBlockScroll } from '@/hooks/useBlockScroll'
+
+const MAX_CREATE_PHOTOS = 15
 
 interface Props {
   isOpen: boolean
@@ -24,30 +27,42 @@ export default function PersonalVehicleModal({ isOpen, onClose, onSuccess, userI
   })
   const [uploading, setUploading] = useState(false)
   const [creating, setCreating] = useState(false)
+  // Несколько фото: [0] — главное, остальные уходят в галерею авто.
+  const [photos, setPhotos] = useState<string[]>([])
 
   useBlockScroll(isOpen)
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const validation = validateImageFile(file)
-    if (!validation.valid) {
-      showAlert(validation.error || 'Ошибка валидации', 'error')
-      return
-    }
-
+  const onDrop = useCallback(async (accepted: File[]) => {
+    setPhotos(prev => {
+      const remaining = MAX_CREATE_PHOTOS - prev.length
+      if (remaining <= 0) showAlert(`Максимум ${MAX_CREATE_PHOTOS} фото`, 'error')
+      return prev
+    })
     setUploading(true)
     try {
-      const url = await uploadToImgBB(file)
-      setFormData({ ...formData, photoUrl: url })
+      for (const file of accepted) {
+        // Уважаем лимит на каждой итерации (state читаем через функциональный сеттер ниже).
+        const validation = validateImageFile(file)
+        if (!validation.valid) { showAlert(`${file.name}: ${validation.error || 'ошибка'}`, 'error'); continue }
+        const url = await uploadToImgBB(file)
+        setPhotos(prev => prev.length >= MAX_CREATE_PHOTOS ? prev : [...prev, url])
+      }
     } catch (error) {
       console.error('Failed to upload photo:', error)
       showAlert('Ошибка при загрузке фото', 'error')
     } finally {
       setUploading(false)
     }
-  }
+  }, [showAlert])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp'] },
+    multiple: true,
+    disabled: uploading,
+  })
+
+  const removePhoto = (i: number) => setPhotos(prev => prev.filter((_, idx) => idx !== i))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -74,24 +89,34 @@ export default function PersonalVehicleModal({ isOpen, onClose, onSuccess, userI
 
     setCreating(true)
     try {
-      const { createPersonalVehicle } = await import('@/services/personalVehicles')
+      const { createPersonalVehicle, addVehiclePhoto } = await import('@/services/personalVehicles')
       const vehicleId = await createPersonalVehicle(userId, {
         ...formData,
         vin: formData.vin || undefined,
+        photoUrl: photos[0] || undefined,
         usdRate: formData.usdRate || undefined
       })
-      
+
+      // Остальные фото (кроме главного) — в галерею авто (альбом «USA» — дефолтный).
+      const extra = photos.slice(1)
+      for (const url of extra) {
+        try { await addVehiclePhoto(vehicleId, 'usaPhotos', { url, uploadedAt: new Date().toISOString() }) }
+        catch (err) { console.error('Failed to add gallery photo:', err) }
+      }
+
       onSuccess(vehicleId)
       onClose()
-      
+
       // Сброс формы
       setFormData({
         makeModel: '',
         year: new Date().getFullYear(),
         vin: '',
         photoUrl: '',
+        carfaxUrl: '',
         usdRate: undefined
       })
+      setPhotos([])
     } catch (error) {
       console.error('Failed to create vehicle:', error)
       showAlert('Ошибка при создании автомобиля', 'error')
@@ -200,39 +225,49 @@ export default function PersonalVehicleModal({ isOpen, onClose, onSuccess, userI
 
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-              Фото автомобиля
+              Фото автомобиля <span className="text-gray-400 font-normal">(можно несколько; первое — главное)</span>
             </label>
-            {formData.photoUrl ? (
-              <div className="relative">
-                <img
-                  src={formData.photoUrl}
-                  alt="Vehicle"
-                  className="w-full h-32 sm:h-40 md:h-48 object-cover rounded-lg"
-                />
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, photoUrl: '' })}
-                  className="absolute top-1 sm:top-2 right-1 sm:right-2 p-1 sm:p-2 bg-red-700 text-white rounded-full hover:bg-red-800 transition-colors"
-                >
-                  <X className="w-3 h-3 sm:w-4 sm:h-4" />
-                </button>
+
+            {/* Зона drag-drop + мультивыбор */}
+            {photos.length < MAX_CREATE_PHOTOS && (
+              <div
+                {...getRootProps()}
+                className={`flex flex-col items-center justify-center w-full h-24 sm:h-28 md:h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                  isDragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                }`}
+              >
+                <input {...getInputProps()} />
+                <Upload className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-gray-400 mb-1 sm:mb-2" />
+                <p className="text-xs sm:text-sm text-gray-600 text-center px-2">
+                  {uploading
+                    ? 'Загрузка...'
+                    : isDragActive
+                      ? 'Отпустите, чтобы загрузить'
+                      : 'Перетащите фото или нажмите для выбора'}
+                </p>
               </div>
-            ) : (
-              <label className="flex flex-col items-center justify-center w-full h-24 sm:h-28 md:h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-gray-50 transition-colors">
-                <div className="flex flex-col items-center justify-center pt-3 sm:pt-4 md:pt-5 pb-4 sm:pb-5 md:pb-6">
-                  <Upload className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-gray-400 mb-1 sm:mb-2" />
-                  <p className="text-xs sm:text-sm text-gray-600">
-                    {uploading ? 'Загрузка...' : 'Нажмите для выбора фото'}
-                  </p>
-                </div>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handlePhotoUpload}
-                  disabled={uploading}
-                />
-              </label>
+            )}
+
+            {photos.length > 0 && (
+              <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {photos.map((url, i) => (
+                  <div key={url + i} className="relative aspect-square">
+                    <img src={url} alt={`Фото ${i + 1}`} className="w-full h-full object-cover rounded-lg border border-gray-200" />
+                    {i === 0 && (
+                      <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-white" style={{ background: 'var(--cab-signal, #3538cd)' }}>
+                        Главное
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(i)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-600 text-white rounded-md flex items-center justify-center hover:bg-red-700 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
