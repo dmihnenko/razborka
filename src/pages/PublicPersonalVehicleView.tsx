@@ -247,7 +247,14 @@ export default function PublicPersonalVehicleView() {
                           className="w-full flex items-center gap-2 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                           <Upload className="w-4 h-4" />
-                          Изменить
+                          Загрузить новое
+                        </button>
+                        <button
+                          onClick={() => { setShowPhotoMenu(false); setShowPhotoPicker(true) }}
+                          className="w-full flex items-center gap-2 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
+                        >
+                          <Images className="w-4 h-4" />
+                          Выбрать из галереи
                         </button>
                         {vehicle.photoUrl && (
                           <button
