@@ -283,55 +283,55 @@ export default function PublicPersonalVehicleView() {
             </div>
 
             {/* Информация */}
-            <div className="p-4 sm:p-6 md:p-8 flex flex-col">
+            <div className="p-3 sm:p-4 md:p-5 flex flex-col">
               <div className="flex-1">
-                <div className="flex items-start justify-between mb-1 sm:mb-2">
-                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
-                    {vehicle.makeModel}
-                  </h1>
-                </div>
-                <div className="flex items-center justify-between mb-4 sm:mb-6">
-                  <p className="text-base sm:text-lg md:text-xl text-gray-600">{vehicle.year}</p>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="min-w-0">
+                    <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 leading-tight truncate">
+                      {vehicle.makeModel}
+                    </h1>
+                    <p className="text-sm text-gray-500">{vehicle.year}</p>
+                  </div>
                   {isOwner && (
                     <button
                       onClick={() => setShowRateModal(true)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-base font-semibold rounded transition-colors border border-[var(--cab-border)] text-gray-700 hover:bg-gray-50"
+                      className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 text-sm font-semibold rounded-lg transition-colors border border-[var(--cab-border)] text-gray-700 hover:bg-gray-50"
                       title="Установить курс USD"
                     >
-                      <DollarSign className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
+                      <DollarSign className="w-3.5 h-3.5 text-gray-400" strokeWidth={1.5} />
                       {vehicle.usdRate ? `${vehicle.usdRate}` : 'USD'}
                     </button>
                   )}
                 </div>
 
                 {vehicle.vin && (
-                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="text-xs sm:text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">VIN</p>
-                    <p className="text-xs sm:text-sm md:text-base font-mono font-semibold text-gray-900 break-all">{vehicle.vin}</p>
+                  <div className="mb-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 flex items-baseline gap-2">
+                    <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide flex-shrink-0">VIN</p>
+                    <p className="text-xs sm:text-sm font-mono font-semibold text-gray-900 break-all leading-tight">{vehicle.vin}</p>
                   </div>
                 )}
 
                 {(vehicle.carfaxUrl || (isOwner && !vehicle.isSold)) && (
-                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">CarFax</p>
+                  <div className="mb-2.5 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between gap-2">
+                    <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide flex-shrink-0">CarFax</p>
+                    <div className="flex items-center gap-2 min-w-0">
                       {vehicle.carfaxUrl ? (
                         <a href={vehicle.carfaxUrl} target="_blank" rel="noreferrer"
-                          className="text-sm font-semibold inline-flex items-center gap-1.5" style={{ color: 'var(--cab-signal)' }}>
-                          <FileText className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} /> Открыть отчёт
+                          className="text-xs sm:text-sm font-semibold inline-flex items-center gap-1" style={{ color: 'var(--cab-signal)' }}>
+                          <FileText className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} /> Открыть отчёт
                         </a>
                       ) : (
-                        <p className="text-sm text-gray-400">Не добавлен</p>
+                        <span className="text-xs text-gray-400">Не добавлен</span>
+                      )}
+                      {isOwner && !vehicle.isSold && (
+                        <button
+                          onClick={() => { setCarfaxInput(vehicle.carfaxUrl || ''); setShowCarfaxModal(true) }}
+                          className="flex-shrink-0 text-xs font-semibold text-gray-500 hover:text-gray-900 transition-colors"
+                        >
+                          {vehicle.carfaxUrl ? 'Изменить' : 'Добавить'}
+                        </button>
                       )}
                     </div>
-                    {isOwner && !vehicle.isSold && (
-                      <button
-                        onClick={() => { setCarfaxInput(vehicle.carfaxUrl || ''); setShowCarfaxModal(true) }}
-                        className="flex-shrink-0 text-xs font-semibold text-gray-600 hover:text-gray-900 px-2.5 py-1.5 rounded border border-gray-200 hover:bg-white transition-colors"
-                      >
-                        {vehicle.carfaxUrl ? 'Изменить' : 'Добавить'}
-                      </button>
-                    )}
                   </div>
                 )}
 
@@ -415,21 +415,21 @@ export default function PublicPersonalVehicleView() {
                   const grandTotal = totalUSD + (totalUAH / usdRate)
 
                   return (
-                    <div className="bg-gray-50 rounded-lg p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 border border-gray-200">
-                      <h4 className="font-bold text-gray-900 mb-3 sm:mb-4 text-base sm:text-lg">Общая стоимость</h4>
-                      <div className="space-y-1.5 sm:space-y-2">
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <h4 className="font-bold text-gray-900 mb-2 text-sm">Общая стоимость</h4>
+                      <div className="space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm sm:text-base text-gray-700">Total USD:</span>
-                          <span className="font-semibold text-sm sm:text-base text-gray-900 tabular-nums">${totalUSD.toFixed(2)}</span>
+                          <span className="text-sm text-gray-700">Total USD:</span>
+                          <span className="font-semibold text-sm text-gray-900 tabular-nums">${totalUSD.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm sm:text-base text-gray-700">Total UAH:</span>
-                          <span className="font-semibold text-sm sm:text-base text-gray-900 tabular-nums">{Number(totalUAH || 0).toFixed(2)} грн</span>
+                          <span className="text-sm text-gray-700">Total UAH:</span>
+                          <span className="font-semibold text-sm text-gray-900 tabular-nums">{Number(totalUAH || 0).toFixed(2)} грн</span>
                         </div>
-                        <div className="border-t border-gray-300 pt-2 sm:pt-3 mt-2 sm:mt-3">
+                        <div className="border-t border-gray-300 pt-1.5 mt-1.5">
                           <div className="flex justify-between items-center">
-                            <span className="font-bold text-gray-900 text-base sm:text-lg">Grand Total:</span>
-                            <span className="font-bold text-lg sm:text-xl md:text-2xl tabular-nums text-[var(--cab-signal)]">${grandTotal.toFixed(2)}</span>
+                            <span className="font-bold text-gray-900 text-sm sm:text-base">Grand Total:</span>
+                            <span className="font-bold text-lg sm:text-xl tabular-nums text-[var(--cab-signal)]">${grandTotal.toFixed(2)}</span>
                           </div>
                         </div>
                       </div>
