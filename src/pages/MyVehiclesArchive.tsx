@@ -77,7 +77,7 @@ export default function MyVehiclesArchive() {
               return (
                 <div
                   key={vehicle.id}
-                  onClick={() => navigate(`/public/personal-vehicle/${vehicle.id}`)}
+                  onClick={() => navigate(`/my-vehicles/${vehicle.id}`)}
                   className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer transform transition-all hover:shadow-xl hover:-translate-y-1"
                 >
                   {/* Метка "ПРОДАН" */}

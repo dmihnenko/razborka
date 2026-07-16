@@ -246,6 +246,7 @@ function App() {
           {/* Личные автомобили */}
           <Route path="my-vehicles" element={<MyVehicles />} />
           <Route path="my-vehicles/archive" element={<MyVehiclesArchive />} />
+          <Route path="my-vehicles/:vehicleId" element={<PublicPersonalVehicleView />} />
           <Route path="my-orders" element={<MyOrders />} />
 
           {/* Parts (Авторазборка) - Полностью отдельная система */}

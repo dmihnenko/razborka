@@ -49,18 +49,20 @@ export default function MyVehicles() {
     enabled: !!profile?.id,
   })
 
+  // Владельца ведём на страницу авто ВНУТРИ кабинета (оболочка не пропадает);
+  // публичный роут /public/personal-vehicle/:id остаётся для шэра по ссылке.
   const handleEdit = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    navigate(`/public/personal-vehicle/${id}`)
+    navigate(`/my-vehicles/${id}`)
   }
 
   const handleCardClick = (id: string) => {
-    navigate(`/public/personal-vehicle/${id}`)
+    navigate(`/my-vehicles/${id}`)
   }
 
   const handleCreateSuccess = (vehicleId: string) => {
     queryClient.invalidateQueries({ queryKey: ['personal-vehicles'] })
-    navigate(`/public/personal-vehicle/${vehicleId}`)
+    navigate(`/my-vehicles/${vehicleId}`)
   }
 
   const renderClassicCard = (vehicle: PersonalVehicle) => {
