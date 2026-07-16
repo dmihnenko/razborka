@@ -197,7 +197,7 @@ export default function PublicPersonalVehicleView() {
                   onClick={handleDeletePhoto}
                   title="Удалить главное фото"
                   aria-label="Удалить главное фото"
-                  className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 transition-colors"
+                  className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 w-8 h-8 flex items-center justify-center rounded-md bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 transition-colors"
                 >
                   <X className="w-4 h-4" strokeWidth={2} />
                 </button>
