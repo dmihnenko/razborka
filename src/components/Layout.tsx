@@ -331,12 +331,14 @@ export default function Layout() {
           DESKTOP SIDEBAR — Ink & Signal, md:w-16 → lg:w-64
           ════════════════════════════════════════════ */}
       <aside
-        className={`${isUserCtx ? 'hidden' : 'hidden md:flex'} md:flex-col md:w-16 lg:w-64 flex-shrink-0`}
+        className="hidden md:flex md:flex-col md:w-16 lg:w-64 flex-shrink-0"
         style={{ background: 'var(--cab-surface)', borderRight: '1px solid var(--cab-border)' }}
       >
-        {/* Шапка сайдбара: у админа — переключатель разделов вместо лого; иначе логотип */}
+        {/* Шапка сайдбара: «Мои авто» и админ — переключатель разделов; иначе логотип */}
         <div className="flex items-center justify-center px-2 lg:px-3 h-14" style={{ borderBottom: '1px solid var(--cab-border)' }}>
-          {isAdmin ? (
+          {isUserCtx ? (
+            <ContextSwitcher current={currentCtx} />
+          ) : isAdmin ? (
             <ContextSwitcher current={currentCtx} variant="segment" segLabels="lg" />
           ) : (
             <Link to="/parts/dashboard" className="inline-flex items-center flex-shrink-0 min-w-0" aria-label={BRAND.name}>
@@ -346,9 +348,27 @@ export default function Layout() {
           )}
         </div>
 
-        {/* Nav — сгруппирован: Работа / База / Система */}
+        {/* Nav: «Мои авто» — плоский список; разборка/админ — по группам Работа/База/Система */}
         <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
-          {PARTS_NAV_GROUPS.map((grp) => {
+          {isUserCtx ? (
+            <div className="space-y-0.5">
+              {filteredNavigation.map((item) => {
+                const Icon = item.icon
+                const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/')
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    title={navLabel(item)}
+                    className={`cab-nav justify-center lg:justify-start active:scale-[0.98] ${isActive ? 'cab-nav-active' : ''}`}
+                  >
+                    <Icon className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} />
+                    <span className="hidden lg:block truncate">{navLabel(item)}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          ) : PARTS_NAV_GROUPS.map((grp) => {
             const items = filteredNavigation.filter((i) => (i.group ?? 'system') === grp.id)
             if (items.length === 0) return null
             return (
@@ -394,18 +414,13 @@ export default function Layout() {
           ════════════════════════════════════════════ */}
       <div ref={setScrollNode} className="flex-1 overflow-auto flex flex-col min-w-0">
 
-        {/* ── DESKTOP TOP BAR для «Мои авто» (без сайдбара) ── */}
+        {/* ── DESKTOP TOP BAR для «Мои авто»: переключатель разделов и выход теперь
+            в сайдбаре — здесь только язык и уведомления. ── */}
         {isUserCtx && (
-          <div className="hidden md:flex items-center justify-between h-14 px-6 bg-white border-b border-gray-200">
-            <ContextSwitcher current={currentCtx} />
-            <div className="flex items-center gap-2">
-              <NotificationsBell userId={profile?.id} />
-              <button onClick={handleLogout}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-500 bg-gray-100 rounded-xl hover:bg-red-50 hover:text-red-600 transition-all active:scale-[0.97]"
-              >
-                <LogOut className="w-4 h-4" strokeWidth={1.5} /> {t('chrome.logout')}
-              </button>
-            </div>
+          <div className="hidden md:flex items-center justify-end gap-3 h-14 px-6"
+            style={{ background: 'var(--cab-surface)', borderBottom: '1px solid var(--cab-border)' }}>
+            <LanguageSwitcher />
+            <NotificationsBell userId={profile?.id} />
           </div>
         )}
 
