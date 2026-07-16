@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Share2, Trash2, DollarSign, Upload, Images, FileText } from 'lucide-react'
+import { ArrowLeft, Share2, Trash2, DollarSign, Images, FileText, X } from 'lucide-react'
 import { PublicBrandHeader } from '@/components/PublicBrandHeader'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getPersonalVehicleById, deletePersonalVehicle, markVehicleAsSold, updatePersonalVehicle } from '@/services/personalVehicles'
-import { uploadToImgBB, validateImageFile } from '@/utils/imageStorage'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import PersonalVehicleExpenses from '@/components/personal-vehicles/PersonalVehicleExpenses'
 import VehicleGallery from '@/components/personal-vehicles/VehicleGallery'
@@ -24,11 +23,9 @@ export default function PublicPersonalVehicleView() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [showSellModal, setShowSellModal] = useState(false)
   const [salePrice, setSalePrice] = useState('')
-  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [showRateModal, setShowRateModal] = useState(false)
   const [rateInput, setRateInput] = useState('')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [showPhotoMenu, setShowPhotoMenu] = useState(false)
   const [showPhotoPicker, setShowPhotoPicker] = useState(false)
   const [showCarfaxModal, setShowCarfaxModal] = useState(false)
   const [carfaxInput, setCarfaxInput] = useState('')
@@ -125,38 +122,10 @@ export default function PublicPersonalVehicleView() {
     }
   }
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const validation = validateImageFile(file)
-    if (!validation.valid) {
-      alert(validation.error)
-      return
-    }
-
-    setUploadingPhoto(true)
-    try {
-      const url = await uploadToImgBB(file)
-      updatePhotoMutation.mutate(url)
-    } catch (error) {
-      console.error('Failed to upload photo:', error)
-      alert('Ошибка при загрузке фото')
-    } finally {
-      setUploadingPhoto(false)
-    }
-  }
-
   const handleDeletePhoto = async () => {
-    const ok = await showConfirm({ message: 'Удалить фото автомобиля?', danger: true })
+    const ok = await showConfirm({ message: 'Удалить главное фото автомобиля?', danger: true })
     if (!ok) return
     updatePhotoMutation.mutate('')
-    setShowPhotoMenu(false)
-  }
-
-  const handleChangePhoto = () => {
-    document.getElementById('photo-upload-input')?.click()
-    setShowPhotoMenu(false)
   }
 
   const handleUpdate = () => {
@@ -223,62 +192,15 @@ export default function PublicPersonalVehicleView() {
                   </span>
                 </div>
               )}
-              {isOwner && !vehicle.isSold && (
-                <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-4">
-                  <button
-                    onClick={() => setShowPhotoMenu(!showPhotoMenu)}
-                    className="flex items-center gap-1 sm:gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm text-white rounded-md transition-colors shadow-lg hover:opacity-90"
-                    style={{ background: 'var(--cab-signal)' }}
-                  >
-                    <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline">{uploadingPhoto ? 'Загрузка...' : 'Изменить фото'}</span>
-                    <span className="sm:hidden">{uploadingPhoto ? '...' : 'Фото'}</span>
-                  </button>
-                  
-                  {showPhotoMenu && (
-                    <>
-                      <div 
-                        className="fixed inset-0 z-40" 
-                        onClick={() => setShowPhotoMenu(false)}
-                      />
-                      <div className="absolute bottom-full mb-2 right-0 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50 min-w-[160px]">
-                        <button
-                          onClick={handleChangePhoto}
-                          className="w-full flex items-center gap-2 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <Upload className="w-4 h-4" />
-                          Загрузить новое
-                        </button>
-                        <button
-                          onClick={() => { setShowPhotoMenu(false); setShowPhotoPicker(true) }}
-                          className="w-full flex items-center gap-2 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
-                        >
-                          <Images className="w-4 h-4" />
-                          Выбрать из галереи
-                        </button>
-                        {vehicle.photoUrl && (
-                          <button
-                            onClick={handleDeletePhoto}
-                            className="w-full flex items-center gap-2 px-4 py-3 text-left transition-colors border-t border-gray-100 hover:bg-gray-50"
-                            style={{ color: 'var(--cab-danger)' }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Удалить
-                          </button>
-                        )}
-                      </div>
-                    </>
-                  )}
-                  
-                  <input
-                    id="photo-upload-input"
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    disabled={uploadingPhoto}
-                  />
-                </div>
+              {isOwner && !vehicle.isSold && vehicle.photoUrl && (
+                <button
+                  onClick={handleDeletePhoto}
+                  title="Удалить главное фото"
+                  aria-label="Удалить главное фото"
+                  className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 transition-colors"
+                >
+                  <X className="w-4 h-4" strokeWidth={2} />
+                </button>
               )}
             </div>
 
