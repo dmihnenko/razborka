@@ -44,8 +44,9 @@ function showUpdateToast(ver: string) {
   if (updateShown) return
   updateShown = true
 
-  toast(`Update #${ver}`, {
-    duration: 1000,
+  toast(`Обновлено · #${ver}`, {
+    duration: 2500,
+    position: 'bottom-right',
     onDismiss: () => {
       // Пользователь закрыл — дать возможность показать снова через 5 мин
       setTimeout(() => { updateShown = false }, REDISPLAY_MS)
@@ -145,7 +146,7 @@ export default function VersionChecker() {
       if (!hadController) return // первая установка SW на этой странице — reload не нужен
       pendingHash = ''
       updateShown = false
-      toast('Обновление…', { duration: 1500 })
+      toast('Обновление…', { duration: 1500, position: 'bottom-right' })
       setTimeout(() => { void reloadApp() }, 800)
     }
 
