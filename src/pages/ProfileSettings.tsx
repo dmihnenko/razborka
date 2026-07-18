@@ -338,7 +338,6 @@ export default function ProfileSettings({ embedded = false }: { embedded?: boole
                 value={passwordForm.newPassword}
                 onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                 className="form-input pr-10"
-                placeholder="Новый пароль"
                 autoComplete="new-password"
               />
               <button
@@ -362,7 +361,6 @@ export default function ProfileSettings({ embedded = false }: { embedded?: boole
                 value={passwordForm.confirmPassword}
                 onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                 className="form-input pr-10"
-                placeholder="Повторите пароль"
                 autoComplete="new-password"
               />
               <button

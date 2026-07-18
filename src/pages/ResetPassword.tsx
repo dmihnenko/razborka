@@ -174,7 +174,6 @@ export default function ResetPassword() {
                       value={confirm}
                       onChange={(e) => { setConfirm(e.target.value); if (fieldError) setFieldError(null) }}
                       required
-                      placeholder="Повторите пароль"
                       className="form-input w-full pl-10 pr-12"
                       autoComplete="new-password"
                       aria-invalid={fieldError?.field === 'confirm' || undefined}
