@@ -308,9 +308,11 @@ function App() {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
-  const { isLoading: profileLoading } = useUserProfile()
+  const { data: profile, isLoading: profileLoading } = useUserProfile()
 
-  if (loading || profileLoading) {
+  // Ждём профиль: profile===undefined = запрос ещё не завершён (isLoading бывает false,
+  // когда запрос отключён) — иначе внутренние гейты рендерятся с неизвестными ролями.
+  if (loading || profileLoading || (user && profile === undefined)) {
     return <LayoutSkeleton />
   }
 
@@ -325,10 +327,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // админ-страниц (не полагаемся на проверку внутри AdminLayout как единственную защиту).
 function RequireAdmin({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
-  const { isLoading: profileLoading } = useUserProfile()
+  const { data: profile, isLoading: profileLoading } = useUserProfile()
   const isAdmin = useIsAdmin()
 
-  if (loading || profileLoading) {
+  // Ждём профиль, иначе isAdmin=false во время загрузки → ложный редирект из /admin.
+  if (loading || profileLoading || (user && profile === undefined)) {
     return <LayoutSkeleton />
   }
   if (!user) {
@@ -349,7 +352,9 @@ function RootGate() {
   // обменивает на сессию во время инициализации (loading=true). Если редиректнуть
   // сразу, Navigate затрёт «?code» из адреса ДО обмена — сессия не создастся.
   // Поэтому ждём окончания инициализации авторизации (и профиль, чтобы знать роли).
-  if (loading || (user && profileLoading)) return <PageLoader />
+  // Ждём и профиль: isLoading=false пока запрос отключён/не стартовал (profile===undefined),
+  // тогда роли ещё НЕ известны — нельзя редиректить на онбординг, показываем грузилку.
+  if (loading || (user && (profileLoading || profile === undefined))) return <PageLoader />
   // Залогинен, но роли ещё нет — это новый пользователь: ведём на выбор роли.
   if (user && !profile?.roles?.length) return <Navigate to="/welcome" replace />
   return <Navigate to="/market" replace />
@@ -369,7 +374,9 @@ function WelcomePage() {
     await supabase.auth.signOut()
   }
 
-  if (loading || (user && profileLoading)) return <PageLoader />
+  // Форму выбора роли показываем ТОЛЬКО когда профиль реально загружен (иначе, пока
+  // profile===undefined, роли не известны → мелькала форма вместо грузилки).
+  if (loading || (user && (profileLoading || profile === undefined))) return <PageLoader />
   if (!user) return <Navigate to="/login" replace />
   if (profile?.roles?.length) return <Navigate to="/market" replace />
   return <WaitingAccessPage profile={profile} onLogout={handleLogout} />
