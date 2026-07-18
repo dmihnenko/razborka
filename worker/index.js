@@ -592,16 +592,9 @@ export default {
     // (часть соц-ботов, curl) не получат мета.
     if (route && request.method === 'GET') {
       const lang = url.searchParams.get('lng') === 'uk' ? 'uk' : 'ru'
-      const cache = caches.default
-      // язык в ключе кеша — иначе ru/uk ответы перепутаются
-      const cacheKey = new Request(url.origin + p + (lang === 'uk' ? '?lng=uk' : ''), request)
-      // Бот получает видимый SEO-body (и его версию не кешируем — она отличается);
-      // живому пользователю отдаём чистый #root и кешируем именно эту версию.
       const bot = isBot(request.headers.get('user-agent') || '')
-      const hit = await cache.match(cacheKey)
-      if (hit && !bot) return hit
       try {
-        const assetRes = await env.ASSETS.fetch(request) // SPA-fallback → index.html
+        const assetRes = await env.ASSETS.fetch(request) // SPA-fallback → index.html (текущего деплоя)
         const ct = assetRes.headers.get('content-type') || ''
         if (!ct.includes('text/html')) return assetRes
         let meta
@@ -614,11 +607,12 @@ export default {
         headers.delete('content-length')
         headers.delete('content-encoding')
         headers.delete('etag')
-        headers.set('cache-control', 'public, max-age=300, must-revalidate')
-        // Несуществующая сущность → честный 404 (а не soft-404 200+noindex), не кешируем
-        const resp = new Response(out.body, { status: meta.notFound ? 404 : 200, headers })
-        if (!meta.notFound && !bot) ctx.waitUntil(cache.put(cacheKey, resp.clone()))
-        return resp
+        // index.html НЕ кешируем: он ссылается на хэшированные чанки, которые новый
+        // деплой заменяет. Стухший HTML → запрос удалённого чанка → сервер отдаёт HTML
+        // вместо .js → «Failed to load module script: MIME text/html». Всегда свежий.
+        headers.set('cache-control', 'no-cache')
+        // Несуществующая сущность → честный 404 (а не soft-404 200+noindex)
+        return new Response(out.body, { status: meta.notFound ? 404 : 200, headers })
       } catch {
         return env.ASSETS.fetch(request) // на любой сбой — обычная статика, сайт не падает
       }
@@ -626,7 +620,15 @@ export default {
 
     // 4. статика (последний рубеж — гарантированно что-то отдать)
     try {
-      return await env.ASSETS.fetch(request)
+      const res = await env.ASSETS.fetch(request)
+      // Запрос хэшированного ассета (.js/.css/…), которому SPA-fallback вернул index.html
+      // (чанк удалён новым деплоем) → отдаём честный 404, а не HTML с MIME text/html.
+      // Иначе браузер: «Failed to load module script». 404 → авто-восстановление чанков.
+      const isAsset = /\.(js|mjs|css|map|woff2?|ttf|json|png|jpg|jpeg|svg|webp|ico|wasm)$/i.test(p)
+      if (isAsset && (res.headers.get('content-type') || '').includes('text/html')) {
+        return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8' } })
+      }
+      return res
     } catch {
       return new Response('', { status: 200 })
     }
