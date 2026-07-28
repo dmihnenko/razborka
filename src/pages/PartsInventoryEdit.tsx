@@ -91,10 +91,13 @@ export default function PartsInventoryEdit() {
   const goBack = () => navigate(returnTo || `/parts/inventory?source=${source}`)
 
   // Обновляем и списки авто — если запчасть привязана к авто, страница авто должна освежиться.
+  // refetchType:'all' — список запчастей на момент сохранения НЕактивен (открыта форма-страница),
+  // а глобально refetchOnMount:false, поэтому при возврате он бы показал старый кэш без новой
+  // позиции. 'all' форсирует рефетч и неактивных запросов, чтобы список был свежим сразу.
   const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-    queryClient.invalidateQueries({ queryKey: ['vehicle-parts'] })
-    queryClient.invalidateQueries({ queryKey: ['parts-vehicle'] })
+    queryClient.invalidateQueries({ queryKey: ['parts-inventory'], refetchType: 'all' })
+    queryClient.invalidateQueries({ queryKey: ['vehicle-parts'], refetchType: 'all' })
+    queryClient.invalidateQueries({ queryKey: ['parts-vehicle'], refetchType: 'all' })
   }
 
   const saveMutation = useMutation({
@@ -167,6 +170,7 @@ export default function PartsInventoryEdit() {
     <div className="py-1 sm:py-2">
       <PartsInventoryModal
         asPage
+        isShop={item ? !!item.is_shop : source === 'shop'}
         item={item}
         categories={categories}
         vehicles={vehicles}

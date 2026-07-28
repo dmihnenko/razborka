@@ -94,7 +94,12 @@ export default function Layout() {
     const left = 500 - (Date.now() - started)
     if (left > 0) await new Promise(r => setTimeout(r, left)) // спиннер заметен
   }, [queryClient])
-  const { pull, refreshing } = usePullToRefresh({ onRefresh: handlePullRefresh, scrollEl })
+  // На страницах-формах (добавление/редактирование запчасти) протяжка вниз — это скролл
+  // формы, а не рефреш; PTR перехватывал бы жест. Отключаем здесь.
+  const isPartFormRoute =
+    location.pathname === '/parts/inventory/new' ||
+    /^\/parts\/inventory\/[^/]+\/edit$/.test(location.pathname)
+  const { pull, refreshing } = usePullToRefresh({ onRefresh: handlePullRefresh, scrollEl, disabled: isPartFormRoute })
 
   // Шторка мобильного «Меню» (доп. пункты)
   const [sheetOpen, setSheetOpen] = useState(false)

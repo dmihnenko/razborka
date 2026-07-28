@@ -1680,9 +1680,11 @@ interface PartsInventoryModalProps {
   photoCfg?: PhotoStorageConfig | null
   /** Рендер как полноценная страница (в маршруте), а не модальное окно. */
   asPage?: boolean
+  /** Магазинная позиция (true) или запчасть разборки (false). Закупочная цена — только для магазина. */
+  isShop?: boolean
 }
 
-export function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange, initialStorageLocationId, onStorageChange, photoCfg, asPage }: PartsInventoryModalProps) {
+export function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange, initialStorageLocationId, onStorageChange, photoCfg, asPage, isShop }: PartsInventoryModalProps) {
   const { t } = useTranslation('cabinet')
   const [bulkMode, setBulkMode] = useState(false)
   const [showPasteArea, setShowPasteArea] = useState(false)
@@ -2185,13 +2187,13 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       value={formData.vehicle_id || ''}
                       onChange={(e) => {
                         const newVehicleId = e.target.value || undefined
-                        // Запчасть с авто — закупочной цены нет (себестоимость от авто),
-                        // поэтому очищаем purchase_price при привязке к авто.
+                        // Разборочная запчасть с авто — закупочной цены нет (себестоимость от авто),
+                        // поэтому очищаем purchase_price при привязке к авто. Для магазина не трогаем.
                         setFormData({
                           ...formData,
                           vehicle_id: newVehicleId,
                           category_id: '',
-                          ...(newVehicleId ? { purchase_price: undefined } : {}),
+                          ...(newVehicleId && !isShop ? { purchase_price: undefined } : {}),
                         })
                         if (newVehicleId) onVehicleChange?.(newVehicleId)
                         else onVehicleChange?.('')
@@ -2365,8 +2367,8 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     </div>
                   </div>
 
-                  {/* Закупочная цена — только для магазинных (с авто себестоимость от авто). */}
-                  {!formData.vehicle_id && (
+                  {/* Закупочная цена — только для магазина (у разборки себестоимость от авто, закупки нет). */}
+                  {isShop && (
                     <div>
                       <label className="form-label">
                         {t('inventoryPage.purchasePrice')} <span className="text-gray-400 font-normal">{t('inventoryPage.purchasePriceHint')}</span>

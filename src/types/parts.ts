@@ -114,6 +114,8 @@ export interface PartsInventoryItem {
   qr_code?: string
   status: PartsInventoryStatus
   reserved_quantity: number
+  /** Разборка (false) vs Магазин (true). Закупочная цена — только у магазина. */
+  is_shop?: boolean
   notes?: string
   created_at: string
   updated_at: string
