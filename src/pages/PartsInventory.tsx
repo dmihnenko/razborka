@@ -12,6 +12,7 @@ import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { InventoryCard } from '@/components/parts/InventoryCard'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
+import { StorageLocationCascade } from '@/components/parts/StorageLocationCascade'
 import i18n from '@/i18n'
 import { getPartsInventoryPaged, getPartsInventorySummary, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation, PartsCustomer, PartsVehicle, PartsCategory } from '@/types/parts'
@@ -1993,19 +1994,14 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     <div>
                       <label className="form-label">{t('inventoryPage.storageLocation')}</label>
                       {storageLocations.length > 0 ? (
-                        <select
-                          value={bulkShared.storage_location_id}
-                          onChange={(e) => {
-                            setBulkShared({ ...bulkShared, storage_location_id: e.target.value })
-                            onStorageChange?.(e.target.value)
+                        <StorageLocationCascade
+                          locations={storageLocations}
+                          value={bulkShared.storage_location_id || undefined}
+                          onChange={(id) => {
+                            setBulkShared({ ...bulkShared, storage_location_id: id || '' })
+                            onStorageChange?.(id || '')
                           }}
-                          className="form-select"
-                        >
-                          <option value="">{t('inventoryPage.notSpecified')}</option>
-                          {buildLocationOptions(storageLocations).map(opt => (
-                            <option key={opt.id} value={opt.id}>{opt.label}</option>
-                          ))}
-                        </select>
+                        />
                       ) : (
                         <input
                           type="text"
@@ -2411,19 +2407,14 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 <div>
                   <label className="form-label">{t('inventoryPage.storageLocation')}</label>
                   {storageLocations.length > 0 ? (
-                    <select
-                      value={formData.storage_location_id || ''}
-                      onChange={(e) => {
-                        setFormData({ ...formData, storage_location_id: e.target.value || undefined })
-                        onStorageChange?.(e.target.value)
+                    <StorageLocationCascade
+                      locations={storageLocations}
+                      value={formData.storage_location_id}
+                      onChange={(id) => {
+                        setFormData({ ...formData, storage_location_id: id })
+                        onStorageChange?.(id || '')
                       }}
-                      className="form-select"
-                    >
-                      <option value="">{t('inventoryPage.notSpecified')}</option>
-                      {buildLocationOptions(storageLocations).map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.label}</option>
-                      ))}
-                    </select>
+                    />
                   ) : (
                     <input
                       type="text"
