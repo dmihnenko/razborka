@@ -456,6 +456,7 @@
     "addPhoto": "Добавить фото (можно несколько, ещё {{remaining}})",
     "uploadPhotoShort": "Загрузить",
     "takePhotoShort": "Камера",
+    "moreFields": "Дополнительно",
     "photoAlt": "Фото {{n}}",
     "uploadingAlt": "Загрузка…",
     "photosUploadingHint": "Фото догружаются в фоне — можно сразу сохранять, они допишутся в товар.",

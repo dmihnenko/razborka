@@ -1694,6 +1694,9 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   const autoFilledVehicle = !item && !!initialVehicleId
   const autoFilledStorage = !item && !!initialStorageLocationId
   const [autoHintDismissed, setAutoHintDismissed] = useState(false)
+  // «Дополнительно» (Вариант A): при создании свёрнуто; при редактировании или
+  // при предвыбранном авто — раскрыто, чтобы редкие поля были видны.
+  const [showMore, setShowMore] = useState<boolean>(() => !!item || !!initialVehicleId)
   const [oemCopied, setOemCopied] = useState(false)
   // Фокус на «Оригинальный номер» при открытии и после «Сохранить и добавить ещё».
   const oemInputRef = useRef<HTMLInputElement>(null)
@@ -2176,60 +2179,38 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 </div>
               ) : (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="form-label">
-                      {t('inventoryPage.sourceVehicle')}
-                    </label>
-                    <select
-                      value={formData.vehicle_id || ''}
-                      onChange={(e) => {
-                        const newVehicleId = e.target.value || undefined
-                        // Разборочная запчасть с авто — закупочной цены нет (себестоимость от авто),
-                        // поэтому очищаем purchase_price при привязке к авто. Для магазина не трогаем.
-                        setFormData({
-                          ...formData,
-                          vehicle_id: newVehicleId,
-                          category_id: '',
-                          ...(newVehicleId && !isShop ? { purchase_price: undefined } : {}),
-                        })
-                        if (newVehicleId) onVehicleChange?.(newVehicleId)
-                        else onVehicleChange?.('')
-                      }}
-                      className="form-select"
+                {/* Оригинальный номер — на всю строку */}
+                <div>
+                  <label className="form-label">
+                    {t('inventoryPage.oemLabel')}
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      ref={oemInputRef}
+                      type="text"
+                      inputMode="text"
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      value={formData.part_number}
+                      onChange={(e) => setFormData({ ...formData, part_number: e.target.value.toUpperCase() })}
+                      placeholder={t('inventoryPage.oemExample')}
+                      className="form-input flex-1 min-w-0 font-mono uppercase tracking-wide"
+                    />
+                    <button
+                      type="button"
+                      onClick={copyOem}
+                      disabled={!formData.part_number?.trim()}
+                      className="cab-btn cab-btn-secondary flex-shrink-0 w-11 px-0 flex items-center justify-center disabled:opacity-40"
+                      title={t('inventoryPage.copyOemTitle')}
+                      aria-label={t('inventoryPage.copyOemTitle')}
                     >
-                      <option value="">{t('inventoryPage.notLinkedToVehicle')}</option>
-                      {vehicles.map((vehicle) => (
-                        <option key={vehicle.id} value={vehicle.id}>
-                          {vehicle.make} {vehicle.model} {vehicle.year}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="mt-1 text-xs text-gray-500">
-                      {t('inventoryPage.sourceVehicleHint')}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="form-label">
-                      {t('inventoryPage.category')}
-                    </label>
-                    <select
-                      value={formData.category_id}
-                      onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                      className="form-select"
-                    >
-                      <option value="">{t('inventoryPage.noCategory')}</option>
-                      {(formData.vehicle_id
-                        ? getCategoriesForVehicle(formData.vehicle_id, vehicles, categories)
-                        : categories
-                      ).map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
+                      {oemCopied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
 
+                {/* Название — на всю строку */}
                 <div>
                   <label className="form-label">
                     {t('inventoryPage.nameReq')}
@@ -2244,37 +2225,8 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="form-label">
-                      {t('inventoryPage.oemLabel')}
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        ref={oemInputRef}
-                        type="text"
-                        inputMode="text"
-                        autoCapitalize="characters"
-                        autoCorrect="off"
-                        spellCheck={false}
-                        value={formData.part_number}
-                        onChange={(e) => setFormData({ ...formData, part_number: e.target.value.toUpperCase() })}
-                        placeholder={t('inventoryPage.oemExample')}
-                        className="form-input flex-1 min-w-0 font-mono uppercase tracking-wide"
-                      />
-                      <button
-                        type="button"
-                        onClick={copyOem}
-                        disabled={!formData.part_number?.trim()}
-                        className="cab-btn cab-btn-secondary flex-shrink-0 w-11 px-0 flex items-center justify-center disabled:opacity-40"
-                        title={t('inventoryPage.copyOemTitle')}
-                        aria-label={t('inventoryPage.copyOemTitle')}
-                      >
-                        {oemCopied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
+                {/* Состояние (слева) + Цена продажи и валюта (справа) — одна строка */}
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="form-label">
                       {t('inventoryPage.conditionReq')}
@@ -2293,43 +2245,6 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       <option value="damaged">{t('inventoryPage.conditionDamaged')}</option>
                     </select>
                   </div>
-                </div>
-
-                <div>
-                  <label className="form-label">
-                    {t('inventoryPage.description')}
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={2}
-                    className="form-input resize-none"
-                  />
-                </div>
-
-                {/* Кол-во — только для магазинных (для запчасти с авто кол-во = 1). */}
-                {!formData.vehicle_id && (
-                  <div>
-                    <label className="form-label">{t('inventoryPage.quantity')}</label>
-                    <input
-                      type="number"
-                      min="1"
-                      inputMode="numeric"
-                      value={formData.quantity ?? ''}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        // Пустое поле держим как undefined (плейсхолдер), в БД уходит quantity||1.
-                        // quantity в типе — number; коэрсим каст, поведение не меняется.
-                        setFormData({ ...formData, quantity: (v === '' ? undefined : Number(v)) as unknown as number })
-                      }}
-                      className="form-input tabular"
-                    />
-                  </div>
-                )}
-
-                {/* Цена продажи + Закупочная цена — в одну строку (в т.ч. на мобиле).
-                    У разборки закупки нет → цена продажи занимает всю ширину, а не половину. */}
-                <div className={isShop ? 'grid grid-cols-2 gap-4' : ''}>
                   <div>
                     <label className="form-label">{t('inventoryPage.sellPrice')}</label>
                     {/* Валюта цветом: $ → мягкий зелёный (чтобы не перепутать с грн) */}
@@ -2365,45 +2280,9 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       </button>
                     </div>
                   </div>
-
-                  {/* Закупочная цена — только для магазина (у разборки себестоимость от авто, закупки нет). */}
-                  {isShop && (
-                    <div>
-                      <label className="form-label">
-                        {t('inventoryPage.purchasePrice')} <span className="text-gray-400 font-normal">{t('inventoryPage.purchasePriceHint')}</span>
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        inputMode="decimal"
-                        value={formData.purchase_price ?? ''}
-                        onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value ? Number(e.target.value) : undefined })}
-                        placeholder={t('inventoryPage.optionalPlaceholder')}
-                        className="form-input tabular"
-                      />
-                      {formData.purchase_price != null && formData.selling_price != null && formData.selling_price < formData.purchase_price && (
-                        <p className="mt-1 text-xs text-amber-600">{t('inventoryPage.marginNegative')}</p>
-                      )}
-                    </div>
-                  )}
                 </div>
 
-                {/* Sold toggle button — only when creating */}
-                {!item && (
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, status: formData.status === 'sold' ? 'available' : 'sold' })}
-                    className={`w-full py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
-                      formData.status === 'sold'
-                        ? 'bg-gray-800 border-gray-800 text-white'
-                        : 'cab-btn cab-btn-secondary border-2 text-gray-500 hover:border-gray-400 hover:text-gray-700'
-                    }`}
-                  >
-                    {formData.status === 'sold' ? t('inventoryPage.soldCheck') : t('inventoryPage.markAsSold')}
-                  </button>
-                )}
-
+                {/* Место хранения */}
                 <div>
                   <label className="form-label">{t('inventoryPage.storageLocation')}</label>
                   {storageLocations.length > 0 ? (
@@ -2514,14 +2393,151 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   )}
                 </div>
 
+                {/* Источник (авто) — под фото */}
                 <div>
-                  <label className="form-label">{t('inventoryPage.notes')}</label>
-                  <textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    rows={2}
-                    className="form-input resize-none"
-                  />
+                  <label className="form-label">{t('inventoryPage.sourceVehicle')}</label>
+                  <select
+                    value={formData.vehicle_id || ''}
+                    onChange={(e) => {
+                      const newVehicleId = e.target.value || undefined
+                      // Разборочная запчасть с авто — закупочной цены нет (себестоимость от авто),
+                      // поэтому очищаем purchase_price при привязке к авто. Для магазина не трогаем.
+                      setFormData({
+                        ...formData,
+                        vehicle_id: newVehicleId,
+                        category_id: '',
+                        ...(newVehicleId && !isShop ? { purchase_price: undefined } : {}),
+                      })
+                      if (newVehicleId) onVehicleChange?.(newVehicleId)
+                      else onVehicleChange?.('')
+                    }}
+                    className="form-select"
+                  >
+                    <option value="">{t('inventoryPage.notLinkedToVehicle')}</option>
+                    {vehicles.map((vehicle) => (
+                      <option key={vehicle.id} value={vehicle.id}>
+                        {vehicle.make} {vehicle.model} {vehicle.year}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {t('inventoryPage.sourceVehicleHint')}
+                  </p>
+                </div>
+
+                {/* Дополнительно — редкие поля свёрнуты (Вариант A) */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowMore((v) => !v)}
+                    className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <span>{t('inventoryPage.moreFields', { defaultValue: 'Дополнительно' })}</span>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showMore ? 'rotate-180' : ''}`} strokeWidth={1.5} />
+                  </button>
+                  {showMore && (
+                    <div className="space-y-4 mt-4">
+                      {/* Категория */}
+                      <div>
+                        <label className="form-label">
+                          {t('inventoryPage.category')}
+                        </label>
+                        <select
+                          value={formData.category_id}
+                          onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                          className="form-select"
+                        >
+                          <option value="">{t('inventoryPage.noCategory')}</option>
+                          {(formData.vehicle_id
+                            ? getCategoriesForVehicle(formData.vehicle_id, vehicles, categories)
+                            : categories
+                          ).map((cat) => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Кол-во — только для магазинных (для запчасти с авто кол-во = 1). */}
+                      {!formData.vehicle_id && (
+                        <div>
+                          <label className="form-label">{t('inventoryPage.quantity')}</label>
+                          <input
+                            type="number"
+                            min="1"
+                            inputMode="numeric"
+                            value={formData.quantity ?? ''}
+                            onChange={(e) => {
+                              const v = e.target.value
+                              // Пустое поле держим как undefined (плейсхолдер), в БД уходит quantity||1.
+                              setFormData({ ...formData, quantity: (v === '' ? undefined : Number(v)) as unknown as number })
+                            }}
+                            className="form-input tabular"
+                          />
+                        </div>
+                      )}
+
+                      {/* Закупочная цена — только для магазина (у разборки себестоимость от авто). */}
+                      {isShop && (
+                        <div>
+                          <label className="form-label">
+                            {t('inventoryPage.purchasePrice')} <span className="text-gray-400 font-normal">{t('inventoryPage.purchasePriceHint')}</span>
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            inputMode="decimal"
+                            value={formData.purchase_price ?? ''}
+                            onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value ? Number(e.target.value) : undefined })}
+                            placeholder={t('inventoryPage.optionalPlaceholder')}
+                            className="form-input tabular"
+                          />
+                          {formData.purchase_price != null && formData.selling_price != null && formData.selling_price < formData.purchase_price && (
+                            <p className="mt-1 text-xs text-amber-600">{t('inventoryPage.marginNegative')}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Описание */}
+                      <div>
+                        <label className="form-label">
+                          {t('inventoryPage.description')}
+                        </label>
+                        <textarea
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          rows={2}
+                          className="form-input resize-none"
+                        />
+                      </div>
+
+                      {/* Заметки */}
+                      <div>
+                        <label className="form-label">{t('inventoryPage.notes')}</label>
+                        <textarea
+                          value={formData.notes}
+                          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                          rows={2}
+                          className="form-input resize-none"
+                        />
+                      </div>
+
+                      {/* Отметить проданной — только при создании */}
+                      {!item && (
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, status: formData.status === 'sold' ? 'available' : 'sold' })}
+                          className={`w-full py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
+                            formData.status === 'sold'
+                              ? 'bg-gray-800 border-gray-800 text-white'
+                              : 'cab-btn cab-btn-secondary border-2 text-gray-500 hover:border-gray-400 hover:text-gray-700'
+                          }`}
+                        >
+                          {formData.status === 'sold' ? t('inventoryPage.soldCheck') : t('inventoryPage.markAsSold')}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               )}
