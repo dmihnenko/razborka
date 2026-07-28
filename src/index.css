@@ -286,6 +286,21 @@
   }
   .cab-chip-signal { background: var(--cab-signal-weak); color: var(--cab-signal); border-color: transparent; }
 
+  /* Каскад места хранения (StorageLocationCascade) — оформление из демо. */
+  .loc-chip {
+    @apply inline-flex items-center gap-1.5 rounded-md text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer;
+    padding: .4rem .7rem; min-height: 34px;
+    background: var(--cab-surface-2); color: var(--cab-ink); border: 1px solid var(--cab-border);
+  }
+  .loc-chip:hover { border-color: var(--cab-border-strong); }
+  .loc-chip.is-active { background: var(--cab-signal-weak); color: var(--cab-signal); border-color: transparent; font-weight: 600; }
+  .loc-chip .loc-cnt { font-size: 11px; color: var(--cab-ink-3); font-variant-numeric: tabular-nums; }
+  .loc-chip.is-active .loc-cnt { color: var(--cab-signal); }
+  .loc-crumb {
+    @apply inline-flex items-center gap-1.5 rounded-md text-xs font-semibold;
+    padding: .35rem .6rem; background: var(--cab-signal-weak); color: var(--cab-signal);
+  }
+
   /* Боковая навигация */
   .cab-nav {
     @apply flex items-center gap-3 w-full rounded-lg text-sm font-medium transition-colors;

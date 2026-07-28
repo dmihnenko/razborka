@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { StorageLocation } from '@/types/parts'
 
@@ -15,8 +14,9 @@ interface Props {
 
 /**
  * Каскадный выбор места хранения по уровням: Стеллаж → Полка → Ячейка.
- * Следующий уровень появляется после выбора родителя; можно остановиться на
- * любом уровне (место = последний выбранный узел). Чипы — общие .chip/.chip-active.
+ * Оформление — из демо: индиго-тинт активного чипа, счётчик мест у веток,
+ * моно-код у ячеек, путь-крошка с галочкой. Следующий уровень появляется
+ * после выбора родителя; можно остановиться на любом уровне.
  */
 export function StorageLocationCascade({ locations, value, onChange, className }: Props) {
   const { t } = useTranslation('cabinet')
@@ -36,6 +36,13 @@ export function StorageLocationCascade({ locations, value, onChange, className }
     childrenOf.forEach((arr) => arr.sort(sortFn))
     return { byId, childrenOf, roots: childrenOf.get('__root__') || [] }
   }, [locations])
+
+  // Кол-во выбираемых мест внутри узла (для счётчика на ветках).
+  const leafCount = (id: string): number => {
+    const kids = childrenOf.get(id)
+    if (!kids || !kids.length) return 1
+    return kids.reduce((s, k) => s + leafCount(k.id), 0)
+  }
 
   // Цепочка выбранных узлов от корня до value (по parent_id).
   const chain = useMemo(() => {
@@ -62,7 +69,8 @@ export function StorageLocationCascade({ locations, value, onChange, className }
     } else break
   }
 
-  const hasSelection = !!(value && byId.get(value))
+  const selectedNode = value ? byId.get(value) : undefined
+  const selectedIsLeaf = selectedNode ? !(childrenOf.get(selectedNode.id)?.length) : false
 
   return (
     <div className={className}>
@@ -76,14 +84,12 @@ export function StorageLocationCascade({ locations, value, onChange, className }
                 <button
                   key={n.id}
                   type="button"
-                  // Повторный тап по выбранному листу — снять выбор; по ветке — оставить.
+                  // Повторный тап по выбранной ячейке — снять выбор; по ветке — оставить.
                   onClick={() => onChange(active && !hasKids ? undefined : n.id)}
-                  className={`chip ${active ? 'chip-active' : ''}`}
+                  className={`loc-chip ${active ? 'is-active' : ''} ${hasKids ? '' : 'font-mono'}`}
                 >
                   {n.name}
-                  {hasKids && (
-                    <span className={`text-[11px] leading-none ${active ? 'text-white/70' : 'text-gray-400'}`}>›</span>
-                  )}
+                  {hasKids && <span className="loc-cnt">{leafCount(n.id)}</span>}
                 </button>
               )
             })}
@@ -91,15 +97,22 @@ export function StorageLocationCascade({ locations, value, onChange, className }
         ))}
       </div>
 
-      {hasSelection && (
-        <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
-          <span className="truncate">{chain.map((id) => byId.get(id)?.name).filter(Boolean).join(' → ')}</span>
+      {selectedNode && (
+        <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+          <span className="loc-crumb">
+            <span className="text-[var(--cab-signal)]">✓</span>
+            <span>
+              {chain.slice(0, -1).map((id) => byId.get(id)?.name).filter(Boolean).join(' → ')}
+              {chain.length > 1 && ' → '}
+              <b className={selectedIsLeaf ? 'font-mono' : ''}>{selectedNode.name}</b>
+            </span>
+          </span>
           <button
             type="button"
             onClick={() => onChange(undefined)}
-            className="inline-flex items-center gap-0.5 text-gray-400 hover:text-red-500 flex-shrink-0"
+            className="text-xs text-[var(--cab-ink-3)] hover:text-[var(--cab-signal)] underline underline-offset-2"
           >
-            <X className="w-3 h-3" /> {t('inventoryPage.clearLocation', { defaultValue: 'очистить' })}
+            {t('inventoryPage.clearLocation', { defaultValue: 'Сбросить' })}
           </button>
         </div>
       )}
