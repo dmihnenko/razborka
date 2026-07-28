@@ -1694,9 +1694,10 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   const autoFilledVehicle = !item && !!initialVehicleId
   const autoFilledStorage = !item && !!initialStorageLocationId
   const [autoHintDismissed, setAutoHintDismissed] = useState(false)
-  // «Дополнительно» (Вариант A): при создании свёрнуто; при редактировании или
-  // при предвыбранном авто — раскрыто, чтобы редкие поля были видны.
-  const [showMore, setShowMore] = useState<boolean>(() => !!item || !!initialVehicleId)
+  // «Дополнительно» (Вариант A) — по умолчанию всегда свёрнуто.
+  const [showMore, setShowMore] = useState(false)
+  // Мобилка: «Добавить фото» открывает лист с выбором «Загрузить» / «Сделать фото».
+  const [photoSheetOpen, setPhotoSheetOpen] = useState(false)
   const [oemCopied, setOemCopied] = useState(false)
   // Фокус на «Оригинальный номер» при открытии и после «Сохранить и добавить ещё».
   const oemInputRef = useRef<HTMLInputElement>(null)
@@ -2327,32 +2328,15 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         {t('inventoryPage.addPhoto', { remaining: MAX_PHOTOS - photos.length - pendingPhotos.length })}
                       </span>
                     </label>
-                    {/* Мобилка — компактные кнопки без большого пустого блока */}
-                    <div className="grid grid-cols-2 gap-2 sm:hidden">
-                      <label className="flex items-center justify-center gap-2 h-11 border border-gray-200 rounded-xl cursor-pointer text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={handlePhotoSelect}
-                          className="sr-only"
-                        />
-                        <Upload className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
-                        {t('inventoryPage.uploadPhotoShort', { defaultValue: 'Загрузить' })}
-                      </label>
-                      {/* capture открывает камеру напрямую */}
-                      <label className="flex items-center justify-center gap-2 h-11 border border-gray-200 rounded-xl cursor-pointer text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          onChange={handlePhotoSelect}
-                          className="sr-only"
-                        />
-                        <Camera className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
-                        {t('inventoryPage.takePhotoShort', { defaultValue: 'Камера' })}
-                      </label>
-                    </div>
+                    {/* Мобилка — одна кнопка «Добавить фото» открывает лист выбора способа */}
+                    <button
+                      type="button"
+                      onClick={() => setPhotoSheetOpen(true)}
+                      className="sm:hidden flex items-center justify-center gap-2 w-full h-11 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
+                    >
+                      <Camera className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
+                      {t('inventoryPage.addPhotoBtn', { defaultValue: 'Добавить фото' })}
+                    </button>
                   </div>
                   )}
                   {(photos.length > 0 || pendingPhotos.length > 0) && (
@@ -2577,6 +2561,60 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
             </button>
           </div>
         </form>
+
+        {/* Лист выбора способа добавления фото (мобилка) */}
+        {photoSheetOpen && (
+          <div
+            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-[2px] flex items-start sm:items-center justify-center px-3 py-3"
+            style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top,0px))' }}
+            onClick={() => setPhotoSheetOpen(false)}
+          >
+            <div
+              className="w-full sm:max-w-xs bg-white rounded-2xl p-4 animate-slide-down sm:animate-modal-pop"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h4 className="text-sm font-bold text-gray-900 mb-3">
+                {t('inventoryPage.addPhotoBtn', { defaultValue: 'Добавить фото' })}
+              </h4>
+              <div className="space-y-2">
+                <label className="flex items-center gap-3 w-full h-12 px-3 border border-gray-200 rounded-xl cursor-pointer text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => { handlePhotoSelect(e); setPhotoSheetOpen(false) }}
+                    className="sr-only"
+                  />
+                  <span className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <Upload className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                  </span>
+                  {t('inventoryPage.uploadPhotoOption', { defaultValue: 'Загрузить фото' })}
+                </label>
+                {/* capture открывает камеру напрямую */}
+                <label className="flex items-center gap-3 w-full h-12 px-3 border border-gray-200 rounded-xl cursor-pointer text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => { handlePhotoSelect(e); setPhotoSheetOpen(false) }}
+                    className="sr-only"
+                  />
+                  <span className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <Camera className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                  </span>
+                  {t('inventoryPage.takePhotoOption', { defaultValue: 'Сделать фото' })}
+                </label>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPhotoSheetOpen(false)}
+                className="mt-3 w-full h-10 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                {t('inventoryPage.cancel')}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
