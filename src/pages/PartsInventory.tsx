@@ -1694,7 +1694,9 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   const autoFilledStorage = !item && !!initialStorageLocationId
   const [autoHintDismissed, setAutoHintDismissed] = useState(false)
   const [oemCopied, setOemCopied] = useState(false)
-  // Фокус на «Название» при открытии и после «Сохранить и добавить ещё».
+  // Фокус на «Оригинальный номер» при открытии и после «Сохранить и добавить ещё».
+  const oemInputRef = useRef<HTMLInputElement>(null)
+  // nameInputRef — только чтобы вернуть фокус на «Название» при ошибке валидации.
   const nameInputRef = useRef<HTMLInputElement>(null)
   // «Поколение» формы: при сбросе (добавить ещё) увеличиваем, чтобы поздно
   // долетевшие коллбэки выгрузки фото от ПРЕДЫДУЩЕЙ позиции не попали в новую.
@@ -1738,9 +1740,9 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   const [pendingPhotos, setPendingPhotos] = useState<{ id: string; localUrl: string; promise: Promise<ImgbbPhoto> }[]>([])
   const uploading = pendingPhotos.length > 0
 
-  // Автофокус на «Название» при создании (single) — сразу печатать.
+  // Автофокус на «Оригинальный номер» при создании (single) — сразу печатать номер.
   useEffect(() => {
-    if (!item && !bulkMode) nameInputRef.current?.focus()
+    if (!item && !bulkMode) oemInputRef.current?.focus()
   }, [item, bulkMode])
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1859,7 +1861,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
           status: undefined,
         }))
         setOemCopied(false)
-        nameInputRef.current?.focus()
+        oemInputRef.current?.focus()
       }
     }
   }
@@ -2253,6 +2255,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     </label>
                     <div className="flex gap-2">
                       <input
+                        ref={oemInputRef}
                         type="text"
                         inputMode="text"
                         autoCapitalize="characters"
@@ -2329,8 +2332,8 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 )}
 
                 {/* Цена продажи + Закупочная цена — в одну строку (в т.ч. на мобиле).
-                    Для запчасти с авто закупки нет — её место просто пустует. */}
-                <div className="grid grid-cols-2 gap-4">
+                    У разборки закупки нет → цена продажи занимает всю ширину, а не половину. */}
+                <div className={isShop ? 'grid grid-cols-2 gap-4' : ''}>
                   <div>
                     <label className="form-label">{t('inventoryPage.sellPrice')}</label>
                     {/* Валюта цветом: $ → мягкий зелёный (чтобы не перепутать с грн) */}
