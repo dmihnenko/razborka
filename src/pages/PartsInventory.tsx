@@ -1871,11 +1871,21 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     }
   }
 
+  // Метки для предпросмотра карточки (правая колонка на десктопе).
+  const previewConditionLabel = formData.condition === 'new'
+    ? t('inventoryPage.conditionNew')
+    : formData.condition === 'damaged'
+      ? t('inventoryPage.conditionDamaged')
+      : t('inventoryPage.conditionUsed')
+  const previewPlaceLabel = formData.storage_location_id
+    ? buildLocationOptions(storageLocations).find(o => o.id === formData.storage_location_id)?.label
+    : undefined
+
   return (
     <div className={asPage ? '' : 'modal-overlay'}>
       {!asPage && <div className="absolute inset-0" />}
       <div className={asPage
-        ? 'w-full max-w-3xl mx-auto'
+        ? 'w-full'
         : 'modal-sheet w-full max-w-none sm:max-w-5xl z-10 h-[100dvh] sm:h-[94dvh] rounded-none sm:rounded-2xl flex flex-col overflow-hidden'}>
         {!asPage && <div className="modal-handle sm:hidden" />}
         <form onSubmit={handleSubmit} className={asPage ? 'flex flex-col' : 'flex flex-col flex-1 min-h-0'}>
@@ -2179,9 +2189,9 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   </div>
                 </div>
               ) : (
-              <div className="space-y-4">
+              <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[1.6fr_1fr] lg:gap-x-6 lg:gap-y-4 lg:items-start">
                 {/* Оригинальный номер — на всю строку */}
-                <div>
+                <div className="lg:col-start-1">
                   <label className="form-label">
                     {t('inventoryPage.oemLabel')}
                   </label>
@@ -2212,7 +2222,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 </div>
 
                 {/* Название — на всю строку */}
-                <div>
+                <div className="lg:col-start-1">
                   <label className="form-label">
                     {t('inventoryPage.nameReq')}
                   </label>
@@ -2227,7 +2237,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 </div>
 
                 {/* Состояние (слева) + Цена продажи и валюта (справа) — одна строка */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 lg:col-start-1">
                   <div>
                     <label className="form-label">
                       {t('inventoryPage.conditionReq')}
@@ -2283,8 +2293,10 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   </div>
                 </div>
 
+                {/* Правая колонка на десктопе: Фото + Место + предпросмотр карточки */}
+                <div className="flex flex-col gap-4 lg:col-start-2 lg:row-start-1 lg:row-span-6 lg:sticky lg:top-2 lg:self-start">
                 {/* Место хранения */}
-                <div>
+                <div className="order-1 lg:order-2">
                   <label className="form-label">{t('inventoryPage.storageLocation')}</label>
                   {storageLocations.length > 0 ? (
                     <StorageLocationCascade
@@ -2306,7 +2318,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   )}
                 </div>
 
-                <div>
+                <div className="order-2 lg:order-1">
                   <label className="form-label">{t('inventoryPage.photos')} <span className="text-gray-400 font-normal">({photos.length + pendingPhotos.length}/{MAX_PHOTOS})</span></label>
                   {(photos.length + pendingPhotos.length) >= MAX_PHOTOS ? (
                     <div className="flex items-center justify-center gap-2 w-full h-24 sm:h-28 border-2 border-dashed border-gray-200 bg-gray-50 rounded-xl text-sm font-medium text-gray-400">
@@ -2377,8 +2389,40 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   )}
                 </div>
 
+                {/* Предпросмотр карточки — под местом хранения (десктоп) */}
+                <div className="hidden lg:block order-3 rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="px-3 pt-2.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                    {t('inventoryPage.previewLabel', { defaultValue: 'Предпросмотр' })}
+                  </div>
+                  <div className="p-3">
+                    <div className="aspect-[4/3] rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center mb-3">
+                      {photos[0] ? (
+                        <img src={photos[0].thumb_url || photos[0].url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="w-8 h-8 text-gray-300" strokeWidth={1.5} />
+                      )}
+                    </div>
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {formData.name || t('inventoryPage.previewNamePlaceholder', { defaultValue: 'Название запчасти' })}
+                    </p>
+                    {formData.part_number && (
+                      <p className="text-xs font-mono text-gray-500 mt-0.5 truncate">{formData.part_number}</p>
+                    )}
+                    <div className="flex items-center gap-2 flex-wrap mt-2">
+                      {formData.selling_price != null && (
+                        <span className="text-base font-bold text-emerald-600">
+                          {formData.selling_price.toLocaleString('ru-RU')} {formData.price_currency === 'USD' ? '$' : '₴'}
+                        </span>
+                      )}
+                      <span className="badge badge-gray">{previewConditionLabel}</span>
+                      {previewPlaceLabel && <span className="badge badge-blue">{previewPlaceLabel}</span>}
+                    </div>
+                  </div>
+                </div>
+                </div>
+
                 {/* Источник (авто) — под фото */}
-                <div>
+                <div className="lg:col-start-1">
                   <label className="form-label">{t('inventoryPage.sourceVehicle')}</label>
                   <select
                     value={formData.vehicle_id || ''}
@@ -2410,7 +2454,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                 </div>
 
                 {/* Дополнительно — редкие поля свёрнуты (Вариант A) */}
-                <div>
+                <div className="lg:col-start-1">
                   <button
                     type="button"
                     onClick={() => setShowMore((v) => !v)}

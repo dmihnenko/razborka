@@ -460,6 +460,8 @@
     "addPhotoBtn": "Додати фото",
     "uploadPhotoOption": "Завантажити фото",
     "takePhotoOption": "Зробити фото",
+    "previewLabel": "Попередній перегляд",
+    "previewNamePlaceholder": "Назва запчастини",
     "photoAlt": "Фото {{n}}",
     "uploadingAlt": "Завантаження…",
     "photosUploadingHint": "Фото довантажуються у фоні — можна одразу зберігати, вони допишуться до товару.",
