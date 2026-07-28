@@ -2438,8 +2438,8 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     </div>
                   ) : (
                   <div className="space-y-2">
-                    {/* Крупная зона выбора файлов (галерея/проводник) */}
-                    <label className="flex flex-col items-center justify-center gap-1.5 w-full h-24 sm:h-28 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer transition-colors hover:border-blue-400 hover:bg-gray-50">
+                    {/* Десктоп — крупная зона drag&drop / выбора файлов */}
+                    <label className="hidden sm:flex flex-col items-center justify-center gap-1.5 w-full h-28 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer transition-colors hover:border-blue-400 hover:bg-gray-50">
                       <input
                         type="file"
                         accept="image/*"
@@ -2447,23 +2447,37 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                         onChange={handlePhotoSelect}
                         className="sr-only"
                       />
-                      <Upload className="w-7 h-7 sm:w-8 sm:h-8 text-gray-400" strokeWidth={1.5} />
+                      <Upload className="w-8 h-8 text-gray-400" strokeWidth={1.5} />
                       <span className="text-sm font-medium text-gray-600">
                         {t('inventoryPage.addPhoto', { remaining: MAX_PHOTOS - photos.length - pendingPhotos.length })}
                       </span>
                     </label>
-                    {/* Снять фото камерой (мобилка) — capture открывает камеру напрямую */}
-                    <label className="sm:hidden flex items-center justify-center gap-2 w-full h-10 border border-gray-200 rounded-xl cursor-pointer text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handlePhotoSelect}
-                        className="sr-only"
-                      />
-                      <Camera className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
-                      {t('inventoryPage.takePhoto', { defaultValue: 'Сделать фото' })}
-                    </label>
+                    {/* Мобилка — компактные кнопки без большого пустого блока */}
+                    <div className="grid grid-cols-2 gap-2 sm:hidden">
+                      <label className="flex items-center justify-center gap-2 h-11 border border-gray-200 rounded-xl cursor-pointer text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handlePhotoSelect}
+                          className="sr-only"
+                        />
+                        <Upload className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
+                        {t('inventoryPage.uploadPhotoShort', { defaultValue: 'Загрузить' })}
+                      </label>
+                      {/* capture открывает камеру напрямую */}
+                      <label className="flex items-center justify-center gap-2 h-11 border border-gray-200 rounded-xl cursor-pointer text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={handlePhotoSelect}
+                          className="sr-only"
+                        />
+                        <Camera className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
+                        {t('inventoryPage.takePhotoShort', { defaultValue: 'Камера' })}
+                      </label>
+                    </div>
                   </div>
                   )}
                   {(photos.length > 0 || pendingPhotos.length > 0) && (

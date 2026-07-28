@@ -454,6 +454,8 @@
     "photos": "Фотографии",
     "photoLimitReached": "Достигнут лимит {{max}} фото",
     "addPhoto": "Добавить фото (можно несколько, ещё {{remaining}})",
+    "uploadPhotoShort": "Загрузить",
+    "takePhotoShort": "Камера",
     "photoAlt": "Фото {{n}}",
     "uploadingAlt": "Загрузка…",
     "photosUploadingHint": "Фото догружаются в фоне — можно сразу сохранять, они допишутся в товар.",

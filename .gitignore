@@ -54,3 +54,6 @@ design-previews/
 .wrangler/
 .dev.vars
 lint-output.txt
+
+# Graphify — граф знаний по коду (генерируется, пересобираемо)
+graphify-out/
