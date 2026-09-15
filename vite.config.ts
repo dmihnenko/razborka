@@ -221,10 +221,26 @@ export default defineConfig({
           if (id.includes('react-dom') || /[\\/]react[\\/]/.test(id) || id.includes('scheduler')) return 'vendor-react'
           if (id.includes('@supabase')) return 'vendor-supabase'
           if (id.includes('@tanstack')) return 'vendor-query'
-          if (id.includes('recharts') || id.includes('d3-') || id.includes('victory')) return 'vendor-charts'
-          if (id.includes('framer-motion')) return 'vendor-motion'
+          // Recharts + его транзитивная подсистема (react-smooth/decimal.js-light/internmap/
+          // fast-equals/victory/d3) — только в аналитике (lazy). НЕ трогаем lodash: он
+          // используется и в eager-коде, иначе тянет vendor-charts на первый экран.
+          if (
+            id.includes('recharts') || id.includes('d3-') || id.includes('victory') ||
+            id.includes('react-smooth') || id.includes('decimal.js-light') ||
+            id.includes('internmap') || id.includes('fast-equals')
+          ) return 'vendor-charts'
+          // framer-motion теперь пакеты motion-dom/motion-utils — иначе 93KB утекали в vendor.
+          if (id.includes('framer-motion') || id.includes('motion-dom') || id.includes('motion-utils')) return 'vendor-motion'
           if (id.includes('lucide-react')) return 'vendor-icons'
           if (id.includes('date-fns')) return 'vendor-date'
+          // Тяжёлые зависимости, которые нужны ТОЛЬКО на lazy-страницах — в отдельные
+          // именованные чанки. Так они загружаются вместе со своей страницей, а не форсятся
+          // в общий eager-vendor: @dnd-kit — только PartsOrders; qrcode — только QR-этикетки;
+          // react-dropzone/file-selector — формы; imask — маски ввода в формах.
+          if (id.includes('@dnd-kit')) return 'vendor-dnd'
+          if (id.includes('qrcode') || id.includes('dijkstrajs')) return 'vendor-qrcode'
+          if (id.includes('react-dropzone') || id.includes('file-selector') || id.includes('attr-accept')) return 'vendor-upload'
+          if (id.includes('imask')) return 'vendor-mask'
           return 'vendor'
         },
       }

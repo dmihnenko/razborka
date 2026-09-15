@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   LogOut,
@@ -12,8 +12,10 @@ import {
 } from 'lucide-react'
 import GlobalSearch from './GlobalSearch'
 import { LayoutSkeleton } from './LayoutSkeleton'
-import WaitingAccessPage from './WaitingAccessPage'
-import OwnerSetupPage from './OwnerSetupPage'
+// Экраны-гейты (онбординг/ожидание доступа) показываются редко и тянут imask (~17KB gzip)
+// на первый экран — грузим лениво, чтобы не утяжелять вход для всех остальных.
+const WaitingAccessPage = lazy(() => import('./WaitingAccessPage'))
+const OwnerSetupPage = lazy(() => import('./OwnerSetupPage'))
 import ContextSwitcher from './ContextSwitcher'
 import LanguageSwitcher from './LanguageSwitcher'
 import NotificationsBell from './NotificationsBell'
@@ -275,10 +277,12 @@ export default function Layout() {
   if (!primaryRole && filteredNavigation.length === 0) {
     if (profileFetching) return <LayoutSkeleton />
     return (
-      <WaitingAccessPage
-        profile={profile}
-        onLogout={handleLogout}
-      />
+      <Suspense fallback={<LayoutSkeleton />}>
+        <WaitingAccessPage
+          profile={profile}
+          onLogout={handleLogout}
+        />
+      </Suspense>
     )
   }
 
@@ -291,13 +295,15 @@ export default function Layout() {
 
   if (needsSetup && primaryRole) {
     return (
-      <OwnerSetupPage
-        profile={profile}
-        onLogout={handleLogout}
-        onComplete={() => { localStorage.removeItem('tsp_profile_cache'); window.location.reload() }}
-        existingCompanyId={hasCompanyNoPhone ? ownerCompanyId : undefined}
-        existingCompanyName={hasCompanyNoPhone ? ownerCompany?.name : undefined}
-      />
+      <Suspense fallback={<LayoutSkeleton />}>
+        <OwnerSetupPage
+          profile={profile}
+          onLogout={handleLogout}
+          onComplete={() => { localStorage.removeItem('tsp_profile_cache'); window.location.reload() }}
+          existingCompanyId={hasCompanyNoPhone ? ownerCompanyId : undefined}
+          existingCompanyName={hasCompanyNoPhone ? ownerCompany?.name : undefined}
+        />
+      </Suspense>
     )
   }
 
