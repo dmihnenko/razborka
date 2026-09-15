@@ -107,6 +107,14 @@ export default function PartsOrderDetails() {
   /* ── изменить статус ────────────────────────────────────────── */
   const updateStatusMutation = useMutation({
     mutationFn: async (status: string) => {
+      // Нельзя завершать заказ с USD-позициями без курса — иначе exchange_rate_at_sale
+      // не запишется и выручка/прибыль посчитаются неверно. Ждём загрузки курса.
+      if (status === 'completed') {
+        const hasUsd = (order?.items ?? []).some((i) => getItemCurrency(i) === 'USD')
+        if (hasUsd && exchangeRate == null) {
+          throw new Error(t('orderDetailsPage.rateNotReady', { defaultValue: 'Курс USD ещё не загрузился — попробуйте через секунду' }))
+        }
+      }
       if ((status === 'in_progress' || status === 'completed') && !order?.customer_id) {
         await createAndAttachCustomer(id!)
       }
@@ -151,10 +159,12 @@ export default function PartsOrderDetails() {
       // Заявка с маркета теряет ссылку на заказ (FK SET NULL) → вернётся в «Активные»
       queryClient.invalidateQueries({ queryKey: ['marketplace-orders'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       queryClient.invalidateQueries({ queryKey: ['trash'] })
       toast.success(t('orderDetailsPage.orderMovedToTrash'))
       navigate('/parts/orders')
+    },
+    onError: (err: unknown) => {
+      toast.error((err instanceof Error ? err.message : '') || t('orderDetailsPage.orderDeleteError', { defaultValue: 'Не удалось удалить заказ' }))
     },
   })
 
@@ -626,7 +636,11 @@ export default function PartsOrderDetails() {
                         )}
                       </p>
                     </div>
-                    {canManage && (
+                    {/* Удаление позиции — только у редактируемых заказов (new/assembling/
+                        in_progress), где позиция в резерве и корректно вернётся в «в наличии».
+                        У завершённых заказ позиция «продана» и кол-во списано — удаление строки
+                        безвозвратно теряло бы товар; для правок завершённого заказа — отмена. */}
+                    {canEdit && (
                       <button
                         onClick={async () => {
                           const ok = await showConfirm({ message: t('orderDetailsPage.deleteItemConfirm'), danger: true })
@@ -890,6 +904,11 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
     onSuccess: async () => {
       await updatePartsOrderTotal(orderId, exchangeRate)
       queryClient.invalidateQueries({ queryKey: ['parts-order', orderId] })
+      // Позиция забронирована (available→reserved): обновляем список доступных в модалке
+      // и общий склад, иначе её можно добавить повторно (двойной резерв) и статус на
+      // странице склада остаётся «в наличии».
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory-for-order', partsCompanyId] })
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       onClose()
     },
   })

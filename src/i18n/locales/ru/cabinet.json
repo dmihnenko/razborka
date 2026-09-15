@@ -947,6 +947,8 @@
     "timeline": "История заказа",
     "created": "Заказ создан",
     "orderMovedToTrash": "Заказ перемещён в корзину",
+    "orderDeleteError": "Не удалось удалить заказ",
+    "rateNotReady": "Курс USD ещё не загрузился — попробуйте через секунду",
     "customerSaved": "Данные клиента сохранены",
     "customerSaveError": "Ошибка сохранения данных клиента",
     "noOrderError": "Нет заказа",

@@ -411,9 +411,10 @@ export async function getPartsInventorySummary(
   return data as PartsInventorySummary
 }
 
-/** Экранируем значение для PostgREST or()-фильтра (запятые/скобки ломают синтаксис) */
+/** Экранируем значение для PostgREST or()-фильтра: запятые/скобки ломают синтаксис,
+ *  а `%` в ilike — это wildcard (литеральный «%» дал бы слишком широкий поиск). */
 function sanitizeInventorySearch(s: string): string {
-  return s.trim().replace(/[,()]/g, ' ').replace(/\s+/g, ' ')
+  return s.trim().replace(/[,()%]/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
 export interface PartsInventoryPagedOpts {
@@ -754,7 +755,9 @@ export async function updatePartsOrderTotal(orderId: string, exchangeRate?: numb
     .eq('order_id', orderId)
 
   const total = (items || []).reduce((s: number, i: Pick<PartsOrderItem, 'price_at_sale' | 'quantity' | 'price_at_sale_currency'>) => {
-    const currency = i.price_at_sale_currency || 'UAH'
+    // Дефолт валюты согласован с createPartsOrderItem (там тоже 'USD'), иначе итог на
+    // клиенте (USD) и сохранённый total_amount (был 'UAH') расходились для null-валюты.
+    const currency = i.price_at_sale_currency || 'USD'
     const amount = (i.price_at_sale || 0) * (i.quantity || 1)
     // USD → грн только при известном курсе; иначе считаем сумму без USD-позиций (без хардкода)
     const amountUAH = currency === 'USD' ? (exchangeRate != null ? amount * exchangeRate : 0) : amount
