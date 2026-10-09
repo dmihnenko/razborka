@@ -27,6 +27,7 @@ import { getMenuForRoles, PARTS_NAV_GROUPS } from '../config/navigation'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { useAdminNotifications } from '../hooks/useAdminNotifications'
 import { useSubscriptionLimits } from '../hooks/useSubscription'
+import { countNewMarketplaceOrders } from '@/services/marketplaceService'
 import NotificationBanner from './NotificationBanner'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import { PullToRefreshIndicator } from './ui/PullToRefreshIndicator'
@@ -253,6 +254,23 @@ export default function Layout() {
   // Название пункта меню с переводом (fallback — русское имя из конфига).
   const navLabel = (item: { href: string; name: string }) =>
     t(NAV_KEY[item.href] ?? '', { defaultValue: item.name })
+  // Короткая подпись для нижней панели (длинные названия переносились на 2 строки).
+  const navShortLabel = (item: { href: string; name: string }) =>
+    item.href === '/parts/market-orders'
+      ? t('nav.marketOrdersShort', { defaultValue: 'Заявки' })
+      : navLabel(item)
+
+  // Счётчик новых заявок с маркета — бейдж на пункте «Заявки» в нижней панели.
+  // Ключ вложен в ['marketplace-orders', companyId] → инвалидации со страницы заявок
+  // обновляют и его.
+  const partsCompanyIdForBadge = profile?.parts_company_id
+  const { data: newMarketCount = 0 } = useQuery({
+    queryKey: ['marketplace-orders', partsCompanyIdForBadge, 'new-count'],
+    queryFn: () => countNewMarketplaceOrders(partsCompanyIdForBadge!),
+    enabled: !!partsCompanyIdForBadge && currentCtx === 'parts',
+    staleTime: 60_000,
+    refetchInterval: 120_000,
+  })
 
   const handleLogout = async () => {
     // Очищаем весь кэш React Query перед выходом
@@ -317,9 +335,16 @@ export default function Layout() {
   //  • «Админ» — если пользователь админ и /admin нет в самом меню.
   const adminInNav = filteredNavigation.some(i => i.href === '/admin')
   const showAdminInSheet = isAdmin && !adminInNav
-  const showPartsCtxInSheet = (ctxAdmin || ctxRoles.includes('parts_owner') || ctxRoles.includes('parts_worker')) && currentCtx !== 'parts'
-  const showUserCtxInSheet = (ctxAdmin || ctxRoles.includes('user')) && currentCtx !== 'user'
-  const hasCtxLinks = showAdminInSheet || showPartsCtxInSheet || showUserCtxInSheet
+  // У админа смена «Разборка ⇄ Мои авто» — кнопкой в мобильной шапке, в шторке не дублируем.
+  // Кнопку «В маркет» админу в шапке не ставим (нет места) — она уходит строкой в шторку.
+  const showPartsCtxInSheet = !isAdmin && ctxRoles.some((r: string) => r === 'parts_owner' || r === 'parts_worker') && currentCtx !== 'parts'
+  const showUserCtxInSheet = !isAdmin && ctxRoles.includes('user') && currentCtx !== 'user'
+  const showMarketInSheet = isAdmin && currentCtx === 'parts'
+  const hasCtxLinks = showAdminInSheet || showPartsCtxInSheet || showUserCtxInSheet || showMarketInSheet
+
+  // Остальные пункты шторки — блоками по группам навигации (как в сайдбаре десктопа),
+  // блоки разделяются тонкой линией без подписей. Пункты без группы — отдельным блоком.
+  const SHEET_GROUP_ORDER = ['work', 'base', 'system'] as const
 
   // Если ≤4 пункта — все в нижнем баре; иначе первые 4 + кнопка «Меню» (5-й слот).
   // Кнопку «Меню» показываем и когда основных пунктов ≤4, но есть контекст-ссылки
@@ -327,6 +352,10 @@ export default function Layout() {
   const showMobileSheet = mobileNavItems.length > 4 || hasCtxLinks
   const mobileBarItems = showMobileSheet ? mobileNavItems.slice(0, 4) : mobileNavItems
   const mobileSheetItems = showMobileSheet ? mobileNavItems.slice(4) : []
+  const sheetGroups = [
+    ...SHEET_GROUP_ORDER.map(g => mobileSheetItems.filter(i => i.group === g)),
+    mobileSheetItems.filter(i => !i.group),
+  ].filter(list => list.length > 0)
 
   return (
     <div
@@ -467,8 +496,28 @@ export default function Layout() {
                 <Logo size="sm" withText />
               </Link>
             </div>
+            {/* Админ: смена раздела в один тап — «Мои авто» из кабинета, «Разборка» обратно */}
+            {isAdmin && (
+              <Link
+                to={currentCtx === 'parts' ? '/my-vehicles' : '/parts/dashboard'}
+                className="inline-flex items-center gap-1.5 h-9 px-2.5 rounded-lg text-xs font-semibold flex-shrink-0 whitespace-nowrap"
+                style={{ background: 'var(--cab-signal-weak)', color: 'var(--cab-signal)' }}
+              >
+                {currentCtx === 'parts'
+                  ? <><Car className="w-4 h-4" strokeWidth={1.6} />{t('chrome.myCars', { defaultValue: 'Мои авто' })}</>
+                  : <><Store className="w-4 h-4" strokeWidth={1.6} />{t('chrome.parts', { defaultValue: 'Разборка' })}</>}
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              aria-label={t('chrome.search')}
+              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 flex-shrink-0 transition-colors"
+            >
+              <Search className="w-5 h-5" strokeWidth={1.5} />
+            </button>
             <NotificationsBell userId={profile?.id} />
-            {currentCtx === 'parts' && (
+            {currentCtx === 'parts' && !isAdmin && (
               <Link
                 to="/market"
                 title={t('chrome.openMarket')}
@@ -512,14 +561,28 @@ export default function Layout() {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-colors ${
-                  isActive ? 'text-[#16181D]' : 'text-gray-400 hover:text-gray-600'
+                className={`relative flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-colors ${
+                  isActive ? 'font-semibold' : 'text-gray-400 hover:text-gray-600'
                 }`}
+                style={isActive ? { color: 'var(--cab-ink)' } : undefined}
               >
+                {/* Метка активного пункта — тонкая полоска сверху */}
+                {isActive && (
+                  <span aria-hidden className="absolute top-0 inset-x-[22%] h-0.5 rounded-b" style={{ background: 'var(--cab-ink)' }} />
+                )}
                 <Icon className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
-                <span className="text-center leading-tight" style={{ fontSize: '11px' }}>
-                  {navLabel(item)}
+                <span className="text-center leading-tight truncate max-w-full px-0.5" style={{ fontSize: '11px' }}>
+                  {navShortLabel(item)}
                 </span>
+                {item.href === '/parts/market-orders' && newMarketCount > 0 && (
+                  <span
+                    className="absolute top-1.5 left-[calc(50%+4px)] min-w-[16px] h-4 px-1 rounded-lg text-white text-center font-bold"
+                    style={{ background: 'var(--cab-signal)', fontSize: '9.5px', lineHeight: '16px' }}
+                    aria-label={t('nav.newMarketOrders', { defaultValue: 'Новых заявок: {{n}}', n: newMarketCount })}
+                  >
+                    {newMarketCount > 99 ? '99+' : newMarketCount}
+                  </span>
+                )}
               </Link>
             )
           })}
@@ -546,15 +609,15 @@ export default function Layout() {
           onClick={() => setSheetOpen(false)}
         >
           <div
-            className="w-full bg-white rounded-t-2xl"
+            className="w-full bg-white rounded-t-2xl max-h-[85dvh] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             {/* Ручка */}
-            <div className="flex justify-center pt-3 pb-1">
+            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
               <div className="w-10 h-1 rounded-full bg-gray-200" />
             </div>
             {/* Шапка шторки */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 flex-shrink-0">
               <span className="text-sm font-semibold text-gray-700">{t('chrome.menu')}</span>
               <button
                 onClick={() => setSheetOpen(false)}
@@ -563,80 +626,99 @@ export default function Layout() {
                 <X className="w-4 h-4" strokeWidth={1.5} />
               </button>
             </div>
-            {/* Сетка пунктов 3 колонки */}
-            <div className="grid grid-cols-3 gap-2 p-4"
-              style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
-              {mobileSheetItems.map((item) => {
-                const Icon = item.icon
-                const isActive = item.href.includes('?')
-                  ? location.pathname + location.search === item.href
-                  : location.pathname === item.href
-                return (
-                  <Link
-                    key={item.href}
-                    to={item.href}
-                    onClick={() => setSheetOpen(false)}
-                    className={`flex flex-col items-center justify-center gap-1.5 px-1 py-3 rounded-xl min-h-[64px] transition-colors active:scale-[0.96] ${
-                      isActive
-                        ? 'bg-[#16181D] text-white font-semibold'
-                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
-                    <span className="text-center text-[11px] font-medium leading-tight line-clamp-2">{navLabel(item)}</span>
-                  </Link>
-                )
-              })}
-              {/* Смена раздела «Разборка» — прямо в нижнем меню */}
-              {showPartsCtxInSheet && (
-                <Link
-                  to="/parts/dashboard"
-                  onClick={() => {
-                    localStorage.setItem('activeRole', (ctxRoles.includes('parts_worker') && !ctxRoles.includes('parts_owner')) ? 'parts_worker' : 'parts_owner')
-                    setSheetOpen(false)
-                  }}
-                  className="flex flex-col items-center justify-center gap-1.5 px-1 py-3 rounded-xl min-h-[64px] bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors active:scale-[0.96]"
-                >
-                  <Store className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
-                  <span className="text-center text-[11px] font-medium leading-tight">{t('chrome.parts', { defaultValue: 'Разборка' })}</span>
-                </Link>
+            <div className="flex-1 overflow-y-auto px-3 pt-2 pb-1">
+              {/* Разделы: панель админа / маркет (админ) / смена раздела (мультироль без админа) */}
+              {hasCtxLinks && (
+                <div className={`grid grid-cols-1 gap-0.5 ${sheetGroups.length ? 'pb-2 mb-2 border-b border-gray-100' : ''}`}>
+                  {showAdminInSheet && (
+                    <Link
+                      to="/admin"
+                      onClick={() => { localStorage.removeItem('activeRole'); setSheetOpen(false) }}
+                      className="flex items-center gap-2.5 min-h-[44px] px-2.5 rounded-lg text-[13px] font-semibold text-gray-800 hover:bg-gray-50 transition-colors"
+                    >
+                      <Shield className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.6} style={{ color: 'var(--cab-signal)' }} />
+                      {t('chrome.adminPanel', { defaultValue: 'Панель администратора' })}
+                    </Link>
+                  )}
+                  {showMarketInSheet && (
+                    <Link
+                      to="/market"
+                      onClick={() => setSheetOpen(false)}
+                      className="flex items-center gap-2.5 min-h-[44px] px-2.5 rounded-lg text-[13px] font-semibold text-gray-800 hover:bg-gray-50 transition-colors"
+                    >
+                      <Store className="w-[18px] h-[18px] flex-shrink-0 text-gray-400" strokeWidth={1.6} />
+                      {t('chrome.toMarket')}
+                    </Link>
+                  )}
+                  {showPartsCtxInSheet && (
+                    <Link
+                      to="/parts/dashboard"
+                      onClick={() => {
+                        localStorage.setItem('activeRole', (ctxRoles.includes('parts_worker') && !ctxRoles.includes('parts_owner')) ? 'parts_worker' : 'parts_owner')
+                        setSheetOpen(false)
+                      }}
+                      className="flex items-center gap-2.5 min-h-[44px] px-2.5 rounded-lg text-[13px] font-semibold text-gray-800 hover:bg-gray-50 transition-colors"
+                    >
+                      <Store className="w-[18px] h-[18px] flex-shrink-0 text-gray-400" strokeWidth={1.6} />
+                      {t('chrome.parts', { defaultValue: 'Разборка' })}
+                    </Link>
+                  )}
+                  {showUserCtxInSheet && (
+                    <Link
+                      to="/my-vehicles"
+                      onClick={() => { localStorage.setItem('activeRole', 'user'); setSheetOpen(false) }}
+                      className="flex items-center gap-2.5 min-h-[44px] px-2.5 rounded-lg text-[13px] font-semibold text-gray-800 hover:bg-gray-50 transition-colors"
+                    >
+                      <Car className="w-[18px] h-[18px] flex-shrink-0 text-gray-400" strokeWidth={1.6} />
+                      {t('chrome.myCars', { defaultValue: 'Мои авто' })}
+                    </Link>
+                  )}
+                </div>
               )}
-              {/* Смена раздела «Мои авто» — прямо в нижнем меню */}
-              {showUserCtxInSheet && (
-                <Link
-                  to="/my-vehicles"
-                  onClick={() => { localStorage.setItem('activeRole', 'user'); setSheetOpen(false) }}
-                  className="flex flex-col items-center justify-center gap-1.5 px-1 py-3 rounded-xl min-h-[64px] bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors active:scale-[0.96]"
-                >
-                  <Car className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
-                  <span className="text-center text-[11px] font-medium leading-tight">{t('chrome.myCars', { defaultValue: 'Мои авто' })}</span>
-                </Link>
-              )}
-              {/* Ссылка на Панель администратора в шторке */}
-              {showAdminInSheet && (
-                <Link
-                  to="/admin"
-                  onClick={() => { localStorage.removeItem('activeRole'); setSheetOpen(false) }}
-                  className="flex flex-col items-center justify-center gap-1.5 px-1 py-3 rounded-xl min-h-[64px] bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors active:scale-[0.96]"
-                >
-                  <Shield className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
-                  <span className="text-center text-[11px] font-medium leading-tight">{t('chrome.admin')}</span>
-                </Link>
-              )}
+
+              {/* Пункты меню: 2 колонки строк; группы — через тонкую линию, без подписей */}
+              {sheetGroups.map((list, gi) => (
+                <div key={gi} className={gi > 0 ? 'mt-2 pt-2 border-t border-gray-100' : ''}>
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+                    {list.map((item) => {
+                      const Icon = item.icon
+                      const isActive = item.href.includes('?')
+                        ? location.pathname + location.search === item.href
+                        : location.pathname === item.href
+                      return (
+                        <Link
+                          key={item.href}
+                          to={item.href}
+                          onClick={() => setSheetOpen(false)}
+                          className={`flex items-center gap-2.5 min-h-[44px] px-2.5 rounded-lg text-[13px] min-w-0 transition-colors ${
+                            isActive ? 'bg-gray-100 font-semibold text-gray-900' : 'text-gray-800 hover:bg-gray-50'
+                          }`}
+                        >
+                          <Icon
+                            className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? 'text-gray-900' : 'text-gray-400'}`}
+                            strokeWidth={1.6}
+                          />
+                          <span className="truncate">{navLabel(item)}</span>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
-            {/* Поиск + Выйти */}
-            <div className="px-4 pb-4 pt-1 flex gap-2" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
+
+            {/* Аккаунт + тихий «Выйти». Отступ под вырез экрана — только здесь (раньше дважды). */}
+            <div
+              className="flex items-center justify-between gap-3 mx-3 mt-1 pt-2 border-t border-gray-100 flex-shrink-0"
+              style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
+            >
+              <span className="text-xs text-gray-400 truncate min-w-0">{user?.email}</span>
               <button
-                onClick={() => { setSheetOpen(false); setSearchOpen(true) }}
-                className="flex-1 inline-flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors active:scale-[0.98]"
-              >
-                <Search className="w-4 h-4" strokeWidth={1.5} /> {t('chrome.search')}
-              </button>
-              <button
+                type="button"
                 onClick={() => { setSheetOpen(false); handleLogout() }}
-                className="flex-1 inline-flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors active:scale-[0.98]"
+                className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-[13px] font-semibold text-red-600 hover:bg-red-50 flex-shrink-0 transition-colors"
               >
-                <LogOut className="w-4 h-4" strokeWidth={1.5} /> {t('chrome.logoutFull')}
+                <LogOut className="w-4 h-4" strokeWidth={1.6} /> {t('chrome.logoutFull')}
               </button>
             </div>
           </div>

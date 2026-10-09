@@ -544,6 +544,19 @@ export async function getMarketplaceOrders(companyId: string): Promise<Marketpla
   return ((data || []) as MarketplaceOrderRow[]).map(mapOrderRow)
 }
 
+/** Кол-во новых (status='new') заявок с маркета — для счётчика в нижнем меню кабинета.
+ *  head:true — без строк, только count. */
+export async function countNewMarketplaceOrders(companyId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('marketplace_orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('parts_company_id', companyId)
+    .eq('status', 'new')
+
+  if (error) throw error
+  return count ?? 0
+}
+
 // ── Кабинет клиента («Мои заказы») ─────────────────────────────────────────
 
 /**

@@ -3,6 +3,8 @@
     "dashboard": "Дашборд",
     "orders": "Замовлення",
     "marketOrders": "Заявки з маркету",
+    "marketOrdersShort": "Заявки",
+    "newMarketOrders": "Нових заявок: {{n}}",
     "shipments": "Доставка",
     "inventory": "Запчастини",
     "shop": "Магазин",
@@ -84,6 +86,9 @@
   },
   "chrome": {
     "menu": "Меню",
+    "parts": "Розборка",
+    "myCars": "Мої авто",
+    "adminPanel": "Панель адміністратора",
     "search": "Пошук",
     "logout": "Вихід",
     "logoutFull": "Вийти",
