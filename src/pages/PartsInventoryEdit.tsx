@@ -6,7 +6,7 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { Spinner } from '@/components/ui/Spinner'
-import { PartsInventoryModal } from './PartsInventory'
+import { PartsInventoryModal } from './PartsInventoryModal'
 import {
   getPartsInventoryItem,
   createPartsInventoryItem,
