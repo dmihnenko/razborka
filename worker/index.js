@@ -81,6 +81,38 @@ function makesLinksHtml(catalog, uk) {
   return `<nav aria-label="${escapeHtml(label)}"><h2>${escapeHtml(label)}</h2>${links}</nav>`
 }
 
+// «N запчастей» с правильным склонением (видно в сниппетах выдачи):
+// ru 1 запчасть · 2–4 запчасти · 5+ запчастей; uk 1 запчастина · 2–4 запчастини · 5+ запчастин
+function partsWord(n, uk) {
+  const a = Math.abs(Number(n) || 0) % 100, b = a % 10
+  const i = a > 10 && a < 20 ? 2 : b === 1 ? 0 : b >= 2 && b <= 4 ? 1 : 2
+  return `${n} ${(uk ? ['запчастина', 'запчастини', 'запчастин'] : ['запчасть', 'запчасти', 'запчастей'])[i]}`
+}
+
+// Список товаров витрины для перелинковки (страницы каталога/марки/модели).
+// market_inventory — публичное view (только опубликованное в наличии, без закупки).
+async function getPartsForLinks(env, { make, model, limit = 40 } = {}) {
+  try {
+    const veh = make ? 'vehicle:parts_vehicles!vehicle_id!inner(make,model,year)' : 'vehicle:parts_vehicles!vehicle_id(make,model,year)'
+    let path = `/rest/v1/market_inventory?select=id,name,${veh}&order=created_at.desc&limit=${limit}`
+    if (make) path += '&vehicle.make=eq.' + encodeURIComponent(make)
+    if (model) path += '&vehicle.model=eq.' + encodeURIComponent(model)
+    const rows = await supa(env, path)
+    return Array.isArray(rows) ? rows.filter((r) => r && r.id && r.name) : []
+  } catch { return [] }
+}
+// HTML-список ссылок на товары: «Название — Марка Модель Год»
+function partsLinksHtml(items, heading, q) {
+  if (!items || !items.length) return ''
+  const li = items.map((it) => {
+    const v = it.vehicle || {}
+    const veh = [v.make, v.model, v.year].filter(Boolean).join(' ')
+    const text = veh && !it.name.includes(v.model || '\u0000') ? `${it.name} — ${veh}` : it.name
+    return `<li>${A(SITE + '/market/part/' + it.id + q, text)}</li>`
+  }).join('')
+  return `<section><h2>${escapeHtml(heading)}</h2><ul>${li}</ul></section>`
+}
+
 async function supa(env, path, init = {}) {
   const url = env.SUPABASE_URL + path
   const headers = { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + env.SUPABASE_ANON_KEY, ...(init.headers || {}) }
@@ -123,13 +155,15 @@ async function computeMeta(route, env, pathname, lang) {
   const uk = lang === 'uk'
   const q = uk ? '?lng=uk' : ''
   const cleanPath = pathname.replace(/\/+$/, '') || '/'
-  // altBase — канонический URL БЕЗ языкового параметра (для hreflang-альтернатив)
+  // altBase — канонический URL БЕЗ языкового параметра (для hreflang-альтернатив).
+  // Главная: «/» и «/market» отдают одно и то же, а «/» в SPA всех сразу уводит на /market
+  // (RootGate) → канон один — /market (иначе два «главных» дубля в индексе).
   const altBase = route.type === 'product' ? SITE + '/market/part/' + route.id
-    : cleanPath === '/' ? SITE + '/'
+    : route.type === 'home' ? SITE + '/market'
     : SITE + cleanPath
   const canonical = altBase + q
   const base = { canonical, altBase, lang, ogImage: DEFAULT_OG, ogType: 'website', robots: null, jsonld: null }
-  const homeUrl = SITE + '/' + q
+  const homeUrl = SITE + '/market' + q
   const catUrl = SITE + '/market/catalog' + q
   const bcHome = uk ? 'Головна' : 'Главная'
   const bcCat = 'Каталог'
@@ -150,26 +184,46 @@ async function computeMeta(route, env, pathname, lang) {
       ? 'Купити вживані та нові автозапчастини від перевірених авторозборок України. Каталог за маркою, моделлю та роком, прямий контакт з розборкою.'
       : 'Купить б/у и новые автозапчасти от проверенных авторазборок Украины. Каталог по марке, модели и году, прямой контакт с разборкой.',
     jsonld: [
-      { '@context': 'https://schema.org', '@type': 'Organization', name: BRAND, url: SITE, logo: DEFAULT_OG },
+      // logo — квадратный знак (Google требует ≥112px, не баннер 1200×630)
+      { '@context': 'https://schema.org', '@type': 'Organization', name: BRAND, url: SITE, logo: SITE + '/brand/razborka-mark-512.png' },
       { '@context': 'https://schema.org', '@type': 'WebSite', name: BRAND, url: SITE,
         potentialAction: { '@type': 'SearchAction', target: SITE + '/market/catalog?q={query}', 'query-input': 'required name=query' } },
     ],
     }
   }
   if (route.type === 'catalog') {
-    const catalog = await getCarCatalog(env)
+    const [catalog, latest] = await Promise.all([getCarCatalog(env), getPartsForLinks(env, { limit: 30 })])
     return { ...base,
-    body: seoBody(uk ? 'Каталог автозапчастин' : 'Каталог автозапчастей', [`<p>${escapeHtml(uk ? 'Б/в та нові автозапчастини від авторозборок. Оберіть марку, модель, рік і стан.' : 'Б/у и новые автозапчасти от авторазборок. Выберите марку, модель, год и состояние.')}</p>`, makesLinksHtml(catalog, uk)]),
+    body: seoBody(uk ? 'Каталог автозапчастин' : 'Каталог автозапчастей', [
+      `<p>${escapeHtml(uk ? 'Б/в та нові автозапчастини від авторозборок. Оберіть марку, модель, рік і стан.' : 'Б/у и новые автозапчасти от авторазборок. Выберите марку, модель, год и состояние.')}</p>`,
+      makesLinksHtml(catalog, uk),
+      partsLinksHtml(latest, uk ? 'Нові надходження' : 'Новые поступления', q),
+    ]),
     title: uk ? `Каталог автозапчастин — ${BRAND}` : `Каталог автозапчастей — ${BRAND}`,
     description: uk ? 'Каталог вживаних і нових автозапчастин від авторозборок. Фільтр за маркою, моделлю, роком і станом.'
                     : 'Каталог б/у и новых автозапчастей от авторазборок. Фильтр по марке, модели, году и состоянию.',
     jsonld: [breadcrumb([[bcHome, homeUrl], [bcCat, catUrl]])] }
   }
-  if (route.type === 'suppliers') return { ...base,
-    body: seoBody(uk ? 'Авторозборки України' : 'Авторазборки Украины', [`<p>${escapeHtml(uk ? 'Перелік авторозборок: контакти, міста, наявність запчастин. Прямий контакт з розборкою.' : 'Список авторазборок: контакты, города, наличие запчастей. Прямой контакт с разборкой.')}</p>`, `<nav>${A(catUrl, uk ? 'Каталог запчастин' : 'Каталог запчастей')}</nav>`]),
-    title: uk ? `Авторозборки України — ${BRAND}` : `Авторазборки Украины — ${BRAND}`,
-    description: uk ? 'Список авторозборок: контакти, міста, наявність запчастин. Прямий зв’язок з розборкою.'
-                    : 'Список авторазборок: контакты, города, наличие запчастей. Прямая связь с разборкой.' }
+  if (route.type === 'suppliers') {
+    // Список разборок со ссылками — иначе страницы разборок краулер находит только через sitemap
+    let list = []
+    try { const r = await rpc(env, 'get_market_suppliers', {}); list = Array.isArray(r) ? r : [] } catch {}
+    const supUrl = SITE + '/market/suppliers' + q
+    const items = list.filter((s) => s && s.id && s.name).map((s) => {
+      const extra = [s.city, s.available_parts != null ? partsWord(s.available_parts, uk) : null].filter(Boolean).join(', ')
+      return `<li>${A(SITE + '/market/supplier/' + s.id + q, s.name)}${extra ? ' — ' + escapeHtml(extra) : ''}</li>`
+    }).join('')
+    return { ...base,
+      body: seoBody(uk ? 'Авторозборки України' : 'Авторазборки Украины', [
+        `<p>${escapeHtml(uk ? 'Перелік авторозборок: контакти, міста, наявність запчастин. Прямий контакт з розборкою.' : 'Список авторазборок: контакты, города, наличие запчастей. Прямой контакт с разборкой.')}</p>`,
+        items ? `<ul>${items}</ul>` : '',
+        `<nav>${A(catUrl, uk ? 'Каталог запчастин' : 'Каталог запчастей')}</nav>`,
+      ]),
+      title: uk ? `Авторозборки України — ${BRAND}` : `Авторазборки Украины — ${BRAND}`,
+      description: uk ? 'Список авторозборок: контакти, міста, наявність запчастин. Прямий зв’язок з розборкою.'
+                      : 'Список авторазборок: контакты, города, наличие запчастей. Прямая связь с разборкой.',
+      jsonld: [breadcrumb([[bcHome, homeUrl], [uk ? 'Авторозборки' : 'Авторазборки', supUrl]])] }
+  }
   if (route.type === 'business') return { ...base,
     body: seoBody(uk ? 'Razborka.net для авторозборок' : 'Razborka.net для авторазборок', [`<p>${escapeHtml(uk ? 'Облік складу, вітрина запчастин у маркеті, заявки покупців, інтеграція з Новою Поштою та Telegram.' : 'Учёт склада, витрина запчастей в маркете, заявки покупателей, интеграция с Новой Почтой и Telegram.')}</p>`, `<p>${A(SITE + '/business/apply' + q, uk ? 'Підключити авторозборку' : 'Подключить авторозборку')}</p>`]),
     title: uk ? `Для авторозборок — ${BRAND}` : `Для авторазборок — ${BRAND}`,
@@ -195,7 +249,7 @@ async function computeMeta(route, env, pathname, lang) {
     const label = [make, model].filter(Boolean).join(' ')
     const cnt = modelEntry ? modelEntry.count : makeEntry.count
     const h1 = uk ? `Запчастини ${label}` : `Запчасти ${label}`
-    const cntTxt = uk ? `${cnt} запчастин у наявності` : `${cnt} запчастей в наличии`
+    const cntTxt = partsWord(cnt, uk) + (uk ? ' у наявності' : ' в наличии')
     let links = ''
     if (!model) {
       const models = (makeEntry.models || []).filter((mm) => (mm.count || 0) > 0)
@@ -206,11 +260,17 @@ async function computeMeta(route, env, pathname, lang) {
     }
     const bc = [[bcHome, homeUrl], [bcCat, catUrl], [make, SITE + '/market/catalog/' + route.makeSlug + q]]
     if (model) bc.push([label, SITE + '/market/catalog/' + route.makeSlug + '/' + route.modelSlug + q])
+    // Ссылки на сами запчасти марки/модели — главная перелинковка «посадочная → товар»
+    const parts = await getPartsForLinks(env, { make, model, limit: model ? 60 : 40 })
     return { ...base,
       title: `${h1} — ${BRAND}`,
       description: uk ? `Купити запчастини ${label} від авторозборок: ${cntTxt}. Б/в та нові, доставка Новою Поштою.`
                       : `Купить запчасти ${label} от авторазборок: ${cntTxt}. Б/у и новые, доставка Новой Почтой.`,
-      body: seoBody(h1, [`<p>${escapeHtml((uk ? `Запчастини ${label} від перевірених авторозборок. ` : `Запчасти ${label} от проверенных авторазборок. `) + cntTxt + '.')}</p>`, links]),
+      body: seoBody(h1, [
+        `<p>${escapeHtml((uk ? `Запчастини ${label} від перевірених авторозборок. ` : `Запчасти ${label} от проверенных авторазборок. `) + cntTxt + '.')}</p>`,
+        links,
+        partsLinksHtml(parts, uk ? `${label}: у наявності` : `${label}: в наличии`, q),
+      ]),
       jsonld: [breadcrumb(bc)] }
   }
   if (route.type === 'noindex') return { ...base, robots: 'noindex,follow', altBase: undefined, title: BRAND,
@@ -227,7 +287,11 @@ async function computeMeta(route, env, pathname, lang) {
     const price = it.selling_price ? `${Number(it.selling_price).toLocaleString('uk-UA')} ${cur}` : ''
     const cond = (uk ? COND_UK : COND_RU)[it.condition] || ''
     const img = (it.photos && it.photos[0] && (it.photos[0].medium_url || it.photos[0].url)) || it.photo_url || DEFAULT_OG
-    const title = clip([it.name, veh].filter(Boolean).join(' — '), 65) + ` | ${BRAND}`
+    // Авто дописываем, только если модели ещё нет в названии (иначе «… Tesla Model 3 — T…»);
+    // режем по границе слова, а не посреди.
+    const nameHasModel = v.model && it.name.toLowerCase().includes(String(v.model).toLowerCase())
+    const rawTitle = veh && !nameHasModel ? `${it.name} — ${veh}` : it.name
+    const title = (rawTitle.length > 65 ? clip(rawTitle, 65).replace(/\s+\S*…$/, '…') : rawTitle) + ` | ${BRAND}`
     const L = uk ? { cond: 'Стан', price: 'Ціна', veh: 'Авто', num: 'Номер' } : { cond: 'Состояние', price: 'Цена', veh: 'Авто', num: 'Номер' }
     const description = clip([it.name, cond && `${L.cond}: ${cond}`, price && `${L.price} ${price}`, veh && `${L.veh}: ${veh}`, it.part_number && `${L.num}: ${it.part_number}`].filter(Boolean).join('. ') + '.', 175)
     const canon = altBase + q // дедуп: /public/parts-item → /market/part (+язык)
@@ -285,7 +349,7 @@ async function computeMeta(route, env, pathname, lang) {
       title: (uk ? 'Авторозборку не знайдено — ' : 'Авторазборка не найдена — ') + BRAND,
       description: uk ? 'Авторозборку не знайдено.' : 'Авторазборка не найдена.' }
     const title = clip(`${s.name} — ${uk ? 'авторозборка' : 'авторазборка'}${s.city ? ', ' + s.city : ''}`, 65) + ` | ${BRAND}`
-    const partsTxt = s.available_parts != null ? (uk ? `${s.available_parts} запчастин у наявності` : `${s.available_parts} запчастей в наличии`) : null
+    const partsTxt = s.available_parts != null ? partsWord(s.available_parts, uk) + (uk ? ' у наявності' : ' в наличии') : null
     const description = clip([s.name, partsTxt, s.address].filter(Boolean).join('. ') + '.', 175)
     const sFacts = [s.city && `${uk ? 'Місто' : 'Город'}: ${s.city}`, s.address, partsTxt, s.phone && `${uk ? 'Телефон' : 'Телефон'}: ${s.phone}`].filter(Boolean)
     const body = seoBody(s.name, [
@@ -328,7 +392,8 @@ function injectMeta(res, meta, includeBody) {
     `<meta name="twitter:title" content="${escapeHtml(meta.title)}">` +
     `<meta name="twitter:description" content="${escapeHtml(meta.description)}">` +
     `<meta name="twitter:image" content="${escapeHtml(meta.ogImage)}">` +
-    (meta.robots ? `<meta name="robots" content="${escapeHtml(meta.robots)}">` : '') +
+    // Индексируемым страницам — крупные превью картинок в выдаче/Discover (по умолчанию Google режет)
+    (meta.robots ? `<meta name="robots" content="${escapeHtml(meta.robots)}">` : '<meta name="robots" content="max-image-preview:large">') +
     (meta.jsonld ? `<script type="application/ld+json">${JSON.stringify(meta.jsonld.length === 1 ? meta.jsonld[0] : meta.jsonld).replace(/</g, '\\u003c')}</script>` : '')
 
   const rewriter = new HTMLRewriter()
@@ -359,7 +424,8 @@ function sitemapUrl(path, opts = {}) {
 }
 
 async function buildSitemap(env) {
-  const entries = ['/', '/market', '/market/catalog', '/market/suppliers', '/business'].map((p) => sitemapUrl(p))
+  // «/» не включаем: её канон — /market (в sitemap только канонические URL)
+  const entries = ['/market', '/market/catalog', '/market/suppliers', '/business'].map((p) => sitemapUrl(p))
 
   // товары: lastmod из created_at + image из фото
   try {
@@ -476,6 +542,15 @@ export default {
     // 0. www → apex (канонический хост, без дублей в индексе)
     if (url.hostname === 'www.razborka.net') {
       return Response.redirect(SITE + p + url.search, 301)
+    }
+
+    // 0b. Один адрес на страницу (без дублей в индексе): http → https и без хвостового «/».
+    //     Только прод-хост (wrangler dev ходит по http://localhost — без петли) и не API.
+    if (url.hostname === 'razborka.net' && (request.method === 'GET' || request.method === 'HEAD') && !p.startsWith('/api/')) {
+      const noSlash = p.length > 1 && p.endsWith('/') ? p.replace(/\/+$/, '') : p
+      if (url.protocol === 'http:' || noSlash !== p) {
+        return Response.redirect(SITE + noSlash + url.search, 301)
+      }
     }
 
     // 0c. IndexNow: мгновенный пинг новых/изменённых URL (вызывается Supabase-вебхуком).
