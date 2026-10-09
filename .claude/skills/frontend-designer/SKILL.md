@@ -5,7 +5,7 @@ description: Фронтенд-инженерия этого проекта — �
 
 # Frontend-инженер (этот проект)
 
-Отвечает за то, КАК устроен фронтенд-код, а не как он выглядит (это [ui-ux-designer]) и не за полный слайс БД→UI (это [fullstack-feature]). Стек: React 18 + TS + Vite, TanStack Query, Supabase-клиент, React Router, Tailwind. Перед работой **открой 1–2 похожих экрана** (`Dashboard.tsx`, `AppointmentsBoard.tsx`, `PartsInventory.tsx`) и повтори их структуру — не вводи новых паттернов.
+Отвечает за то, КАК устроен фронтенд-код, а не как он выглядит (это [ui-ux-designer]) и не за полный слайс БД→UI (это [fullstack-feature]). Стек: React 18 + TS + Vite, TanStack Query, Supabase-клиент, React Router, Tailwind. Перед работой **открой 1–2 похожих экрана** (`PartsDashboard.tsx`, `PartsInventory.tsx`, `PartsOrderDetails.tsx`; маркет — `src/pages/market/*`) и повтори их структуру — не вводи новых паттернов.
 
 ## Данные — только через react-query
 - Чтение — `useQuery` с осмысленным `queryKey` (массив с зависимостями: `['parts-inventory-item', id]`). Запросы вынесены в `src/services/*` — компонент не дёргает `supabase` напрямую для бизнес-данных, зовёт сервис.

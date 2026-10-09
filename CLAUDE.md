@@ -8,7 +8,7 @@ React 18 + TypeScript + Vite · TanStack Query · Supabase (Postgres + Auth + Ed
 
 | Задача | Скил |
 |--------|------|
-| UI/редизайн экранов, форм, карточек (визуал) | `ui-ux-designer` |
+| UI/редизайн экранов, форм, карточек (визуал) | `ui-ux-designer` (+ сторонние дизайн-скилы; визуальный QA скриншотами `node scripts/ui-shot.mjs` — обязателен) |
 | Фронтенд-инженерия: компоненты, react-query, TS-паттерны | `frontend-designer` |
 | Сквозная фича (БД → UI) | `fullstack-feature` |
 | Слой данных: миграции, RLS, запросы, react-query | `supabase-data` |

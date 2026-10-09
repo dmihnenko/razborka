@@ -10,9 +10,9 @@ description: Планирование и техническое руководс
 ## Контекст архитектуры
 - SPA: React 18 + TS + Vite, данные — Supabase (Postgres + RLS), состояние сервера — react-query, роутинг — react-router (`App.tsx`, всё внутри `<Layout>`).
 - Слои: `types/` → `services/` (доступ к данным) → `hooks/` (react-query) → `components/`+`pages/` → `App.tsx`. Миграции — `database/migrations/*.sql`.
-- **Мультитенантность:** данные изолированы по `sto_company_id`. Любая фича с данными обязана учитывать это и на уровне запросов, и на уровне RLS.
-- Две подсистемы: СТО (`appointments`, `customers`, `vehicles`) и разборка/parts. Не смешивай их без причины.
-- Деплой: `vite build` (Netlify). `tsc` не гейтит сборку (есть долг unused-locals).
+- **Мультитенантность:** данные изолированы по `parts_company_id`. Любая фича с данными обязана учитывать это и на уровне запросов, и на уровне RLS (RLS включена на всех `parts_*`).
+- Подсистемы: кабинет разборки (`parts_*`), публичный маркет (`/market`, view `market_inventory`), «Мои авто» (личные авто, отдельный стиль), админка. СТО удалён — не возвращать.
+- Деплой: Cloudflare Workers + Static Assets по пушу в `master` (`worker/index.js`, `wrangler.jsonc`). Перед пушем `build:check` + `lint` + `test` зелёные; миграции — вручную через Management API; Edge Functions — вручную.
 
 ## Как выдавать план
 1. **Уточни цель и охват.** Если требование неоднозначно — задай 2–3 точечных вопроса (через AskUserQuestion), не угадывай критичное.

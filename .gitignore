@@ -57,3 +57,6 @@ lint-output.txt
 
 # Graphify — граф знаний по коду (генерируется, пересобираемо)
 graphify-out/
+
+# Сессия для визуального QA (scripts/ui-shot.mjs --login) — не коммитить
+.auth/
