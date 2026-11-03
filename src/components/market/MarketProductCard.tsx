@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Car, MapPin, Package, Plus, Heart } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { Package, ShoppingCart, Check, Heart } from 'lucide-react'
 import { toast } from 'sonner'
 import type { MarketPart } from '@/types/marketplace'
 import { useCart } from '@/hooks/useCart'
 import { useFavorites } from '@/hooks/useFavorites'
 import { formatPrice } from '@/utils/currency'
-import { PARTS_CONDITION_LABELS } from '@/utils/status'
 
 // ============================================================================
 // Карточка товара (Graphite). Монохром: цвет — только акцент на кнопке.
@@ -16,21 +16,23 @@ export interface MarketProductCardProps {
   part: MarketPart
 }
 
-const CONDITION_BADGE: Record<string, string> = {
-  new: 'mk-badge-new',
-  used: 'mk-badge-used',
-  damaged: 'mk-badge-damaged',
+const CONDITION_KEY: Record<string, string> = {
+  new: 'card.condNew',
+  used: 'card.condUsed',
+  damaged: 'card.condDamaged',
 }
 
 export function MarketProductCard({ part }: MarketProductCardProps) {
-  const { addItem } = useCart()
+  const { t } = useTranslation('market')
+  const { addItem, items } = useCart()
+  const inCart = items.some(i => i.inventoryId === part.id)
   const fav = useFavorites()
   const [imgError, setImgError] = useState(false)
 
   const handleFav = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (!fav.canUse) { toast.error('Войдите, чтобы добавить в избранное', { position: 'top-center' }); return }
+    if (!fav.canUse) { toast.error(t('card.loginForFav'), { position: 'top-center' }); return }
     fav.toggle(part.id)
   }
 
@@ -45,7 +47,7 @@ export function MarketProductCard({ part }: MarketProductCardProps) {
         p0.url && `${p0.url} 1000w`,
       ].filter(Boolean).join(', ')
     : undefined
-  const conditionLabel = part.condition ? PARTS_CONDITION_LABELS[part.condition] ?? part.condition : null
+  const conditionLabel = part.condition && CONDITION_KEY[part.condition] ? t(CONDITION_KEY[part.condition]) : null
   const vehicleStr = part.vehicle
     ? `${part.vehicle.make} ${part.vehicle.model}${part.vehicle.year ? ` ${part.vehicle.year}` : ''}`.trim()
     : null
@@ -65,14 +67,16 @@ export function MarketProductCard({ part }: MarketProductCardProps) {
       companyName: part.company.name,
       condition: part.condition,
     })
-    toast.success('Добавлено в корзину', { position: 'top-center' })
+    toast.success(t('card.addedToCart'), { position: 'top-center' })
   }
 
+  const carLine = [conditionLabel, vehicleStr ? t('card.fromCar', { car: vehicleStr }) : null].filter(Boolean).join(', ')
+  const favOn = fav.isFavorite(part.id)
+
   return (
-    <div className="mk-card mk-card-interactive overflow-hidden flex flex-col group">
+    <div className="mk-card mk-card-interactive overflow-hidden flex flex-col group relative">
       <Link to={`/market/part/${part.id}`} className="flex flex-col flex-1 min-w-0 focus-visible:outline-none" aria-label={part.name}>
-        {/* Фото */}
-        <div className="relative aspect-[4/3] overflow-hidden flex-shrink-0" style={{ background: 'var(--mk-surface-2)' }}>
+        <div className="relative aspect-square overflow-hidden flex-shrink-0 mx-2 mt-2 rounded-[var(--mk-r-btn)]" style={{ background: 'var(--mk-surface-2)' }}>
           {photo && !imgError ? (
             <img
               src={photo}
@@ -83,71 +87,64 @@ export function MarketProductCard({ part }: MarketProductCardProps) {
               decoding="async"
               draggable={false}
               onError={() => setImgError(true)}
-              className="absolute inset-0 w-full h-full object-contain p-1.5 transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-1.5">
               <Package className="w-9 h-9" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
-              <span className="text-[11px] mk-meta">Нет фото</span>
+              <span className="text-[11px] mk-meta">{t('card.noPhoto')}</span>
             </div>
-          )}
-          {conditionLabel && (
-            <span className={['mk-badge mk-photo-badge', CONDITION_BADGE[part.condition] ?? 'mk-badge-neutral'].join(' ')}>
-              {conditionLabel}
-            </span>
-          )}
-          {fav.enabled && (
-            <button
-              type="button"
-              onClick={handleFav}
-              aria-label={fav.isFavorite(part.id) ? 'Убрать из избранного' : 'В избранное'}
-              aria-pressed={fav.isFavorite(part.id)}
-              className="absolute top-2 right-2 w-8 h-8 rounded-full inline-flex items-center justify-center bg-white/85 backdrop-blur-sm shadow-sm transition-colors hover:bg-white"
-            >
-              <Heart className="w-4 h-4" strokeWidth={1.5}
-                fill={fav.isFavorite(part.id) ? '#ef4444' : 'none'}
-                color={fav.isFavorite(part.id) ? '#ef4444' : 'var(--mk-text-2)'} />
-            </button>
           )}
         </div>
 
-        {/* Контент */}
-        <div className="flex flex-col flex-1 px-3 pt-2.5 pb-2 gap-1 min-w-0">
-          <h3 className="text-sm font-semibold leading-snug line-clamp-2" style={{ color: 'var(--mk-text)' }}>
-            {part.name}
-          </h3>
+        <div className="flex flex-col flex-1 px-3 pt-2.5 pb-1 gap-1 min-w-0">
           {part.partNumber && (
-            <span
-              className="inline-flex items-center gap-1 w-fit text-[11px] font-mono px-1.5 py-0.5 rounded-md"
-              style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}
-              title={`Оригинальный номер: ${part.partNumber}`}
-            >
-              <span className="font-sans" style={{ color: 'var(--mk-text-3)' }}>OEM</span>
+            <span className="text-xs font-bold truncate" style={{ color: 'var(--mk-text)' }} title={t('card.oemTitle', { n: part.partNumber })}>
               {part.partNumber}
             </span>
           )}
-          {vehicleStr && (
-            <p className="flex items-center gap-1.5 text-xs min-w-0 mk-meta">
-              <Car className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
-              <span className="truncate">{vehicleStr}</span>
-            </p>
-          )}
-          {part.company.address && (
-            <p className="flex items-center gap-1.5 text-[11px] min-w-0 mk-meta">
-              <MapPin className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
-              <span className="truncate">{part.company.address}</span>
-            </p>
-          )}
+          <h3 className="text-sm font-semibold leading-snug line-clamp-2" style={{ color: 'var(--mk-accent)' }}>
+            {part.name}
+          </h3>
+          {carLine && <p className="text-xs mk-meta truncate">{carLine}</p>}
         </div>
       </Link>
 
-      {/* Футер: цена + добавить */}
-      <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-1 min-w-0">
-        <span className="mk-price text-base truncate">{formatPrice(part.sellingPrice, part.priceCurrency)}</span>
-        <button type="button" onClick={handleAdd} className="mk-add" aria-label={`Добавить в корзину: ${part.name}`}>
-          <Plus className="w-5 h-5" strokeWidth={2} aria-hidden="true" />
-        </button>
+      <div className="mt-auto px-3 pb-3 pt-1 min-w-0">
+        {part.quantity > 0 && (
+          <p className="flex items-center gap-1.5 text-xs mb-1.5" style={{ color: 'var(--mk-text-2)' }}>
+            <span className="mk-dot" aria-hidden="true" />{t('card.inStock')}
+          </p>
+        )}
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <span className="mk-price text-lg truncate">{formatPrice(part.sellingPrice, part.priceCurrency)}</span>
+          <button
+            type="button"
+            onClick={handleAdd}
+            className="mk-add"
+            aria-label={inCart ? t('card.inCart', { name: part.name }) : t('card.addToCart', { name: part.name })}
+          >
+            {inCart
+              ? <Check className="w-5 h-5" strokeWidth={2} aria-hidden="true" />
+              : <ShoppingCart className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />}
+          </button>
+        </div>
       </div>
+
+      {fav.enabled && (
+        <button
+          type="button"
+          onClick={handleFav}
+          aria-label={favOn ? t('card.removeFav') : t('card.addFav')}
+          aria-pressed={favOn}
+          className="absolute top-3 right-3 w-8 h-8 rounded-[var(--mk-r-btn)] inline-flex items-center justify-center transition-colors"
+          style={{ background: 'var(--mk-surface)', border: '1px solid var(--mk-border)' }}
+        >
+          <Heart className="w-4 h-4" strokeWidth={1.75}
+            fill={favOn ? 'var(--mk-accent)' : 'none'}
+            color={favOn ? 'var(--mk-accent)' : 'var(--mk-text-2)'} />
+        </button>
+      )}
     </div>
   )
 }

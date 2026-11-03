@@ -1,10 +1,10 @@
 import { Suspense, useCallback, useState, type FormEvent } from 'react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { PullToRefreshIndicator } from '@/components/ui/PullToRefreshIndicator'
 import { useTranslation } from 'react-i18next'
-import { LayoutDashboard, LogIn, Search, ShoppingCart, Heart } from 'lucide-react'
+import { LayoutDashboard, LayoutGrid, LogIn, Search, ShoppingCart, Heart, Store } from 'lucide-react'
 import { Logo } from '@/components/brand/Logo'
 import { BRAND } from '@/config/brand'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
@@ -21,16 +21,8 @@ import { getDefaultRouteForRoles } from '@/config/navigation'
 // Данные/корзина не тронуты: CartProvider сверху, как и было.
 // ============================================================================
 
-function navTab({ isActive }: { isActive: boolean }) {
-  return [
-    'inline-flex items-center justify-center min-w-0 sm:min-w-[92px] h-9 px-2 sm:px-4 rounded-[7px] text-xs sm:text-sm whitespace-nowrap transition-colors',
-    isActive ? 'font-semibold' : 'font-medium',
-  ].join(' ')
-}
-
 function MarketLayoutInner() {
   const navigate = useNavigate()
-  const location = useLocation()
   const { t } = useTranslation('market')
   const { user } = useAuth()
   const { data: profile } = useUserProfile()
@@ -52,43 +44,28 @@ function MarketLayoutInner() {
   }, [qc])
   const { pull, refreshing } = usePullToRefresh({ onRefresh: handlePullRefresh })
   const [search, setSearch] = useState('')
-  const isHome = location.pathname === '/market' || location.pathname === '/market/'
-  // Каталог и разборки имеют свой поиск/листинг — поиск в шапке скрываем, чтобы не дублировать.
-  // Когда поиска нет, табы «Каталог/Разборки» поднимаем в первый ряд (десктоп).
-  const isCatalog = location.pathname.startsWith('/market/catalog')
-  const isSupplier = location.pathname.startsWith('/market/supplier')
-  const isProduct = location.pathname.startsWith('/market/part')
-  // Поиск в шапке — только на страницах без собственного поиска. На карточке товара
-  // (как на главной/каталоге/разборках) шапка БЕЗ поиска — иначе он встаёт над табами.
-  const showHeaderSearch = !isHome && !isCatalog && !isSupplier && !isProduct
-
   const handleSearch = (e: FormEvent) => {
     e.preventDefault()
     const q = search.trim()
     navigate(q ? `/market/catalog?search=${encodeURIComponent(q)}` : '/market/catalog')
   }
 
-  const navTabs = (
-    <div className="inline-flex items-center gap-1 p-0.5 sm:p-1 rounded-[10px]" style={{ background: 'var(--mk-surface-2)' }}>
-      <NavLink
-        to="/market/catalog"
-        className={navTab}
-        style={({ isActive }) => isActive
-          ? { background: 'var(--mk-surface)', color: 'var(--mk-text)', boxShadow: 'var(--mk-shadow)' }
-          : { color: 'var(--mk-text-2)' }}
-      >
-        {t('header.catalog')}
-      </NavLink>
-      <NavLink
-        to="/market/suppliers"
-        className={navTab}
-        style={({ isActive }) => isActive
-          ? { background: 'var(--mk-surface)', color: 'var(--mk-text)', boxShadow: 'var(--mk-shadow)' }
-          : { color: 'var(--mk-text-2)' }}
-      >
-        {t('header.suppliers')}
-      </NavLink>
-    </div>
+  const searchForm = (cls: string) => (
+    <form onSubmit={handleSearch} role="search" className={cls}>
+      <div className="relative w-full flex">
+        <input
+          type="search"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder={t('header.searchPlaceholder')}
+          className="mk-input !rounded-r-none !border-r-0 min-w-0"
+          aria-label={t('header.searchPlaceholder')}
+        />
+        <button type="submit" className="mk-add !rounded-l-none" aria-label={t('header.searchSubmit')}>
+          <Search className="w-4 h-4" aria-hidden="true" />
+        </button>
+      </div>
+    </form>
   )
 
   return (
@@ -96,52 +73,43 @@ function MarketLayoutInner() {
       <PullToRefreshIndicator pull={pull} refreshing={refreshing} />
 
       {/* ── Шапка ──────────────────────────────────────────────────────── */}
-      <header
-        className="sticky top-0 z-40 backdrop-blur-md"
-        style={{ background: 'color-mix(in srgb, var(--mk-surface) 88%, transparent)', borderBottom: '1px solid var(--mk-border)' }}
-      >
+      <header className="sticky top-0 z-40" style={{ background: 'var(--mk-surface)', borderBottom: '1px solid var(--mk-border)' }}>
+        {/* Узкая серая полоса: только существующие страницы */}
+        <div className="mk-topstrip hidden md:block">
+          <div className="mk-container flex items-center justify-between gap-4 h-8">
+            <span className="truncate">{t('header.stripTagline')}</span>
+            <Link to="/business" className="flex-shrink-0">{t('header.forBusiness')}</Link>
+          </div>
+        </div>
+
         <div className="mk-container">
-          {/* Ряд 1 — на мобиле контролы компактнее (--mk-control-h 36 вместо 44),
-              чтобы лого + табы + язык + корзина + вход уместились в один ряд */}
-          <div className="flex items-center gap-1.5 sm:gap-3 h-14 sm:h-16 [--mk-control-h:40px] sm:[--mk-control-h:44px]">
-            {/* Лого: на мобиле компактный знак (в размер кнопок Каталог/Разборки),
-                на десктопе — полная эмблема с дескриптором */}
-            <Link to="/market" className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0 min-w-0" aria-label="Razborka.net — маркет запчастей, на главную">
+          <div className="flex items-center gap-2 sm:gap-3 h-14 sm:h-16 [--mk-control-h:40px] sm:[--mk-control-h:44px]">
+            <Link to="/market" className="flex items-center flex-shrink-0 min-w-0" aria-label={t('header.logoAria')}>
               <Logo size="sm" withText={false} className="md:hidden flex-shrink-0 [&>svg]:!w-[44px] [&>svg]:!h-[44px]" />
               <Logo size="sm" withText className="hidden md:inline-flex flex-shrink-0" />
             </Link>
 
-            {/* Мобила: Каталог/Разборки в первом ряду рядом со знаком, корзиной и входом */}
-            <div className="md:hidden">{navTabs}</div>
+            <Link to="/market/catalog" className="mk-btn mk-btn-accent hidden md:inline-flex flex-shrink-0">
+              <LayoutGrid className="w-4 h-4" aria-hidden="true" />{t('header.catalog')}
+            </Link>
 
-            {showHeaderSearch && (
-              <form onSubmit={handleSearch} role="search" className="hidden md:flex flex-1 max-w-md mx-auto">
-                <div className="relative w-full">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none mk-meta" aria-hidden="true" />
-                  <input
-                    type="search"
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder={t('header.searchPlaceholder')}
-                    className="mk-input mk-search"
-                    aria-label={t('header.searchPlaceholder')}
-                  />
-                </div>
-              </form>
-            )}
+            {searchForm('hidden md:flex flex-1 min-w-0')}
 
-            {!showHeaderSearch && (
-              <div className="hidden md:flex flex-1 justify-center">{navTabs}</div>
-            )}
+            <NavLink
+              to="/market/suppliers"
+              className={({ isActive }) => `mk-btn mk-btn-ghost hidden md:inline-flex flex-shrink-0 ${isActive ? '!text-[color:var(--mk-text)]' : ''}`}
+            >
+              <Store className="w-4 h-4" aria-hidden="true" />{t('header.suppliers')}
+            </NavLink>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 ml-auto flex-shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 ml-auto md:ml-0 flex-shrink-0">
               <LanguageSwitcher />
               {showFav && (
-                <Link to="/market/favorites" className="mk-icon-btn" aria-label="Избранное">
+                <Link to="/market/favorites" className="mk-icon-btn" aria-label={t('header.favorites')}>
                   <Heart className="w-5 h-5" aria-hidden="true" />
                 </Link>
               )}
-              <Link to="/market/cart" className="mk-icon-btn relative" aria-label={`Корзина${totalCount ? `, товаров: ${totalCount}` : ' (пусто)'}`}>
+              <Link to="/market/cart" className="mk-icon-btn relative" aria-label={totalCount ? t('header.cartCount', { n: totalCount }) : t('header.cartEmpty')}>
                 <ShoppingCart className="w-5 h-5" aria-hidden="true" />
                 {totalCount > 0 && (
                   <span
@@ -152,39 +120,26 @@ function MarketLayoutInner() {
                   </span>
                 )}
               </Link>
-              <Link to={user ? dashboardHref : '/login'} className="mk-btn mk-btn-outline px-2.5 sm:px-[0.875rem]">
+              <Link to={user ? dashboardHref : '/login'} className="mk-btn mk-btn-outline px-2.5 sm:px-[0.875rem]" aria-label={user ? t('header.toCabinet') : t('header.login')}>
                 {user
-                  ? <><LayoutDashboard className="w-4 h-4" aria-hidden="true" /><span className="hidden sm:inline">{t('header.toCabinet')}</span></>
-                  : <><LogIn className="w-4 h-4" aria-hidden="true" /><span className="hidden sm:inline">{t('header.login')}</span></>}
+                  ? <><LayoutDashboard className="w-4 h-4" aria-hidden="true" /><span className="hidden lg:inline">{t('header.toCabinet')}</span></>
+                  : <><LogIn className="w-4 h-4" aria-hidden="true" /><span className="hidden lg:inline">{t('header.login')}</span></>}
               </Link>
             </div>
           </div>
 
-          {/* Навигация: на мобиле табы теперь в первом ряду (см. выше). Здесь —
-              только десктоп, когда в первом ряду стоит поиск. */}
-          <nav
-            className={`${showHeaderSearch ? 'hidden md:flex' : 'hidden'} items-center justify-center pb-2.5`}
-            aria-label="Разделы маркета"
-          >
-            {navTabs}
-          </nav>
-
-          {/* Поиск (мобила) — под категориями/разборками */}
-          {showHeaderSearch && (
-            <form onSubmit={handleSearch} role="search" className="md:hidden pb-2.5">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none mk-meta" aria-hidden="true" />
-                <input
-                  type="search"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Поиск запчасти или артикула…"
-                  className="mk-input mk-search !rounded-full"
-                  aria-label={t('header.searchPlaceholder')}
-                />
-              </div>
-            </form>
-          )}
+          {/* Телефон: поиск отдельной строкой, ниже — Каталог и Разборки */}
+          <div className="md:hidden pb-2.5 space-y-2 [--mk-control-h:40px]">
+            {searchForm('')}
+            <nav className="grid grid-cols-2 gap-2" aria-label={t('header.sectionsNav')}>
+              <Link to="/market/catalog" className="mk-btn mk-btn-accent">
+                <LayoutGrid className="w-4 h-4" aria-hidden="true" />{t('header.catalog')}
+              </Link>
+              <Link to="/market/suppliers" className="mk-btn mk-btn-outline">
+                <Store className="w-4 h-4" aria-hidden="true" />{t('header.suppliers')}
+              </Link>
+            </nav>
+          </div>
         </div>
       </header>
 

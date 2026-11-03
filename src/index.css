@@ -244,6 +244,14 @@
     min-height: 30px;
   }
 
+  /* Тач-экраны: цель касания не меньше 44px, внешний вид кнопки прежний */
+  @media (pointer: coarse) {
+    .btn-icon, .btn-icon-sm {
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
+
   /* ═══════════════════════════════════════════════════════════════
      КАБИНЕТ РАЗБОРКИ — «Ink and Signal» (строгий светлый, без градиентов).
      Префикс cab-. Не трогает глобальные классы btn и card (логин, админка).
@@ -630,6 +638,7 @@
     --mk-accent-weak:  rgba(79,91,122,0.10);
     --mk-on-accent:    #FFFFFF;
     --mk-focus:        rgba(79,91,122,0.35);
+    --mk-ok:           #2F8F5B;   /* «в наличии» — точка-индикатор */
     /* Радиусы — кнопки прямоугольные, слегка скруглённые */
     --mk-r-btn: 7px; --mk-r-sm: 7px; --mk-r: 10px; --mk-r-lg: 12px; --mk-r-xl: 16px;
     /* Высоты контролов: компактно на десктопе; на тач ≥44px (см. @media coarse ниже) */
@@ -676,6 +685,51 @@
 
   /* Сетки — авто-адаптив под любой экран (телефон → 4K → ультраширокий) */
   .mk-grid { display: grid; gap: var(--mk-gap); grid-template-columns: repeat(auto-fill, minmax(min(var(--mk-card-min), 100%), 1fr)); }
+  /* Сетка товаров с разделительными линиями (общая для каталога/избранного/разборки/главной) */
+  .mk-grid { gap: 0; background: var(--mk-surface); border-top: 1px solid var(--mk-border); border-left: 1px solid var(--mk-border); }
+  .mk-grid > * { border: 0; border-radius: 0; box-shadow: inset -1px 0 0 var(--mk-border), inset 0 -1px 0 var(--mk-border); transform: none; }
+  .mk-grid > .mk-card-interactive:hover { transform: none; background: var(--mk-surface); box-shadow: inset -1px 0 0 var(--mk-border-2), inset 0 -1px 0 var(--mk-border-2); }
+  .mk-grid > .mk-card-interactive:focus-within { box-shadow: inset 0 0 0 2px var(--mk-accent); }
+  /* Заполнитель неполного последнего ряда: замыкает линии справа/снизу.
+     Если ряд полный, элемент уходит в новую строку нулевой высоты и не виден. */
+  .mk-grid::after { content: ""; grid-column: auto / -1; box-shadow: inset -1px 0 0 var(--mk-border), inset 0 -1px 0 var(--mk-border); }
+
+  /* Карточка товара: панель со строками-разделителями */
+  .mk-panel { background: var(--mk-surface); border: 1px solid var(--mk-border); border-radius: var(--mk-r-lg); }
+  .mk-panel-row { padding: .75rem .875rem; }
+  .mk-panel-row + .mk-panel-row { border-top: 1px solid var(--mk-border); }
+  /* Характеристики: подпись, точечная линия, значение */
+  .mk-spec { display: flex; align-items: baseline; gap: .5rem; padding-block: .4rem; font-size: .875rem; }
+  .mk-spec-dots { flex: 1; min-width: 1rem; border-bottom: 1px dotted var(--mk-border-2); transform: translateY(-.25rem); }
+  .mk-spec dt { color: var(--mk-text-3); flex-shrink: 0; }
+  .mk-spec dd { color: var(--mk-text); font-weight: 600; text-align: right; min-width: 0; overflow-wrap: anywhere; }
+  .mk-chip { display: inline-flex; align-items: center; min-height: 2rem; padding-inline: .75rem; border: 1px solid var(--mk-border); border-radius: var(--mk-r-btn); background: var(--mk-surface); color: var(--mk-text); font-size: .85rem; font-weight: 600; transition: border-color .15s, background-color .15s; }
+  .mk-chip:hover { border-color: var(--mk-border-2); background: var(--mk-surface-2); }
+  .mk-btn-square { width: var(--mk-control-h); padding-inline: 0; flex-shrink: 0; }
+  /* Нижняя закреплённая панель покупки (только телефон/планшет) */
+  .mk-buybar { position: fixed; inset-inline: 0; bottom: 0; z-index: 30; background: var(--mk-surface); border-top: 1px solid var(--mk-border); padding: .625rem var(--mk-pad, .75rem) calc(.625rem + env(safe-area-inset-bottom)); }
+  .mk-buybar-spacer { height: calc(4.5rem + env(safe-area-inset-bottom)); }
+  @media (min-width: 1024px) { .mk-buybar, .mk-buybar-spacer { display: none; } }
+
+  /* Узкая полоса над шапкой */
+  .mk-topstrip { background: var(--mk-surface-2); border-bottom: 1px solid var(--mk-border); color: var(--mk-text-3); font-size: .75rem; }
+  .mk-topstrip a { color: var(--mk-text-2); font-weight: 600; }
+  .mk-topstrip a:hover { color: var(--mk-text); }
+
+  /* Подбор авто: линия шагов */
+  .mk-steps { list-style:none; margin:0; padding:0; display:flex; align-items:stretch; border:1px solid var(--mk-border); border-radius: var(--mk-r); overflow:hidden; background: var(--mk-surface); }
+  .mk-step { flex:1; min-width:0; display:flex; align-items:center; gap:.5rem; padding:.5rem .75rem; min-height: var(--mk-control-h); font-size:.8rem; font-weight:600; color: var(--mk-text-3); text-align:left; background: var(--mk-surface); cursor: pointer; }
+  .mk-steps > li:not(:last-child) { border-right: 1px solid var(--mk-border); }
+  .mk-step:disabled { cursor: default; opacity: .6; }
+  .mk-step-num { flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; width:1.35rem; height:1.35rem; border-radius: var(--mk-r-btn); border:1px solid var(--mk-border-2); font-size:.7rem; }
+  .mk-step[aria-current="step"] { color: var(--mk-text); box-shadow: inset 0 -2px 0 var(--mk-accent); }
+  .mk-step[aria-current="step"] .mk-step-num { background: var(--mk-accent); border-color: var(--mk-accent); color: var(--mk-on-accent); }
+  .mk-step.done .mk-step-num { background: var(--mk-accent-weak); border-color: var(--mk-accent); color: var(--mk-accent); }
+  .mk-opt { display:flex; align-items:center; justify-content:space-between; gap:.5rem; min-height: var(--mk-control-h); padding: 0 .75rem; border:1px solid var(--mk-border); border-radius: var(--mk-r-btn); background: var(--mk-surface); color: var(--mk-text); font-size:.85rem; font-weight:600; text-align:left; cursor:pointer; transition: border-color .15s, background-color .15s; }
+  .mk-opt:hover { border-color: var(--mk-accent); background: var(--mk-accent-weak); }
+  .mk-opt-count { color: var(--mk-text-3); font-weight:500; font-size:.75rem; font-variant-numeric: tabular-nums; }
+  .mk-dot { display:inline-block; width:.5rem; height:.5rem; border-radius:999px; background: var(--mk-ok); flex-shrink:0; }
+
   .mk-grid-wide { display: grid; gap: var(--mk-gap); grid-template-columns: repeat(auto-fill, minmax(min(var(--mk-card-min-wide), 100%), 1fr)); }
 
   /* Типографика (fluid) */
@@ -1095,6 +1149,7 @@
   --mk-accent-weak:  rgba(143,160,200,0.16);
   --mk-on-accent:    #0C1019;
   --mk-focus:        rgba(143,160,200,0.40);
+  --mk-ok:           #5CC18A;
   --mk-shadow:    0 1px 2px rgba(0,0,0,0.4);
   --mk-shadow-md: 0 8px 20px -8px rgba(0,0,0,0.6);
 }

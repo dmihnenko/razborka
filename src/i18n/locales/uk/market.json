@@ -4,7 +4,16 @@
     "login": "Увійти",
     "catalog": "Каталог",
     "suppliers": "Розбірки",
-    "searchPlaceholder": "Пошук запчастини або артикула…"
+    "searchPlaceholder": "Пошук запчастини або артикула…",
+    "stripTagline": "Вживані запчастини від перевірених авторозбірок, доставка Новою поштою",
+    "forBusiness": "Для розбірок",
+    "searchSubmit": "Знайти",
+    "favorites": "Обране",
+    "cartLabel": "Кошик",
+    "cartCount": "Кошик, товарів: {{n}}",
+    "cartEmpty": "Кошик порожній",
+    "logoAria": "Razborka.net, маркет запчастин, на головну",
+    "sectionsNav": "Розділи маркету"
   },
   "footer": {
     "tagline": "Маркет запчастин · вживані та нові запчастини від авторозбірок",
@@ -26,7 +35,10 @@
     "suppliersEmptyText": "Незабаром тут з’являться продавці запчастин",
     "ctaTitle": "Ви авторозбірка? Розмістіть вітрину на маркеті",
     "ctaText": "Ознайомтеся з пропозицією та тарифами для розбірок",
-    "ctaBtn": "Наша пропозиція"
+    "ctaBtn": "Наша пропозиція",
+    "h1": "Вживані запчастини з авторозбірок України",
+    "categories": "Категорії",
+    "allCategories": "Усі категорії"
   },
   "catalogPage": {
     "title": "Каталог запчастин",
@@ -80,6 +92,17 @@
     "tgCar": "Авто: {{car}}",
     "tgOem": "Ориг. номер: {{number}}",
     "moreFromSeller": "Ще від цієї розборки",
+    "specs": "Характеристики",
+    "fitment": "Застосовність",
+    "fitmentAria": "Каталог: {{car}}",
+    "specOem": "Номер OEM",
+    "specArticle": "Артикул",
+    "specCondition": "Стан",
+    "specFromCar": "Знято з авто",
+    "specCategory": "Категорія",
+    "removedFrom": "Знято з {{car}}",
+    "checkCompat": "Перевірте сумісність за номером OEM",
+    "pcs": "{{n}} шт.",
     "allProducts": "Усі товари"
   },
   "suppliersPage": {
@@ -182,6 +205,8 @@
     "seller": "Продавець",
     "callAria": "Зателефонувати {{phone}}",
     "emailAria": "Написати на пошту {{email}}",
+    "delivery": "Доставка",
+    "warrantyLabel": "Гарантія",
     "novaPoshta": "Новою Поштою",
     "ship12": "1–2 дні",
     "shipToday": "сьогодні",
@@ -191,5 +216,35 @@
     "tgOpenAria": "Відкрити Telegram розборки",
     "write": "Написати",
     "telegram": "Telegram"
+  },
+  "picker": {
+    "title": "Підбір запчастин за авто",
+    "nav": "Кроки підбору",
+    "stepMake": "Марка",
+    "stepModel": "Модель",
+    "stepYear": "Рік",
+    "chooseMake": "Оберіть марку",
+    "chooseModel": "Оберіть модель",
+    "chooseYear": "Оберіть рік",
+    "showParts": "Показати запчастини",
+    "allYears": "Усі роки",
+    "partsCount": "{{n}} шт.",
+    "empty": "Каталог авто поки порожній"
+  },
+  "card": {
+    "oem": "OEM",
+    "inStock": "В наявності",
+    "noPhoto": "Немає фото",
+    "fromCar": "з {{car}}",
+    "condNew": "Нова",
+    "condUsed": "Вживана",
+    "condDamaged": "Пошкоджена",
+    "addToCart": "Додати до кошика: {{name}}",
+    "inCart": "Уже в кошику: {{name}}",
+    "addedToCart": "Додано до кошика",
+    "loginForFav": "Увійдіть, щоб додати до обраного",
+    "addFav": "В обране",
+    "removeFav": "Прибрати з обраного",
+    "oemTitle": "Оригінальний номер: {{n}}"
   }
 }

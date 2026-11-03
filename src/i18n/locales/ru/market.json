@@ -4,7 +4,16 @@
     "login": "Войти",
     "catalog": "Каталог",
     "suppliers": "Разборки",
-    "searchPlaceholder": "Поиск запчасти или артикула…"
+    "searchPlaceholder": "Поиск запчасти или артикула…",
+    "stripTagline": "Б/у запчасти от проверенных авторазборок, доставка Новой Почтой",
+    "forBusiness": "Для разборок",
+    "searchSubmit": "Найти",
+    "favorites": "Избранное",
+    "cartLabel": "Корзина",
+    "cartCount": "Корзина, товаров: {{n}}",
+    "cartEmpty": "Корзина пуста",
+    "logoAria": "Razborka.net, маркет запчастей, на главную",
+    "sectionsNav": "Разделы маркета"
   },
   "footer": {
     "tagline": "Маркет запчастей · б/у и новые запчасти от авторазборок",
@@ -26,7 +35,10 @@
     "suppliersEmptyText": "Скоро здесь появятся продавцы запчастей",
     "ctaTitle": "Вы авторазборка? Разместите витрину на маркете",
     "ctaText": "Ознакомьтесь с предложением и тарифами для разборок",
-    "ctaBtn": "Наше предложение"
+    "ctaBtn": "Наше предложение",
+    "h1": "Б/у запчасти с авторазборок Украины",
+    "categories": "Категории",
+    "allCategories": "Все категории"
   },
   "catalogPage": {
     "title": "Каталог запчастей",
@@ -80,6 +92,17 @@
     "tgCar": "Авто: {{car}}",
     "tgOem": "Ориг. номер: {{number}}",
     "moreFromSeller": "Ещё от этой разборки",
+    "specs": "Характеристики",
+    "fitment": "Применяемость",
+    "fitmentAria": "Каталог: {{car}}",
+    "specOem": "Номер OEM",
+    "specArticle": "Артикул",
+    "specCondition": "Состояние",
+    "specFromCar": "Снято с авто",
+    "specCategory": "Категория",
+    "removedFrom": "Снято с {{car}}",
+    "checkCompat": "Проверьте совместимость по номеру OEM",
+    "pcs": "{{n}} шт.",
     "allProducts": "Все товары"
   },
   "suppliersPage": {
@@ -182,6 +205,8 @@
     "seller": "Продавец",
     "callAria": "Позвонить {{phone}}",
     "emailAria": "Написать на почту {{email}}",
+    "delivery": "Доставка",
+    "warrantyLabel": "Гарантия",
     "novaPoshta": "Новой Почтой",
     "ship12": "1–2 дня",
     "shipToday": "сегодня",
@@ -191,5 +216,35 @@
     "tgOpenAria": "Открыть Telegram разборки",
     "write": "Написать",
     "telegram": "Telegram"
+  },
+  "picker": {
+    "title": "Подбор запчастей по авто",
+    "nav": "Шаги подбора",
+    "stepMake": "Марка",
+    "stepModel": "Модель",
+    "stepYear": "Год",
+    "chooseMake": "Выберите марку",
+    "chooseModel": "Выберите модель",
+    "chooseYear": "Выберите год",
+    "showParts": "Показать запчасти",
+    "allYears": "Все годы",
+    "partsCount": "{{n}} шт.",
+    "empty": "Каталог авто пока пуст"
+  },
+  "card": {
+    "oem": "OEM",
+    "inStock": "В наличии",
+    "noPhoto": "Нет фото",
+    "fromCar": "с {{car}}",
+    "condNew": "Новая",
+    "condUsed": "Б/у",
+    "condDamaged": "Повреждённая",
+    "addToCart": "Добавить в корзину: {{name}}",
+    "inCart": "Уже в корзине: {{name}}",
+    "addedToCart": "Добавлено в корзину",
+    "loginForFav": "Войдите, чтобы добавить в избранное",
+    "addFav": "В избранное",
+    "removeFav": "Убрать из избранного",
+    "oemTitle": "Оригинальный номер: {{n}}"
   }
 }

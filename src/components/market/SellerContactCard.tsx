@@ -36,8 +36,6 @@ function TelegramIcon({ className }: { className?: string }) {
   )
 }
 
-const TILE = 'inline-flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0'
-
 export function SellerContactCard({ company, supplierId, hideCallButton, telegramMessage }: SellerContactCardProps) {
   const { t } = useTranslation('market')
   const phoneRaw = company.phone ? cleanPhone(company.phone) : null
@@ -53,74 +51,71 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
   }
 
   return (
-    <div className="mk-card p-5">
-      {/* Продавец */}
-      <Link to={supplierLink} className="flex items-center gap-3 mb-4" aria-label={t('sellerCard.supplierAria', { name: company.name })}>
-        <span className="mk-tile-icon">
-          <Store className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" />
-        </span>
-        <span className="min-w-0">
-          <span className="block text-[10px] font-bold uppercase tracking-wider mk-meta">{t('sellerCard.seller')}</span>
-          <span className="block text-base font-bold tracking-tight leading-snug truncate" style={{ color: 'var(--mk-text)' }}>
-            {company.name}
+    <div className="mk-panel">
+      {/* Разборка и контакты */}
+      <div className="mk-panel-row">
+        <Link to={supplierLink} className="flex items-center gap-2.5 min-w-0" aria-label={t('sellerCard.supplierAria', { name: company.name })}>
+          <Store className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
+          <span className="min-w-0">
+            <span className="block text-xs mk-meta">{t('sellerCard.seller')}</span>
+            <span className="block text-sm font-semibold leading-snug truncate mk-link" style={{ color: 'var(--mk-text)' }}>{company.name}</span>
           </span>
-        </span>
-      </Link>
+        </Link>
 
-      {/* Контакты */}
-      <div className="space-y-1 mb-3 -mx-1.5">
-        {company.phone && phoneRaw && (
-          <a href={`tel:${phoneRaw}`} className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-xl text-sm transition-colors hover:bg-[var(--mk-surface-2)]" style={{ color: 'var(--mk-text-2)' }} aria-label={t('sellerCard.callAria', { phone: company.phone })}>
-            <span className={TILE} style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
-              <Phone className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
-            </span>
-            <span className="font-semibold" style={{ color: 'var(--mk-text)' }}>{company.phone}</span>
-          </a>
-        )}
-        {company.address && (
-          <p className="flex items-start gap-2.5 px-1.5 py-1.5 text-sm" style={{ color: 'var(--mk-text-2)' }}>
-            <span className={`${TILE} mt-0.5`} style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
-              <MapPin className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
-            </span>
-            <span className="leading-snug pt-1">{company.address}</span>
-          </p>
-        )}
-        {company.email && (
-          <a href={`mailto:${company.email}`} className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-xl text-sm transition-colors hover:bg-[var(--mk-surface-2)] min-w-0" style={{ color: 'var(--mk-text-2)' }} aria-label={t('sellerCard.emailAria', { email: company.email })}>
-            <span className={TILE} style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
-              <Mail className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
-            </span>
-            <span className="truncate">{company.email}</span>
-          </a>
-        )}
-      </div>
-
-      {/* Доставка и гарантия — отдельными пунктами */}
-      <div className="space-y-1 mb-3 -mx-1.5 pt-2" style={{ borderTop: '1px solid var(--mk-border)' }}>
-        <div className="flex items-center gap-2.5 px-1.5 py-1.5 text-sm" style={{ color: 'var(--mk-text-2)' }}>
-          <span className={TILE} style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
-            <Truck className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
-          </span>
-          <span>{t('sellerCard.novaPoshta')} · {company.shipSpeed === 'days12' ? t('sellerCard.ship12') : t('sellerCard.shipToday')}</span>
-        </div>
-        {company.warrantyEnabled && (company.warrantyDays ?? 0) > 0 && (
-          <div className="flex items-center gap-2.5 px-1.5 py-1.5 text-sm" style={{ color: 'var(--mk-text-2)' }}>
-            <span className={TILE} style={{ background: 'var(--mk-surface-2)', color: 'var(--mk-text-2)' }}>
-              <ShieldCheck className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
-            </span>
-            <span>{t('sellerCard.warranty', { n: company.warrantyDays })}</span>
+        {(company.address || company.phone || company.email) && (
+          <div className="mt-2 space-y-1.5 text-sm" style={{ color: 'var(--mk-text-2)' }}>
+            {company.address && (
+              <p className="flex items-start gap-2.5">
+                <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
+                <span className="leading-snug">{company.address}</span>
+              </p>
+            )}
+            {company.phone && phoneRaw && (
+              <a href={`tel:${phoneRaw}`} className="flex items-center gap-2.5 min-h-[28px] mk-link" aria-label={t('sellerCard.callAria', { phone: company.phone })}>
+                <Phone className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
+                <span className="font-semibold" style={{ color: 'var(--mk-text)' }}>{company.phone}</span>
+              </a>
+            )}
+            {company.email && (
+              <a href={`mailto:${company.email}`} className="flex items-center gap-2.5 min-h-[28px] min-w-0 mk-link" aria-label={t('sellerCard.emailAria', { email: company.email })}>
+                <Mail className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
+                <span className="truncate">{company.email}</span>
+              </a>
+            )}
           </div>
         )}
       </div>
 
+      {/* Доставка */}
+      <div className="mk-panel-row flex items-start gap-2.5 text-sm" style={{ color: 'var(--mk-text-2)' }}>
+        <Truck className="w-4 h-4 flex-shrink-0 mt-0.5" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
+        <span>
+          <span className="block text-xs mk-meta">{t('sellerCard.delivery')}</span>
+          {t('sellerCard.novaPoshta')}, {company.shipSpeed === 'days12' ? t('sellerCard.ship12') : t('sellerCard.shipToday')}
+        </span>
+      </div>
+
+      {/* Гарантия — только если задана */}
+      {company.warrantyEnabled && (company.warrantyDays ?? 0) > 0 && (
+        <div className="mk-panel-row flex items-start gap-2.5 text-sm" style={{ color: 'var(--mk-text-2)' }}>
+          <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-0.5" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
+          <span>
+            <span className="block text-xs mk-meta">{t('sellerCard.warrantyLabel')}</span>
+            {t('sellerCard.warranty', { n: company.warrantyDays })}
+          </span>
+        </div>
+      )}
+
       {company.description && (
-        <p className="text-xs leading-relaxed mb-4 whitespace-pre-wrap mk-meta">{company.description}</p>
+        <div className="mk-panel-row">
+          <p className="text-xs leading-relaxed whitespace-pre-wrap mk-meta">{company.description}</p>
+        </div>
       )}
 
       {(showCall || tgHref) && (
-        <div className="flex flex-wrap gap-2.5">
+        <div className="mk-panel-row flex flex-wrap gap-2">
           {showCall && (
-            <a href={`tel:${phoneRaw}`} className="mk-btn mk-btn-accent flex-1 sm:flex-none min-w-[140px]" aria-label={t('sellerCard.callAria', { phone: company.phone })}>
+            <a href={`tel:${phoneRaw}`} className="mk-btn mk-btn-accent flex-1 min-w-[130px]" aria-label={t('sellerCard.callAria', { phone: company.phone })}>
               <Phone className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" /> {t('sellerCard.call')}
             </a>
           )}
@@ -130,7 +125,7 @@ export function SellerContactCard({ company, supplierId, hideCallButton, telegra
               target="_blank"
               rel="noopener noreferrer"
               onClick={telegramMessage ? handleWriteTelegram : undefined}
-              className="mk-btn mk-btn-outline flex-1 sm:flex-none min-w-[140px]"
+              className="mk-btn mk-btn-outline flex-1 min-w-[130px]"
               aria-label={telegramMessage ? t('sellerCard.tgWriteAria') : t('sellerCard.tgOpenAria')}
             >
               <TelegramIcon className="w-4 h-4 fill-current" /> {telegramMessage ? t('sellerCard.write') : t('sellerCard.telegram')}

@@ -1,24 +1,23 @@
-import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { motion, useReducedMotion } from 'framer-motion'
-import { ArrowRight, Car, Package, Search, Store } from 'lucide-react'
+import { ChevronRight, Package, Store, Boxes } from 'lucide-react'
 import {
-  getMarketMakes, getMarketParts, getMarketSuppliers,
+  getMarketCategories, getMarketParts, getMarketSuppliers,
 } from '@/services/marketplaceService'
 import { MarketProductCard } from '@/components/market/MarketProductCard'
 import { SupplierCard } from '@/components/market/SupplierCard'
 import EmptyState from '@/components/ui/EmptyState'
 import { usePageMeta } from '@/hooks/usePageMeta'
-import { slugify } from '@/utils/slug'
+import { CarPicker } from '@/components/market/CarPicker'
 
 // ============================================================================
 // Главная маркета (/market) — Graphite. Чистый монохром, акцент сдержанный.
 // ============================================================================
 
 const FRESH_PAGE_SIZE = 12
-const MAX_MAKES = 12
+const MIN_CATEGORIES = 4
 const MAX_SUPPLIERS = 6
 
 function SectionHead({ title, to, linkLabel, id }: { title: string; to: string; linkLabel: string; id: string }) {
@@ -26,7 +25,7 @@ function SectionHead({ title, to, linkLabel, id }: { title: string; to: string; 
     <div className="flex items-center justify-between gap-3 mb-4">
       <h2 id={id} className="mk-title">{title}</h2>
       <Link to={to} className="inline-flex items-center gap-1 text-sm mk-link min-h-[44px] -my-2 px-1">
-        {linkLabel} <ArrowRight className="w-4 h-4" aria-hidden="true" />
+        {linkLabel}<ChevronRight className="w-4 h-4" aria-hidden="true" />
       </Link>
     </div>
   )
@@ -35,20 +34,18 @@ function SectionHead({ title, to, linkLabel, id }: { title: string; to: string; 
 function SkeletonCard() {
   return (
     <div className="mk-card overflow-hidden" aria-hidden="true">
-      <div className="aspect-[4/3]" style={{ background: 'var(--mk-surface-2)' }} />
+      <div className="aspect-square" style={{ background: 'var(--mk-surface-2)' }} />
       <div className="p-3 space-y-2.5">
         <div className="h-3.5 rounded-lg w-3/4" style={{ background: 'var(--mk-surface-2)' }} />
         <div className="h-3 rounded-lg w-1/2" style={{ background: 'var(--mk-surface-2)' }} />
-        <div className="h-7 rounded-xl w-full mt-2" style={{ background: 'var(--mk-surface-2)' }} />
+        <div className="h-9 rounded-lg w-full mt-2" style={{ background: 'var(--mk-surface-2)' }} />
       </div>
     </div>
   )
 }
 
 export function MarketHome() {
-  const navigate = useNavigate()
   const { t } = useTranslation('market')
-  const [search, setSearch] = useState('')
   usePageMeta(
     'Razborka.net — маркет б/у и новых запчастей от авторазборок',
     'Купить б/у и новые автозапчасти от проверенных авторазборок Украины. Каталог по марке, модели и году, прямой контакт с разборкой.',
@@ -64,46 +61,31 @@ export function MarketHome() {
     queryFn: () => getMarketParts({ sort: 'new', pageSize: FRESH_PAGE_SIZE }),
     staleTime: 60_000,
   })
-  const { data: makes = [] } = useQuery({ queryKey: ['market', 'makes'], queryFn: getMarketMakes, staleTime: 5 * 60_000 })
+  const { data: categories = [] } = useQuery({ queryKey: ['market', 'categories'], queryFn: getMarketCategories, staleTime: 5 * 60_000 })
   const { data: suppliers, isLoading: suppliersLoading } = useQuery({ queryKey: ['market', 'suppliers'], queryFn: getMarketSuppliers, staleTime: 5 * 60_000 })
 
-  const handleSearch = (e: FormEvent) => {
-    e.preventDefault()
-    const q = search.trim()
-    navigate(q ? `/market/catalog?search=${encodeURIComponent(q)}` : '/market/catalog')
-  }
-
-  const topMakes = makes.slice(0, MAX_MAKES)
+  // Блок категорий — только когда есть минимум 4 категории с товарами (фильтр ?category= работает в каталоге)
+  const shownCategories = categories.filter(c => c.count > 0)
   const topSuppliers = (suppliers ?? []).slice(0, MAX_SUPPLIERS)
 
   return (
     <div className="space-y-6 sm:space-y-8">
 
-      {/* ── Герой: чистая панель, акцент только на кнопке ─────────────── */}
-      <motion.section {...anim(0)} className="mk-card p-5 sm:p-8 text-center">
-        <form onSubmit={handleSearch} role="search" className="max-w-xl mx-auto">
-          <div className="flex gap-2">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none mk-meta" strokeWidth={1.5} aria-hidden="true" />
-              <input
-                type="search" value={search} onChange={e => setSearch(e.target.value)}
-                placeholder={t('home.searchPlaceholder')}
-                className="mk-input mk-search !min-h-[var(--mk-control-h-lg)]" aria-label={t('home.searchAria')}
-              />
-            </div>
-            <button type="submit" className="mk-btn mk-btn-accent mk-btn-lg flex-shrink-0">{t('home.find')}</button>
-          </div>
-        </form>
+      <motion.section {...anim(0)}>
+        <h1 className="mk-h1">{t('home.h1')}</h1>
       </motion.section>
 
-      {/* ── Марки авто — чипы ─────────────────────────────────────────── */}
-      {topMakes.length > 0 && (
-        <motion.section {...anim(0.12)} aria-labelledby="mk-makes-title">
-          <SectionHead id="mk-makes-title" title={t('home.makes')} to="/market/catalog" linkLabel={t('home.allMakes')} />
+      <motion.div {...anim(0.06)}>
+        <CarPicker />
+      </motion.div>
+
+      {shownCategories.length >= MIN_CATEGORIES && (
+        <motion.section {...anim(0.12)} aria-labelledby="mk-cats-title">
+          <SectionHead id="mk-cats-title" title={t('home.categories')} to="/market/catalog" linkLabel={t('home.allCategories')} />
           <div className="mk-scroller sm:flex-wrap pb-1 -mb-1">
-            {topMakes.map(make => (
-              <Link key={make} to={`/market/catalog/${slugify(make)}`} className="mk-chip">
-                <Car className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" /> {make}
+            {shownCategories.map(c => (
+              <Link key={c.id} to={`/market/catalog?category=${encodeURIComponent(c.id)}`} className="mk-chip">
+                <Boxes className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" />{c.name}
               </Link>
             ))}
           </div>
