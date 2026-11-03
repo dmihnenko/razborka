@@ -548,6 +548,8 @@ export default function PartsVehicles() {
               onClick={() => setViewMode('grid')}
               className={`btn-icon-sm ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
               title={t('vehiclesPage.gridView')}
+              aria-label={t('vehiclesPage.gridView')}
+              aria-pressed={viewMode === 'grid'}
             >
               <Grid className="w-4 h-4" />
             </button>
@@ -555,6 +557,8 @@ export default function PartsVehicles() {
               onClick={() => setViewMode('list')}
               className={`btn-icon-sm ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
               title={t('vehiclesPage.listView')}
+              aria-label={t('vehiclesPage.listView')}
+              aria-pressed={viewMode === 'list'}
             >
               <List className="w-4 h-4" />
             </button>
@@ -819,7 +823,7 @@ export default function PartsVehicles() {
                 <h3 className="text-base font-semibold text-gray-900">{t('vehiclesPage.importTitle')}</h3>
                 <p className="text-xs text-gray-500 mt-0.5">{t('vehiclesPage.importSubtitle')}</p>
               </div>
-              <button type="button" onClick={close} className="btn-icon btn-icon-sm ml-3 flex-shrink-0">
+              <button type="button" onClick={close} aria-label={t('vehiclesPage.close')} className="btn-icon btn-icon-sm ml-3 flex-shrink-0">
                 <X className="w-4 h-4" />
               </button>
             </div>

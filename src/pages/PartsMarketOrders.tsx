@@ -10,6 +10,7 @@ import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import i18n from '@/i18n'
 import { Spinner } from '@/components/ui/Spinner'
+import { QueryState } from '@/components/ui/QueryState'
 import EmptyState from '@/components/ui/EmptyState'
 import { useConfirm } from '@/hooks/useConfirm'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -211,7 +212,7 @@ export default function PartsMarketOrders() {
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active')
 
-  const { data: orders = [], isLoading } = useQuery({
+  const { data: orders = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['marketplace-orders', partsCompanyId],
     queryFn: () => getMarketplaceOrders(partsCompanyId!),
     enabled: !!partsCompanyId,
@@ -299,7 +300,9 @@ export default function PartsMarketOrders() {
           ))}
         </div>
 
-        {isLoading ? (
+        {isError ? (
+          <QueryState isError onRetry={() => { void refetch() }}>{null}</QueryState>
+        ) : isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Spinner size="md" />
           </div>

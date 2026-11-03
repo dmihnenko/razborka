@@ -86,7 +86,7 @@ export default function PartsDashboard() {
     delivered: shipments.filter(shipDelivered).length,
   }
 
-  const { data: recentOrders } = useQuery({
+  const { data: recentOrders, isLoading: recentLoading, isError: recentError, refetch: refetchRecent } = useQuery({
     queryKey: ['parts-recent-activity', partsCompanyId],
     queryFn: () => getRecentPartsOrders(partsCompanyId!),
     enabled: !!partsCompanyId,
@@ -154,7 +154,7 @@ export default function PartsDashboard() {
         </div>
         <div className="flex items-center gap-2">
           {/* Курс — read-only (обновляется автоматически кроном) */}
-          <span className="cab-btn cab-btn-secondary cab-btn-sm cursor-default" title={t('dashboard.updateRate')}>
+          <span className="inline-flex items-center gap-1.5 text-sm font-medium px-1" style={{ color: ink2 }} title={t('dashboard.updateRate')}>
             <DollarSign className="w-4 h-4" strokeWidth={1.5} />
             <span className="tabular-nums">{usdRate != null ? `${usdRate} ₴/$` : '—'}</span>
           </span>
@@ -261,7 +261,11 @@ export default function PartsDashboard() {
               {t('dashboard.allOrders')} <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.5} />
             </Link>
           </div>
-          {(recentOrders?.length ?? 0) === 0 ? (
+          {recentError ? (
+            <QueryState isError onRetry={() => { void refetchRecent() }}>{null}</QueryState>
+          ) : recentLoading ? (
+            <QueryState isLoading>{null}</QueryState>
+          ) : (recentOrders?.length ?? 0) === 0 ? (
             <div className="px-4 py-10 text-center">
               <Boxes className="w-8 h-8 mx-auto mb-2" style={{ color: ink3 }} strokeWidth={1.5} />
               <p className="text-sm font-medium" style={{ color: ink2 }}>{t('dashboard.noOrders')}</p>

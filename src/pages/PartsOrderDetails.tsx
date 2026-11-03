@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Spinner } from '@/components/ui/Spinner'
+import { QueryState } from '@/components/ui/QueryState'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useUserProfile, useHasRole, useIsAdmin } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
@@ -8,6 +9,7 @@ import { formatDate } from '@/utils/date'
 import { PartsOrder, PartsOrderItem, CreatePartsOrderItemInput, PartsInventoryItem } from '@/types/parts'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
+import { useAlert } from '@/components/CustomAlert'
 import {
   ArrowLeft, Plus, Trash2, Edit2, Search,
   CheckCircle, MapPin, Truck, Package, X, Copy, ExternalLink, AlertTriangle,
@@ -75,7 +77,7 @@ export default function PartsOrderDetails() {
   const [ttnCreating, setTtnCreating] = useState(false)
 
   /* ── запрос заказа ──────────────────────────────────────────── */
-  const { data: order, isLoading } = useQuery({
+  const { data: order, isLoading, isError, refetch } = useQuery({
     queryKey: ['parts-order', id],
     queryFn: async () => {
       const { getPartsOrder } = await import('@/services/partsService')
@@ -292,6 +294,14 @@ export default function PartsOrderDetails() {
     return (
       <div className="min-h-dvh bg-gray-50 flex items-center justify-center">
         <Spinner size="md" />
+      </div>
+    )
+  }
+
+  if (isError && !order) {
+    return (
+      <div className="p-4">
+        <QueryState isError onRetry={() => { void refetch() }}>{null}</QueryState>
       </div>
     )
   }
@@ -874,6 +884,7 @@ type AvailableInventoryRow = Pick<
 
 function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
   const { t } = useTranslation('cabinet')
+  const { showAlert } = useAlert()
   const queryClient = useQueryClient()
   const { rate: exchangeRate } = usePartsExchangeRate()
   const [searchQuery, setSearchQuery] = useState('')
@@ -911,6 +922,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       onClose()
     },
+    onError: (err: unknown) => showAlert((err instanceof Error ? err.message : '') || t('orderDetailsPage.addItemError'), 'error'),
   })
 
   const handleSelectItem = (item: AvailableInventoryRow) => {
@@ -1083,6 +1095,7 @@ interface EditOrderModalProps {
 
 function EditOrderModal({ order, partsCompanyId, onClose }: EditOrderModalProps) {
   const { t } = useTranslation('cabinet')
+  const { showAlert } = useAlert()
   const queryClient = useQueryClient()
   const [customerId, setCustomerId] = useState(order.customer_id || '')
   const [notes, setNotes] = useState(order.notes || '')
@@ -1099,6 +1112,7 @@ function EditOrderModal({ order, partsCompanyId, onClose }: EditOrderModalProps)
       queryClient.invalidateQueries({ queryKey: ['parts-order', order.id] })
       onClose()
     },
+    onError: (err: unknown) => showAlert((err instanceof Error ? err.message : '') || t('orderDetailsPage.updateError'), 'error'),
   })
 
   return (

@@ -19,6 +19,7 @@ import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { Spinner } from '@/components/ui/Spinner'
+import { QueryState } from '@/components/ui/QueryState'
 import { getVehicleRoi } from '@/services/partsService'
 import { formatPrice } from '@/utils/currency'
 import type { VehicleRoi } from '@/types/parts'
@@ -52,7 +53,7 @@ export default function PartsRoi() {
   const [sort, setSort] = useState<Sort>('profit')
   const [search, setSearch] = useState('')
 
-  const { data = [], isLoading } = useQuery({
+  const { data = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['vehicle-roi', partsCompanyId, globalRate],
     staleTime: 1000 * 60 * 30,
     enabled: !!partsCompanyId && globalRate != null,
@@ -138,7 +139,9 @@ export default function PartsRoi() {
         </div>
 
         {/* ── Список ──────────────────────────────────────────── */}
-        {isLoading ? (
+        {isError ? (
+          <QueryState isError onRetry={() => { void refetch() }}>{null}</QueryState>
+        ) : isLoading ? (
           <div className="flex justify-center py-20"><Spinner size="lg" /></div>
         ) : rows.length === 0 ? (
           <div className="cab-card p-4 text-center py-16">

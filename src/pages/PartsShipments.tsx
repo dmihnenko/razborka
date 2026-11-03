@@ -8,6 +8,7 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { Spinner } from '@/components/ui/Spinner'
+import { QueryState } from '@/components/ui/QueryState'
 import { formatDate } from '@/utils/date'
 import { getShipments, trackTtn, refreshShipmentStatus, formatTtn, vehicleLabel, shipmentClient, shipmentPhone, type PartsShipment } from '@/services/shipmentsService'
 import AddShipmentModal from '@/components/parts/AddShipmentModal'
@@ -35,7 +36,7 @@ export default function PartsShipments() {
   const [tab, setTab] = useState<'active' | 'delivered' | 'problem' | 'all'>('active')
   const [addOpen, setAddOpen] = useState(false)
 
-  const { data: shipments = [], isLoading } = useQuery({
+  const { data: shipments = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['parts-shipments', partsCompanyId],
     queryFn: () => getShipments(partsCompanyId!),
     enabled: !!partsCompanyId,
@@ -152,7 +153,9 @@ export default function PartsShipments() {
           ))}
         </div>
 
-        {isLoading ? (
+        {isError ? (
+          <QueryState isError onRetry={() => { void refetch() }}>{null}</QueryState>
+        ) : isLoading ? (
           <div className="flex justify-center py-16"><Spinner size="md" /></div>
         ) : filtered.length === 0 ? (
           <div className="cab-card p-10 text-center">

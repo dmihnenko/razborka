@@ -85,6 +85,7 @@
     "profit": "Прибуток"
   },
   "chrome": {
+    "closeMenu": "Закрити меню",
     "menu": "Меню",
     "parts": "Розборка",
     "myCars": "Мої авто",
@@ -293,6 +294,9 @@
     "emptyArchiveDesc": "Оформлені заявки переїжджають сюди."
   },
   "inventoryPage": {
+    "removeRow": "Видалити рядок",
+    "removePhoto": "Видалити фото",
+    "trashLabel": "Запчастина: {{name}}",
     "status_available": "В наявності",
     "status_reserved": "Зарезервовано",
     "status_sold": "Продано",
@@ -518,6 +522,7 @@
     "entityLabel": "Клієнт"
   },
   "vehiclesPage": {
+    "close": "Закрити",
     "statusAwaiting": "Очікує розбирання",
     "statusInProgress": "У процесі",
     "statusDismantled": "Розібрано",
@@ -656,6 +661,8 @@
     "have": "є"
   },
   "warehousePage": {
+    "save": "Зберегти",
+    "cancel": "Скасувати",
     "levelBox": "Бокс",
     "levelRack": "Стелаж",
     "levelShelf": "Полиця",
@@ -945,6 +952,8 @@
     "toInventory": "На склад"
   },
   "orderDetailsPage": {
+    "addItemError": "Не вдалося додати позицію",
+    "updateError": "Не вдалося зберегти замовлення",
     "itemDeleted": "Позицію видалено",
     "itemDeleteError": "Помилка під час видалення позиції",
     "statusUpdated": "Статус оновлено",
@@ -1038,6 +1047,10 @@
     "notEnoughParts": "Недостатньо запчастин. Доступно: {{n}}"
   },
   "customerProfilePage": {
+    "clearSearch": "Очистити пошук",
+    "removeFromCart": "Прибрати з кошика",
+    "decreaseQty": "Зменшити кількість",
+    "increaseQty": "Збільшити кількість",
     "linkCopied": "Публічне посилання скопійовано в буфер обміну",
     "linkCopyError": "Не вдалося скопіювати посилання",
     "orderCreated": "Замовлення {{number}} створено",

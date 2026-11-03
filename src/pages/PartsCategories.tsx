@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/i18n'
 import { Spinner } from '@/components/ui/Spinner'
+import { QueryState } from '@/components/ui/QueryState'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -61,7 +62,7 @@ export default function PartsCategories() {
   const [templateBrand, setTemplateBrand] = useState(searchParams.get('brand') || '')
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<Set<string>>(new Set())
 
-  const { data: categories = [], isLoading } = useQuery({
+  const { data: categories = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['parts-categories-manage', partsCompanyId],
     queryFn: async () => {
       if (!partsCompanyId) return []
@@ -315,8 +316,8 @@ export default function PartsCategories() {
       {subMode === 'single' ? (
         <form onSubmit={e => handleAddSub(e, parentId)} className="flex gap-2">
           <input type="text" autoFocus value={subName} onChange={e => setSubName(e.target.value)} placeholder={t('categoriesPage.subNamePlaceholder')} className="form-input flex-1" />
-          <button type="submit" disabled={!subName.trim() || subCreateMutation.isPending} className="cab-btn cab-btn-primary"><Check className="w-4 h-4" /></button>
-          <button type="button" onClick={closeSub} className="cab-btn cab-btn-secondary"><X className="w-4 h-4" /></button>
+          <button type="submit" disabled={!subName.trim() || subCreateMutation.isPending} aria-label={t('categoriesPage.save')} className="cab-btn cab-btn-primary"><Check className="w-4 h-4" /></button>
+          <button type="button" onClick={closeSub} aria-label={t('categoriesPage.cancel')} className="cab-btn cab-btn-secondary"><X className="w-4 h-4" /></button>
         </form>
       ) : (
         <form onSubmit={e => handleBulkAddSub(e, parentId)} className="space-y-3">
@@ -422,6 +423,7 @@ export default function PartsCategories() {
                     <button
                       type="submit"
                       disabled={!newName.trim() || createMutation.isPending}
+                      aria-label={t('categoriesPage.save')}
                       className="cab-btn cab-btn-primary"
                     >
                       <Check className="w-4 h-4" />
@@ -429,6 +431,7 @@ export default function PartsCategories() {
                     <button
                       type="button"
                       onClick={() => { setIsAddOpen(false); setNewName('') }}
+                      aria-label={t('categoriesPage.cancel')}
                       className="cab-btn cab-btn-secondary"
                     >
                       <X className="w-4 h-4" />
@@ -479,7 +482,9 @@ export default function PartsCategories() {
               </div>
             )}
 
-            {isLoading ? (
+            {isError ? (
+              <QueryState isError onRetry={() => { void refetch() }}>{null}</QueryState>
+            ) : isLoading ? (
               <div className="flex justify-center py-16">
                 <Spinner size="xl" />
               </div>

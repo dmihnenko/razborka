@@ -441,6 +441,7 @@ export default function Layout() {
           {/* «Админ» — в верхнем баре (ContextSwitcher) */}
           <button
             onClick={handleLogout}
+            aria-label={t('chrome.logout')}
             className="flex items-center justify-center lg:justify-start gap-3 w-full px-1 lg:px-3 py-2.5 text-sm rounded-lg transition-colors active:scale-[0.98] text-slate-600 hover:bg-red-50 hover:text-red-600"
           >
             <LogOut className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} />
@@ -521,7 +522,7 @@ export default function Layout() {
               <Link
                 to="/market"
                 title={t('chrome.openMarket')}
-                aria-label="В маркет"
+                aria-label={t('chrome.toMarket')}
                 className="market mk-btn mk-btn-outline flex-shrink-0"
               >
                 <Store className="w-4 h-4" strokeWidth={1.5} /> <span className="hidden sm:inline">{t('chrome.toMarket')}</span>
@@ -621,6 +622,7 @@ export default function Layout() {
               <span className="text-sm font-semibold text-gray-700">{t('chrome.menu')}</span>
               <button
                 onClick={() => setSheetOpen(false)}
+                aria-label={t('chrome.closeMenu')}
                 className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"
               >
                 <X className="w-4 h-4" strokeWidth={1.5} />
@@ -734,8 +736,8 @@ export default function Layout() {
           </div>
           <button
             onClick={() => setSearchOpen(true)}
-            title="Поиск (Ctrl+K)"
-            aria-label="Поиск"
+            title={`${t('chrome.search')} (Ctrl+K)`}
+            aria-label={t('chrome.search')}
             className="flex items-center justify-center w-12 h-12 rounded-full transition-colors"
             style={{ background: 'var(--cab-ink)', color: '#fff', boxShadow: '0 6px 20px -6px rgba(22,24,29,.35)' }}
           >

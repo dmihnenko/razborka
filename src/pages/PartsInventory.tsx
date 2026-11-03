@@ -236,7 +236,7 @@ export default function PartsInventory() {
       await moveToTrash({
         entityType: 'parts_inventory',
         entityId: item.id,
-        entityLabel: `Запчасть: ${item.name}`,
+        entityLabel: t('inventoryPage.trashLabel', { name: item.name }),
         entityData: item,
         partsCompanyId: partsCompanyId,
       })
@@ -784,6 +784,8 @@ export default function PartsInventory() {
                   onClick={() => setViewMode('list')}
                   className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
                   title={t('inventoryPage.viewList')}
+                  aria-label={t('inventoryPage.viewList')}
+                  aria-pressed={viewMode === 'list'}
                 >
                   <List className="w-4 h-4" strokeWidth={1.5} />
                 </button>
@@ -791,6 +793,8 @@ export default function PartsInventory() {
                   onClick={() => setViewMode('grid')}
                   className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
                   title={t('inventoryPage.viewGrid')}
+                  aria-label={t('inventoryPage.viewGrid')}
+                  aria-pressed={viewMode === 'grid'}
                 >
                   <Grid className="w-4 h-4" strokeWidth={1.5} />
                 </button>
@@ -1115,6 +1119,7 @@ export default function PartsInventory() {
             <button
               type="button"
               onClick={openBulkSell}
+              aria-label={t('inventoryPage.sell')}
               className="cab-btn cab-btn-success cab-btn-sm flex items-center gap-1.5"
             >
               <DollarSign className="w-4 h-4" strokeWidth={1.5} />
@@ -1123,6 +1128,7 @@ export default function PartsInventory() {
             <button
               type="button"
               onClick={() => { setBulkLocationId(''); setIsBulkLocationOpen(true) }}
+              aria-label={t('inventoryPage.location')}
               className="cab-btn cab-btn-secondary cab-btn-sm"
             >
               <MapPin className="w-4 h-4" strokeWidth={1.5} />
@@ -1131,6 +1137,7 @@ export default function PartsInventory() {
             <button
               type="button"
               onClick={() => { setBulkCategoryId(''); setIsBulkCategoryOpen(true) }}
+              aria-label={t('inventoryPage.category')}
               className="cab-btn cab-btn-secondary cab-btn-sm"
             >
               <FolderOpen className="w-4 h-4" strokeWidth={1.5} />
@@ -1139,6 +1146,7 @@ export default function PartsInventory() {
             <button
               type="button"
               onClick={handleBulkDelete}
+              aria-label={t('inventoryPage.delete')}
               disabled={bulkDeleteMutation.isPending}
               className="cab-btn cab-btn-danger cab-btn-sm disabled:opacity-50"
             >
@@ -1182,7 +1190,7 @@ export default function PartsInventory() {
                     onClick={() => setSellCurrency(c => c === 'USD' ? 'UAH' : 'USD')}
                     className="cab-btn cab-btn-primary w-12 text-center px-0"
                   >
-                    {sellCurrency === 'USD' ? '$' : 'грн'}
+                    {sellCurrency === 'USD' ? '$' : t('vehicleDetailsPage.uah')}
                   </button>
                 </div>
               </div>
@@ -1243,7 +1251,7 @@ export default function PartsInventory() {
                   <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-gray-700">{t('inventoryPage.newCustomer')}</span>
-                      <button type="button" onClick={() => setShowNewCustomer(false)} className="btn-icon-sm">
+                      <button type="button" onClick={() => setShowNewCustomer(false)} className="btn-icon-sm" aria-label={t('inventoryPage.cancel')}>
                         <X className="w-3.5 h-3.5" strokeWidth={1.5} />
                       </button>
                     </div>
@@ -1371,7 +1379,7 @@ export default function PartsInventory() {
                         }}
                         className="cab-btn cab-btn-primary cab-btn-sm w-9 text-center px-0"
                       >
-                        {row.currency === 'USD' ? '$' : 'грн'}
+                        {row.currency === 'USD' ? '$' : t('vehicleDetailsPage.uah')}
                       </button>
                     </div>
                   </div>
@@ -1412,7 +1420,7 @@ export default function PartsInventory() {
                 <div className="mb-5 p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-gray-700">{t('inventoryPage.newCustomer')}</span>
-                    <button type="button" onClick={() => setBulkShowNewCustomer(false)} className="btn-icon-sm">
+                    <button type="button" onClick={() => setBulkShowNewCustomer(false)} className="btn-icon-sm" aria-label={t('inventoryPage.cancel')}>
                       <X className="w-3.5 h-3.5" strokeWidth={1.5} />
                     </button>
                   </div>

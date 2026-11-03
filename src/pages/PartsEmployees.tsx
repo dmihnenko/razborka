@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
+import { QueryState } from '@/components/ui/QueryState'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
@@ -39,7 +40,7 @@ export default function PartsEmployees() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
 
   // Получить список сотрудников разборки
-  const { data: employees = [], isLoading } = useQuery({
+  const { data: employees = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['parts-employees', partsCompanyId],
     queryFn: async () => {
       if (!partsCompanyId) return []
@@ -168,7 +169,9 @@ export default function PartsEmployees() {
         </div>
 
         {/* List */}
-        {isLoading ? (
+        {isError ? (
+          <QueryState isError onRetry={() => { void refetch() }}>{null}</QueryState>
+        ) : isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Spinner size="md" />
           </div>

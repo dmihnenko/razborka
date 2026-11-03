@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { intlLocale } from '@/i18n'
 import { Spinner } from '@/components/ui/Spinner'
+import { QueryState } from '@/components/ui/QueryState'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Edit, TrendingUp, TrendingDown, Plus, Settings, Tag, Sparkles, X, Car, DollarSign, Download } from 'lucide-react'
@@ -75,14 +77,14 @@ export default function PartsVehicleDetails() {
   const partsCompanyId = profile?.parts_company_id
 
   // Fetch vehicle
-  const { data: vehicle, isLoading } = useQuery({
+  const { data: vehicle, isLoading, isError, refetch } = useQuery({
     queryKey: ['parts-vehicle', id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('parts_vehicles')
         .select('*')
         .eq('id', id)
-        .single()
+        .maybeSingle()
       if (error) throw error
       return data as PartsVehicle
     },
@@ -196,6 +198,14 @@ export default function PartsVehicleDetails() {
     return (
       <div className="flex items-center justify-center h-dvh">
         <Spinner size="lg" />
+      </div>
+    )
+  }
+
+  if (isError && !vehicle) {
+    return (
+      <div className="p-4">
+        <QueryState isError onRetry={() => { void refetch() }}>{null}</QueryState>
       </div>
     )
   }
@@ -320,7 +330,7 @@ export default function PartsVehicleDetails() {
                 label={t('vehicleDetailsPage.mileage')}
                 value={
                   <span className="tabular">
-                    {vehicle.mileage.toLocaleString('ru-RU')} {t('vehicleDetailsPage.km')}
+                    {vehicle.mileage.toLocaleString(intlLocale())} {t('vehicleDetailsPage.km')}
                   </span>
                 }
               />
@@ -333,7 +343,7 @@ export default function PartsVehicleDetails() {
                 label={t('vehicleDetailsPage.purchasePrice')}
                 value={
                   <span className="tabular text-red-600">
-                    ${purchasePriceUSD.toLocaleString('ru-RU', { maximumFractionDigits: 0 })}
+                    ${purchasePriceUSD.toLocaleString(intlLocale(), { maximumFractionDigits: 0 })}
                   </span>
                 }
               />
@@ -341,7 +351,7 @@ export default function PartsVehicleDetails() {
             {vehicle.purchase_date && (
               <InfoRow
                 label={t('vehicleDetailsPage.purchaseDate')}
-                value={new Date(vehicle.purchase_date).toLocaleDateString('ru-RU')}
+                value={new Date(vehicle.purchase_date).toLocaleDateString(intlLocale())}
               />
             )}
           </dl>
@@ -586,11 +596,11 @@ export default function PartsVehicleDetails() {
                   <span className="text-sm text-gray-500">{t('vehicleDetailsPage.finPurchase')}</span>
                   <div className="text-right">
                     <div className="tabular font-semibold text-red-600 text-sm">
-                      ${purchasePriceUSD.toLocaleString('ru-RU', { maximumFractionDigits: 0 })}
+                      ${purchasePriceUSD.toLocaleString(intlLocale(), { maximumFractionDigits: 0 })}
                     </div>
                     {purchasePrice > 0 && (
                       <div className="text-xs text-gray-400 tabular">
-                        {purchasePrice.toLocaleString('ru-RU')} {t('vehicleDetailsPage.uah')}
+                        {purchasePrice.toLocaleString(intlLocale())} {t('vehicleDetailsPage.uah')}
                       </div>
                     )}
                   </div>
@@ -601,11 +611,11 @@ export default function PartsVehicleDetails() {
                   <span className="text-sm text-gray-500">{t('vehicleDetailsPage.finRevenue')}</span>
                   <div className="text-right">
                     <div className="tabular font-semibold text-emerald-600 text-sm">
-                      ${totalRevenueUSD.toLocaleString('ru-RU', { maximumFractionDigits: 0 })}
+                      ${totalRevenueUSD.toLocaleString(intlLocale(), { maximumFractionDigits: 0 })}
                     </div>
                     {totalRevenue > 0 && (
                       <div className="text-xs text-gray-400 tabular">
-                        {totalRevenue.toLocaleString('ru-RU')} {t('vehicleDetailsPage.uah')}
+                        {totalRevenue.toLocaleString(intlLocale())} {t('vehicleDetailsPage.uah')}
                       </div>
                     )}
                   </div>
@@ -627,14 +637,14 @@ export default function PartsVehicleDetails() {
                         }`}
                       >
                         {profitUSD > 0 ? '+' : ''}$
-                        {Math.abs(profitUSD).toLocaleString('ru-RU', { maximumFractionDigits: 0 })}
+                        {Math.abs(profitUSD).toLocaleString(intlLocale(), { maximumFractionDigits: 0 })}
                       </div>
                       <div
                         className={`text-xs tabular font-medium mt-0.5 ${
                           isProfitable ? 'text-emerald-500' : 'text-red-400'
                         }`}
                       >
-                        {profit > 0 ? '+' : ''}{profit.toLocaleString('ru-RU')} {t('vehicleDetailsPage.uah')}
+                        {profit > 0 ? '+' : ''}{profit.toLocaleString(intlLocale())} {t('vehicleDetailsPage.uah')}
                         {recoveryPct && <span className="ml-1 text-gray-400">· {recoveryPct}%</span>}
                       </div>
                     </div>

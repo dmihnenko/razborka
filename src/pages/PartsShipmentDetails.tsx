@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { intlLocale } from '@/i18n'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { RefreshCw, ExternalLink, Package, Phone } from 'lucide-react'
@@ -139,7 +140,7 @@ export default function PartsShipmentDetails() {
             <Row label={t('shipments.colWarehouse', { defaultValue: 'Отделение' })}>{shipment.recipient_warehouse}</Row>
           )}
           {cod != null && cod > 0 && (
-            <Row label={t('shipments.colCod', { defaultValue: 'Наложенный платёж' })}>{cod.toLocaleString('ru-RU')} ₴</Row>
+            <Row label={t('shipments.colCod', { defaultValue: 'Наложенный платёж' })}>{cod.toLocaleString(intlLocale())} ₴</Row>
           )}
           <Row label={t('shipments.colCreated', { defaultValue: 'Создана' })}>{formatDate(shipment.created_at)}</Row>
         </div>

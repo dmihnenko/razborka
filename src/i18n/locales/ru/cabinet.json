@@ -85,6 +85,7 @@
     "profit": "Прибыль"
   },
   "chrome": {
+    "closeMenu": "Закрыть меню",
     "menu": "Меню",
     "parts": "Разборка",
     "myCars": "Мои авто",
@@ -293,6 +294,9 @@
     "emptyArchiveDesc": "Оформленные заявки переезжают сюда."
   },
   "inventoryPage": {
+    "removeRow": "Удалить строку",
+    "removePhoto": "Удалить фото",
+    "trashLabel": "Запчасть: {{name}}",
     "status_available": "В наличии",
     "status_reserved": "Зарезервировано",
     "status_sold": "Продано",
@@ -518,6 +522,7 @@
     "entityLabel": "Клиент"
   },
   "vehiclesPage": {
+    "close": "Закрыть",
     "statusAwaiting": "Ожидает разборки",
     "statusInProgress": "В процессе",
     "statusDismantled": "Разобран",
@@ -656,6 +661,8 @@
     "have": "есть"
   },
   "warehousePage": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
     "levelBox": "Бокс",
     "levelRack": "Стеллаж",
     "levelShelf": "Полка",
@@ -945,6 +952,8 @@
     "toInventory": "На склад"
   },
   "orderDetailsPage": {
+    "addItemError": "Не удалось добавить позицию",
+    "updateError": "Не удалось сохранить заказ",
     "itemDeleted": "Позиция удалена",
     "itemDeleteError": "Ошибка при удалении позиции",
     "statusUpdated": "Статус обновлён",
@@ -1038,6 +1047,10 @@
     "notEnoughParts": "Недостаточно запчастей. Доступно: {{n}}"
   },
   "customerProfilePage": {
+    "clearSearch": "Очистить поиск",
+    "removeFromCart": "Убрать из корзины",
+    "decreaseQty": "Уменьшить количество",
+    "increaseQty": "Увеличить количество",
     "linkCopied": "Публичная ссылка скопирована в буфер обмена",
     "linkCopyError": "Не удалось скопировать ссылку",
     "orderCreated": "Заказ {{number}} создан",

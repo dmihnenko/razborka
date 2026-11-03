@@ -14,10 +14,11 @@ import {
   Lock,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { QueryState } from '@/components/ui/QueryState'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import { useSubscriptionLimits } from '@/hooks/useSubscription'
-import i18n from '@/i18n'
+import i18n, { intlLocale } from '@/i18n'
 
 export default function PartsAnalytics() {
   const { t } = useTranslation('cabinet')
@@ -26,7 +27,7 @@ export default function PartsAnalytics() {
   const { rate: globalRate } = usePartsExchangeRate()
   const { hasAnalytics } = useSubscriptionLimits()
 
-  const { data } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['parts-analytics', partsCompanyId, globalRate],
     staleTime: 1000 * 60 * 30,
     queryFn: () => getPartsAnalytics(partsCompanyId!, globalRate!),
@@ -36,7 +37,7 @@ export default function PartsAnalytics() {
   // Transform server monthly array → [label, {revenue, orders}][] for the chart
   const monthlyRevenue: [string, { revenue: number; orders: number }][] = (data?.monthly ?? []).map(
     (m: { month: string; revenue: number; orders: number }) => [
-      new Date(m.month + '-01').toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }),
+      new Date(m.month + '-01').toLocaleDateString(intlLocale(), { month: 'short', year: 'numeric' }),
       { revenue: m.revenue, orders: m.orders },
     ]
   )
@@ -201,6 +202,10 @@ export default function PartsAnalytics() {
                     )
                   })}
                 </div>
+              ) : isError ? (
+                <QueryState isError onRetry={() => { void refetch() }}>{null}</QueryState>
+              ) : isLoading ? (
+                <QueryState isLoading>{null}</QueryState>
               ) : (
                 <div className="empty-state py-12">
                   <div className="empty-state-icon">
@@ -246,6 +251,10 @@ export default function PartsAnalytics() {
                     </div>
                   ))}
                 </div>
+              ) : isError ? (
+                <QueryState isError onRetry={() => { void refetch() }}>{null}</QueryState>
+              ) : isLoading ? (
+                <QueryState isLoading>{null}</QueryState>
               ) : (
                 <div className="empty-state py-12">
                   <div className="empty-state-icon">

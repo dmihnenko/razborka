@@ -329,8 +329,8 @@ export default function PartsWarehouse() {
                 {addingParentId === null && (
                   <form onSubmit={handleAdd} className="p-2.5 flex gap-2" style={{ borderBottom: '1px solid var(--cab-border)' }}>
                     <input autoFocus value={addingName} onChange={e => setAddingName(e.target.value)} placeholder={t('warehousePage.placeholderRoot')} className="form-input flex-1 py-1.5 text-sm" />
-                    <button type="submit" disabled={!addingName.trim() || createMutation.isPending} className="cab-btn cab-btn-primary px-2.5 min-h-[36px]"><Check className="w-4 h-4" /></button>
-                    <button type="button" onClick={() => { setAddingParentId(undefined); setAddingName('') }} className="cab-btn cab-btn-secondary px-2.5 min-h-[36px]"><X className="w-4 h-4" /></button>
+                    <button type="submit" disabled={!addingName.trim() || createMutation.isPending} aria-label={t('warehousePage.save')} className="cab-btn cab-btn-primary px-2.5 min-h-[36px]"><Check className="w-4 h-4" /></button>
+                    <button type="button" onClick={() => { setAddingParentId(undefined); setAddingName('') }} aria-label={t('warehousePage.cancel')} className="cab-btn cab-btn-secondary px-2.5 min-h-[36px]"><X className="w-4 h-4" /></button>
                   </form>
                 )}
                 {structActive && (
@@ -410,8 +410,8 @@ export default function PartsWarehouse() {
                       <div className="flex items-center gap-0.5 flex-shrink-0">
                         {editingId === selected.id ? (
                           <>
-                            <button onClick={() => editingName.trim() && updateMutation.mutate({ id: selected.id, name: editingName.trim() })} className="btn-icon-sm text-green-600 hover:bg-green-50"><Check className="w-4 h-4" /></button>
-                            <button onClick={() => setEditingId(null)} className="btn-icon-sm"><X className="w-4 h-4" /></button>
+                            <button onClick={() => editingName.trim() && updateMutation.mutate({ id: selected.id, name: editingName.trim() })} aria-label={t('warehousePage.save')} className="btn-icon-sm text-green-600 hover:bg-green-50"><Check className="w-4 h-4" /></button>
+                            <button onClick={() => setEditingId(null)} aria-label={t('warehousePage.cancel')} className="btn-icon-sm"><X className="w-4 h-4" /></button>
                           </>
                         ) : (
                           <>
@@ -436,8 +436,8 @@ export default function PartsWarehouse() {
                     {addingParentId === selected.id && (
                       <form onSubmit={handleAdd} className="flex gap-2 px-3 sm:px-4 py-2.5" style={{ background: 'var(--cab-surface-2)', borderBottom: '1px solid var(--cab-border)' }}>
                         <input autoFocus value={addingName} onChange={e => setAddingName(e.target.value)} placeholder={t('warehousePage.placeholderNested', { name: selected.name })} className="form-input flex-1 py-1.5 text-sm" />
-                        <button type="submit" disabled={!addingName.trim() || createMutation.isPending} className="cab-btn cab-btn-primary px-2.5 min-h-[36px]"><Check className="w-4 h-4" /></button>
-                        <button type="button" onClick={() => { setAddingParentId(undefined); setAddingName('') }} className="cab-btn cab-btn-secondary px-2.5 min-h-[36px]"><X className="w-4 h-4" /></button>
+                        <button type="submit" disabled={!addingName.trim() || createMutation.isPending} aria-label={t('warehousePage.save')} className="cab-btn cab-btn-primary px-2.5 min-h-[36px]"><Check className="w-4 h-4" /></button>
+                        <button type="button" onClick={() => { setAddingParentId(undefined); setAddingName('') }} aria-label={t('warehousePage.cancel')} className="cab-btn cab-btn-secondary px-2.5 min-h-[36px]"><X className="w-4 h-4" /></button>
                       </form>
                     )}
 

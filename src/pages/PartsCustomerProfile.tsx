@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { intlLocale } from '@/i18n'
 import { Spinner } from '@/components/ui/Spinner'
+import { QueryState } from '@/components/ui/QueryState'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -94,14 +96,14 @@ export default function PartsCustomerProfile() {
   }
 
   // Получаем данные клиента разборки
-  const { data: customer, isLoading: customerLoading } = useQuery({
+  const { data: customer, isLoading: customerLoading, isError, refetch } = useQuery({
     queryKey: ['parts-customer', id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('parts_customers')
         .select('*')
         .eq('id', id)
-        .single()
+        .maybeSingle()
       if (error) throw error
       return data
     },
@@ -264,6 +266,14 @@ export default function PartsCustomerProfile() {
     return (
       <div className="flex justify-center items-center min-h-dvh bg-gray-50">
         <Spinner size="lg" />
+      </div>
+    )
+  }
+
+  if (isError && !customer) {
+    return (
+      <div className="p-4">
+        <QueryState isError onRetry={() => { void refetch() }}>{null}</QueryState>
       </div>
     )
   }
@@ -449,7 +459,7 @@ export default function PartsCustomerProfile() {
                         </Link>
                       </td>
                       <td className="table-cell text-gray-500">
-                        {new Date(order.order_date).toLocaleDateString('ru-RU')}
+                        {new Date(order.order_date).toLocaleDateString(intlLocale())}
                       </td>
                       <td className="table-cell text-gray-500">
                         {t('customerProfilePage.itemsPcs', { count: order.items?.length || 0 })}
@@ -482,7 +492,7 @@ export default function PartsCustomerProfile() {
                         {order.order_number}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {new Date(order.order_date).toLocaleDateString('ru-RU')}
+                        {new Date(order.order_date).toLocaleDateString(intlLocale())}
                         {' · '}
                         {formatDistanceToNow(new Date(order.created_at), { addSuffix: true, locale: ru })}
                       </p>
@@ -730,6 +740,7 @@ export default function PartsCustomerProfile() {
                         {partsSearch && (
                           <button
                             onClick={() => setPartsSearch('')}
+                            aria-label={t('customerProfilePage.clearSearch')}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -830,6 +841,7 @@ export default function PartsCustomerProfile() {
                             </div>
                             <button
                               onClick={() => removeFromCart(item.id)}
+                              aria-label={t('customerProfilePage.removeFromCart')}
                               className="btn-icon-sm text-gray-300 hover:text-red-500 hover:bg-red-50"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -839,6 +851,7 @@ export default function PartsCustomerProfile() {
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => updateCartQty(item.id, item.quantity - 1)}
+                                aria-label={t('customerProfilePage.decreaseQty')}
                                 className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
                               >
                                 <Minus className="w-3 h-3 text-gray-600" />
@@ -848,6 +861,7 @@ export default function PartsCustomerProfile() {
                               </span>
                               <button
                                 onClick={() => updateCartQty(item.id, item.quantity + 1)}
+                                aria-label={t('customerProfilePage.increaseQty')}
                                 disabled={item.quantity >= item.maxQty}
                                 className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                               >
