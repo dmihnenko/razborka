@@ -17,6 +17,75 @@ function Thumb({ src, alt, className }: { src: string; alt: string; className: s
   return <img src={photoSrc(src)} alt={alt} className={className} draggable={false} onError={() => setFailed(true)} />
 }
 
+/** Сколько ждём файл, прежде чем попробовать другой размер: на imgbb отдельные файлы зависают */
+const MAIN_PHOTO_WAIT_MS = 4000
+
+/**
+ * Основное фото галереи. Миниатюра видна сразу, поверх загружается большой файл.
+ * Если он не ответил или упал, берём следующий размер; заглушка — только когда не открылся ни один.
+ */
+function MainPhoto({ photo, hd, alt, fitClass, unavailableLabel }: {
+  photo: ImgbbPhoto
+  hd: boolean
+  alt: string
+  fitClass: string
+  unavailableLabel: string
+}) {
+  const order = hd
+    ? [photo.url, photo.medium_url, photo.thumb_url]
+    : [photo.medium_url, photo.url, photo.thumb_url]
+  const candidates = [...new Set(order.filter((u): u is string => !!u))]
+  const [index, setIndex] = useState(0)
+  const [loaded, setLoaded] = useState(false)
+  const [exhausted, setExhausted] = useState(false)
+  const [thumbFailed, setThumbFailed] = useState(false)
+
+  useEffect(() => {
+    if (loaded || index >= candidates.length - 1) return
+    const timer = setTimeout(() => setIndex(i => i + 1), MAIN_PHOTO_WAIT_MS)
+    return () => clearTimeout(timer)
+  }, [loaded, index, candidates.length])
+
+  if (exhausted || candidates.length === 0) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-gray-100 text-gray-400">
+        <CameraOff className="w-10 h-10" strokeWidth={1.25} aria-hidden="true" />
+        <span className="text-xs">{unavailableLabel}</span>
+      </div>
+    )
+  }
+
+  const thumb = photo.thumb_url
+  return (
+    <>
+      {thumb && !loaded && !thumbFailed && candidates[index] !== thumb && (
+        <img
+          src={photoSrc(thumb)}
+          alt=""
+          aria-hidden="true"
+          className={`absolute inset-0 w-full h-full ${fitClass}`}
+          draggable={false}
+          onError={() => setThumbFailed(true)}
+        />
+      )}
+      <img
+        key={candidates[index]}
+        src={photoSrc(candidates[index])}
+        alt={alt}
+        className={`absolute inset-0 w-full h-full ${fitClass}`}
+        loading="eager"
+        decoding="async"
+        draggable={false}
+        onLoad={() => setLoaded(true)}
+        onError={() => {
+          if (index < candidates.length - 1) setIndex(index + 1)
+          else setExhausted(true)
+        }}
+      />
+    </>
+  )
+}
+
 interface PhotoGalleryProps {
   photos: ImgbbPhoto[]
   alt?: string
@@ -36,8 +105,6 @@ export default function PhotoGallery({ photos, alt: altProp, mainAspect = 'aspec
   // HD: по умолчанию грузим облегчённое (medium/thumb), по кнопке — полное качество.
   const [hd, setHd] = useState(false)
   // Основное фото не загрузилось ни в medium, ни в оригинале — нейтральная заглушка
-  const [mainFailed, setMainFailed] = useState(false)
-  useEffect(() => { setMainFailed(false) }, [activeIndex, hd, photos])
 
   // Touch swipe state
   const touchStartX = useRef<number | null>(null)
@@ -169,35 +236,14 @@ export default function PhotoGallery({ photos, alt: altProp, mainAspect = 'aspec
           onTouchEnd={onGalleryTouchEnd}
           onClick={() => openLightbox(activeIndex)}
         >
-          {mainFailed ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-gray-100 text-gray-400">
-              <CameraOff className="w-10 h-10" strokeWidth={1.25} aria-hidden="true" />
-              <span className="text-xs">{t('photoGallery.unavailable')}</span>
-            </div>
-          ) : (
-            <img
-              key={photos[activeIndex].url}
-              src={photoSrc(hd
-                ? (photos[activeIndex].url || photos[activeIndex].medium_url || photos[activeIndex].thumb_url)
-                : (photos[activeIndex].medium_url || photos[activeIndex].thumb_url || photos[activeIndex].url))}
-              alt={`${alt} ${activeIndex + 1}`}
-              className={`absolute inset-0 w-full h-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'}`}
-              loading="eager"
-              decoding="async"
-              draggable={false}
-              // Средний размер не загрузился — пробуем оригинал, затем заглушка
-              onError={e => {
-                const full = photoSrc(photos[activeIndex].url)
-                const el = e.currentTarget
-                if (full && el.dataset.fb !== '1' && el.getAttribute('src') !== full) {
-                  el.dataset.fb = '1'
-                  el.src = full
-                } else {
-                  setMainFailed(true)
-                }
-              }}
-            />
-          )}
+          <MainPhoto
+            key={`${photos[activeIndex].url}-${hd}`}
+            photo={photos[activeIndex]}
+            hd={hd}
+            alt={`${alt} ${activeIndex + 1}`}
+            fitClass={objectFit === 'contain' ? 'object-contain' : 'object-cover'}
+            unavailableLabel={t('photoGallery.unavailable')}
+          />
 
           {/* HD-переключатель — справа сверху */}
           <button
@@ -301,6 +347,10 @@ export default function PhotoGallery({ photos, alt: altProp, mainAspect = 'aspec
                          transition-opacity duration-150"
               draggable={false}
               onClick={e => e.stopPropagation()}
+              onError={e => {
+                const fallback = photoSrc(photos[lightboxIndex].medium_url || photos[lightboxIndex].thumb_url)
+                if (fallback && e.currentTarget.getAttribute('src') !== fallback) e.currentTarget.src = fallback
+              }}
             />
 
             {/* Prev arrow */}
