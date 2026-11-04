@@ -1,3 +1,4 @@
+import { photoSrc } from '@/utils/photoSrc'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -127,7 +128,7 @@ function MarketOrderCard({
                   <div key={item.id} className="flex items-center gap-3 py-2.5">
                     {item.photoUrl ? (
                       <img
-                        src={item.photoUrl}
+                        src={photoSrc(item.photoUrl)}
                         alt=""
                         className="w-11 h-11 rounded-xl object-cover bg-gray-100 flex-shrink-0"
                         loading="lazy"

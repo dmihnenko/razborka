@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Package, ShoppingCart, Check, Heart } from 'lucide-react'
+import { ShoppingCart, Check, Heart } from 'lucide-react'
 import { toast } from 'sonner'
+import NoPhoto from './NoPhoto'
+import { photoSrc } from '@/utils/photoSrc'
 import type { MarketPart } from '@/types/marketplace'
 import { useCart } from '@/hooks/useCart'
 import { useFavorites } from '@/hooks/useFavorites'
@@ -42,9 +44,9 @@ export function MarketProductCard({ part }: MarketProductCardProps) {
   // размеру отрисовки × devicePixelRatio (чёткое фото на Retina/2K/4K).
   const srcSet = p0
     ? [
-        p0.thumb_url && `${p0.thumb_url} 180w`,
-        (p0.medium_url || p0.display_url) && `${p0.medium_url || p0.display_url} 480w`,
-        p0.url && `${p0.url} 1000w`,
+        p0.thumb_url && `${photoSrc(p0.thumb_url)} 180w`,
+        (p0.medium_url || p0.display_url) && `${photoSrc(p0.medium_url || p0.display_url)} 480w`,
+        p0.url && `${photoSrc(p0.url)} 1000w`,
       ].filter(Boolean).join(', ')
     : undefined
   const conditionLabel = part.condition && CONDITION_KEY[part.condition] ? t(CONDITION_KEY[part.condition]) : null
@@ -79,7 +81,7 @@ export function MarketProductCard({ part }: MarketProductCardProps) {
         <div className="relative aspect-square overflow-hidden flex-shrink-0 mx-2 mt-2 rounded-[var(--mk-r-btn)]" style={{ background: 'var(--mk-surface-2)' }}>
           {photo && !imgError ? (
             <img
-              src={photo}
+              src={photoSrc(photo)}
               srcSet={srcSet}
               sizes="(min-width:1280px) 220px, (min-width:640px) 33vw, 47vw"
               alt={part.name}
@@ -90,10 +92,7 @@ export function MarketProductCard({ part }: MarketProductCardProps) {
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-1.5">
-              <Package className="w-9 h-9" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
-              <span className="text-[11px] mk-meta">{t('card.noPhoto')}</span>
-            </div>
+            <NoPhoto size="card" />
           )}
         </div>
 

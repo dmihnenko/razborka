@@ -1,3 +1,4 @@
+import NoPhoto from '@/components/market/NoPhoto'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -196,9 +197,8 @@ export default function MarketProductPage() {
                 <PhotoGallery photos={galleryPhotos} alt={part.name} mainAspect="aspect-[4/3]" objectFit="contain" mainBgClass="bg-[var(--mk-surface-2)]" />
               </div>
             ) : (
-              <div className="mk-card aspect-[4/3] flex flex-col items-center justify-center gap-3" style={{ color: 'var(--mk-text-3)', background: 'var(--mk-surface-2)' }}>
-                <Package className="w-12 h-12" strokeWidth={1.5} aria-hidden="true" />
-                <span className="text-sm mk-meta">{t('productPage.noPhoto')}</span>
+              <div className="mk-card aspect-[4/3] overflow-hidden">
+                <NoPhoto size="page" />
               </div>
             )}
           </div>

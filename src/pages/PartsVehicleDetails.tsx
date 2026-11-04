@@ -1,3 +1,4 @@
+import { photoSrc } from '@/utils/photoSrc'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { intlLocale } from '@/i18n'
@@ -435,7 +436,7 @@ export default function PartsVehicleDetails() {
                                 {(part.photos ?? []).slice(0, 4).map((photo: ImgbbPhoto, i: number) => (
                                   <img
                                     key={i}
-                                    src={photo.thumb_url || photo.url}
+                                    src={photoSrc(photo.thumb_url || photo.url)}
                                     alt={part.name}
                                     className="w-9 h-9 object-cover rounded border border-gray-200"
                                   />
@@ -495,7 +496,7 @@ export default function PartsVehicleDetails() {
                       {/* Thumb */}
                       {(part.photos?.length ?? 0) > 0 ? (
                         <img
-                          src={part.photos?.[0]?.thumb_url || part.photos?.[0]?.url}
+                          src={photoSrc(part.photos?.[0]?.thumb_url || part.photos?.[0]?.url) ?? undefined}
                           alt={part.name}
                           className="w-12 h-12 rounded-lg object-cover border border-gray-200 flex-shrink-0"
                         />

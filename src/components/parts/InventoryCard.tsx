@@ -1,3 +1,4 @@
+import { photoSrc } from '@/utils/photoSrc'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Package, ImageIcon, Trash2, Car, Edit2, ShoppingCart, CheckSquare, Square, Share2 } from 'lucide-react'
@@ -116,7 +117,7 @@ export function InventoryCard({
               <div className="absolute inset-0 bg-gray-200 animate-pulse" />
             )}
             <img
-              src={primaryPhoto}
+              src={photoSrc(primaryPhoto)}
               alt={item.name}
               loading="lazy"
               decoding="async"

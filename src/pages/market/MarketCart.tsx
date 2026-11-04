@@ -1,10 +1,12 @@
+import NoPhoto from '@/components/market/NoPhoto'
+import { photoSrc } from '@/utils/photoSrc'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useMutation } from '@tanstack/react-query'
 import { IMaskInput } from 'react-imask'
 import { toast } from 'sonner'
-import { CheckCircle2, Minus, Package, Plus, Send, ShoppingCart, Store, Trash2 } from 'lucide-react'
+import { CheckCircle2, Minus, Plus, Send, ShoppingCart, Store, Trash2 } from 'lucide-react'
 import { useCart, type CartGroup } from '@/hooks/useCart'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { submitMarketOrders, PartialSubmitError } from '@/services/marketplaceService'
@@ -36,9 +38,9 @@ function CartItemRow({ item }: { item: CartItem }) {
     <div className="flex gap-3 py-3.5">
       <Link to={`/market/part/${item.inventoryId}`} className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center hover:opacity-90 transition-opacity" style={{ background: 'var(--mk-surface-2)' }} aria-label={item.name}>
         {item.photoUrl && !imgError ? (
-          <img src={item.photoUrl} alt={item.name} loading="lazy" decoding="async" onError={() => setImgError(true)} className="w-full h-full object-cover" />
+          <img src={photoSrc(item.photoUrl)} alt={item.name} loading="lazy" decoding="async" onError={() => setImgError(true)} className="w-full h-full object-cover" />
         ) : (
-          <Package className="w-7 h-7" strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--mk-text-3)' }} />
+          <NoPhoto size="thumb" />
         )}
       </Link>
 

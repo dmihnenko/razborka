@@ -1428,6 +1428,7 @@
     "createAria": "Создать"
   },
   "photoGallery": {
+    "unavailable": "Фото недоступно",
     "altDefault": "Фото",
     "hdOnAria": "Высокое качество фото (HD)",
     "hdOffAria": "Обычное качество фото",

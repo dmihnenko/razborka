@@ -1,7 +1,21 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { CameraOff, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import type { ImgbbPhoto } from '@/services/imgbbService'
+import { photoSrc } from '@/utils/photoSrc'
+
+/** Миниатюра: при ошибке загрузки вместо битой картинки — нейтральная иконка. */
+function Thumb({ src, alt, className }: { src: string; alt: string; className: string }) {
+  const [failed, setFailed] = useState(false)
+  if (failed) {
+    return (
+      <span className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400" aria-hidden="true">
+        <CameraOff className="w-5 h-5" strokeWidth={1.25} />
+      </span>
+    )
+  }
+  return <img src={photoSrc(src)} alt={alt} className={className} draggable={false} onError={() => setFailed(true)} />
+}
 
 interface PhotoGalleryProps {
   photos: ImgbbPhoto[]
@@ -21,6 +35,9 @@ export default function PhotoGallery({ photos, alt: altProp, mainAspect = 'aspec
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   // HD: по умолчанию грузим облегчённое (medium/thumb), по кнопке — полное качество.
   const [hd, setHd] = useState(false)
+  // Основное фото не загрузилось ни в medium, ни в оригинале — нейтральная заглушка
+  const [mainFailed, setMainFailed] = useState(false)
+  useEffect(() => { setMainFailed(false) }, [activeIndex, hd, photos])
 
   // Touch swipe state
   const touchStartX = useRef<number | null>(null)
@@ -152,22 +169,35 @@ export default function PhotoGallery({ photos, alt: altProp, mainAspect = 'aspec
           onTouchEnd={onGalleryTouchEnd}
           onClick={() => openLightbox(activeIndex)}
         >
-          <img
-            key={photos[activeIndex].url}
-            src={hd
-              ? (photos[activeIndex].url || photos[activeIndex].medium_url || photos[activeIndex].thumb_url)
-              : (photos[activeIndex].medium_url || photos[activeIndex].thumb_url || photos[activeIndex].url)}
-            alt={`${alt} ${activeIndex + 1}`}
-            className={`absolute inset-0 w-full h-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'}`}
-            loading="eager"
-            decoding="async"
-            draggable={false}
-            // Средний размер не загрузился — пробуем оригинал
-            onError={e => {
-              const full = photos[activeIndex].url
-              if (full && e.currentTarget.src !== full) e.currentTarget.src = full
-            }}
-          />
+          {mainFailed ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-gray-100 text-gray-400">
+              <CameraOff className="w-10 h-10" strokeWidth={1.25} aria-hidden="true" />
+              <span className="text-xs">{t('photoGallery.unavailable')}</span>
+            </div>
+          ) : (
+            <img
+              key={photos[activeIndex].url}
+              src={photoSrc(hd
+                ? (photos[activeIndex].url || photos[activeIndex].medium_url || photos[activeIndex].thumb_url)
+                : (photos[activeIndex].medium_url || photos[activeIndex].thumb_url || photos[activeIndex].url))}
+              alt={`${alt} ${activeIndex + 1}`}
+              className={`absolute inset-0 w-full h-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'}`}
+              loading="eager"
+              decoding="async"
+              draggable={false}
+              // Средний размер не загрузился — пробуем оригинал, затем заглушка
+              onError={e => {
+                const full = photoSrc(photos[activeIndex].url)
+                const el = e.currentTarget
+                if (full && el.dataset.fb !== '1' && el.getAttribute('src') !== full) {
+                  el.dataset.fb = '1'
+                  el.src = full
+                } else {
+                  setMainFailed(true)
+                }
+              }}
+            />
+          )}
 
           {/* HD-переключатель — справа сверху */}
           <button
@@ -224,11 +254,10 @@ export default function PhotoGallery({ photos, alt: altProp, mainAspect = 'aspec
                 `}
                 aria-label={t('photoGallery.photoN', { n: i + 1 })}
               >
-                <img
+                <Thumb
                   src={photo.thumb_url || photo.url}
                   alt={`${alt} ${i + 1}`}
                   className={`w-full h-full ${objectFit === 'contain' ? 'object-contain bg-white' : 'object-cover'}`}
-                  draggable={false}
                 />
               </button>
             ))}
@@ -265,7 +294,7 @@ export default function PhotoGallery({ photos, alt: altProp, mainAspect = 'aspec
             {/* Image */}
             <img
               key={photos[lightboxIndex].url}
-              src={photos[lightboxIndex].url}
+              src={photoSrc(photos[lightboxIndex].url)}
               alt={`${alt} ${lightboxIndex + 1}`}
               className="relative z-10 max-w-full max-h-full object-contain select-none
                          px-14 sm:px-20
@@ -328,11 +357,10 @@ export default function PhotoGallery({ photos, alt: altProp, mainAspect = 'aspec
                   `}
                   aria-label={t('photoGallery.goToPhotoN', { n: i + 1 })}
                 >
-                  <img
+                  <Thumb
                     src={photo.thumb_url || photo.url}
                     alt={`${alt} ${i + 1}`}
                     className={`w-full h-full ${objectFit === 'contain' ? 'object-contain bg-white' : 'object-cover'}`}
-                    draggable={false}
                   />
                 </button>
               ))}

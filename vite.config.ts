@@ -97,7 +97,7 @@ export default defineConfig({
         // Offline SPA: все navigate-запросы → index.html,
         // кроме API, version.json и статических файлов из /public/
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//, /^\/version\.json/, /^\/public\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/img\//, /^\/version\.json/, /^\/public\//],
 
         runtimeCaching: [
           // ── Supabase Auth ─────────────────────────────────────────────────────
@@ -156,21 +156,6 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 2  // 2 минуты
               },
               cacheableResponse: { statuses: [200] }
-            }
-          },
-
-          // ── Изображения ImgBB ─────────────────────────────────────────────────
-          // CacheFirst: загруженные фото не меняются — агрессивный кеш
-          {
-            urlPattern: /^https?:\/\/(i\.ibb\.co|imgbb\.com|image\.ibb\.co)\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'imgbb-images',
-              expiration: {
-                maxEntries: 400,
-                maxAgeSeconds: 60 * 60 * 24 * 30  // 30 дней — фото не меняются
-              },
-              cacheableResponse: { statuses: [0, 200] }
             }
           },
 
@@ -250,7 +235,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}', 'worker/**/*.test.js'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'html'],

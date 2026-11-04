@@ -1,3 +1,4 @@
+import { photoSrc } from '@/utils/photoSrc'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { BRAND } from '@/config/brand'
@@ -201,7 +202,7 @@ function Lightbox({ photos, startIdx, onClose }: {
         <div className="absolute inset-0" onClick={onClose} />
         <img
           key={src}
-          src={src}
+          src={photoSrc(src)}
           alt={`Фото ${idx + 1}`}
           className="relative z-10 max-w-full max-h-full object-contain px-12 sm:px-16"
           draggable={false}
@@ -240,7 +241,7 @@ function Lightbox({ photos, startIdx, onClose }: {
                 i === idx ? 'border-white' : 'border-transparent opacity-50 hover:opacity-75'
               }`}
             >
-              <img src={thumb(p)} alt="" className="w-full h-full object-cover" draggable={false} />
+              <img src={photoSrc(thumb(p))} alt="" className="w-full h-full object-cover" draggable={false} />
             </button>
           ))}
         </div>
@@ -364,7 +365,7 @@ export default function PublicPartsItemView() {
                 >
                   <img
                     key={getUrl(photos[activePhoto])}
-                    src={getUrl(photos[activePhoto])}
+                    src={photoSrc(getUrl(photos[activePhoto]))}
                     alt={item.name}
                     className="absolute inset-0 w-full h-full object-cover"
                     loading="lazy"
@@ -411,7 +412,7 @@ export default function PublicPartsItemView() {
                         aria-label={`Фото ${i + 1}`}
                       >
                         <img
-                          src={getThumb(p)}
+                          src={photoSrc(getThumb(p))}
                           alt=""
                           className="w-full h-full object-cover"
                           loading="lazy"

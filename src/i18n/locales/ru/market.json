@@ -238,7 +238,7 @@
   "card": {
     "oem": "OEM",
     "inStock": "В наличии",
-    "noPhoto": "Нет фото",
+    "noPhoto": "Фото пока нет",
     "fromCar": "с {{car}}",
     "condNew": "Новая",
     "condUsed": "Б/у",

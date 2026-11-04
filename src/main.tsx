@@ -120,6 +120,9 @@ const queryClient = new QueryClient({
 
 // Сохраняем кэш react-query в localStorage — при повторном открытии/«пробуждении»
 // PWA данные показываются мгновенно из кэша, без полной перезагрузки контекста.
+// Старый кэш сервис-воркера мог сохранить заглушку imgbb как фото (непроверяемый ответ), удаляем его
+if ('caches' in window) void caches.delete('imgbb-images').catch(() => {})
+
 const persister = createSyncStoragePersister({
   storage: window.localStorage,
   key: 'tsp_rq_cache',

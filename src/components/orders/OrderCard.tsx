@@ -1,3 +1,4 @@
+import { photoSrc } from '@/utils/photoSrc'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -147,7 +148,7 @@ export default function OrderCard({
           {order.items.map((item, i) => (
             <div key={i} className="flex items-start gap-3">
               <img
-                src={item.photoUrl || NO_IMAGE_URL}
+                src={photoSrc(item.photoUrl || NO_IMAGE_URL)}
                 alt={item.name}
                 className="w-12 h-12 rounded-lg object-cover bg-white border border-gray-100 shrink-0"
               />

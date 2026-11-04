@@ -1,3 +1,4 @@
+import { photoSrc } from '@/utils/photoSrc'
 import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -218,7 +219,7 @@ export default function PublicPartsLocationView() {
                 >
                   {photos.length > 0 ? (
                     <img
-                      src={getThumb(photos[0])}
+                      src={photoSrc(getThumb(photos[0]))}
                       alt=""
                       className="w-14 h-14 rounded-lg object-cover bg-gray-100 flex-shrink-0"
                       loading="lazy"

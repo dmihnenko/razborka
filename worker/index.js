@@ -7,6 +7,8 @@
 //  4. Остальное (ассеты, robots.txt) — статика edge напрямую (run_worker_first их не включает).
 // Публичные данные берём анонимно (anon-ключ публичен, приватное закрыто RLS).
 
+import { handleImageProxy, isImageProxyPath } from './imageProxy.js'
+
 const SITE = 'https://razborka.net'
 const BRAND = 'Razborka.net'
 const DEFAULT_OG = SITE + '/og-default.png' // баннер 1200×630 (фолбэк для страниц без фото)
@@ -606,6 +608,9 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url)
     const p = url.pathname
+
+    // Прокси картинок imgbb (отсекает 503-заглушки)
+    if (isImageProxyPath(p)) return handleImageProxy(request)
 
     // 0. www → apex (канонический хост, без дублей в индексе)
     if (url.hostname === 'www.razborka.net') {
