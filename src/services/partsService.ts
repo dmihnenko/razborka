@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { oemOrClause } from '@/utils/partNumberSearch'
 import type {
   PartsVehicle,
   PartsCustomer,
@@ -417,13 +418,35 @@ function sanitizeInventorySearch(s: string): string {
   return s.trim().replace(/[,()%]/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
+/** id ячеек, у которых название содержит запрос, плюс все их потомки */
+export function matchStorageLocationIds(
+  locs: { id: string; name: string; parent_id: string | null }[],
+  q: string
+): string[] {
+  const needle = q.trim().toLowerCase()
+  if (!needle) return []
+  const result = new Set<string>(locs.filter(l => l.name.toLowerCase().includes(needle)).map(l => l.id))
+  let grew = true
+  while (grew) {
+    grew = false
+    for (const l of locs) {
+      if (l.parent_id && result.has(l.parent_id) && !result.has(l.id)) { result.add(l.id); grew = true }
+    }
+  }
+  return [...result]
+}
+
 export interface PartsInventoryPagedOpts {
   page?: number
   pageSize?: number
   status?: string
   vehicleId?: string
-  source?: 'vehicles' | 'shop'
+  source?: 'vehicles' | 'shop' | 'all'
   search?: string
+  /** Фильтр по ячейке: id выбранной ячейки и всех вложенных */
+  storageLocationIds?: string[]
+  /** Раздел маркета: slug, либо 'none' = без раздела; пусто/'all' = без фильтра */
+  marketCategory?: string
 }
 
 /** Серверная пагинация инвентаря (не заменяет getPartsInventory — для PartsInventory.tsx) */
@@ -431,7 +454,7 @@ export async function getPartsInventoryPaged(
   partsCompanyId: string,
   opts: PartsInventoryPagedOpts = {}
 ): Promise<{ items: PartsInventoryItem[]; total: number }> {
-  const { page = 1, pageSize = 50, status, vehicleId, source, search } = opts
+  const { page = 1, pageSize = 50, status, vehicleId, source, search, storageLocationIds, marketCategory } = opts
 
   let query = supabase
     .from('parts_inventory')
@@ -451,7 +474,22 @@ export async function getPartsInventoryPaged(
   }
   if (search?.trim()) {
     const s = sanitizeInventorySearch(search)
-    query = query.or(`name.ilike.%${s}%,part_number.ilike.%${s}%,article.ilike.%${s}%`)
+    // Ячейки компании, чьё название подходит под запрос (вместе с вложенными)
+    let locClause = ''
+    if (s && s.length >= 2) {
+      const locs = await getStorageLocations(partsCompanyId)
+      // не более 50 id, чтобы не раздувать URL запроса
+      const ids = matchStorageLocationIds(locs as { id: string; name: string; parent_id: string | null }[], s).slice(0, 50)
+      if (ids.length) locClause = `,storage_location_id.in.(${ids.join(',')})`
+    }
+    query = query.or(`name.ilike.%${s}%,part_number.ilike.%${s}%,article.ilike.%${s}%${oemOrClause(s)}${locClause}`)
+  }
+
+  if (storageLocationIds?.length) {
+    query = query.in('storage_location_id', storageLocationIds)
+  }
+  if (marketCategory && marketCategory !== 'all') {
+    query = marketCategory === 'none' ? query.is('market_category', null) : query.eq('market_category', marketCategory)
   }
 
   const from = (page - 1) * pageSize
@@ -476,26 +514,68 @@ export async function getPartsInventoryItem(id: string) {
   return data as PartsInventoryItem
 }
 
+function toInventoryInsertRow(input: CreatePartsInventoryInput, partsCompanyId: string) {
+  return {
+    ...input,
+    parts_company_id: partsCompanyId,
+    status: input.status || 'available',
+    reserved_quantity: 0,
+    // convert empty strings to null for UUID/optional fields
+    category_id: input.category_id || null,
+    vehicle_id: input.vehicle_id || null,
+    storage_location_id: input.storage_location_id || null,
+    location: input.location || null,
+    shelf: input.shelf || null,
+    bin: input.bin || null,
+    part_number: input.part_number || null,
+    description: input.description || null,
+    notes: input.notes || null,
+    purchase_price: input.purchase_price ?? null,
+  }
+}
+
+/**
+ * Пакетная вставка запчастей (импорт): по `batchSize` строк одним insert.
+ * Если пачка упала, её строки вставляются по одной: одна плохая строка не отбрасывает остальные,
+ * в failed попадают только реально упавшие. defaultToNull:false — пропущенные поля (например,
+ * пустая цена из xlsx) берут DB-дефолт, как при поштучной вставке, а не уходят в NULL.
+ */
+export async function createPartsInventoryItemsBatch(
+  inputs: CreatePartsInventoryInput[],
+  partsCompanyId: string,
+  batchSize = 100
+): Promise<{ inserted: number; failed: number }> {
+  let inserted = 0
+  let failed = 0
+  for (let i = 0; i < inputs.length; i += batchSize) {
+    const chunk = inputs.slice(i, i + batchSize)
+    const { error } = await supabase
+      .from('parts_inventory')
+      .insert(chunk.map(inp => toInventoryInsertRow(inp, partsCompanyId)), { defaultToNull: false })
+    if (error) {
+      console.error('createPartsInventoryItemsBatch error:', JSON.stringify(error))
+      for (const inp of chunk) {
+        const { error: rowErr } = await supabase
+          .from('parts_inventory')
+          .insert(toInventoryInsertRow(inp, partsCompanyId))
+        if (rowErr) {
+          console.error('createPartsInventoryItemsBatch row error:', JSON.stringify(rowErr))
+          failed++
+        } else {
+          inserted++
+        }
+      }
+    } else {
+      inserted += chunk.length
+    }
+  }
+  return { inserted, failed }
+}
+
 export async function createPartsInventoryItem(input: CreatePartsInventoryInput, partsCompanyId: string) {
   const { data, error } = await supabase
     .from('parts_inventory')
-    .insert({
-      ...input,
-      parts_company_id: partsCompanyId,
-      status: input.status || 'available',
-      reserved_quantity: 0,
-      // convert empty strings to null for UUID/optional fields
-      category_id: input.category_id || null,
-      vehicle_id: input.vehicle_id || null,
-      storage_location_id: input.storage_location_id || null,
-      location: input.location || null,
-      shelf: input.shelf || null,
-      bin: input.bin || null,
-      part_number: input.part_number || null,
-      description: input.description || null,
-      notes: input.notes || null,
-      purchase_price: input.purchase_price ?? null,
-    })
+    .insert(toInventoryInsertRow(input, partsCompanyId))
     .select('*')
     .single()
   
@@ -506,6 +586,8 @@ export async function createPartsInventoryItem(input: CreatePartsInventoryInput,
 export async function updatePartsInventoryItem(id: string, updates: Partial<PartsInventoryItem>) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { category, vehicle, ...rest } = updates
+  // generated-колонку не пишем, даже если пришла целая строка select('*')
+  delete (rest as Record<string, unknown>).part_number_norm
   // Convert empty strings to null for UUID and optional fields to avoid 400 errors
   // Only include UUID fields if explicitly provided — otherwise they'd be set to null,
   // overwriting existing values (e.g. vehicle_id gets wiped when selling a part)
@@ -718,10 +800,65 @@ export async function getRecentPartsOrders(partsCompanyId: string, limit = 6): P
   return (data || []) as unknown as RecentPartsOrder[]
 }
 
+/** Ошибка доступности позиции при добавлении в заказ. Текст показывают вызывающие через partsErrorMessage(err, t). */
+export class PartsStockError extends Error {
+  code: 'unavailable' | 'insufficient'
+  constructor(code: 'unavailable' | 'insufficient') {
+    super(code === 'unavailable' ? 'parts item unavailable' : 'parts item insufficient quantity')
+    this.name = 'PartsStockError'
+    this.code = code
+  }
+}
+
+/** Локализованное сообщение для PartsStockError; для прочих ошибок — их message или fallback. */
+export function partsErrorMessage(err: unknown, t: (key: string) => string, fallback = ''): string {
+  if (err instanceof PartsStockError) {
+    return t(err.code === 'unavailable' ? 'orderDetailsPage.itemUnavailable' : 'orderDetailsPage.itemInsufficient')
+  }
+  return (err instanceof Error ? err.message : '') || fallback
+}
+
 export async function createPartsOrderItem(
   orderId: string,
   item: { inventory_item_id: string; quantity: number; price_at_sale: number; price_at_sale_currency?: 'UAH' | 'USD' }
 ) {
+  // Проверка доступности: позиция не продана и запрошенное количество не больше
+  // остатка за вычетом уже занятого в незавершённых заказах (многоштучная позиция
+  // может быть «reserved» одним заказом и всё ещё иметь свободные штуки).
+  // Резерв (available → reserved) ставим только если позиция была available.
+  let reserved = false
+  if (item.inventory_item_id) {
+    const { data: inv, error: invErr } = await supabase
+      .from('parts_inventory')
+      .select('quantity, status')
+      .eq('id', item.inventory_item_id)
+      .maybeSingle()
+    if (invErr) throw invErr
+    if (!inv || inv.status === 'sold' || inv.status === 'damaged') throw new PartsStockError('unavailable')
+
+    const { data: busy, error: busyErr } = await supabase
+      .from('parts_order_items')
+      .select('quantity, order:parts_orders!inner(status)')
+      .eq('inventory_item_id', item.inventory_item_id)
+      .not('order.status', 'in', '(completed,cancelled)')
+    if (busyErr) throw busyErr
+    const taken = (Array.isArray(busy) ? busy : []).reduce((s: number, r: { quantity: number | null }) => s + (r.quantity || 0), 0)
+    if (item.quantity > (inv.quantity || 0) - taken) {
+      throw new PartsStockError(taken > 0 || inv.status === 'reserved' ? 'insufficient' : 'unavailable')
+    }
+
+    if (inv.status === 'available') {
+      const { data: upd, error: resErr } = await supabase
+        .from('parts_inventory')
+        .update({ status: 'reserved' })
+        .eq('id', item.inventory_item_id)
+        .eq('status', 'available')
+        .select('id')
+      if (resErr) throw resErr
+      reserved = !!upd && upd.length > 0
+    }
+  }
+
   const { data, error } = await supabase
     .from('parts_order_items')
     .insert({
@@ -734,15 +871,16 @@ export async function createPartsOrderItem(
     .select('*')
     .single()
 
-  if (error) throw error
-
-  // Авторезерв: позиция бронируется сразу при добавлении в заказ (статус «available» → «reserved»).
-  if (item.inventory_item_id) {
-    await supabase
-      .from('parts_inventory')
-      .update({ status: 'reserved' })
-      .eq('id', item.inventory_item_id)
-      .eq('status', 'available')
+  if (error) {
+    // Вставка не удалась — откатываем только что поставленный нами резерв
+    if (reserved) {
+      await supabase
+        .from('parts_inventory')
+        .update({ status: 'available' })
+        .eq('id', item.inventory_item_id)
+        .eq('status', 'reserved')
+    }
+    throw error
   }
 
   return data
@@ -754,13 +892,20 @@ export async function updatePartsOrderTotal(orderId: string, exchangeRate?: numb
     .select('price_at_sale, quantity, price_at_sale_currency')
     .eq('order_id', orderId)
 
+  // USD-позиции без известного курса: не пишем заниженную сумму, оставляем прежнюю.
+  const hasUsd = (items || []).some(i => (i.price_at_sale_currency || 'USD') === 'USD')
+  if (hasUsd && exchangeRate == null) {
+    console.warn('updatePartsOrderTotal: нет курса USD, сумма заказа не обновлена', orderId)
+    return
+  }
+
   const total = (items || []).reduce((s: number, i: Pick<PartsOrderItem, 'price_at_sale' | 'quantity' | 'price_at_sale_currency'>) => {
     // Дефолт валюты согласован с createPartsOrderItem (там тоже 'USD'), иначе итог на
     // клиенте (USD) и сохранённый total_amount (был 'UAH') расходились для null-валюты.
     const currency = i.price_at_sale_currency || 'USD'
     const amount = (i.price_at_sale || 0) * (i.quantity || 1)
-    // USD → грн только при известном курсе; иначе считаем сумму без USD-позиций (без хардкода)
-    const amountUAH = currency === 'USD' ? (exchangeRate != null ? amount * exchangeRate : 0) : amount
+    // USD → грн: курс здесь гарантированно известен (иначе вышли выше)
+    const amountUAH = currency === 'USD' ? amount * (exchangeRate as number) : amount
     return s + amountUAH
   }, 0)
 
@@ -993,6 +1138,8 @@ export async function duplicatePartsInventoryItem(
     parts_company_id: partsCompanyId,
     reserved_quantity: 0,
     category_id: source.category_id || null,
+    market_category: source.market_category ?? null,
+    market_category_locked: source.market_category_locked ?? false,
     vehicle_id: source.vehicle_id || null,
     storage_location_id: source.storage_location_id || null,
     location: source.location || null,
@@ -1003,6 +1150,8 @@ export async function duplicatePartsInventoryItem(
     notes: source.notes || null,
     purchase_price: source.purchase_price ?? null,
   }
+  // generated-колонка: в insert передавать нельзя
+  delete copy.part_number_norm
 
   // copy собирается динамическим spread'ом (...rest + переопределения), поэтому
   // структурно эквивалентен CreatePartsInventoryInput, но TS не может это вывести —
@@ -1026,13 +1175,48 @@ export async function getPartsInventoryByVehicle(vehicleId: string): Promise<Par
  */
 export async function bulkUpdateInventory(
   ids: string[],
-  updates: { storage_location_id?: string | null; category_id?: string | null }
+  updates: {
+    storage_location_id?: string | null
+    category_id?: string | null
+    market_category?: string | null
+    market_category_locked?: boolean
+  }
 ): Promise<void> {
   const { error } = await supabase
     .from('parts_inventory')
     .update(updates)
     .in('id', ids)
   if (error) throw error
+}
+
+/** Раздел маркета (глобальный справочник market_categories) */
+export interface MarketSection {
+  slug: string
+  name_ru: string
+  name_uk: string
+}
+
+/** Все активные разделы маркета по порядку (для выбора в кабинете; читается всеми ролями). */
+export async function getMarketSections(): Promise<MarketSection[]> {
+  const { data, error } = await supabase
+    .from('market_categories')
+    .select('slug, name_ru, name_uk')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+  if (error) throw error
+  return (data ?? []) as MarketSection[]
+}
+
+/** Раздел, который авторазметка присвоит названию (RPC market_category_classify); null = не определён. */
+export async function classifyMarketCategory(name: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('market_category_classify', { p_name: name })
+  if (error) throw error
+  return (data as string | null) ?? null
+}
+
+/** Имя раздела на языке интерфейса */
+export function marketSectionName(s: Pick<MarketSection, 'name_ru' | 'name_uk'>, lang?: string | null): string {
+  return (lang?.startsWith('uk') ? s.name_uk : s.name_ru) || s.name_ru
 }
 
 /**
@@ -1083,7 +1267,7 @@ export async function searchCabinet(
       .from('parts_inventory')
       .select('id,name,part_number,selling_price,price_currency,status')
       .eq('parts_company_id', partsCompanyId)
-      .or(`name.ilike.%${s}%,part_number.ilike.%${s}%`)
+      .or(`name.ilike.%${s}%,part_number.ilike.%${s}%${oemOrClause(s)}`)
       .limit(5),
     supabase
       .from('parts_vehicles')

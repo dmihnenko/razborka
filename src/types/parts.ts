@@ -128,6 +128,11 @@ export interface PartsInventoryItem {
 
   storage_location_id?: string | null
 
+  /** Раздел на публичном маркете (slug); null = без раздела */
+  market_category?: string | null
+  /** true = раздел выбран вручную (авторазметка по названию отключена) */
+  market_category_locked?: boolean
+
   // Relations
   category?: PartsCategory
   vehicle?: PartsVehicle
@@ -182,6 +187,8 @@ export interface CreatePartsInventoryInput {
   photos?: ImgbbPhoto[]
   notes?: string
   storage_location_id?: string
+  market_category?: string | null
+  market_category_locked?: boolean
   status?: PartsInventoryStatus
   // Разборка (false) vs Магазин (true). Определяется вкладкой, через которую добавляют:
   // «Запчасти» → false, «Магазин» → true. По умолчанию (БД) — false.

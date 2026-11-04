@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Car, ChevronRight, Copy, Heart, Package, Share2, ShoppingCart } from 'lucide-react'
 import { toast } from 'sonner'
-import { getMarketPart, getRelatedParts } from '@/services/marketplaceService'
+import { getMarketPart, getRelatedParts, getMarketCategories, marketCategoryName } from '@/services/marketplaceService'
 import type { MarketPart } from '@/types/marketplace'
 import { useCart } from '@/hooks/useCart'
 import { useFavorites } from '@/hooks/useFavorites'
@@ -40,7 +40,7 @@ function toGalleryPhotos(part: MarketPart): ImgbbPhoto[] {
 }
 
 export default function MarketProductPage() {
-  const { t } = useTranslation('market')
+  const { t, i18n } = useTranslation('market')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { addItem, items } = useCart()
@@ -56,6 +56,8 @@ export default function MarketProductPage() {
     queryFn: () => getRelatedParts(part!.company.id, part!.id),
     enabled: !!part?.company.id, staleTime: 60_000,
   })
+
+  const { data: categories = [] } = useQuery({ queryKey: ['market', 'categories'], queryFn: getMarketCategories, staleTime: 5 * 60_000 })
 
   const galleryPhotos = useMemo(() => (part ? toGalleryPhotos(part) : []), [part])
 
@@ -154,6 +156,8 @@ export default function MarketProductPage() {
     fav.toggle(part.id)
   }
 
+  const sectionRow = part.categorySlug ? categories.find(c => c.slug === part.categorySlug) : undefined
+  const categoryName = sectionRow ? marketCategoryName(sectionRow, i18n.language) : ''
   const carName = part.vehicle ? [part.vehicle.make, part.vehicle.model, part.vehicle.year].filter(Boolean).join(' ') : ''
   const conditionLabel = CONDITION_KEY[part.condition] ? t(CONDITION_KEY[part.condition]) : part.condition
   const oem = part.partNumber ? part.partNumber.toUpperCase() : ''
@@ -165,13 +169,13 @@ export default function MarketProductPage() {
     ...(part.article ? [{ label: t('productPage.specArticle'), value: part.article, mono: true }] : []),
     { label: t('productPage.specCondition'), value: String(conditionLabel) },
     ...(carName ? [{ label: t('productPage.specFromCar'), value: carName }] : []),
-    ...(part.categoryName ? [{ label: t('productPage.specCategory'), value: part.categoryName }] : []),
+    ...(categoryName ? [{ label: t('productPage.specCategory'), value: categoryName }] : []),
   ]
 
   const sectionTitle = 'text-base font-bold mb-2'
 
   return (
-    <div>
+    <div className="mx-auto max-w-6xl">
       {/* Хлебные крошки */}
       <nav aria-label={t('productPage.breadcrumbsAria')} className="mb-4">
         <ol className="flex items-center gap-1 text-xs sm:text-sm min-w-0 mk-meta">

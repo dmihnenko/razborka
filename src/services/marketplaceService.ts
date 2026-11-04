@@ -14,8 +14,10 @@ import type {
 import {
   createPartsOrder,
   createPartsOrderItem,
+  deletePartsOrder,
   updatePartsOrderTotal,
 } from '@/services/partsService'
+import { oemOrClause } from '@/utils/partNumberSearch'
 
 // ============================================================================
 // ПУБЛИЧНЫЙ МАРКЕТПЛЕЙС — каталог читается анонимно (anon key)
@@ -23,6 +25,8 @@ import {
 // ============================================================================
 
 export const MARKET_PAGE_SIZE = 24
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
  * Приведение результата select к форме строки БД.
@@ -41,17 +45,16 @@ function asRow<T>(data: unknown): T {
 /** Безопасные публичные поля запчасти (полные — для страницы товара: с галереей photos) */
 const PART_FIELDS = `
   id, name, article, part_number, description, condition, quantity, reserved_quantity,
-  selling_price, price_currency, photo_url, photos, status, created_at
+  selling_price, price_currency, photo_url, photos, status, created_at, market_category
 `
 
 /** Лёгкие поля для списков/карточек — без тяжёлого photos jsonb (тумба берётся из photo_url) */
 const PART_LIST_FIELDS = `
   id, name, article, part_number, description, condition, quantity, reserved_quantity,
-  selling_price, price_currency, photo_url, status, created_at
+  selling_price, price_currency, photo_url, status, created_at, market_category
 `
 
 const COMPANY_JOIN = `company:parts_companies!inner(id, name, phone, telegram, address, city, email, description, is_active, ship_speed, warranty_enabled, warranty_days)`
-const CATEGORY_JOIN = `category:parts_categories(id, name)`
 
 function vehicleJoin(inner: boolean) {
   // VIN НЕ запрашиваем — публичный маркет не должен раскрывать VIN авто-донора.
@@ -92,7 +95,7 @@ interface MarketPartRow {
   photos?: MarketPhoto[] | null
   status?: string | null
   created_at?: string | null
-  category?: { id?: string | null; name?: string | null } | null
+  market_category?: string | null
   vehicle?: { make: string; model: string; year?: number | null } | null
   company?: PartCompanyJoin | null
 }
@@ -114,7 +117,7 @@ function mapPartRow(row: MarketPartRow): MarketPart {
     priceCurrency: row.price_currency === 'USD' ? 'USD' : 'UAH',
     photoUrl: row.photo_url || first?.thumb_url || first?.display_url || first?.url || null,
     photos,
-    categoryName: row.category?.name ?? null,
+    categorySlug: row.market_category ?? null,
     vehicle: row.vehicle
       ? {
           make: row.vehicle.make,
@@ -139,6 +142,11 @@ function mapPartRow(row: MarketPartRow): MarketPart {
 }
 
 /** Экранируем значение для PostgREST or()-фильтра (запятые/скобки ломают синтаксис) */
+// Экранирование спецсимволов ilike (\ % _), чтобы сравнивать как точное значение без учёта регистра
+function escapeIlike(s: string): string {
+  return s.replace(/[\\%_]/g, '\\$&')
+}
+
 function sanitizeSearch(s: string): string {
   return s.trim().replace(/[,()]/g, ' ').replace(/\s+/g, ' ')
 }
@@ -161,7 +169,7 @@ export async function getMarketParts(
     // и анонимы, и залогиненные читают витрину через неё, не получая чужой purchase_price.
     .from('market_inventory')
     .select(
-      `${PART_LIST_FIELDS}, ${COMPANY_JOIN}, ${CATEGORY_JOIN}, ${vehicleJoin(needVehicleInner)}`,
+      `${PART_LIST_FIELDS}, ${COMPANY_JOIN}, ${vehicleJoin(needVehicleInner)}`,
       // estimated: точный COUNT для малых выборок, оценочный (по планировщику) для
       // больших — чтобы не считать 1M строк на каждой странице каталога.
       { count: 'estimated' }
@@ -169,13 +177,16 @@ export async function getMarketParts(
 
   if (f.search?.trim()) {
     const s = sanitizeSearch(f.search)
-    query = query.or(`name.ilike.%${s}%,part_number.ilike.%${s}%,description.ilike.%${s}%`)
+    query = query.or(`name.ilike.%${s}%,part_number.ilike.%${s}%,description.ilike.%${s}%${oemOrClause(s)}`)
   }
-  if (f.categoryId) query = query.eq('category_id', f.categoryId)
+  if (f.categoryId) {
+    // старые ссылки ?category=<uuid> (внутренняя категория) продолжают работать; новые — slug раздела
+    query = UUID_RE.test(f.categoryId) ? query.eq('category_id', f.categoryId) : query.eq('market_category', f.categoryId)
+  }
   if (f.condition) query = query.eq('condition', f.condition)
   if (f.companyId) query = query.eq('parts_company_id', f.companyId)
-  if (f.make?.trim()) query = query.eq('vehicle.make', f.make.trim())
-  if (f.model?.trim()) query = query.eq('vehicle.model', f.model.trim())
+  if (f.make?.trim()) query = query.ilike('vehicle.make', escapeIlike(f.make.trim()))
+  if (f.model?.trim()) query = query.ilike('vehicle.model', escapeIlike(f.model.trim()))
   if (f.year != null) query = query.eq('vehicle.year', f.year)
   if (f.minPrice != null && f.minPrice > 0) query = query.gte('selling_price', f.minPrice)
   if (f.maxPrice != null && f.maxPrice > 0) query = query.lte('selling_price', f.maxPrice)
@@ -201,7 +212,7 @@ export async function getMarketParts(
 export async function getMarketPart(id: string): Promise<MarketPart | null> {
   const { data, error } = await supabase
     .from('market_inventory')
-    .select(`${PART_FIELDS}, ${COMPANY_JOIN}, ${CATEGORY_JOIN}, ${vehicleJoin(false)}`)
+    .select(`${PART_FIELDS}, ${COMPANY_JOIN}, ${vehicleJoin(false)}`)
     .eq('id', id)
     .maybeSingle()
 
@@ -216,7 +227,7 @@ export async function getRelatedParts(
 ): Promise<MarketPart[]> {
   const { data, error } = await supabase
     .from('market_inventory')
-    .select(`${PART_LIST_FIELDS}, ${COMPANY_JOIN}, ${CATEGORY_JOIN}, ${vehicleJoin(false)}`)
+    .select(`${PART_LIST_FIELDS}, ${COMPANY_JOIN}, ${vehicleJoin(false)}`)
     .eq('parts_company_id', companyId)
     .neq('id', excludeId)
     .order('created_at', { ascending: false })
@@ -231,7 +242,7 @@ export async function getMarketPartsByIds(ids: string[]): Promise<MarketPart[]> 
   if (!ids.length) return []
   const { data, error } = await supabase
     .from('market_inventory')
-    .select(`${PART_LIST_FIELDS}, ${COMPANY_JOIN}, ${CATEGORY_JOIN}, ${vehicleJoin(false)}`)
+    .select(`${PART_LIST_FIELDS}, ${COMPANY_JOIN}, ${vehicleJoin(false)}`)
     .in('id', ids)
   if (error) throw error
   return asRows<MarketPartRow>(data).map(mapPartRow)
@@ -335,26 +346,25 @@ export async function getMarketSupplier(id: string): Promise<MarketSupplier | nu
 
 // ── Категории и марки (для фильтров) ───────────────────────────────────────
 
+/** Имя раздела на языке интерфейса (выбор при рендере, чтобы смена языка не требовала перезапроса) */
+export function marketCategoryName(c: Pick<MarketCategory, 'nameRu' | 'nameUk'>, lang?: string | null): string {
+  return (lang?.startsWith('uk') ? c.nameUk : c.nameRu) || c.nameRu
+}
+
+/** Разделы маркета (справочник + количество) из кэша RPC get_market_categories; nameRu/nameUk. */
 export async function getMarketCategories(): Promise<MarketCategory[]> {
   try {
-    const { data, error } = await supabase
-      .from('market_inventory')
-      .select(`category_id, category:parts_categories!inner(id, name)`)
-      .not('category_id', 'is', null)
-      .limit(5000)
-
+    const { data, error } = await supabase.rpc('get_market_categories')
     if (error) throw error
-
-    const map = new Map<string, MarketCategory>()
-    type CategoryFacetRow = { category_id: string | null; category?: { id?: string | null; name?: string | null } | null }
-    for (const row of (data || []) as CategoryFacetRow[]) {
-      const cat = row.category
-      if (!cat?.id || !cat?.name) continue
-      const existing = map.get(cat.id)
-      if (existing) existing.count += 1
-      else map.set(cat.id, { id: cat.id, name: cat.name, count: 1 })
-    }
-    return [...map.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'ru'))
+    type Row = { slug?: string; name_ru?: string; name_uk?: string; count?: number | string }
+    return ((data || []) as Row[])
+      .filter(r => r.slug && Number(r.count) > 0)
+      .map(r => ({
+        slug: r.slug as string,
+        nameRu: r.name_ru || (r.slug as string),
+        nameUk: r.name_uk || r.name_ru || (r.slug as string),
+        count: Number(r.count),
+      }))
   } catch {
     return []
   }
@@ -441,6 +451,7 @@ export async function submitMarketOrders(
   groups: { companyId: string; items: CartItem[] }[],
   buyer: { phone: string; name?: string; comment?: string }
 ): Promise<void> {
+  const sentCompanyIds: string[] = []
   for (const group of groups) {
     if (!group.items.length) continue
     const { error } = await supabase.rpc('submit_marketplace_order', {
@@ -457,7 +468,24 @@ export async function submitMarketOrders(
         photo_url: i.photoUrl ?? null,
       })),
     })
-    if (error) throw error
+    if (error) {
+      // Часть заявок уже ушла: вызывающий уберёт их из корзины, чтобы повтор не создал дубль.
+      if (sentCompanyIds.length) throw new PartialSubmitError(sentCompanyIds, group.companyId, error)
+      throw error
+    }
+    sentCompanyIds.push(group.companyId)
+  }
+}
+
+/** Ошибка отправки заявок, когда часть разборок уже получила свои заявки. */
+export class PartialSubmitError extends Error {
+  constructor(
+    public sentCompanyIds: string[],
+    public failedCompanyId: string,
+    public original: unknown
+  ) {
+    super('partial_submit')
+    this.name = 'PartialSubmitError'
   }
 }
 
@@ -651,18 +679,12 @@ export async function updateMarketplaceOrderStatus(
 
 /**
  * Удаление неоформленной заявки с маркета.
- * Снимает бронь с привязанных позиций (reserved → available) — товар возвращается
- * в маркет. items удаляются каскадом (FK order_id ON DELETE CASCADE).
+ * Сама заявка склад не бронирует (резерв ставит заказ при конвертации —
+ * convertMarketplaceOrderToPartsOrder → createPartsOrderItem), поэтому резерв
+ * здесь не трогаем: иначе снялась бы бронь другого заказа. items удаляются
+ * каскадом (FK order_id ON DELETE CASCADE).
  */
 export async function deleteMarketplaceOrder(order: MarketplaceOrder): Promise<void> {
-  const invIds = order.items.map(i => i.inventoryId).filter(Boolean) as string[]
-  if (invIds.length) {
-    await supabase
-      .from('parts_inventory')
-      .update({ status: 'available' })
-      .in('id', invIds)
-      .eq('status', 'reserved')
-  }
   const { error } = await supabase
     .from('marketplace_orders')
     .delete()
@@ -685,6 +707,15 @@ export async function convertMarketplaceOrderToPartsOrder(
   exchangeRate?: number | null
 ): Promise<{ orderId: string }> {
   if (order.convertedOrderId) return { orderId: order.convertedOrderId }
+
+  // Перечитываем заявку с сервера: она могла быть оформлена в другой вкладке/другим сотрудником.
+  const { data: fresh, error: freshErr } = await supabase
+    .from('marketplace_orders')
+    .select('converted_order_id')
+    .eq('id', order.id)
+    .maybeSingle()
+  if (freshErr) throw freshErr
+  if (fresh?.converted_order_id) return { orderId: fresh.converted_order_id }
 
   // 1. Клиент по телефону (в рамках компании) или новый
   let customerId: string | null = null
@@ -722,35 +753,32 @@ export async function convertMarketplaceOrderToPartsOrder(
       : 'Заявка с маркета',
   })
 
-  // 3. Позиции + резерв склада
-  const inventoryIds: string[] = []
-  for (const it of order.items) {
-    if (!it.inventoryId) continue // позиция без привязки к складу — пропускаем
-    await createPartsOrderItem(newOrder.id, {
-      inventory_item_id: it.inventoryId,
-      quantity: it.quantity || 1,
-      price_at_sale: it.sellingPrice ?? 0,
-      price_at_sale_currency: it.priceCurrency,
-    })
-    inventoryIds.push(it.inventoryId)
-  }
-  if (inventoryIds.length) {
-    await supabase
-      .from('parts_inventory')
-      .update({ status: 'reserved' })
-      .in('id', inventoryIds)
-      .eq('status', 'available')
-  }
+  try {
+    // 3. Позиции + резерв склада (createPartsOrderItem сам ставит available → reserved)
+    for (const it of order.items) {
+      if (!it.inventoryId) continue // позиция без привязки к складу — пропускаем
+      await createPartsOrderItem(newOrder.id, {
+        inventory_item_id: it.inventoryId,
+        quantity: it.quantity || 1,
+        price_at_sale: it.sellingPrice ?? 0,
+        price_at_sale_currency: it.priceCurrency,
+      })
+    }
 
-  // 4. Сумма заказа
-  await updatePartsOrderTotal(newOrder.id, exchangeRate)
+    // 4. Сумма заказа
+    await updatePartsOrderTotal(newOrder.id, exchangeRate)
 
-  // 5. Связать заявку с заказом и закрыть
-  const { error: uErr } = await supabase
-    .from('marketplace_orders')
-    .update({ converted_order_id: newOrder.id, status: 'closed' })
-    .eq('id', order.id)
-  if (uErr) throw uErr
+    // 5. Связать заявку с заказом и закрыть
+    const { error: uErr } = await supabase
+      .from('marketplace_orders')
+      .update({ converted_order_id: newOrder.id, status: 'closed' })
+      .eq('id', order.id)
+    if (uErr) throw uErr
+  } catch (e) {
+    // Не оставляем «брошенный» заказ: delete_parts_order снимает резервы позиций.
+    try { await deletePartsOrder(newOrder.id) } catch (cleanupErr) { console.error('cleanup order failed', cleanupErr) }
+    throw e
+  }
 
   return { orderId: newOrder.id }
 }

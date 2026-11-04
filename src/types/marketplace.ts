@@ -55,7 +55,8 @@ export interface MarketPart {
   photoUrl?: string | null
   /** Полный массив фото для галереи */
   photos?: MarketPhoto[]
-  categoryName?: string | null
+  /** Slug раздела маркета (market_category); имя — из справочника get_market_categories */
+  categorySlug?: string | null
   vehicle?: MarketPartVehicle | null
   company: MarketCompanyContact
 }
@@ -75,8 +76,9 @@ export interface MarketSupplier {
 }
 
 export interface MarketCategory {
-  id: string
-  name: string
+  slug: string
+  nameRu: string
+  nameUk: string
   count: number
 }
 
@@ -85,6 +87,10 @@ export interface MarketModelFacet {
   model: string
   count: number
   years: number[]
+  /** Количество по годам {"2019": 12}; нет в старом ответе */
+  year_counts?: Record<string, number>
+  /** Модель из утверждённого справочника; нет в старом ответе = утверждена */
+  approved?: boolean
 }
 
 /** Марка авто в дереве фасетов каталога (get_market_vehicle_facets) */
@@ -170,6 +176,7 @@ export interface MyMarketplaceOrder {
 /** Фильтры каталога */
 export interface MarketFilters {
   search?: string
+  /** Раздел маркета: slug (новые ссылки) либо uuid внутренней категории (старые) */
   categoryId?: string
   condition?: MarketCondition
   companyId?: string

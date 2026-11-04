@@ -21,6 +21,7 @@ import {
   deleteMarketplaceOrder,
   convertMarketplaceOrderToPartsOrder,
 } from '@/services/marketplaceService'
+import { PartsStockError, partsErrorMessage } from '@/services/partsService'
 import type { MarketplaceOrder, MarketplaceOrderStatus } from '@/types/marketplace'
 
 type StatusFilter = 'active' | 'archive'
@@ -245,11 +246,12 @@ export default function PartsMarketOrders() {
       queryClient.invalidateQueries({ queryKey: ['marketplace-orders', partsCompanyId] })
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory-for-order'] })
       toast.success(t('marketOrdersPage.toastConverted'))
       navigate(`/parts/orders/${orderId}`)
     },
-    onError: () => {
-      toast.error(t('marketOrdersPage.toastConvertError'))
+    onError: (err: unknown) => {
+      toast.error(err instanceof PartsStockError ? partsErrorMessage(err, t) : t('marketOrdersPage.toastConvertError'))
     },
   })
 

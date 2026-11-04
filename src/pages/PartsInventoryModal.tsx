@@ -2,11 +2,13 @@
 // PartsInventory.tsx (god-компонент). Рендерится страницей в PartsInventoryEdit
 // (asPage). Общие хелперы (buildLocationOptions, типы дропдаунов) — в ./PartsInventory.
 import { useState, useEffect, useRef } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { intlLocale } from '@/i18n'
 import { toast } from 'sonner'
 import { Camera, X, Upload, Copy, Check, ChevronDown, Package, Plus, ClipboardList, ArrowLeft } from 'lucide-react'
 import { Spinner } from '@/components/ui/Spinner'
+import { getMarketSections, classifyMarketCategory, marketSectionName } from '@/services/partsService'
 import { StorageLocationCascade } from '@/components/parts/StorageLocationCascade'
 import { uploadPhoto, PhotoProviderNotConfigured } from '@/services/photoStorage'
 import { type PhotoStorageConfig } from '@/services/photoStorageConfig'
@@ -93,7 +95,7 @@ interface PartsInventoryModalProps {
 }
 
 export function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange, initialStorageLocationId, onStorageChange, photoCfg, asPage, isShop }: PartsInventoryModalProps) {
-  const { t } = useTranslation('cabinet')
+  const { t, i18n } = useTranslation('cabinet')
   const [bulkMode, setBulkMode] = useState(false)
   const [showPasteArea, setShowPasteArea] = useState(false)
   const [pasteText, setPasteText] = useState('')
@@ -144,6 +146,8 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     bin: item?.bin || '',
     notes: item?.notes || '',
     storage_location_id: item?.storage_location_id || initialStorageLocationId || '',
+    market_category: item?.market_category ?? null,
+    market_category_locked: item?.market_category_locked ?? false,
   })
   const [photos, setPhotos] = useState<ImgbbPhoto[]>((item?.photos as ImgbbPhoto[]) || [])
   // Фото, которые ещё грузятся в ФОНЕ: превью сразу (localUrl) + промис выгрузки.
@@ -151,6 +155,31 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   // родитель допишет их в товар после создания.
   const [pendingPhotos, setPendingPhotos] = useState<{ id: string; localUrl: string; promise: Promise<ImgbbPhoto> }[]>([])
   const uploading = pendingPhotos.length > 0
+
+  // Раздел на маркете: справочник + превью авторазметки (RPC с задержкой 400 мс после ввода названия).
+  const { data: sections = [] } = useQuery({
+    queryKey: ['market', 'sections'],
+    queryFn: getMarketSections,
+    staleTime: 30 * 60_000,
+  })
+  const [debouncedName, setDebouncedName] = useState(formData.name)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedName(formData.name), 400)
+    return () => clearTimeout(timer)
+  }, [formData.name])
+  const { data: autoSlug = null } = useQuery({
+    queryKey: ['market', 'classify', debouncedName.trim()],
+    queryFn: () => classifyMarketCategory(debouncedName.trim()),
+    enabled: debouncedName.trim().length > 1 && !bulkMode,
+    staleTime: 10 * 60_000,
+  })
+  const autoSection = autoSlug ? sections.find(s => s.slug === autoSlug) : undefined
+  const sectionMode = !formData.market_category_locked ? 'auto' : formData.market_category ?? 'none'
+  const handleSectionChange = (v: string) => {
+    if (v === 'auto') setFormData({ ...formData, market_category: item?.market_category ?? null, market_category_locked: false })
+    else if (v === 'none') setFormData({ ...formData, market_category: null, market_category_locked: true })
+    else setFormData({ ...formData, market_category: v, market_category_locked: true })
+  }
 
   // Автофокус на «Оригинальный номер» при создании (single) — сразу печатать номер.
   useEffect(() => {
@@ -271,6 +300,8 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
           selling_price: undefined,
           purchase_price: undefined,
           status: undefined,
+          market_category: null,
+          market_category_locked: false,
         }))
         setOemCopied(false)
         oemInputRef.current?.focus()
@@ -883,12 +914,40 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                   </button>
                   {showMore && (
                     <div className="space-y-4 mt-4">
-                      {/* Категория */}
+                      {/* Раздел на маркете: авто по названию либо ручной выбор */}
                       <div>
-                        <label className="form-label">
-                          {t('inventoryPage.category')}
+                        <label className="form-label" htmlFor="inv-market-section">
+                          {t('inventoryPage.marketSection')}
                         </label>
                         <select
+                          id="inv-market-section"
+                          value={sectionMode}
+                          onChange={(e) => handleSectionChange(e.target.value)}
+                          className="form-select"
+                          aria-describedby="inv-market-section-hint"
+                        >
+                          <option value="auto">
+                            {autoSection
+                              ? t('inventoryPage.marketSectionAutoNamed', { name: marketSectionName(autoSection, i18n.language) })
+                              : t('inventoryPage.marketSectionAuto')}
+                          </option>
+                          {sections.map((s) => (
+                            <option key={s.slug} value={s.slug}>{marketSectionName(s, i18n.language)}</option>
+                          ))}
+                          <option value="none">{t('inventoryPage.marketSectionNone')}</option>
+                        </select>
+                        <p id="inv-market-section-hint" className="mt-1 text-xs text-gray-500">
+                          {t('inventoryPage.marketSectionHint')}
+                        </p>
+                      </div>
+
+                      {/* Внутренняя категория */}
+                      <div>
+                        <label className="form-label" htmlFor="inv-internal-category">
+                          {t('inventoryPage.internalCategory')}
+                        </label>
+                        <select
+                          id="inv-internal-category"
                           value={formData.category_id}
                           onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                           className="form-select"

@@ -11,6 +11,7 @@ interface MockQueryBuilder {
   upsert: ReturnType<typeof vi.fn>
   eq: ReturnType<typeof vi.fn>
   neq: ReturnType<typeof vi.fn>
+  not: ReturnType<typeof vi.fn>
   or: ReturnType<typeof vi.fn>
   in: ReturnType<typeof vi.fn>
   order: ReturnType<typeof vi.fn>
@@ -29,6 +30,7 @@ function createQueryBuilder(resolvedValue: { data: unknown; error: unknown }): M
     upsert: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     neq: vi.fn().mockReturnThis(),
+    not: vi.fn().mockReturnThis(),
     or: vi.fn().mockReturnThis(),
     in: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),

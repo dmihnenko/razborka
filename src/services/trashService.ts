@@ -104,6 +104,12 @@ function parseSnapshot<T>(data: TrashEntityData): T {
   return data as T
 }
 
+/** part_number_norm — generated-колонка parts_inventory: в upsert её передавать нельзя. */
+function withoutGenerated<T extends object>(row: T): T {
+  const { part_number_norm: _g, ...rest } = row as T & { part_number_norm?: unknown }
+  return rest as T
+}
+
 export async function restoreFromTrash(item: TrashItem): Promise<void> {
   const { entity_type, entity_data } = item
 
@@ -113,14 +119,14 @@ export async function restoreFromTrash(item: TrashItem): Promise<void> {
       const { error: ve } = await supabase.from('parts_vehicles').upsert([vehicle])
       if (ve) throw ve
       if (parts?.length) {
-        const { error: pe } = await supabase.from('parts_inventory').upsert(parts)
+        const { error: pe } = await supabase.from('parts_inventory').upsert(parts.map(withoutGenerated))
         if (pe) throw pe
       }
       break
     }
 
     case 'parts_inventory': {
-      const { error } = await supabase.from('parts_inventory').upsert([parseSnapshot<PartsInventoryItem>(entity_data)])
+      const { error } = await supabase.from('parts_inventory').upsert([withoutGenerated(parseSnapshot<PartsInventoryItem>(entity_data))])
       if (error) throw error
       break
     }

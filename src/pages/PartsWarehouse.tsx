@@ -5,7 +5,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { QueryState } from '@/components/ui/QueryState'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, Warehouse, Check, X, QrCode, ChevronLeft, ChevronRight, FolderTree, GripVertical } from 'lucide-react'
+import { Plus, Pencil, Trash2, Warehouse, Check, X, QrCode, ChevronLeft, ChevronRight, FolderTree, GripVertical, ListFilter } from 'lucide-react'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import i18n from '@/i18n'
 import QrLabelModal from '@/components/parts/QrLabelModal'
@@ -424,6 +424,7 @@ export default function PartsWarehouse() {
                             {selected.depth < MAX_DEPTH - 1 && (
                               <button onClick={() => { setAddingParentId(selected.id); setAddingName('') }} title={t('warehousePage.nestedLocation')} className="btn-icon-sm"><Plus className="w-4 h-4" /></button>
                             )}
+                            <button onClick={() => navigate(`/parts/inventory?source=all&location=${selected.id}`)} title={t('warehousePage.openInInventory')} aria-label={t('warehousePage.openInInventory')} className="btn-icon-sm"><ListFilter className="w-4 h-4" /></button>
                             <button onClick={() => setQrNode({ id: selected.id, name: selected.name, path: getNodePath(selected.id) })} title={t('warehousePage.qrLabel')} className="btn-icon-sm"><QrCode className="w-4 h-4" /></button>
                             <button onClick={() => { setEditingId(selected.id); setEditingName(selected.name) }} title={t('warehousePage.rename')} className="btn-icon-sm"><Pencil className="w-4 h-4" /></button>
                             <button onClick={() => handleDelete(selected)} disabled={deleteMutation.isPending} title={t('warehousePage.delete')} className="btn-icon-sm hover:text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" /></button>

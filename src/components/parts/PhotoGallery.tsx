@@ -162,6 +162,11 @@ export default function PhotoGallery({ photos, alt: altProp, mainAspect = 'aspec
             loading="eager"
             decoding="async"
             draggable={false}
+            // Средний размер не загрузился — пробуем оригинал
+            onError={e => {
+              const full = photos[activeIndex].url
+              if (full && e.currentTarget.src !== full) e.currentTarget.src = full
+            }}
           />
 
           {/* HD-переключатель — справа сверху */}

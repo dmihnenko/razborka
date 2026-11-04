@@ -13,7 +13,7 @@ import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { InventoryCard } from '@/components/parts/InventoryCard'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import i18n from '@/i18n'
-import { getPartsInventoryPaged, getPartsInventorySummary, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory } from '@/services/partsService'
+import { getPartsInventoryPaged, getPartsInventorySummary, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, deletePartsOrder, PartsStockError, partsErrorMessage, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory, getMarketSections, marketSectionName } from '@/services/partsService'
 import type { PartsInventoryItem, PartsInventoryStatus, StorageLocation, PartsCustomer, PartsVehicle } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { deletePhotosFromImgbb } from '@/services/imgbbService'
@@ -45,7 +45,7 @@ const statusColors: Record<PartsInventoryStatus, string> = {
 }
 
 export default function PartsInventory() {
-  const { t } = useTranslation('cabinet')
+  const { t, i18n } = useTranslation('cabinet')
   const navigate = useNavigate()
   const location = useLocation()
   const rootRef = useRef<HTMLDivElement>(null)
@@ -62,6 +62,10 @@ export default function PartsInventory() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('available')
   const [vehicleFilter, setVehicleFilter] = useState<string>('all') // vehicle_id or 'all'
+  // Фильтр по ячейке склада читается из URL (?location=<id>) — из PartsWarehouse
+  const locationParam = searchParams.get('location') ?? 'all'
+  const [locationFilter, setLocationFilter] = useState<string>(locationParam)
+  useEffect(() => { setLocationFilter(locationParam) }, [locationParam])
   // По умолчанию — компактный список; выбор (список/плитка) запоминается.
   const [viewMode, setViewMode] = useState<ViewMode>(
     () => ((typeof localStorage !== 'undefined' && localStorage.getItem('parts_inventory_view')) as ViewMode) || 'list'
@@ -91,6 +95,10 @@ export default function PartsInventory() {
   const [isBulkCategoryOpen, setIsBulkCategoryOpen] = useState(false)
   const [bulkLocationId, setBulkLocationId] = useState<string>('')
   const [bulkCategoryId, setBulkCategoryId] = useState<string>('')
+  // Раздел на маркете: серверный фильтр списка ('all' | slug | 'none') и массовая смена
+  const [sectionFilter, setSectionFilter] = useState<string>('all')
+  const [isBulkSectionOpen, setIsBulkSectionOpen] = useState(false)
+  const [bulkSection, setBulkSection] = useState<string>('auto') // 'auto' | 'none' | slug
 
   const { data: profile } = useUserProfile()
   const { rate: usdRate } = usePartsExchangeRate()
@@ -106,6 +114,27 @@ export default function PartsInventory() {
 
   const PAGE_SIZE = 50
 
+  // Места хранения: для фильтра по ячейке и bulk-перемещения
+  const { data: storageLocations = [], isSuccess: locationsLoaded } = useQuery({
+    queryKey: ['parts-storage-locations', partsCompanyId],
+    queryFn: () => getStorageLocations(partsCompanyId!),
+    enabled: !!partsCompanyId,
+  })
+  // Выбранная ячейка + все вложенные
+  const locationFilterIds: string[] = (() => {
+    if (locationFilter === 'all') return []
+    const ids = new Set<string>([locationFilter])
+    let grew = true
+    while (grew) {
+      grew = false
+      for (const l of storageLocations as StorageLocation[]) {
+        if (l.parent_id && ids.has(l.parent_id) && !ids.has(l.id)) { ids.add(l.id); grew = true }
+      }
+    }
+    return [...ids]
+  })()
+  const locationLabelById = new Map(buildLocationOptions(storageLocations as StorageLocation[]).map(o => [o.id, o.label]))
+
   const {
     data: pagedData,
     isLoading,
@@ -115,22 +144,25 @@ export default function PartsInventory() {
     hasNextPage,
     fetchNextPage,
   } = useInfiniteQuery({
-    queryKey: ['parts-inventory', 'paged', partsCompanyId, debouncedSearch, statusFilter, vehicleFilter, sourceFilter],
+    queryKey: ['parts-inventory', 'paged', partsCompanyId, debouncedSearch, statusFilter, vehicleFilter, sourceFilter, locationFilter, locationFilterIds.join(','), sectionFilter],
     queryFn: ({ pageParam = 1 }) =>
       getPartsInventoryPaged(partsCompanyId!, {
         page: pageParam as number,
         pageSize: PAGE_SIZE,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         vehicleId: vehicleFilter !== 'all' ? vehicleFilter : undefined,
-        source: sourceFilter as 'vehicles' | 'shop',
+        source: sourceFilter as 'vehicles' | 'shop' | 'all',
         search: debouncedSearch || undefined,
+        storageLocationIds: locationFilterIds.length ? locationFilterIds : undefined,
+        marketCategory: sectionFilter !== 'all' ? sectionFilter : undefined,
       }),
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
       const loaded = allPages.reduce((s, p) => s + p.items.length, 0)
       return loaded < lastPage.total ? allPages.length + 1 : undefined
     },
-    enabled: !!partsCompanyId,
+    // При выбранной ячейке ждём загрузки списка ячеек, чтобы сразу учесть вложенные
+    enabled: !!partsCompanyId && (locationFilter === 'all' || locationsLoaded),
   })
 
   // Суммарный массив загруженных элементов
@@ -141,7 +173,7 @@ export default function PartsInventory() {
   const { data: summary } = useQuery({
     // ключ вложен в ['parts-inventory', …] — те же инвалидации, что и список, обновляют агрегат
     queryKey: ['parts-inventory', 'summary', partsCompanyId, usdRate, sourceFilter],
-    queryFn: () => getPartsInventorySummary(partsCompanyId!, usdRate!, sourceFilter === 'shop'),
+    queryFn: () => getPartsInventorySummary(partsCompanyId!, usdRate!, sourceFilter === 'shop' ? true : sourceFilter === 'all' ? undefined : false),
     enabled: !!partsCompanyId && usdRate != null,
     staleTime: 60_000,
   })
@@ -191,13 +223,18 @@ export default function PartsInventory() {
     setSearchQuery('')
     setDebouncedSearch('')
     setVehicleFilter('all')
+    setSectionFilter('all')
     setSelectedIds(new Set())
   }, [sourceFilter])
 
-  // Clear selection when changing status filter
+  // Clear selection when changing status / section / location filter
   useEffect(() => {
     setSelectedIds(new Set())
-  }, [statusFilter])
+  }, [statusFilter, sectionFilter, locationFilter])
+
+  // Разделы маркета (справочник, общий для всех разборок)
+  const { data: sections = [] } = useQuery({ queryKey: ['market', 'sections'], queryFn: getMarketSections, staleTime: 30 * 60_000 })
+  const sectionByslug = new Map(sections.map(s => [s.slug, s]))
 
   // Get categories for dropdown
   const { data: categories = [] } = useQuery({
@@ -212,13 +249,6 @@ export default function PartsInventory() {
       return data
     },
     enabled: !!partsCompanyId
-  })
-
-  // Get storage locations for bulk-операций (перемещение группы в место хранения)
-  const { data: storageLocations = [] } = useQuery({
-    queryKey: ['parts-storage-locations', partsCompanyId],
-    queryFn: () => getStorageLocations(partsCompanyId!),
-    enabled: !!partsCompanyId && isBulkLocationOpen,
   })
 
   // Get customers for sell modal
@@ -374,22 +404,31 @@ export default function PartsInventory() {
         resolvedCustomerId = created.id
       }
 
+      // USD-позиция без курса: сумму заказа не рассчитать — не создаём и не закрываем заказ
+      if (currency === 'USD' && usdRate == null) throw new Error(t('inventoryPage.rateLoading'))
+
       // Create order
       const order = await createPartsOrder(partsCompanyId!, {
         customer_id: resolvedCustomerId,
         order_date: new Date().toISOString(),
       })
 
-      // Add item to order
-      await createPartsOrderItem(order.id, {
-        inventory_item_id: item.id,
-        quantity: soldQty,
-        price_at_sale: price,
-        price_at_sale_currency: currency,
-      })
+      try {
+        // Add item to order
+        await createPartsOrderItem(order.id, {
+          inventory_item_id: item.id,
+          quantity: soldQty,
+          price_at_sale: price,
+          price_at_sale_currency: currency,
+        })
 
-      // Update order total with current exchange rate
-      await updatePartsOrderTotal(order.id, usdRate)
+        // Update order total with current exchange rate
+        await updatePartsOrderTotal(order.id, usdRate)
+      } catch (e) {
+        // Не оставляем «брошенный» заказ (delete_parts_order снимает резервы)
+        try { await deletePartsOrder(order.id) } catch (cleanupErr) { console.error('cleanup order failed', cleanupErr) }
+        throw e
+      }
 
       // Complete the order — trigger complete_parts_order() sets inventory status='sold' and decrements quantity
       const { error: completeError } = await supabase
@@ -426,7 +465,7 @@ export default function PartsInventory() {
     onError: (err: unknown) => {
       console.error('Sell error:', err)
       const e = err as { message?: string; error_description?: string } | null
-      const msg = e?.message || e?.error_description || JSON.stringify(err)
+      const msg = (err instanceof PartsStockError ? partsErrorMessage(err, t) : '') || e?.message || e?.error_description || JSON.stringify(err)
       toast.error(t('inventoryPage.toastSaveErrorMsg', { msg }))
     },
   })
@@ -445,19 +484,25 @@ export default function PartsInventory() {
         )
         resolvedCustomerId = created.id
       }
+      if (usdRate == null && rows.some(r => r.currency === 'USD')) throw new Error(t('inventoryPage.rateLoading'))
       const order = await createPartsOrder(partsCompanyId!, {
         customer_id: resolvedCustomerId,
         order_date: new Date().toISOString(),
       })
-      for (const row of rows) {
-        await createPartsOrderItem(order.id, {
-          inventory_item_id: row.item.id,
-          quantity: row.quantity,
-          price_at_sale: parseFloat(row.price) || 0,
-          price_at_sale_currency: row.currency,
-        })
+      try {
+        for (const row of rows) {
+          await createPartsOrderItem(order.id, {
+            inventory_item_id: row.item.id,
+            quantity: row.quantity,
+            price_at_sale: parseFloat(row.price) || 0,
+            price_at_sale_currency: row.currency,
+          })
+        }
+        await updatePartsOrderTotal(order.id, usdRate)
+      } catch (e) {
+        try { await deletePartsOrder(order.id) } catch (cleanupErr) { console.error('cleanup order failed', cleanupErr) }
+        throw e
       }
-      await updatePartsOrderTotal(order.id, usdRate)
       const { error: completeError } = await supabase
         .from('parts_orders')
         .update({ status: 'completed', ...(usdRate != null ? { exchange_rate_at_sale: usdRate } : {}) })
@@ -491,7 +536,7 @@ export default function PartsInventory() {
     onError: (err: unknown) => {
       console.error('Bulk sell error:', err)
       const e = err as { message?: string; error_description?: string } | null
-      const msg = e?.message || e?.error_description || JSON.stringify(err)
+      const msg = (err instanceof PartsStockError ? partsErrorMessage(err, t) : '') || e?.message || e?.error_description || JSON.stringify(err)
       toast.error(t('inventoryPage.toastBulkSellErrorMsg', { msg }))
     },
   })
@@ -564,6 +609,24 @@ export default function PartsInventory() {
       setBulkLocationId('')
     },
     onError: () => toast.error(t('inventoryPage.toastBulkLocationError')),
+  })
+
+  const bulkSectionMutation = useMutation({
+    mutationFn: ({ ids, section }: { ids: string[]; section: string }) =>
+      bulkUpdateInventory(
+        ids,
+        section === 'auto'
+          ? { market_category_locked: false }
+          : { market_category: section === 'none' ? null : section, market_category_locked: true },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      toast.success(t('inventoryPage.toastBulkSection', { n: selectedIds.size }))
+      setSelectedIds(new Set())
+      setIsBulkSectionOpen(false)
+      setBulkSection('auto')
+    },
+    onError: () => toast.error(t('inventoryPage.toastBulkSectionError')),
   })
 
   const bulkCategoryMutation = useMutation({
@@ -752,6 +815,35 @@ export default function PartsInventory() {
               />
             </div>
 
+            {/* Фильтр по разделу маркета (серверный) */}
+            <select
+              value={sectionFilter}
+              onChange={(e) => setSectionFilter(e.target.value)}
+              className="form-select sm:w-48"
+              aria-label={t('inventoryPage.sectionFilter')}
+            >
+              <option value="all">{t('inventoryPage.allSections')}</option>
+              {sections.map(s => (
+                <option key={s.slug} value={s.slug}>{marketSectionName(s, i18n.language)}</option>
+              ))}
+              <option value="none">{t('inventoryPage.marketSectionNone')}</option>
+            </select>
+
+            {/* Фильтр по ячейке склада */}
+            {(storageLocations as StorageLocation[]).length > 0 && (
+              <select
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+                className="form-select sm:w-56"
+                aria-label={t('inventoryPage.locationFilter')}
+              >
+                <option value="all">{t('inventoryPage.allLocations')}</option>
+                {buildLocationOptions(storageLocations as StorageLocation[]).map(opt => (
+                  <option key={opt.id} value={opt.id}>{opt.label}</option>
+                ))}
+              </select>
+            )}
+
             <div className="flex items-center gap-2">
               {/* Сортировка — кнопки-чипы (как чипы статусов). Тап по активному чипу
                   переключает направление (↑/↓). Не сокращаем: на мобиле скрыт только
@@ -887,6 +979,9 @@ export default function PartsInventory() {
                   </div>
                   <div className="text-xs font-mono text-gray-500 truncate mt-0.5">
                     {item.part_number || t('inventoryPage.noNumber')}
+                    {(item.storage_location?.id || item.storage_location?.name) && (
+                      <span className="font-sans text-gray-600"> · <MapPin className="inline w-3 h-3 -mt-0.5" strokeWidth={1.5} /> {(item.storage_location?.id && locationLabelById.get(item.storage_location.id)) || item.storage_location?.name}</span>
+                    )}
                   </div>
                 </div>
                 <span className="flex-shrink-0 text-sm font-bold text-primary tabular whitespace-nowrap">
@@ -940,6 +1035,11 @@ export default function PartsInventory() {
                           )}
                           <span className="truncate">{item.name}</span>
                         </div>
+                        {item.storage_location?.name && (
+                          <div className="xl:hidden text-[11px] text-gray-500 truncate inline-flex items-center gap-1">
+                            <MapPin className="w-3 h-3 flex-shrink-0" strokeWidth={1.5} /> {item.storage_location.name}
+                          </div>
+                        )}
                       </td>
                       {/* Оригинальный номер */}
                       <td className="hidden sm:table-cell px-2 py-2 text-sm text-gray-500 font-mono truncate">
@@ -981,8 +1081,11 @@ export default function PartsInventory() {
                       {/* Категория */}
                       <td className="hidden lg:table-cell px-2 py-2 text-sm text-gray-600">
                         <div className="truncate">
-                          {item.category ? item.category.name : <span className="text-gray-300">—</span>}
+                          {item.market_category && sectionByslug.get(item.market_category)
+                            ? marketSectionName(sectionByslug.get(item.market_category)!, i18n.language)
+                            : <span className="text-gray-300">—</span>}
                         </div>
+                        {item.category && <div className="truncate text-[11px] text-gray-400">{item.category.name}</div>}
                       </td>
                       {/* Склад */}
                       <td className="hidden xl:table-cell px-2 py-2 text-sm text-gray-600">
@@ -1142,6 +1245,15 @@ export default function PartsInventory() {
             >
               <FolderOpen className="w-4 h-4" strokeWidth={1.5} />
               <span className="hidden sm:inline">{t('inventoryPage.category')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setBulkSection('auto'); setIsBulkSectionOpen(true) }}
+              aria-label={t('inventoryPage.changeSection')}
+              className="cab-btn cab-btn-secondary cab-btn-sm"
+            >
+              <Tag className="w-4 h-4" strokeWidth={1.5} />
+              <span className="hidden sm:inline">{t('inventoryPage.section')}</span>
             </button>
             <button
               type="button"
@@ -1529,6 +1641,49 @@ export default function PartsInventory() {
                 className="cab-btn cab-btn-primary disabled:opacity-50"
               >
                 {bulkLocationMutation.isPending ? t('inventoryPage.saving') : t('inventoryPage.apply')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Market Section Modal */}
+      {isBulkSectionOpen && (
+        <div className="modal-overlay">
+          <div onClick={() => setIsBulkSectionOpen(false)} className="absolute inset-0" />
+          <div className="modal-sheet sm:max-w-xs w-full z-10" role="dialog" aria-modal="true" aria-labelledby="bulk-section-title">
+            <div className="modal-handle sm:hidden" />
+            <div className="modal-header">
+              <h3 id="bulk-section-title" className="text-base font-bold text-gray-900">{t('inventoryPage.changeSection')}</h3>
+              <p className="text-sm text-gray-500 mt-0.5">{t('inventoryPage.forNItems', { n: selectedIds.size })}</p>
+            </div>
+            <div className="modal-body">
+              <label className="form-label" htmlFor="bulk-section-select">{t('inventoryPage.marketSection')}</label>
+              <select
+                id="bulk-section-select"
+                value={bulkSection}
+                onChange={(e) => setBulkSection(e.target.value)}
+                className="form-select"
+                autoFocus
+              >
+                <option value="auto">{t('inventoryPage.marketSectionAuto')}</option>
+                {sections.map(s => (
+                  <option key={s.slug} value={s.slug}>{marketSectionName(s, i18n.language)}</option>
+                ))}
+                <option value="none">{t('inventoryPage.marketSectionNone')}</option>
+              </select>
+            </div>
+            <div className="modal-footer">
+              <button type="button" onClick={() => setIsBulkSectionOpen(false)} className="modal-btn-cancel">
+                {t('inventoryPage.cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={bulkSectionMutation.isPending}
+                onClick={() => bulkSectionMutation.mutate({ ids: Array.from(selectedIds), section: bulkSection })}
+                className="cab-btn cab-btn-primary disabled:opacity-50"
+              >
+                {bulkSectionMutation.isPending ? t('inventoryPage.saving') : t('inventoryPage.apply')}
               </button>
             </div>
           </div>

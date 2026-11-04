@@ -12,7 +12,7 @@ import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
-import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle, getPartsCategoryTemplates, getPartsInventoryByVehicle, getVehicleRoi, getPartsInventory, createPartsInventoryItem, updatePartsInventoryItem, updateVehicleStatus } from '@/services/partsService'
+import { getPartsVehicles, createPartsVehicle, updatePartsVehicle, deletePartsVehicle, getPartsCategoryTemplates, getPartsInventoryByVehicle, getVehicleRoi, getPartsInventory, createPartsInventoryItemsBatch, updatePartsInventoryItem, updateVehicleStatus } from '@/services/partsService'
 import { moveToTrash } from '@/services/trashService'
 import { exportVehiclesXlsx, downloadVehiclesTemplate, parseVehiclesFile, type ParsedVehicle } from '@/utils/vehiclesXlsx'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
@@ -308,26 +308,30 @@ export default function PartsVehicles() {
   // ── Импорт по плану: создать новые / обновить изменённые / пропустить ──
   const importMutation = useMutation({
     mutationFn: async () => {
-      if (!plan) return { created: 0, updated: 0, skipped: 0, parts: 0, partsUpdated: 0 }
+      if (!plan) return { created: 0, updated: 0, skipped: 0, parts: 0, partsUpdated: 0, partsFailed: 0 }
       // Существующие запчасти по авто — для досоздания недостающих
       const partsByVeh = new Map<string, PartsInventoryItem[]>()
       existingParts.forEach((p) => {
         if (!p.vehicle_id) return
         const a = partsByVeh.get(p.vehicle_id) || []; a.push(p); partsByVeh.set(p.vehicle_id, a)
       })
-      let created = 0, updated = 0, skipped = 0, parts = 0, partsUpdated = 0
+      let created = 0, updated = 0, skipped = 0, parts = 0, partsUpdated = 0, partsFailed = 0
 
       const addParts = async (vehicleId: string, list: ParsedVehicle['parts'], existing: PartsInventoryItem[]) => {
         const seen = new Set(existing.map((p) => partKey(p.part_number, p.name)))
+        const toInsert: Parameters<typeof createPartsInventoryItemsBatch>[0] = []
         for (const pp of list) {
           if (seen.has(partKey(pp.part_number, pp.name))) continue   // запчасть уже есть → пропуск (обновление — отдельно)
-          await createPartsInventoryItem({
+          toInsert.push({
             name: pp.name, part_number: pp.part_number, condition: pp.condition,
             quantity: pp.quantity, selling_price: pp.selling_price, price_currency: pp.price_currency,
             location: pp.location, vehicle_id: vehicleId, status: 'available',
-          }, partsCompanyId!)
-          seen.add(partKey(pp.part_number, pp.name)); parts++
+          })
+          seen.add(partKey(pp.part_number, pp.name))
         }
+        if (!toInsert.length) return
+        const r = await createPartsInventoryItemsBatch(toInsert, partsCompanyId!)
+        parts += r.inserted; partsFailed += r.failed
       }
 
       for (const it of plan) {
@@ -362,13 +366,14 @@ export default function PartsVehicles() {
           await addParts(it.matchId, pv.parts, partsByVeh.get(it.matchId) || [])
         }
       }
-      return { created, updated, skipped, parts, partsUpdated }
+      return { created, updated, skipped, parts, partsUpdated, partsFailed }
     },
     onSuccess: (r) => {
       queryClient.invalidateQueries({ queryKey: ['parts-vehicles'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       queryClient.invalidateQueries({ queryKey: ['vehicle-roi'] })
       toast.success(t('vehiclesPage.importDone2', { created: r.created, updated: r.updated, parts: r.parts, skipped: r.skipped }) + (r.partsUpdated ? t('vehiclesPage.importPartsUpdated', { n: r.partsUpdated }) : ''))
+      if (r.partsFailed) toast.error(t('vehiclesPage.importPartsFailed', { n: r.partsFailed }))
       setImportOpen(false); setParsed(null); setPlan(null)
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : t('vehiclesPage.importError')),

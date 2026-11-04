@@ -70,7 +70,14 @@ async function getCarCatalog(env) {
   try {
     const data = await rpc(env, 'get_market_car_catalog', {})
     return Array.isArray(data) ? data : []
-  } catch { return [] }
+  } catch { return null } // null = RPC упал (не путать с «каталог пуст» = [])
+}
+// разделы маркета (slug, name_ru/name_uk, count>0) из кэша RPC get_market_categories
+async function getMarketCategories(env) {
+  try {
+    const data = await rpc(env, 'get_market_categories', {})
+    return Array.isArray(data) ? data.filter((c) => c && c.slug && (c.count || 0) > 0) : []
+  } catch { return null } // null = RPC упал
 }
 // HTML-блок ссылок на марки (только с count>0), для главной/каталога
 function makesLinksHtml(catalog, uk) {
@@ -91,12 +98,14 @@ function partsWord(n, uk) {
 
 // Список товаров витрины для перелинковки (страницы каталога/марки/модели).
 // market_inventory — публичное view (только опубликованное в наличии, без закупки).
-async function getPartsForLinks(env, { make, model, limit = 40 } = {}) {
+const escIlike = (s) => String(s).replace(/[\\%_]/g, '\\$&')
+async function getPartsForLinks(env, { make, model, category, limit = 40 } = {}) {
   try {
     const veh = make ? 'vehicle:parts_vehicles!vehicle_id!inner(make,model,year)' : 'vehicle:parts_vehicles!vehicle_id(make,model,year)'
     let path = `/rest/v1/market_inventory?select=id,name,${veh}&order=created_at.desc&limit=${limit}`
-    if (make) path += '&vehicle.make=eq.' + encodeURIComponent(make)
-    if (model) path += '&vehicle.model=eq.' + encodeURIComponent(model)
+    if (make) path += '&vehicle.make=ilike.' + encodeURIComponent(escIlike(make))
+    if (model) path += '&vehicle.model=ilike.' + encodeURIComponent(escIlike(model))
+    if (category) path += '&market_category=eq.' + encodeURIComponent(category)
     const rows = await supa(env, path)
     return Array.isArray(rows) ? rows.filter((r) => r && r.id && r.name) : []
   } catch { return [] }
@@ -120,9 +129,31 @@ async function supa(env, path, init = {}) {
   if (!res.ok) throw new Error('supa ' + res.status)
   return res.json()
 }
-const rpc = (env, fn, body) => supa(env, '/rest/v1/rpc/' + fn, {
+const rpcFetch = (env, fn, body) => supa(env, '/rest/v1/rpc/' + fn, {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}),
 })
+// Edge-кеш ДАННЫХ публичных RPC (не готового HTML: он зависит от бота и деплоя).
+// supa() ходит только с anon-ключом, поэтому кешируются лишь публичные данные.
+// Ключ — синтетический GET от имени функции и аргументов; пишем только успешные ответы
+// (supa кидает на !ok). Без caches (тесты/node) работает как раньше.
+const RPC_CACHE_TTL = 300
+async function rpc(env, fn, body) {
+  const cache = typeof caches !== 'undefined' ? caches.default : null
+  if (!cache) return rpcFetch(env, fn, body)
+  const key = new Request('https://rpc-cache.internal/' + encodeURIComponent(fn) + '?a=' + encodeURIComponent(JSON.stringify(body || {})))
+  try {
+    const hit = await cache.match(key)
+    if (hit) return await hit.json()
+  } catch { /* кеш недоступен — идём в БД */ }
+  const data = await rpcFetch(env, fn, body)
+  try {
+    // ctx в этой точке недоступен — await put (мс), чтобы запись не оборвалась после ответа
+    await cache.put(key, new Response(JSON.stringify(data), {
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=' + RPC_CACHE_TTL },
+    }))
+  } catch { /* не критично */ }
+  return data
+}
 
 // ── сопоставление маршрута ───────────────────────────────────────────────────
 function matchRoute(p) {
@@ -167,6 +198,12 @@ async function computeMeta(route, env, pathname, lang) {
   const catUrl = SITE + '/market/catalog' + q
   const bcHome = uk ? 'Головна' : 'Главная'
   const bcCat = 'Каталог'
+
+  // Базовые мета каталога: при сбое RPC отдаём 200 без notFound/noindex
+  const catalogFallback = () => ({ ...base,
+    title: uk ? `Каталог автозапчастин — ${BRAND}` : `Каталог автозапчастей — ${BRAND}`,
+    description: uk ? 'Каталог вживаних і нових автозапчастин від авторозборок. Фільтр за маркою, моделлю, роком і станом.'
+                    : 'Каталог б/у и новых автозапчастей от авторазборок. Фильтр по марке, модели, году и состоянию.' })
 
   if (route.type === 'home') {
     const catalog = await getCarCatalog(env)
@@ -232,9 +269,35 @@ async function computeMeta(route, env, pathname, lang) {
   if (route.type === 'location') return { ...base,
     title: uk ? `Запчастини на складі — ${BRAND}` : `Запчасти на складе — ${BRAND}`,
     description: uk ? 'Запчастини в цьому місці зберігання авторозборки.' : 'Запчасти в этом месте хранения авторазборки.' }
+  // /market/catalog/<slug-раздела>: раздел проверяем раньше марок (лендинг раздела, только count>0)
+  if (route.type === 'brand' && !route.modelSlug) {
+    const sections = await getMarketCategories(env)
+    if (sections === null) return catalogFallback() // RPC упал — не отдаём 404/noindex настоящему разделу
+    const sec = sections.find((c) => c.slug === route.makeSlug)
+    if (sec) {
+      const name = uk ? sec.name_uk : sec.name_ru
+      const h1 = uk ? `${name}: б/в автозапчастини` : `${name}: б/у автозапчасти`
+      const cntTxt = partsWord(sec.count, uk) + (uk ? ' у наявності' : ' в наличии')
+      const links = `<nav><h2>${escapeHtml(uk ? 'Розділи' : 'Разделы')}</h2>` +
+        sections.map((c) => A(SITE + '/market/catalog/' + c.slug + q, uk ? c.name_uk : c.name_ru)).join(' · ') + '</nav>'
+      const bc = [[bcHome, homeUrl], [bcCat, catUrl], [name, SITE + '/market/catalog/' + route.makeSlug + q]]
+      const parts = await getPartsForLinks(env, { category: sec.slug, limit: 40 })
+      return { ...base,
+        title: `${name} — ${uk ? 'б/в автозапчастини' : 'б/у автозапчасти'} | ${BRAND}`,
+        description: uk ? `Б/в та нові автозапчастини з розділу «${name}» від авторозборок України: ${cntTxt}. Доставка Новою Поштою.`
+                        : `Б/у и новые автозапчасти из раздела «${name}» от авторазборок Украины: ${cntTxt}. Доставка Новой Почтой.`,
+        body: seoBody(h1, [
+          `<p>${escapeHtml((uk ? `Розділ «${name}» від перевірених авторозборок. ` : `Раздел «${name}» от проверенных авторазборок. `) + cntTxt + '.')}</p>`,
+          links,
+          partsLinksHtml(parts, uk ? `${name}: у наявності` : `${name}: в наличии`, q),
+        ]),
+        jsonld: [breadcrumb(bc)] }
+    }
+  }
   if (route.type === 'brand') {
     const catalog = await getCarCatalog(env)
-    const makeEntry = (catalog || []).find((m) => slugify(m.make) === route.makeSlug && (m.count || 0) > 0)
+    if (catalog === null) return catalogFallback() // RPC упал — не отдаём 404/noindex настоящей марке
+    const makeEntry = catalog.find((m) => slugify(m.make) === route.makeSlug && (m.count || 0) > 0)
     if (!makeEntry) return { ...base, robots: 'noindex,follow', altBase: undefined, notFound: true,
       title: (uk ? 'Нічого не знайдено — ' : 'Ничего не найдено — ') + BRAND,
       description: uk ? 'За цією маркою поки немає запчастин.' : 'По этой марке пока нет запчастей.' }
@@ -440,6 +503,11 @@ async function buildSitemap(env) {
   try {
     const sup = await rpc(env, 'get_market_suppliers', {})
     for (const s of sup || []) entries.push(sitemapUrl('/market/supplier/' + s.id))
+  } catch {}
+
+  // SEO-лендинги разделов (только с доступными товарами)
+  try {
+    for (const c of (await getMarketCategories(env)) || []) entries.push(sitemapUrl('/market/catalog/' + c.slug))
   } catch {}
 
   // SEO-лендинги: марка и марка/модель (только с доступными товарами)

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import '../test/mocks/supabase'
 import {
   getPartsVehicles,
@@ -29,6 +29,7 @@ import {
   getPartsOrder,
   createPartsOrder,
   createPartsOrderItem,
+  createPartsInventoryItemsBatch,
   updatePartsOrderTotal,
   sellPart,
   deletePartsOrder,
@@ -537,9 +538,46 @@ describe('createPartsOrder', () => {
   })
 })
 
+describe('createPartsInventoryItemsBatch', () => {
+  const mk = (n: number) => Array.from({ length: n }, (_, i) => ({ name: `p${i}`, quantity: 1 })) as never[]
+
+  it('вставляє пачками по 100', async () => {
+    setFromResponse(null, null)
+    mockSupabase.from.mockClear()
+    const r = await createPartsInventoryItemsBatch(mk(250), 'pc-1')
+    expect(mockSupabase.from).toHaveBeenCalledTimes(3)
+    expect(r).toEqual({ inserted: 250, failed: 0 })
+  })
+
+  it('якщо всі рядки падають — failed рахує кожен і імпорт не переривається', async () => {
+    setFromResponse(null, { message: 'boom' })
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const r = await createPartsInventoryItemsBatch(mk(120), 'pc-1')
+    expect(r).toEqual({ inserted: 0, failed: 120 })
+    spy.mockRestore()
+  })
+
+  it('пачка впала — рядки вставляються по одному, одна погана не відкидає решту', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const bad = setFromResponse(null, { message: 'bad row' })
+    const good = setFromResponse(null, null)
+    mockSupabase.from.mockReset()
+    // 1 виклик пачки (помилка), далі 3 рядки: ok, bad, ok
+    mockSupabase.from
+      .mockReturnValueOnce(bad)
+      .mockReturnValueOnce(good)
+      .mockReturnValueOnce(bad)
+      .mockReturnValueOnce(good)
+    const r = await createPartsInventoryItemsBatch(mk(3), 'pc-1')
+    expect(r).toEqual({ inserted: 2, failed: 1 })
+    expect(bad.insert.mock.calls[0][1]).toEqual({ defaultToNull: false })
+    spy.mockRestore()
+  })
+})
+
 describe('createPartsOrderItem', () => {
   it('додає позицію до заказу', async () => {
-    setFromResponse({ id: 'item-1' }, null)
+    setFromResponse({ id: 'item-1', quantity: 5, status: 'available' }, null)
     await createPartsOrderItem('order-1', {
       inventory_item_id: 'inv-1',
       quantity: 2,
@@ -548,8 +586,72 @@ describe('createPartsOrderItem', () => {
     expect(mockSupabase.from).toHaveBeenCalledWith('parts_order_items')
   })
 
+  // Послідовність викликів from(): inventory(select) → order_items(busy) → [inventory(update)] → order_items(insert)
+  function seqFrom(...responses: Array<{ data: unknown; error?: unknown }>) {
+    const builders = responses.map(r => setFromResponse(r.data, r.error ?? null))
+    mockSupabase.from.mockReset()
+    builders.forEach(b => mockSupabase.from.mockReturnValueOnce(b))
+    return builders
+  }
+
+  it('кидає PartsStockError, якщо позиція вже продана', async () => {
+    seqFrom({ data: { quantity: 1, status: 'sold' } })
+    await expect(
+      createPartsOrderItem('order-1', { inventory_item_id: 'inv-1', quantity: 1, price_at_sale: 50 })
+    ).rejects.toMatchObject({ code: 'unavailable' })
+  })
+
+  it('дозволяє другий заказ на вільну штуку reserved-позиції (5 шт., 1 зайнята)', async () => {
+    const [, , ins] = seqFrom(
+      { data: { quantity: 5, status: 'reserved' } },
+      { data: [{ quantity: 1 }] },
+      { data: { id: 'item-2' } },
+    )
+    const res = await createPartsOrderItem('order-1', { inventory_item_id: 'inv-1', quantity: 1, price_at_sale: 50 })
+    expect(res).toEqual({ id: 'item-2' })
+    expect(ins.insert).toHaveBeenCalled()
+    expect(mockSupabase.from).toHaveBeenCalledTimes(3) // без update резерву
+  })
+
+  it('кидає insufficient, якщо запит більший за вільний залишок', async () => {
+    seqFrom(
+      { data: { quantity: 5, status: 'reserved' } },
+      { data: [{ quantity: 4 }] },
+    )
+    await expect(
+      createPartsOrderItem('order-1', { inventory_item_id: 'inv-1', quantity: 2, price_at_sale: 50 })
+    ).rejects.toMatchObject({ code: 'insufficient' })
+  })
+
+  it('ставить reserved для available і відкочує його лише якщо поставила вона', async () => {
+    const [, , upd, , rollback] = seqFrom(
+      { data: { quantity: 2, status: 'available' } },
+      { data: [] },
+      { data: [{ id: 'inv-1' }] },
+      { data: null, error: { message: 'insert failed' } },
+      { data: null },
+    )
+    await expect(
+      createPartsOrderItem('order-1', { inventory_item_id: 'inv-1', quantity: 1, price_at_sale: 50 })
+    ).rejects.toBeDefined()
+    expect(upd.update).toHaveBeenCalledWith({ status: 'reserved' })
+    expect(rollback.update).toHaveBeenCalledWith({ status: 'available' })
+  })
+
+  it('не відкочує reserved, якщо позиція вже була reserved (чужий резерв)', async () => {
+    seqFrom(
+      { data: { quantity: 5, status: 'reserved' } },
+      { data: [] },
+      { data: null, error: { message: 'insert failed' } },
+    )
+    await expect(
+      createPartsOrderItem('order-1', { inventory_item_id: 'inv-1', quantity: 1, price_at_sale: 50 })
+    ).rejects.toBeDefined()
+    expect(mockSupabase.from).toHaveBeenCalledTimes(3)
+  })
+
   it('виключає помилку DB', async () => {
-    setFromResponse(null, { message: 'insert failed' })
+    setFromResponse(null, { message: 'select failed' })
     await expect(
       createPartsOrderItem('order-1', { inventory_item_id: 'inv-1', quantity: 1, price_at_sale: 50 })
     ).rejects.toBeDefined()
@@ -574,6 +676,19 @@ describe('updatePartsOrderTotal', () => {
     )
     await updatePartsOrderTotal('order-1', 41)
     expect(mockSupabase.from).toHaveBeenCalledWith('parts_orders')
+  })
+
+  it('не пише суму, якщо є USD-позиції, а курсу немає', async () => {
+    setFromResponse(
+      [{ price_at_sale: 10, quantity: 1, price_at_sale_currency: 'USD' }],
+      null
+    )
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockSupabase.from.mockClear()
+    await updatePartsOrderTotal('order-1', null)
+    expect(mockSupabase.from).not.toHaveBeenCalledWith('parts_orders')
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
   })
 })
 

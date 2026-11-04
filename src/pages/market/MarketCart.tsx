@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { CheckCircle2, Minus, Package, Plus, Send, ShoppingCart, Store, Trash2 } from 'lucide-react'
 import { useCart, type CartGroup } from '@/hooks/useCart'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { submitMarketOrders } from '@/services/marketplaceService'
+import { submitMarketOrders, PartialSubmitError } from '@/services/marketplaceService'
 import type { CartItem, MarketCurrency } from '@/types/marketplace'
 import { formatPrice } from '@/utils/currency'
 import { PARTS_CONDITION_LABELS } from '@/utils/status'
@@ -101,7 +101,7 @@ function CompanyGroup({ group }: { group: CartGroup }) {
 
 export function MarketCart() {
   const { t } = useTranslation('market')
-  const { items, clear, totalCount, groupedByCompany } = useCart()
+  const { items, clear, removeItem, totalCount, groupedByCompany } = useCart()
   const { data: profile } = useUserProfile()
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
@@ -127,7 +127,20 @@ export function MarketCart() {
   const mutation = useMutation({
     mutationFn: (vars: { groups: { companyId: string; items: CartItem[] }[]; buyer: { phone: string; name?: string; comment?: string } }) => submitMarketOrders(vars.groups, vars.buyer),
     onSuccess: () => { clear(); setSubmitted(true); toast.success(t('cartPage.orderSentToast')) },
-    onError: () => { toast.error(t('cartPage.orderErrorToast')) },
+    onError: (err: unknown) => {
+      if (err instanceof PartialSubmitError) {
+        // Уже отправленные заявки убираем из корзины, чтобы повтор не создал дубли
+        const sent = groups.filter(g => err.sentCompanyIds.includes(g.companyId))
+        sent.forEach(g => g.items.forEach(i => removeItem(i.inventoryId)))
+        const failed = groups.find(g => g.companyId === err.failedCompanyId)
+        toast.error(t('cartPage.orderPartialToast', {
+          sent: sent.map(g => g.companyName).join(', '),
+          failed: failed?.companyName ?? '',
+        }), { duration: 12000 })
+        return
+      }
+      toast.error(t('cartPage.orderErrorToast'))
+    },
   })
 
   const handleSubmit = (e: FormEvent) => {

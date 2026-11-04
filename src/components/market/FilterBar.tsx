@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { RotateCcw, Search, SlidersHorizontal, X } from 'lucide-react'
 import type { MarketCategory, MarketCondition, MarketFilters, MarketMakeFacet, MarketSort } from '@/types/marketplace'
 import { PARTS_CONDITION_LABELS } from '@/utils/status'
+import { marketCategoryName } from '@/services/marketplaceService'
 
 // ============================================================================
 // Панель фильтров каталога (Graphite). Управляемый компонент (value/onChange).
@@ -28,7 +29,7 @@ const SORT_OPTIONS: { value: MarketSort; labelKey: string }[] = [
 const FIELD_LABEL = 'block text-xs font-semibold mb-1.5'
 
 export function FilterBar({ value, onChange, categories = [], carCatalog = [], showPriceFilter = false }: FilterBarProps) {
-  const { t } = useTranslation('market')
+  const { t, i18n } = useTranslation('market')
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState(value.search ?? '')
 
@@ -49,7 +50,7 @@ export function FilterBar({ value, onChange, categories = [], carCatalog = [], s
 
   // ── Каскад: марка → модель → год ──────────────────────────────────────────
   const makeFacet = useMemo(() => carCatalog.find(m => m.make === value.make), [carCatalog, value.make])
-  const models = makeFacet?.models ?? []
+  const models = useMemo(() => (makeFacet?.models ?? []).filter(m => (m.count ?? 0) > 0), [makeFacet])
   const modelFacet = useMemo(() => models.find(m => m.model === value.model), [models, value.model])
   const years = modelFacet?.years ?? []
 
@@ -114,7 +115,7 @@ export function FilterBar({ value, onChange, categories = [], carCatalog = [], s
               <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-make">{t('filterBar.make')}</label>
               <select id="mf-make" value={value.make ?? ''} onChange={e => onMakeChange(e.target.value)} className="mk-input">
                 <option value="">{t('filterBar.allMakes')}</option>
-                {carCatalog.map(m => (
+                {carCatalog.filter(m => (m.count ?? 0) > 0).map(m => (
                   <option key={m.make} value={m.make}>{m.make}</option>
                 ))}
               </select>
@@ -151,7 +152,7 @@ export function FilterBar({ value, onChange, categories = [], carCatalog = [], s
               <label className={FIELD_LABEL} style={{ color: 'var(--mk-text-2)' }} htmlFor="mf-category">{t('filterBar.category')}</label>
               <select id="mf-category" value={value.categoryId ?? ''} onChange={e => patch({ categoryId: e.target.value || undefined })} className="mk-input">
                 <option value="">{t('filterBar.allCategories')}</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({c.count})</option>)}
+                {categories.map(c => <option key={c.slug} value={c.slug}>{marketCategoryName(c, i18n.language)} ({c.count})</option>)}
               </select>
             </div>
           )}

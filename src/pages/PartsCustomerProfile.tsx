@@ -22,8 +22,10 @@ import {
   getPartsInventory,
   createPartsOrder,
   createPartsOrderItem,
+  deletePartsOrder,
+  PartsStockError,
+  partsErrorMessage,
   updatePartsOrderTotal,
-  updatePartsInventoryItem,
 } from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import type { PartsInventoryItem, PartsOrder } from '@/types/parts'
@@ -234,16 +236,21 @@ export default function PartsCustomerProfile() {
         notes: orderNotes || undefined,
         order_date: new Date().toISOString(),
       })
-      for (const cartItem of cart) {
-        await createPartsOrderItem(order.id, {
-          inventory_item_id: cartItem.id,
-          quantity: cartItem.quantity,
-          price_at_sale: cartItem.price,
-          price_at_sale_currency: cartItem.currency,
-        })
-        await updatePartsInventoryItem(cartItem.id, { status: 'reserved' })
+      try {
+        for (const cartItem of cart) {
+          await createPartsOrderItem(order.id, {
+            inventory_item_id: cartItem.id,
+            quantity: cartItem.quantity,
+            price_at_sale: cartItem.price,
+            price_at_sale_currency: cartItem.currency,
+          })
+        }
+        await updatePartsOrderTotal(order.id, usdRate)
+      } catch (e) {
+        // Не оставляем «брошенный» заказ (delete_parts_order снимает резервы)
+        try { await deletePartsOrder(order.id) } catch (cleanupErr) { console.error('cleanup order failed', cleanupErr) }
+        throw e
       }
-      await updatePartsOrderTotal(order.id, usdRate)
       return order
     },
     onSuccess: (order) => {
@@ -258,7 +265,7 @@ export default function PartsCustomerProfile() {
       setSelectedModel(null)
       setPartsSearch('')
     },
-    onError: () => toast.error(t('customerProfilePage.orderCreateError')),
+    onError: (err: unknown) => toast.error(err instanceof PartsStockError ? partsErrorMessage(err, t) : t('customerProfilePage.orderCreateError')),
   })
 
   // ── Loading / not found ───────────────────────────────────────────────

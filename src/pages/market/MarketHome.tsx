@@ -2,9 +2,9 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { motion, useReducedMotion } from 'framer-motion'
-import { ChevronRight, Package, Store, Boxes } from 'lucide-react'
+import { ChevronRight, Package, Store, Boxes, Car, Lightbulb, Armchair, ShieldCheck, Wrench, CircleDot, Disc, Cog, BatteryCharging, Zap, Snowflake, Fuel, type LucideIcon } from 'lucide-react'
 import {
-  getMarketCategories, getMarketParts, getMarketSuppliers,
+  getMarketCategories, getMarketParts, getMarketSuppliers, marketCategoryName,
 } from '@/services/marketplaceService'
 import { MarketProductCard } from '@/components/market/MarketProductCard'
 import { SupplierCard } from '@/components/market/SupplierCard'
@@ -18,6 +18,22 @@ import { CarPicker } from '@/components/market/CarPicker'
 
 const FRESH_PAGE_SIZE = 12
 const MIN_CATEGORIES = 4
+
+/** Иконки разделов по slug (lucide); неизвестный slug -> Boxes */
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  kuzov: Car,
+  optika: Lightbulb,
+  salon: Armchair,
+  bezopasnost: ShieldCheck,
+  podveska: Wrench,
+  tormoza: CircleDot,
+  kolesa: Disc,
+  dvigatel: Cog,
+  batareya: BatteryCharging,
+  elektrika: Zap,
+  klimat: Snowflake,
+  vyhlop: Fuel,
+}
 const MAX_SUPPLIERS = 6
 
 function SectionHead({ title, to, linkLabel, id }: { title: string; to: string; linkLabel: string; id: string }) {
@@ -45,7 +61,7 @@ function SkeletonCard() {
 }
 
 export function MarketHome() {
-  const { t } = useTranslation('market')
+  const { t, i18n } = useTranslation('market')
   usePageMeta(
     'Razborka.net — маркет б/у и новых запчастей от авторазборок',
     'Купить б/у и новые автозапчасти от проверенных авторазборок Украины. Каталог по марке, модели и году, прямой контакт с разборкой.',
@@ -83,11 +99,14 @@ export function MarketHome() {
         <motion.section {...anim(0.12)} aria-labelledby="mk-cats-title">
           <SectionHead id="mk-cats-title" title={t('home.categories')} to="/market/catalog" linkLabel={t('home.allCategories')} />
           <div className="mk-scroller sm:flex-wrap pb-1 -mb-1">
-            {shownCategories.map(c => (
-              <Link key={c.id} to={`/market/catalog?category=${encodeURIComponent(c.id)}`} className="mk-chip">
-                <Boxes className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" />{c.name}
-              </Link>
-            ))}
+            {shownCategories.map(c => {
+              const Icon = CATEGORY_ICONS[c.slug] ?? Boxes
+              return (
+                <Link key={c.slug} to={`/market/catalog/${encodeURIComponent(c.slug)}`} className="mk-chip">
+                  <Icon className="w-3.5 h-3.5" strokeWidth={1.5} aria-hidden="true" />{marketCategoryName(c, i18n.language)}
+                </Link>
+              )
+            })}
           </div>
         </motion.section>
       )}

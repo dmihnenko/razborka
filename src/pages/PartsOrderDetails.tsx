@@ -21,7 +21,7 @@ import { getPartsOrderStatusText, statusBadgeClass } from '@/utils/status'
 import {
   updatePartsOrderTotal, getAvailablePartsInventory,
   getPartsCustomersDropdown, updatePartsOrder, updatePartsOrderStatus,
-  deletePartsOrder, deletePartsOrderItem, createPartsOrderItem,
+  deletePartsOrder, deletePartsOrderItem, createPartsOrderItem, partsErrorMessage,
   createPartsCustomer, updatePartsCustomer,
 } from '@/services/partsService'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
@@ -37,6 +37,7 @@ export default function PartsOrderDetails() {
   const { t } = useTranslation('cabinet')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { showAlert } = useAlert()
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
   const queryClient = useQueryClient()
@@ -101,6 +102,7 @@ export default function PartsOrderDetails() {
       if (id) await updatePartsOrderTotal(id, exchangeRate)
       queryClient.invalidateQueries({ queryKey: ['parts-order', id] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory-for-order'] })
       toast.success(t('orderDetailsPage.itemDeleted'))
     },
     onError: () => toast.error(t('orderDetailsPage.itemDeleteError')),
@@ -120,6 +122,8 @@ export default function PartsOrderDetails() {
       if ((status === 'in_progress' || status === 'completed') && !order?.customer_id) {
         await createAndAttachCustomer(id!)
       }
+      // Сумма могла остаться старой, если курс не загрузился при правке позиций
+      if (status === 'completed') await updatePartsOrderTotal(id!, exchangeRate)
       const inventoryIds = (order?.items ?? []).map((i) => i.inventory_item_id).filter(Boolean)
       await updatePartsOrderStatus(id!, status, inventoryIds, exchangeRate)
     },
@@ -128,6 +132,7 @@ export default function PartsOrderDetails() {
       queryClient.invalidateQueries({ queryKey: ['parts-order-activity', id] })
       queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory-for-order'] })
       setShowCompleteModal(false)
       toast.success(t('orderDetailsPage.statusUpdated'))
     },
@@ -161,6 +166,7 @@ export default function PartsOrderDetails() {
       // Заявка с маркета теряет ссылку на заказ (FK SET NULL) → вернётся в «Активные»
       queryClient.invalidateQueries({ queryKey: ['marketplace-orders'] })
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory-for-order'] })
       queryClient.invalidateQueries({ queryKey: ['trash'] })
       toast.success(t('orderDetailsPage.orderMovedToTrash'))
       navigate('/parts/orders')
@@ -704,7 +710,16 @@ export default function PartsOrderDetails() {
             // Авто-переход в «Отправлен» при создании ТТН (если заказ ещё не завершён/отменён)
             if (order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'shipped') {
               const invIds = (order.items ?? []).map((i: PartsOrderItem) => i.inventory_item_id).filter(Boolean)
-              updatePartsOrderStatus(order.id, 'shipped', invIds).catch(() => { /* не блокируем ТТН */ })
+              updatePartsOrderStatus(order.id, 'shipped', invIds)
+                .then(() => {
+                  queryClient.invalidateQueries({ queryKey: ['parts-order', id] })
+                  queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
+                  queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
+                })
+                .catch(() => {
+                  // ТТН создана — статус не блокирует её, но об ошибке сообщаем
+                  showAlert(t('orderDetailsPage.ttnStatusError'), 'error')
+                })
             }
             // Регистрируем посылку для трекинга (раздел «Доставка»)
             if (partsCompanyId) {
@@ -922,7 +937,10 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
       onClose()
     },
-    onError: (err: unknown) => showAlert((err instanceof Error ? err.message : '') || t('orderDetailsPage.addItemError'), 'error'),
+    onError: (err: unknown) => {
+      queryClient.invalidateQueries({ queryKey: ['parts-inventory-for-order'] })
+      showAlert(partsErrorMessage(err, t, t('orderDetailsPage.addItemError')), 'error')
+    },
   })
 
   const handleSelectItem = (item: AvailableInventoryRow) => {

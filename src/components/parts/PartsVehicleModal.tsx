@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { X, Plus, Trash2, ScanLine, Pencil } from 'lucide-react'
@@ -92,7 +92,15 @@ export default function PartsVehicleModal({ isOpen, onClose, onSubmit, vehicle }
 
   // ── Каталог авто: выбор марки/модели из справочника либо ручной ввод ───────
   const { data: profile } = useUserProfile()
-  const { data: carCatalog = [] } = useQuery({ queryKey: ['market-car-catalog'], queryFn: getMarketCarCatalog, staleTime: 5 * 60_000 })
+  const { data: rawCatalog = [] } = useQuery({ queryKey: ['market-car-catalog'], queryFn: getMarketCarCatalog, staleTime: 5 * 60_000 })
+  // В справочник кабинета попадают только утверждённые модели (чужие написания — нет);
+  // старый ответ без поля approved считается утверждённым
+  const carCatalog = useMemo(
+    () => rawCatalog
+      .map(c => ({ ...c, models: c.models.filter(m => m.approved !== false) }))
+      .filter(c => c.models.length > 0),
+    [rawCatalog],
+  )
 
   const [manualMake, setManualMake] = useState(false)   // ручной ввод марки + модели
   const [manualModel, setManualModel] = useState(false) // марка из каталога, модель вручную
