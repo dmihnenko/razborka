@@ -587,13 +587,11 @@
   .dot-spinner > i:nth-child(9) { animation-delay: .15s; }
   @keyframes dot-shimmer { 0%, 100% { opacity: .2; } 50% { opacity: 1; } }
 
-  /* ── Kicker — IBM Plex Mono метки (цифры/лейблы над заголовками) ── */
+  /* ── Kicker — мелкая подпись над значением/заголовком.
+     Обычный регистр без разрядки: капс с разрядкой читался как шаблонный «генерированный» стиль. ── */
   .kicker {
-    font-family: var(--font-mono);
-    font-size: var(--fs-2xs);
+    font-size: var(--fs-xs, 0.75rem);
     font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
     @apply text-gray-500;
   }
 

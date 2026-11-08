@@ -343,7 +343,7 @@ export default function PartsVehicleDetails() {
               <InfoRow
                 label={t('vehicleDetailsPage.purchasePrice')}
                 value={
-                  <span className="tabular text-red-600">
+                  <span className="tabular">
                     ${purchasePriceUSD.toLocaleString(intlLocale(), { maximumFractionDigits: 0 })}
                   </span>
                 }
@@ -508,16 +508,18 @@ export default function PartsVehicleDetails() {
 
                       {/* Main */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="font-semibold text-sm text-gray-900 truncate leading-tight">
+                        <div className="flex items-start gap-2">
+                          <span className="font-semibold text-sm text-gray-900 line-clamp-2 leading-tight flex-1 min-w-0">
                             {part.name}
                           </span>
-                          <span className={`${PART_STATUS_BADGE[part.status] ?? 'badge badge-gray'} flex-shrink-0`}>
-                            {partStatusLabels[part.status] ? t(`vehicleDetailsPage.partStatus_${part.status}`) : part.status}
-                          </span>
+                          {part.status !== 'available' && (
+                            <span className={`${PART_STATUS_BADGE[part.status] ?? 'badge badge-gray'} flex-shrink-0`}>
+                              {partStatusLabels[part.status] ? t(`vehicleDetailsPage.partStatus_${part.status}`) : part.status}
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center justify-between mt-1 gap-2">
-                          <span className="text-sm tabular font-semibold text-gray-700">
+                        <div className="flex items-center gap-2 mt-1 min-w-0">
+                          <span className="text-sm tabular font-semibold text-gray-700 flex-shrink-0">
                             {part.status === 'sold'
                               ? formatPrice(
                                   part.sold_price ?? part.selling_price,
@@ -540,10 +542,11 @@ export default function PartsVehicleDetails() {
                       {part.status !== 'sold' && (
                         <button
                           onClick={(e) => { e.stopPropagation(); setSellPart(part) }}
-                          className="cab-btn cab-btn-success cab-btn-sm flex-shrink-0"
+                          className="cab-btn cab-btn-secondary cab-btn-sm flex-shrink-0 min-w-[40px] min-h-[40px] rounded-md"
                           title={t('vehicleDetailsPage.sellBtn')}
+                          aria-label={t('vehicleDetailsPage.sellBtn')}
                         >
-                          <DollarSign className="w-3.5 h-3.5" />
+                          <DollarSign className="w-4 h-4" />
                         </button>
                       )}
                     </div>

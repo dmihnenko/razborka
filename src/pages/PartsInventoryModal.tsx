@@ -15,7 +15,7 @@ import { uploadPhoto, deletePhotosIfUnused, PhotoProviderNotConfigured, PhotoQuo
 import { type PhotoStorageConfig } from '@/services/photoStorageConfig'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation } from '@/types/parts'
-import { buildLocationOptions, type VehicleDropdownRow, type CategoryDropdownRow } from './partsInventoryShared'
+import { buildLocationOptions, newBulkRow, buildBulkInputs, bulkHasPending, type BulkRow, type VehicleDropdownRow, type CategoryDropdownRow } from './partsInventoryShared'
 
 const MAX_PHOTOS = 5
 
@@ -51,7 +51,7 @@ function parseBulkText(text: string): ModalBulkRow[] {
       const oem   = (cols[2] || '').trim()
       const stat  = (cols[3] || '').trim()
       const status: PartsInventoryStatus = stat ? parseStatusKeyword(stat) : 'available'
-      return { name, selling_price: price, part_number: oem, status }
+      return newBulkRow({ name, selling_price: price, part_number: oem, status })
     })
     .filter(r => r.name && !/^[-\s=]+$/.test(r.name))
 }
@@ -68,12 +68,7 @@ function getCategoriesForVehicle(vehicleId: string, vehicles: VehicleDropdownRow
 }
 
 // Modal Component
-interface ModalBulkRow {
-  name: string
-  selling_price: string
-  part_number: string
-  status: PartsInventoryStatus
-}
+type ModalBulkRow = BulkRow
 
 interface PartsInventoryModalProps {
   item: PartsInventoryItem | null
@@ -104,7 +99,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   const [bulkMode, setBulkMode] = useState(!item && !!initialBulk && !!onSaveBulk)
   const [showPasteArea, setShowPasteArea] = useState(false)
   const [pasteText, setPasteText] = useState('')
-  const [bulkItems, setBulkItems] = useState<ModalBulkRow[]>([{ name: '', selling_price: '', part_number: '', status: 'available' }])
+  const [bulkItems, setBulkItems] = useState<ModalBulkRow[]>(() => [newBulkRow()])
   const autoFilledVehicle = !item && !!initialVehicleId
   const autoFilledStorage = !item && !!initialStorageLocationId
   const [autoHintDismissed, setAutoHintDismissed] = useState(false)
@@ -166,7 +161,16 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   const pendingRef = useRef(pendingPhotos)
   pendingRef.current = pendingPhotos
   const submittedRef = useRef(false)
+  // Фото пакетного режима: загруженные (url → фото) и грузящиеся промисы. Чистим при закрытии без сохранения.
+  const bulkUploadsRef = useRef<Map<string, ImgbbPhoto>>(new Map())
+  const bulkInFlightRef = useRef<Set<Promise<ImgbbPhoto>>>(new Set())
+  const bulkSubmittedRef = useRef(false)
   useEffect(() => () => {
+    if (!bulkSubmittedRef.current) {
+      const bo = [...bulkUploadsRef.current.values()]
+      if (bo.length) void deletePhotosIfUnused(bo).catch(() => {})
+      for (const pr of bulkInFlightRef.current) pr.then(ph => deletePhotosIfUnused([ph])).catch(() => {})
+    }
     if (submittedRef.current) return
     const orphans = [...sessionUploadsRef.current.values()]
     if (orphans.length) void deletePhotosIfUnused(orphans).catch(() => {})
@@ -258,6 +262,78 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
     }
   }
 
+  const patchBulkRow = (rowId: string, fn: (r: ModalBulkRow) => ModalBulkRow) =>
+    setBulkItems(prev => prev.map(r => (r.id === rowId ? fn(r) : r)))
+
+  const handleBulkPhotoSelect = (rowId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    let files = Array.from(e.target.files || [])
+    e.target.value = ''
+    if (!files.length) return
+    const row = bulkItems.find(r => r.id === rowId)
+    if (!row) return
+    const remaining = MAX_PHOTOS - row.photos.length - row.pending.length
+    if (remaining <= 0) {
+      toast.error(t('inventoryPage.maxPhotos', { max: MAX_PHOTOS }))
+      return
+    }
+    if (files.length > remaining) {
+      toast.error(t('inventoryPage.canAddMorePhotos', { remaining, max: MAX_PHOTOS }))
+      files = files.slice(0, remaining)
+    }
+    if (!photoCfg) {
+      toast.error(t('inventoryPage.photoConfigNotLoaded'))
+      return
+    }
+    bulkSubmittedRef.current = false
+    for (const file of files) {
+      const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
+      const localUrl = URL.createObjectURL(file)
+      const promise = uploadPhoto(file, photoCfg)
+      bulkInFlightRef.current.add(promise)
+      patchBulkRow(rowId, r => ({ ...r, pending: [...r.pending, { id, localUrl }] }))
+      promise
+        .then(uploaded => {
+          bulkUploadsRef.current.set(uploaded.url, uploaded)
+          // строку могли удалить, пока фото грузилось — тогда чистим его сразу
+          setBulkItems(prev => {
+            if (!prev.some(r => r.id === rowId)) {
+              bulkUploadsRef.current.delete(uploaded.url)
+              void deletePhotosIfUnused([uploaded]).catch(() => {})
+              return prev
+            }
+            return prev.map(r => (r.id === rowId ? { ...r, photos: [...r.photos, uploaded] } : r))
+          })
+        })
+        .catch(err => {
+          if (err instanceof PhotoSessionExpired) toast.error(t('inventoryPage.photoSessionExpired'))
+          else if (err instanceof PhotoQuotaExceeded) showAlert(t('inventoryPage.photoQuotaExceeded'), 'error')
+          else if (err instanceof PhotoStorageUnavailable) toast.error(t('inventoryPage.photoStorageUnavailable'))
+          else if (err instanceof PhotoProviderNotConfigured) toast.error(err.message)
+          else toast.error(t('inventoryPage.photoUploadError'))
+        })
+        .finally(() => {
+          bulkInFlightRef.current.delete(promise)
+          void queryClient.invalidateQueries({ queryKey: ['photo-usage'] })
+          setBulkItems(prev => prev.map(r => (r.id === rowId ? { ...r, pending: r.pending.filter(p => p.id !== id) } : r)))
+          URL.revokeObjectURL(localUrl)
+        })
+    }
+  }
+
+  const removeBulkPhoto = (rowId: string, index: number) => {
+    const ph = bulkItems.find(r => r.id === rowId)?.photos[index]
+    if (ph && bulkUploadsRef.current.delete(ph.url)) void deletePhotosIfUnused([ph]).catch(() => {})
+    patchBulkRow(rowId, r => ({ ...r, photos: r.photos.filter((_, i) => i !== index) }))
+  }
+
+  const removeBulkRow = (rowId: string) => {
+    const row = bulkItems.find(r => r.id === rowId)
+    if (!row || bulkItems.length <= 1) return
+    const orphans = row.photos.filter(ph => bulkUploadsRef.current.delete(ph.url))
+    if (orphans.length) void deletePhotosIfUnused(orphans).catch(() => {})
+    setBulkItems(prev => prev.filter(r => r.id !== rowId))
+  }
+
   const removePhoto = (index: number) => {
     const ph = photos[index]
     // Только что загруженное и не сохранённое — удаляем из хранилища сразу.
@@ -287,19 +363,10 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
         toast.error(t('inventoryPage.addAtLeastOne'))
         return
       }
-      onSaveBulk?.(valid.map(r => ({
-        name: r.name.trim(),
-        selling_price: Number(r.selling_price) || undefined,
-        part_number: r.part_number.trim().toUpperCase() || undefined,
-        category_id: bulkShared.category_id || undefined,
-        vehicle_id: bulkShared.vehicle_id || undefined,
-        condition: bulkShared.condition,
-        storage_location_id: bulkShared.storage_location_id || undefined,
-        price_currency: bulkShared.price_currency,
-        quantity: 1,
-        photos: [],
-        status: r.status,
-      })))
+      if (bulkHasPending(bulkItems)) return
+      // файлы теперь принадлежат создаваемым позициям — при закрытии их не чистим
+      bulkSubmittedRef.current = true
+      onSaveBulk?.(buildBulkInputs(bulkItems, bulkShared))
     } else {
       // Валидация: имя без пробелов (HTML required пропускает пробелы).
       if (!formData.name.trim()) {
@@ -582,8 +649,8 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       </div>
                     )}
                     <div className="border border-gray-200 rounded-lg overflow-x-auto">
-                      <div className="min-w-[480px]">
-                      <div className="grid gap-0 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 border-b border-gray-200" style={{ gridTemplateColumns: '1fr 80px 110px 108px 32px' }}>
+                      <div className="sm:min-w-[480px]">
+                      <div className="hidden sm:grid gap-0 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 border-b border-gray-200" style={{ gridTemplateColumns: '1fr 80px 110px 108px 32px' }}>
                         <span>{t('inventoryPage.colNameReq')}</span>
                         <span>{t('inventoryPage.colPrice')}</span>
                         <span>{t('inventoryPage.colOem')}</span>
@@ -592,7 +659,8 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                       </div>
                       <div className="divide-y divide-gray-100">
                         {bulkItems.map((row, idx) => (
-                          <div key={idx} className="grid gap-0 items-center px-3 py-1.5" style={{ gridTemplateColumns: '1fr 80px 110px 108px 32px' }}>
+                          <div key={row.id}>
+                          <div className="grid grid-cols-[1fr_1fr_40px] gap-2 sm:gap-0 sm:grid-cols-[1fr_80px_110px_108px_32px] items-center px-3 py-2 sm:py-1.5">
                             <input
                               type="text"
                               value={row.name}
@@ -602,7 +670,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                                 setBulkItems(next)
                               }}
                               placeholder={t('inventoryPage.namePlaceholderShort')}
-                              className="w-full pr-2 py-1.5 text-sm border-0 focus:outline-none focus:ring-0"
+                              className="w-full col-span-2 col-start-1 row-start-1 sm:col-span-1 sm:col-start-auto sm:row-start-auto min-h-[40px] sm:min-h-0 px-2 sm:px-0 sm:pr-2 py-1.5 text-sm border border-gray-200 rounded-md sm:border-0 sm:rounded-none focus:outline-none focus:ring-0"
                             />
                             <input
                               type="number"
@@ -615,7 +683,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                                 setBulkItems(next)
                               }}
                               placeholder="0"
-                              className="w-full pr-2 py-1.5 text-sm border-0 border-l border-gray-200 pl-2 focus:outline-none focus:ring-0"
+                              className="w-full min-h-[40px] sm:min-h-0 py-1.5 text-sm border border-gray-200 rounded-md sm:rounded-none sm:border-0 sm:border-l px-2 sm:pr-2 focus:outline-none focus:ring-0"
                             />
                             <input
                               type="text"
@@ -629,7 +697,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                                 setBulkItems(next)
                               }}
                               placeholder={t('inventoryPage.oemPlaceholder')}
-                              className="w-full pr-2 py-1.5 text-sm border-0 border-l border-gray-200 pl-2 focus:outline-none focus:ring-0 font-mono uppercase"
+                              className="w-full col-span-2 min-h-[40px] sm:min-h-0 sm:col-span-1 py-1.5 text-sm border border-gray-200 rounded-md sm:rounded-none sm:border-0 sm:border-l px-2 sm:pr-2 focus:outline-none focus:ring-0 font-mono uppercase"
                             />
                             <select
                               value={row.status}
@@ -638,7 +706,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                                 next[idx] = { ...next[idx], status: e.target.value as PartsInventoryStatus }
                                 setBulkItems(next)
                               }}
-                              className={`w-full py-1.5 text-xs border-0 border-l border-gray-200 pl-2 pr-1 focus:outline-none focus:ring-0 font-medium ${
+                              className={`w-full col-span-3 sm:col-span-1 min-h-[40px] sm:min-h-0 py-1.5 text-xs border border-gray-200 rounded-md sm:rounded-none sm:border-0 sm:border-l pl-2 pr-1 focus:outline-none focus:ring-0 font-medium ${
                                 row.status === 'available' ? 'text-green-700 bg-green-50' :
                                 row.status === 'reserved' ? 'text-yellow-700 bg-yellow-50' :
                                 row.status === 'sold'     ? 'text-gray-500 bg-gray-50' :
@@ -653,13 +721,50 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                             <button
                               type="button"
                               onClick={() => {
-                                if (bulkItems.length > 1) setBulkItems(prev => prev.filter((_, i) => i !== idx))
+                                removeBulkRow(row.id)
                               }}
-                              className="flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
+                              className="col-start-3 row-start-1 sm:col-start-auto sm:row-start-auto min-h-[40px] sm:min-h-0 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
                               aria-label={t('inventoryPage.removeRow')}
                             >
                               <X className="w-4 h-4" />
                             </button>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 px-3 pb-2">
+                            <label
+                              className={`inline-flex items-center justify-center gap-1.5 min-w-[40px] min-h-[40px] px-2.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-medium cursor-pointer ${row.photos.length + row.pending.length >= MAX_PHOTOS ? 'opacity-40 pointer-events-none' : ''}`}
+                              title={t('inventoryPage.addPhotoShort')}
+                            >
+                              <Camera className="w-4 h-4" />
+                              <span>{row.photos.length + row.pending.length}/{MAX_PHOTOS}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                className="sr-only"
+                                aria-label={t('inventoryPage.addPhotoShort')}
+                                onChange={(e) => handleBulkPhotoSelect(row.id, e)}
+                              />
+                            </label>
+                            {row.photos.map((ph, pi) => (
+                              <div key={ph.url} className="relative w-10 h-10 shrink-0">
+                                <img src={ph.thumb_url || ph.url} alt="" className="w-10 h-10 rounded-md object-cover border border-gray-200" />
+                                <button
+                                  type="button"
+                                  onClick={() => removeBulkPhoto(row.id, pi)}
+                                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-md bg-white border border-gray-200 text-gray-500 hover:text-red-500 flex items-center justify-center"
+                                  aria-label={t('inventoryPage.removePhoto')}
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                            {row.pending.map(p => (
+                              <div key={p.id} className="relative w-10 h-10 shrink-0">
+                                <img src={p.localUrl} alt="" className="w-10 h-10 rounded-md object-cover border border-gray-200 opacity-50" />
+                                <span className="absolute inset-0 flex items-center justify-center"><Spinner /></span>
+                              </div>
+                            ))}
+                          </div>
                           </div>
                         ))}
                       </div>
@@ -667,7 +772,7 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
                     </div>
                     <button
                       type="button"
-                      onClick={() => setBulkItems(prev => [...prev, { name: '', selling_price: '', part_number: '', status: 'available' }])}
+                      onClick={() => setBulkItems(prev => [...prev, newBulkRow()])}
                       className="mt-2 cab-btn cab-btn-ghost cab-btn-sm flex items-center gap-1.5 text-primary"
                     >
                       <Plus className="w-4 h-4" />
@@ -1117,12 +1222,14 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
             )}
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || (bulkMode && bulkHasPending(bulkItems))}
               className="cab-btn cab-btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSaving
                 ? t('inventoryPage.saving')
-                : bulkMode
+                : bulkMode && bulkHasPending(bulkItems)
+                  ? t('inventoryPage.photosUploadingWait')
+                  : bulkMode
                   ? t('inventoryPage.addNParts', { n: bulkItems.filter(r => r.name.trim()).length || '' })
                   : item ? t('inventoryPage.save') : t('inventoryPage.add')}
             </button>

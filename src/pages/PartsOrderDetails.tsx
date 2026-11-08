@@ -52,6 +52,7 @@ export default function PartsOrderDetails() {
   useHydrateNpSettings(partsCompanyId ?? undefined)
 
   /* ── поля «Клиент и доставка» ───────────────────────────────── */
+  const [expandClientForm, setExpandClientForm] = useState(false)
   const [customerFullName, setCustomerFullName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerCity, setCustomerCity] = useState('')
@@ -463,6 +464,14 @@ export default function PartsOrderDetails() {
               <h2 className="heading-3">{t('orderDetailsPage.customerAndDelivery')}</h2>
             </div>
 
+            {(order.status === 'completed' || order.status === 'cancelled') && !order.customer_id && !order.customer && !expandClientForm ? (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-gray-500">{t('orderDetailsPage.customerNotSet')}</span>
+                <button onClick={() => setExpandClientForm(true)} className="cab-btn cab-btn-secondary cab-btn-sm">
+                  {t('orderDetailsPage.setCustomer')}
+                </button>
+              </div>
+            ) : (<>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="form-label">{t('orderDetailsPage.customerFullName')}</label>
@@ -488,7 +497,7 @@ export default function PartsOrderDetails() {
                     type="tel"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="+38 (067) 000-00-00"
+                    placeholder={t('orderDetailsPage.phonePlaceholder')}
                     className="form-input"
                   />
                 )}
@@ -550,7 +559,7 @@ export default function PartsOrderDetails() {
                     type="text"
                     value={customerNpOffice}
                     onChange={(e) => setCustomerNpOffice(e.target.value)}
-                    placeholder="Відділення №1"
+                    placeholder={t('orderDetailsPage.warehousePlaceholder')}
                     className="form-input"
                   />
                 )}
@@ -569,6 +578,7 @@ export default function PartsOrderDetails() {
                 {saveCustomerMutation.isPending ? t('orderDetailsPage.saving') : t('orderDetailsPage.saveCustomer')}
               </button>
             </div>
+            </>)}
           </div>
         )}
 
@@ -687,7 +697,8 @@ export default function PartsOrderDetails() {
           )}
         </div>
 
-        {/* ── блок «Доставка Новой почты» ─────────────────────────────── */}
+        {/* ── блок «Доставка Новой почты»: у закрытых заказов без ТТН отправлять уже нечего ── */}
+        {!((order.status === 'completed' || order.status === 'cancelled') && !order.np_ttn) && (
         <NpTtnBlock
           order={order}
           npCityRef={npCityRef}
@@ -742,6 +753,7 @@ export default function PartsOrderDetails() {
           }}
           orderId={order.id}
         />
+        )}
 
         {/* ── таймлайн заказа (история статусов/событий) ──────────────── */}
         {timelineFull.length > 0 && (

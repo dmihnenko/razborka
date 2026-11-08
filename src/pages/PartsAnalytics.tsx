@@ -52,7 +52,7 @@ export default function PartsAnalytics() {
     <div className="min-h-dvh bg-gray-50">
       {/* Header */}
       <PartsPageHeader
-        title={i18n.t('cabinet:pages.analytics')}
+        title={i18n.t('cabinet:nav.reports')}
         subtitle={i18n.t('cabinet:pages.analyticsSub')}
         backPath="/parts/dashboard"
       />
