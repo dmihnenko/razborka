@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase'
+import { deletePhotosIfUnused } from '@/services/photoStorage'
+import type { ImgbbPhoto } from '@/services/imgbbService'
 import type {
   PartsVehicle,
   PartsInventoryItem,
@@ -169,7 +171,36 @@ export async function restoreFromTrash(item: TrashItem): Promise<void> {
   if (de) throw de
 }
 
-export async function permanentlyDelete(trashId: string): Promise<void> {
+/** Фото из снимка корзины: запчасть или авто с запчастями (остальные сущности фото не имеют). */
+function snapshotPhotos(entityType: TrashEntityType, data: TrashEntityData): ImgbbPhoto[] {
+  if (!data || typeof data !== 'object') return []
+  if (entityType === 'parts_inventory') {
+    return ((data as Partial<PartsInventoryItem>).photos as ImgbbPhoto[] | undefined) ?? []
+  }
+  if (entityType === 'parts_vehicle') {
+    const parts = (data as Partial<TrashVehicleSnapshot>).parts ?? []
+    return parts.flatMap((p) => (p.photos as ImgbbPhoto[] | undefined) ?? [])
+  }
+  return []
+}
+
+/**
+ * Окончательное удаление из корзины. Файлы фото (R2/imgbb) удаляем ТОЛЬКО здесь и только
+ * после успешного удаления записи (до этого товар можно восстановить). Ошибки фото не роняют удаление.
+ */
+export async function permanentlyDelete(
+  trashId: string,
+  snapshot?: Pick<TrashItem, 'entity_type' | 'entity_data'> & { parts_company_id?: string | null },
+): Promise<void> {
   const { error } = await supabase.from('trash_bin').delete().eq('id', trashId)
   if (error) throw error
+  if (snapshot) {
+    const photos = snapshotPhotos(snapshot.entity_type, snapshot.entity_data)
+    if (photos.length && snapshot.parts_company_id === null) {
+      // запись без компании (admin) — файлы не трогаем
+      console.warn('photo cleanup skipped: trash item has no company')
+    } else if (photos.length) {
+      try { await deletePhotosIfUnused(photos) } catch (e) { console.error('photo cleanup failed', e) }
+    }
+  }
 }

@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
   Clock, CheckCircle2, AlertTriangle, Infinity as InfinityIcon,
-  MessageCircle, Send, Hourglass, Package, Car, Check, Users,
+  MessageCircle, Send, Hourglass, Package, Car, Check, Users, Camera,
 } from 'lucide-react'
+import { getMyPhotoUsage } from '@/services/photoStorageConfig'
 import { Spinner } from '@/components/ui/Spinner'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
@@ -33,6 +34,12 @@ export default function PartsSubscriptionPage() {
 
   const { data: companySub, isLoading } = useCompanySubscription()
   const { usage, limits, isExpiringSoon, daysLeft: subDaysLeft } = useSubscriptionLimits()
+  const { data: photoUsage } = useQuery({
+    queryKey: ['photo-usage', companyId],
+    queryFn: getMyPhotoUsage,
+    enabled: !!companyId,
+    refetchOnMount: 'always',
+  })
 
   const { data: tiers = [] } = useQuery({
     queryKey: ['subscription-tiers', 'parts'],
@@ -192,6 +199,14 @@ export default function PartsSubscriptionPage() {
               used={usage.parts}
               max={limits.maxParts}
             />
+            {photoUsage && (
+              <UsageMeter
+                icon={Camera}
+                label="Фото товаров"
+                used={photoUsage.used_photos}
+                max={photoUsage.limit_photos}
+              />
+            )}
             {limits.maxWorkers !== undefined && (
               <UsageMeter
                 icon={Users}
@@ -395,6 +410,12 @@ export default function PartsSubscriptionPage() {
                           <li className="flex items-center gap-1.5">
                             <Package className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
                             до {t.max_parts} запчастей
+                          </li>
+                        )}
+                        {t.max_photos != null && (
+                          <li className="flex items-center gap-1.5">
+                            <Camera className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                            до {t.max_photos} фото товаров
                           </li>
                         )}
                         {t.max_workers != null && (

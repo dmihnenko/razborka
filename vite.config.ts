@@ -97,7 +97,7 @@ export default defineConfig({
         // Offline SPA: все navigate-запросы → index.html,
         // кроме API, version.json и статических файлов из /public/
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//, /^\/img\//, /^\/version\.json/, /^\/public\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/img\//, /^\/photos\//, /^\/version\.json/, /^\/public\//],
 
         runtimeCaching: [
           // ── Supabase Auth ─────────────────────────────────────────────────────

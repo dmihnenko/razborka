@@ -40,6 +40,8 @@
     "tariffVehiclesUpTo": "До {{count}} авто",
     "tariffPartsUnlimited": "Запчасти — без лимита",
     "tariffPartsUpTo": "До {{count}} запчастей",
+    "tariffPhotosUnlimited": "Фото товаров — без лимита",
+    "tariffPhotosUpTo": "До {{count}} фото товаров",
     "tariffWorkersUnlimited": "Сотрудники — без лимита",
     "tariffWorkersUpTo": "До {{count}} сотрудников",
     "tariffAnalytics": "Аналитика и окупаемость",

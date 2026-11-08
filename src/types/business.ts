@@ -5,6 +5,8 @@ export interface Tariff {
   description?: string | null
   maxVehicles: number | null
   maxParts: number | null
+  /** Лимит фото товаров (null = без лимита) */
+  maxPhotos: number | null
   maxWorkers: number | null
   hasAnalytics: boolean
   isCustom: boolean

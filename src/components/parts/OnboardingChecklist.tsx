@@ -131,7 +131,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
     enabled: !!partsCompanyId,
     staleTime: 2 * 60 * 1000,
   })
-  const hasPhoto = isProviderConfigured(photoCfg)
+  const hasPhoto = isProviderConfigured(photoCfg) // 'shared' по умолчанию — ключ не нужен
 
   // 7. Telegram-уведомления (бот привязан → telegram_chat_id)
   const hasTelegram = !!companyContacts?.telegram_chat_id

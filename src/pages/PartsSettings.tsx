@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
-import { PHOTO_SERVICES, getCompanyPhotoStorage, saveCompanyPhotoStorage, isProviderConfigured, type PhotoStorageConfig, type PhotoProvider } from '@/services/photoStorageConfig'
+import { PHOTO_SERVICES, getCompanyPhotoStorage, saveCompanyPhotoStorage, getMyPhotoUsage, isProviderConfigured, type PhotoStorageConfig, type PhotoProvider } from '@/services/photoStorageConfig'
 import { getNpApiKey, setNpApiKey } from '@/utils/npApiKey'
 import { getNpConfig, setNpConfig, NpSenderConfig } from '@/utils/npConfig'
 import { upsertNpSettings } from '@/services/npSettingsService'
@@ -97,12 +97,21 @@ export default function PartsSettings() {
   const [npKeyInput, setNpKeyInput] = useState<string>(getNpApiKey)
 
   /* ── Хранилище фото (per-company): провайдер + ключи ───────────── */
-  const [photoCfg, setPhotoCfg] = useState<PhotoStorageConfig>({ provider: 'imgbb' })
+  const [photoCfg, setPhotoCfg] = useState<PhotoStorageConfig>({ provider: 'shared' })
   const [savingPhoto, setSavingPhoto] = useState(false)
+  const [photoLoadFailed, setPhotoLoadFailed] = useState(false)
   useEffect(() => {
     if (!partsCompanyId) return
-    getCompanyPhotoStorage(partsCompanyId).then(cfg => { if (cfg) setPhotoCfg(cfg) })
+    setPhotoLoadFailed(false)
+    getCompanyPhotoStorage(partsCompanyId).then(cfg => { if (cfg) setPhotoCfg(cfg) }).catch(() => setPhotoLoadFailed(true))
   }, [partsCompanyId])
+
+  const { data: photoUsage } = useQuery({
+    queryKey: ['photo-usage', partsCompanyId],
+    queryFn: getMyPhotoUsage,
+    enabled: !!partsCompanyId,
+    staleTime: 60_000,
+  })
 
   /* ── НП: конфиг отправителя ──────────────────────────────────── */
   const [npSender, setNpSender] = useState<Partial<NpSenderConfig>>(() => getNpConfig())
@@ -266,7 +275,7 @@ export default function PartsSettings() {
   }
 
   const handleSavePhotoStorage = async () => {
-    if (!partsCompanyId) return
+    if (!partsCompanyId || photoLoadFailed) return
     setSavingPhoto(true)
     try {
       await saveCompanyPhotoStorage(partsCompanyId, photoCfg)
@@ -329,7 +338,7 @@ export default function PartsSettings() {
     },
     {
       id: 'imgbb', Icon: Key, iconBg: 'bg-[var(--cab-surface-2)]', iconColor: 'text-[var(--cab-ink-2)]',
-      title: t('settingsPage.cardPhotoTitle'), sub: PHOTO_SERVICES.find(s => s.id === photoCfg.provider)?.name || t('settingsPage.cardPhotoSubFallback'), badge: imgbbConnected ? connectedBadge : notSetBadge,
+      title: t('settingsPage.cardPhotoTitle'), sub: photoCfg.provider === 'shared' ? t('settingsPage.photoSharedShort', { defaultValue: 'razborka.net' }) : PHOTO_SERVICES.find(s => s.id === photoCfg.provider)?.name || t('settingsPage.cardPhotoSubFallback'), badge: imgbbConnected ? connectedBadge : notSetBadge,
       onClick: () => setPanel('imgbb'),
     },
     {
@@ -490,6 +499,7 @@ export default function PartsSettings() {
         )
 
       case 'imgbb': {
+        const isShared = photoCfg.provider === 'shared'
         const svc = PHOTO_SERVICES.find(s => s.id === photoCfg.provider) ?? PHOTO_SERVICES[0]
         return (
           <div className="space-y-4">
@@ -497,7 +507,28 @@ export default function PartsSettings() {
               {t('settingsPage.photoIntro1')} <b>{t('settingsPage.photoIntroOwn')}</b> {t('settingsPage.photoIntro2')}
             </p>
 
-            {/* Выбор сервиса — карточки с лимитами */}
+            {photoLoadFailed && <p role="alert" className="text-xs font-semibold text-red-600">{t('settingsPage.photoLoadError')}</p>}
+            {/* Общее хранилище razborka.net — по умолчанию */}
+            <button
+              type="button"
+              onClick={() => setPhotoCfg(c => ({ ...c, provider: 'shared' }))}
+              className={`w-full text-left p-3 rounded-xl border-2 transition-colors ${isShared ? 'border-[var(--cab-signal)] bg-[var(--cab-signal-weak)]' : 'border-gray-200 hover:border-gray-300'}`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-bold text-gray-900">{t('settingsPage.photoSharedName')}</span>
+                {isShared && <CheckCircle className="w-4 h-4 text-[var(--cab-signal)] flex-shrink-0" />}
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5">{t('settingsPage.photoSharedDesc')}</p>
+              {photoUsage && (
+                <p className="text-xs font-semibold text-gray-700 mt-1">
+                  {photoUsage.limit_photos == null
+                    ? t('settingsPage.photoUsageUnlimited', { used: photoUsage.used_photos.toLocaleString('ru-RU') })
+                    : t('settingsPage.photoUsage', { used: photoUsage.used_photos.toLocaleString('ru-RU'), limit: photoUsage.limit_photos.toLocaleString('ru-RU') })}
+                </p>
+              )}
+            </button>
+
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide pt-1">{t('settingsPage.photoOwnService')}</p>
             <div className="grid grid-cols-1 gap-2">
               {PHOTO_SERVICES.map(s => {
                 const active = photoCfg.provider === s.id
@@ -518,6 +549,14 @@ export default function PartsSettings() {
               })}
             </div>
 
+            {isShared ? (
+              <>
+                <p className="text-xs text-gray-500">{t('settingsPage.photoSharedChosen')}</p>
+                <button onClick={handleSavePhotoStorage} disabled={savingPhoto || photoLoadFailed} className="cab-btn cab-btn-primary w-full disabled:opacity-60">
+                  <Save className="w-4 h-4" /> {savingPhoto ? t('settingsPage.saving') : t('settingsPage.savePhotoStorage')}
+                </button>
+              </>
+            ) : (<>
             {/* Инструкция для выбранного сервиса */}
             <div className="rounded-xl bg-slate-50 p-3">
               <p className="text-xs font-semibold text-gray-700 mb-1.5">{t('settingsPage.howToConnect', { name: svc.name })}</p>
@@ -543,10 +582,11 @@ export default function PartsSettings() {
                   />
                 </div>
               ))}
-              <button onClick={handleSavePhotoStorage} disabled={savingPhoto} className="cab-btn cab-btn-primary w-full disabled:opacity-60">
+              <button onClick={handleSavePhotoStorage} disabled={savingPhoto || photoLoadFailed} className="cab-btn cab-btn-primary w-full disabled:opacity-60">
                 <Save className="w-4 h-4" /> {savingPhoto ? t('settingsPage.saving') : t('settingsPage.savePhotoStorage')}
               </button>
             </div>
+            </>)}
           </div>
         )
       }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Spinner } from '@/components/ui/Spinner'
 import {
   CreditCard, Plus, Trash2, Building2,
-  CheckCircle2, XCircle, Search, X, Edit2, Car, Package, User,
+  CheckCircle2, XCircle, Search, X, Edit2, Car, Package, User, Camera,
   Bell, ChevronRight, ChevronLeft, Layers, Check, BarChart3, Snowflake, Clock, Settings2,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -581,6 +581,7 @@ export default function Subscriptions() {
                           ([
                             [Car, 'Машин', plan.max_vehicles],
                             [Package, 'Запчастей', plan.max_parts],
+                            [Camera, 'Фото товаров', plan.max_photos],
                             [User, 'Сотрудников', plan.max_workers],
                           ] as const).map(([Icon, label, val]) => (
                             <div key={label} className="flex items-center justify-between text-sm">
@@ -1120,7 +1121,7 @@ function DetailPanel({
                   <span className="text-xs font-medium text-gray-500"> {p.type === 'lifetime' ? '· навсегда' : free ? '' : '/мес'}</span>
                 </p>
                 <p className="text-[11.5px] text-gray-500 mt-1.5 leading-snug">
-                  {p.max_parts ?? '∞'} запчастей · {p.max_vehicles ?? '∞'} авто · {p.max_workers ?? '∞'} сотр.
+                  {p.max_parts ?? '∞'} запчастей · {p.max_photos ?? '∞'} фото · {p.max_vehicles ?? '∞'} авто · {p.max_workers ?? '∞'} сотр.
                 </p>
               </button>
             )
@@ -1271,6 +1272,7 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
     price:            String(plan.price),
     max_vehicles:     plan.max_vehicles != null ? String(plan.max_vehicles) : '',
     max_parts:        plan.max_parts != null ? String(plan.max_parts) : '',
+    max_photos:       plan.max_photos != null ? String(plan.max_photos) : '',
     max_workers:      plan.max_workers != null ? String(plan.max_workers) : '',
     sort_order:       plan.sort_order != null ? String(plan.sort_order) : '0',
     has_analytics:    plan.has_analytics ?? false,
@@ -1288,6 +1290,7 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
         price:            Number(form.price),
         max_vehicles:     numOrNull(form.max_vehicles),
         max_parts:        numOrNull(form.max_parts),
+        max_photos:       numOrNull(form.max_photos),
         max_workers:      numOrNull(form.max_workers),
         sort_order:       Number(form.sort_order) || 0,
         has_analytics:    form.has_analytics,
@@ -1339,6 +1342,7 @@ function PlanEditModal({ plan, onClose, onSaved }: { plan: Subscription; onClose
           {field('Машины', 'max_vehicles', 'number')}
           {field('Запчасти', 'max_parts', 'number')}
         </div>
+        {field('Фото товаров', 'max_photos', 'number', 'Пусто = без лимита')}
         {field('Сотрудников (max_workers)', 'max_workers', 'number', 'Пусто = без лимита')}
         {field('Порядок', 'sort_order', 'number')}
         {/* Аналитика тоггл */}

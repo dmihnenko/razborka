@@ -16,6 +16,7 @@ interface SubscriptionRow {
   description: string | null
   max_vehicles: number | null
   max_parts: number | null
+  max_photos: number | null
   max_workers: number | null
   has_analytics: boolean | null
   is_custom: boolean | null
@@ -25,7 +26,7 @@ interface SubscriptionRow {
 export async function getPublicTariffs(): Promise<Tariff[]> {
   const { data, error } = await supabase
     .from('subscriptions')
-    .select('id,name,price,description,max_vehicles,max_parts,max_workers,has_analytics,is_custom,sort_order')
+    .select('id,name,price,description,max_vehicles,max_parts,max_photos,max_workers,has_analytics,is_custom,sort_order')
     .eq('company_type', 'parts')
     .eq('is_active', true)
     .order('sort_order')
@@ -39,6 +40,7 @@ export async function getPublicTariffs(): Promise<Tariff[]> {
     description: row.description ?? null,
     maxVehicles: row.max_vehicles ?? null,
     maxParts: row.max_parts ?? null,
+    maxPhotos: row.max_photos ?? null,
     maxWorkers: row.max_workers ?? null,
     hasAnalytics: row.has_analytics ?? false,
     isCustom: row.is_custom ?? false,

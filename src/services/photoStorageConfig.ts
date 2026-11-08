@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 
-export type PhotoProvider = 'imgbb' | 'cloudinary' | 'freeimage'
+/** shared = общее хранилище razborka.net (R2) с лимитом по тарифу; остальные — свой сервис. */
+export type PhotoProvider = 'shared' | 'imgbb' | 'cloudinary' | 'freeimage'
 
 export interface PhotoStorageConfig {
   provider: PhotoProvider
@@ -11,7 +12,7 @@ export interface PhotoStorageConfig {
 
 /** Описание сервиса для UI: лимиты + инструкция как получить ключ. */
 export interface PhotoServiceMeta {
-  id: PhotoProvider
+  id: Exclude<PhotoProvider, 'shared'>
   name: string
   limits: string
   signupUrl: string
@@ -65,49 +66,61 @@ export const PHOTO_SERVICES: PhotoServiceMeta[] = [
 ]
 
 /**
- * Конфиг хранилища КОМПАНИИ (не per-device). Защищённо: если миграция
- * (колонки photo_provider/photo_config) ещё не применена — вернёт null,
- * и вызывающий код откатится на прежнее поведение.
+ * Конфиг хранилища КОМПАНИИ (не per-device), читается через RPC get_my_photo_storage.
+ * При сбое RPC БРОСАЕТ ошибку (иначе загрузка молча ушла бы не туда). null — у пользователя нет компании.
  */
-export async function getCompanyPhotoStorage(companyId: string): Promise<PhotoStorageConfig | null> {
-  try {
-    const { data, error } = await supabase
-      .from('parts_companies')
-      .select('photo_provider, photo_config')
-      .eq('id', companyId)
-      .maybeSingle()
-    if (error || !data) return null
-    const cfg = (data as any).photo_config || {}
-    return {
-      provider: ((data as any).photo_provider as PhotoProvider) || 'imgbb',
-      imgbb: cfg.imgbb,
-      cloudinary: cfg.cloudinary,
-      freeimage: cfg.freeimage,
-    }
-  } catch {
-    return null
+export async function getCompanyPhotoStorage(_companyId?: string): Promise<PhotoStorageConfig | null> {
+  const { data, error } = await supabase.rpc('get_my_photo_storage')
+  if (error) throw error
+  if (!data) return null
+  const row = data as { provider?: string; config?: any }
+  const cfg = row.config || {}
+  const base = {
+    imgbb: cfg.imgbb,
+    cloudinary: cfg.cloudinary,
+    freeimage: cfg.freeimage,
+  }
+  const chosen = (row.provider as PhotoProvider) || 'shared'
+  // Выбранный сервис без ключа -> общее хранилище razborka.net
+  const provider: PhotoProvider = chosen !== 'shared' && !isProviderConfigured({ provider: chosen, ...base }) ? 'shared' : chosen
+  return { provider, ...base }
+}
+
+export interface PhotoUsage {
+  used_bytes: number
+  limit_bytes: number | null
+  /** Сколько фото загружено и сколько разрешено тарифом (null = без лимита) */
+  used_photos: number
+  limit_photos: number | null
+}
+
+/** Занято / лимит общего хранилища razborka.net (null-лимит = без ограничения). */
+export async function getMyPhotoUsage(): Promise<PhotoUsage | null> {
+  const { data, error } = await supabase.rpc('get_my_photo_usage')
+  if (error || !data) return null
+  const d = data as { used_bytes?: number; limit_bytes?: number | null; used_photos?: number; limit_photos?: number | null }
+  return {
+    used_bytes: Number(d.used_bytes) || 0,
+    limit_bytes: d.limit_bytes == null ? null : Number(d.limit_bytes),
+    used_photos: Number(d.used_photos) || 0,
+    limit_photos: d.limit_photos == null ? null : Number(d.limit_photos),
   }
 }
 
-/** Сохранить конфиг компании. Бросает, если миграция не применена. */
-export async function saveCompanyPhotoStorage(companyId: string, cfg: PhotoStorageConfig): Promise<void> {
-  const { error } = await supabase
-    .from('parts_companies')
-    .update({
-      photo_provider: cfg.provider,
-      photo_config: {
-        imgbb: cfg.imgbb,
-        cloudinary: cfg.cloudinary,
-        freeimage: cfg.freeimage,
-      },
-    })
-    .eq('id', companyId)
+/** Сохранить конфиг компании через RPC save_my_photo_storage (сервер СЛИВАЕТ config: ключи не теряются). */
+export async function saveCompanyPhotoStorage(_companyId: string, cfg: PhotoStorageConfig): Promise<void> {
+  const config: Record<string, unknown> = {}
+  if (cfg.imgbb?.key) config.imgbb = cfg.imgbb
+  if (cfg.cloudinary?.cloudName || cfg.cloudinary?.preset) config.cloudinary = cfg.cloudinary
+  if (cfg.freeimage?.key) config.freeimage = cfg.freeimage
+  const { error } = await supabase.rpc('save_my_photo_storage', { p_provider: cfg.provider, p_config: config })
   if (error) throw error
 }
 
 /** Настроен ли выбранный провайдер (есть ли нужные ключи). */
 export function isProviderConfigured(cfg: PhotoStorageConfig | null): boolean {
   if (!cfg) return false
+  if (cfg.provider === 'shared') return true
   if (cfg.provider === 'cloudinary') return Boolean(cfg.cloudinary?.cloudName && cfg.cloudinary?.preset)
   if (cfg.provider === 'freeimage') return Boolean(cfg.freeimage?.key)
   return Boolean(cfg.imgbb?.key)

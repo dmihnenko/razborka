@@ -52,6 +52,7 @@ export async function updateSubscriptionPlanFields(
     price: number
     max_vehicles: number | null
     max_parts: number | null
+    max_photos: number | null
     max_workers: number | null
     sort_order: number
     has_analytics: boolean

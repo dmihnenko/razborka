@@ -16,7 +16,7 @@ import i18n from '@/i18n'
 import { getPartsInventoryPaged, getPartsInventorySummary, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, deletePartsOrder, PartsStockError, partsErrorMessage, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory, getMarketSections, marketSectionName } from '@/services/partsService'
 import type { PartsInventoryItem, PartsInventoryStatus, StorageLocation, PartsCustomer, PartsVehicle } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
-import { deletePhotosFromImgbb } from '@/services/imgbbService'
+import { deletePhotosIfUnused } from '@/services/photoStorage'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/utils/currency'
 import { intlLocale } from '@/i18n'
@@ -260,9 +260,7 @@ export default function PartsInventory() {
 
   const deleteMutation = useMutation({
     mutationFn: async (item: PartsInventoryItem) => {
-      if (item.photos?.length) {
-        await deletePhotosFromImgbb(item.photos as ImgbbPhoto[])
-      }
+      // Фото НЕ удаляем: товар в корзине можно восстановить. Файлы чистит permanentlyDelete.
       await moveToTrash({
         entityType: 'parts_inventory',
         entityId: item.id,
@@ -644,13 +642,13 @@ export default function PartsInventory() {
 
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      // Сначала удаляем фото с хранилища у удаляемых позиций, потом сами позиции
+      // Позиции удаляются без корзины: файлы фото чистим только после успешного удаления из БД
       const idSet = new Set(ids)
       const photos = inventory
         .filter((i: PartsInventoryItem) => idSet.has(i.id))
         .flatMap((i: PartsInventoryItem) => ((i.photos as ImgbbPhoto[] | undefined) ?? []))
-      if (photos.length) await deletePhotosFromImgbb(photos)
       await bulkDeleteInventory(ids)
+      if (photos.length) await deletePhotosIfUnused(photos).catch((e) => console.error('photo cleanup failed', e))
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })

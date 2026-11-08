@@ -8,6 +8,7 @@
 // Публичные данные берём анонимно (anon-ключ публичен, приватное закрыто RLS).
 
 import { handleImageProxy, isImageProxyPath } from './imageProxy.js'
+import { handleUpload, handleDelete, handleGet, isPhotosGet } from './photoStorage.js'
 
 const SITE = 'https://razborka.net'
 const BRAND = 'Razborka.net'
@@ -611,6 +612,11 @@ export default {
 
     // Прокси картинок imgbb (отсекает 503-заглушки)
     if (isImageProxyPath(p)) return handleImageProxy(request)
+
+    // Общее хранилище фото (R2): загрузка/удаление/раздача
+    if (p === '/api/photos/upload' && request.method === 'POST') return handleUpload(request, env)
+    if (p === '/api/photos/delete' && request.method === 'POST') return handleDelete(request, env)
+    if (isPhotosGet(p, request.method)) return handleGet(request, env, ctx)
 
     // 0. www → apex (канонический хост, без дублей в индексе)
     if (url.hostname === 'www.razborka.net') {

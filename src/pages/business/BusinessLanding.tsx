@@ -9,6 +9,7 @@ import {
   Car,
   CheckCircle2,
   ChevronRight,
+  Camera,
   DollarSign,
   Package,
   ShoppingBag,
@@ -106,6 +107,12 @@ function TariffCard({
             {tariff.maxParts === null
               ? t('landing.tariffPartsUnlimited')
               : t('landing.tariffPartsUpTo', { count: tariff.maxParts })}
+          </li>
+          <li className="flex items-center gap-2 text-sm text-gray-700">
+            <Camera className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+            {tariff.maxPhotos === null
+              ? t('landing.tariffPhotosUnlimited')
+              : t('landing.tariffPhotosUpTo', { count: tariff.maxPhotos })}
           </li>
           <li className="flex items-center gap-2 text-sm text-gray-700">
             <Users className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />

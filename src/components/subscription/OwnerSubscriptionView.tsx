@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
   Clock, CheckCircle2, AlertTriangle, Infinity as InfinityIcon,
-  MessageCircle, Send, Hourglass, Package, Car, Check, Users,
+  MessageCircle, Send, Hourglass, Package, Car, Check, Users, Camera,
 } from 'lucide-react'
 import { Spinner } from '@/components/ui/Spinner'
 import { toast } from 'sonner'
@@ -227,6 +227,7 @@ export default function OwnerSubscriptionView({ companyType }: { companyType: Co
                     <ul className="text-xs text-gray-600 space-y-1.5 mt-1">
                       {t.max_vehicles != null && <li className="flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-gray-400" /> до {t.max_vehicles} машин</li>}
                       {t.max_parts != null && <li className="flex items-center gap-1.5"><Package className="w-3.5 h-3.5 text-gray-400" /> до {t.max_parts} запчастей</li>}
+                      {t.max_photos != null && <li className="flex items-center gap-1.5"><Camera className="w-3.5 h-3.5 text-gray-400" /> до {t.max_photos} фото товаров</li>}
                     </ul>
                   </button>
                 )

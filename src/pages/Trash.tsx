@@ -70,7 +70,7 @@ export default function Trash() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (trashId: string) => permanentlyDelete(trashId),
+    mutationFn: (item: TrashItem) => permanentlyDelete(item.id, item),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trash'] })
       toast.success(t('trashPage.deletedForever'))
@@ -93,7 +93,7 @@ export default function Trash() {
       danger: true,
     })
     if (!ok) return
-    deleteMutation.mutate(item.id)
+    deleteMutation.mutate(item)
   }
 
   return (

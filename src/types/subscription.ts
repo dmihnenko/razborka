@@ -14,6 +14,7 @@ export interface Subscription {
   // Лимиты разборки
   max_vehicles?: number | null
   max_parts?: number | null
+  max_photos?: number | null
   duration_months: number | null
   sort_order?: number
   /** Персональный тариф — цена/лимиты обсуждаются индивидуально */

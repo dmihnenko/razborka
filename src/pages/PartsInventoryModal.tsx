@@ -10,7 +10,7 @@ import { Camera, X, Upload, Copy, Check, ChevronDown, Package, Plus, ClipboardLi
 import { Spinner } from '@/components/ui/Spinner'
 import { getMarketSections, classifyMarketCategory, marketSectionName } from '@/services/partsService'
 import { StorageLocationCascade } from '@/components/parts/StorageLocationCascade'
-import { uploadPhoto, PhotoProviderNotConfigured } from '@/services/photoStorage'
+import { uploadPhoto, deletePhotosIfUnused, PhotoProviderNotConfigured, PhotoQuotaExceeded, PhotoStorageUnavailable, PhotoSessionExpired } from '@/services/photoStorage'
 import { type PhotoStorageConfig } from '@/services/photoStorageConfig'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import type { PartsInventoryItem, CreatePartsInventoryInput, PartsInventoryStatus, StorageLocation } from '@/types/parts'
@@ -80,7 +80,7 @@ interface PartsInventoryModalProps {
   vehicles: VehicleDropdownRow[]
   storageLocations: StorageLocation[]
   onClose: () => void
-  onSave: (data: CreatePartsInventoryInput, pendingPhotos?: Promise<ImgbbPhoto>[], keepOpen?: boolean) => void
+  onSave: (data: CreatePartsInventoryInput, pendingPhotos?: Promise<ImgbbPhoto>[], keepOpen?: boolean, done?: (ok: boolean) => void) => void
   onSaveBulk?: (items: CreatePartsInventoryInput[]) => void
   isSaving?: boolean
   initialVehicleId?: string
@@ -155,6 +155,18 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   // родитель допишет их в товар после создания.
   const [pendingPhotos, setPendingPhotos] = useState<{ id: string; localUrl: string; promise: Promise<ImgbbPhoto> }[]>([])
   const uploading = pendingPhotos.length > 0
+  // Загруженные в этой сессии формы, но ещё не сохранённые фото: при удалении/закрытии без
+  // сохранения их надо убрать из хранилища (иначе сироты и «съеденная» квота).
+  const sessionUploadsRef = useRef<Map<string, ImgbbPhoto>>(new Map())
+  const pendingRef = useRef(pendingPhotos)
+  pendingRef.current = pendingPhotos
+  const submittedRef = useRef(false)
+  useEffect(() => () => {
+    if (submittedRef.current) return
+    const orphans = [...sessionUploadsRef.current.values()]
+    if (orphans.length) void deletePhotosIfUnused(orphans).catch(() => {})
+    for (const p of pendingRef.current) p.promise.then(ph => deletePhotosIfUnused([ph])).catch(() => {})
+  }, [])
 
   // Раздел на маркете: справочник + превью авторазметки (RPC с задержкой 400 мс после ввода названия).
   const { data: sections = [] } = useQuery({
@@ -202,21 +214,34 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
       files = files.slice(0, remaining)
     }
 
+    // Конфиг хранилища ещё не загружен — не грузим молча «куда попало»
+    if (!photoCfg) {
+      toast.error(t('inventoryPage.photoConfigNotLoaded'))
+      return
+    }
+    submittedRef.current = false
+
     // Превью мгновенно, выгрузка в ФОНЕ — пользователь не ждёт (можно сразу сохранять).
     const gen = formGenRef.current
     for (const file of files) {
       const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
       const localUrl = URL.createObjectURL(file)
-      const promise = uploadPhoto(file, photoCfg ?? null)
+      const promise = uploadPhoto(file, photoCfg)
       setPendingPhotos(prev => [...prev, { id, localUrl, promise }])
       promise
         .then(uploaded => {
           // форму сбросили под новую позицию — это фото уже ушло в предыдущую (через
           // inFlight), в новую его добавлять нельзя.
-          if (gen === formGenRef.current) setPhotos(prev => [...prev, uploaded])
+          if (gen === formGenRef.current) {
+            sessionUploadsRef.current.set(uploaded.url, uploaded)
+            setPhotos(prev => [...prev, uploaded])
+          }
         })
         .catch(err => {
-          if (err instanceof PhotoProviderNotConfigured) toast.error(err.message)
+          if (err instanceof PhotoSessionExpired) toast.error(t('inventoryPage.photoSessionExpired'))
+          else if (err instanceof PhotoQuotaExceeded) toast.error(t('inventoryPage.photoQuotaExceeded'), { duration: 8000 })
+          else if (err instanceof PhotoStorageUnavailable) toast.error(t('inventoryPage.photoStorageUnavailable'))
+          else if (err instanceof PhotoProviderNotConfigured) toast.error(err.message)
           else toast.error(t('inventoryPage.photoUploadError'))
         })
         .finally(() => {
@@ -227,6 +252,10 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
   }
 
   const removePhoto = (index: number) => {
+    const ph = photos[index]
+    // Только что загруженное и не сохранённое — удаляем из хранилища сразу.
+    // Сохранённое ранее (редактирование) удалит родитель после успешного сохранения.
+    if (ph && sessionUploadsRef.current.delete(ph.url)) void deletePhotosIfUnused([ph]).catch(() => {})
     setPhotos(prev => prev.filter((_, i) => i !== index))
   }
 
@@ -274,6 +303,14 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
       // Можно сохранять не дожидаясь выгрузки: передаём готовые фото + промисы
       // ещё грузящихся — родитель допишет их в товар в фоне.
       const inFlight = pendingPhotos.map(p => p.promise)
+      // Фото этой отправки: реестр чистим только при УСПЕХЕ сохранения (иначе файлы удалятся при уходе).
+      const snapshot = [...sessionUploadsRef.current.keys()]
+      // пока идёт сохранение — чистку сирот при размонтировании отключаем
+      submittedRef.current = true
+      const done = (ok: boolean) => {
+        if (ok) for (const k of snapshot) sessionUploadsRef.current.delete(k)
+        if (!ok && !addAnother) submittedRef.current = false
+      }
       onSave(
         {
           ...formData,
@@ -284,12 +321,14 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
         },
         inFlight,
         addAnother,
+        done,
       )
       if (addAnother) {
         // Следующая позиция: новое «поколение» формы (поздние фото-коллбэки прошлой
         // позиции не попадут в новую). Липкие поля (авто/категория/состояние/валюта/
         // место/кол-во) сохраняем — сбрасываем только то, что у каждой позиции своё.
         formGenRef.current += 1
+        submittedRef.current = false
         setPhotos([])
         setPendingPhotos([])
         setFormData(prev => ({

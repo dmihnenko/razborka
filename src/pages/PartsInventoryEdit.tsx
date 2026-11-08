@@ -15,6 +15,7 @@ import {
   getStorageLocations,
 } from '@/services/partsService'
 import { getCompanyPhotoStorage } from '@/services/photoStorageConfig'
+import { deletePhotosIfUnused } from '@/services/photoStorage'
 import { supabase } from '@/lib/supabase'
 import type { CreatePartsInventoryInput, PartsInventoryItem, StorageLocation } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
@@ -101,10 +102,14 @@ export default function PartsInventoryEdit() {
   }
 
   const saveMutation = useMutation({
-    mutationFn: async ({ data, pending }: { data: CreatePartsInventoryInput; pending?: Promise<ImgbbPhoto>[]; keepOpen?: boolean }) => {
+    mutationFn: async ({ data, pending }: { data: CreatePartsInventoryInput; pending?: Promise<ImgbbPhoto>[]; keepOpen?: boolean; done?: (ok: boolean) => void }) => {
       let saved: PartsInventoryItem
       if (item) {
         saved = await updatePartsInventoryItem(item.id, data)
+        // Фото, убранные пользователем, удаляем из хранилища только ПОСЛЕ успешного сохранения
+        const keep = new Set((data.photos ?? []).map((p: { url: string }) => p.url))
+        const removed = ((item.photos ?? []) as { url: string; medium_url?: string; thumb_url: string; delete_url: string }[]).filter(p => !keep.has(p.url))
+        if (removed.length) void deletePhotosIfUnused(removed).catch(() => {})
       } else {
         if (!canCreate.part()) throw new Error(t('inventoryPage.limitReachedError'))
         saved = await createPartsInventoryItem({ ...data, is_shop: source === 'shop' }, partsCompanyId!)
@@ -129,12 +134,16 @@ export default function PartsInventoryEdit() {
       return saved
     },
     onSuccess: (_data, variables) => {
+      variables.done?.(true)
       invalidateAll()
       toast.success(item ? t('inventoryPage.toastUpdated') : t('inventoryPage.toastAdded'))
       // keepOpen — «Сохранить и добавить ещё»: остаёмся на странице, форму сбрасывает модалка.
       if (!variables.keepOpen) goBack()
     },
-    onError: () => toast.error(t('inventoryPage.toastSaveError')),
+    onError: (_e, variables) => {
+      variables.done?.(false)
+      toast.error(t('inventoryPage.toastSaveError'))
+    },
   })
 
   const saveBulkMutation = useMutation({
@@ -177,7 +186,7 @@ export default function PartsInventoryEdit() {
         storageLocations={storageLocations as StorageLocation[]}
         photoCfg={photoCfg}
         onClose={goBack}
-        onSave={(data, pending, keepOpen) => saveMutation.mutate({ data, pending, keepOpen })}
+        onSave={(data, pending, keepOpen, done) => saveMutation.mutate({ data, pending, keepOpen, done })}
         onSaveBulk={(items) => saveBulkMutation.mutate(items)}
         isSaving={saveMutation.isPending || saveBulkMutation.isPending}
         initialVehicleId={item ? undefined : (vehicleParam || lastVehicleId)}
