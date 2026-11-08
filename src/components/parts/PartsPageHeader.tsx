@@ -31,9 +31,10 @@ export default function PartsPageHeader({
   const innerClass = maxWidth ? `max-w-${maxWidth} mx-auto` : 'w-full'
 
   if (embedded) {
-    if (!actions && !footer) return null
+    if (!actions && !footer && !subtitle) return null
     return (
       <div className="flex flex-col gap-2 mb-3">
+        {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
         {actions && <div className="flex items-center justify-end gap-2">{actions}</div>}
         {footer}
       </div>

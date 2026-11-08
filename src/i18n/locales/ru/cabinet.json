@@ -29,7 +29,9 @@
     "machines": "Машины",
     "categoriesShort": "Категории",
     "reports": "Отчёты",
-    "more": "Ещё"
+    "more": "Ещё",
+    "directory": "Справочники",
+    "journal": "Журнал"
   },
   "groups": {
     "work": "Работа",
@@ -536,7 +538,10 @@
     "quickNoPhoto": "Без фото",
     "quickNoLocation": "Без ячейки",
     "quickStale": "Лежит > 90 дн.",
-    "noLocation": "нет ячейки"
+    "noLocation": "нет ячейки",
+    "addBulk": "Списком",
+    "notFound": "Позиция не найдена",
+    "clearLocation": "Сбросить"
   },
   "customersPage": {
     "add": "Добавить",
@@ -876,7 +881,9 @@
     "photoUsage": "Фото: {{used}} из {{limit}} по тарифу",
     "photoUsageUnlimited": "Фото: {{used}} (без лимита)",
     "photoOwnService": "Свой сервис",
-    "photoSharedChosen": "Фото будут храниться на razborka.net. Старые фото в других сервисах остаются на месте."
+    "photoSharedChosen": "Фото будут храниться на razborka.net. Старые фото в других сервисах остаются на месте.",
+    "photoLoadError": "Не удалось загрузить настройки фото. Обновите страницу.",
+    "photoSharedShort": "Хранилище razborka.net"
   },
   "analyticsPage": {
     "paywallTitle": "Аналитика и окупаемость",
@@ -1306,7 +1313,9 @@
     "toastSaveError": "Ошибка при сохранении: {{msg}}",
     "toastInvalidAmount": "Введите корректную сумму",
     "toastEnterName": "Введите имя клиента",
-    "toastRateLoading": "Курс ещё загружается, попробуйте через секунду"
+    "toastRateLoading": "Курс ещё загружается, попробуйте через секунду",
+    "quantity": "Количество",
+    "inStock": "в наличии"
   },
   "customerModal": {
     "titleEdit": "Редактировать клиента",
@@ -1561,5 +1570,35 @@
     "tabInbox": "Входящие",
     "tabOrders": "Заказы",
     "tabShipments": "Отправки"
+  },
+  "directory": {
+    "title": "Справочники",
+    "tabLocations": "Места хранения",
+    "tabCategories": "Категории"
+  },
+  "journal": {
+    "title": "Журнал",
+    "tabActivity": "История",
+    "tabTrash": "Корзина"
+  },
+  "saleSheet": {
+    "titleNew": "Новая продажа",
+    "modeSell": "Продажа",
+    "modeReserve": "Заказ в работе",
+    "modeSellHint": "Заказ завершится сразу, склад спишется",
+    "modeReserveHint": "Позиции в резерве, заказ можно завершить позже",
+    "items": "Позиции",
+    "noItems": "Позиции не выбраны",
+    "addItem": "Добавить позицию",
+    "comment": "Комментарий",
+    "customerNamePlaceholder": "Имя клиента",
+    "customerPhonePlaceholder": "Телефон",
+    "submitSell": "Оформить продажу",
+    "submitReserve": "Создать заказ",
+    "toastReserved": "Заказ создан, позиции в резерве",
+    "errNoItems": "Добавьте хотя бы одну позицию",
+    "errQty": "Укажите количество для: {{name}}",
+    "finalizeFailed": "Продажа оформлена, но метки «продано» (цена и покупатель) проставились не у всех позиций. Поправьте их в карточке позиции.",
+    "startTyping": "Начните вводить название или номер"
   }
 }

@@ -353,15 +353,15 @@ export default function PartsSettings() {
     } as CardDef] : []),
     {
       id: 'categories', Icon: Tag, iconBg: 'bg-[var(--cab-surface-2)]', iconColor: 'text-[var(--cab-ink-2)]',
-      title: t('settingsPage.cardCategoriesTitle'), sub: t('settingsPage.cardCategoriesSub'), onClick: () => navigate('/parts/categories'),
+      title: t('settingsPage.cardCategoriesTitle'), sub: t('settingsPage.cardCategoriesSub'), onClick: () => navigate('/parts/directory?section=categories'),
     },
     {
       id: 'warehouse', Icon: Warehouse, iconBg: 'bg-[var(--cab-surface-2)]', iconColor: 'text-[var(--cab-ink-2)]',
-      title: t('settingsPage.cardWarehouseTitle'), sub: t('settingsPage.cardWarehouseSub'), onClick: () => navigate('/parts/warehouse'),
+      title: t('settingsPage.cardWarehouseTitle'), sub: t('settingsPage.cardWarehouseSub'), onClick: () => navigate('/parts/directory?section=locations'),
     },
     {
       id: 'trash', Icon: Trash2, iconBg: 'bg-[var(--cab-surface-2)]', iconColor: 'text-[var(--cab-ink-2)]',
-      title: t('settingsPage.cardTrashTitle'), sub: t('settingsPage.cardTrashSub'), onClick: () => navigate('/parts/trash'),
+      title: t('settingsPage.cardTrashTitle'), sub: t('settingsPage.cardTrashSub'), onClick: () => navigate('/parts/journal?section=trash'),
     },
   ]
 

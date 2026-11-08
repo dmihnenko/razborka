@@ -128,7 +128,7 @@ export default function PartsEmployees() {
         <div className="cab-card p-4 mb-4">
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Search */}
-            <div className="flex-1 relative">
+            <div className="flex-1 min-w-0 relative">
               <Search
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
                 strokeWidth={1.5}

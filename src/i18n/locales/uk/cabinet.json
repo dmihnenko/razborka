@@ -29,7 +29,9 @@
     "machines": "Машини",
     "categoriesShort": "Категорії",
     "reports": "Звіти",
-    "more": "Ще"
+    "more": "Ще",
+    "directory": "Довідники",
+    "journal": "Журнал"
   },
   "groups": {
     "work": "Робота",
@@ -536,7 +538,10 @@
     "quickNoPhoto": "Без фото",
     "quickNoLocation": "Без комірки",
     "quickStale": "Лежить > 90 дн.",
-    "noLocation": "немає комірки"
+    "noLocation": "немає комірки",
+    "addBulk": "Списком",
+    "notFound": "Позицію не знайдено",
+    "clearLocation": "Скинути"
   },
   "customersPage": {
     "add": "Додати",
@@ -876,7 +881,9 @@
     "photoUsage": "Фото: {{used}} з {{limit}} за тарифом",
     "photoUsageUnlimited": "Фото: {{used}} (без ліміту)",
     "photoOwnService": "Свій сервіс",
-    "photoSharedChosen": "Фото зберігатимуться на razborka.net. Старі фото в інших сервісах залишаються на місці."
+    "photoSharedChosen": "Фото зберігатимуться на razborka.net. Старі фото в інших сервісах залишаються на місці.",
+    "photoLoadError": "Не вдалося завантажити налаштування фото. Оновіть сторінку.",
+    "photoSharedShort": "Сховище razborka.net"
   },
   "analyticsPage": {
     "paywallTitle": "Аналітика та окупність",
@@ -1306,7 +1313,9 @@
     "toastSaveError": "Помилка під час збереження: {{msg}}",
     "toastInvalidAmount": "Введіть коректну суму",
     "toastEnterName": "Введіть ім'я клієнта",
-    "toastRateLoading": "Курс ще завантажується, спробуйте за секунду"
+    "toastRateLoading": "Курс ще завантажується, спробуйте за секунду",
+    "quantity": "Кількість",
+    "inStock": "в наявності"
   },
   "customerModal": {
     "titleEdit": "Редагувати клієнта",
@@ -1561,5 +1570,35 @@
     "tabInbox": "Вхідні",
     "tabOrders": "Замовлення",
     "tabShipments": "Відправлення"
+  },
+  "directory": {
+    "title": "Довідники",
+    "tabLocations": "Місця зберігання",
+    "tabCategories": "Категорії"
+  },
+  "journal": {
+    "title": "Журнал",
+    "tabActivity": "Історія",
+    "tabTrash": "Кошик"
+  },
+  "saleSheet": {
+    "titleNew": "Новий продаж",
+    "modeSell": "Продаж",
+    "modeReserve": "Замовлення в роботі",
+    "modeSellHint": "Замовлення завершиться одразу, склад спишеться",
+    "modeReserveHint": "Позиції в резерві, замовлення можна завершити пізніше",
+    "items": "Позиції",
+    "noItems": "Позиції не вибрано",
+    "addItem": "Додати позицію",
+    "comment": "Коментар",
+    "customerNamePlaceholder": "Ім'я клієнта",
+    "customerPhonePlaceholder": "Телефон",
+    "submitSell": "Оформити продаж",
+    "submitReserve": "Створити замовлення",
+    "toastReserved": "Замовлення створено, позиції в резерві",
+    "errNoItems": "Додайте хоча б одну позицію",
+    "errQty": "Вкажіть кількість для: {{name}}",
+    "finalizeFailed": "Продаж оформлено, але позначки «продано» (ціна та покупець) проставилися не в усіх позицій. Виправте їх у картці позиції.",
+    "startTyping": "Почніть вводити назву або номер"
   }
 }

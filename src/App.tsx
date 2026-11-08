@@ -61,6 +61,8 @@ const PartsSubscriptionPage = lazy(() => import('./pages/PartsSubscriptionPage')
 const PartsSales = lazy(() => import('./pages/PartsSales'))
 const PartsShipmentDetails = lazy(() => import('./pages/PartsShipmentDetails'))
 const PartsActivityLog = lazy(() => import('./pages/PartsActivityLog'))
+const PartsDirectory = lazy(() => import('./pages/PartsDirectory'))
+const PartsJournal = lazy(() => import('./pages/PartsJournal'))
 
 // Публичный лендинг авторазборок
 const BusinessLanding = lazy(() => import('./pages/business/BusinessLanding'))
@@ -273,6 +275,8 @@ function App() {
           <Route path="parts/settings" element={<PartsSettings />} />
           <Route path="parts/warehouse" element={<PartsWarehouse />} />
           <Route path="parts/trash" element={<Trash />} />
+          <Route path="parts/directory" element={<PartsDirectory />} />
+          <Route path="parts/journal" element={<PartsJournal />} />
         </Route>
 
         {/* Admin Panel - полностью отдельный layout. Ролевой guard в роутере

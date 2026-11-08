@@ -43,7 +43,7 @@ const BASE_CATEGORIES = [
   'Система охлаждения',
 ]
 
-export default function PartsCategories() {
+export default function PartsCategories({ embedded = false }: { embedded?: boolean } = {}) {
   const { t } = useTranslation('cabinet')
   const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
@@ -276,7 +276,7 @@ export default function PartsCategories() {
             type="text" autoFocus value={editingName}
             onChange={e => setEditingName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(cat.id); if (e.key === 'Escape') setEditingId(null) }}
-            className="form-input flex-1"
+            className="form-input flex-1 min-w-0"
           />
         ) : (
           <div className="flex-1 min-w-0">
@@ -315,7 +315,7 @@ export default function PartsCategories() {
       </div>
       {subMode === 'single' ? (
         <form onSubmit={e => handleAddSub(e, parentId)} className="flex gap-2">
-          <input type="text" autoFocus value={subName} onChange={e => setSubName(e.target.value)} placeholder={t('categoriesPage.subNamePlaceholder')} className="form-input flex-1" />
+          <input type="text" autoFocus value={subName} onChange={e => setSubName(e.target.value)} placeholder={t('categoriesPage.subNamePlaceholder')} className="form-input flex-1 min-w-0" />
           <button type="submit" disabled={!subName.trim() || subCreateMutation.isPending} aria-label={t('categoriesPage.save')} className="cab-btn cab-btn-primary"><Check className="w-4 h-4" /></button>
           <button type="button" onClick={closeSub} aria-label={t('categoriesPage.cancel')} className="cab-btn cab-btn-secondary"><X className="w-4 h-4" /></button>
         </form>
@@ -336,8 +336,9 @@ export default function PartsCategories() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50">
+    <div className={embedded ? '' : 'min-h-dvh bg-gray-50'}>
       <PartsPageHeader
+        embedded={embedded}
         title={i18n.t('cabinet:pages.categories')}
         subtitle={i18n.t('cabinet:pages.ownCategories', { n: categories.length })}
         backPath="/parts/inventory"
@@ -385,7 +386,7 @@ export default function PartsCategories() {
         }
       />
 
-      <div className="page-container">
+      <div className={embedded ? '' : 'page-container'}>
 
         {/* ── Вкладка: Мои категории ─────────────────────────── */}
         {tab === 'my' && (
@@ -418,7 +419,7 @@ export default function PartsCategories() {
                       value={newName}
                       onChange={e => setNewName(e.target.value)}
                       placeholder={t('categoriesPage.namePlaceholder')}
-                      className="form-input flex-1"
+                      className="form-input flex-1 min-w-0"
                     />
                     <button
                       type="submit"

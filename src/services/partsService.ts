@@ -414,8 +414,8 @@ export async function getPartsInventorySummary(
 
 /** Экранируем значение для PostgREST or()-фильтра: запятые/скобки ломают синтаксис,
  *  а `%` в ilike — это wildcard (литеральный «%» дал бы слишком широкий поиск). */
-function sanitizeInventorySearch(s: string): string {
-  return s.trim().replace(/[,()%]/g, ' ').replace(/\s+/g, ' ').trim()
+export function sanitizeInventorySearch(s: string): string {
+  return s.trim().replace(/[,()%*_"\\]/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
 /** id ячеек, у которых название содержит запрос, плюс все их потомки */
@@ -1115,6 +1115,22 @@ export async function getAvailablePartsInventory(partsCompanyId: string) {
     .eq('status', 'available')
     .gt('quantity', 0)
     .order('name')
+  if (error) throw error
+  return data
+}
+
+/** Серверный поиск позиций для формы продажи: available + reserved, имя/номер/артикул/OEM. */
+export async function searchSaleStock(partsCompanyId: string, q: string, limit = 20) {
+  let query = supabase
+    .from('parts_inventory')
+    .select('id, name, part_number, quantity, reserved_quantity, selling_price, price_currency')
+    .eq('parts_company_id', partsCompanyId)
+    .in('status', ['available', 'reserved'])
+  const s = sanitizeInventorySearch(q)
+  if (s) {
+    query = query.or(`name.ilike.%${s}%,part_number.ilike.%${s}%,article.ilike.%${s}%${oemOrClause(s)}`)
+  }
+  const { data, error } = await query.order('name').limit(limit)
   if (error) throw error
   return data
 }

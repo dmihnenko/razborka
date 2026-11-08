@@ -93,13 +93,15 @@ interface PartsInventoryModalProps {
   asPage?: boolean
   /** Магазинная позиция (true) или запчасть разборки (false). Закупочная цена — только для магазина. */
   isShop?: boolean
+  /** Открыть форму сразу в пакетном режиме (только для новой позиции). */
+  initialBulk?: boolean
 }
 
-export function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange, initialStorageLocationId, onStorageChange, photoCfg, asPage, isShop }: PartsInventoryModalProps) {
+export function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange, initialStorageLocationId, onStorageChange, photoCfg, asPage, isShop, initialBulk }: PartsInventoryModalProps) {
   const { t, i18n } = useTranslation('cabinet')
   const queryClient = useQueryClient()
   const { showAlert } = useAlert()
-  const [bulkMode, setBulkMode] = useState(false)
+  const [bulkMode, setBulkMode] = useState(!item && !!initialBulk && !!onSaveBulk)
   const [showPasteArea, setShowPasteArea] = useState(false)
   const [pasteText, setPasteText] = useState('')
   const [bulkItems, setBulkItems] = useState<ModalBulkRow[]>([{ name: '', selling_price: '', part_number: '', status: 'available' }])

@@ -210,7 +210,7 @@ export default function PartsShipments({ embedded = false }: { embedded?: boolea
                     </p>
                   )}
                 </div>
-                <div className="text-right flex-shrink-0">
+                <div className="text-right flex-shrink-0 max-w-[7.5rem] sm:max-w-[16rem] break-words">
                   <p className={`text-xs font-semibold ${isProblem(s) ? 'text-red-700' : isDelivered(s) ? 'text-emerald-700' : ''}`}
                     style={isProblem(s) || isDelivered(s) ? undefined : { color: ink }}>
                     {s.status || t('shipments.noData')}

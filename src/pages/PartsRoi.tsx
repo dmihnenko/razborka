@@ -121,7 +121,7 @@ export default function PartsRoi() {
             <input value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder={t('roiPage.searchPlaceholder')} className="form-input pl-9" />
           </div>
-          <div className="flex items-center gap-1.5 overflow-x-auto">
+          <div className="flex items-center gap-1.5 overflow-x-auto min-w-0 scrollbar-hide">
             {(['all', 'paid', 'progress', 'loss'] as Filter[]).map((f) => (
               <button key={f} onClick={() => setFilter(f)}
                 className={`px-3 h-9 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${

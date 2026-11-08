@@ -11,9 +11,7 @@ import {
   ShoppingBag,
   CreditCard,
   History,
-  FolderTree,
-  Warehouse,
-  Trash2,
+  BookMarked,
   PiggyBank,
   type LucideIcon,
 } from 'lucide-react';
@@ -38,6 +36,11 @@ export const PARTS_NAV_GROUPS: { id: 'main' | 'more'; label: string }[] = [
 // но карточки заказов и отправок открываются по своим адресам.
 const SALES_MATCH = ['/parts/sales', '/parts/orders', '/parts/shipments', '/parts/market-orders'];
 
+// «Справочники» (места хранения + категории) и «Журнал» (история + корзина) — хабы;
+// старые адреса остаются рабочими и подсвечивают те же пункты.
+const DIRECTORY_MATCH = ['/parts/directory', '/parts/warehouse', '/parts/categories'];
+const JOURNAL_MATCH = ['/parts/journal', '/parts/activity', '/parts/trash'];
+
 // Меню для администратора
 export const adminMenu: MenuItem[] = [
   { name: 'Мои авто', href: '/my-vehicles', icon: Car },
@@ -59,23 +62,21 @@ export const partsOwnerMenu: MenuItem[] = [
   ...partsMainItems,
   { name: 'Отчёты', href: '/parts/analytics', icon: LineChart, group: 'more' },
   { name: 'Окупаемость авто', href: '/parts/roi', icon: PiggyBank, group: 'more' },
-  { name: 'Места хранения', href: '/parts/warehouse', icon: Warehouse, group: 'more' },
-  { name: 'Категории', href: '/parts/categories', icon: FolderTree, group: 'more' },
+  { name: 'Справочники', href: '/parts/directory', icon: BookMarked, group: 'more', match: DIRECTORY_MATCH },
   { name: 'Сотрудники', href: '/parts/employees', icon: Users, group: 'more' },
   { name: 'Настройки', href: '/parts/settings', icon: SlidersHorizontal, group: 'more' },
   { name: 'Подписка', href: '/parts/subscription', icon: CreditCard, group: 'more' },
-  { name: 'История', href: '/parts/activity', icon: History, group: 'more' },
-  { name: 'Корзина', href: '/parts/trash', icon: Trash2, group: 'more' },
+  { name: 'Журнал', href: '/parts/journal', icon: History, group: 'more', match: JOURNAL_MATCH },
   { name: 'Поддержка', href: '/support', icon: MessageCircle, group: 'more' },
   { name: 'Профиль', href: '/profile', icon: CircleUser, group: 'more' },
 ];
 
-// Меню для работника разборки (без отчётов, сотрудников, подписки, истории, корзины)
+// Меню для работника разборки (без отчётов, сотрудников, подписки; в «Журнале» только корзина)
 export const partsWorkerMenu: MenuItem[] = [
   ...partsMainItems,
-  { name: 'Места хранения', href: '/parts/warehouse', icon: Warehouse, group: 'more' },
-  { name: 'Категории', href: '/parts/categories', icon: FolderTree, group: 'more' },
+  { name: 'Справочники', href: '/parts/directory', icon: BookMarked, group: 'more', match: DIRECTORY_MATCH },
   { name: 'Настройки', href: '/parts/settings', icon: SlidersHorizontal, group: 'more' },
+  { name: 'Журнал', href: '/parts/journal', icon: History, group: 'more', match: JOURNAL_MATCH },
   { name: 'Поддержка', href: '/support', icon: MessageCircle, group: 'more' },
   { name: 'Профиль', href: '/profile', icon: CircleUser, group: 'more' },
 ];

@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { QueryState } from '@/components/ui/QueryState'
-import { Plus, Search, Package, Grid, List, AlertTriangle, X, Tag, Trash2, DollarSign, UserPlus, ChevronDown, ChevronRight, MapPin, FolderOpen, ArrowUp, ArrowDown } from 'lucide-react'
+import { Plus, Layers, Search, Package, Grid, List, AlertTriangle, Tag, Trash2, DollarSign, ChevronDown, ChevronRight, MapPin, FolderOpen, ArrowUp, ArrowDown } from 'lucide-react'
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -14,13 +14,15 @@ import PhotoLimitNotice from '@/components/subscription/PhotoLimitNotice'
 import { InventoryCard } from '@/components/parts/InventoryCard'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import i18n from '@/i18n'
-import { getPartsInventoryPaged, getPartsInventorySummary, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, deletePartsOrder, PartsStockError, partsErrorMessage, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory, getMarketSections, marketSectionName } from '@/services/partsService'
+import { getPartsInventoryPaged, getPartsInventorySummary, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, bulkUpdateInventory, bulkDeleteInventory, getMarketSections, marketSectionName } from '@/services/partsService'
 import type { InventoryQuickFilter } from '@/services/partsService'
-import type { PartsInventoryItem, PartsInventoryStatus, StorageLocation, PartsCustomer, PartsVehicle } from '@/types/parts'
+import type { PartsInventoryItem, PartsInventoryStatus, StorageLocation, PartsVehicle } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { deletePhotosIfUnused } from '@/services/photoStorage'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/utils/currency'
+import { SaleSheet } from '@/components/parts/sale/SaleSheet'
+import { lineFromInventory, type SaleLine, type SaleSource } from '@/components/parts/sale/saleLogic'
 import { intlLocale } from '@/i18n'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -29,13 +31,6 @@ import { moveToTrash } from '@/services/trashService'
 import { buildLocationOptions, type VehicleDropdownRow, type CategoryDropdownRow } from './partsInventoryShared'
 
 type ViewMode = 'grid' | 'list'
-
-interface BulkRow {
-  item: PartsInventoryItem
-  quantity: number
-  price: string
-  currency: 'UAH' | 'USD'
-}
 
 const statusLabel = (s: PartsInventoryStatus): string => i18n.t(`inventoryPage.status_${s}`, { ns: 'cabinet' })
 
@@ -88,21 +83,8 @@ export default function PartsInventory() {
     () => ((typeof localStorage !== 'undefined' && localStorage.getItem('parts_inventory_view')) as ViewMode) || 'list'
   )
   useEffect(() => { try { localStorage.setItem('parts_inventory_view', viewMode) } catch { /* ignore */ } }, [viewMode])
-  const [sellingItem, setSellingItem] = useState<PartsInventoryItem | null>(null)
-  const [sellPrice, setSellPrice] = useState('')
-  const [sellQty, setSellQty] = useState(1)
-  const [sellCurrency, setSellCurrency] = useState<'UAH' | 'USD'>('USD')
-  const [sellCustomerId, setSellCustomerId] = useState<string>('')
-  const [showNewCustomer, setShowNewCustomer] = useState(false)
-  const [newCustomerName, setNewCustomerName] = useState('')
-  const [newCustomerPhone, setNewCustomerPhone] = useState('')
+  const [saleSheet, setSaleSheet] = useState<{ source: SaleSource; items: SaleLine[] } | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [isBulkSellOpen, setIsBulkSellOpen] = useState(false)
-  const [bulkRows, setBulkRows] = useState<BulkRow[]>([])
-  const [bulkCustomerId, setBulkCustomerId] = useState<string>('')
-  const [bulkShowNewCustomer, setBulkShowNewCustomer] = useState(false)
-  const [bulkNewCustomerName, setBulkNewCustomerName] = useState('')
-  const [bulkNewCustomerPhone, setBulkNewCustomerPhone] = useState('')
   const [statusPickerItem, setStatusPickerItem] = useState<PartsInventoryItem | null>(null)
   const [pendingStatus, setPendingStatus] = useState<PartsInventoryStatus | null>(null)
   // По умолчанию — по дате добавления, новые сверху (удобно отслеживать последнее добавленное)
@@ -224,13 +206,7 @@ export default function PartsInventory() {
     if (!sellItemId || inventory.length === 0) return
     const found = inventory.find((i: PartsInventoryItem) => i.id === sellItemId)
     if (found && found.status !== 'sold') {
-      setSellingItem(found)
-      setSellPrice(found.selling_price ? String(found.selling_price) : '')
-      setSellCurrency((found.price_currency as 'UAH' | 'USD') || 'USD')
-      setSellCustomerId('')
-      setShowNewCustomer(false)
-      setNewCustomerName('')
-      setNewCustomerPhone('')
+      setSaleSheet({ source: 'stock', items: [lineFromInventory(found)] })
     }
     navigate(location.pathname + location.search, { replace: true, state: null })
   }, [location.state?.sellItemId, inventory.length])  
@@ -248,7 +224,7 @@ export default function PartsInventory() {
 
   // Разделы маркета (справочник, общий для всех разборок)
   const { data: sections = [] } = useQuery({ queryKey: ['market', 'sections'], queryFn: getMarketSections, staleTime: 30 * 60_000 })
-  const sectionByslug = new Map(sections.map(s => [s.slug, s]))
+  const sectionByslug = useMemo(() => new Map(sections.map(s => [s.slug, s])), [sections])
 
   // Get categories for dropdown
   const { data: categories = [] } = useQuery({
@@ -263,13 +239,6 @@ export default function PartsInventory() {
       return data
     },
     enabled: !!partsCompanyId
-  })
-
-  // Get customers for sell modal
-  const { data: customers = [] } = useQuery<PartsCustomer[]>({
-    queryKey: ['parts-customers', partsCompanyId],
-    queryFn: () => getPartsCustomers(partsCompanyId!),
-    enabled: !!partsCompanyId && (!!sellingItem || isBulkSellOpen),
   })
 
   const deleteMutation = useMutation({
@@ -391,168 +360,6 @@ export default function PartsInventory() {
     }, 0),
   }
 
-  const sellMutation = useMutation({
-    mutationFn: async ({ item, price, currency, qty, customerId, newCustomer }: {
-      item: PartsInventoryItem
-      price: number
-      currency: 'UAH' | 'USD'
-      qty: number
-      customerId?: string
-      newCustomer?: { name: string; phone: string }
-    }) => {
-      let resolvedCustomerId: string | null = customerId || null
-
-      // Сколько штук продаём (для многоштучного товара). Не больше остатка на складе.
-      const soldQty = Math.max(1, Math.min(qty || 1, item.quantity))
-      // Полностью ли уходит позиция (после продажи остаток = 0) — тогда помечаем «продано».
-      const fullySold = item.quantity - soldQty <= 0
-
-      // Create new customer if provided
-      if (newCustomer?.name?.trim()) {
-        const created = await createPartsCustomer(
-          { full_name: newCustomer.name.trim(), phone: newCustomer.phone.trim() || undefined },
-          partsCompanyId!
-        )
-        resolvedCustomerId = created.id
-      }
-
-      // USD-позиция без курса: сумму заказа не рассчитать — не создаём и не закрываем заказ
-      if (currency === 'USD' && usdRate == null) throw new Error(t('inventoryPage.rateLoading'))
-
-      // Create order
-      const order = await createPartsOrder(partsCompanyId!, {
-        customer_id: resolvedCustomerId,
-        order_date: new Date().toISOString(),
-      })
-
-      try {
-        // Add item to order
-        await createPartsOrderItem(order.id, {
-          inventory_item_id: item.id,
-          quantity: soldQty,
-          price_at_sale: price,
-          price_at_sale_currency: currency,
-        })
-
-        // Update order total with current exchange rate
-        await updatePartsOrderTotal(order.id, usdRate)
-      } catch (e) {
-        // Не оставляем «брошенный» заказ (delete_parts_order снимает резервы)
-        try { await deletePartsOrder(order.id) } catch (cleanupErr) { console.error('cleanup order failed', cleanupErr) }
-        throw e
-      }
-
-      // Complete the order — trigger complete_parts_order() sets inventory status='sold' and decrements quantity
-      const { error: completeError } = await supabase
-        .from('parts_orders')
-        .update({ status: 'completed', ...(usdRate != null ? { exchange_rate_at_sale: usdRate } : {}) })
-        .eq('id', order.id)
-      if (completeError) throw completeError
-
-      // Метку покупателя/цены продажи ставим ТОЛЬКО при полной продаже позиции.
-      // При частичной (продали часть многоштучного товара) позиция остаётся в наличии —
-      // триггер уже вычел количество, статус не трогаем.
-      if (fullySold) {
-        return updatePartsInventoryItem(item.id, {
-          sold_price: price,
-          price_currency: currency,
-          sold_to_customer_id: resolvedCustomerId || undefined,
-        })
-      }
-      return null
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
-      queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
-      toast.success(t('inventoryPage.toastSold'))
-      setSellingItem(null)
-      setSellPrice('')
-      setSellQty(1)
-      setSellCustomerId('')
-      setShowNewCustomer(false)
-      setNewCustomerName('')
-      setNewCustomerPhone('')
-    },
-    onError: (err: unknown) => {
-      console.error('Sell error:', err)
-      const e = err as { message?: string; error_description?: string } | null
-      const msg = (err instanceof PartsStockError ? partsErrorMessage(err, t) : '') || e?.message || e?.error_description || JSON.stringify(err)
-      toast.error(t('inventoryPage.toastSaveErrorMsg', { msg }))
-    },
-  })
-
-  const bulkSellMutation = useMutation({
-    mutationFn: async ({ rows, customerId, newCustomer }: {
-      rows: BulkRow[]
-      customerId?: string
-      newCustomer?: { name: string; phone: string }
-    }) => {
-      let resolvedCustomerId: string | null = customerId || null
-      if (newCustomer?.name?.trim()) {
-        const created = await createPartsCustomer(
-          { full_name: newCustomer.name.trim(), phone: newCustomer.phone.trim() || undefined },
-          partsCompanyId!
-        )
-        resolvedCustomerId = created.id
-      }
-      if (usdRate == null && rows.some(r => r.currency === 'USD')) throw new Error(t('inventoryPage.rateLoading'))
-      const order = await createPartsOrder(partsCompanyId!, {
-        customer_id: resolvedCustomerId,
-        order_date: new Date().toISOString(),
-      })
-      try {
-        for (const row of rows) {
-          await createPartsOrderItem(order.id, {
-            inventory_item_id: row.item.id,
-            quantity: row.quantity,
-            price_at_sale: parseFloat(row.price) || 0,
-            price_at_sale_currency: row.currency,
-          })
-        }
-        await updatePartsOrderTotal(order.id, usdRate)
-      } catch (e) {
-        try { await deletePartsOrder(order.id) } catch (cleanupErr) { console.error('cleanup order failed', cleanupErr) }
-        throw e
-      }
-      const { error: completeError } = await supabase
-        .from('parts_orders')
-        .update({ status: 'completed', ...(usdRate != null ? { exchange_rate_at_sale: usdRate } : {}) })
-        .eq('id', order.id)
-      if (completeError) throw completeError
-      for (const row of rows) {
-        // Метку «продано» ставим только при полной продаже позиции; при частичной
-        // (продали часть многоштучного товара) позиция остаётся в наличии.
-        if (row.item.quantity - row.quantity <= 0) {
-          await updatePartsInventoryItem(row.item.id, {
-            sold_price: parseFloat(row.price) || undefined,
-            price_currency: row.currency,
-            sold_to_customer_id: resolvedCustomerId || undefined,
-          })
-        }
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      queryClient.invalidateQueries({ queryKey: ['parts-customers'] })
-      queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
-      toast.success(t('inventoryPage.toastBulkSold', { n: bulkRows.length }))
-      setIsBulkSellOpen(false)
-      setSelectedIds(new Set())
-      setBulkRows([])
-      setBulkCustomerId('')
-      setBulkShowNewCustomer(false)
-      setBulkNewCustomerName('')
-      setBulkNewCustomerPhone('')
-    },
-    onError: (err: unknown) => {
-      console.error('Bulk sell error:', err)
-      const e = err as { message?: string; error_description?: string } | null
-      const msg = (err instanceof PartsStockError ? partsErrorMessage(err, t) : '') || e?.message || e?.error_description || JSON.stringify(err)
-      toast.error(t('inventoryPage.toastBulkSellErrorMsg', { msg }))
-    },
-  })
-
   const toggleSelect = (id: string, e: React.MouseEvent | React.ChangeEvent) => {
     e.stopPropagation()
     setSelectedIds(prev => {
@@ -565,18 +372,8 @@ export default function PartsInventory() {
 
   const openBulkSell = useCallback(() => {
     const items = inventory.filter((i: PartsInventoryItem) => selectedIds.has(i.id))
-    setBulkRows(items.map((item: PartsInventoryItem) => ({
-      item,
-      quantity: 1,
-      price: item.selling_price ? String(item.selling_price) : '',
-      currency: (item.price_currency as 'UAH' | 'USD') || 'USD',
-    })))
-    setBulkCustomerId('')
-    setBulkShowNewCustomer(false)
-    setBulkNewCustomerName('')
-    setBulkNewCustomerPhone('')
-    setIsBulkSellOpen(true)
-  }, [inventory, selectedIds])  
+    setSaleSheet({ source: 'stock-bulk', items: items.map(lineFromInventory) })
+  }, [inventory, selectedIds])
 
   const handleEdit = (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -585,14 +382,7 @@ export default function PartsInventory() {
 
   const handleSell = (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
-    setSellingItem(item)
-    setSellPrice(item.selling_price ? String(item.selling_price) : '')
-    setSellQty(1)
-    setSellCurrency((item.price_currency as 'UAH' | 'USD') || 'USD')
-    setSellCustomerId('')
-    setShowNewCustomer(false)
-    setNewCustomerName('')
-    setNewCustomerPhone('')
+    setSaleSheet({ source: 'stock', items: [lineFromInventory(item)] })
   }
 
   const statusChangeMutation = useMutation({
@@ -707,6 +497,14 @@ export default function PartsInventory() {
         backPath="/parts/dashboard"
         actions={
           <>
+            <button
+              onClick={() => navigate(`/parts/inventory/new?source=${addSource}&bulk=1`)}
+              className="cab-btn cab-btn-secondary cab-btn-sm flex items-center gap-1.5"
+              title={t('inventoryPage.addBulk')}
+            >
+              <Layers className="w-4 h-4" strokeWidth={1.5} />
+              <span className="hidden sm:inline">{t('inventoryPage.addBulk')}</span>
+            </button>
             <button
               onClick={() => navigate(`/parts/inventory/new?source=${addSource}`)}
               className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
@@ -1305,331 +1103,15 @@ export default function PartsInventory() {
         </div>
       )}
 
-      {/* Sell Modal */}
-      {sellingItem && (
-        <div className="modal-overlay">
-          <div onClick={() => setSellingItem(null)} className="absolute inset-0" />
-          <div className="modal-sheet sm:max-w-sm w-full z-10">
-            <div className="modal-handle sm:hidden" />
-            <div className="modal-header">
-              <h3 className="text-base font-bold text-gray-900">{t('inventoryPage.sellPart')}</h3>
-              <p className="text-sm text-gray-500 line-clamp-1 mt-0.5">{sellingItem.name}</p>
-            </div>
-            <div className="modal-body space-y-4">
-              {/* Price */}
-              <div>
-                <label className="form-label">{t('inventoryPage.sellPrice')}</label>
-                {sellingItem.selling_price && (
-                  <p className="text-xs text-gray-400 mb-2">{t('inventoryPage.announcedPrice')}: {formatPrice(sellingItem.selling_price, (sellingItem.price_currency as 'UAH' | 'USD') || 'USD')}</p>
-                )}
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={sellPrice}
-                    onChange={(e) => setSellPrice(e.target.value)}
-                    placeholder="0"
-                    autoFocus
-                    className="form-input flex-1"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setSellCurrency(c => c === 'USD' ? 'UAH' : 'USD')}
-                    className="cab-btn cab-btn-primary w-12 text-center px-0"
-                  >
-                    {sellCurrency === 'USD' ? '$' : t('vehicleDetailsPage.uah')}
-                  </button>
-                </div>
-              </div>
-
-              {/* Количество — только для многоштучного товара (qty > 1) */}
-              {sellingItem.quantity > 1 && (
-                <div>
-                  <label className="form-label">
-                    {t('inventoryPage.sellQty')}{' '}
-                    <span className="text-gray-400 font-normal">
-                      {t('inventoryPage.inStock', { n: sellingItem.quantity })}
-                    </span>
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={sellingItem.quantity}
-                    step={1}
-                    value={sellQty}
-                    onChange={(e) =>
-                      setSellQty(Math.max(1, Math.min(sellingItem.quantity, parseInt(e.target.value) || 1)))
-                    }
-                    className="form-input"
-                  />
-                </div>
-              )}
-
-              {/* Customer selection */}
-              <div>
-                <label className="form-label">{t('inventoryPage.customer')} <span className="text-gray-400 font-normal">{t('inventoryPage.optional')}</span></label>
-                {!showNewCustomer ? (
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <select
-                        value={sellCustomerId}
-                        onChange={(e) => setSellCustomerId(e.target.value)}
-                        className="form-select"
-                      >
-                        <option value="">{t('inventoryPage.noCustomer')}</option>
-                        {customers.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.full_name}{c.phone ? ` (${c.phone})` : ''}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" strokeWidth={1.5} />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowNewCustomer(true)}
-                      className="cab-btn cab-btn-secondary px-3 flex-shrink-0"
-                      title={t('inventoryPage.newCustomer')}
-                    >
-                      <UserPlus className="w-4 h-4" strokeWidth={1.5} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-gray-700">{t('inventoryPage.newCustomer')}</span>
-                      <button type="button" onClick={() => setShowNewCustomer(false)} className="btn-icon-sm" aria-label={t('inventoryPage.cancel')}>
-                        <X className="w-3.5 h-3.5" strokeWidth={1.5} />
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      value={newCustomerName}
-                      onChange={(e) => setNewCustomerName(e.target.value)}
-                      placeholder={t('inventoryPage.namePlaceholder')}
-                      className="form-input"
-                    />
-                    <input
-                      type="text"
-                      value={newCustomerPhone}
-                      onChange={(e) => setNewCustomerPhone(e.target.value)}
-                      placeholder={t('inventoryPage.phonePlaceholder')}
-                      className="form-input"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button
-                type="button"
-                onClick={() => setSellingItem(null)}
-                className="modal-btn-cancel"
-              >
-                {t('inventoryPage.cancel')}
-              </button>
-              <button
-                type="button"
-                disabled={sellMutation.isPending}
-                onClick={() => {
-                  const price = parseFloat(sellPrice)
-                  if (isNaN(price) || price < 0) {
-                    toast.error(t('inventoryPage.invalidAmount'))
-                    return
-                  }
-                  if (showNewCustomer && !newCustomerName.trim()) {
-                    toast.error(t('inventoryPage.enterCustomerName'))
-                    return
-                  }
-                  // Продажа в USD требует курс — если он ещё не загрузился, не фиксируем сделку без курса
-                  if (sellCurrency === 'USD' && usdRate == null) {
-                    toast.error(t('inventoryPage.rateLoading'))
-                    return
-                  }
-                  sellMutation.mutate({
-                    item: sellingItem,
-                    price,
-                    currency: sellCurrency,
-                    qty: sellQty,
-                    customerId: sellCustomerId || undefined,
-                    newCustomer: showNewCustomer ? { name: newCustomerName, phone: newCustomerPhone } : undefined,
-                  })
-                }}
-                className="cab-btn cab-btn-primary disabled:opacity-50"
-              >
-                {sellMutation.isPending ? t('inventoryPage.saving') : t('inventoryPage.sell')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Sell Modal */}
-      {isBulkSellOpen && (
-        <div className="modal-overlay">
-          <div onClick={() => setIsBulkSellOpen(false)} className="absolute inset-0" />
-          <div className="modal-sheet sm:max-w-lg w-full z-10">
-            <div className="modal-handle sm:hidden" />
-            <div className="modal-header">
-              <h3 className="text-base font-bold text-gray-900">{t('inventoryPage.bulkSellTitle')}</h3>
-              <p className="text-sm text-gray-500 mt-0.5">{t('inventoryPage.bulkSellSubtitle')}</p>
-            </div>
-            <div className="modal-body">
-
-              {/* Items list */}
-              <div className="space-y-3 mb-5 max-h-60 overflow-y-auto pr-1">
-                {bulkRows.map((row, idx) => (
-                  <div key={row.item.id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{row.item.name}</p>
-                      {row.item.part_number && (
-                        <p className="text-xs text-gray-400">{row.item.part_number}</p>
-                      )}
-                    </div>
-                    {/* Quantity */}
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs font-medium text-gray-400">{t('inventoryPage.qtyShort')}</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max={row.item.quantity}
-                        value={row.quantity}
-                        onChange={(e) => {
-                          const next = [...bulkRows]
-                          next[idx] = { ...next[idx], quantity: Math.max(1, Math.min(row.item.quantity, parseInt(e.target.value) || 1)) }
-                          setBulkRows(next)
-                        }}
-                        className="w-14 form-input text-center px-2 py-1.5 text-sm"
-                      />
-                    </div>
-                    {/* Price */}
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={row.price}
-                        onChange={(e) => {
-                          const next = [...bulkRows]
-                          next[idx] = { ...next[idx], price: e.target.value }
-                          setBulkRows(next)
-                        }}
-                        placeholder={t('inventoryPage.pricePlaceholder')}
-                        className="w-20 form-input px-2 py-1.5 text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = [...bulkRows]
-                          next[idx] = { ...next[idx], currency: row.currency === 'USD' ? 'UAH' : 'USD' }
-                          setBulkRows(next)
-                        }}
-                        className="cab-btn cab-btn-primary cab-btn-sm w-9 text-center px-0"
-                      >
-                        {row.currency === 'USD' ? '$' : t('vehicleDetailsPage.uah')}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Customer */}
-              <label className="form-label">
-                {t('inventoryPage.customer')} <span className="text-gray-400 font-normal">{t('inventoryPage.optional')}</span>
-              </label>
-              {!bulkShowNewCustomer ? (
-                <div className="flex gap-2 mb-5">
-                  <div className="relative flex-1">
-                    <select
-                      value={bulkCustomerId}
-                      onChange={(e) => setBulkCustomerId(e.target.value)}
-                      className="form-select"
-                    >
-                      <option value="">{t('inventoryPage.noCustomer')}</option>
-                      {customers.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.full_name}{c.phone ? ` (${c.phone})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" strokeWidth={1.5} />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setBulkShowNewCustomer(true)}
-                    className="cab-btn cab-btn-secondary px-3 flex-shrink-0"
-                    title={t('inventoryPage.newCustomer')}
-                  >
-                    <UserPlus className="w-4 h-4" strokeWidth={1.5} />
-                  </button>
-                </div>
-              ) : (
-                <div className="mb-5 p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-gray-700">{t('inventoryPage.newCustomer')}</span>
-                    <button type="button" onClick={() => setBulkShowNewCustomer(false)} className="btn-icon-sm" aria-label={t('inventoryPage.cancel')}>
-                      <X className="w-3.5 h-3.5" strokeWidth={1.5} />
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={bulkNewCustomerName}
-                    onChange={(e) => setBulkNewCustomerName(e.target.value)}
-                    placeholder={t('inventoryPage.namePlaceholder')}
-                    className="form-input"
-                  />
-                  <input
-                    type="text"
-                    value={bulkNewCustomerPhone}
-                    onChange={(e) => setBulkNewCustomerPhone(e.target.value)}
-                    placeholder={t('inventoryPage.phonePlaceholder')}
-                    className="form-input"
-                  />
-                </div>
-              )}
-            </div>
-            <div className="modal-footer">
-              <button
-                type="button"
-                onClick={() => setIsBulkSellOpen(false)}
-                className="modal-btn-cancel"
-              >
-                {t('inventoryPage.cancel')}
-              </button>
-              <button
-                type="button"
-                disabled={bulkSellMutation.isPending}
-                onClick={() => {
-                  for (const row of bulkRows) {
-                    const price = parseFloat(row.price)
-                    if (isNaN(price) || price < 0) {
-                      toast.error(t('inventoryPage.enterPriceFor', { name: row.item.name }))
-                      return
-                    }
-                  }
-                  if (bulkShowNewCustomer && !bulkNewCustomerName.trim()) {
-                    toast.error(t('inventoryPage.enterCustomerName'))
-                    return
-                  }
-                  // Если в продаже есть USD-позиции, курс обязателен — иначе сумма посчитается некорректно
-                  if (bulkRows.some(r => r.currency === 'USD') && usdRate == null) {
-                    toast.error(t('inventoryPage.rateLoading'))
-                    return
-                  }
-                  bulkSellMutation.mutate({
-                    rows: bulkRows,
-                    customerId: bulkCustomerId || undefined,
-                    newCustomer: bulkShowNewCustomer ? { name: bulkNewCustomerName, phone: bulkNewCustomerPhone } : undefined,
-                  })
-                }}
-                className="cab-btn cab-btn-primary disabled:opacity-50"
-              >
-                {bulkSellMutation.isPending ? t('inventoryPage.saving') : t('inventoryPage.sellWithCount', { n: bulkRows.length })}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Единая форма продажи */}
+      {saleSheet && (
+        <SaleSheet
+          open
+          onClose={() => setSaleSheet(null)}
+          source={saleSheet.source}
+          initialItems={saleSheet.items}
+          onDone={() => { if (saleSheet.source === 'stock-bulk') setSelectedIds(new Set()) }}
+        />
       )}
 
       {/* Bulk Location Modal */}

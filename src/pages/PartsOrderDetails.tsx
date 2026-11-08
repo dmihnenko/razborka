@@ -1005,7 +1005,7 @@ function AddItemModal({ orderId, partsCompanyId, onClose }: AddItemModalProps) {
                     selectedItem?.id === item.id ? 'bg-slate-100' : 'bg-white'
                   }`}
                 >
-                  <p className="text-sm font-semibold text-gray-900">{item.name}</p>
+                  <p className="text-sm font-semibold text-gray-900 break-words">{item.name}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {item.part_number && <span>{item.part_number} · </span>}
                     {categoryName && <span>{categoryName} · </span>}

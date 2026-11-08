@@ -247,7 +247,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
                     {addCategoriesMutation.isPending ? t('onboarding.adding') : t('onboarding.addBasic')}
                   </button>
                   <Link
-                    to="/parts/categories"
+                    to="/parts/directory?section=categories"
                     className="cab-btn cab-btn-secondary cab-btn-sm"
                   >
                     {t('onboarding.openCategories')}
@@ -331,7 +331,7 @@ export default function OnboardingChecklist({ partsCompanyId }: Props) {
                 <>
                   <p className="text-xs text-gray-500 mt-0.5">{t('onboarding.step5Desc')}</p>
                   <div className="mt-2">
-                    <Link to="/parts/warehouse" className="cab-btn cab-btn-secondary cab-btn-sm">
+                    <Link to="/parts/directory?section=locations" className="cab-btn cab-btn-secondary cab-btn-sm">
                       {t('onboarding.openWarehouse')}
                     </Link>
                   </div>

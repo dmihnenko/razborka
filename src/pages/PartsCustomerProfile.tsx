@@ -841,7 +841,7 @@ export default function PartsCustomerProfile() {
                         <div key={item.id} className="cab-card p-3 shadow-none">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-gray-900 leading-tight">{item.name}</p>
+                              <p className="text-sm font-semibold text-gray-900 leading-tight break-words">{item.name}</p>
                               {item.vehicleInfo && (
                                 <p className="text-xs text-gray-500 mt-0.5 truncate">{item.vehicleInfo}</p>
                               )}

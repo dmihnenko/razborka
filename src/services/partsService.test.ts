@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import '../test/mocks/supabase'
 import {
+  sanitizeInventorySearch,
   getPartsVehicles,
   getPartsVehicle,
   createPartsVehicle,
@@ -778,5 +779,14 @@ describe('Заказы — атомарные RPC (склад/продажа/о�
     setRpcResponse(null)
     await updatePartsOrderStatus('o-1', 'cancelled', [])
     expect(mockSupabaseRpc).toHaveBeenCalledWith('cancel_parts_order', { p_order_id: 'o-1' })
+  })
+})
+
+describe('sanitizeInventorySearch', () => {
+  it('убирает символы, ломающие or()/ilike', () => {
+    expect(sanitizeInventorySearch(' a*b_c"d,(e)%f\\g ')).toBe('a b c d e f g')
+  })
+  it('сохраняет OEM-номер', () => {
+    expect(sanitizeInventorySearch('1K0-615.301')).toBe('1K0-615.301')
   })
 })

@@ -38,7 +38,7 @@ function daysUntilExpiry(expiresAt: string): number {
   return differenceInDays(new Date(expiresAt), new Date())
 }
 
-export default function Trash() {
+export default function Trash({ embedded = false }: { embedded?: boolean } = {}) {
   const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
   const queryClient = useQueryClient()
@@ -97,14 +97,15 @@ export default function Trash() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50">
+    <div className={embedded ? '' : 'min-h-dvh bg-gray-50'}>
       <PartsPageHeader
+        embedded={embedded}
         title={t('trashPage.title')}
         subtitle={t('trashPage.subtitle')}
         backPath={backPath}
       />
 
-      <div className="w-full py-5 sm:py-6">
+      <div className={embedded ? 'w-full' : 'w-full py-5 sm:py-6'}>
         {isLoading ? (
           <div className="flex items-center justify-center min-h-[400px]">
             <Spinner size="lg" />
@@ -140,7 +141,7 @@ export default function Trash() {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-semibold text-gray-900 truncate">
+                        <span className="font-semibold text-gray-900 break-words min-w-0">
                           {item.entity_label}
                         </span>
                         <span className="cab-chip">

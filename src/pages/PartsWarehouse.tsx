@@ -55,7 +55,7 @@ function flatten(nodes: StorageLocation[], collapsed: Set<string>): FlatNode[] {
   return out
 }
 
-export default function PartsWarehouse() {
+export default function PartsWarehouse({ embedded = false }: { embedded?: boolean } = {}) {
   const { t } = useTranslation('cabinet')
   const LEVEL_LABELS = [t('warehousePage.levelBox'), t('warehousePage.levelRack'), t('warehousePage.levelShelf'), t('warehousePage.levelCell')]
   const queryClient = useQueryClient()
@@ -285,8 +285,9 @@ export default function PartsWarehouse() {
   const usedCount = Object.keys(usageMap).length
 
   return (
-    <div className="min-h-dvh" style={{ background: 'var(--cab-bg)' }}>
+    <div className={embedded ? '' : 'min-h-dvh'} style={embedded ? undefined : { background: 'var(--cab-bg)' }}>
       <PartsPageHeader
+        embedded={embedded}
         title={i18n.t('cabinet:pages.warehouse')}
         subtitle={totalLocations > 0 ? t('warehousePage.subtitle', { total: totalLocations, used: usedCount }) : undefined}
         backPath="/parts/dashboard"
@@ -297,7 +298,7 @@ export default function PartsWarehouse() {
         }
       />
 
-      <div className="px-4 sm:px-6 py-5">
+      <div className={embedded ? '' : 'px-4 sm:px-6 py-5'}>
         {isError ? (
           <QueryState isError onRetry={() => { void refetch() }}>{null}</QueryState>
         ) : isLoading ? (
@@ -328,7 +329,7 @@ export default function PartsWarehouse() {
                 {/* Форма добавления корневого места */}
                 {addingParentId === null && (
                   <form onSubmit={handleAdd} className="p-2.5 flex gap-2" style={{ borderBottom: '1px solid var(--cab-border)' }}>
-                    <input autoFocus value={addingName} onChange={e => setAddingName(e.target.value)} placeholder={t('warehousePage.placeholderRoot')} className="form-input flex-1 py-1.5 text-sm" />
+                    <input autoFocus value={addingName} onChange={e => setAddingName(e.target.value)} placeholder={t('warehousePage.placeholderRoot')} className="form-input flex-1 min-w-0 py-1.5 text-sm" />
                     <button type="submit" disabled={!addingName.trim() || createMutation.isPending} aria-label={t('warehousePage.save')} className="cab-btn cab-btn-primary px-2.5 min-h-[36px]"><Check className="w-4 h-4" /></button>
                     <button type="button" onClick={() => { setAddingParentId(undefined); setAddingName('') }} aria-label={t('warehousePage.cancel')} className="cab-btn cab-btn-secondary px-2.5 min-h-[36px]"><X className="w-4 h-4" /></button>
                   </form>
@@ -396,7 +397,7 @@ export default function PartsWarehouse() {
                       {editingId === selected.id ? (
                         <input autoFocus value={editingName} onChange={e => setEditingName(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter' && editingName.trim()) updateMutation.mutate({ id: selected.id, name: editingName.trim() }); if (e.key === 'Escape') setEditingId(null) }}
-                          className="form-input flex-1 py-1.5 text-sm" />
+                          className="form-input flex-1 min-w-0 py-1.5 text-sm" />
                       ) : (
                         <div className="min-w-0 flex-1">
                           <p className="font-bold text-sm truncate" style={{ color: 'var(--cab-ink)' }}>{selected.name}</p>
@@ -436,7 +437,7 @@ export default function PartsWarehouse() {
                     {/* Форма вложенного места */}
                     {addingParentId === selected.id && (
                       <form onSubmit={handleAdd} className="flex gap-2 px-3 sm:px-4 py-2.5" style={{ background: 'var(--cab-surface-2)', borderBottom: '1px solid var(--cab-border)' }}>
-                        <input autoFocus value={addingName} onChange={e => setAddingName(e.target.value)} placeholder={t('warehousePage.placeholderNested', { name: selected.name })} className="form-input flex-1 py-1.5 text-sm" />
+                        <input autoFocus value={addingName} onChange={e => setAddingName(e.target.value)} placeholder={t('warehousePage.placeholderNested', { name: selected.name })} className="form-input flex-1 min-w-0 py-1.5 text-sm" />
                         <button type="submit" disabled={!addingName.trim() || createMutation.isPending} aria-label={t('warehousePage.save')} className="cab-btn cab-btn-primary px-2.5 min-h-[36px]"><Check className="w-4 h-4" /></button>
                         <button type="button" onClick={() => { setAddingParentId(undefined); setAddingName('') }} aria-label={t('warehousePage.cancel')} className="cab-btn cab-btn-secondary px-2.5 min-h-[36px]"><X className="w-4 h-4" /></button>
                       </form>

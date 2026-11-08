@@ -179,6 +179,7 @@ export default function PartsInventoryEdit() {
     <div className="py-1 sm:py-2">
       <PartsInventoryModal
         asPage
+        initialBulk={!id && searchParams.get('bulk') === '1'}
         isShop={item ? !!item.is_shop : source === 'shop'}
         item={item}
         categories={categories}

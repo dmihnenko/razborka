@@ -51,6 +51,8 @@ const NAV_KEY: Record<string, string> = {
   '/parts/sales': 'nav.sales',
   '/parts/vehicles': 'nav.machines',
   '/parts/customers': 'nav.customers',
+  '/parts/directory': 'nav.directory',
+  '/parts/journal': 'nav.journal',
   '/parts/categories': 'nav.categoriesShort',
   '/parts/warehouse': 'nav.warehouse',
   '/parts/analytics': 'nav.reports',

@@ -80,7 +80,7 @@ function LogItem({ entry }: { entry: ActivityLogEntry }) {
           </p>
         )}
         {entry.detail && (
-          <p className="text-sm text-gray-600 mt-0.5 leading-snug">{entry.detail}</p>
+          <p className="text-sm text-gray-600 mt-0.5 leading-snug break-words">{entry.detail}</p>
         )}
         <div className="flex items-center gap-2 mt-1 flex-wrap">
           <span className="flex items-center gap-1 text-xs text-gray-400">
@@ -109,7 +109,7 @@ const FILTER_ACTIONS: Record<ActivityFilter, string[] | undefined> = {
   deleted: ['inventory_deleted'],
 }
 
-export default function PartsActivityLog() {
+export default function PartsActivityLog({ embedded = false }: { embedded?: boolean } = {}) {
   const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id
@@ -158,10 +158,10 @@ export default function PartsActivityLog() {
   const hasMore = allItems.length < total
 
   return (
-    <div className="min-h-dvh bg-gray-50">
-      <PartsPageHeader title={i18n.t('cabinet:pages.activity')} backPath="/parts/dashboard" />
+    <div className={embedded ? '' : 'min-h-dvh bg-gray-50'}>
+      <PartsPageHeader embedded={embedded} title={i18n.t('cabinet:pages.activity')} backPath="/parts/dashboard" />
 
-      <div className="px-4 sm:px-6 py-6">
+      <div className={embedded ? '' : 'px-4 sm:px-6 py-6'}>
         {/* Подзаголовок — назначение журнала */}
         <p className="text-sm text-gray-500 mb-3">{t('activityPage.subtitle')}</p>
 
@@ -176,7 +176,7 @@ export default function PartsActivityLog() {
             <button
               key={key}
               onClick={() => setFilter(key)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 filter === key
                   ? 'bg-gray-900 text-white'
                   : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
