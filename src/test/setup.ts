@@ -1,5 +1,10 @@
 import '@testing-library/jest-dom'
 import { vi, afterEach } from 'vitest'
+import i18n, { i18nReady } from '@/i18n'
+
+// В тестах словари грузим заранее, чтобы t() сразу возвращал тексты, а не ключи.
+await i18nReady
+await i18n.loadNamespaces(['common', 'market', 'auth', 'cabinet', 'business'])
 
 // Глобальная очистка моков после каждого теста
 afterEach(() => {

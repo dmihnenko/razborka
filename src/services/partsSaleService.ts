@@ -7,6 +7,7 @@ import {
   updatePartsInventoryItem,
   updatePartsOrderTotal,
 } from '@/services/partsService'
+import { assertMarketOrderNotConverted, linkMarketplaceOrderToPartsOrder } from '@/services/marketplaceService'
 import { samePhone, type SalePlan } from '@/components/parts/sale/saleLogic'
 
 /**
@@ -18,12 +19,17 @@ import { samePhone, type SalePlan } from '@/components/parts/sale/saleLogic'
  * о созданном клиенте сообщает onCustomerCreated (чтобы повтор после ошибки не плодил дубль).
  * Если не удалась только простановка меток «продано» после завершения заказа — продажа состоялась:
  * возвращается finalizeFailed: true, ошибка не бросается.
+ * Заявка с маркета (plan.marketOrderId): ДО создания проверяется, что она не оформлена
+ * (MarketOrderAlreadyConvertedError), затем атомарно связывается с заказом и закрывается
+ * (до завершения заказа); если не вышло — заказ откатывается, бросается ошибка.
  */
 export async function createPartsSale(
   partsCompanyId: string,
   plan: SalePlan,
   opts: { onCustomerCreated?: (customerId: string) => void } = {},
 ): Promise<{ orderId: string; finalizeFailed: boolean }> {
+  if (plan.marketOrderId) await assertMarketOrderNotConverted(plan.marketOrderId)
+
   let customerId: string | null = null
   if (plan.customer.kind === 'existing') {
     customerId = plan.customer.id
@@ -56,6 +62,8 @@ export async function createPartsSale(
   try {
     for (const item of plan.items) await createPartsOrderItem(order.id, item)
     await updatePartsOrderTotal(order.id, plan.rate)
+    // Атомарная привязка заявки ДО завершения: если её уже оформили — откат и ошибка
+    if (plan.marketOrderId) await linkMarketplaceOrderToPartsOrder(plan.marketOrderId, order.id)
     if (plan.complete) {
       // Триггер complete_parts_order() ставит sold и списывает quantity
       const { error } = await supabase
@@ -83,5 +91,6 @@ export async function createPartsSale(
       console.error('finalize sold marks failed', e)
     }
   }
+
   return { orderId: order.id, finalizeFailed }
 }

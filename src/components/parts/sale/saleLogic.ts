@@ -5,7 +5,7 @@
 import type { PriceCurrency } from '@/utils/currency'
 
 /** Откуда открыта форма. Влияет только на режим по умолчанию. */
-export type SaleSource = 'manual' | 'stock' | 'stock-bulk'
+export type SaleSource = 'manual' | 'stock' | 'stock-bulk' | 'market'
 
 /**
  * sell    — «Оформить продажу»: заказ сразу завершается (склад списывается, статус sold).
@@ -67,8 +67,88 @@ export function lineFromInventory(item: {
   }
 }
 
-export function defaultSaleMode(_source: SaleSource): SaleMode {
-  return 'sell'
+export function defaultSaleMode(source: SaleSource): SaleMode {
+  // Заявка с маркета по умолчанию — заказ в работе (резерв), как и раньше
+  return source === 'market' ? 'reserve' : 'sell'
+}
+
+/** Позиция заявки с маркета (минимум полей MarketplaceOrderItem). */
+export interface MarketItemInput {
+  name: string
+  sellingPrice?: number | null
+  priceCurrency: PriceCurrency
+  quantity: number
+  inventoryId?: string | null
+}
+
+/** Остаток позиции склада на момент открытия формы. */
+export interface MarketStockInfo {
+  quantity: number | null
+  reserved_quantity?: number | null
+  status?: string | null
+  part_number?: string | null
+}
+
+export interface MarketSkippedItem {
+  name: string
+  reason: 'noInventory' | 'unavailable'
+}
+
+/**
+ * Строки формы из позиций заявки: количество и цена — из заявки. Позиции без привязки к складу
+ * или которых нет в наличии (нет строки / sold / damaged / свободно 0) не включаются — идут в skipped.
+ * Дубли одной позиции склада суммируются. Если свободно меньше запрошенного — количество остаётся
+ * из заявки, validateSale покажет «не хватает».
+ */
+export function marketItemsToSaleLines(
+  items: MarketItemInput[],
+  stock: Record<string, MarketStockInfo | undefined>,
+): { lines: SaleLine[]; skipped: MarketSkippedItem[] } {
+  const lines: SaleLine[] = []
+  const skipped: MarketSkippedItem[] = []
+  for (const it of items) {
+    if (!it.inventoryId) { skipped.push({ name: it.name, reason: 'noInventory' }); continue }
+    const st = stock[it.inventoryId]
+    const free = st ? (st.quantity ?? 0) - (st.reserved_quantity ?? 0) : 0
+    if (!st || st.status === 'sold' || st.status === 'damaged' || free <= 0) {
+      skipped.push({ name: it.name, reason: 'unavailable' })
+      continue
+    }
+    const qty = it.quantity || 1
+    const existing = lines.find(l => l.itemId === it.inventoryId)
+    if (existing) { existing.quantity += qty; continue }
+    lines.push({
+      itemId: it.inventoryId,
+      name: it.name,
+      partNumber: st.part_number,
+      maxQty: free,
+      quantity: qty,
+      price: it.sellingPrice != null ? String(it.sellingPrice) : '',
+      currency: it.priceCurrency,
+      announcedPrice: it.sellingPrice ?? null,
+      listCurrency: it.priceCurrency,
+    })
+  }
+  return { lines, skipped }
+}
+
+/** Клиент для заявки: клиент компании с тем же телефоном, иначе новый (имя + телефон). */
+export function customerFromMarketBuyer(
+  buyer: { name?: string | null; phone?: string | null },
+  customers: { id: string; phone?: string | null }[],
+  fallbackName: string,
+): CustomerChoice {
+  const phone = (buyer.phone || '').trim()
+  const found = phone ? customers.find(c => samePhone(c.phone, phone)) : undefined
+  if (found) return { kind: 'existing', id: found.id }
+  if (!phone && !buyer.name?.trim()) return { kind: 'none' }
+  return { kind: 'new', name: buyer.name?.trim() || fallbackName, phone }
+}
+
+/** Комментарий заказа из заявки: «<префикс>» или «<префикс>: <комментарий покупателя>». */
+export function marketOrderNotes(prefix: string, buyerComment?: string | null): string {
+  const c = (buyerComment || '').trim()
+  return c ? `${prefix}: ${c}` : prefix
 }
 
 /** Число из поля цены; пустое/некорректное/отрицательное → null. */
@@ -159,12 +239,14 @@ export interface SalePlan {
   rate: number | null
   /** Метки «продано» (sold_price/sold_to_customer_id) — только для полностью проданных позиций и только при complete */
   finalize: SalePlanFinalize[]
+  /** Заявка с маркета, из которой создаётся заказ (после создания связывается с ним) */
+  marketOrderId?: string
 }
 
 /** Маппинг строк формы и режима в вызовы сервисов. Предполагает, что validateSale вернул null. */
 export function buildSalePlan(
   lines: SaleLine[],
-  opts: { mode: SaleMode; rate: number | null | undefined; customer: CustomerChoice; notes?: string },
+  opts: { mode: SaleMode; rate: number | null | undefined; customer: CustomerChoice; notes?: string; marketOrderId?: string },
 ): SalePlan {
   const complete = opts.mode === 'sell'
   const items = lines.map<SalePlanItem>(l => ({
@@ -188,6 +270,7 @@ export function buildSalePlan(
     complete,
     rate: opts.rate ?? null,
     finalize,
+    marketOrderId: opts.marketOrderId,
   }
 }
 

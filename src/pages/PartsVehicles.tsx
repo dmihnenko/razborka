@@ -430,7 +430,7 @@ export default function PartsVehicles() {
     <div className="min-h-dvh bg-gray-50">
       {/* Header */}
       <PartsPageHeader
-        title={i18n.t('cabinet:pages.vehicles')}
+        title={i18n.t('cabinet:nav.machines')}
         subtitle={i18n.t('cabinet:pages.totalN', { n: stats.total })}
         backPath="/parts/dashboard"
         actions={
@@ -531,7 +531,7 @@ export default function PartsVehicles() {
             className={`cab-card p-4 text-left ${statusFilter === key ? `ring-2 ${ringCls}` : ''}`}
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="kicker">{label}</span>
+              <span className="text-xs text-gray-500">{label}</span>
               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotCls}`} />
             </div>
             <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tabular-nums" style={{ letterSpacing: '-0.03em' }}>
@@ -666,19 +666,19 @@ export default function PartsVehicles() {
                 <div className="mt-3 space-y-1.5 text-sm">
                   {vehicle.vin && (
                     <div className="flex items-baseline gap-1.5 text-gray-600 min-w-0">
-                      <span className="kicker shrink-0">VIN</span>
+                      <span className="text-xs text-gray-500 shrink-0">VIN</span>
                       <span className="font-mono text-xs truncate text-gray-700">{vehicle.vin}</span>
                     </div>
                   )}
                   {vehicle.color && (
                     <div className="flex items-baseline gap-1.5 text-gray-600">
-                      <span className="kicker shrink-0">{t('vehiclesPage.color')}</span>
+                      <span className="text-xs text-gray-500 shrink-0">{t('vehiclesPage.color')}</span>
                       <span>{vehicle.color}</span>
                     </div>
                   )}
                   {vehicle.purchase_price && (
                     <div className="flex items-baseline gap-1.5">
-                      <span className="kicker shrink-0">{t('vehiclesPage.purchase')}</span>
+                      <span className="text-xs text-gray-500 shrink-0">{t('vehiclesPage.purchase')}</span>
                       <span className="font-semibold text-gray-900 tabular-nums">{formatPriceUSD(vehicle)}</span>
                     </div>
                   )}
@@ -686,7 +686,7 @@ export default function PartsVehicles() {
                     const b = roiBadge(roiByVehicle.get(vehicle.id))
                     return b && (
                       <div className="flex items-baseline gap-1.5">
-                        <span className="kicker shrink-0">{t('vehiclesPage.recovery')}</span>
+                        <span className="text-xs text-gray-500 shrink-0">{t('vehiclesPage.recovery')}</span>
                         <span className={`inline-flex items-center px-1.5 h-5 rounded-full text-xs font-bold tabular-nums ring-1 ${b.cls}`}>
                           {b.pct}%
                         </span>

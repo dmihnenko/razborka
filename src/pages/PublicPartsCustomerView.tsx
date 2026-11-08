@@ -9,6 +9,7 @@ import { ru } from 'date-fns/locale'
 import { statusBadgeClass, getPartsOrderStatusText, type PartsOrderStatus } from '@/utils/status'
 import { formatCurrency } from '@/utils/currency'
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 
 const ACTIVE_STATUSES = new Set(['new', 'in_progress'])
 
@@ -143,6 +144,7 @@ function OrderCard({ order }: { order: PublicOrder }) {
 }
 
 export default function PublicPartsCustomerView() {
+  useTranslation('cabinet')
   const { id } = useParams<{ id: string }>()
   const [archiveOpen, setArchiveOpen] = useState(false)
 

@@ -8,15 +8,25 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { PartsStockError, partsErrorMessage } from '@/services/partsService'
 import { createPartsSale } from '@/services/partsSaleService'
+import {
+  MarketOrderAlreadyConvertedError,
+  getInventoryStockByIds,
+} from '@/services/marketplaceService'
+import { getPartsCustomersDropdown } from '@/services/partsService'
+import type { MarketplaceOrder } from '@/types/marketplace'
 import { formatPrice } from '@/utils/currency'
 import { CustomerPicker } from './CustomerPicker'
 import { SaleItems } from './SaleItems'
 import {
   buildSalePlan,
   calcTotals,
+  customerFromMarketBuyer,
   defaultSaleMode,
+  marketItemsToSaleLines,
+  marketOrderNotes,
   validateSale,
   type CustomerChoice,
+  type MarketSkippedItem,
   type SaleIssue,
   type SaleLine,
   type SaleMode,
@@ -30,6 +40,8 @@ export interface SaleSheetProps {
   initialItems?: SaleLine[]
   initialCustomer?: CustomerChoice
   source: SaleSource
+  /** Заявка с маркета (для source='market'): форма предзаполняется ею, после создания заказа заявка закрывается */
+  marketOrder?: MarketplaceOrder
   /** Вызывается после успешного оформления с id созданного заказа */
   onDone?: (orderId: string) => void
 }
@@ -39,7 +51,7 @@ export interface SaleSheetProps {
  * Режим «Оформить продажу» завершает заказ сразу (как продажа со склада),
  * «Заказ в работе» — резервирует позиции и оставляет заказ новым.
  */
-export function SaleSheet({ open, onClose, initialItems = [], initialCustomer, source, onDone }: SaleSheetProps) {
+export function SaleSheet({ open, onClose, initialItems = [], initialCustomer, source, marketOrder, onDone }: SaleSheetProps) {
   const { t } = useTranslation('cabinet')
   const { showAlert } = useAlert()
   const queryClient = useQueryClient()
@@ -51,6 +63,8 @@ export function SaleSheet({ open, onClose, initialItems = [], initialCustomer, s
   const [customer, setCustomer] = useState<CustomerChoice>(initialCustomer ?? { kind: 'none' })
   const [mode, setMode] = useState<SaleMode>(defaultSaleMode(source))
   const [notes, setNotes] = useState('')
+  const [skipped, setSkipped] = useState<MarketSkippedItem[]>([])
+  const [marketLoading, setMarketLoading] = useState(false)
   // Номер «сессии» формы: растёт при каждом открытии и закрытии — старые колбэки не трогают новую форму
   const sessionRef = useRef(0)
 
@@ -62,11 +76,47 @@ export function SaleSheet({ open, onClose, initialItems = [], initialCustomer, s
     setCustomer(initialCustomer ?? { kind: 'none' })
     setMode(defaultSaleMode(source))
     setNotes('')
+    setSkipped([])
   }, [open])
+
+  // Заявка с маркета: клиент, позиции (по текущему наличию) и комментарий
+  useEffect(() => {
+    if (!open || source !== 'market' || !marketOrder || !partsCompanyId) return
+    const session = sessionRef.current
+    setMarketLoading(true)
+    ;(async () => {
+      try {
+        const ids = marketOrder.items.map((i) => i.inventoryId).filter((x): x is string => !!x)
+        const [stock, customers] = await Promise.all([
+          getInventoryStockByIds(partsCompanyId, ids),
+          getPartsCustomersDropdown(partsCompanyId),
+        ])
+        if (sessionRef.current !== session) return
+        const mapped = marketItemsToSaleLines(marketOrder.items, stock)
+        setLines(mapped.lines)
+        setSkipped(mapped.skipped)
+        setCustomer(
+          customerFromMarketBuyer(
+            { name: marketOrder.buyerName, phone: marketOrder.buyerPhone },
+            customers || [],
+            t('marketOrdersPage.buyer'),
+          ),
+        )
+        setNotes(marketOrderNotes(t('saleSheet.marketNote', { defaultValue: 'Заявка с маркета' }), marketOrder.comment))
+      } catch (e) {
+        console.error('market order prefill failed', e)
+        if (sessionRef.current === session) {
+          showAlert(t('marketOrdersPage.toastConvertError'), 'error')
+        }
+      } finally {
+        if (sessionRef.current === session) setMarketLoading(false)
+      }
+    })()
+  }, [open, partsCompanyId, marketOrder?.id, source])
 
   const mutation = useMutation({
     mutationFn: (vars: { session: number }) => {
-      const plan = buildSalePlan(lines, { mode, rate, customer, notes })
+      const plan = buildSalePlan(lines, { mode, rate, customer, notes, marketOrderId: source === 'market' ? marketOrder?.id : undefined })
       return createPartsSale(partsCompanyId!, plan, {
         // Клиент уже создан — при повторе после ошибки используем его, а не создаём дубль
         onCustomerCreated: (id) => {
@@ -83,6 +133,8 @@ export function SaleSheet({ open, onClose, initialItems = [], initialCustomer, s
         'parts-customers', 'parts-customers-dropdown', 'parts-dashboard-stats', 'parts-recent-activity',
         'parts-analytics', 'vehicle-roi', 'vehicle-parts', 'parts-vehicle', 'parts-orders-stats',
         'parts-customer-orders', 'parts-location-items', 'parts-activity-log',
+        // Заявки с маркета и бейдж «новых» (['marketplace-orders', id, 'new-count'] — вложен по префиксу)
+        'marketplace-orders',
       ]) {
         queryClient.invalidateQueries({ queryKey: [key] })
       }
@@ -106,6 +158,11 @@ export function SaleSheet({ open, onClose, initialItems = [], initialCustomer, s
       console.error('Sale error:', err)
       // Остаток могли изменить в другом окне — обновим список доступных позиций
       queryClient.invalidateQueries({ queryKey: ['parts-inventory-for-order'] })
+      if (err instanceof MarketOrderAlreadyConvertedError) {
+        queryClient.invalidateQueries({ queryKey: ['marketplace-orders'] })
+        showAlert(t('saleSheet.marketAlreadyConverted', { defaultValue: 'Эта заявка уже оформлена в заказ' }), 'error')
+        return
+      }
       const e = err as { message?: string; error_description?: string } | null
       const msg = (err instanceof PartsStockError ? partsErrorMessage(err, t) : '') || e?.message || e?.error_description || JSON.stringify(err)
       showAlert(
@@ -127,7 +184,7 @@ export function SaleSheet({ open, onClose, initialItems = [], initialCustomer, s
   }
 
   const submit = () => {
-    if (!partsCompanyId || mutation.isPending) return
+    if (!partsCompanyId || mutation.isPending || marketLoading) return
     const issue = validateSale(lines, { mode, rate, customer })
     if (issue) {
       showAlert(issueMessage(issue), 'error')
@@ -152,7 +209,9 @@ export function SaleSheet({ open, onClose, initialItems = [], initialCustomer, s
   const totals = calcTotals(lines, rate)
   const title = source === 'manual'
     ? t('saleSheet.titleNew', { defaultValue: 'Новая продажа' })
-    : lines.length > 1 ? t('inventoryPage.bulkSellTitle') : t('inventoryPage.sellPart')
+    : source === 'market'
+      ? t('saleSheet.titleMarket', { defaultValue: 'Заявка с маркета' })
+      : lines.length > 1 ? t('inventoryPage.bulkSellTitle') : t('inventoryPage.sellPart')
 
   const submitLabel = mutation.isPending
     ? t('inventoryPage.saving')
@@ -174,7 +233,7 @@ export function SaleSheet({ open, onClose, initialItems = [], initialCustomer, s
           <button
             type="button"
             onClick={submit}
-            disabled={mutation.isPending || !partsCompanyId}
+            disabled={mutation.isPending || !partsCompanyId || marketLoading}
             className="cab-btn cab-btn-primary disabled:opacity-50"
           >
             {submitLabel}
@@ -207,6 +266,15 @@ export function SaleSheet({ open, onClose, initialItems = [], initialCustomer, s
                 : t('saleSheet.modeReserveHint', { defaultValue: 'Позиции в резерве, заказ можно завершить позже' })}
             </p>
           </div>
+
+          {skipped.length > 0 && (
+            <div role="alert" className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-sm text-amber-800">
+              <p className="font-semibold">{t('saleSheet.marketSkipped', { defaultValue: 'Не вошли в заказ (нет в наличии):' })}</p>
+              <ul className="mt-1 list-disc pl-5">
+                {skipped.map((k, i) => <li key={i}>{k.name}</li>)}
+              </ul>
+            </div>
+          )}
 
           <div>
             <label className="form-label">

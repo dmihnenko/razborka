@@ -11,12 +11,6 @@ import type {
   MyMarketplaceOrder,
   CartItem,
 } from '@/types/marketplace'
-import {
-  createPartsOrder,
-  createPartsOrderItem,
-  deletePartsOrder,
-  updatePartsOrderTotal,
-} from '@/services/partsService'
 import { oemOrClause } from '@/utils/partNumberSearch'
 
 // ============================================================================
@@ -680,7 +674,7 @@ export async function updateMarketplaceOrderStatus(
 /**
  * Удаление неоформленной заявки с маркета.
  * Сама заявка склад не бронирует (резерв ставит заказ при конвертации —
- * convertMarketplaceOrderToPartsOrder → createPartsOrderItem), поэтому резерв
+ * создание заказа из заявки → createPartsOrderItem), поэтому резерв
  * здесь не трогаем: иначе снялась бы бронь другого заказа. items удаляются
  * каскадом (FK order_id ON DELETE CASCADE).
  */
@@ -692,93 +686,65 @@ export async function deleteMarketplaceOrder(order: MarketplaceOrder): Promise<v
   if (error) throw error
 }
 
-/**
- * Конвертирует заявку покупателя с маркета в полноценный заказ разборки за 1 клик:
- * 1) находит клиента по телефону (или заводит нового),
- * 2) создаёт parts_order с позициями из заявки,
- * 3) резервирует склад (available → reserved),
- * 4) пересчитывает сумму заказа,
- * 5) связывает заявку с заказом (converted_order_id) и закрывает её.
- * Повторная конвертация защищена: если заявка уже оформлена — возвращает существующий заказ.
- */
-export async function convertMarketplaceOrderToPartsOrder(
-  order: MarketplaceOrder,
-  partsCompanyId: string,
-  exchangeRate?: number | null
-): Promise<{ orderId: string }> {
-  if (order.convertedOrderId) return { orderId: order.convertedOrderId }
+/** Заявка уже оформлена в заказ — второй заказ из неё создавать нельзя. */
+export class MarketOrderAlreadyConvertedError extends Error {
+  orderId: string
+  constructor(orderId: string) {
+    super('market order already converted')
+    this.name = 'MarketOrderAlreadyConvertedError'
+    this.orderId = orderId
+  }
+}
 
-  // Перечитываем заявку с сервера: она могла быть оформлена в другой вкладке/другим сотрудником.
-  const { data: fresh, error: freshErr } = await supabase
+/**
+ * Проверка перед созданием заказа из заявки: перечитывает converted_order_id с сервера
+ * (заявку могли оформить в другой вкладке/сотрудником). Бросает MarketOrderAlreadyConvertedError.
+ */
+export async function assertMarketOrderNotConverted(marketOrderId: string): Promise<void> {
+  const { data, error } = await supabase
     .from('marketplace_orders')
     .select('converted_order_id')
-    .eq('id', order.id)
+    .eq('id', marketOrderId)
     .maybeSingle()
-  if (freshErr) throw freshErr
-  if (fresh?.converted_order_id) return { orderId: fresh.converted_order_id }
+  if (error) throw error
+  if (data?.converted_order_id) throw new MarketOrderAlreadyConvertedError(data.converted_order_id)
+}
 
-  // 1. Клиент по телефону (в рамках компании) или новый
-  let customerId: string | null = null
-  const phone = (order.buyerPhone || '').trim()
-  if (phone) {
-    const { data: existing } = await supabase
-      .from('parts_customers')
-      .select('id')
-      .eq('parts_company_id', partsCompanyId)
-      .eq('phone', phone)
-      .limit(1)
-      .maybeSingle()
-    if (existing) {
-      customerId = existing.id
-    } else {
-      const { data: created, error: cErr } = await supabase
-        .from('parts_customers')
-        .insert({
-          parts_company_id: partsCompanyId,
-          full_name: order.buyerName?.trim() || 'Покупатель с маркета',
-          phone,
-        })
-        .select('id')
-        .single()
-      if (cErr) throw cErr
-      customerId = created.id
-    }
-  }
+/**
+ * Атомарно связывает заявку с заказом и закрывает её (converted_order_id + status='closed'),
+ * только если она ещё не оформлена. Если строк не обновлено — MarketOrderAlreadyConvertedError.
+ */
+export async function linkMarketplaceOrderToPartsOrder(marketOrderId: string, partsOrderId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from('marketplace_orders')
+    .update({ converted_order_id: partsOrderId, status: 'closed' })
+    .eq('id', marketOrderId)
+    .is('converted_order_id', null)
+    .select('id')
+  if (error) throw error
+  if (!data || data.length === 0) throw new MarketOrderAlreadyConvertedError(marketOrderId)
+}
 
-  // 2. Заказ
-  const newOrder = await createPartsOrder(partsCompanyId, {
-    customer_id: customerId,
-    notes: order.comment?.trim()
-      ? `Заявка с маркета: ${order.comment.trim()}`
-      : 'Заявка с маркета',
-  })
+export interface InventoryStockRow {
+  quantity: number | null
+  reserved_quantity: number | null
+  status: string | null
+  part_number: string | null
+}
 
-  try {
-    // 3. Позиции + резерв склада (createPartsOrderItem сам ставит available → reserved)
-    for (const it of order.items) {
-      if (!it.inventoryId) continue // позиция без привязки к складу — пропускаем
-      await createPartsOrderItem(newOrder.id, {
-        inventory_item_id: it.inventoryId,
-        quantity: it.quantity || 1,
-        price_at_sale: it.sellingPrice ?? 0,
-        price_at_sale_currency: it.priceCurrency,
-      })
-    }
-
-    // 4. Сумма заказа
-    await updatePartsOrderTotal(newOrder.id, exchangeRate)
-
-    // 5. Связать заявку с заказом и закрыть
-    const { error: uErr } = await supabase
-      .from('marketplace_orders')
-      .update({ converted_order_id: newOrder.id, status: 'closed' })
-      .eq('id', order.id)
-    if (uErr) throw uErr
-  } catch (e) {
-    // Не оставляем «брошенный» заказ: delete_parts_order снимает резервы позиций.
-    try { await deletePartsOrder(newOrder.id) } catch (cleanupErr) { console.error('cleanup order failed', cleanupErr) }
-    throw e
-  }
-
-  return { orderId: newOrder.id }
+/** Остатки позиций склада по id (для предзаполнения формы продажи из заявки). */
+export async function getInventoryStockByIds(
+  partsCompanyId: string,
+  ids: string[],
+): Promise<Record<string, InventoryStockRow>> {
+  if (ids.length === 0) return {}
+  const { data, error } = await supabase
+    .from('parts_inventory')
+    .select('id, quantity, reserved_quantity, status, part_number')
+    .eq('parts_company_id', partsCompanyId)
+    .in('id', ids)
+  if (error) throw error
+  const out: Record<string, InventoryStockRow> = {}
+  for (const r of data || []) out[r.id] = r
+  return out
 }

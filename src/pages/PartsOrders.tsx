@@ -329,6 +329,7 @@ export default function PartsOrders({ embedded = false }: { embedded?: boolean }
       <div className="page-container">
 
         {/* Stats — фильтр-плитки */}
+        {!embedded && (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
           {[
             { key: 'all',        label: t('ordersPage.statAll'),        value: stats.total,      dot: 'var(--cab-ink-3)' },
@@ -360,6 +361,14 @@ export default function PartsOrders({ embedded = false }: { embedded?: boolean }
             </p>
           </div>
         </div>
+        )}
+
+        {/* Встроенный режим: выручка одной строкой (счётчики — в чипах статусов) */}
+        {embedded && (statusFilter === 'all' || statusFilter === 'completed') && (
+          <p className="text-xs mb-2" style={{ color: 'var(--cab-ink-3)' }}>
+            {t('ordersPage.revenue')}: <span className="font-semibold tabular-nums" style={{ color: 'var(--cab-ink-2)' }}>{formatUSD(stats.totalRevenue)}</span>
+          </p>
+        )}
 
         {/* Поиск + фильтры + переключатель вида */}
         <div className="cab-card p-4 mb-4">
@@ -379,19 +388,23 @@ export default function PartsOrders({ embedded = false }: { embedded?: boolean }
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex flex-wrap gap-2 flex-1">
               {[
-                { key: 'all',        label: t('ordersPage.chipAll') },
-                { key: 'new',        label: t('ordersPage.chipNew') },
-                { key: 'assembling', label: t('ordersPage.chipAssembling') },
-                { key: 'shipped',    label: t('ordersPage.chipShipped') },
-                { key: 'completed',  label: t('ordersPage.chipCompleted') },
-                { key: 'cancelled',  label: t('ordersPage.chipCancelled') },
-              ].map(({ key, label }) => (
+                { key: 'all',        label: t('ordersPage.chipAll'),        count: stats.total },
+                { key: 'new',        label: t('ordersPage.chipNew'),        count: stats.new },
+                { key: 'assembling', label: t('ordersPage.chipAssembling'), count: stats.assembling },
+                { key: 'shipped',    label: t('ordersPage.chipShipped'),    count: stats.shipped },
+                { key: 'completed',  label: t('ordersPage.chipCompleted'),  count: stats.completed },
+                { key: 'cancelled',  label: t('ordersPage.chipCancelled'),  count: stats.cancelled },
+              ].map(({ key, label, count }) => (
                 <button
                   key={key}
                   onClick={() => setStatusFilter(key)}
                   className={statusFilter === key ? 'cab-chip cab-chip-signal' : 'cab-chip'}
                 >
                   {label}
+                  {/* Счётчик — только когда он достоверен (список не сужен другим статусом) */}
+                  {embedded && (statusFilter === 'all' || statusFilter === key) && (
+                    <span className="ml-1 tabular-nums" style={{ color: 'var(--cab-ink-3)' }}>{count}</span>
+                  )}
                 </button>
               ))}
             </div>
@@ -579,8 +592,11 @@ export default function PartsOrders({ embedded = false }: { embedded?: boolean }
                     <div className="flex items-start justify-between gap-2 mb-1.5">
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-bold text-gray-900 truncate">
-                          {order.customer?.full_name ?? '—'}
+                          {order.customer?.full_name ?? (embedded ? order.order_number : '—')}
                         </p>
+                        {embedded && !order.customer?.full_name && (
+                          <p className="text-xs text-gray-400 truncate mt-0.5">{t('ordersPage.noCustomerShort')}</p>
+                        )}
                         <p className="text-xs text-gray-400 truncate mt-0.5">{itemNames}</p>
                       </div>
                       <span className="text-base font-extrabold tabular-nums text-primary flex-shrink-0" style={{ letterSpacing: '-0.02em' }}>

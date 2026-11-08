@@ -12,8 +12,9 @@ export default function Version() {
 
   if (!version) return null
 
+  // Только на широких экранах и внизу по центру: в углах — нижняя панель телефона и кнопки поиска/уведомлений
   return (
-    <div className="fixed bottom-[calc(0.5rem+env(safe-area-inset-bottom,0px))] right-2 z-50 text-xs text-gray-400 bg-white/50 px-2 py-1 rounded select-none pointer-events-none">
+    <div className="hidden lg:block fixed bottom-1 left-1/2 -translate-x-1/2 z-10 text-[10px] leading-none text-gray-400 select-none pointer-events-none">
       v{version}
     </div>
   )

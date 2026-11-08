@@ -337,36 +337,42 @@ export default function PartsCategories({ embedded = false }: { embedded?: boole
 
   return (
     <div className={embedded ? '' : 'min-h-dvh bg-gray-50'}>
+      {(() => {
+        const actionsNode = (
+          tab === 'my' ? (
+          <>
+            <button
+              onClick={() => baseBulkMutation.mutate(missingBaseNames)}
+              disabled={baseAllAdded || baseBulkMutation.isPending}
+              title={baseAllAdded ? t('categoriesPage.baseAllAddedTitle') : t('categoriesPage.baseAddTitle')}
+              className="cab-btn cab-btn-secondary cab-btn-sm flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">
+                {baseAllAdded ? t('categoriesPage.baseAdded') : `${t('categoriesPage.base')}${missingBaseNames.length ? ` (${missingBaseNames.length})` : ''}`}
+              </span>
+            </button>
+            <button
+              onClick={() => { setIsAddOpen(v => !v); setAddMode('single') }}
+              className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{t('categoriesPage.add')}</span>
+            </button>
+    </>
+  ) : undefined
+        )
+        return (
       <PartsPageHeader
         embedded={embedded}
         title={i18n.t('cabinet:pages.categories')}
-        subtitle={i18n.t('cabinet:pages.ownCategories', { n: categories.length })}
+        // Встроенно: подзаголовок и кнопки — в одной строке
+        subtitle={embedded && actionsNode
+          ? <span className="flex items-center justify-between gap-2 min-h-8"><span className="min-w-0 truncate">{i18n.t('cabinet:pages.ownCategories', { n: categories.length })}</span><span className="flex items-center gap-2 flex-shrink-0">{actionsNode}</span></span>
+          : i18n.t('cabinet:pages.ownCategories', { n: categories.length })}
         backPath="/parts/inventory"
         height="sm"
-        actions={
-          tab === 'my' ? (
-            <>
-              <button
-                onClick={() => baseBulkMutation.mutate(missingBaseNames)}
-                disabled={baseAllAdded || baseBulkMutation.isPending}
-                title={baseAllAdded ? t('categoriesPage.baseAllAddedTitle') : t('categoriesPage.baseAddTitle')}
-                className="cab-btn cab-btn-secondary cab-btn-sm flex items-center gap-1.5"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">
-                  {baseAllAdded ? t('categoriesPage.baseAdded') : `${t('categoriesPage.base')}${missingBaseNames.length ? ` (${missingBaseNames.length})` : ''}`}
-                </span>
-              </button>
-              <button
-                onClick={() => { setIsAddOpen(v => !v); setAddMode('single') }}
-                className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{t('categoriesPage.add')}</span>
-              </button>
-            </>
-          ) : undefined
-        }
+        actions={embedded ? undefined : actionsNode}
         footer={
           <div className="flex border-t border-gray-100 overflow-x-auto scrollbar-hide">
             {(['my', 'templates'] as Tab[]).map(tabId => (
@@ -385,6 +391,8 @@ export default function PartsCategories({ embedded = false }: { embedded?: boole
           </div>
         }
       />
+        )
+      })()}
 
       <div className={embedded ? '' : 'page-container'}>
 

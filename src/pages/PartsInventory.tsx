@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
 import { QueryState } from '@/components/ui/QueryState'
-import { Plus, Layers, Search, Package, Grid, List, AlertTriangle, Tag, Trash2, DollarSign, ChevronDown, ChevronRight, MapPin, FolderOpen, ArrowUp, ArrowDown } from 'lucide-react'
+import { SlidersHorizontal, Plus, Layers, Search, Package, Grid, List, AlertTriangle, Tag, Trash2, DollarSign, ChevronDown, ChevronRight, MapPin, FolderOpen, ArrowUp, ArrowDown } from 'lucide-react'
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -88,6 +88,7 @@ export default function PartsInventory() {
   const [statusPickerItem, setStatusPickerItem] = useState<PartsInventoryItem | null>(null)
   const [pendingStatus, setPendingStatus] = useState<PartsInventoryStatus | null>(null)
   // По умолчанию — по дате добавления, новые сверху (удобно отслеживать последнее добавленное)
+  const [filtersOpen, setFiltersOpen] = useState(false) // раскрытие фильтров на телефоне (< md)
   const [sortField, setSortField] = useState<'date' | 'name' | 'status' | 'price'>('date')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [isBulkLocationOpen, setIsBulkLocationOpen] = useState(false)
@@ -291,6 +292,12 @@ export default function PartsInventory() {
 
   // Сортировка загруженных элементов на клиенте
   const statusOrder: Record<PartsInventoryStatus, number> = { available: 0, reserved: 1, damaged: 2, sold: 3 }
+  const activeFiltersCount =
+    (sectionFilter !== 'all' ? 1 : 0) +
+    (locationFilter !== 'all' ? 1 : 0) +
+    (vehicleFilter !== 'all' ? 1 : 0) +
+    (sortField !== 'date' || sortDir !== 'desc' ? 1 : 0)
+
   const filteredAndSorted = [...filteredInventory].sort((a: PartsInventoryItem, b: PartsInventoryItem) => {
     // Фильтр «Продано» — по давности продажи: свежие продажи сверху
     if (statusFilter === 'sold') {
@@ -490,7 +497,7 @@ export default function PartsInventory() {
     <div ref={rootRef} className="min-h-dvh bg-gray-50">
       {/* Header */}
       <PartsPageHeader
-        title={i18n.t('cabinet:pages.inventory')}
+        title={i18n.t('cabinet:nav.stock')}
         subtitle={totalCount > inventory.length
           ? t('inventoryPage.subtitleOf', { loaded: inventory.length, total: totalCount })
           : t('inventoryPage.subtitleTotal', { loaded: inventory.length, total: totalCount })}
@@ -633,17 +640,34 @@ export default function PartsInventory() {
 
         {/* Search & View Controls */}
         <div className="cab-card p-4 mb-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" strokeWidth={1.5} />
-              <input
-                type="text"
-                placeholder={t('inventoryPage.searchPlaceholder')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="form-input pl-10"
-              />
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex gap-2 flex-1">
+              <div className="flex-1 relative min-w-0">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" strokeWidth={1.5} />
+                <input
+                  type="text"
+                  placeholder={t('inventoryPage.searchPlaceholder')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="form-input pl-10"
+                />
+              </div>
+              {/* Телефон: остальные фильтры спрятаны за кнопкой */}
+              <button
+                type="button"
+                onClick={() => setFiltersOpen(v => !v)}
+                aria-expanded={filtersOpen}
+                className={`md:hidden flex-shrink-0 inline-flex items-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors ${filtersOpen || activeFiltersCount > 0 ? 'border-gray-900 text-gray-900' : 'border-gray-200 text-gray-600'}`}
+              >
+                <SlidersHorizontal className="w-4 h-4" strokeWidth={1.5} />
+                {t('inventoryPage.filters')}
+                {activeFiltersCount > 0 && (
+                  <span className="min-w-5 h-5 px-1 rounded-md bg-gray-900 text-white text-[11px] font-semibold tabular-nums inline-flex items-center justify-center">{activeFiltersCount}</span>
+                )}
+              </button>
             </div>
+
+            <div className={`${filtersOpen ? 'flex' : 'hidden'} flex-col sm:flex-row sm:flex-wrap gap-3 md:contents`}>
 
             {/* Фильтр по разделу маркета (серверный) */}
             <select
@@ -722,11 +746,12 @@ export default function PartsInventory() {
                 </button>
               </div>
             </div>
+            </div>
           </div>
 
           {/* Vehicle filter — only in Разборка mode with 2+ vehicles */}
           {showVehicleButtons && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
+            <div className={`mt-3 flex-wrap gap-1.5 md:flex ${filtersOpen ? 'flex' : 'hidden'}`}>
               <button
                 onClick={() => setVehicleFilter('all')}
                 className={`chip ${effectiveVehicleFilter === 'all' ? 'chip-active' : ''}`}
@@ -801,32 +826,33 @@ export default function PartsInventory() {
                 className="cv-row w-full flex items-center gap-3 px-3.5 py-2.5 text-left active:bg-slate-50 transition-colors"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-gray-900 truncate flex items-center gap-1.5">
+                  <div className="font-semibold text-gray-900 flex items-start gap-1.5">
                     {!((item.photos as ImgbbPhoto[] | undefined)?.length) && (
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" strokeWidth={2} aria-label={t('inventoryPage.noPhotoMark')} />
+                      <AlertTriangle className="w-3.5 h-3.5 mt-0.5 text-amber-500 flex-shrink-0" strokeWidth={2} aria-label={t('inventoryPage.noPhotoMark')} />
                     )}
-                    <span className="truncate">{item.name}</span>
+                    <span className="line-clamp-2 break-words">{item.name}</span>
                   </div>
-                  <div className="text-xs font-mono text-gray-500 truncate mt-0.5">
-                    {item.part_number || t('inventoryPage.noNumber')}
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+                    <span className="font-mono truncate max-w-[40%]">{item.part_number || t('inventoryPage.noNumber')}</span>
+                    <span className="text-sm font-bold text-primary tabular whitespace-nowrap">
+                      {item.selling_price
+                        ? formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')
+                        : <span className="text-amber-500 text-xs font-semibold">{t('inventoryPage.noPrice')}</span>}
+                    </span>
+                    {(item.storage_location?.id || item.storage_location?.name) ? (
+                      <span className="inline-flex items-center gap-1 max-w-full rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-700">
+                        <MapPin className="w-3 h-3 flex-shrink-0" strokeWidth={1.5} />
+                        <span className="truncate">{(item.storage_location?.id && locationLabelById.get(item.storage_location.id)) || item.storage_location?.name}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-md border border-dashed border-gray-200 px-1.5 py-0.5 text-[11px] text-gray-400 whitespace-nowrap">
+                        {t('inventoryPage.noLocation')}
+                      </span>
+                    )}
+                    {item.status !== 'available' && (
+                      <span className="text-[11px] text-gray-500 whitespace-nowrap">{statusLabel(item.status as PartsInventoryStatus)}</span>
+                    )}
                   </div>
-                </div>
-                <div className="flex-shrink-0 flex flex-col items-end gap-1 max-w-[45%]">
-                  <span className="text-sm font-bold text-primary tabular whitespace-nowrap">
-                    {item.selling_price
-                      ? formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')
-                      : <span className="text-amber-500 text-xs font-semibold">{t('inventoryPage.noPrice')}</span>}
-                  </span>
-                  {(item.storage_location?.id || item.storage_location?.name) ? (
-                    <span className="inline-flex items-center gap-1 max-w-full rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-700">
-                      <MapPin className="w-3 h-3 flex-shrink-0" strokeWidth={1.5} />
-                      <span className="truncate">{(item.storage_location?.id && locationLabelById.get(item.storage_location.id)) || item.storage_location?.name}</span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center rounded-md border border-dashed border-gray-200 px-1.5 py-0.5 text-[11px] text-gray-400 whitespace-nowrap">
-                      {t('inventoryPage.noLocation')}
-                    </span>
-                  )}
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
               </button>

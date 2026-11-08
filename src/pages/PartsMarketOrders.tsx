@@ -6,7 +6,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Phone, Inbox, MessageSquare, Store, ClipboardCheck, ArrowRight, Trash2, Car, MapPin } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
-import { usePartsExchangeRate } from '@/hooks/usePartsExchangeRate'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import i18n from '@/i18n'
@@ -20,9 +19,8 @@ import { formatDateTime } from '@/utils/date'
 import {
   getMarketplaceOrders,
   deleteMarketplaceOrder,
-  convertMarketplaceOrderToPartsOrder,
 } from '@/services/marketplaceService'
-import { PartsStockError, partsErrorMessage } from '@/services/partsService'
+import { SaleSheet } from '@/components/parts/sale/SaleSheet'
 import type { MarketplaceOrder, MarketplaceOrderStatus } from '@/types/marketplace'
 
 type StatusFilter = 'active' | 'archive'
@@ -71,14 +69,12 @@ function MarketOrderCard({
   isDeleting,
   onConvert,
   onOpenOrder,
-  isConverting,
 }: {
   order: MarketplaceOrder
   onDelete: (order: MarketplaceOrder) => void
   isDeleting: boolean
   onConvert: (order: MarketplaceOrder) => void
   onOpenOrder: (orderId: string) => void
-  isConverting: boolean
 }) {
   const { t } = useTranslation('cabinet')
   const telHref = `tel:${order.buyerPhone.replace(/[^\d+]/g, '')}`
@@ -189,10 +185,9 @@ function MarketOrderCard({
               </button>
               <button
                 onClick={() => onConvert(order)}
-                disabled={isConverting}
-                className="cab-btn cab-btn-primary cab-btn-sm disabled:opacity-50"
+                className="cab-btn cab-btn-primary cab-btn-sm"
               >
-                {isConverting ? <Spinner size="sm" /> : <ClipboardCheck className="w-3.5 h-3.5" strokeWidth={1.5} />}
+                <ClipboardCheck className="w-3.5 h-3.5" strokeWidth={1.5} />
                 {t('marketOrdersPage.createOrder')}
               </button>
             </>
@@ -209,10 +204,10 @@ export default function PartsMarketOrders({ embedded = false }: { embedded?: boo
   const partsCompanyId: string | undefined = profile?.parts_company_id ?? undefined
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const { rate } = usePartsExchangeRate()
   const { confirm: showConfirm, dialogProps } = useConfirm()
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active')
+  const [saleOrder, setSaleOrder] = useState<MarketplaceOrder | null>(null)
 
   const { data: orders = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['marketplace-orders', partsCompanyId],
@@ -239,22 +234,6 @@ export default function PartsMarketOrders({ embedded = false }: { embedded?: boo
     })
     if (ok) deleteMutation.mutate(order)
   }
-
-  const convertMutation = useMutation({
-    mutationFn: (order: MarketplaceOrder) =>
-      convertMarketplaceOrderToPartsOrder(order, partsCompanyId!, rate),
-    onSuccess: ({ orderId }) => {
-      queryClient.invalidateQueries({ queryKey: ['marketplace-orders', partsCompanyId] })
-      queryClient.invalidateQueries({ queryKey: ['parts-orders'] })
-      queryClient.invalidateQueries({ queryKey: ['parts-inventory'] })
-      queryClient.invalidateQueries({ queryKey: ['parts-inventory-for-order'] })
-      toast.success(t('marketOrdersPage.toastConverted'))
-      navigate(`/parts/orders/${orderId}`)
-    },
-    onError: (err: unknown) => {
-      toast.error(err instanceof PartsStockError ? partsErrorMessage(err, t) : t('marketOrdersPage.toastConvertError'))
-    },
-  })
 
   if (!partsCompanyId) {
     return <PartsAccessDenied />
@@ -330,20 +309,23 @@ export default function PartsMarketOrders({ embedded = false }: { embedded?: boo
                 isDeleting={
                   deleteMutation.isPending && deleteMutation.variables?.id === order.id
                 }
-                onConvert={(o) => {
-                  // Курс ещё не загружен — не оформляем заказ без курса (сумма посчитается некорректно)
-                  if (rate == null) { toast.error(t('marketOrdersPage.toastRateLoading')); return }
-                  convertMutation.mutate(o)
-                }}
+                onConvert={setSaleOrder}
                 onOpenOrder={(orderId) => navigate(`/parts/orders/${orderId}`)}
-                isConverting={
-                  convertMutation.isPending && convertMutation.variables?.id === order.id
-                }
               />
             ))}
           </div>
         )}
       </div>
+      <SaleSheet
+        open={!!saleOrder}
+        source="market"
+        marketOrder={saleOrder ?? undefined}
+        onClose={() => setSaleOrder(null)}
+        onDone={(orderId) => {
+          setSaleOrder(null)
+          navigate(`/parts/orders/${orderId}`)
+        }}
+      />
       <ConfirmDialog {...dialogProps} />
     </div>
   )

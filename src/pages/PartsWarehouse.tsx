@@ -286,17 +286,26 @@ export default function PartsWarehouse({ embedded = false }: { embedded?: boolea
 
   return (
     <div className={embedded ? '' : 'min-h-dvh'} style={embedded ? undefined : { background: 'var(--cab-bg)' }}>
-      <PartsPageHeader
-        embedded={embedded}
-        title={i18n.t('cabinet:pages.warehouse')}
-        subtitle={totalLocations > 0 ? t('warehousePage.subtitle', { total: totalLocations, used: usedCount }) : undefined}
-        backPath="/parts/dashboard"
-        actions={
+      {(() => {
+        const addBtn = (
           <button onClick={() => { setAddingParentId(null); setAddingName('') }} className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5">
             <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t('warehousePage.addLocation')}</span>
           </button>
-        }
-      />
+        )
+        const sub = totalLocations > 0 ? t('warehousePage.subtitle', { total: totalLocations, used: usedCount }) : undefined
+        return (
+          <PartsPageHeader
+            embedded={embedded}
+            title={i18n.t('cabinet:pages.warehouse')}
+            // Встроенно: подзаголовок и кнопка — в одной строке (без отдельной строки под кнопку)
+            subtitle={embedded
+              ? <span className="flex items-center justify-between gap-2 min-h-8"><span className="min-w-0 truncate">{sub}</span>{addBtn}</span>
+              : sub}
+            backPath="/parts/dashboard"
+            actions={embedded ? undefined : addBtn}
+          />
+        )
+      })()}
 
       <div className={embedded ? '' : 'px-4 sm:px-6 py-5'}>
         {isError ? (

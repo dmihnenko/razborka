@@ -3,7 +3,10 @@ import {
   buildSalePlan,
   calcTotals,
   clampQty,
+  customerFromMarketBuyer,
   defaultSaleMode,
+  marketItemsToSaleLines,
+  marketOrderNotes,
   filterCustomers,
   isFullySold,
   lineFromInventory,
@@ -148,5 +151,35 @@ describe('lineFromInventory: исходная валюта', () => {
     expect(l.listCurrency).toBe('UAH')
     expect({ ...l, currency: 'USD' as const }.listCurrency).toBe('UAH')
     expect(lineFromInventory({ id: 'y', name: 'Б', quantity: 1 }).listCurrency).toBe('USD')
+  })
+})
+
+describe('заявка с маркета', () => {
+  const item = (over = {}) => ({ name: 'Фара', sellingPrice: 50, priceCurrency: 'USD' as const, quantity: 2, inventoryId: 'inv1', ...over })
+  it('режим по умолчанию — заказ в работе', () => expect(defaultSaleMode('market')).toBe('reserve'))
+  it('маппит позицию: количество и цена из заявки', () => {
+    const { lines, skipped } = marketItemsToSaleLines([item()], { inv1: { quantity: 5, reserved_quantity: 1, status: 'reserved' } })
+    expect(skipped).toEqual([])
+    expect(lines[0]).toMatchObject({ itemId: 'inv1', quantity: 2, maxQty: 4, price: '50', currency: 'USD' })
+  })
+  it('пропускает позиции без наличия и без привязки', () => {
+    const { lines, skipped } = marketItemsToSaleLines(
+      [item({ inventoryId: 'gone' }), item({ inventoryId: null, name: 'Х' }), item({ inventoryId: 's', name: 'Продан' })],
+      { s: { quantity: 1, status: 'sold' } },
+    )
+    expect(lines).toEqual([])
+    expect(skipped.map(k => k.reason)).toEqual(['unavailable', 'noInventory', 'unavailable'])
+  })
+  it('клиент: существующий по телефону, иначе новый', () => {
+    const customers = [{ id: 'c1', phone: '+38 (095) 355-25-53' }]
+    expect(customerFromMarketBuyer({ name: 'Ив', phone: '0953552553' }, customers, 'П')).toEqual({ kind: 'existing', id: 'c1' })
+    expect(customerFromMarketBuyer({ name: ' Ив ', phone: '0501112233' }, customers, 'П')).toEqual({ kind: 'new', name: 'Ив', phone: '0501112233' })
+    expect(customerFromMarketBuyer({ name: '', phone: '0501112233' }, [], 'П')).toMatchObject({ name: 'П' })
+  })
+  it('комментарий и marketOrderId в плане', () => {
+    expect(marketOrderNotes('Заявка с маркета')).toBe('Заявка с маркета')
+    expect(marketOrderNotes('Заявка с маркета', ' срочно ')).toBe('Заявка с маркета: срочно')
+    const plan = buildSalePlan([line()], { mode: 'reserve', rate: 40, customer: none, marketOrderId: 'm1' })
+    expect(plan.marketOrderId).toBe('m1')
   })
 })

@@ -5,7 +5,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
 import App from './App.tsx'
 // i18n (ru/uk) — инициализируется до рендера, язык берётся из localStorage 'tsp_lang'/браузера.
-import './i18n'
+import i18n, { i18nReady } from './i18n'
 // Inter Variable бандлится: на Windows/Android заменяет Segoe UI/Roboto (чище и легче).
 // На Apple-устройствах первым в стеке остаётся системный SF Pro.
 import '@fontsource-variable/inter'
@@ -129,33 +129,61 @@ const persister = createSyncStoragePersister({
   throttleTime: 1000,
 })
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{
-        persister,
-        maxAge: 1000 * 60 * 60 * 24, // 24ч
-        // При новой версии сборки сбрасываем persist-кэш, чтобы не показывать
-        // устаревший профиль/роли (старое меню) после обновления.
-        buster: import.meta.env.VITE_BUILD_HASH || 'dev',
-        dehydrateOptions: {
-          // Главное — мгновенно показать ОФОРМЛЕНИЕ (оболочка, навигация, профиль,
-          // компании, роли), а тяжёлые списки (запчасти, авто, заказы, клиенты)
-          // грузить в фоне. Поэтому персистим только лёгкие запросы, а большие
-          // НЕ кладём в localStorage (не раздувают хранилище и не блокируют старт).
-          shouldDehydrateQuery: (q) => {
-            if (q.state.status !== 'success') return false
-            const key = String(q.queryKey?.[0] ?? '')
-            const heavy = [
-              'parts-inventory', 'parts-vehicles', 'parts-orders', 'parts-customers',
-            ]
-            return !heavy.some(h => key.startsWith(h))
+// Если базовый неймспейс common так и не загрузился (после повторов) — не вечный спиннер:
+// один раз пробуем перезагрузку (recoverFromChunkFailure), при повторе показываем сообщение с кнопкой.
+function renderApp() {
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister,
+          maxAge: 1000 * 60 * 60 * 24, // 24ч
+          // При новой версии сборки сбрасываем persist-кэш, чтобы не показывать
+          // устаревший профиль/роли (старое меню) после обновления.
+          buster: import.meta.env.VITE_BUILD_HASH || 'dev',
+          dehydrateOptions: {
+            // Главное — мгновенно показать ОФОРМЛЕНИЕ (оболочка, навигация, профиль,
+            // компании, роли), а тяжёлые списки (запчасти, авто, заказы, клиенты)
+            // грузить в фоне. Поэтому персистим только лёгкие запросы, а большие
+            // НЕ кладём в localStorage (не раздувают хранилище и не блокируют старт).
+            shouldDehydrateQuery: (q) => {
+              if (q.state.status !== 'success') return false
+              const key = String(q.queryKey?.[0] ?? '')
+              const heavy = [
+                'parts-inventory', 'parts-vehicles', 'parts-orders', 'parts-customers',
+              ]
+              return !heavy.some(h => key.startsWith(h))
+            },
           },
-        },
-      }}
-    >
-      <App />
-    </PersistQueryClientProvider>
-  </React.StrictMode>,
-)
+        }}
+      >
+        <App />
+      </PersistQueryClientProvider>
+    </React.StrictMode>,
+  )
+}
+
+function showI18nFailure() {
+  const root = document.getElementById('root')!
+  root.innerHTML = ''
+  const box = document.createElement('div')
+  box.style.cssText = 'padding:48px 16px;text-align:center;font-family:sans-serif'
+  const p = document.createElement('p')
+  p.textContent = 'Не удалось загрузить интерфейс / Не вдалося завантажити інтерфейс'
+  const btn = document.createElement('button')
+  btn.textContent = 'Обновить / Оновити'
+  btn.style.cssText = 'margin-top:12px;padding:8px 16px;border:1px solid #888;border-radius:8px;cursor:pointer'
+  btn.onclick = () => { sessionStorage.removeItem(CHUNK_KEY); window.location.reload() }
+  box.append(p, btn)
+  root.append(box)
+}
+
+i18nReady
+  .catch(() => {})
+  .then(() => {
+    if (i18n.hasLoadedNamespace('common')) return renderApp()
+    const last = Number(sessionStorage.getItem(CHUNK_KEY) || 0)
+    if (Date.now() - last < 25_000) return showI18nFailure() // уже была попытка — без цикла
+    return recoverFromChunkFailure()
+  })
