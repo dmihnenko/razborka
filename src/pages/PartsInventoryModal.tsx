@@ -2,7 +2,8 @@
 // PartsInventory.tsx (god-компонент). Рендерится страницей в PartsInventoryEdit
 // (asPage). Общие хелперы (buildLocationOptions, типы дропдаунов) — в ./PartsInventory.
 import { useState, useEffect, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useAlert } from '@/components/CustomAlert'
 import { useTranslation } from 'react-i18next'
 import { intlLocale } from '@/i18n'
 import { toast } from 'sonner'
@@ -96,6 +97,8 @@ interface PartsInventoryModalProps {
 
 export function PartsInventoryModal({ item, categories, vehicles, storageLocations, onClose, onSave, onSaveBulk, isSaving, initialVehicleId, onVehicleChange, initialStorageLocationId, onStorageChange, photoCfg, asPage, isShop }: PartsInventoryModalProps) {
   const { t, i18n } = useTranslation('cabinet')
+  const queryClient = useQueryClient()
+  const { showAlert } = useAlert()
   const [bulkMode, setBulkMode] = useState(false)
   const [showPasteArea, setShowPasteArea] = useState(false)
   const [pasteText, setPasteText] = useState('')
@@ -239,12 +242,14 @@ export function PartsInventoryModal({ item, categories, vehicles, storageLocatio
         })
         .catch(err => {
           if (err instanceof PhotoSessionExpired) toast.error(t('inventoryPage.photoSessionExpired'))
-          else if (err instanceof PhotoQuotaExceeded) toast.error(t('inventoryPage.photoQuotaExceeded'), { duration: 8000 })
+          else if (err instanceof PhotoQuotaExceeded) showAlert(t('inventoryPage.photoQuotaExceeded'), 'error')
           else if (err instanceof PhotoStorageUnavailable) toast.error(t('inventoryPage.photoStorageUnavailable'))
           else if (err instanceof PhotoProviderNotConfigured) toast.error(err.message)
           else toast.error(t('inventoryPage.photoUploadError'))
         })
         .finally(() => {
+          // счётчик «Фото X из Y» на складе и в подписке
+          void queryClient.invalidateQueries({ queryKey: ['photo-usage'] })
           if (gen === formGenRef.current) setPendingPhotos(prev => prev.filter(p => p.id !== id))
           URL.revokeObjectURL(localUrl)
         })

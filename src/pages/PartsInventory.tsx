@@ -10,6 +10,7 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { useSubscriptionLimits } from '@/hooks/useSubscription'
 import { PartsAccessDenied } from '@/components/parts/PartsAccessDenied'
 import LimitReachedBanner from '@/components/subscription/LimitReachedBanner'
+import PhotoLimitNotice from '@/components/subscription/PhotoLimitNotice'
 import { InventoryCard } from '@/components/parts/InventoryCard'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import i18n from '@/i18n'
@@ -717,6 +718,11 @@ export default function PartsInventory() {
             />
           </div>
         )}
+
+        {/* Лимит фото по тарифу: предупреждение с 90% */}
+        <div className="mb-4 empty:hidden">
+          <PhotoLimitNotice companyId={partsCompanyId} />
+        </div>
 
         {/* Needs-fill banner: нет цены или оригинального номера (серверный счёт по всей выборке) */}
         {(summary?.needsFill ?? 0) > 0 && (
