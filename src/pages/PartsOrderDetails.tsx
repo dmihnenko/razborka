@@ -169,7 +169,7 @@ export default function PartsOrderDetails() {
       queryClient.invalidateQueries({ queryKey: ['parts-inventory-for-order'] })
       queryClient.invalidateQueries({ queryKey: ['trash'] })
       toast.success(t('orderDetailsPage.orderMovedToTrash'))
-      navigate('/parts/orders')
+      navigate('/parts/sales?tab=orders')
     },
     onError: (err: unknown) => {
       toast.error((err instanceof Error ? err.message : '') || t('orderDetailsPage.orderDeleteError', { defaultValue: 'Не удалось удалить заказ' }))
@@ -319,7 +319,7 @@ export default function PartsOrderDetails() {
         <Package className="w-12 h-12 text-gray-300" />
         <p className="text-gray-500">{t('orderDetailsPage.orderNotFound')}</p>
         <button
-          onClick={() => navigate('/parts/orders')}
+          onClick={() => navigate('/parts/sales?tab=orders')}
           className="text-primary text-sm hover:underline"
         >
           {t('orderDetailsPage.backToOrders')}
@@ -347,7 +347,7 @@ export default function PartsOrderDetails() {
             {/* back + заголовок */}
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <button
-                onClick={() => navigate('/parts/orders')}
+                onClick={() => navigate('/parts/sales?tab=orders')}
                 className="btn-icon flex-shrink-0"
                 aria-label={t('orderDetailsPage.back')}
               >

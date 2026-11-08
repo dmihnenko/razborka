@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -9,6 +9,10 @@ import {
   Search,
   Store,
   Car,
+  Plus,
+  Package,
+  ShoppingCart,
+  Ellipsis,
 } from 'lucide-react'
 import GlobalSearch from './GlobalSearch'
 import { LayoutSkeleton } from './LayoutSkeleton'
@@ -23,7 +27,7 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { useIsAdmin, useUserProfile } from '../hooks/useUserProfile'
 import { useAuth } from '../hooks/useAuth'
-import { getMenuForRoles, PARTS_NAV_GROUPS } from '../config/navigation'
+import { getMenuForRoles, PARTS_NAV_GROUPS, type MenuItem } from '../config/navigation'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { useAdminNotifications } from '../hooks/useAdminNotifications'
 import { useSubscriptionLimits } from '../hooks/useSubscription'
@@ -42,18 +46,15 @@ interface ProfileRole {
 
 // Ключи перевода названий пунктов меню (по href) — чтобы не менять navigation.ts.
 const NAV_KEY: Record<string, string> = {
-  '/parts/dashboard': 'nav.dashboard',
-  '/parts/orders': 'nav.orders',
-  '/parts/market-orders': 'nav.marketOrders',
-  '/parts/shipments': 'nav.shipments',
-  '/parts/inventory?source=vehicles': 'nav.inventory',
-  '/parts/inventory?source=shop': 'nav.shop',
-  '/parts/vehicles': 'nav.vehicles',
+  '/parts/dashboard': 'nav.pulse',
+  '/parts/inventory': 'nav.stock',
+  '/parts/sales': 'nav.sales',
+  '/parts/vehicles': 'nav.machines',
   '/parts/customers': 'nav.customers',
-  '/parts/categories': 'nav.categories',
+  '/parts/categories': 'nav.categoriesShort',
   '/parts/warehouse': 'nav.warehouse',
+  '/parts/analytics': 'nav.reports',
   '/parts/roi': 'nav.roi',
-  '/parts/analytics': 'nav.analytics',
   '/parts/employees': 'nav.employees',
   '/parts/settings': 'nav.settings',
   '/parts/subscription': 'nav.subscription',
@@ -69,6 +70,7 @@ export default function Layout() {
   useAdminNotifications()
   const { t } = useTranslation('cabinet')
   const location = useLocation()
+  const navigate = useNavigate()
   const { hasAnalytics } = useSubscriptionLimits()
   const scrollRef = useRef<HTMLDivElement | null>(null)
   // Элемент скролла в state — чтобы pull-to-refresh перепривязался, когда контейнер
@@ -106,6 +108,16 @@ export default function Layout() {
 
   // Шторка мобильного «Меню» (доп. пункты)
   const [sheetOpen, setSheetOpen] = useState(false)
+  // Шторка быстрого создания (кнопка [+] в нижней панели)
+  const [createOpen, setCreateOpen] = useState(false)
+  // Шторка «+»: закрывается при переходе (в т.ч. аппаратным «назад») и по Escape
+  useEffect(() => { setCreateOpen(false) }, [location.pathname])
+  useEffect(() => {
+    if (!createOpen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setCreateOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [createOpen])
 
   // Глобальный поиск (Cmd/Ctrl+K)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -254,13 +266,14 @@ export default function Layout() {
   // Название пункта меню с переводом (fallback — русское имя из конфига).
   const navLabel = (item: { href: string; name: string }) =>
     t(NAV_KEY[item.href] ?? '', { defaultValue: item.name })
-  // Короткая подпись для нижней панели (длинные названия переносились на 2 строки).
-  const navShortLabel = (item: { href: string; name: string }) =>
-    item.href === '/parts/market-orders'
-      ? t('nav.marketOrdersShort', { defaultValue: 'Заявки' })
-      : navLabel(item)
+  // Активность пункта: по префиксам match (карточки заказов подсвечивают «Продажи»)
+  const isItemActive = (item: MenuItem) => {
+    const prefixes = item.match ?? [item.href.split('?')[0]]
+    const path = location.pathname
+    return prefixes.some((p) => path === p || path.startsWith(p + '/'))
+  }
 
-  // Счётчик новых заявок с маркета — бейдж на пункте «Заявки» в нижней панели.
+  // Счётчик новых заявок с маркета — бейдж на пункте «Продажи».
   // Ключ вложен в ['marketplace-orders', companyId] → инвалидации со страницы заявок
   // обновляют и его.
   const partsCompanyIdForBadge = profile?.parts_company_id
@@ -344,18 +357,60 @@ export default function Layout() {
 
   // Остальные пункты шторки — блоками по группам навигации (как в сайдбаре десктопа),
   // блоки разделяются тонкой линией без подписей. Пункты без группы — отдельным блоком.
-  const SHEET_GROUP_ORDER = ['work', 'base', 'system'] as const
+  const SHEET_GROUP_ORDER = ['main', 'more'] as const
+
+  // Кабинет разборки: панель Пульт · Склад · [+] · Продажи · Ещё; остальное — в шторке «Ещё».
+  const isPartsBar = currentCtx === 'parts'
+  const BAR_LEFT = ['/parts/dashboard', '/parts/inventory']
+  const BAR_RIGHT = ['/parts/sales']
+  const partsBarLeft = mobileNavItems.filter(i => BAR_LEFT.includes(i.href))
+  const partsBarRight = mobileNavItems.filter(i => BAR_RIGHT.includes(i.href))
 
   // Если ≤4 пункта — все в нижнем баре; иначе первые 4 + кнопка «Меню» (5-й слот).
   // Кнопку «Меню» показываем и когда основных пунктов ≤4, но есть контекст-ссылки
   // (Админ/Мои авто) — иначе шторку не открыть.
-  const showMobileSheet = mobileNavItems.length > 4 || hasCtxLinks
-  const mobileBarItems = showMobileSheet ? mobileNavItems.slice(0, 4) : mobileNavItems
-  const mobileSheetItems = showMobileSheet ? mobileNavItems.slice(4) : []
+  const showMobileSheet = isPartsBar || mobileNavItems.length > 4 || hasCtxLinks
+  const mobileBarItems = isPartsBar ? [] : showMobileSheet ? mobileNavItems.slice(0, 4) : mobileNavItems
+  const mobileSheetItems = isPartsBar
+    ? mobileNavItems.filter(i => !BAR_LEFT.includes(i.href) && !BAR_RIGHT.includes(i.href))
+    : showMobileSheet ? mobileNavItems.slice(4) : []
   const sheetGroups = [
     ...SHEET_GROUP_ORDER.map(g => mobileSheetItems.filter(i => i.group === g)),
     mobileSheetItems.filter(i => !i.group),
   ].filter(list => list.length > 0)
+
+  const renderBarItem = (item: MenuItem) => {
+    const Icon = item.icon
+    const isActive = isItemActive(item)
+    return (
+      <Link
+        key={item.href}
+        to={item.href}
+        className={`relative flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-colors ${
+          isActive ? 'font-semibold' : 'text-gray-400 hover:text-gray-600'
+        }`}
+        style={isActive ? { color: 'var(--cab-ink)' } : undefined}
+      >
+        {/* Метка активного пункта — тонкая полоска сверху */}
+        {isActive && (
+          <span aria-hidden className="absolute top-0 inset-x-[22%] h-0.5 rounded-b" style={{ background: 'var(--cab-ink)' }} />
+        )}
+        <Icon className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
+        <span className="text-center leading-tight truncate max-w-full px-0.5" style={{ fontSize: '11px' }}>
+          {navLabel(item)}
+        </span>
+        {item.href === '/parts/sales' && newMarketCount > 0 && (
+          <span
+            className="absolute top-1.5 left-[calc(50%+4px)] min-w-[16px] h-4 px-1 rounded-lg text-white text-center font-bold"
+            style={{ background: 'var(--cab-signal)', fontSize: '9.5px', lineHeight: '16px' }}
+            aria-label={t('nav.newMarketOrders', { defaultValue: 'Новых заявок: {{n}}', n: newMarketCount })}
+          >
+            {newMarketCount > 99 ? '99+' : newMarketCount}
+          </span>
+        )}
+      </Link>
+    )
+  }
 
   return (
     <div
@@ -389,12 +444,12 @@ export default function Layout() {
         </div>
 
         {/* Nav: «Мои авто» — плоский список; разборка/админ — по группам Работа/База/Система */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
+        <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-2">
           {isUserCtx ? (
             <div className="space-y-0.5">
               {filteredNavigation.map((item) => {
                 const Icon = item.icon
-                const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/')
+                const isActive = isItemActive(item)
                 return (
                   <Link
                     key={item.href}
@@ -409,16 +464,14 @@ export default function Layout() {
               })}
             </div>
           ) : PARTS_NAV_GROUPS.map((grp) => {
-            const items = filteredNavigation.filter((i) => (i.group ?? 'system') === grp.id)
+            const items = filteredNavigation.filter((i) => (i.group ?? 'more') === grp.id)
             if (items.length === 0) return null
             return (
-              <div key={grp.id} className="space-y-0.5">
-                <p className="cab-group-label hidden lg:block mb-1.5">{t(`groups.${grp.id}`)}</p>
+              <div key={grp.id} className={`space-y-0.5 ${grp.id === 'more' ? 'pt-2 border-t' : ''}`} style={grp.id === 'more' ? { borderColor: 'var(--cab-border)' } : undefined}>
+                {grp.id === 'more' && <p className="cab-group-label hidden lg:block mb-1">{t('groups.more', { defaultValue: grp.label })}</p>}
                 {items.map((item) => {
                   const Icon = item.icon
-                  const isActive = item.href.includes('?')
-                    ? location.pathname + location.search === item.href
-                    : location.pathname === item.href
+                  const isActive = isItemActive(item)
                   return (
                     <Link
                       key={item.href}
@@ -428,6 +481,15 @@ export default function Layout() {
                     >
                       <Icon className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.5} />
                       <span className="hidden lg:block truncate">{navLabel(item)}</span>
+                      {item.href === '/parts/sales' && newMarketCount > 0 && (
+                        <span
+                          className="ml-auto hidden lg:inline-block min-w-[18px] h-[18px] px-1 rounded-md text-white text-center font-bold"
+                          style={{ background: 'var(--cab-signal)', fontSize: '10px', lineHeight: '18px' }}
+                          aria-label={t('nav.newMarketOrders', { defaultValue: 'Новых заявок: {{n}}', n: newMarketCount })}
+                        >
+                          {newMarketCount > 99 ? '99+' : newMarketCount}
+                        </span>
+                      )}
                     </Link>
                   )
                 })}
@@ -437,7 +499,7 @@ export default function Layout() {
         </nav>
 
         {/* Footer */}
-        <div className="px-2 py-3 space-y-0.5 border-t border-gray-200">
+        <div className="px-2 py-2 space-y-0.5 border-t border-gray-200">
           {/* «Админ» — в верхнем баре (ContextSwitcher) */}
           <button
             onClick={handleLogout}
@@ -553,52 +615,94 @@ export default function Layout() {
           className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 flex items-stretch"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
-          {mobileBarItems.map((item) => {
-            const Icon = item.icon
-            const isActive = item.href.includes('?')
-              ? location.pathname + location.search === item.href
-              : location.pathname === item.href
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={`relative flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-colors ${
-                  isActive ? 'font-semibold' : 'text-gray-400 hover:text-gray-600'
-                }`}
-                style={isActive ? { color: 'var(--cab-ink)' } : undefined}
-              >
-                {/* Метка активного пункта — тонкая полоска сверху */}
-                {isActive && (
-                  <span aria-hidden className="absolute top-0 inset-x-[22%] h-0.5 rounded-b" style={{ background: 'var(--cab-ink)' }} />
-                )}
-                <Icon className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
-                <span className="text-center leading-tight truncate max-w-full px-0.5" style={{ fontSize: '11px' }}>
-                  {navShortLabel(item)}
-                </span>
-                {item.href === '/parts/market-orders' && newMarketCount > 0 && (
-                  <span
-                    className="absolute top-1.5 left-[calc(50%+4px)] min-w-[16px] h-4 px-1 rounded-lg text-white text-center font-bold"
-                    style={{ background: 'var(--cab-signal)', fontSize: '9.5px', lineHeight: '16px' }}
-                    aria-label={t('nav.newMarketOrders', { defaultValue: 'Новых заявок: {{n}}', n: newMarketCount })}
-                  >
-                    {newMarketCount > 99 ? '99+' : newMarketCount}
-                  </span>
-                )}
-              </Link>
-            )
-          })}
+          {(isPartsBar ? partsBarLeft : mobileBarItems).map(renderBarItem)}
 
-          {/* 5-й слот — кнопка «Меню» если пунктов > 4 */}
+          {/* Кабинет разборки: центральная кнопка быстрого создания */}
+          {isPartsBar && (
+            <div className="flex-1 flex items-center justify-center min-h-[56px]">
+              <button
+                type="button"
+                onClick={() => setCreateOpen(true)}
+                aria-label={t('createSheet.title', { defaultValue: 'Создать' })}
+                aria-haspopup="dialog"
+                className="w-11 h-11 rounded-lg flex items-center justify-center text-white active:scale-95 transition-transform"
+                style={{ background: 'var(--cab-ink)' }}
+              >
+                <Plus className="w-5 h-5" strokeWidth={2} />
+              </button>
+            </div>
+          )}
+
+          {isPartsBar && partsBarRight.map(renderBarItem)}
+
+          {/* Последний слот — «Ещё» (кабинет) / «Меню» если пунктов > 4 */}
           {showMobileSheet && (
             <button
               onClick={() => setSheetOpen(true)}
-              className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-gray-400 hover:text-gray-600 transition-colors"
+              className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <Menu className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
-              <span className="text-center leading-tight" style={{ fontSize: '11px' }}>{t('chrome.menu')}</span>
+              {isPartsBar
+                ? <Ellipsis className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
+                : <Menu className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />}
+              <span className="text-center leading-tight" style={{ fontSize: '11px' }}>
+                {isPartsBar ? t('nav.more', { defaultValue: 'Ещё' }) : t('chrome.menu')}
+              </span>
             </button>
           )}
         </nav>
+
+      {/* ════════════════════════════════════════════
+          CREATE SHEET — быстрое создание (запчасть / авто / продажа)
+          ════════════════════════════════════════════ */}
+      {createOpen && isPartsBar && (
+        <div
+          className="md:hidden fixed inset-0 z-50 flex items-end"
+          style={{ background: 'rgba(0,0,0,0.40)' }}
+          onClick={() => setCreateOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-label={t('createSheet.title', { defaultValue: 'Создать' })}
+            className="w-full bg-white rounded-t-2xl flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-gray-200" />
+            </div>
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
+              <span className="text-sm font-semibold text-gray-700">{t('createSheet.title', { defaultValue: 'Создать' })}</span>
+              <button
+                onClick={() => setCreateOpen(false)}
+                aria-label={t('chrome.closeMenu')}
+                className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+            </div>
+            <div
+              className="grid grid-cols-3 gap-2 px-3 pt-3"
+              style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
+            >
+              {([
+                { key: 'part', Icon: Package, label: t('createSheet.part', { defaultValue: 'Запчасть' }), to: '/parts/inventory/new' },
+                { key: 'vehicle', Icon: Car, label: t('createSheet.vehicle', { defaultValue: 'Авто' }), to: '/parts/vehicles?new=1' },
+                { key: 'sale', Icon: ShoppingCart, label: t('createSheet.sale', { defaultValue: 'Продажа' }), to: '/parts/orders/create' },
+              ]).map(({ key, Icon, label, to }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => { setCreateOpen(false); navigate(to) }}
+                  className="flex flex-col items-center justify-center gap-1.5 min-h-[76px] rounded-lg border active:scale-[0.98] transition-colors hover:bg-gray-50"
+                  style={{ borderColor: 'var(--cab-border)', color: 'var(--cab-ink)' }}
+                >
+                  <Icon className="w-5 h-5" strokeWidth={1.6} />
+                  <span className="text-[13px] font-semibold">{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ════════════════════════════════════════════
           MOBILE SHEET — доп. пункты меню (снизу)
@@ -619,7 +723,7 @@ export default function Layout() {
             </div>
             {/* Шапка шторки */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 flex-shrink-0">
-              <span className="text-sm font-semibold text-gray-700">{t('chrome.menu')}</span>
+              <span className="text-sm font-semibold text-gray-700">{isPartsBar ? t('nav.more', { defaultValue: 'Ещё' }) : t('chrome.menu')}</span>
               <button
                 onClick={() => setSheetOpen(false)}
                 aria-label={t('chrome.closeMenu')}
@@ -684,9 +788,7 @@ export default function Layout() {
                   <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
                     {list.map((item) => {
                       const Icon = item.icon
-                      const isActive = item.href.includes('?')
-                        ? location.pathname + location.search === item.href
-                        : location.pathname === item.href
+                      const isActive = isItemActive(item)
                       return (
                         <Link
                           key={item.href}
@@ -730,7 +832,7 @@ export default function Layout() {
       {/* Плавающие инструменты (десктоп, разборка): уведомления + поиск в правом нижнем углу */}
       {currentCtx === 'parts' && (
         <div className="hidden md:flex fixed bottom-5 right-5 z-40 items-center gap-2">
-          <div className="flex items-center justify-center w-12 h-12 rounded-full"
+          <div className="flex items-center justify-center w-12 h-12 rounded-lg"
             style={{ background: 'var(--cab-surface)', border: '1px solid var(--cab-border)', boxShadow: '0 6px 20px -6px rgba(22,24,29,.20)' }}>
             <NotificationsBell userId={profile?.id} />
           </div>
@@ -738,7 +840,7 @@ export default function Layout() {
             onClick={() => setSearchOpen(true)}
             title={`${t('chrome.search')} (Ctrl+K)`}
             aria-label={t('chrome.search')}
-            className="flex items-center justify-center w-12 h-12 rounded-full transition-colors"
+            className="flex items-center justify-center w-12 h-12 rounded-lg transition-colors"
             style={{ background: 'var(--cab-ink)', color: '#fff', boxShadow: '0 6px 20px -6px rgba(22,24,29,.35)' }}
           >
             <Search className="w-5 h-5" strokeWidth={1.5} />

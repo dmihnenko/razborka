@@ -12,6 +12,8 @@ interface PartsPageHeaderProps {
   /** Если задан — контент шапки центрируется на этой ширине (для узких страниц,
       чтобы заголовок совпадал с узким контентом). По умолчанию — во всю ширину main. */
   maxWidth?: '2xl' | '3xl' | '4xl' | '7xl'
+  /** Встроена в другую страницу (вкладка «Продаж»): без заголовка и «назад», только действия и footer */
+  embedded?: boolean
 }
 
 export default function PartsPageHeader({
@@ -22,10 +24,21 @@ export default function PartsPageHeader({
   footer,
   height = 'md',
   maxWidth,
+  embedded = false,
 }: PartsPageHeaderProps) {
   const navigate = useNavigate()
   const hClass = height === 'sm' ? 'h-14' : 'h-16'
   const innerClass = maxWidth ? `max-w-${maxWidth} mx-auto` : 'w-full'
+
+  if (embedded) {
+    if (!actions && !footer) return null
+    return (
+      <div className="flex flex-col gap-2 mb-3">
+        {actions && <div className="flex items-center justify-end gap-2">{actions}</div>}
+        {footer}
+      </div>
+    )
+  }
 
   return (
     <div className="bg-white border-b sticky top-0 z-10">

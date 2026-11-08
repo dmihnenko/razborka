@@ -1,5 +1,5 @@
 import {
-  LayoutGrid,
+  Gauge,
   Users,
   Car,
   Package,
@@ -10,11 +10,10 @@ import {
   CircleUser,
   ShoppingBag,
   CreditCard,
-  Inbox,
   History,
-  Truck,
   FolderTree,
   Warehouse,
+  Trash2,
   PiggyBank,
   type LucideIcon,
 } from 'lucide-react';
@@ -25,15 +24,19 @@ export interface MenuItem {
   icon: LucideIcon;
   roles?: string[]; // Если не указано, доступно всем
   mobileHidden?: boolean; // Скрыть в мобильной версии
-  group?: 'work' | 'base' | 'system'; // Смысловой блок сайдбара (кабинет разборки)
+  group?: 'main' | 'more'; // Блок сайдбара кабинета разборки: основное / «Ещё»
+  match?: string[]; // Префиксы путей, при которых пункт подсвечивается активным (по умолчанию — href)
 }
 
-// Заголовки групп сайдбара кабинета (порядок = порядок отображения)
-export const PARTS_NAV_GROUPS: { id: 'work' | 'base' | 'system'; label: string }[] = [
-  { id: 'work',   label: 'Работа' },
-  { id: 'base',   label: 'База' },
-  { id: 'system', label: 'Система' },
+// Блоки сайдбара кабинета (порядок = порядок отображения); у «main» подписи нет
+export const PARTS_NAV_GROUPS: { id: 'main' | 'more'; label: string }[] = [
+  { id: 'main', label: '' },
+  { id: 'more', label: 'Ещё' },
 ];
+
+// Пункты «Продаж» — вкладки Входящие/Заказы/Отправки живут на /parts/sales,
+// но карточки заказов и отправок открываются по своим адресам.
+const SALES_MATCH = ['/parts/sales', '/parts/orders', '/parts/shipments', '/parts/market-orders'];
 
 // Меню для администратора
 export const adminMenu: MenuItem[] = [
@@ -41,43 +44,40 @@ export const adminMenu: MenuItem[] = [
   { name: 'Поддержка', href: '/admin/support', icon: MessageCircle },
 ];
 
-// Меню для владельца разборки.
-// Порядок = и для сайдбара, и для мобильного нижнего меню (первые 4 — табы):
-// Дашборд / Заказы / Заявки с маркета / Запчасти — самые частые.
-export const partsOwnerMenu: MenuItem[] = [
-  { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutGrid, group: 'work' },
-  { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart, group: 'work' },
-  { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox, group: 'work' },
-  { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package, group: 'base' },
-  { name: 'Доставка', href: '/parts/shipments', icon: Truck, group: 'work' },
-  { name: 'Магазин', href: '/parts/inventory?source=shop', icon: ShoppingBag, group: 'base' },
-  { name: 'Автомобили', href: '/parts/vehicles', icon: Car, group: 'base' },
-  { name: 'Клиенты', href: '/parts/customers', icon: Users, group: 'base' },
-  { name: 'Внутренние категории', href: '/parts/categories', icon: FolderTree, group: 'base' },
-  { name: 'Места хранения', href: '/parts/warehouse', icon: Warehouse, group: 'base' },
-  { name: 'Окупаемость авто', href: '/parts/roi', icon: PiggyBank, group: 'system' },
-  { name: 'Аналитика', href: '/parts/analytics', icon: LineChart, group: 'system' },
-  { name: 'Сотрудники', href: '/parts/employees', icon: Users, group: 'system' },
-  { name: 'Настройки', href: '/parts/settings', icon: SlidersHorizontal, group: 'system' },
-  { name: 'Подписка', href: '/parts/subscription', icon: CreditCard, group: 'system' },
-  { name: 'История', href: '/parts/activity', icon: History, group: 'system' },
-  { name: 'Поддержка', href: '/support', icon: MessageCircle, group: 'system' },
-  { name: 'Профиль', href: '/profile', icon: CircleUser, group: 'system' },
+// Основные пункты кабинета разборки (общие для владельца и работника).
+// Мобильная нижняя панель: Пульт · Склад · [+] · Продажи · Ещё (Layout берёт их по href).
+const partsMainItems: MenuItem[] = [
+  { name: 'Пульт', href: '/parts/dashboard', icon: Gauge, group: 'main' },
+  { name: 'Склад', href: '/parts/inventory', icon: Package, group: 'main', match: ['/parts/inventory'] },
+  { name: 'Продажи', href: '/parts/sales', icon: ShoppingCart, group: 'main', match: SALES_MATCH },
+  { name: 'Машины', href: '/parts/vehicles', icon: Car, group: 'main' },
+  { name: 'Клиенты', href: '/parts/customers', icon: Users, group: 'main' },
 ];
 
-// Меню для работника разборки (первые 4 — мобильные табы)
+// Меню для владельца разборки
+export const partsOwnerMenu: MenuItem[] = [
+  ...partsMainItems,
+  { name: 'Отчёты', href: '/parts/analytics', icon: LineChart, group: 'more' },
+  { name: 'Окупаемость авто', href: '/parts/roi', icon: PiggyBank, group: 'more' },
+  { name: 'Места хранения', href: '/parts/warehouse', icon: Warehouse, group: 'more' },
+  { name: 'Категории', href: '/parts/categories', icon: FolderTree, group: 'more' },
+  { name: 'Сотрудники', href: '/parts/employees', icon: Users, group: 'more' },
+  { name: 'Настройки', href: '/parts/settings', icon: SlidersHorizontal, group: 'more' },
+  { name: 'Подписка', href: '/parts/subscription', icon: CreditCard, group: 'more' },
+  { name: 'История', href: '/parts/activity', icon: History, group: 'more' },
+  { name: 'Корзина', href: '/parts/trash', icon: Trash2, group: 'more' },
+  { name: 'Поддержка', href: '/support', icon: MessageCircle, group: 'more' },
+  { name: 'Профиль', href: '/profile', icon: CircleUser, group: 'more' },
+];
+
+// Меню для работника разборки (без отчётов, сотрудников, подписки, истории, корзины)
 export const partsWorkerMenu: MenuItem[] = [
-  { name: 'Дашборд', href: '/parts/dashboard', icon: LayoutGrid, group: 'work' },
-  { name: 'Заказы', href: '/parts/orders', icon: ShoppingCart, group: 'work' },
-  { name: 'Заявки с маркета', href: '/parts/market-orders', icon: Inbox, group: 'work' },
-  { name: 'Запчасти', href: '/parts/inventory?source=vehicles', icon: Package, group: 'base' },
-  { name: 'Доставка', href: '/parts/shipments', icon: Truck, group: 'work' },
-  { name: 'Автомобили', href: '/parts/vehicles', icon: Car, group: 'base' },
-  { name: 'Клиенты', href: '/parts/customers', icon: Users, group: 'base' },
-  { name: 'Внутренние категории', href: '/parts/categories', icon: FolderTree, group: 'base' },
-  { name: 'Места хранения', href: '/parts/warehouse', icon: Warehouse, group: 'base' },
-  { name: 'Настройки', href: '/parts/settings', icon: SlidersHorizontal, group: 'system' },
-  { name: 'Профиль', href: '/profile', icon: CircleUser, group: 'system' },
+  ...partsMainItems,
+  { name: 'Места хранения', href: '/parts/warehouse', icon: Warehouse, group: 'more' },
+  { name: 'Категории', href: '/parts/categories', icon: FolderTree, group: 'more' },
+  { name: 'Настройки', href: '/parts/settings', icon: SlidersHorizontal, group: 'more' },
+  { name: 'Поддержка', href: '/support', icon: MessageCircle, group: 'more' },
+  { name: 'Профиль', href: '/profile', icon: CircleUser, group: 'more' },
 ];
 
 // Меню обычного пользователя (раздел «Мои авто»).

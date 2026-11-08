@@ -63,7 +63,7 @@ export default function PartsShipmentDetails() {
       <div className="page-container">
         <div className="cab-card p-10 text-center">
           <p className="text-sm font-semibold" style={{ color: 'var(--cab-ink)' }}>{t('shipments.notFound', { defaultValue: 'ТТН не найдена' })}</p>
-          <button onClick={() => navigate('/parts/shipments')} className="cab-btn cab-btn-secondary cab-btn-sm mt-4">
+          <button onClick={() => navigate('/parts/sales?tab=shipments')} className="cab-btn cab-btn-secondary cab-btn-sm mt-4">
             {t('shipments.backToList', { defaultValue: 'К списку' })}
           </button>
         </div>
@@ -87,7 +87,7 @@ export default function PartsShipmentDetails() {
       <PartsPageHeader
         title={`${t('shipments.ttnLabel', { defaultValue: 'ТТН' })} ${formatTtn(shipment.ttn)}`}
         subtitle={shipment.status || t('shipments.noData')}
-        backPath="/parts/shipments"
+        backPath="/parts/sales?tab=shipments"
         actions={
           <div className="flex items-center gap-2">
             <button

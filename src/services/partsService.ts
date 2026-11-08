@@ -447,14 +447,18 @@ export interface PartsInventoryPagedOpts {
   storageLocationIds?: string[]
   /** Раздел маркета: slug, либо 'none' = без раздела; пусто/'all' = без фильтра */
   marketCategory?: string
+  /** Быстрый фильтр: без цены/номера, без фото, без ячейки, лежит > 90 дней (в наличии) */
+  quick?: InventoryQuickFilter
 }
+
+export type InventoryQuickFilter = 'noPrice' | 'noPhoto' | 'noLocation' | 'stale'
 
 /** Серверная пагинация инвентаря (не заменяет getPartsInventory — для PartsInventory.tsx) */
 export async function getPartsInventoryPaged(
   partsCompanyId: string,
   opts: PartsInventoryPagedOpts = {}
 ): Promise<{ items: PartsInventoryItem[]; total: number }> {
-  const { page = 1, pageSize = 50, status, vehicleId, source, search, storageLocationIds, marketCategory } = opts
+  const { page = 1, pageSize = 50, status, vehicleId, source, search, storageLocationIds, marketCategory, quick } = opts
 
   let query = supabase
     .from('parts_inventory')
@@ -472,6 +476,9 @@ export async function getPartsInventoryPaged(
   } else if (source === 'shop') {
     query = query.eq('is_shop', true)    // магазин (наполняется отдельным меню)
   }
+  // Несколько групп «ИЛИ» (поиск + быстрый фильтр) объединяем в одно условие через and(...):
+  // два отдельных .or() в одном запросе PostgREST не гарантирует сложить через И.
+  const orGroups: string[] = []
   if (search?.trim()) {
     const s = sanitizeInventorySearch(search)
     // Ячейки компании, чьё название подходит под запрос (вместе с вложенными)
@@ -482,7 +489,7 @@ export async function getPartsInventoryPaged(
       const ids = matchStorageLocationIds(locs as { id: string; name: string; parent_id: string | null }[], s).slice(0, 50)
       if (ids.length) locClause = `,storage_location_id.in.(${ids.join(',')})`
     }
-    query = query.or(`name.ilike.%${s}%,part_number.ilike.%${s}%,article.ilike.%${s}%${oemOrClause(s)}${locClause}`)
+    orGroups.push(`name.ilike.%${s}%,part_number.ilike.%${s}%,article.ilike.%${s}%${oemOrClause(s)}${locClause}`)
   }
 
   if (storageLocationIds?.length) {
@@ -491,6 +498,27 @@ export async function getPartsInventoryPaged(
   if (marketCategory && marketCategory !== 'all') {
     query = marketCategory === 'none' ? query.is('market_category', null) : query.eq('market_category', marketCategory)
   }
+
+  if (quick) {
+    const noStatus = !status || status === 'all'
+    if (quick === 'noPrice') {
+      // как серверный счётчик needsFill: непроданные без цены ИЛИ без оригинального номера
+      orGroups.push('selling_price.is.null,selling_price.eq.0,part_number.is.null,part_number.eq.')
+      if (noStatus) query = query.neq('status', 'sold')
+    } else if (quick === 'noPhoto') {
+      // как серверный счётчик noPhoto: пустой массив фото
+      orGroups.push('photos.is.null,photos.eq.[]')
+      if (noStatus) query = query.neq('status', 'sold')
+    } else if (quick === 'noLocation') {
+      query = query.is('storage_location_id', null)
+    } else if (quick === 'stale') {
+      const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+      query = query.lt('created_at', cutoff).eq('status', 'available')
+    }
+  }
+
+  if (orGroups.length === 1) query = query.or(orGroups[0])
+  else if (orGroups.length > 1) query = query.or(`and(${orGroups.map(g => `or(${g})`).join(',')})`)
 
   const from = (page - 1) * pageSize
   const to = page * pageSize - 1

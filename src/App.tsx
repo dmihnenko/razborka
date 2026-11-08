@@ -35,7 +35,6 @@ const PartsDashboard = lazy(() => import('./pages/PartsDashboard'))
 const PartsVehicles = lazy(() => import('./pages/PartsVehicles'))
 const PartsVehicleDetails = lazy(() => import('./pages/PartsVehicleDetails'))
 const PartsInventory = lazy(() => import('./pages/PartsInventory'))
-const PartsOrders = lazy(() => import('./pages/PartsOrders'))
 const PartsOrderDetails = lazy(() => import('./pages/PartsOrderDetails'))
 const PartsCreateOrder = lazy(() => import('./pages/PartsCreateOrder'))
 const PartsEmployees = lazy(() => import('./pages/PartsEmployees'))
@@ -59,8 +58,7 @@ const AdminSettings = lazy(() => import('./pages/AdminSettings'))
 const AdminAccessRequests = lazy(() => import('./pages/AdminAccessRequests'))
 const AdminCarModels = lazy(() => import('./pages/AdminCarModels'))
 const PartsSubscriptionPage = lazy(() => import('./pages/PartsSubscriptionPage'))
-const PartsMarketOrders = lazy(() => import('./pages/PartsMarketOrders'))
-const PartsShipments = lazy(() => import('./pages/PartsShipments'))
+const PartsSales = lazy(() => import('./pages/PartsSales'))
 const PartsShipmentDetails = lazy(() => import('./pages/PartsShipmentDetails'))
 const PartsActivityLog = lazy(() => import('./pages/PartsActivityLog'))
 
@@ -258,9 +256,10 @@ function App() {
           <Route path="parts/inventory/no-price" element={<PartsNoPricePage />} />
           <Route path="parts/inventory/:id" element={<PartsInventoryItemPage />} />
           <Route path="parts/inventory/:id/edit" element={<PartsInventoryEdit />} />
-          <Route path="parts/orders" element={<PartsOrders />} />
-          <Route path="parts/market-orders" element={<PartsMarketOrders />} />
-          <Route path="parts/shipments" element={<PartsShipments />} />
+          <Route path="parts/orders" element={<Navigate to="/parts/sales?tab=orders" replace />} />
+          <Route path="parts/sales" element={<PartsSales />} />
+          <Route path="parts/market-orders" element={<Navigate to="/parts/sales?tab=inbox" replace />} />
+          <Route path="parts/shipments" element={<Navigate to="/parts/sales?tab=shipments" replace />} />
           <Route path="parts/shipments/:id" element={<PartsShipmentDetails />} />
           <Route path="parts/orders/create" element={<PartsCreateOrder />} />
           <Route path="parts/orders/:id" element={<PartsOrderDetails />} />

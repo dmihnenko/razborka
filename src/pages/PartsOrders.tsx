@@ -143,7 +143,7 @@ function BoardColumn({ status, label, dot, orders, formatUSD, computeOrderUSD, o
 }
 
 // ─── Главный компонент ────────────────────────────────────────────────────────
-export default function PartsOrders() {
+export default function PartsOrders({ embedded = false }: { embedded?: boolean } = {}) {
   const { t } = useTranslation('cabinet')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -307,13 +307,14 @@ export default function PartsOrders() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50">
+    <div className={embedded ? '' : 'min-h-dvh bg-gray-50'}>
       {/* Header */}
       <PartsPageHeader
+        embedded={embedded}
         title={i18n.t('cabinet:pages.orders')}
         subtitle={t('ordersPage.totalCount', { n: stats.total })}
         backPath="/parts/dashboard"
-        actions={
+        actions={embedded ? undefined : (
           <button
             onClick={() => navigate('/parts/orders/create')}
             className="cab-btn cab-btn-primary cab-btn-sm"
@@ -321,7 +322,7 @@ export default function PartsOrders() {
             <Plus className="w-4 h-4" strokeWidth={2} />
             <span className="hidden sm:inline">{t('ordersPage.createOrder')}</span>
           </button>
-        }
+        )}
       />
 
       {/* Content */}

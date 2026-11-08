@@ -203,7 +203,7 @@ function MarketOrderCard({
   )
 }
 
-export default function PartsMarketOrders() {
+export default function PartsMarketOrders({ embedded = false }: { embedded?: boolean } = {}) {
   const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
   const partsCompanyId: string | undefined = profile?.parts_company_id ?? undefined
@@ -268,8 +268,9 @@ export default function PartsMarketOrders() {
     : orders.filter((o) => isArchived(o))
 
   return (
-    <div className="min-h-dvh bg-gray-50">
+    <div className={embedded ? '' : 'min-h-dvh bg-gray-50'}>
       <PartsPageHeader
+        embedded={embedded}
         title={i18n.t('cabinet:pages.marketOrders')}
         subtitle={
           activeCount > 0

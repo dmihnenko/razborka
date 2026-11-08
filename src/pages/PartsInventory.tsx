@@ -15,6 +15,7 @@ import { InventoryCard } from '@/components/parts/InventoryCard'
 import PartsPageHeader from '@/components/parts/PartsPageHeader'
 import i18n from '@/i18n'
 import { getPartsInventoryPaged, getPartsInventorySummary, updatePartsInventoryItem, deletePartsInventoryItem, getStorageLocations, getPartsCustomers, createPartsCustomer, createPartsOrder, createPartsOrderItem, deletePartsOrder, PartsStockError, partsErrorMessage, updatePartsOrderTotal, bulkUpdateInventory, bulkDeleteInventory, getMarketSections, marketSectionName } from '@/services/partsService'
+import type { InventoryQuickFilter } from '@/services/partsService'
 import type { PartsInventoryItem, PartsInventoryStatus, StorageLocation, PartsCustomer, PartsVehicle } from '@/types/parts'
 import type { ImgbbPhoto } from '@/services/imgbbService'
 import { deletePhotosIfUnused } from '@/services/photoStorage'
@@ -56,12 +57,27 @@ export default function PartsInventory() {
     sessionStorage.setItem('parts-inv-scroll', String(el ? el.scrollTop : 0))
     navigate(`/parts/inventory/${id}`)
   }
-  const [searchParams] = useSearchParams()
-  const sourceFilter = searchParams.get('source') ?? 'vehicles' // 'vehicles' | 'shop'
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Источник: все / с авто (разборка) / магазин. Без ?source — «Все». Старые ссылки ?source=vehicles|shop работают.
+  const sourceParam = searchParams.get('source')
+  const sourceFilter: 'all' | 'vehicles' | 'shop' = sourceParam === 'shop' || sourceParam === 'vehicles' ? sourceParam : 'all'
+  // Быстрый фильтр (?filter=noPrice|noPhoto|noLocation|stale) — серверный
+  const filterParam = searchParams.get('filter')
+  const quickFilter: InventoryQuickFilter | undefined =
+    filterParam === 'noPrice' || filterParam === 'noPhoto' || filterParam === 'noLocation' || filterParam === 'stale' ? filterParam : undefined
+  const setUrlParam = (key: string, value: string | null) =>
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (value) next.set(key, value); else next.delete(key)
+      return next
+    }, { replace: true })
+  // Куда вести «+ Запчасть»: магазин только на вкладке «Магазин», иначе разборка
+  const addSource = sourceFilter === 'shop' ? 'shop' : 'vehicles'
   const { confirm: showConfirm, dialogProps } = useConfirm()
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('available')
+  // С быстрым фильтром показываем все непроданные — как считают счётчики на чипах и Пульте
+  const [statusFilter, setStatusFilter] = useState<string>(quickFilter ? 'all' : 'available')
   const [vehicleFilter, setVehicleFilter] = useState<string>('all') // vehicle_id or 'all'
   // Фильтр по ячейке склада читается из URL (?location=<id>) — из PartsWarehouse
   const locationParam = searchParams.get('location') ?? 'all'
@@ -145,17 +161,18 @@ export default function PartsInventory() {
     hasNextPage,
     fetchNextPage,
   } = useInfiniteQuery({
-    queryKey: ['parts-inventory', 'paged', partsCompanyId, debouncedSearch, statusFilter, vehicleFilter, sourceFilter, locationFilter, locationFilterIds.join(','), sectionFilter],
+    queryKey: ['parts-inventory', 'paged', partsCompanyId, debouncedSearch, statusFilter, vehicleFilter, sourceFilter, locationFilter, locationFilterIds.join(','), sectionFilter, quickFilter ?? ''],
     queryFn: ({ pageParam = 1 }) =>
       getPartsInventoryPaged(partsCompanyId!, {
         page: pageParam as number,
         pageSize: PAGE_SIZE,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         vehicleId: vehicleFilter !== 'all' ? vehicleFilter : undefined,
-        source: sourceFilter as 'vehicles' | 'shop' | 'all',
+        source: sourceFilter,
         search: debouncedSearch || undefined,
         storageLocationIds: locationFilterIds.length ? locationFilterIds : undefined,
         marketCategory: sectionFilter !== 'all' ? sectionFilter : undefined,
+        quick: quickFilter,
       }),
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
@@ -198,7 +215,7 @@ export default function PartsInventory() {
   useEffect(() => {
     const editItemId = location.state?.editItemId
     if (!editItemId) return
-    navigate(`/parts/inventory/${editItemId}/edit?source=${sourceFilter}`, { replace: true })
+    navigate(`/parts/inventory/${editItemId}/edit?source=${addSource}`, { replace: true })
   }, [location.state?.editItemId])
 
   // Auto-open sell modal when navigated with sellItemId in state (from item page)
@@ -218,20 +235,16 @@ export default function PartsInventory() {
     navigate(location.pathname + location.search, { replace: true, state: null })
   }, [location.state?.sellItemId, inventory.length])  
 
-  // Reset filters when switching between Разборка / Магазин
+  // Смена источника не сбрасывает поиск/статус/раздел/ячейку; сбрасываем только выбор и фильтр по авто
   useEffect(() => {
-    setStatusFilter('available')
-    setSearchQuery('')
-    setDebouncedSearch('')
     setVehicleFilter('all')
-    setSectionFilter('all')
     setSelectedIds(new Set())
   }, [sourceFilter])
 
   // Clear selection when changing status / section / location filter
   useEffect(() => {
     setSelectedIds(new Set())
-  }, [statusFilter, sectionFilter, locationFilter])
+  }, [statusFilter, sectionFilter, locationFilter, quickFilter])
 
   // Разделы маркета (справочник, общий для всех разборок)
   const { data: sections = [] } = useQuery({ queryKey: ['market', 'sections'], queryFn: getMarketSections, staleTime: 30 * 60_000 })
@@ -287,7 +300,7 @@ export default function PartsInventory() {
   })
 
   // Unique vehicles from loaded items for vehicle filter buttons (только в режиме Разборки)
-  const uniqueVehicles: VehicleDropdownRow[] = sourceFilter === 'vehicles'
+  const uniqueVehicles: VehicleDropdownRow[] = sourceFilter !== 'shop'
     ? Array.from(
         new Map(
           inventory
@@ -567,7 +580,7 @@ export default function PartsInventory() {
 
   const handleEdit = (item: PartsInventoryItem, e: React.MouseEvent) => {
     e.stopPropagation()
-    navigate(`/parts/inventory/${item.id}/edit?source=${sourceFilter}`)
+    navigate(`/parts/inventory/${item.id}/edit?source=${addSource}`)
   }
 
   const handleSell = (item: PartsInventoryItem, e: React.MouseEvent) => {
@@ -687,7 +700,7 @@ export default function PartsInventory() {
     <div ref={rootRef} className="min-h-dvh bg-gray-50">
       {/* Header */}
       <PartsPageHeader
-        title={i18n.t(sourceFilter === 'shop' ? 'cabinet:pages.shop' : 'cabinet:pages.inventory')}
+        title={i18n.t('cabinet:pages.inventory')}
         subtitle={totalCount > inventory.length
           ? t('inventoryPage.subtitleOf', { loaded: inventory.length, total: totalCount })
           : t('inventoryPage.subtitleTotal', { loaded: inventory.length, total: totalCount })}
@@ -695,7 +708,7 @@ export default function PartsInventory() {
         actions={
           <>
             <button
-              onClick={() => navigate(`/parts/inventory/new?source=${sourceFilter}`)}
+              onClick={() => navigate(`/parts/inventory/new?source=${addSource}`)}
               className="cab-btn cab-btn-primary cab-btn-sm flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" strokeWidth={2} />
@@ -724,26 +737,41 @@ export default function PartsInventory() {
           <PhotoLimitNotice companyId={partsCompanyId} />
         </div>
 
-        {/* Needs-fill banner: нет цены или оригинального номера (серверный счёт по всей выборке) */}
-        {(summary?.needsFill ?? 0) > 0 && (
-          <div className="mb-4 flex items-center justify-between gap-3 bg-amber-50 border border-amber-200/60 rounded-2xl px-4 py-3">
-            <div className="flex items-center gap-2.5">
-              <div className="icon-tile-sm bg-amber-100 text-amber-600 flex-shrink-0">
-                <Tag className="w-3.5 h-3.5" strokeWidth={1.5} />
-              </div>
-              <span className="text-sm text-amber-800">
-                <span className="font-bold">{summary!.needsFill}</span>
-                {' '}{t('inventoryPage.needsFillText', { count: summary!.needsFill })}
-              </span>
-            </div>
+        {/* Источник: Все / С авто / Магазин (остальные фильтры не сбрасываются) */}
+        <div className="mb-3 inline-flex rounded-lg border border-gray-200 bg-white p-0.5" role="group" aria-label={t('inventoryPage.sourceLabel')}>
+          {(['all', 'vehicles', 'shop'] as const).map(src => (
             <button
-              onClick={() => navigate('/parts/inventory/no-price')}
-              className="flex-shrink-0 px-3 py-1.5 text-xs font-bold bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition-colors"
+              key={src}
+              type="button"
+              onClick={() => setUrlParam('source', src === 'all' ? null : src)}
+              aria-pressed={sourceFilter === src}
+              className={`px-3 py-1.5 text-sm font-semibold rounded-md whitespace-nowrap transition-colors ${sourceFilter === src ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-50'}`}
             >
-              {t('inventoryPage.fill')}
+              {t(src === 'all' ? 'inventoryPage.sourceAll' : src === 'vehicles' ? 'inventoryPage.sourceVehicles' : 'inventoryPage.sourceShop')}
             </button>
-          </div>
-        )}
+          ))}
+        </div>
+
+        {/* Быстрые фильтры (серверные, в URL: ?filter=) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 mb-3 scrollbar-hide">
+          {([
+            [undefined, t('inventoryPage.quickAll'), null],
+            ['noPrice', t('inventoryPage.quickNoPrice'), summary?.needsFill ?? null],
+            ['noPhoto', t('inventoryPage.quickNoPhoto'), summary?.noPhoto ?? null],
+            ['noLocation', t('inventoryPage.quickNoLocation'), null],
+            ['stale', t('inventoryPage.quickStale'), null],
+          ] as const).map(([key, label, count]) => (
+            <button
+              key={key ?? 'all'}
+              type="button"
+              onClick={() => { if (key) setStatusFilter('all'); setUrlParam('filter', key ?? null) }}
+              aria-pressed={quickFilter === key}
+              className={`chip flex-shrink-0 whitespace-nowrap ${quickFilter === key ? 'chip-active' : ''}`}
+            >
+              {label}{count ? ` (${count})` : ''}
+            </button>
+          ))}
+        </div>
 
         {/* Status chips + cost line. Суммы стоимости — только на десктопе (sm+);
             на мобиле они засоряли интерфейс, статистика видна в других местах. */}
@@ -754,7 +782,7 @@ export default function PartsInventory() {
               onClick={() => setStatusFilter('all')}
               className={`chip flex-shrink-0 ${statusFilter === 'all' ? 'chip-active' : ''}`}
             >
-              {t('inventoryPage.chipAll')} ({sourceFilter === 'vehicles' ? stats.total : stats.totalQuantity})
+              {t('inventoryPage.chipAll')} ({sourceFilter === 'shop' ? stats.totalQuantity : stats.total})
             </button>
             <button
               onClick={() => setStatusFilter('available')}
@@ -938,7 +966,7 @@ export default function PartsInventory() {
               </p>
               {!debouncedSearch && statusFilter === 'all' && (
                 <button
-                  onClick={() => navigate(`/parts/inventory/new?source=${sourceFilter}`)}
+                  onClick={() => navigate(`/parts/inventory/new?source=${addSource}`)}
                   className="mt-3 cab-btn cab-btn-ghost cab-btn-sm text-primary"
                 >
                   {t('inventoryPage.addFirst')}
@@ -967,7 +995,7 @@ export default function PartsInventory() {
         ) : (
           <>
           {/* Мобильный компактный список — название · ориг. номер · цена (всё остальное в карточке) */}
-          <div className="cab-card p-0 overflow-hidden sm:hidden divide-y divide-gray-100">
+          <div className="cab-card p-0 overflow-hidden md:hidden divide-y divide-gray-100">
             {filteredAndSorted.map((item) => (
               <button
                 key={item.id}
@@ -983,23 +1011,32 @@ export default function PartsInventory() {
                   </div>
                   <div className="text-xs font-mono text-gray-500 truncate mt-0.5">
                     {item.part_number || t('inventoryPage.noNumber')}
-                    {(item.storage_location?.id || item.storage_location?.name) && (
-                      <span className="font-sans text-gray-600"> · <MapPin className="inline w-3 h-3 -mt-0.5" strokeWidth={1.5} /> {(item.storage_location?.id && locationLabelById.get(item.storage_location.id)) || item.storage_location?.name}</span>
-                    )}
                   </div>
                 </div>
-                <span className="flex-shrink-0 text-sm font-bold text-primary tabular whitespace-nowrap">
-                  {item.selling_price
-                    ? formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')
-                    : <span className="text-amber-500 text-xs font-semibold">{t('inventoryPage.noPrice')}</span>}
-                </span>
+                <div className="flex-shrink-0 flex flex-col items-end gap-1 max-w-[45%]">
+                  <span className="text-sm font-bold text-primary tabular whitespace-nowrap">
+                    {item.selling_price
+                      ? formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')
+                      : <span className="text-amber-500 text-xs font-semibold">{t('inventoryPage.noPrice')}</span>}
+                  </span>
+                  {(item.storage_location?.id || item.storage_location?.name) ? (
+                    <span className="inline-flex items-center gap-1 max-w-full rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-700">
+                      <MapPin className="w-3 h-3 flex-shrink-0" strokeWidth={1.5} />
+                      <span className="truncate">{(item.storage_location?.id && locationLabelById.get(item.storage_location.id)) || item.storage_location?.name}</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-md border border-dashed border-gray-200 px-1.5 py-0.5 text-[11px] text-gray-400 whitespace-nowrap">
+                      {t('inventoryPage.noLocation')}
+                    </span>
+                  )}
+                </div>
                 <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
               </button>
             ))}
           </div>
 
           {/* Таблица — планшет/десктоп */}
-          <div className="cab-card p-0 overflow-hidden hidden sm:block">
+          <div className="cab-card p-0 overflow-hidden hidden md:block">
             <div className="overflow-x-auto">
               <table className="w-full table-fixed min-w-[640px]">
                 <thead>
@@ -1009,9 +1046,9 @@ export default function PartsInventory() {
                     <th className="table-header-cell !px-2 hidden sm:table-cell" style={{ width: '15%' }}>{t('inventoryPage.colOem')}</th>
                     <th className="table-header-cell !px-2 whitespace-nowrap" style={{ width: '9%' }}>{t('inventoryPage.colPrice')}</th>
                     <th className="table-header-cell !px-2 whitespace-nowrap" style={{ width: '13%' }}>{t('inventoryPage.colStatus')}</th>
-                    <th className="table-header-cell !px-2 hidden md:table-cell" style={{ width: '15%' }}>{t('inventoryPage.colVehicle')}</th>
-                    <th className="table-header-cell !px-2 hidden lg:table-cell" style={{ width: '11%' }}>{t('inventoryPage.colCategory')}</th>
-                    <th className="table-header-cell !px-2 hidden xl:table-cell" style={{ width: '11%' }}>{t('inventoryPage.colStorage')}</th>
+                    <th className="table-header-cell !px-2 hidden lg:table-cell" style={{ width: '14%' }}>{t('inventoryPage.colVehicle')}</th>
+                    <th className="table-header-cell !px-2 hidden xl:table-cell" style={{ width: '11%' }}>{t('inventoryPage.colCategory')}</th>
+                    <th className="table-header-cell !px-2 whitespace-nowrap" style={{ width: '12%' }}>{t('inventoryPage.colStorage')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -1039,11 +1076,6 @@ export default function PartsInventory() {
                           )}
                           <span className="truncate">{item.name}</span>
                         </div>
-                        {item.storage_location?.name && (
-                          <div className="xl:hidden text-[11px] text-gray-500 truncate inline-flex items-center gap-1">
-                            <MapPin className="w-3 h-3 flex-shrink-0" strokeWidth={1.5} /> {item.storage_location.name}
-                          </div>
-                        )}
                       </td>
                       {/* Оригинальный номер */}
                       <td className="hidden sm:table-cell px-2 py-2 text-sm text-gray-500 font-mono truncate">
@@ -1051,7 +1083,7 @@ export default function PartsInventory() {
                       </td>
                       {/* Цена */}
                       <td className="px-2 py-2 whitespace-nowrap">
-                        <span className="text-sm font-bold text-primary tabular">
+                        <span className="text-sm font-bold text-primary tabular text-right">
                           {formatPrice(item.selling_price, (item.price_currency as 'UAH' | 'USD') || 'USD')}
                         </span>
                       </td>
@@ -1072,7 +1104,7 @@ export default function PartsInventory() {
                         )}
                       </td>
                       {/* Авто */}
-                      <td className="hidden md:table-cell px-2 py-2 text-sm text-gray-700">
+                      <td className="hidden lg:table-cell px-2 py-2 text-sm text-gray-700">
                         {item.vehicle ? (
                           <div className="leading-tight min-w-0">
                             <div className="text-sm font-medium text-gray-700 truncate">{item.vehicle.make} {item.vehicle.model}</div>
@@ -1083,7 +1115,7 @@ export default function PartsInventory() {
                         )}
                       </td>
                       {/* Категория */}
-                      <td className="hidden lg:table-cell px-2 py-2 text-sm text-gray-600">
+                      <td className="hidden xl:table-cell px-2 py-2 text-sm text-gray-600">
                         <div className="truncate">
                           {item.market_category && sectionByslug.get(item.market_category)
                             ? marketSectionName(sectionByslug.get(item.market_category)!, i18n.language)
@@ -1092,7 +1124,7 @@ export default function PartsInventory() {
                         {item.category && <div className="truncate text-[11px] text-gray-400">{item.category.name}</div>}
                       </td>
                       {/* Склад */}
-                      <td className="hidden xl:table-cell px-2 py-2 text-sm text-gray-600">
+                      <td className="px-2 py-2 text-sm text-gray-600 whitespace-nowrap">
                         <div className="truncate">
                           {item.storage_location?.name || item.location || <span className="text-gray-300">—</span>}
                         </div>

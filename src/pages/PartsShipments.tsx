@@ -27,7 +27,7 @@ function isProblem(s: PartsShipment) {
   return code === '14' || code === '102' || code === '103' || code === '108'
 }
 
-export default function PartsShipments() {
+export default function PartsShipments({ embedded = false }: { embedded?: boolean } = {}) {
   const { t } = useTranslation('cabinet')
   const { data: profile } = useUserProfile()
   const partsCompanyId = profile?.parts_company_id ?? undefined
@@ -104,8 +104,9 @@ export default function PartsShipments() {
   const ink = 'var(--cab-ink)', ink2 = 'var(--cab-ink-2)', ink3 = 'var(--cab-ink-3)'
 
   return (
-    <div className="min-h-dvh" style={{ background: 'var(--cab-bg)' }}>
+    <div className={embedded ? '' : 'min-h-dvh'} style={embedded ? undefined : { background: 'var(--cab-bg)' }}>
       <PartsPageHeader
+        embedded={embedded}
         title={t('pages.shipments')}
         subtitle={t('pages.shipmentsSub', { n: counts.all })}
         backPath="/parts/dashboard"

@@ -229,7 +229,7 @@ export default function PartsCreateOrder() {
           <div className="flex flex-col-reverse sm:flex-row gap-3 pt-1">
             <button
               type="button"
-              onClick={() => navigate('/parts/orders')}
+              onClick={() => navigate('/parts/sales?tab=orders')}
               className="cab-btn cab-btn-secondary sm:w-auto w-full"
             >
               {t('createOrderPage.cancel')}

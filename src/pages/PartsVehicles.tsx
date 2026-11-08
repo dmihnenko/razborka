@@ -1,11 +1,11 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18n, { intlLocale } from '@/i18n'
 import { Spinner } from '@/components/ui/Spinner'
 import { QueryState } from '@/components/ui/QueryState'
 import { Plus, Search, Car, Filter, Grid, List, Download, Upload, FileSpreadsheet, X, ChevronDown, CheckSquare, Square } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useSubscriptionLimits } from '@/hooks/useSubscription'
@@ -156,6 +156,15 @@ export default function PartsVehicles() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  // Быстрое создание из нижней панели: /parts/vehicles?new=1 сразу открывает форму
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setSelectedVehicle(null)
+      setIsModalOpen(true)
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
   const [selectedVehicle, setSelectedVehicle] = useState<PartsVehicle | null>(null)
   // Импорт/экспорт
   const [importOpen, setImportOpen] = useState(false)
