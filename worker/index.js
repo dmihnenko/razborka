@@ -9,6 +9,7 @@
 
 import { handleImageProxy, isImageProxyPath } from './imageProxy.js'
 import { handleUpload, handleDelete, handleGet, isPhotosGet } from './photoStorage.js'
+import { cleanupPhotos } from './photoCleanup.js'
 
 const SITE = 'https://razborka.net'
 const BRAND = 'Razborka.net'
@@ -603,6 +604,7 @@ export default {
   // Крон: курс USD (06:30/12:30 UTC) + синк Новой Почты (каждые 30 мин)
   async scheduled(event, env, ctx) {
     if (event.cron === '*/30 * * * *') ctx.waitUntil(syncNpShipments(env))
+    else if (event.cron === '15 3 * * *') ctx.waitUntil(cleanupPhotos(env).catch((e) => console.log('photoCleanup failed', String(e && e.message || e))))
     else ctx.waitUntil(updateGlobalRate(env))
   },
 
